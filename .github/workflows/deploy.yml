@@ -1,0 +1,22 @@
+name: Deploy site to server
+
+on:
+  push:
+    branches: [claude/server-access-ajcs5w]
+    paths: [bestwayplus.html]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull latest site onto the server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: 130.17.12.118
+          username: root
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: |
+            set -e
+            curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/bestwayplus.html" -o /var/www/bestwayplus/index.html
+            echo "Deployed $(date -u +%FT%TZ), size: $(stat -c%s /var/www/bestwayplus/index.html) bytes"
