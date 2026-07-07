@@ -1,0 +1,25 @@
+name: Server exec
+
+# Runs a shell script on the server over SSH. Triggered manually (workflow_dispatch).
+# Used to administer the box (diagnostics, installs) without a local terminal.
+
+on:
+  workflow_dispatch:
+    inputs:
+      script:
+        description: Shell script to run on the server
+        required: true
+        default: "uname -a"
+
+jobs:
+  exec:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run script on server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: 130.17.12.118
+          username: root
+          password: ${{ secrets.SERVER_PASSWORD }}
+          command_timeout: 40m
+          script: ${{ inputs.script }}
