@@ -506,7 +506,7 @@ html[lang="ru"] .hero h1{font-size:clamp(30px,5.6vw,64px)}
 <header class="hero" id="top">
   <canvas id="cityfx"></canvas>
   <div class="container hero-content">
-    <div class="eyebrow"><span class="dot"></span> <span data-scramble data-i18n="hero_eyebrow">Wrocław · Kraków · Katowice · Warszawa</span></div>
+    <div class="eyebrow"><span class="dot"></span> <span data-i18n="hero_eyebrow">Wrocław · Kraków · Katowice · Warszawa</span></div>
     <h1 data-i18n-html="hero_h1">
       <span class="w" style="animation-delay:.05s">Już</span>
       <span class="w" style="animation-delay:.13s">jeździsz</span>
@@ -807,8 +807,9 @@ document.querySelectorAll('.count').forEach(el=>{
 if(!reduced){
   const CH='!<>-_\\/[]{}—=+*^?#01';
   document.querySelectorAll('[data-scramble]').forEach(el=>{
-    new IntersectionObserver(([e],o)=>{
-      if(!e.isIntersecting)return;o.disconnect();
+    const ob=new IntersectionObserver(([e],o)=>{
+      if(!e.isIntersecting||el.dataset.scrambled)return;
+      o.disconnect();el.dataset.scrambled='1';   // run at most once, ever
       let orig=el._target!=null?el._target:el.textContent;
       let f=0;
       (function step(){
@@ -820,7 +821,8 @@ if(!reduced){
         }).join('');
         if(f++<total)requestAnimationFrame(step);else el.textContent=orig;
       })();
-    },{threshold:.6}).observe(el);
+    },{threshold:.6});
+    ob.observe(el);
   });
 }
 
