@@ -360,12 +360,15 @@ body::before{
     linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
     linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
   background-size:64px 64px;
+  -webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.9),rgba(0,0,0,.28) 55%,transparent);
   mask-image:linear-gradient(180deg,rgba(0,0,0,.9),rgba(0,0,0,.28) 55%,transparent);
+  /* promote to its own GPU layer so scrolling doesn't repaint it (fixes mobile jitter) */
+  transform:translateZ(0);backface-visibility:hidden;
 }
 body::after{
-  content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.75;
-  background:linear-gradient(115deg,rgba(255,210,63,.06),transparent 22%,rgba(75,231,255,.06) 64%,transparent 86%);
-  mix-blend-mode:screen;
+  content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.6;
+  background:linear-gradient(115deg,rgba(255,210,63,.05),transparent 22%,rgba(75,231,255,.05) 64%,transparent 86%);
+  transform:translateZ(0);backface-visibility:hidden;
 }
 .container{max-width:1180px}
 nav{background:rgba(2,6,17,.62);box-shadow:0 14px 50px rgba(0,0,0,.28)}
