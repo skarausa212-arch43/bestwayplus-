@@ -760,6 +760,39 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
 .wallet-add input:focus { border-color: var(--pms-violet); }
 .wallet-add #wLabel { flex: 0 0 180px; }
 @media (max-width: 520px) { .wallet-item { flex-wrap: wrap; } .wallet-add #wLabel { flex: 1 1 100%; } }
+
+/* ── Админ-панель ── */
+.admin-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 22px; }
+.admin-stat { background: var(--pms-white); border: 1px solid var(--pms-border); border-radius: 14px; padding: 16px 18px; }
+.admin-stat .n { font-size: 26px; font-weight: 800; color: var(--pms-text); line-height: 1.1; }
+.admin-stat .l { font-size: 12px; color: var(--pms-text-soft); margin-top: 4px; }
+.admin-stat.alert .n { color: var(--pms-violet); }
+.admin-subtabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.admin-subtab { font-size: 13px; font-weight: 600; padding: 9px 16px; border-radius: 10px; cursor: pointer;
+  border: 1px solid var(--pms-border); background: var(--pms-white); color: var(--pms-text-soft); }
+.admin-subtab.on { border-color: var(--pms-violet); color: var(--pms-violet); background: var(--pms-violet-light); }
+.admin-table { width: 100%; border-collapse: collapse; background: var(--pms-white);
+  border: 1px solid var(--pms-border); border-radius: 14px; overflow: hidden; }
+.admin-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .4px;
+  color: var(--pms-text-soft); font-weight: 700; padding: 12px 14px; border-bottom: 1px solid var(--pms-border); }
+.admin-table td { padding: 12px 14px; font-size: 13px; color: var(--pms-text); border-bottom: 1px solid var(--pms-border); vertical-align: top; }
+.admin-table tr:last-child td { border-bottom: none; }
+.admin-table .mono { font-family: ui-monospace, monospace; font-size: 12px; color: var(--pms-text-soft); }
+.adm-pill { display: inline-block; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .3px;
+  padding: 2px 8px; border-radius: 999px; }
+.adm-pill.ok { background: #e6f6ec; color: #1a8f4c; }
+.adm-pill.warn { background: #fdeede; color: #b5701a; }
+.adm-pill.dispute { background: #fbe4e4; color: #c0392b; }
+.adm-pill.role { background: var(--pms-violet-light); color: var(--pms-violet); }
+.adm-btn { font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--pms-violet); background: var(--pms-violet); color: #fff; }
+.adm-empty { padding: 30px; text-align: center; color: var(--pms-text-soft); font-size: 14px; }
+.admin-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+@media (prefers-color-scheme: dark) {
+  .adm-pill.ok { background: rgba(26,143,76,.18); }
+  .adm-pill.warn { background: rgba(181,112,26,.18); }
+  .adm-pill.dispute { background: rgba(192,57,43,.2); }
+}
 </style>
 </head>
 <body>
@@ -882,6 +915,7 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
     <div class="app-tabs">
       <button class="on" onclick="go('dashboard')">Deals</button>
       <button onclick="go('profile')">Profile</button>
+      <button id="adminTab" style="display:none" onclick="go('admin')">⚙ Админ</button>
     </div>
   </div>
   <div class="right">
@@ -1054,6 +1088,24 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
       <input type="text" id="wAddr" placeholder="TRC-20 / адрес кошелька">
       <button class="btn btn-violet" onclick="addWallet()">+ Добавить</button>
     </div>
+  </div>
+</section>
+
+<!-- ======================= АДМИН-ПАНЕЛЬ ======================= -->
+<section class="view" id="admin">
+  <div class="page" style="max-width: 1000px;">
+    <div class="page-head">
+      <h2>Панель администратора</h2>
+      <button class="btn btn-violet" onclick="go('dashboard')">← К сделкам</button>
+    </div>
+    <div id="adminMsg"></div>
+    <div id="adminStats" class="admin-stats"></div>
+    <div class="admin-subtabs">
+      <button class="admin-subtab on" data-tab="deals" onclick="adminTabSelect('deals')">Сделки</button>
+      <button class="admin-subtab" data-tab="disputes" onclick="adminTabSelect('disputes')">Арбитраж</button>
+      <button class="admin-subtab" data-tab="users" onclick="adminTabSelect('users')">Пользователи</button>
+    </div>
+    <div id="adminPanel"></div>
   </div>
 </section>
 
@@ -1356,8 +1408,9 @@ function go(view) {
   if (['dashboard','dealForm','dealChat'].includes(view) && !token) view = 'auth';
   document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
   document.getElementById(view).classList.add('on');
-  const isApp = ['dashboard','createModal','dealForm','dealChat','profile'].includes(view);
+  const isApp = ['dashboard','createModal','dealForm','dealChat','profile','admin'].includes(view);
   if (view === 'profile') loadProfile();
+  if (view === 'admin') loadAdmin();
   document.getElementById('appBar').style.display = isApp ? 'flex' : 'none';
   document.getElementById('siteNav').style.display = isApp ? 'none' : 'flex';
   if (view !== 'dealChat' && chatTimer) { clearInterval(chatTimer); chatTimer = null; }
@@ -1431,9 +1484,11 @@ function logout() {
 }
 function setUserChip() {
   if (!me) return;
-  document.querySelector('.user-chip .name').textContent = me.isArbiter ? '⚖ Arbiter' : me.email.split('@')[0];
+  document.querySelector('.user-chip .name').textContent = me.isAdmin ? '⚙ Admin' : me.isArbiter ? '⚖ Arbiter' : me.email.split('@')[0];
   document.querySelector('.user-chip .mail').textContent = me.email;
   document.querySelector('.avatar').textContent = me.email[0].toUpperCase();
+  const at = document.getElementById('adminTab');
+  if (at) at.style.display = me.isAdmin ? 'inline-flex' : 'none';
 }
 
 // ─────────── Дашборд ───────────
@@ -1898,6 +1953,133 @@ async function acceptInvite() {
     history.replaceState(null, '', location.pathname);
     openDeal(deal.id);
   } catch (e) { document.getElementById('joinMsg').innerHTML = '<div class="alert alert-err">' + esc(e.message) + '</div>'; }
+}
+
+// ─────────── Админ-панель ───────────
+let adminTab = 'deals';
+const admState = s => (BADGES[s] ? BADGES[s][1] : s);
+
+async function loadAdmin() {
+  if (!me || !me.isAdmin) { go('dashboard'); return; }
+  const msg = document.getElementById('adminMsg');
+  try {
+    const o = await api('/api/admin/overview');
+    document.getElementById('adminStats').innerHTML =
+      admStat(o.totalDeals, 'Сделок всего') +
+      admStat(o.openDisputes, 'Открытых споров', o.openDisputes > 0) +
+      admStat(o.totalUsers, 'Пользователей') +
+      admStat(o.activatedUsers, 'Активированы') +
+      admStat('$' + o.locked, 'Заблокировано USDT') +
+      admStat('$' + o.fees, 'Комиссии USDT');
+    msg.innerHTML = '';
+    adminTabSelect(adminTab);
+  } catch (e) { msg.innerHTML = '<div class="alert alert-err">' + esc(e.message) + '</div>'; }
+}
+function admStat(n, l, alert) {
+  return '<div class="admin-stat' + (alert ? ' alert' : '') + '"><div class="n">' + esc(n) + '</div><div class="l">' + esc(l) + '</div></div>';
+}
+
+async function adminTabSelect(tab) {
+  adminTab = tab;
+  document.querySelectorAll('.admin-subtab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  const panel = document.getElementById('adminPanel');
+  panel.innerHTML = '<div class="adm-empty">Загрузка…</div>';
+  try {
+    if (tab === 'users') {
+      const { users } = await api('/api/admin/users');
+      panel.innerHTML = renderAdminUsers(users);
+    } else if (tab === 'disputes') {
+      const { disputes } = await api('/api/admin/disputes');
+      panel.innerHTML = renderAdminDeals(disputes, true);
+    } else {
+      const { deals } = await api('/api/admin/deals');
+      panel.innerHTML = renderAdminDeals(deals, false);
+    }
+  } catch (e) { panel.innerHTML = '<div class="alert alert-err">' + esc(e.message) + '</div>'; }
+}
+
+function renderAdminUsers(users) {
+  if (!users.length) return '<div class="adm-empty">Пользователей нет</div>';
+  const rows = users.map(u => {
+    const role = u.isAdmin ? '<span class="adm-pill role">admin</span>'
+      : u.isArbiter ? '<span class="adm-pill role">arbiter</span>' : '<span class="adm-pill">user</span>';
+    const act = u.activated ? '<span class="adm-pill ok">активен</span>' : '<span class="adm-pill warn">не активен</span>';
+    return '<tr><td>' + esc(u.email) + '</td><td>' + role + '</td><td>' + act + '</td><td>' + u.wallets +
+      '</td><td class="mono">' + esc((u.tronAddress || '').slice(0, 10)) + '…</td><td class="mono">' +
+      esc((u.createdAt || '').slice(0, 10)) + '</td></tr>';
+  }).join('');
+  return '<div class="admin-scroll"><table class="admin-table"><thead><tr><th>Email</th><th>Роль</th><th>Статус</th><th>Кошельки</th><th>Адрес</th><th>Создан</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
+
+function renderAdminDeals(deals, disputesOnly) {
+  if (!deals.length) return '<div class="adm-empty">' + (disputesOnly ? 'Открытых споров нет' : 'Сделок пока нет') + '</div>';
+  const rows = deals.map(d => {
+    let st = '<span class="adm-pill">' + esc(admState(d.state)) + '</span>';
+    if (d.hasDispute && !d.resolved) st = '<span class="adm-pill dispute">спор</span>';
+    else if (d.resolved) st = '<span class="adm-pill ok">решён</span>';
+    const act = (d.hasDispute && !d.resolved)
+      ? '<button class="adm-btn" onclick="adminOpenDeal(\'' + d.id + '\')">В арбитраж →</button>'
+      : '<button class="adm-btn" style="background:var(--pms-white);color:var(--pms-violet)" onclick="adminOpenDeal(\'' + d.id + '\')">Открыть</button>';
+    return '<tr><td>' + esc(d.title) + '<div class="mono">' + esc(d.id.slice(0, 8)) + '</div></td><td>$' + esc(d.amount) +
+      '</td><td class="mono">' + esc(d.buyer.email) + '<br>' + esc(d.seller.email) + '</td><td>' + st +
+      '</td><td style="text-align:right">' + act + '</td></tr>';
+  }).join('');
+  return '<div class="admin-scroll"><table class="admin-table"><thead><tr><th>Сделка</th><th>Сумма</th><th>Стороны</th><th>Статус</th><th style="text-align:right">Действие</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
+
+async function adminOpenDeal(id) {
+  const panel = document.getElementById('adminPanel');
+  panel.innerHTML = '<div class="adm-empty">Загрузка сделки…</div>';
+  try {
+    const { deal, journal, chat } = await api('/api/admin/deals/' + id);
+    const back = '<button class="admin-subtab" onclick="adminTabSelect(adminTab)">← Назад к списку</button>';
+    const info = '<div class="prof-card" style="margin:14px 0">' +
+      admRow('Сделка', deal.title) + admRow('ID', deal.id) +
+      admRow('Сумма', '$' + deal.amount + ' USDT') + admRow('Статус', admState(deal.state)) +
+      admRow('Покупатель', deal.buyer.email) + admRow('Продавец', deal.seller.email) +
+      admRow('Комиссия', deal.feePayer === 'buyer' ? 'платит покупатель' : deal.feePayer === 'seller' ? 'платит продавец' : 'пополам') +
+      (deal.dispute ? admRow('Арбитр', deal.dispute.arbiter || '—') : '') +
+      (deal.resolution ? admRow('Решение', 'sellerBps=' + (deal.resolution.sellerBps ?? '—')) : '') + '</div>';
+    const msgs = (chat || []).map(m =>
+      '<div style="padding:8px 12px;border-bottom:1px solid var(--pms-border);font-size:13px">' +
+      '<b class="mono" style="font-size:11px;color:var(--pms-text-soft)">' + esc(m.email || m.from || 'system') + '</b><br>' +
+      esc(m.text || '') + '</div>').join('') || '<div class="adm-empty">Сообщений нет</div>';
+    let arb = '';
+    if (deal.dispute && !deal.resolution) {
+      const mine = deal.dispute.arbiter === me.email;
+      if (!mine) {
+        arb = '<div class="prof-card" style="margin-top:14px;padding:16px 18px"><b>Спор в работе у: ' + esc(deal.dispute.arbiter || '—') + '</b>' +
+          '<p class="prof-sub" style="margin:8px 0">Возьмите спор на себя, чтобы вынести решение.</p>' +
+          '<button class="adm-btn" onclick="adminTakeover(\'' + deal.id + '\')">Взять спор в работу</button></div>';
+      } else {
+        arb = '<div class="prof-card" style="margin-top:14px;padding:16px 18px"><b>Вынести решение</b>' +
+          '<p class="prof-sub" style="margin:8px 0">Какую долю получает продавец (%)? Остальное вернётся покупателю.</p>' +
+          '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
+          '<input type="range" id="admSellerPct" min="0" max="100" value="50" style="flex:1;min-width:160px" oninput="document.getElementById(\'admPctLbl\').textContent=this.value+\'%\'">' +
+          '<span id="admPctLbl" style="font-weight:800;min-width:46px">50%</span></div>' +
+          '<input type="text" id="admRationale" placeholder="Обоснование решения" style="width:100%;margin-top:10px;padding:10px;border:1px solid var(--pms-border);border-radius:9px">' +
+          '<button class="adm-btn" style="margin-top:10px" onclick="adminDecide(\'' + deal.id + '\')">Вынести решение</button>' +
+          '<div id="admDecideMsg" style="margin-top:8px"></div></div>';
+      }
+    }
+    panel.innerHTML = back + info + '<h3 class="prof-h3" style="margin-top:16px">Чат и события</h3><div class="prof-card" style="padding:0;max-height:340px;overflow-y:auto">' + msgs + '</div>' + arb;
+  } catch (e) { panel.innerHTML = '<div class="alert alert-err">' + esc(e.message) + '</div>'; }
+}
+function admRow(k, v) { return '<div class="prof-row"><span class="k">' + esc(k) + '</span><span class="v">' + esc(v) + '</span></div>'; }
+
+async function adminTakeover(id) {
+  try { await api('/api/admin/deals/' + id + '/takeover', 'POST', {}); adminOpenDeal(id); }
+  catch (e) { alert(e.message); }
+}
+async function adminDecide(id) {
+  const pct = parseInt(document.getElementById('admSellerPct').value, 10) || 0;
+  const rationale = document.getElementById('admRationale').value.trim();
+  const box = document.getElementById('admDecideMsg');
+  try {
+    const r = await api('/api/deals/' + id + '/decide', 'POST', { sellerBps: pct * 100, rationale });
+    box.innerHTML = '<div class="alert alert-ok">Решение вынесено: продавцу $' + esc(r.payout) + ', возврат $' + esc(r.refunded) + '</div>';
+    setTimeout(() => adminOpenDeal(id), 1200);
+  } catch (e) { box.innerHTML = '<div class="alert alert-err">' + esc(e.message) + '</div>'; }
 }
 
 // ─────────── Boot ───────────

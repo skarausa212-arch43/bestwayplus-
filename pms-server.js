@@ -116,6 +116,29 @@ if (DEV_MODE && !users['arbiter@paymesafe.online']) {
   console.log('[dev] арбитр: arbiter@paymesafe.online / arbiter123');
 }
 
+// Администратор платформы. Пароль берётся из env ADMIN_PASSWORD (в проде),
+// в DEV — дефолтный admin123. Админ одновременно является арбитром,
+// чтобы мог входить в спор и выносить решение.
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@paymesafe.online';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || (DEV_MODE ? 'admin123' : null);
+if (ADMIN_PASSWORD && !users[ADMIN_EMAIL]) {
+  users[ADMIN_EMAIL] = {
+    email: ADMIN_EMAIL,
+    pass: hashPassword(ADMIN_PASSWORD),
+    tronAddress: 'TAdminPlatformAddr',
+    isArbiter: true,
+    isAdmin: true,
+    activated: true,
+    createdAt: new Date().toISOString(),
+  };
+  saveUsers();
+  console.log(`[admin] администратор: ${ADMIN_EMAIL}` + (DEV_MODE ? ' / admin123' : ' (пароль из ADMIN_PASSWORD)'));
+} else if (users[ADMIN_EMAIL] && !users[ADMIN_EMAIL].isAdmin) {
+  users[ADMIN_EMAIL].isAdmin = true;
+  users[ADMIN_EMAIL].isArbiter = true;
+  saveUsers();
+}
+
 // ─────────────────────────── ДВИЖОК, ЧАТ, АРБИТРАЖ ───────────────────────────
 
 const engine = new EscrowEngine({
@@ -214,7 +237,7 @@ route('POST', /^\/api\/auth\/login$/, async (req, res) => {
     const link = activationLink(req, makeVerifyToken(email));
     return send(res, 403, { error: 'Подтвердите email, чтобы войти', needsActivation: true, email, activationUrl: DEV_MODE ? link : undefined });
   }
-  send(res, 200, { token: makeToken(email), me: { email, tronAddress: u.tronAddress, isArbiter: !!u.isArbiter } });
+  send(res, 200, { token: makeToken(email), me: { email, tronAddress: u.tronAddress, isArbiter: !!u.isArbiter, isAdmin: !!u.isAdmin } });
 });
 
 route('GET', /^\/api\/auth\/verify$/, async (req, res) => {
@@ -250,7 +273,7 @@ function userWallets(u) {
   if (Array.isArray(u.wallets) && u.wallets.length) return u.wallets;
   return u.tronAddress ? [{ address: u.tronAddress, label: 'Основной', primary: true }] : [];
 }
-const meView = u => ({ email: u.email, isArbiter: !!u.isArbiter, tronAddress: u.tronAddress, wallets: userWallets(u) });
+const meView = u => ({ email: u.email, isArbiter: !!u.isArbiter, isAdmin: !!u.isAdmin, tronAddress: u.tronAddress, wallets: userWallets(u) });
 
 route('GET', /^\/api\/me$/, async (req, res, user) => {
   send(res, 200, { me: meView(user) });
@@ -488,6 +511,95 @@ route('GET', /^\/api\/stats$/, async (req, res) => {
     fees: rec.totalFees,
     gmv: fromBaseUnits(gmv),
   });
+});
+
+// ---- АДМИН-ПАНЕЛЬ ----
+
+const requireAdmin = (res, user) => {
+  if (!user || !user.isAdmin) { send(res, 403, { error: 'Доступ только для администратора' }); return false; }
+  return true;
+};
+
+// Сводка для дашборда админа
+route('GET', /^\/api\/admin\/overview$/, async (req, res, user) => {
+  if (!requireAdmin(res, user)) return;
+  const rec = engine.reconcile();
+  const all = engine.ledger.allDeals();
+  const disputes = all.filter(d => d.dispute && !d.resolution).length;
+  send(res, 200, {
+    totalUsers: Object.keys(users).length,
+    activatedUsers: Object.values(users).filter(u => isActivated(u)).length,
+    totalDeals: all.length,
+    openDisputes: disputes,
+    pendingInvites: Object.keys(invites).length,
+    locked: rec.totalLocked,
+    fees: rec.totalFees,
+  });
+});
+
+// Все пользователи
+route('GET', /^\/api\/admin\/users$/, async (req, res, user) => {
+  if (!requireAdmin(res, user)) return;
+  const list = Object.values(users).map(u => ({
+    email: u.email,
+    activated: isActivated(u),
+    isArbiter: !!u.isArbiter,
+    isAdmin: !!u.isAdmin,
+    wallets: userWallets(u).length,
+    tronAddress: u.tronAddress,
+    createdAt: u.createdAt,
+  })).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  send(res, 200, { users: list });
+});
+
+// Все сделки платформы (не только свои)
+route('GET', /^\/api\/admin\/deals$/, async (req, res, user) => {
+  if (!requireAdmin(res, user)) return;
+  const list = engine.ledger.allDeals()
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .map(d => ({
+      ...dealView(d, user.email),
+      hasDispute: !!d.dispute,
+      resolved: !!d.resolution,
+    }));
+  send(res, 200, { deals: list });
+});
+
+// Только споры (арбитраж)
+route('GET', /^\/api\/admin\/disputes$/, async (req, res, user) => {
+  if (!requireAdmin(res, user)) return;
+  const list = engine.ledger.allDeals()
+    .filter(d => d.dispute)
+    .sort((a, b) => (b.dispute.openedAt || '').localeCompare(a.dispute.openedAt || ''))
+    .map(d => ({
+      ...dealView(d, user.email),
+      resolved: !!d.resolution,
+    }));
+  send(res, 200, { disputes: list });
+});
+
+// Полный просмотр любой сделки (админ входит в арбитраж)
+route('GET', /^\/api\/admin\/deals\/([\w-]+)$/, async (req, res, user, m) => {
+  if (!requireAdmin(res, user)) return;
+  const d = engine.ledger.getDeal(m[1]);
+  if (!d) return send(res, 404, { error: 'Сделка не найдена' });
+  const messages = chat.messages.get(d.id) || []; // админ читает без проверки участия
+  send(res, 200, { deal: dealView(d, user.email), journal: journalView(d.id), chat: messages });
+});
+
+// Админ берёт спор на себя → назначается арбитром этого дела и может решать/писать
+route('POST', /^\/api\/admin\/deals\/([\w-]+)\/takeover$/, async (req, res, user, m) => {
+  if (!requireAdmin(res, user)) return;
+  const d = engine.ledger.getDeal(m[1]);
+  if (!d) return send(res, 404, { error: 'Сделка не найдена' });
+  if (!d.dispute) return send(res, 400, { error: 'По этой сделке нет открытого спора' });
+  if (d.resolution) return send(res, 400, { error: 'Спор уже разрешён' });
+  const prev = d.dispute.arbiter;
+  d.dispute.arbiter = user.email;
+  engine.ledger.putDeal(d);
+  if (!arbitration.arbiters.includes(user.email)) arbitration.arbiters.push(user.email);
+  chat.system(d.id, `Администратор ${user.email} взял спор в работу` + (prev && prev !== user.email ? ` (ранее: ${prev})` : '') + '.', { event: 'admin_takeover', arbiter: user.email });
+  send(res, 200, { deal: dealView(d, user.email) });
 });
 
 // ─────────────────────────── СЕРВЕР ───────────────────────────
