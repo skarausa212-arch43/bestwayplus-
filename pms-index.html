@@ -1,0 +1,1915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PayMeSafe — Secure Payments Made Easy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  /* PayMeSafe brand — взято со скриншотов dev.paymesafe.online */
+  --pms-navy: #14102b;          /* тёмная навигация */
+  --pms-navy-2: #1c1740;
+  --pms-indigo: #4f46e5;        /* градиент старт */
+  --pms-violet: #7c5ce8;        /* фирменный фиолетовый (кнопки, шапка дашборда) */
+  --pms-violet-dark: #6947d6;
+  --pms-violet-light: #ede9fe;
+  --pms-link: #7c5ce8;
+  --pms-bg: #f7f7fb;
+  --pms-white: #ffffff;
+  --pms-text: #1f2130;
+  --pms-text-soft: #6b7080;
+  --pms-border: #e8e8f0;
+  --pms-green: #16a34a;
+  --pms-green-bg: #dcfce7;
+  --pms-red: #dc2626;
+  --pms-red-bg: #fee2e2;
+  --pms-blue: #4f6ae5;
+  --pms-blue-bg: #e4e9fd;
+  --pms-gray-bg: #eef0f4;
+  --radius: 10px;
+  --radius-lg: 16px;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--pms-bg);
+  color: var(--pms-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============ ЛОГОТИП (гексагон как на сайте) ============ */
+.logo {
+  display: flex; align-items: center; gap: 9px;
+  font-weight: 700; font-size: 17px; letter-spacing: -0.2px;
+  color: #fff; text-decoration: none;
+}
+.logo svg { flex-shrink: 0; }
+
+/* ============ ПУБЛИЧНАЯ НАВИГАЦИЯ (тёмная) ============ */
+.site-nav {
+  background: var(--pms-navy);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 36px;
+  position: relative; z-index: 10;
+}
+.site-nav .links { display: flex; gap: 28px; }
+.site-nav .links a {
+  color: rgba(255,255,255,.72); text-decoration: none;
+  font-size: 13.5px; font-weight: 500; transition: color .2s;
+}
+.site-nav .links a:hover, .site-nav .links a.on { color: #fff; }
+.site-nav .actions { display: flex; align-items: center; gap: 18px; }
+.site-nav .login { color: rgba(255,255,255,.8); font-size: 13.5px; text-decoration: none; font-weight: 500; }
+
+.btn {
+  border: none; cursor: pointer; font-family: inherit; font-weight: 600;
+  border-radius: 8px; transition: all .2s; text-decoration: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-violet {
+  background: var(--pms-violet); color: #fff;
+  padding: 10px 20px; font-size: 13.5px;
+  box-shadow: 0 4px 14px rgba(124, 92, 232, .35);
+}
+.btn-violet:hover { background: var(--pms-violet-dark); transform: translateY(-1px); }
+.btn-ghost {
+  background: rgba(255,255,255,.12); color: #fff;
+  padding: 10px 18px; font-size: 13.5px;
+}
+.btn-lg { padding: 14px 28px; font-size: 15px; border-radius: 10px; }
+.btn-full { width: 100%; }
+
+/* ============ ГЕРОЙ С ГЕКСАГОНАМИ ============ */
+.hero {
+  position: relative; overflow: hidden;
+  background: linear-gradient(120deg, #3f37c9 0%, #4f46e5 35%, #6d5ce8 70%, #8b6ff0 100%);
+  min-height: 480px;
+  display: flex; align-items: center; justify-content: center;
+  text-align: center;
+}
+/* угловые «крылья» как на лендинге */
+.hero::before, .hero::after {
+  content: ''; position: absolute; width: 60%; height: 220px; background: var(--pms-bg);
+}
+.hero::before { left: -18%; bottom: -140px; transform: rotate(8deg); }
+.hero::after  { right: -18%; top: -140px;  transform: rotate(8deg); }
+
+.hex-field {
+  position: absolute; inset: 0; display: flex;
+  align-items: center; justify-content: center; pointer-events: none;
+}
+.hero-inner { position: relative; z-index: 2; padding: 90px 24px; max-width: 760px; }
+.hero h1 {
+  color: #fff; font-size: 52px; font-weight: 700; letter-spacing: -1.2px; line-height: 1.12;
+}
+.hero p {
+  color: rgba(255,255,255,.82); font-size: 15px; line-height: 1.65;
+  max-width: 560px; margin: 22px auto 0;
+}
+.hero .hero-cta { margin-top: 34px; display: flex; gap: 14px; justify-content: center; }
+
+/* ============ ШАПКА ПРИЛОЖЕНИЯ (фиолетовая, как в дашборде) ============ */
+.app-bar {
+  background: var(--pms-violet);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 32px;
+}
+.app-bar .left { display: flex; align-items: center; gap: 34px; }
+.app-tabs { display: flex; gap: 8px; }
+.app-tabs button {
+  background: transparent; border: none; cursor: pointer;
+  color: rgba(255,255,255,.75); font-family: inherit;
+  font-size: 13.5px; font-weight: 600; padding: 8px 16px; border-radius: 8px;
+  transition: all .2s;
+}
+.app-tabs button.on { background: rgba(255,255,255,.18); color: #fff; }
+.app-tabs button:hover { color: #fff; }
+.app-bar .right { display: flex; align-items: center; gap: 16px; }
+.icon-btn {
+  background: transparent; border: none; cursor: pointer;
+  color: rgba(255,255,255,.85); font-size: 16px; padding: 6px;
+}
+.wallet-pill {
+  background: #fff; color: var(--pms-violet);
+  border: none; cursor: pointer; font-family: inherit; font-weight: 700;
+  font-size: 12.5px; padding: 7px 16px; border-radius: 8px;
+  display: flex; align-items: center; gap: 7px;
+}
+.user-chip { display: flex; align-items: center; gap: 10px; }
+.avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: #fff; color: var(--pms-violet);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px;
+}
+.user-chip .meta { line-height: 1.25; }
+.user-chip .meta .name { color: #fff; font-size: 12.5px; font-weight: 600; }
+.user-chip .meta .mail { color: rgba(255,255,255,.6); font-size: 10.5px; }
+
+/* ============ КОНТЕЙНЕР ДАШБОРДА ============ */
+.page { max-width: 1120px; margin: 0 auto; padding: 34px 24px 80px; }
+.view { display: none; }
+.view.on { display: block; animation: fade .25s ease; }
+@keyframes fade { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: none;} }
+
+.page-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+.page-head h2 { font-size: 24px; font-weight: 700; letter-spacing: -0.4px; }
+.page-head .head-actions { display: flex; gap: 12px; align-items: center; }
+.select-like {
+  background: #fff; border: 1px solid var(--pms-border); border-radius: 8px;
+  padding: 9px 16px; font-size: 13px; color: var(--pms-text-soft); font-weight: 500;
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+}
+
+/* фильтры-пилюли со скриншота */
+.filters { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
+.filter {
+  border: none; cursor: pointer; font-family: inherit;
+  background: transparent; color: var(--pms-text-soft);
+  font-size: 12.5px; font-weight: 600; padding: 7px 14px; border-radius: 20px;
+  display: flex; align-items: center; gap: 7px; transition: all .2s;
+}
+.filter.on { background: #fff; box-shadow: 0 1px 4px rgba(20,16,43,.08); color: var(--pms-text); }
+.dot { width: 7px; height: 7px; border-radius: 50%; }
+.dot.gray { background: #9aa0ae; } .dot.violet { background: var(--pms-violet); }
+.dot.green { background: var(--pms-green); } .dot.blue { background: var(--pms-blue); }
+
+/* ============ ТАБЛИЦА СДЕЛОК ============ */
+.deals-table {
+  background: #fff; border-radius: var(--radius-lg);
+  box-shadow: 0 1px 4px rgba(20,16,43,.06);
+  overflow: hidden;
+}
+.deals-table table { width: 100%; border-collapse: collapse; }
+.deals-table th {
+  text-align: left; font-size: 11px; font-weight: 600; text-transform: none;
+  color: var(--pms-text-soft); padding: 14px 20px;
+  border-bottom: 1px solid var(--pms-border);
+}
+.deals-table td { padding: 15px 20px; border-bottom: 1px solid var(--pms-border); font-size: 13px; vertical-align: middle; }
+.deals-table tr:last-child td { border-bottom: none; }
+.deals-table tr:hover td { background: #fafafe; }
+
+.deal-cell { display: flex; align-items: center; gap: 12px; }
+.hex-badge {
+  width: 34px; height: 34px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.deal-cell .t { line-height: 1.35; }
+.deal-cell .t a { color: var(--pms-link); font-weight: 600; text-decoration: none; font-size: 13px; }
+.deal-cell .t a:hover { text-decoration: underline; }
+.deal-cell .t .cat { color: var(--pms-text-soft); font-size: 11.5px; }
+.col-soft { color: var(--pms-text-soft); font-size: 12.5px; }
+
+.badge {
+  display: inline-block; padding: 5px 12px; border-radius: 7px;
+  font-size: 11px; font-weight: 600; white-space: nowrap;
+}
+.badge.awaiting  { background: var(--pms-blue-bg);   color: var(--pms-blue); }
+.badge.funded    { background: var(--pms-green-bg);  color: var(--pms-green); }
+.badge.progress  { background: var(--pms-violet-light); color: var(--pms-violet); }
+.badge.approval  { background: var(--pms-violet-light); color: var(--pms-violet); }
+.badge.released  { background: var(--pms-green-bg);  color: var(--pms-green); }
+.badge.disputed  { background: var(--pms-red-bg);    color: var(--pms-red); }
+.badge.expired   { background: var(--pms-gray-bg);   color: var(--pms-text-soft); }
+.badge.initiated { background: var(--pms-gray-bg);   color: var(--pms-text-soft); }
+
+.row-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.row-actions button {
+  width: 30px; height: 30px; border: 1px solid var(--pms-border); background: #fff;
+  border-radius: 7px; cursor: pointer; color: var(--pms-text-soft); font-size: 13px;
+  display: flex; align-items: center; justify-content: center; transition: all .15s;
+}
+.row-actions button:hover { border-color: var(--pms-violet); color: var(--pms-violet); }
+.invite-link {
+  color: var(--pms-violet); font-size: 12px; font-weight: 600;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+}
+
+/* ============ МОДАЛКА «CREATE A DEAL» (сплит как на сайте) ============ */
+.modal-shell {
+  background: #fff; border-radius: var(--radius-lg); overflow: hidden;
+  box-shadow: 0 8px 40px rgba(20,16,43,.12);
+  display: grid; grid-template-columns: 420px 1fr; min-height: 560px;
+}
+.modal-left {
+  position: relative; overflow: hidden;
+  background: linear-gradient(150deg, #3f37c9 0%, #5346e0 45%, #6d5ce8 100%);
+  padding: 46px 40px; color: #fff;
+}
+.modal-left .hexes { position: absolute; right: -170px; top: 50%; transform: translateY(-50%); opacity: .5; }
+.modal-left h3 { position: relative; font-size: 30px; font-weight: 700; letter-spacing: -0.6px; line-height: 1.2; max-width: 260px; }
+.steps { position: relative; margin-top: 42px; display: flex; flex-direction: column; gap: 12px; }
+.step {
+  background: rgba(255,255,255,.10); border-radius: 12px; padding: 16px 18px;
+  display: flex; gap: 14px; align-items: flex-start;
+  backdrop-filter: blur(4px);
+}
+.step:first-child { background: rgba(255,255,255,.18); }
+.step .ic { font-size: 18px; margin-top: 1px; }
+.step .tt { font-size: 13.5px; font-weight: 700; }
+.step .dd { font-size: 12px; color: rgba(255,255,255,.72); margin-top: 3px; line-height: 1.5; }
+
+.modal-right { padding: 46px 44px; position: relative; }
+.modal-right .close { position: absolute; top: 18px; right: 22px; background: none; border: none; font-size: 18px; color: var(--pms-text-soft); cursor: pointer; }
+.modal-right h3 { text-align: center; font-size: 22px; font-weight: 700; letter-spacing: -0.4px; }
+.tpl-group { margin-top: 28px; }
+.tpl-group .lbl {
+  text-align: center; font-size: 11px; color: var(--pms-text-soft);
+  display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
+}
+.tpl-group .lbl::before, .tpl-group .lbl::after { content: ''; flex: 1; height: 1px; background: var(--pms-border); }
+.tpl-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.tpl-card {
+  border: 1px solid var(--pms-border); border-radius: 12px;
+  padding: 20px 12px 16px; text-align: center; cursor: pointer;
+  transition: all .2s; background: #fff;
+}
+.tpl-card:hover { border-color: var(--pms-violet); box-shadow: 0 4px 16px rgba(124,92,232,.14); transform: translateY(-2px); }
+.tpl-card .ic {
+  width: 42px; height: 42px; margin: 0 auto 10px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 12px; color: #fff;
+}
+.tpl-card .nm { font-size: 12px; font-weight: 600; line-height: 1.35; }
+.ic.copart { background: #1c3d8f; font-style: italic; }
+.ic.iaai { background: #d0342c; }
+.ic.manheim { background: #14102b; }
+.ic.plain { background: var(--pms-gray-bg); color: var(--pms-text-soft); font-size: 17px; }
+.tpl-cta { text-align: center; margin-top: 26px; }
+.tpl-cta .hint { font-size: 11px; color: var(--pms-text-soft); display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.tpl-cta .hint::before, .tpl-cta .hint::after { content: ''; flex: 1; height: 1px; background: var(--pms-border); }
+
+/* ============ ФОРМА СДЕЛКИ (Real Estate со скриншота) ============ */
+.deal-form {
+  background: #fff; border-radius: var(--radius-lg);
+  box-shadow: 0 1px 4px rgba(20,16,43,.06);
+  max-width: 560px; margin: 0 auto; padding: 36px 40px;
+}
+.deal-form .form-head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+.deal-form .form-head h3 { font-size: 19px; font-weight: 700; }
+.deal-form .form-sub { font-size: 12.5px; color: var(--pms-text-soft); line-height: 1.55; margin-bottom: 22px; }
+.role-toggle { display: flex; gap: 0; border: 1px solid var(--pms-border); border-radius: 9px; overflow: hidden; margin-bottom: 26px; width: fit-content; }
+.role-toggle button {
+  border: none; background: #fff; cursor: pointer; font-family: inherit;
+  padding: 9px 22px; font-size: 12.5px; font-weight: 600; color: var(--pms-text-soft);
+}
+.role-toggle button.on { background: var(--pms-navy); color: #fff; }
+
+.fld { margin-bottom: 18px; }
+.fld label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 7px; }
+.fld label .req { color: var(--pms-red); }
+.fld input, .fld select, .fld textarea {
+  width: 100%; padding: 11px 14px; font-size: 13px; font-family: inherit;
+  border: 1px solid var(--pms-border); border-radius: 9px; color: var(--pms-text);
+  background: #fff; transition: border .2s, box-shadow .2s;
+}
+.fld input::placeholder, .fld textarea::placeholder { color: #b3b8c4; }
+.fld input:focus, .fld select:focus, .fld textarea:focus {
+  outline: none; border-color: var(--pms-violet);
+  box-shadow: 0 0 0 3px rgba(124,92,232,.14);
+}
+.fld-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.fee-box { border-top: 1px solid var(--pms-border); padding-top: 16px; margin-bottom: 18px; }
+.fee-box .fee-line { display: flex; justify-content: space-between; margin-bottom: 10px; }
+.fee-box .fee-line .k { font-size: 12.5px; color: var(--pms-violet); font-weight: 600; }
+.fee-box .fee-line .d { font-size: 10.5px; color: var(--pms-text-soft); margin-top: 2px; }
+.upload {
+  border: 1.5px dashed var(--pms-border); border-radius: 9px; padding: 13px 14px;
+  font-size: 12.5px; color: var(--pms-text-soft); cursor: pointer; transition: all .2s;
+  display: flex; align-items: center; gap: 9px;
+}
+.upload:hover { border-color: var(--pms-violet); color: var(--pms-violet); }
+.form-msg { margin-top: 4px; }
+
+/* ============ ЛОГИН ============ */
+.auth-wrap {
+  min-height: calc(100vh - 60px); display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+  background: linear-gradient(120deg, #3f37c9 0%, #4f46e5 40%, #6d5ce8 100%);
+  padding: 40px 20px;
+}
+.auth-card {
+  position: relative; z-index: 2;
+  background: #fff; border-radius: var(--radius-lg); padding: 40px 38px;
+  width: 100%; max-width: 400px;
+  box-shadow: 0 20px 60px rgba(20,16,43,.3);
+}
+.auth-card .logo-dark { color: var(--pms-text); justify-content: center; margin-bottom: 6px; }
+.auth-card .sub { text-align: center; color: var(--pms-text-soft); font-size: 12.5px; margin-bottom: 28px; }
+.auth-note {
+  margin-top: 16px; text-align: center; font-size: 11.5px; color: var(--pms-text-soft);
+  background: var(--pms-violet-light); border-radius: 8px; padding: 10px 14px;
+}
+
+/* ============ АЛЕРТЫ ============ */
+.alert { padding: 11px 14px; border-radius: 9px; margin-bottom: 14px; font-size: 12.5px; font-weight: 500; }
+.alert-ok { background: var(--pms-green-bg); color: var(--pms-green); }
+.alert-err { background: var(--pms-red-bg); color: var(--pms-red); }
+
+/* ============ АДАПТИВ ============ */
+/* ============ ЧАТ СДЕЛКИ + АРБИТРАЖ ============ */
+.chat-layout { display: grid; grid-template-columns: 1fr 340px; gap: 20px; align-items: start; }
+.chat-shell {
+  background: #fff; border-radius: var(--radius-lg);
+  box-shadow: 0 1px 4px rgba(20,16,43,.06);
+  display: flex; flex-direction: column; height: 620px; overflow: hidden;
+}
+.chat-head {
+  padding: 16px 22px; border-bottom: 1px solid var(--pms-border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.chat-head .who { display: flex; align-items: center; gap: 12px; }
+.chat-head .tt { font-size: 15px; font-weight: 700; }
+.chat-head .sub { font-size: 11.5px; color: var(--pms-text-soft); }
+.chat-body { flex: 1; overflow-y: auto; padding: 22px; display: flex; flex-direction: column; gap: 12px; background: #fafafd; }
+.msg { max-width: 72%; }
+.msg .bubble {
+  padding: 11px 15px; border-radius: 14px; font-size: 13px; line-height: 1.5;
+}
+.msg .meta { font-size: 10.5px; color: var(--pms-text-soft); margin-top: 4px; }
+.msg.them { align-self: flex-start; }
+.msg.them .bubble { background: #fff; border: 1px solid var(--pms-border); border-bottom-left-radius: 4px; }
+.msg.me { align-self: flex-end; text-align: right; }
+.msg.me .bubble { background: var(--pms-violet); color: #fff; border-bottom-right-radius: 4px; text-align: left; }
+.msg.arb { align-self: flex-start; }
+.msg.arb .bubble { background: #fff7ed; border: 1px solid #fed7aa; border-bottom-left-radius: 4px; }
+.msg.arb .meta { color: #c2660a; font-weight: 600; }
+.msg.sys { align-self: center; max-width: 88%; text-align: center; }
+.msg.sys .bubble {
+  background: var(--pms-violet-light); color: var(--pms-violet);
+  font-size: 11.5px; font-weight: 500; border-radius: 9px; padding: 9px 14px;
+}
+.msg .attach {
+  display: inline-flex; align-items: center; gap: 7px; margin-top: 8px;
+  background: rgba(124,92,232,.08); border: 1px solid rgba(124,92,232,.25);
+  border-radius: 8px; padding: 7px 11px; font-size: 11.5px; color: var(--pms-violet); font-weight: 600;
+}
+.msg.me .attach { background: rgba(255,255,255,.16); border-color: rgba(255,255,255,.35); color: #fff; }
+.evidence-tag {
+  display: inline-block; font-size: 9.5px; font-weight: 700; letter-spacing: .4px;
+  background: var(--pms-red-bg); color: var(--pms-red);
+  border-radius: 5px; padding: 2px 7px; margin-bottom: 6px; text-transform: uppercase;
+}
+.chat-input {
+  border-top: 1px solid var(--pms-border); padding: 14px 18px;
+  display: flex; gap: 10px; align-items: center; background: #fff;
+}
+.chat-input input {
+  flex: 1; border: 1px solid var(--pms-border); border-radius: 10px;
+  padding: 11px 15px; font-size: 13px; font-family: inherit;
+}
+.chat-input input:focus { outline: none; border-color: var(--pms-violet); box-shadow: 0 0 0 3px rgba(124,92,232,.14); }
+.chat-input .clip {
+  width: 40px; height: 40px; border: 1px solid var(--pms-border); background: #fff;
+  border-radius: 10px; cursor: pointer; font-size: 15px; color: var(--pms-text-soft);
+}
+
+/* Правая колонка: сделка + арбитраж */
+.side-card {
+  background: #fff; border-radius: var(--radius-lg);
+  box-shadow: 0 1px 4px rgba(20,16,43,.06);
+  padding: 22px; margin-bottom: 16px;
+}
+.side-card h4 { font-size: 13.5px; font-weight: 700; margin-bottom: 14px; }
+.kv { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 10px; }
+.kv .k { color: var(--pms-text-soft); }
+.kv .v { font-weight: 600; }
+.arb-card { border: 1.5px solid #fed7aa; background: #fffbf5; }
+.arb-card .arb-head { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; }
+.arb-card .arb-head .ic {
+  width: 30px; height: 30px; border-radius: 8px; background: #fff7ed;
+  display: flex; align-items: center; justify-content: center; font-size: 15px;
+}
+.arb-card .arb-head .tt { font-size: 13px; font-weight: 700; color: #9a4d00; }
+.arb-card .arb-head .sub { font-size: 10.5px; color: #c2660a; }
+.split-box { margin-top: 14px; }
+.split-labels { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; margin-bottom: 8px; }
+.split-labels .s { color: var(--pms-green); } .split-labels .b { color: var(--pms-blue); }
+.split-track { height: 10px; border-radius: 6px; overflow: hidden; display: flex; }
+.split-track .fill-s { background: var(--pms-green); }
+.split-track .fill-b { background: var(--pms-blue); flex: 1; }
+input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: var(--pms-violet); }
+.split-sums { display: flex; justify-content: space-between; font-size: 11px; color: var(--pms-text-soft); margin-top: 8px; }
+.deadline-pill {
+  margin-top: 12px; font-size: 11px; color: #9a4d00; background: #fff1df;
+  border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; gap: 8px;
+}
+
+@media (max-width: 900px) {
+  .modal-shell { grid-template-columns: 1fr; }
+  .modal-left { display: none; }
+  .tpl-grid { grid-template-columns: repeat(2, 1fr); }
+  .hero h1 { font-size: 34px; }
+  .site-nav .links { display: none; }
+  .deals-table { overflow-x: auto; }
+  .deals-table table { min-width: 720px; }
+  .app-bar { padding: 12px 16px; }
+  .user-chip .meta { display: none; }
+  .fld-row { grid-template-columns: 1fr; }
+  .deal-form { padding: 26px 20px; }
+  .chat-layout { grid-template-columns: 1fr; }
+  .chat-shell { height: 480px; }
+}
+
+
+/* ════════ FUTURE LANDING ════════ */
+.fhero {
+  position: relative; overflow: hidden; min-height: 92vh;
+  background: radial-gradient(1200px 700px at 50% -10%, #2b2470 0%, #17123d 45%, #0b0820 100%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 70px 20px 90px;
+}
+/* дрейф звёзд — два слоя точек */
+.fstars, .fstars.l2 { position: absolute; inset: -50%; pointer-events: none;
+  background-image: radial-gradient(1.5px 1.5px at 20% 30%, rgba(255,255,255,.5) 50%, transparent 51%),
+    radial-gradient(1px 1px at 60% 70%, rgba(167,139,250,.6) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 80% 20%, rgba(255,255,255,.35) 50%, transparent 51%),
+    radial-gradient(1px 1px at 35% 85%, rgba(255,255,255,.4) 50%, transparent 51%),
+    radial-gradient(1px 1px at 90% 55%, rgba(167,139,250,.5) 50%, transparent 51%);
+  background-size: 520px 520px; animation: fdrift 120s linear infinite; opacity: .7;
+}
+.fstars.l2 { background-size: 340px 340px; animation-duration: 80s; animation-direction: reverse; opacity: .45; }
+@keyframes fdrift { to { transform: translate3d(260px, 180px, 0); } }
+
+/* вращающиеся кольца гексагонов за ядром */
+.fhex-rings { position: absolute; top: 50%; left: 50%; width: 920px; height: 920px;
+  transform: translate(-50%, -54%); pointer-events: none; }
+.fhex-rings svg { position: absolute; inset: 0; }
+.fpx { will-change: transform; transition: transform .15s ease-out; }
+.fring-a { animation: fspin 90s linear infinite; }
+.fring-b { animation: fspin 140s linear infinite reverse; }
+@keyframes fspin { to { transform: rotate(360deg); } }
+
+.fhero-inner { position: relative; z-index: 3; max-width: 860px; }
+.f-eyebrow {
+  display: inline-flex; align-items: center; gap: 9px;
+  font-size: 11.5px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase;
+  color: #a78bfa; border: 1px solid rgba(167,139,250,.35); border-radius: 30px;
+  padding: 8px 18px; background: rgba(124,92,232,.08); backdrop-filter: blur(6px);
+  animation: fup .8s .1s cubic-bezier(.2,.8,.2,1) both;
+}
+.f-eyebrow .dot-live { width: 7px; height: 7px; border-radius: 50%; background: #34d399;
+  box-shadow: 0 0 10px #34d399; animation: fblink 2s infinite; }
+@keyframes fblink { 50% { opacity: .3; } }
+
+.fhero h1 {
+  margin: 26px 0 0; font-size: 64px; font-weight: 800; letter-spacing: -2.2px; line-height: 1.05;
+  background: linear-gradient(110deg, #ffffff 20%, #b7a5ff 40%, #ffffff 60%, #8b6ff0 80%, #ffffff 100%);
+  background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: fup .8s .22s cubic-bezier(.2,.8,.2,1) both, fshimmer 7s 1.2s linear infinite;
+}
+@keyframes fshimmer { to { background-position: -220% 0; } }
+.fhero p.fsub {
+  margin: 20px auto 0; max-width: 560px; color: rgba(226,222,255,.72);
+  font-size: 15.5px; line-height: 1.7;
+  animation: fup .8s .34s cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes fup { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
+
+/* ── СИГНАТУРА: ядро эскроу с потоком платежа ── */
+.fflow { position: relative; margin: 54px auto 0; width: min(720px, 92vw); height: 150px;
+  animation: fup .8s .48s cubic-bezier(.2,.8,.2,1) both; }
+.fparty { position: absolute; top: 50%; transform: translateY(-50%); width: 120px; }
+.fparty.buyer { left: 0; } .fparty.seller { right: 0; }
+.fparty .pavatar { width: 52px; height: 52px; margin: 0 auto; border-radius: 16px;
+  border: 1px solid rgba(167,139,250,.4); background: rgba(124,92,232,.12);
+  backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center;
+  font-size: 22px; }
+.fparty .plabel { margin-top: 9px; font-size: 11px; font-weight: 600; letter-spacing: .8px;
+  text-transform: uppercase; color: rgba(200,190,255,.6); }
+.fline { position: absolute; top: 50%; height: 2px; width: calc(50% - 170px);
+  background: linear-gradient(90deg, rgba(124,92,232,.05), rgba(124,92,232,.55)); }
+.fline.in { left: 120px; }
+.fline.out { right: 120px; transform: scaleX(-1); }
+/* импульсы платежа */
+.fpulse { position: absolute; top: 50%; width: 9px; height: 9px; margin-top: -4.5px;
+  border-radius: 50%; background: #34d399; box-shadow: 0 0 12px #34d399, 0 0 26px rgba(52,211,153,.5); }
+.fpulse.p-in  { left: 120px; animation: fflowin 6s linear infinite; }
+.fpulse.p-in2 { left: 120px; animation: fflowin 6s 2s linear infinite; }
+.fpulse.p-out { right: 120px; animation: fflowout 6s 3s linear infinite; }
+@keyframes fflowin {
+  0% { transform: translateX(0); opacity: 0; }
+  6% { opacity: 1; }
+  40% { transform: translateX(calc(36vw > 190px ? 190px : 36vw)); opacity: 1; }
+  42%, 100% { transform: translateX(190px); opacity: 0; }
+}
+@keyframes fflowout {
+  0%, 48% { transform: translateX(0); opacity: 0; }
+  54% { opacity: 1; }
+  88% { transform: translateX(-190px); opacity: 1; }
+  92%, 100% { transform: translateX(-190px); opacity: 0; }
+}
+/* ядро-сейф */
+.fcore { position: absolute; left: 50%; top: 50%; width: 130px; height: 130px;
+  transform: translate(-50%, -50%); }
+.fcore svg.hexcore { position: absolute; inset: 0; filter: drop-shadow(0 0 26px rgba(124,92,232,.65)); }
+.fcore .hex-outline { animation: fcorepulse 3s ease-in-out infinite; transform-origin: center; }
+@keyframes fcorepulse { 50% { transform: scale(1.05); } }
+.fcore .ficon { position: absolute; inset: 0; display: flex; align-items: center;
+  justify-content: center; font-size: 30px; }
+.fcore .ficon.lock  { animation: ficonlock 6s infinite; }
+.fcore .ficon.check { animation: ficoncheck 6s infinite; color: #34d399; }
+@keyframes ficonlock  { 0%, 44% { opacity: 1; } 50%, 94% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes ficoncheck { 0%, 44% { opacity: 0; } 50%, 94% { opacity: 1; } 100% { opacity: 0; } }
+/* сменяющиеся статусы под ядром */
+.fstatus { position: absolute; left: 50%; top: calc(50% + 78px); transform: translateX(-50%);
+  width: 300px; height: 20px; }
+.fstatus span { position: absolute; inset: 0; font-size: 12px; font-weight: 600;
+  letter-spacing: .6px; color: #a78bfa; opacity: 0; animation: fstat 6s infinite; }
+.fstatus span:nth-child(1) { animation-delay: 0s; }
+.fstatus span:nth-child(2) { animation-delay: 2s; }
+.fstatus span:nth-child(3) { animation-delay: 4s; color: #34d399; }
+@keyframes fstat { 0% { opacity: 0; transform: translateY(6px); }
+  8%, 28% { opacity: 1; transform: none; } 36%, 100% { opacity: 0; transform: translateY(-6px); } }
+
+.fcta { margin-top: 64px; display: flex; gap: 16px; justify-content: center;
+  animation: fup .8s .6s cubic-bezier(.2,.8,.2,1) both; }
+.btn-glow { position: relative; background: linear-gradient(120deg, #6d5ce8, #8b6ff0);
+  color: #fff; padding: 15px 34px; font-size: 15px; border-radius: 12px;
+  box-shadow: 0 0 32px rgba(124,92,232,.55), 0 4px 18px rgba(0,0,0,.4);
+  animation: fglow 3s ease-in-out infinite; }
+@keyframes fglow { 50% { box-shadow: 0 0 52px rgba(139,111,240,.8), 0 4px 18px rgba(0,0,0,.4); } }
+.btn-dark-ghost { background: rgba(255,255,255,.07); color: #e6e1ff;
+  border: 1px solid rgba(167,139,250,.3); padding: 15px 30px; font-size: 15px;
+  border-radius: 12px; backdrop-filter: blur(6px); }
+.btn-dark-ghost:hover { background: rgba(255,255,255,.12); }
+
+/* ── тикер живых сделок ── */
+.fticker { position: relative; background: #0b0820; border-top: 1px solid rgba(124,92,232,.2);
+  border-bottom: 1px solid rgba(124,92,232,.2); overflow: hidden; padding: 15px 0; }
+.fticker .track { display: flex; gap: 44px; width: max-content; animation: fmarq 34s linear infinite; }
+@keyframes fmarq { to { transform: translateX(-50%); } }
+.ftick { display: flex; align-items: center; gap: 10px; font-size: 12.5px; white-space: nowrap;
+  color: rgba(220,214,255,.75); font-family: ui-monospace, 'SF Mono', Menlo, monospace; }
+.ftick b { color: #fff; font-weight: 600; }
+.ftick .st { padding: 3px 9px; border-radius: 6px; font-size: 10.5px; font-weight: 700; }
+.ftick .st.ok { background: rgba(52,211,153,.15); color: #34d399; }
+.ftick .st.lk { background: rgba(124,92,232,.2); color: #a78bfa; }
+
+/* ── счётчики ── */
+.fstats { background: linear-gradient(180deg, #0b0820, #120e2e); padding: 74px 20px; }
+.fstats .grid4 { max-width: 980px; margin: 0 auto; display: grid;
+  grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.fstat-card { text-align: center; }
+.fstat-card .num { font-size: 42px; font-weight: 800; letter-spacing: -1.5px;
+  background: linear-gradient(120deg, #fff, #a78bfa); -webkit-background-clip: text;
+  background-clip: text; color: transparent; font-variant-numeric: tabular-nums; }
+.fstat-card .lbl { margin-top: 8px; font-size: 12px; letter-spacing: 1.2px;
+  text-transform: uppercase; color: rgba(200,190,255,.5); font-weight: 600; }
+
+/* ── шаги, glass-карты со scroll-reveal ── */
+.fsteps { background: #120e2e; padding: 30px 20px 110px; }
+.fsteps h2 { text-align: center; color: #fff; font-size: 34px; font-weight: 800;
+  letter-spacing: -1px; margin-bottom: 50px; }
+.fsteps .grid3 { max-width: 1020px; margin: 0 auto; display: grid;
+  grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.fcard { border: 1px solid rgba(167,139,250,.22); border-radius: 18px; padding: 30px 26px;
+  background: linear-gradient(160deg, rgba(124,92,232,.10), rgba(124,92,232,.02));
+  backdrop-filter: blur(8px); transition: transform .35s, border-color .35s, box-shadow .35s;
+  opacity: 0; transform: translateY(28px); }
+.fcard.vis { opacity: 1; transform: none; transition: opacity .7s, transform .7s cubic-bezier(.2,.8,.2,1); }
+.fcard:hover { transform: translateY(-6px); border-color: rgba(167,139,250,.55);
+  box-shadow: 0 18px 44px rgba(80,60,200,.28); }
+.fcard .fico { width: 50px; height: 50px; border-radius: 14px; display: flex;
+  align-items: center; justify-content: center; font-size: 22px;
+  background: rgba(124,92,232,.18); border: 1px solid rgba(167,139,250,.3); }
+.fcard h3 { color: #fff; font-size: 17px; margin: 18px 0 10px; }
+.fcard p { color: rgba(214,208,250,.65); font-size: 13.5px; line-height: 1.65; }
+
+@media (max-width: 900px) {
+  .fhero h1 { font-size: 38px; letter-spacing: -1.2px; }
+  .fflow { height: 210px; }
+  .fparty { width: 76px; } .fparty .pavatar { width: 44px; height: 44px; font-size: 18px; }
+  .fline.in { left: 76px; } .fline.out { right: 76px; }
+  .fline { width: calc(50% - 118px); }
+  .fpulse.p-in, .fpulse.p-in2 { left: 76px; } .fpulse.p-out { right: 76px; }
+  .fstats .grid4 { grid-template-columns: repeat(2, 1fr); }
+  .fsteps .grid3 { grid-template-columns: 1fr; }
+  .fhex-rings { width: 640px; height: 640px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fstars, .fstars.l2, .fring-a, .fring-b, .fpulse, .fhero h1,
+  .fcore .hex-outline, .btn-glow, .fticker .track { animation: none !important; }
+  .fcard { opacity: 1; transform: none; }
+}
+
+/* ===================== Deal categories (Create Deal) ===================== */
+.cat-search { position: relative; margin: 4px 0 18px; }
+.cat-search-ic { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 14px; opacity: .6; }
+.cat-search input {
+  width: 100%; padding: 12px 14px 12px 40px; border-radius: 11px;
+  border: 1px solid var(--pms-border); background: var(--pms-white); color: var(--pms-text);
+  font-size: 14px; outline: none; transition: border-color .15s, box-shadow .15s;
+}
+.cat-search input:focus { border-color: var(--pms-violet); box-shadow: 0 0 0 3px rgba(124,92,232,.14); }
+
+.cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 12px; }
+.cat-card {
+  position: relative; display: flex; flex-direction: column; gap: 10px; align-items: flex-start;
+  padding: 16px 15px; border-radius: 15px; cursor: pointer; text-align: left;
+  border: 1px solid var(--pms-border); background: var(--pms-white);
+  transition: transform .16s ease, border-color .16s, box-shadow .16s;
+}
+.cat-card:hover { transform: translateY(-3px); border-color: var(--pms-violet); box-shadow: 0 10px 26px rgba(124,92,232,.16); }
+.cat-card .cat-ic {
+  width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; font-size: 23px;
+  background: linear-gradient(150deg, var(--pms-violet-light), rgba(124,92,232,.06));
+}
+.cat-card .cat-nm { font-size: 14px; font-weight: 700; color: var(--pms-text); line-height: 1.25; }
+.cat-card .cat-count { font-size: 11.5px; font-weight: 600; color: var(--pms-text-soft); }
+.cat-card .cat-arrow { position: absolute; right: 13px; top: 15px; color: var(--pms-violet); opacity: 0; transition: opacity .16s, transform .16s; }
+.cat-card:hover .cat-arrow { opacity: 1; transform: translateX(2px); }
+
+.sub-wrap { animation: fade .2s ease; }
+.sub-back {
+  display: inline-flex; align-items: center; gap: 6px; margin-bottom: 14px; padding: 7px 13px;
+  border-radius: 9px; border: 1px solid var(--pms-border); background: var(--pms-white);
+  color: var(--pms-text); font-size: 13px; font-weight: 600; cursor: pointer; transition: border-color .15s;
+}
+.sub-back:hover { border-color: var(--pms-violet); }
+.sub-head { display: flex; align-items: center; gap: 11px; margin-bottom: 14px; }
+.sub-head .cat-ic { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; font-size: 20px;
+  background: linear-gradient(150deg, var(--pms-violet-light), rgba(124,92,232,.06)); }
+.sub-head .sub-title { font-size: 16px; font-weight: 700; color: var(--pms-text); }
+.sub-head .sub-desc { font-size: 12px; color: var(--pms-text-soft); }
+
+.sub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.sub-card {
+  display: flex; align-items: center; gap: 9px; padding: 13px 14px; border-radius: 12px; cursor: pointer;
+  border: 1px solid var(--pms-border); background: var(--pms-white); color: var(--pms-text);
+  font-size: 13.5px; font-weight: 600; transition: transform .14s, border-color .14s, box-shadow .14s;
+}
+.sub-card:hover { transform: translateY(-2px); border-color: var(--pms-violet); box-shadow: 0 6px 16px rgba(124,92,232,.14); }
+.sub-card .sub-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pms-violet); flex: 0 0 auto; }
+.sub-card .sub-cat-tag { font-size: 11px; color: var(--pms-text-soft); margin-left: auto; }
+.cat-empty { padding: 22px 8px; text-align: center; color: var(--pms-text-soft); font-size: 13.5px; }
+
+@media (max-width: 560px) {
+  .cat-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+  .sub-grid { grid-template-columns: 1fr; }
+  .cat-card { padding: 13px 12px; }
+  .cat-card .cat-ic { width: 40px; height: 40px; font-size: 20px; }
+}
+
+/* ===================== FAQ ===================== */
+#faq { background: var(--pms-bg); }
+.faq-page { max-width: 780px; margin: 0 auto; padding: 54px 20px 80px; }
+.faq-hero { text-align: center; margin-bottom: 34px; }
+.faq-eyebrow { display: inline-block; font-size: 12px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase;
+  color: var(--pms-violet); background: var(--pms-violet-light); padding: 6px 13px; border-radius: 999px; margin-bottom: 16px; }
+.faq-hero h1 { font-size: clamp(28px, 5vw, 42px); font-weight: 800; letter-spacing: -.02em; margin: 0 0 12px; color: var(--pms-text); }
+.faq-hero p { font-size: 15.5px; color: var(--pms-text-soft); max-width: 560px; margin: 0 auto; line-height: 1.55; }
+.faq-hero p a { color: var(--pms-violet); font-weight: 600; text-decoration: none; }
+.faq-list { display: flex; flex-direction: column; gap: 12px; }
+.faq-item { border: 1px solid var(--pms-border); border-radius: 14px; background: var(--pms-white); overflow: hidden; transition: border-color .15s, box-shadow .15s; }
+.faq-item[open] { border-color: var(--pms-violet); box-shadow: 0 8px 26px rgba(124,92,232,.10); }
+.faq-item summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 18px 20px; font-size: 15.5px; font-weight: 700; color: var(--pms-text); }
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary:hover { color: var(--pms-violet); }
+.faq-x { flex: 0 0 auto; width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; font-size: 19px; font-weight: 400;
+  background: var(--pms-violet-light); color: var(--pms-violet); transition: transform .2s; }
+.faq-item[open] .faq-x { transform: rotate(45deg); }
+.faq-a { padding: 0 20px 20px; font-size: 14.5px; line-height: 1.65; color: var(--pms-text-soft); }
+.faq-a b { color: var(--pms-text); font-weight: 700; }
+.faq-cta { margin-top: 40px; text-align: center; padding: 34px 24px; border-radius: 18px;
+  background: linear-gradient(150deg, var(--pms-violet), var(--pms-violet-dark)); color: #fff; }
+.faq-cta h3 { font-size: 20px; font-weight: 700; margin: 0 0 16px; }
+.faq-cta .btn-violet { background: #fff; color: var(--pms-violet-dark); }
+.faq-cta .btn-violet:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,.2); }
+@media (max-width: 560px) { .faq-page { padding: 34px 16px 60px; } .faq-item summary { padding: 15px 16px; font-size: 14.5px; } }
+
+/* deal form: execution time + fee payer */
+.deadline-row { display: flex; gap: 8px; }
+.deadline-row input { flex: 1; min-width: 0; }
+.fld select { width: 100%; padding: 11px 12px; border: 1px solid var(--pms-border); border-radius: 10px;
+  background: var(--pms-white); color: var(--pms-text); font-size: 14px; outline: none; cursor: pointer; }
+.fld select:focus { border-color: var(--pms-violet); box-shadow: 0 0 0 3px rgba(124,92,232,.12); }
+.deadline-row select { flex: 0 0 116px; }
+#feePayerToggle button { font-size: 13px; padding: 9px 6px; }
+
+/* profile / wallets cabinet */
+.prof-card { background: var(--pms-white); border: 1px solid var(--pms-border); border-radius: 14px; padding: 6px 18px; margin-bottom: 26px; }
+.prof-row { display: flex; justify-content: space-between; padding: 13px 0; border-bottom: 1px solid var(--pms-border); font-size: 14px; }
+.prof-row:last-child { border-bottom: none; }
+.prof-row .k { color: var(--pms-text-soft); } .prof-row .v { font-weight: 600; color: var(--pms-text); }
+.prof-h3 { font-size: 17px; font-weight: 700; margin: 0 0 6px; color: var(--pms-text); }
+.prof-sub { font-size: 13.5px; color: var(--pms-text-soft); margin: 0 0 16px; line-height: 1.5; }
+.wallet-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.wallet-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px;
+  border: 1px solid var(--pms-border); background: var(--pms-white); }
+.wallet-item.primary { border-color: var(--pms-violet); box-shadow: 0 4px 14px rgba(124,92,232,.10); }
+.wl-info { flex: 1; min-width: 0; }
+.wl-label { font-size: 14px; font-weight: 700; color: var(--pms-text); margin-bottom: 3px; }
+.wl-badge { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; color: var(--pms-violet);
+  background: var(--pms-violet-light); padding: 2px 7px; border-radius: 6px; margin-left: 6px; vertical-align: middle; }
+.wl-addr { font-size: 12px; color: var(--pms-text-soft); font-family: ui-monospace, monospace; word-break: break-all; }
+.wl-actions { display: flex; gap: 7px; flex: 0 0 auto; }
+.wl-btn { font-size: 12px; font-weight: 600; padding: 7px 11px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--pms-border); background: var(--pms-white); color: var(--pms-text); }
+.wl-btn:hover { border-color: var(--pms-violet); color: var(--pms-violet); }
+.wl-btn.danger:hover { border-color: var(--pms-red); color: var(--pms-red); }
+.wallet-add { display: flex; gap: 8px; flex-wrap: wrap; }
+.wallet-add input { flex: 1; min-width: 140px; padding: 11px 13px; border: 1px solid var(--pms-border); border-radius: 10px;
+  background: var(--pms-white); color: var(--pms-text); font-size: 14px; outline: none; }
+.wallet-add input:focus { border-color: var(--pms-violet); }
+.wallet-add #wLabel { flex: 0 0 180px; }
+@media (max-width: 520px) { .wallet-item { flex-wrap: wrap; } .wallet-add #wLabel { flex: 1 1 100%; } }
+</style>
+</head>
+<body>
+
+<!-- ======================= ТЁМНАЯ НАВИГАЦИЯ ======================= -->
+<nav class="site-nav" id="siteNav">
+  <a class="logo" href="#" onclick="go('landing');return false;">
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+      <path d="M13 1.5L23 7.25v11.5L13 24.5 3 18.75V7.25L13 1.5z" stroke="#fff" stroke-width="1.8"/>
+      <path d="M13 6.5l6 3.45v6.9l-6 3.45-6-3.45v-6.9L13 6.5z" stroke="#8b6ff0" stroke-width="1.8"/>
+    </svg>
+    PayMeSafe
+  </a>
+  <div class="links">
+    <a href="#" onclick="go('landing');return false;">Home</a><a href="#" onclick="go('faq');return false;">FAQ</a><a href="#">Partners</a><a href="#">Docs</a><a href="#">Blog</a>
+  </div>
+  <div class="actions">
+    <a class="login" href="#" onclick="go('auth');return false;">Log in</a>
+    <button class="btn btn-violet" onclick="go('createModal')">Create a Deal</button>
+  </div>
+</nav>
+
+<!-- ======================= LANDING / HERO (FUTURE) ======================= -->
+<section class="view on" id="landing">
+  <div class="fhero">
+    <div class="fstars fpx" data-px="12"></div><div class="fstars l2 fpx" data-px="20"></div>
+    <div class="fhex-rings fpx" data-px="26">
+      <svg class="fring-a" viewBox="0 0 920 920" fill="none">
+        <g stroke="#8b7cf0" stroke-width="1">
+          <path d="M460 130 L744 294 V622 L460 786 L176 622 V294 Z" stroke-opacity=".18"/>
+          <path d="M460 210 L676 335 V585 L460 710 L244 585 V335 Z" stroke-opacity=".26"/>
+        </g>
+      </svg>
+      <svg class="fring-b" viewBox="0 0 920 920" fill="none">
+        <g stroke="#a78bfa" stroke-width="1">
+          <path d="M460 60 L810 262 V658 L460 860 L110 658 V262 Z" stroke-opacity=".10"/>
+          <path d="M460 290 L606 375 V545 L460 630 L314 545 V375 Z" stroke-opacity=".32"/>
+        </g>
+      </svg>
+    </div>
+
+    <div class="fhero-inner">
+      <div class="f-eyebrow"><span class="dot-live"></span>Escrow protocol · live on TRON</div>
+      <h1>Trust, engineered.</h1>
+      <p class="fsub">PayMeSafe держит платёж в криптосейфе, пока обе стороны не выполнят условия. Любая сделка, любая страна — деньги двигаются только по правилам, о которых вы договорились.</p>
+
+      <!-- СИГНАТУРА: живой поток сделки -->
+      <div class="fflow" aria-hidden="true">
+        <div class="fparty buyer"><div class="pavatar">👤</div><div class="plabel">Buyer</div></div>
+        <div class="fline in"></div>
+        <span class="fpulse p-in"></span><span class="fpulse p-in2"></span>
+        <div class="fcore fpx" data-px="-10">
+          <svg class="hexcore" viewBox="0 0 130 130" fill="none">
+            <path class="hex-outline" d="M65 6 L119 37 V99 L65 130 L11 99 V37 Z" transform="scale(.94) translate(4,-2)" stroke="#8b6ff0" stroke-width="2.4" fill="rgba(109,92,232,.12)"/>
+            <path d="M65 26 L101 47 V89 L65 110 L29 89 V47 Z" stroke="#a78bfa" stroke-width="1.4" stroke-opacity=".6" fill="none"/>
+          </svg>
+          <div class="ficon lock">🔒</div>
+          <div class="ficon check">✓</div>
+        </div>
+        <div class="fline out"></div>
+        <span class="fpulse p-out"></span>
+        <div class="fparty seller"><div class="pavatar">🏪</div><div class="plabel">Seller</div></div>
+        <div class="fstatus">
+          <span>USDT заблокирован в эскроу</span>
+          <span>Условия сделки выполнены</span>
+          <span>Выплата продавцу отправлена</span>
+        </div>
+      </div>
+
+      <div class="fcta">
+        <button class="btn btn-glow" onclick="go('createModal')">Create a Deal</button>
+        <button class="btn btn-dark-ghost" onclick="go('auth')">Open Dashboard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- тикер живых сделок -->
+  <div class="fticker">
+    <div class="track" id="ftickerTrack">
+      <span class="ftick"><b>Lixiang L7 · Copart</b> $25,000 <span class="st ok">RELEASED</span></span>
+      <span class="ftick"><b>Dubai Marina apt · DLD</b> $185,000 <span class="st lk">LOCKED</span></span>
+      <span class="ftick"><b>Wholesale PCB ×200</b> $8,000 <span class="st ok">RESOLVED 80/20</span></span>
+      <span class="ftick"><b>Modular build · TR→AE</b> $1,200,000 <span class="st lk">MILESTONE 2/4</span></span>
+      <span class="ftick"><b>Freelance sprint</b> $3,500 <span class="st ok">RELEASED</span></span>
+      <span class="ftick"><b>USDT OTC</b> $12,400 <span class="st lk">LOCKED</span></span>
+    </div>
+  </div>
+
+  <!-- счётчики -->
+  <div class="fstats">
+    <div class="grid4">
+      <div class="fstat-card"><div class="num" data-count="14382500" data-prefix="$">0</div><div class="lbl">Защищено объёма</div></div>
+      <div class="fstat-card"><div class="num" data-count="3891">0</div><div class="lbl">Сделок проведено</div></div>
+      <div class="fstat-card"><div class="num" data-count="98.6" data-suffix="%">0</div><div class="lbl">Споров решено</div></div>
+      <div class="fstat-card"><div class="num" data-count="0" data-suffix="">0</div><div class="lbl">Средств потеряно</div></div>
+    </div>
+  </div>
+
+  <!-- как это работает -->
+  <div class="fsteps">
+    <h2>Деньги двигаются только по правилам</h2>
+    <div class="grid3">
+      <div class="fcard"><div class="fico">📝</div><h3>Договоритесь об условиях</h3><p>Шаблон Copart, недвижимости или свой контракт. Обе стороны подтверждают условия — после этого их нельзя изменить.</p></div>
+      <div class="fcard"><div class="fico">🔒</div><h3>USDT уходит в сейф</h3><p>Покупатель переводит на эскроу-адрес. Леджер блокирует средства: продавец видит деньги, но забрать их досрочно не может никто.</p></div>
+      <div class="fcard"><div class="fico">⚖</div><h3>Выплата или арбитраж</h3><p>Условия выполнены — деньги мгновенно уходят продавцу. Спор — арбитр изучает доказательства в чате и делит сумму решением, вплоть до 70/30.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= ШАПКА ПРИЛОЖЕНИЯ ======================= -->
+<div class="app-bar" id="appBar" style="display:none;">
+  <div class="left">
+    <a class="logo" href="#" onclick="go('landing');return false;">
+      <svg width="24" height="24" viewBox="0 0 26 26" fill="none">
+        <path d="M13 1.5L23 7.25v11.5L13 24.5 3 18.75V7.25L13 1.5z" stroke="#fff" stroke-width="1.8"/>
+        <path d="M13 6.5l6 3.45v6.9l-6 3.45-6-3.45v-6.9L13 6.5z" stroke="#fff" stroke-width="1.8" stroke-opacity=".6"/>
+      </svg>
+      PayMeSafe
+    </a>
+    <div class="app-tabs">
+      <button class="on" onclick="go('dashboard')">Deals</button>
+      <button onclick="go('profile')">Profile</button>
+    </div>
+  </div>
+  <div class="right">
+    <button class="icon-btn">⚙</button>
+    <button class="icon-btn">🔔</button>
+    <button class="wallet-pill" onclick="go('profile')">◈ Wallet</button>
+    <div class="user-chip">
+      <div class="avatar">R</div>
+      <div class="meta">
+        <div class="name">Roman</div>
+        <div class="mail">roman@paymesafe.online</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= ДАШБОРД: ТАБЛИЦА СДЕЛОК ======================= -->
+<section class="view" id="dashboard">
+  <div class="page">
+    <div class="page-head">
+      <h2>Deals</h2>
+      <div class="head-actions">
+        <div class="select-like">Use template <span style="font-size:10px;">▾</span></div>
+        <button class="btn btn-violet" onclick="go('createModal')">◈ Create Deal</button>
+      </div>
+    </div>
+
+    <div class="filters">
+      <button class="filter on"><span class="dot gray"></span>All</button>
+      <button class="filter"><span class="dot gray"></span>Drafts</button>
+      <button class="filter"><span class="dot violet"></span>In Progress</button>
+      <button class="filter"><span class="dot green"></span>Completed</button>
+      <button class="filter"><span class="dot blue"></span>Archived</button>
+    </div>
+
+    <div class="deals-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Deal</th><th>Partner</th><th>Last update</th><th>Status</th><th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="dealsBody">
+          <!-- Демо-строки; при подключённом backend заменяются реальными -->
+          <tr>
+            <td><div class="deal-cell"><span class="hex-badge"><svg width="30" height="30" viewBox="0 0 26 26" fill="none"><path d="M13 1.5L23 7.25v11.5L13 24.5 3 18.75V7.25L13 1.5z" stroke="#7c5ce8" stroke-width="1.6"/><path d="M13 6.5l6 3.45v6.9l-6 3.45-6-3.45v-6.9L13 6.5z" stroke="#7c5ce8" stroke-width="1.6" stroke-opacity=".5"/></svg></span><div class="t"><a href="#">Mid-size apartment, DLD</a><div class="cat">Real Estate</div></div></div></td>
+            <td class="col-soft">agency@dubai-re.ae</td>
+            <td class="col-soft">13:22:00</td>
+            <td><span class="badge awaiting">Awaiting Payment</span></td>
+            <td><div class="row-actions"><button>👁</button></div></td>
+          </tr>
+          <tr>
+            <td><div class="deal-cell"><span class="hex-badge"><svg width="30" height="30" viewBox="0 0 26 26" fill="none"><path d="M13 1.5L23 7.25v11.5L13 24.5 3 18.75V7.25L13 1.5z" stroke="#7c5ce8" stroke-width="1.6"/><path d="M13 6.5l6 3.45v6.9l-6 3.45-6-3.45v-6.9L13 6.5z" stroke="#7c5ce8" stroke-width="1.6" stroke-opacity=".5"/></svg></span><div class="t"><a href="#">USDT purchase</a><div class="cat">Custom deal</div></div></div></td>
+            <td class="col-soft">otc@trader.com</td>
+            <td class="col-soft">Yesterday</td>
+            <td><span class="badge funded">Funded</span></td>
+            <td><div class="row-actions"><button>👁</button></div></td>
+          </tr>
+          <tr>
+            <td><div class="deal-cell"><span class="hex-badge"><svg width="30" height="30" viewBox="0 0 26 26" fill="none"><path d="M13 1.5L23 7.25v11.5L13 24.5 3 18.75V7.25L13 1.5z" stroke="#7c5ce8" stroke-width="1.6"/><path d="M13 6.5l6 3.45v6.9l-6 3.45-6-3.45v-6.9L13 6.5z" stroke="#7c5ce8" stroke-width="1.6" stroke-opacity=".5"/></svg></span><div class="t"><a href="#">Lixiang L7</a><div class="cat">Copart</div></div></div></td>
+            <td class="col-soft">copart-dealer@usa.com</td>
+            <td class="col-soft">2 days ago</td>
+            <td><span class="badge progress">In Progress</span></td>
+            <td><div class="row-actions"><button>👁</button></div></td>
+          </tr>
+          <tr>
+            <td><div class="deal-cell"><span class="hex-badge"><svg width="30" height="30" viewBox="0 0 26 26" fill="none"><path d="M13 1.5L23 7.25v11.5L13 24.5 3 18.75V7.25L13 1.5z" stroke="#7c5ce8" stroke-width="1.6"/><path d="M13 6.5l6 3.45v6.9l-6 3.45-6-3.45v-6.9L13 6.5z" stroke="#7c5ce8" stroke-width="1.6" stroke-opacity=".5"/></svg></span><div class="t"><a href="#">FCA Freight</a><div class="cat">Custom deal</div></div></div></td>
+            <td class="col-soft">logistics@freight.eu</td>
+            <td class="col-soft">2 days ago</td>
+            <td><span class="badge approval">Awaiting Approval</span></td>
+            <td><div class="row-actions"><button>👁</button></div></td>
+          </tr>
+          <tr>
+            <td><div class="deal-cell"><span class="hex-badge"><svg width="30" height="30" viewBox="0 0 26 26" fill="none"><path d="M13 1.5L23 7.25v11.5L13 24.5 3 18.75V7.25L13 1.5z" stroke="#7c5ce8" stroke-width="1.6"/><path d="M13 6.5l6 3.45v6.9l-6 3.45-6-3.45v-6.9L13 6.5z" stroke="#7c5ce8" stroke-width="1.6" stroke-opacity=".5"/></svg></span><div class="t"><a href="#">40mm PVC Pipe 300m</a><div class="cat">Wholesale</div></div></div></td>
+            <td class="col-soft">supplier@alibaba.cn</td>
+            <td class="col-soft">2 days ago</td>
+            <td><span class="badge released">Released</span></td>
+            <td><div class="row-actions"><button>⧉</button><button>👁</button></div></td>
+          </tr>
+          <tr>
+            <td><div class="deal-cell"><span class="hex-badge"><svg width="30" height="30" viewBox="0 0 26 26" fill="none"><path d="M13 1.5L23 7.25v11.5L13 24.5 3 18.75V7.25L13 1.5z" stroke="#7c5ce8" stroke-width="1.6"/><path d="M13 6.5l6 3.45v6.9l-6 3.45-6-3.45v-6.9L13 6.5z" stroke="#7c5ce8" stroke-width="1.6" stroke-opacity=".5"/></svg></span><div class="t"><a href="#">Electr. Nov 25</a><div class="cat">Wholesale</div></div></div></td>
+            <td class="col-soft">factory@shenzhen.cn</td>
+            <td class="col-soft">3 weeks ago</td>
+            <td><span class="badge disputed">Disputed</span></td>
+            <td><div class="row-actions"><button onclick="go('dealChat')">👁</button></div></td>
+          </tr>
+          <tr>
+            <td><div class="deal-cell"><span class="hex-badge"><svg width="30" height="30" viewBox="0 0 26 26" fill="none"><path d="M13 1.5L23 7.25v11.5L13 24.5 3 18.75V7.25L13 1.5z" stroke="#7c5ce8" stroke-width="1.6"/><path d="M13 6.5l6 3.45v6.9l-6 3.45-6-3.45v-6.9L13 6.5z" stroke="#7c5ce8" stroke-width="1.6" stroke-opacity=".5"/></svg></span><div class="t"><a href="#">USDT purchase</a><div class="cat">Custom deal</div></div></div></td>
+            <td class="col-soft">2025-08-10</td>
+            <td class="col-soft">2025-08-10</td>
+            <td><span class="badge expired">Expired</span></td>
+            <td><div class="row-actions"><button>⧉</button><button>👁</button></div></td>
+          </tr>
+          <tr>
+            <td><div class="deal-cell"><span class="hex-badge"><svg width="30" height="30" viewBox="0 0 26 26" fill="none"><path d="M13 1.5L23 7.25v11.5L13 24.5 3 18.75V7.25L13 1.5z" stroke="#7c5ce8" stroke-width="1.6"/><path d="M13 6.5l6 3.45v6.9l-6 3.45-6-3.45v-6.9L13 6.5z" stroke="#7c5ce8" stroke-width="1.6" stroke-opacity=".5"/></svg></span><div class="t"><a href="#">Loft, Lndn</a><div class="cat">Real Estate</div></div></div></td>
+            <td><a class="invite-link" href="#">⊕ Invite Partner</a></td>
+            <td class="col-soft">2025-07-28</td>
+            <td><span class="badge initiated">Initiated</span></td>
+            <td><div class="row-actions"><button>⊕</button><button>⧉</button><button>✎</button><button>👁</button></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= МОДАЛКА CREATE A DEAL ======================= -->
+<section class="view" id="createModal">
+  <div class="page" style="max-width: 980px;">
+    <div class="modal-shell">
+      <div class="modal-left">
+        <div class="hexes">
+          <svg width="520" height="560" viewBox="0 0 520 560" fill="none">
+            <g stroke="#ffffff" stroke-width="1">
+              <path d="M260 130 L360 187 V303 L260 360 L160 303 V187 Z" stroke-opacity=".5"/>
+              <path d="M260 85  L399 165 V325 L260 405 L121 325 V165 Z" stroke-opacity=".35"/>
+              <path d="M260 40  L438 143 V347 L260 450 L82 347 V143 Z" stroke-opacity=".22"/>
+              <path d="M260 -5  L477 121 V369 L260 495 L43 369 V121 Z" stroke-opacity=".12"/>
+            </g>
+          </svg>
+        </div>
+        <h3>Create your first secured P2P deal</h3>
+        <div class="steps">
+          <div class="step"><span class="ic">✎</span><div><div class="tt">Fill in the form</div><div class="dd">Use a quick template or set up your custom deal conditions.</div></div></div>
+          <div class="step"><span class="ic">👤</span><div><div class="tt">Sign Up</div><div class="dd">A super-fast free registration in a couple of clicks.</div></div></div>
+          <div class="step"><span class="ic">✉</span><div><div class="tt">Invite your partner</div><div class="dd">Send a unique secure link or QR-code by email or messenger.</div></div></div>
+        </div>
+      </div>
+      <div class="modal-right">
+        <button class="close" onclick="go('dashboard')">✕</button>
+        <h3 id="catHeading">Choose a deal category</h3>
+
+        <div class="cat-search">
+          <span class="cat-search-ic">🔎</span>
+          <input type="text" id="catSearch" placeholder="Search category or type…" oninput="filterCats(this.value)" autocomplete="off">
+        </div>
+
+        <div id="catGrid" class="cat-grid"></div>
+
+        <div id="subWrap" class="sub-wrap" style="display:none">
+          <button class="sub-back" onclick="closeSub()">← All categories</button>
+          <div id="subHead" class="sub-head"></div>
+          <div id="subGrid" class="sub-grid"></div>
+        </div>
+
+        <div id="catResults" class="sub-grid cat-results" style="display:none"></div>
+        <div id="catNoResults" class="cat-empty" style="display:none">Nothing found — try another word or pick a category above.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= КАБИНЕТ: ПРОФИЛЬ + КОШЕЛЬКИ ======================= -->
+<section class="view" id="profile">
+  <div class="page" style="max-width: 760px;">
+    <div class="page-head">
+      <h2>Профиль и кошельки</h2>
+      <button class="btn btn-violet" onclick="go('dashboard')">← К сделкам</button>
+    </div>
+    <div id="profileMsg"></div>
+    <div class="prof-card">
+      <div class="prof-row"><span class="k">Email</span><span class="v" id="profEmail">—</span></div>
+      <div class="prof-row"><span class="k">Роль</span><span class="v" id="profRole">—</span></div>
+    </div>
+    <h3 class="prof-h3">Кошельки для выплат и возвратов</h3>
+    <p class="prof-sub">Основной кошелёк — адрес, на который приходят выплаты и возвраты по вашим сделкам. Можно добавить несколько и переключать основной.</p>
+    <div id="walletList" class="wallet-list"></div>
+    <div class="wallet-add">
+      <input type="text" id="wLabel" placeholder="Название (напр. Binance)">
+      <input type="text" id="wAddr" placeholder="TRC-20 / адрес кошелька">
+      <button class="btn btn-violet" onclick="addWallet()">+ Добавить</button>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= ФОРМА СДЕЛКИ (Real Estate) ======================= -->
+<section class="view" id="dealForm">
+  <div class="page">
+    <div class="deal-form">
+      <div class="form-head">
+        <span class="hex-badge"><svg width="30" height="30" viewBox="0 0 26 26" fill="none"><path d="M13 1.5L23 7.25v11.5L13 24.5 3 18.75V7.25L13 1.5z" stroke="#7c5ce8" stroke-width="1.6"/><path d="M13 6.5l6 3.45v6.9l-6 3.45-6-3.45v-6.9L13 6.5z" stroke="#7c5ce8" stroke-width="1.6" stroke-opacity=".5"/></svg></span>
+        <h3 id="formTemplateName">New Deal</h3>
+      </div>
+      <p class="form-sub">Средства блокируются до выполнения условий. Контрагент должен быть зарегистрирован на платформе — укажите его email ниже.</p>
+
+      <div class="role-toggle" id="roleToggle">
+        <button class="on" onclick="setFormRole('buyer',this)">I'm a Buyer</button>
+        <button onclick="setFormRole('seller',this)">I'm a Seller</button>
+      </div>
+
+      <div id="formMsg" class="form-msg"></div>
+
+      <div class="fld">
+        <label>Deal Title <span class="req">*</span></label>
+        <input type="text" id="fTitle" placeholder="Enter deal title">
+      </div>
+      <div class="fld">
+        <label>Buyer role</label>
+        <input type="text" placeholder="Select or enter buyer role">
+      </div>
+      <div class="fld">
+        <label>Property type <span class="req">*</span></label>
+        <input type="text" placeholder="Select or enter property type">
+      </div>
+      <div class="fld">
+        <label>Property address <span class="req">*</span></label>
+        <input type="text" placeholder="Enter property address">
+      </div>
+      <div class="fld-row">
+        <div class="fld">
+          <label>Amount you lock <span class="req">*</span></label>
+          <input type="number" id="fAmount" placeholder="0.000000" step="0.01">
+        </div>
+        <div class="fld">
+          <label>Counterparty email <span style="color:var(--pms-text-soft);font-weight:400;">(если уже зарегистрирован — иначе пригласите ссылкой)</span></label>
+          <input type="email" id="fPartner" placeholder="partner@example.com">
+        </div>
+      </div>
+
+      <div class="fld-row">
+        <div class="fld">
+          <label>Execution time <span class="req">*</span></label>
+          <div class="deadline-row">
+            <input type="number" id="fDeadlineVal" value="30" min="1" step="1">
+            <select id="fDeadlineUnit">
+              <option value="days">days</option>
+              <option value="hours">hours</option>
+            </select>
+          </div>
+        </div>
+        <div class="fld">
+          <label>Who pays the 2% fee? <span class="req">*</span></label>
+          <div class="role-toggle" id="feePayerToggle">
+            <button type="button" class="on" onclick="setFeePayer('split',this)">50 / 50</button>
+            <button type="button" onclick="setFeePayer('buyer',this)">Buyer</button>
+            <button type="button" onclick="setFeePayer('seller',this)">Seller</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="fee-box">
+        <div class="fee-line"><div><div class="k" id="feeNote">Service fee 2% — split 50 / 50 (1% each side)</div><div class="d">Total platform fee is 2%. You choose who covers it — it's shown before funds lock.</div></div></div>
+        <div class="fee-line"><div><div class="k">Estimated network fee ↗</div><div class="d">Blockchain (TRON) fee. Doesn't depend on us.</div></div></div>
+      </div>
+
+      <div class="fld">
+        <label>Funds release criteria <span class="req">*</span></label>
+        <input type="text" value="Only after land registration" readonly>
+      </div>
+      <div class="fld">
+        <label>Upload contract <span class="req">*</span></label>
+        <div class="upload">📎 Select image or PDF…</div>
+      </div>
+      <div class="fld">
+        <label>Upload ownership certificate</label>
+        <div class="upload">📎 Select image or PDF…</div>
+      </div>
+
+      <button class="btn btn-violet btn-lg btn-full" onclick="submitDeal()">Create a Deal</button>
+      <button class="btn btn-lg btn-full" style="background:var(--pms-gray-bg);color:var(--pms-text);margin-top:10px;" onclick="createInvite()">🔗 Пригласить участника по ссылке</button>
+      <div id="inviteResult"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= ЧАТ СДЕЛКИ + АРБИТРАЖ (динамический) ======================= -->
+<section class="view" id="dealChat">
+  <div class="page">
+    <div class="page-head">
+      <h2 id="dcTitle">Deal</h2>
+      <button class="btn btn-violet" onclick="go('dashboard');loadDeals()">← Back to Deals</button>
+    </div>
+
+    <div class="chat-layout">
+      <div class="chat-shell">
+        <div class="chat-head">
+          <div class="who">
+            <span class="hex-badge"><svg width="30" height="30" viewBox="0 0 26 26" fill="none"><path d="M13 1.5L23 7.25v11.5L13 24.5 3 18.75V7.25L13 1.5z" stroke="#7c5ce8" stroke-width="1.6"/><path d="M13 6.5l6 3.45v6.9l-6 3.45-6-3.45v-6.9L13 6.5z" stroke="#7c5ce8" stroke-width="1.6" stroke-opacity=".5"/></svg></span>
+            <div>
+              <div class="tt">Deal chat</div>
+              <div class="sub" id="dcSub">—</div>
+            </div>
+          </div>
+        </div>
+        <div class="chat-body" id="chatBody"></div>
+        <div class="chat-input">
+          <button class="clip" id="evidenceBtn" onclick="submitEvidence()" title="Приложить доказательство" style="display:none;">📎</button>
+          <input type="text" id="chatText" placeholder="Написать сообщение…" onkeydown="if(event.key==='Enter')sendChat()">
+          <button class="btn btn-violet" id="sendBtn" onclick="sendChat()">Send</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="side-card">
+          <h4>Deal summary</h4>
+          <div id="dealSummary"></div>
+        </div>
+
+        <div class="side-card" id="actionsCard">
+          <h4>Actions</h4>
+          <div id="dealActions"></div>
+        </div>
+
+        <div class="side-card arb-card" id="arbCard" style="display:none;">
+          <div class="arb-head">
+            <span class="ic">⚖</span>
+            <div>
+              <div class="tt">Arbitration — ваше решение</div>
+              <div class="sub" id="arbSub"></div>
+            </div>
+          </div>
+          <div class="split-box">
+            <div class="split-labels"><span class="s">Seller 50%</span><span class="b">Buyer 50%</span></div>
+            <div class="split-track"><div class="fill-s" style="width:50%;"></div><div class="fill-b"></div></div>
+            <input type="range" class="split-range" id="splitRange" min="0" max="100" value="50" oninput="updSplit(this.value)">
+            <div class="split-sums"><span id="splitSeller">—</span><span id="splitBuyer">—</span></div>
+          </div>
+          <div class="fld" style="margin-top:14px;">
+            <label>Обоснование решения *</label>
+            <textarea id="arbRationale" rows="3" placeholder="Обязательно: почему именно такое распределение"></textarea>
+          </div>
+          <button class="btn btn-violet btn-full" onclick="decideCase()">⚖ Вынести решение</button>
+        </div>
+
+        <div class="side-card">
+          <h4>Money trail</h4>
+          <div id="moneyTrail"><div class="kv"><span class="k">Пока нет движений</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= LOGIN ======================= -->
+<section class="view" id="faq">
+  <div class="faq-page">
+    <div class="faq-hero">
+      <div class="faq-eyebrow">◆ Help center</div>
+      <h1>Frequently asked questions</h1>
+      <p>Everything about how PayMeSafe secures your deals. Can't find an answer? <a href="#" onclick="go('createModal');return false;">Start a deal</a> or reach us anytime.</p>
+    </div>
+    <div class="faq-list">
+      <details class="faq-item" open>
+        <summary>What is PayMeSafe?<span class="faq-x">+</span></summary>
+        <div class="faq-a">PayMeSafe is a P2P escrow platform. It holds the payment in a secure crypto vault until both sides fulfil the agreed conditions — so no one has to trust a stranger with their money. Any kind of deal, any country: funds move only by the rules you agreed on.</div>
+      </details>
+      <details class="faq-item">
+        <summary>How does an escrow deal work?<span class="faq-x">+</span></summary>
+        <div class="faq-a">Four simple steps: <b>1)</b> create a deal and pick a category, <b>2)</b> invite your counterparty by a secure link, <b>3)</b> the buyer funds the escrow — money is locked, visible to both, spendable by neither, <b>4)</b> once the conditions are met the funds are released to the seller. If something goes wrong, either side can open a dispute for arbitration.</div>
+      </details>
+      <details class="faq-item">
+        <summary>What can I trade through PayMeSafe?<span class="faq-x">+</span></summary>
+        <div class="faq-a">Practically anything: 💰 Crypto & OTC, 🚗 Vehicles, 🏠 Real estate, 💼 Business & shares, 📦 Goods, 💻 Digital assets (domains, websites, apps, channels, NFTs), 🌍 International trade, and ⭐ any custom deal. You choose the exact type when creating a deal.</div>
+      </details>
+      <details class="faq-item">
+        <summary>What currency is held in escrow?<span class="faq-x">+</span></summary>
+        <div class="faq-a">Deals are secured in <b>USDT on the TRON network (TRC-20)</b> — fast, low fees, stable value. The escrow is on-chain, so the locked amount is verifiable at any time.</div>
+      </details>
+      <details class="faq-item">
+        <summary>What are the fees?<span class="faq-x">+</span></summary>
+        <div class="faq-a">Two components: our <b>service fee</b>, which depends on the deal volume (shown transparently before you confirm — currently 0% on the pilot), and the <b>network fee</b> charged by the blockchain itself, which doesn't depend on us. You always see the exact numbers before locking any funds.</div>
+      </details>
+      <details class="faq-item">
+        <summary>Is my money safe?<span class="faq-x">+</span></summary>
+        <div class="faq-a">Funds are locked in escrow and released strictly according to the conditions both parties agreed on — never unilaterally. Every movement is recorded on-chain. Note: the platform is currently in a <b>pilot / DEV stage</b>; before handling real client funds at scale it goes through a security audit and the required licensing.</div>
+      </details>
+      <details class="faq-item">
+        <summary>What happens if there's a dispute?<span class="faq-x">+</span></summary>
+        <div class="faq-a">Either side can open a dispute from the deal page. A platform <b>arbiter</b> then reviews the deal chat and the evidence both parties submitted, and decides how the escrow is split (fully to the seller, refunded to the buyer, or a partial split). The decision is applied automatically to the locked funds.</div>
+      </details>
+      <details class="faq-item">
+        <summary>How do I invite my counterparty?<span class="faq-x">+</span></summary>
+        <div class="faq-a">When you create a deal you get a unique secure invite link (and email/QR options) to send your partner. They open it, join the deal, and both of you see the same live status and chat.</div>
+      </details>
+      <details class="faq-item">
+        <summary>Do I need to pass KYC?<span class="faq-x">+</span></summary>
+        <div class="faq-a">No KYC at the MVP stage — registration is a free, super-fast couple of clicks. You confirm your email to activate the account, add a payout wallet, and you're ready to deal.</div>
+      </details>
+      <details class="faq-item">
+        <summary>Can I get a refund?<span class="faq-x">+</span></summary>
+        <div class="faq-a">Yes. If the agreed conditions aren't met, or an arbiter rules in your favour, the escrowed amount is returned to the payout wallet on your account — that's exactly why we ask for your TRON address at sign-up.</div>
+      </details>
+    </div>
+    <div class="faq-cta">
+      <h3>Ready to make your first secured deal?</h3>
+      <button class="btn btn-violet btn-lg" onclick="go('createModal')">Create a Deal</button>
+    </div>
+  </div>
+</section>
+
+<section class="view" id="join">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="logo logo-dark">
+        <svg width="28" height="28" viewBox="0 0 26 26" fill="none"><path d="M13 1.5L23 7.25v11.5L13 24.5 3 18.75V7.25L13 1.5z" stroke="#14102b" stroke-width="1.8"/><path d="M13 6.5l6 3.45v6.9l-6 3.45-6-3.45v-6.9L13 6.5z" stroke="#7c5ce8" stroke-width="1.8"/></svg>
+        PayMeSafe
+      </div>
+      <p class="sub">Приглашение в защищённую сделку</p>
+      <div id="joinInfo"></div>
+      <div id="joinMsg"></div>
+      <button class="btn btn-violet btn-lg btn-full" id="joinAcceptBtn" onclick="acceptInvite()" style="display:none">Принять и войти в сделку</button>
+      <button class="btn btn-lg btn-full" id="joinAuthBtn" style="background:var(--pms-gray-bg);color:var(--pms-text);margin-top:10px;display:none" onclick="go('auth')">Войти / зарегистрироваться, чтобы принять</button>
+    </div>
+  </div>
+</section>
+
+<section class="view" id="auth">
+  <div class="auth-wrap">
+    <div class="hex-field">
+      <svg width="900" height="800" viewBox="0 0 900 800" fill="none" opacity="0.3">
+        <g stroke="#ffffff" stroke-width="1" stroke-opacity=".5">
+          <path d="M450 250 L580 325 V475 L450 550 L320 475 V325 Z"/>
+          <path d="M450 190 L632 295 V505 L450 610 L268 505 V295 Z" stroke-opacity=".35"/>
+          <path d="M450 130 L684 265 V535 L450 670 L216 535 V265 Z" stroke-opacity=".22"/>
+        </g>
+      </svg>
+    </div>
+    <div class="auth-card">
+      <div class="logo logo-dark">
+        <svg width="28" height="28" viewBox="0 0 26 26" fill="none">
+          <path d="M13 1.5L23 7.25v11.5L13 24.5 3 18.75V7.25L13 1.5z" stroke="#14102b" stroke-width="1.8"/>
+          <path d="M13 6.5l6 3.45v6.9l-6 3.45-6-3.45v-6.9L13 6.5z" stroke="#7c5ce8" stroke-width="1.8"/>
+        </svg>
+        PayMeSafe
+      </div>
+      <p class="sub">Secure Payments Made Easy</p>
+
+      <div id="authMsg"></div>
+
+      <div class="fld">
+        <label>Email</label>
+        <input type="email" id="aEmail" placeholder="your@email.com">
+      </div>
+      <div class="fld">
+        <label>Password</label>
+        <input type="password" id="aPass" placeholder="••••••••">
+      </div>
+      <div class="fld">
+        <label>Wallet address <span style="color:var(--pms-text-soft);font-weight:400;">(registration only)</span></label>
+        <input type="text" id="aWallet" placeholder="0x… or TRC-20 address">
+      </div>
+
+      <button class="btn btn-violet btn-lg btn-full" onclick="authAction('register')">Create account</button>
+      <button class="btn btn-lg btn-full" style="background:var(--pms-gray-bg);color:var(--pms-text);margin-top:10px;" onclick="authAction('login')">Log in</button>
+
+      <div class="auth-note">No KYC on MVP stage. Just a super-fast free registration in a couple of clicks.</div>
+    </div>
+  </div>
+</section>
+
+<script>
+const API = location.origin.startsWith('http') ? '' : 'http://localhost:3001';
+let token = localStorage.getItem('pms_token');
+let me = JSON.parse(localStorage.getItem('pms_me') || 'null');
+let curDeal = null, chatTimer = null, formRole = 'buyer', feePayer = 'split';
+
+// ─────────── API helper ───────────
+async function api(path, method = 'GET', body = null) {
+  const res = await fetch(API + path, {
+    method,
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
+    body: body ? JSON.stringify(body) : null,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Ошибка сервера');
+  return data;
+}
+const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// ─────────── Навигация ───────────
+function go(view) {
+  if (['dashboard','dealForm','dealChat'].includes(view) && !token) view = 'auth';
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
+  document.getElementById(view).classList.add('on');
+  const isApp = ['dashboard','createModal','dealForm','dealChat','profile'].includes(view);
+  if (view === 'profile') loadProfile();
+  document.getElementById('appBar').style.display = isApp ? 'flex' : 'none';
+  document.getElementById('siteNav').style.display = isApp ? 'none' : 'flex';
+  if (view !== 'dealChat' && chatTimer) { clearInterval(chatTimer); chatTimer = null; }
+  if (view === 'createModal') { const s = document.getElementById('catSearch'); if (s) s.value = ''; filterCats(''); }
+  window.scrollTo(0, 0);
+}
+
+// ─────────── Auth ───────────
+async function authAction(mode) {
+  const msg = document.getElementById('authMsg');
+  try {
+    const body = {
+      email: document.getElementById('aEmail').value.trim(),
+      password: document.getElementById('aPass').value,
+    };
+    if (mode === 'register') body.tronAddress = document.getElementById('aWallet').value.trim();
+    const res = await fetch(API + '/api/auth/' + mode, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (data.needsActivation) { showActivation(body.email, data.activationUrl); return; }
+    if (!res.ok) throw new Error(data.error || 'Ошибка сервера');
+    token = data.token; me = data.me;
+    localStorage.setItem('pms_token', token);
+    localStorage.setItem('pms_me', JSON.stringify(me));
+    setUserChip();
+    msg.innerHTML = '<div class="alert alert-ok">Добро пожаловать!</div>';
+    setTimeout(() => {
+      if (pendingJoin) { openJoin(pendingJoin); return; }
+      go('dashboard'); loadDeals();
+    }, 500);
+  } catch (e) {
+    msg.innerHTML = '<div class="alert alert-err">' + esc(e.message) + '</div>';
+  }
+}
+
+function showActivation(email, url) {
+  const linkBlock = url
+    ? `<div style="margin-top:10px;font-size:12px;color:var(--pms-text-soft)">Тест-режим: письмо не отправляется. Ваша ссылка активации:</div>
+       <a href="${esc(url)}" target="_blank" rel="noopener" style="display:block;margin-top:6px;word-break:break-all;font-size:12px;color:var(--pms-violet);font-weight:600">${esc(url)}</a>`
+    : `<div style="margin-top:10px;font-size:13px;color:var(--pms-text-soft)">Мы отправили ссылку активации на <b>${esc(email)}</b> — проверьте почту (и папку «Спам»).</div>`;
+  document.getElementById('authMsg').innerHTML =
+    `<div class="alert alert-ok" style="text-align:left">
+       <b>Подтвердите email, чтобы продолжить</b>${linkBlock}
+       <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+         <button class="btn btn-violet" style="padding:8px 14px;font-size:13px" onclick="resendActivation('${esc(email)}');return false;">Отправить ещё раз</button>
+         <button class="btn" style="padding:8px 14px;font-size:13px;background:var(--pms-gray-bg);color:var(--pms-text)" onclick="authAction('login');return false;">Я подтвердил — войти</button>
+       </div>
+     </div>`;
+}
+
+async function resendActivation(email) {
+  try {
+    const res = await fetch(API + '/api/auth/resend', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (d.alreadyActivated) {
+      document.getElementById('authMsg').innerHTML = '<div class="alert alert-ok">Аккаунт уже активирован — можете войти.</div>';
+      return;
+    }
+    showActivation(email, d.activationUrl);
+  } catch (e) {
+    document.getElementById('authMsg').innerHTML = '<div class="alert alert-err">' + esc(e.message) + '</div>';
+  }
+}
+function logout() {
+  token = null; me = null;
+  localStorage.removeItem('pms_token'); localStorage.removeItem('pms_me');
+  go('landing');
+}
+function setUserChip() {
+  if (!me) return;
+  document.querySelector('.user-chip .name').textContent = me.isArbiter ? '⚖ Arbiter' : me.email.split('@')[0];
+  document.querySelector('.user-chip .mail').textContent = me.email;
+  document.querySelector('.avatar').textContent = me.email[0].toUpperCase();
+}
+
+// ─────────── Дашборд ───────────
+const BADGES = {
+  CREATED: ['approval','Awaiting Approval'], AWAITING_DEPOSIT: ['awaiting','Awaiting Payment'],
+  FUNDED: ['funded','Funded'], DISPUTED: ['disputed','Disputed'],
+  RELEASED: ['released','Released'], REFUNDED: ['released','Refunded'],
+  EXPIRED: ['expired','Expired'], CANCELLED: ['expired','Cancelled'],
+};
+const HEX = '<span class="hex-badge"><svg width="30" height="30" viewBox="0 0 26 26" fill="none"><path d="M13 1.5L23 7.25v11.5L13 24.5 3 18.75V7.25L13 1.5z" stroke="#7c5ce8" stroke-width="1.6"/><path d="M13 6.5l6 3.45v6.9l-6 3.45-6-3.45v-6.9L13 6.5z" stroke="#7c5ce8" stroke-width="1.6" stroke-opacity=".5"/></svg></span>';
+
+// ─────────── Профиль / кошельки ───────────
+async function loadProfile() {
+  try {
+    const { me: m } = await api('/api/me');
+    document.getElementById('profEmail').textContent = m.email;
+    document.getElementById('profRole').textContent = m.isArbiter ? 'Арбитр платформы' : 'Пользователь';
+    document.getElementById('profileMsg').innerHTML = '';
+    renderWallets(m.wallets);
+  } catch (e) {
+    document.getElementById('profileMsg').innerHTML = '<div class="alert alert-err">' + esc(e.message) + '</div>';
+  }
+}
+function renderWallets(wallets) {
+  document.getElementById('walletList').innerHTML = (wallets || []).map(w =>
+    '<div class="wallet-item' + (w.primary ? ' primary' : '') + '">' +
+      '<div class="wl-info"><div class="wl-label">' + esc(w.label) + (w.primary ? ' <span class="wl-badge">основной</span>' : '') + '</div>' +
+      '<div class="wl-addr">' + esc(w.address) + '</div></div>' +
+      '<div class="wl-actions">' +
+        (w.primary ? '' :
+          '<button class="wl-btn" onclick="setPrimaryWallet(\'' + esc(w.address) + '\')">Сделать основным</button>' +
+          '<button class="wl-btn danger" onclick="removeWallet(\'' + esc(w.address) + '\')">Удалить</button>') +
+      '</div></div>').join('');
+}
+async function addWallet() {
+  const address = document.getElementById('wAddr').value.trim();
+  const label = document.getElementById('wLabel').value.trim();
+  try {
+    const { me: m } = await api('/api/me/wallet', 'POST', { address, label });
+    document.getElementById('wAddr').value = ''; document.getElementById('wLabel').value = '';
+    document.getElementById('profileMsg').innerHTML = '';
+    renderWallets(m.wallets);
+  } catch (e) { document.getElementById('profileMsg').innerHTML = '<div class="alert alert-err">' + esc(e.message) + '</div>'; }
+}
+async function removeWallet(address) {
+  try { const { me: m } = await api('/api/me/wallet/remove', 'POST', { address }); renderWallets(m.wallets); }
+  catch (e) { document.getElementById('profileMsg').innerHTML = '<div class="alert alert-err">' + esc(e.message) + '</div>'; }
+}
+async function setPrimaryWallet(address) {
+  try { const { me: m } = await api('/api/me/wallet/primary', 'POST', { address }); renderWallets(m.wallets); }
+  catch (e) { document.getElementById('profileMsg').innerHTML = '<div class="alert alert-err">' + esc(e.message) + '</div>'; }
+}
+
+async function loadDeals() {
+  try {
+    const { deals } = await api('/api/deals');
+    const tb = document.getElementById('dealsBody');
+    if (!deals.length) {
+      tb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--pms-text-soft);padding:36px;">Сделок пока нет — создайте первую</td></tr>';
+      return;
+    }
+    tb.innerHTML = deals.map(d => {
+      const bd = BADGES[d.state] || ['initiated', d.state];
+      const partner = d.myRole === 'buyer' ? d.seller.email : d.myRole === 'seller' ? d.buyer.email : d.buyer.email + ' / ' + d.seller.email;
+      return '<tr>' +
+        '<td><div class="deal-cell">' + HEX + '<div class="t"><a href="#" onclick="openDeal(\'' + d.id + '\');return false;">' + esc(d.title) + '</a><div class="cat">' + esc(d.template) + ' · $' + d.amount + '</div></div></div></td>' +
+        '<td class="col-soft">' + esc(partner) + '</td>' +
+        '<td class="col-soft">' + new Date(d.createdAt).toLocaleDateString() + '</td>' +
+        '<td><span class="badge ' + bd[0] + '">' + bd[1] + '</span></td>' +
+        '<td><div class="row-actions"><button onclick="openDeal(\'' + d.id + '\')">👁</button></div></td>' +
+        '</tr>';
+    }).join('');
+  } catch (e) { console.error(e); }
+}
+
+// ─────────── Создание сделки ───────────
+function setFormRole(r, btn) {
+  formRole = r;
+  document.querySelectorAll('#roleToggle button').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+function setFeePayer(p, btn) {
+  feePayer = p;
+  document.querySelectorAll('#feePayerToggle button').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  const note = {
+    split:  'Service fee 2% — split 50 / 50 (1% each side)',
+    buyer:  'Service fee 2% — fully paid by the buyer (added on top of the amount)',
+    seller: 'Service fee 2% — fully paid by the seller (deducted from the payout)',
+  }[p];
+  const el = document.getElementById('feeNote'); if (el) el.textContent = note;
+}
+async function submitDeal() {
+  const msg = document.getElementById('formMsg');
+  try {
+    const dv = Math.max(1, parseInt(document.getElementById('fDeadlineVal').value, 10) || 30);
+    const unit = document.getElementById('fDeadlineUnit').value;
+    await api('/api/deals', 'POST', {
+      title: document.getElementById('fTitle').value.trim(),
+      amount: document.getElementById('fAmount').value.trim(),
+      counterpartyEmail: document.getElementById('fPartner').value.trim(),
+      role: formRole,
+      feePayer,
+      deadlineDays: unit === 'days' ? dv : 0,
+      deadlineHours: unit === 'hours' ? dv : 0,
+      template: sessionStorage.getItem('pms_template') || 'custom',
+    });
+    msg.innerHTML = '<div class="alert alert-ok">Сделка создана. Контрагент увидит её в своём дашборде.</div>';
+    setTimeout(() => { go('dashboard'); loadDeals(); }, 700);
+  } catch (e) {
+    msg.innerHTML = '<div class="alert alert-err">' + esc(e.message) + '</div>';
+  }
+}
+function pickTemplate(t, name) {
+  sessionStorage.setItem('pms_template', t);
+  const el = document.getElementById('formTemplateName');
+  if (el) el.textContent = name;
+  go('dealForm');
+}
+
+/* ─────────── Deal categories on Create Deal ─────────── */
+const DEAL_CATS = [
+  { id:'crypto',     icon:'💰', name:'Crypto',              desc:'Coins, tokens & OTC',        subs:['Cryptocurrency','Stablecoins','Token Sales','OTC Deals','Mining Equipment'] },
+  { id:'vehicles',   icon:'🚗', name:'Vehicles',            desc:'Anything that moves',        subs:['Cars','Motorcycles','Trucks','Special Equipment','Boats & Yachts','Aircraft'] },
+  { id:'realestate', icon:'🏠', name:'Real Estate',         desc:'Property & land',            subs:['Apartments','Houses','Land','Commercial Property','Rentals'] },
+  { id:'business',   icon:'💼', name:'Business',             desc:'Companies & shares',         subs:['Business Acquisition','Company Shares','Franchises','Online Businesses','Startups'] },
+  { id:'goods',      icon:'📦', name:'Goods',               desc:'Physical products',          subs:['Wholesale Goods','Electronics','Luxury Items','Jewelry','Art & Collectibles','Industrial Equipment'] },
+  { id:'digital',    icon:'💻', name:'Digital Assets',      desc:'Online & IP assets',         subs:['Domains','Websites','Mobile Apps','SaaS','Source Code','Social Media Accounts','YouTube Channels','Telegram Channels','NFT Collections','Software Licenses'] },
+  { id:'trade',      icon:'🌍', name:'International Trade',  desc:'Cross-border B2B',           subs:['Import','Export','International Contracts','Cross-Border Deliveries','B2B Transactions'] },
+  { id:'other',      icon:'⭐', name:'Other',               desc:'Custom conditions',          subs:['Custom Deal'] },
+];
+
+function renderCats() {
+  const grid = document.getElementById('catGrid');
+  if (!grid) return;
+  grid.innerHTML = DEAL_CATS.map(c => `
+    <div class="cat-card" onclick="openSub('${c.id}')">
+      <span class="cat-arrow">→</span>
+      <div class="cat-ic">${c.icon}</div>
+      <div class="cat-nm">${esc(c.name)}</div>
+      <div class="cat-count">${c.subs.length} type${c.subs.length > 1 ? 's' : ''}</div>
+    </div>`).join('');
+}
+function subCardHTML(cat, sub, showTag) {
+  const label = `${cat.name} — ${sub}`;
+  return `<div class="sub-card" onclick="pickTemplate('${cat.id}', ${JSON.stringify(label).replace(/"/g,'&quot;')})">
+    <span class="sub-dot"></span><span>${esc(sub)}</span>${showTag ? `<span class="sub-cat-tag">${esc(cat.name)}</span>` : ''}</div>`;
+}
+function openSub(id) {
+  const cat = DEAL_CATS.find(c => c.id === id);
+  if (!cat) return;
+  document.getElementById('catSearch').value = '';
+  document.getElementById('catResults').style.display = 'none';
+  document.getElementById('catNoResults').style.display = 'none';
+  document.getElementById('catGrid').style.display = 'none';
+  document.getElementById('catHeading').textContent = 'Select a deal type';
+  document.getElementById('subHead').innerHTML =
+    `<div class="cat-ic">${cat.icon}</div><div><div class="sub-title">${esc(cat.name)}</div><div class="sub-desc">${esc(cat.desc)}</div></div>`;
+  document.getElementById('subGrid').innerHTML = cat.subs.map(s => subCardHTML(cat, s, false)).join('');
+  document.getElementById('subWrap').style.display = 'block';
+}
+function closeSub() {
+  document.getElementById('subWrap').style.display = 'none';
+  document.getElementById('catGrid').style.display = '';
+  document.getElementById('catHeading').textContent = 'Choose a deal category';
+}
+function filterCats(q) {
+  q = q.trim().toLowerCase();
+  const grid = document.getElementById('catGrid'), sub = document.getElementById('subWrap'),
+        res = document.getElementById('catResults'), none = document.getElementById('catNoResults'),
+        head = document.getElementById('catHeading');
+  if (!q) { res.style.display = 'none'; none.style.display = 'none'; sub.style.display = 'none';
+            grid.style.display = ''; head.textContent = 'Choose a deal category'; return; }
+  sub.style.display = 'none'; grid.style.display = 'none'; head.textContent = 'Search results';
+  const hits = [];
+  DEAL_CATS.forEach(c => c.subs.forEach(s => {
+    if (s.toLowerCase().includes(q) || c.name.toLowerCase().includes(q)) hits.push(subCardHTML(c, s, true));
+  }));
+  if (hits.length) { res.innerHTML = hits.join(''); res.style.display = 'grid'; none.style.display = 'none'; }
+  else { res.style.display = 'none'; none.style.display = 'block'; }
+}
+
+// ─────────── Экран сделки ───────────
+async function openDeal(id) {
+  go('dealChat');
+  await refreshDeal(id);
+  chatTimer = setInterval(() => refreshDeal(id, true), 4000);
+}
+
+async function refreshDeal(id, quiet = false) {
+  try {
+    const [dRes, cRes] = await Promise.all([
+      api('/api/deals/' + id), api('/api/deals/' + id + '/chat'),
+    ]);
+    curDeal = dRes.deal;
+    renderDealHead(dRes.deal);
+    renderSummary(dRes.deal);
+    renderActions(dRes.deal);
+    renderArbCard(dRes.deal);
+    renderTrail(dRes.journal);
+    renderChat(cRes.messages);
+  } catch (e) { if (!quiet) alert(e.message); }
+}
+
+function renderDealHead(d) {
+  const bd = BADGES[d.state] || ['initiated', d.state];
+  document.getElementById('dcTitle').innerHTML = esc(d.title) +
+    ' <span class="badge ' + bd[0] + '" style="vertical-align:middle;margin-left:10px;">' + bd[1] + '</span>';
+  document.getElementById('dcSub').textContent = d.buyer.email + ' · ' + d.seller.email +
+    (d.dispute && d.dispute.arbiter ? ' · ⚖ ' + d.dispute.arbiter : '');
+  const terminal = ['RELEASED','REFUNDED','EXPIRED','CANCELLED'].includes(d.state);
+  document.getElementById('chatText').disabled = terminal;
+  document.getElementById('sendBtn').disabled = terminal;
+  document.getElementById('chatText').placeholder = terminal ? 'Чат read-only — сделка завершена' : 'Написать сообщение…';
+  document.getElementById('evidenceBtn').style.display =
+    d.state === 'DISPUTED' && ['buyer','seller'].includes(d.myRole) ? 'block' : 'none';
+}
+
+function renderSummary(d) {
+  let h = '';
+  h += '<div class="kv"><span class="k">Amount</span><span class="v">$' + d.amount + ' USDT</span></div>';
+  h += '<div class="kv"><span class="k">Deposited</span><span class="v">$' + d.deposited + ' / $' + d.requiredDeposit + '</span></div>';
+  const feeTxt = d.feePayer === 'buyer' ? '2% — платит покупатель' : d.feePayer === 'seller' ? '2% — платит продавец' : '2% — пополам (1% / 1%)';
+  h += '<div class="kv"><span class="k">Service fee</span><span class="v">' + feeTxt + '</span></div>';
+  if (d.deadline) h += '<div class="kv"><span class="k">Срок до</span><span class="v">' + new Date(d.deadline).toLocaleString() + '</span></div>';
+  h += '<div class="kv"><span class="k">Template</span><span class="v">' + esc(d.template) + '</span></div>';
+  const c = d.completion || { buyer: false, seller: false };
+  h += '<div class="kv"><span class="k">Buyer</span><span class="v">' + esc(d.buyer.email) + (d.buyer.approved ? ' ✓' : '') + (c.buyer ? ' · выполнил ✅' : '') + '</span></div>';
+  h += '<div class="kv"><span class="k">Seller</span><span class="v">' + esc(d.seller.email) + (d.seller.approved ? ' ✓' : '') + (c.seller ? ' · выполнил ✅' : '') + '</span></div>';
+  if (d.depositAddress) h += '<div class="kv"><span class="k">Deposit addr</span><span class="v" style="color:var(--pms-violet);font-size:10.5px;">' + esc(d.depositAddress) + '</span></div>';
+  h += '<div class="kv"><span class="k">Your role</span><span class="v">' + (d.myRole || '—') + '</span></div>';
+  document.getElementById('dealSummary').innerHTML = h;
+}
+
+function renderActions(d) {
+  const A = [];
+  const myApproved = d.myRole === 'buyer' ? d.buyer.approved : d.myRole === 'seller' ? d.seller.approved : true;
+  if (d.state === 'CREATED' && ['buyer','seller'].includes(d.myRole) && !myApproved)
+    A.push('<button class="btn btn-violet btn-full" onclick="act(\'approve\')">✓ Подтвердить условия</button>');
+  if (d.state === 'CREATED' && myApproved)
+    A.push('<div class="deadline-pill">⏱ Ждём подтверждения второй стороны</div>');
+  if (d.state === 'AWAITING_DEPOSIT' && d.myRole === 'buyer')
+    A.push('<button class="btn btn-violet btn-full" onclick="devDeposit()">💸 Внести $' + d.requiredDeposit + ' — сумма + 1% (симуляция)</button>');
+  if (d.state === 'AWAITING_DEPOSIT' && d.myRole === 'seller')
+    A.push('<div class="deadline-pill">⏱ Ждём депозит покупателя</div>');
+  if (d.state === 'FUNDED' && ['buyer','seller'].includes(d.myRole)) {
+    const c = d.completion || { buyer: false, seller: false };
+    const otherRole = d.myRole === 'buyer' ? 'seller' : 'buyer';
+    const otherName = otherRole === 'buyer' ? 'покупателя' : 'продавца';
+    if (!c[d.myRole])
+      A.push('<button class="btn btn-violet btn-full" onclick="act(\'confirm\')">✓ Подтвердить, что сделка выполнена</button>');
+    else if (!c[otherRole])
+      A.push('<div class="deadline-pill">✓ Вы подтвердили выполнение. Ждём подтверждения ' + otherName + ' — средства выпустятся автоматически.</div>');
+    A.push('<button class="btn btn-full" style="background:var(--pms-red-bg);color:var(--pms-red);margin-top:8px;" onclick="openDispute()">⚖ Открыть спор / арбитраж</button>');
+  }
+  if (d.state === 'DISPUTED' && ['buyer','seller'].includes(d.myRole))
+    A.push('<div class="deadline-pill">⚖ Спор рассматривается. Приложите доказательства через 📎</div>');
+  if (d.resolution)
+    A.push('<div class="deadline-pill">Решение: ' + d.resolution.sellerBps / 100 + '% продавцу · обоснование в чате</div>');
+  document.getElementById('dealActions').innerHTML = A.join('') || '<div class="kv"><span class="k">Действий не требуется</span></div>';
+}
+
+function renderArbCard(d) {
+  const show = d.state === 'DISPUTED' && d.myRole === 'arbiter';
+  document.getElementById('arbCard').style.display = show ? 'block' : 'none';
+  if (show) {
+    document.getElementById('arbSub').textContent = 'Case ' + d.id.slice(0, 8) + ' · вы назначены';
+    updSplit(document.getElementById('splitRange').value);
+  }
+}
+
+function renderTrail(journal) {
+  const names = { DEPOSIT: 'DEPOSIT', PAYOUT: 'PAYOUT → seller', FEE: 'FEE → platform', REFUND: 'REFUND → buyer' };
+  document.getElementById('moneyTrail').innerHTML = journal.length
+    ? journal.map(j => '<div class="kv"><span class="k">' + (names[j.type] || j.type) + '</span><span class="v"' +
+        (j.type === 'DEPOSIT' ? ' style="color:var(--pms-green);"' : '') + '>' +
+        (j.type === 'DEPOSIT' ? '+' : '−') + '$' + j.amount + '</span></div>').join('')
+    : '<div class="kv"><span class="k">Пока нет движений</span></div>';
+}
+
+function renderChat(messages) {
+  const body = document.getElementById('chatBody');
+  const stick = body.scrollHeight - body.scrollTop - body.clientHeight < 60;
+  body.innerHTML = messages.map(m => {
+    if (m.type === 'system') return '<div class="msg sys"><div class="bubble">' + esc(m.text) + '</div></div>';
+    const cls = m.role === 'arbiter' ? 'arb' : (me && m.email === me.email) ? 'me' : 'them';
+    const who = (me && m.email === me.email) ? 'Вы' : (m.role === 'arbiter' ? '⚖ ' + m.email : m.email);
+    const att = (m.attachments || []).map(a => '<div><span class="attach">📎 ' + esc(a.name) + '</span></div>').join('');
+    const ev = m.type === 'evidence' ? '<div class="evidence-tag">Evidence</div>' : '';
+    return '<div class="msg ' + cls + '">' + ev + '<div class="bubble">' + esc(m.text) + att + '</div>' +
+      '<div class="meta">' + esc(who) + ' · ' + new Date(m.ts).toLocaleTimeString().slice(0, 5) + '</div></div>';
+  }).join('');
+  if (stick) body.scrollTop = body.scrollHeight;
+}
+
+// ─────────── Действия ───────────
+async function act(action) {
+  try { await api('/api/deals/' + curDeal.id + '/' + action, 'POST', {}); await refreshDeal(curDeal.id); }
+  catch (e) { alert(e.message); }
+}
+async function devDeposit() {
+  try { await api('/api/dev/deposit', 'POST', { dealId: curDeal.id, amount: curDeal.requiredDeposit }); await refreshDeal(curDeal.id); }
+  catch (e) { alert(e.message); }
+}
+async function openDispute() {
+  const reason = prompt('Причина спора (обязательно):');
+  if (!reason) return;
+  try { await api('/api/deals/' + curDeal.id + '/dispute', 'POST', { reason }); await refreshDeal(curDeal.id); }
+  catch (e) { alert(e.message); }
+}
+async function submitEvidence() {
+  const text = prompt('Опишите доказательство:');
+  if (!text) return;
+  const fname = prompt('Имя файла-вложения (можно пропустить):') || null;
+  try {
+    await api('/api/deals/' + curDeal.id + '/evidence', 'POST', {
+      text, attachments: fname ? [{ name: fname, sha256: 'demo' }] : [],
+    });
+    await refreshDeal(curDeal.id);
+  } catch (e) { alert(e.message); }
+}
+async function sendChat() {
+  const inp = document.getElementById('chatText');
+  if (!inp.value.trim()) return;
+  try {
+    await api('/api/deals/' + curDeal.id + '/chat', 'POST', { text: inp.value });
+    inp.value = '';
+    await refreshDeal(curDeal.id, true);
+  } catch (e) { alert(e.message); }
+}
+async function decideCase() {
+  const sellerBps = Number(document.getElementById('splitRange').value) * 100;
+  const rationale = document.getElementById('arbRationale').value.trim();
+  try {
+    const r = await api('/api/deals/' + curDeal.id + '/decide', 'POST', { sellerBps, rationale });
+    alert('Решение исполнено: продавцу $' + r.payout + ', возврат $' + r.refunded + ', комиссия $' + r.fee);
+    await refreshDeal(curDeal.id);
+  } catch (e) { alert(e.message); }
+}
+
+function updSplit(v) {
+  const pct = Number(v);
+  const base = Number(curDeal && curDeal.amount || 0);
+  const gross = base * pct / 100;
+  const fee = 2 * Math.ceil(gross * 0.01 * 100) / 100; // 1% продавца + 1% покупателя
+  document.querySelector('#arbCard .split-labels .s').textContent = 'Seller ' + pct + '%';
+  document.querySelector('#arbCard .split-labels .b').textContent = 'Buyer ' + (100 - pct) + '%';
+  document.querySelector('#arbCard .fill-s').style.width = pct + '%';
+  document.getElementById('splitSeller').textContent = 'Payout: $' + (gross - fee).toLocaleString() + ' (−$' + fee + ' fee)';
+  document.getElementById('splitBuyer').textContent = 'Refund: $' + (base - gross).toLocaleString();
+}
+
+
+// ── Лендинг: счётчики, reveal, тикер ──
+(function initLanding() {
+  const track = document.getElementById('ftickerTrack');
+  if (track) track.innerHTML += track.innerHTML; // бесшовный marquee
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('vis'); io.unobserve(e.target); }
+  }), { threshold: .2 });
+  document.querySelectorAll('.fcard').forEach(c => io.observe(c));
+  const cio = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return;
+    const el = e.target, target = parseFloat(el.dataset.count),
+      pre = el.dataset.prefix || '', suf = el.dataset.suffix || '',
+      dec = String(el.dataset.count).includes('.') ? 1 : 0;
+    const t0 = performance.now(), dur = 1600;
+    (function tick(t) {
+      const k = Math.min(1, (t - t0) / dur), v = target * (1 - Math.pow(1 - k, 3));
+      el.textContent = pre + v.toLocaleString('en-US', { maximumFractionDigits: dec, minimumFractionDigits: dec }) + suf;
+      if (k < 1) requestAnimationFrame(tick);
+    })(t0);
+    cio.unobserve(el);
+  }), { threshold: .4 });
+  document.querySelectorAll('.fstat-card .num').forEach(n => cio.observe(n));
+
+  // ── Параллакс от курсора: кольца, звёзды и ядро на разной «глубине» ──
+  const hero = document.querySelector('.fhero');
+  const layers = document.querySelectorAll('.fpx');
+  const rm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const touch = window.matchMedia('(pointer: coarse)').matches;
+  if (hero && layers.length && !rm && !touch) {
+    let tx = 0, ty = 0, cx = 0, cy = 0, raf = null;
+    hero.addEventListener('mousemove', e => {
+      const r = hero.getBoundingClientRect();
+      tx = (e.clientX - r.left) / r.width - .5;   // −0.5 … 0.5
+      ty = (e.clientY - r.top) / r.height - .5;
+      if (!raf) raf = requestAnimationFrame(step);
+    });
+    hero.addEventListener('mouseleave', () => { tx = ty = 0; if (!raf) raf = requestAnimationFrame(step); });
+    function step() {
+      cx += (tx - cx) * .12; cy += (ty - cy) * .12; // мягкая инерция
+      layers.forEach(l => {
+        const d = Number(l.dataset.px || 0);
+        const base = l.classList.contains('fhex-rings') ? 'translate(-50%, -54%) '
+                   : l.classList.contains('fcore') ? 'translate(-50%, -50%) '
+                   : '';
+        l.style.transform = base + `translate3d(${(cx * d).toFixed(1)}px, ${(cy * d).toFixed(1)}px, 0)`;
+      });
+      raf = (Math.abs(tx - cx) + Math.abs(ty - cy) > .002) ? requestAnimationFrame(step) : null;
+    }
+  }
+
+  // ── Живые счётчики из API (фолбэк — маркетинговые цифры) ──
+  fetch(API + '/api/stats').then(r => r.json()).then(st => {
+    if (!st || !st.totalDeals) return; // платформа пустая — оставляем демо
+    const nums = document.querySelectorAll('.fstat-card .num');
+    if (st.gmv && Number(st.gmv) > 0) nums[0].dataset.count = st.gmv;
+    nums[1].dataset.count = st.totalDeals;
+  }).catch(() => {}); // API недоступно — демо-цифры остаются
+})();
+
+// ─────────── Приглашения по ссылке ───────────
+let pendingJoin = null;
+
+async function createInvite() {
+  const res = document.getElementById('inviteResult');
+  const dv = Math.max(1, parseInt(document.getElementById('fDeadlineVal').value, 10) || 30);
+  const unit = document.getElementById('fDeadlineUnit').value;
+  try {
+    const d = await api('/api/deals/invite', 'POST', {
+      title: document.getElementById('fTitle').value.trim(),
+      amount: document.getElementById('fAmount').value.trim(),
+      role: formRole, feePayer,
+      deadlineDays: unit === 'days' ? dv : 0,
+      deadlineHours: unit === 'hours' ? dv : 0,
+      template: sessionStorage.getItem('pms_template') || 'custom',
+    });
+    res.innerHTML = '<div class="alert alert-ok" style="text-align:left">Ссылка-приглашение готова — отправьте её второй стороне:' +
+      '<input readonly value="' + esc(d.url) + '" onclick="this.select()" style="width:100%;margin-top:8px;padding:9px;border:1px solid var(--pms-border);border-radius:8px;font-size:12px">' +
+      '<button class="btn btn-violet" style="margin-top:8px;padding:8px 14px;font-size:13px" onclick="navigator.clipboard&&navigator.clipboard.writeText(\'' + esc(d.url) + '\');this.textContent=\'Скопировано ✓\'">Копировать ссылку</button></div>';
+  } catch (e) { res.innerHTML = '<div class="alert alert-err">' + esc(e.message) + '</div>'; }
+}
+
+async function openJoin(jt) {
+  pendingJoin = jt;
+  try { sessionStorage.setItem('pms_join', jt); } catch (e) {}
+  go('join');
+  try {
+    const { invite } = await api('/api/invite/' + jt);
+    const roleTxt = invite.youAre === 'buyer' ? 'Покупатель' : 'Продавец';
+    document.getElementById('joinInfo').innerHTML =
+      '<div class="prof-card" style="margin-bottom:16px">' +
+      '<div class="prof-row"><span class="k">Сделка</span><span class="v">' + esc(invite.title) + '</span></div>' +
+      '<div class="prof-row"><span class="k">Сумма</span><span class="v">$' + esc(invite.amount) + ' USDT</span></div>' +
+      '<div class="prof-row"><span class="k">От кого</span><span class="v">' + esc(invite.creatorEmail) + '</span></div>' +
+      '<div class="prof-row"><span class="k">Ваша роль</span><span class="v">' + roleTxt + '</span></div></div>';
+    const authed = !!(token && me);
+    document.getElementById('joinAcceptBtn').style.display = authed ? 'block' : 'none';
+    document.getElementById('joinAuthBtn').style.display = authed ? 'none' : 'block';
+    document.getElementById('joinMsg').innerHTML = authed ? '' :
+      '<div class="form-sub" style="margin:10px 0">Войдите или зарегистрируйтесь (укажите свой кошелёк для выплат), затем вернитесь — приглашение сохранится.</div>';
+  } catch (e) { document.getElementById('joinInfo').innerHTML = '<div class="alert alert-err">' + esc(e.message) + '</div>'; }
+}
+
+async function acceptInvite() {
+  if (!pendingJoin) return;
+  try {
+    const { deal } = await api('/api/invite/' + pendingJoin + '/accept', 'POST', {});
+    pendingJoin = null; try { sessionStorage.removeItem('pms_join'); } catch (e) {}
+    history.replaceState(null, '', location.pathname);
+    openDeal(deal.id);
+  } catch (e) { document.getElementById('joinMsg').innerHTML = '<div class="alert alert-err">' + esc(e.message) + '</div>'; }
+}
+
+// ─────────── Boot ───────────
+renderCats();
+if (token && me) setUserChip();
+(function bootRoute() {
+  let jt = null;
+  try { jt = new URLSearchParams(location.search).get('join'); } catch (e) {}
+  if (!jt) { try { jt = sessionStorage.getItem('pms_join'); } catch (e) {} }
+  if (jt) { openJoin(jt); return; }
+  if (token && me) { go('dashboard'); loadDeals(); }
+})();
+</script>
+</body>
+</html>
