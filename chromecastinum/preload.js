@@ -1,6 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-contextBridge.exposeInMainWorld('privacyBrowser', {
+contextBridge.exposeInMainWorld('chromecastinum', {
   onOpenInNewTab: (handler) => {
     ipcRenderer.on('open-in-new-tab', (_event, url) => handler(url));
   },

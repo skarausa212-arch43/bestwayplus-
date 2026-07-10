@@ -1,4 +1,4 @@
-// Privacy Browser — главный процесс Electron.
+// Chromecastinum — главный процесс Electron.
 //
 // Гарантии приватности:
 //  1. Все вкладки живут в partition "throwaway" БЕЗ префикса "persist:" —
@@ -15,7 +15,7 @@ const path = require('path');
 const os = require('os');
 const fs = require('fs');
 
-const PROFILE_PREFIX = 'privacy-browser-';
+const PROFILE_PREFIX = 'chromecastinum-';
 const PARTITION = 'throwaway'; // без "persist:" => только в памяти
 
 // Подчистить временные профили, оставшиеся после аварийных завершений.
@@ -47,7 +47,7 @@ function createWindow() {
     minWidth: 640,
     minHeight: 400,
     backgroundColor: '#1b1e24',
-    title: 'Privacy Browser',
+    title: 'Chromecastinum',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       webviewTag: true,

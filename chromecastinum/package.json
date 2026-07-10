@@ -1,6 +1,6 @@
 {
-  "name": "privacy-browser",
-  "productName": "Privacy Browser",
+  "name": "chromecastinum",
+  "productName": "Chromecastinum",
   "version": "1.0.0",
   "description": "Браузер для Windows, который никогда не сохраняет куки, историю и кэш на диск",
   "main": "main.js",
@@ -15,15 +15,15 @@
     "electron-builder": "^24.13.3"
   },
   "build": {
-    "appId": "com.bestwayplus.privacybrowser",
-    "productName": "Privacy Browser",
+    "appId": "com.bestwayplus.chromecastinum",
+    "productName": "Chromecastinum",
     "win": {
       "target": [
         { "target": "portable", "arch": ["x64"] }
       ]
     },
     "portable": {
-      "artifactName": "PrivacyBrowser.exe"
+      "artifactName": "Chromecastinum.exe"
     },
     "files": [
       "main.js",

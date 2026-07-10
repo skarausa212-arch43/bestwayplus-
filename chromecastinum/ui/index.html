@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Privacy Browser</title>
+<title>Chromecastinum</title>
 <style>
   :root {
     --bg: #1b1e24;
@@ -300,7 +300,7 @@
   newtabBtn.addEventListener('click', () => { createTab(); address.focus(); });
 
   wipeBtn.addEventListener('click', async () => {
-    await window.privacyBrowser.wipeSession();
+    await window.chromecastinum.wipeSession();
     for (const t of tabs) t.view.reload();
     toast.textContent = 'Куки и данные всех сайтов стёрты';
     toast.classList.add('show');
@@ -308,7 +308,7 @@
   });
 
   // Ссылки target="_blank" из main-процесса
-  window.privacyBrowser.onOpenInNewTab((url) => createTab(url));
+  window.chromecastinum.onOpenInNewTab((url) => createTab(url));
 
   // ---- Горячие клавиши ----
   window.addEventListener('keydown', (e) => {

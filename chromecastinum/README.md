@@ -1,4 +1,4 @@
-# Privacy Browser
+# Chromecastinum
 
 Браузер для Windows на движке Chromium (Electron), который **вообще не сохраняет
 куки** — а также историю, кэш, localStorage и любые другие данные сайтов.
@@ -27,7 +27,7 @@
 ## Запуск (нужен [Node.js](https://nodejs.org))
 
 ```bat
-cd privacy-browser
+cd chromecastinum
 npm install
 npm start
 ```
@@ -37,10 +37,10 @@ npm start
 На Windows-машине:
 
 ```bat
-cd privacy-browser
+cd chromecastinum
 npm install
 npm run dist
 ```
 
-Готовый портативный файл появится в `privacy-browser/dist/PrivacyBrowser.exe` —
+Готовый портативный файл появится в `chromecastinum/dist/Chromecastinum.exe` —
 его можно просто скопировать и запускать без установки.
