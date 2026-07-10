@@ -456,6 +456,23 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
   .chat-shell { height: 480px; }
 }
 
+/* Мобильная шапка: переключатель языка не должен обрезаться */
+@media (max-width: 640px) {
+  .site-nav { padding: 12px 14px; gap: 8px; }
+  .site-nav .actions { gap: 9px; }
+  .site-nav .lang-toggle { flex: 0 0 auto; }
+  .site-nav .lang-toggle button { padding: 5px 9px; }
+  .site-nav .login { font-size: 13px; }
+  .site-nav .actions .btn { padding: 10px 14px; font-size: 13px; white-space: nowrap; }
+  .app-bar .lang-toggle { flex: 0 0 auto; }
+}
+@media (max-width: 420px) {
+  .site-nav .logo { font-size: 15px; gap: 6px; }
+  .site-nav .logo svg { width: 22px; height: 22px; }
+  .site-nav .login { display: none; } /* очень узкий экран: «Войти» доступно кнопкой «Открыть кабинет» на главной */
+  .site-nav .actions .btn { padding: 9px 12px; font-size: 12.5px; }
+}
+
 
 /* ════════ FUTURE LANDING ════════ */
 .fhero {
