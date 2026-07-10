@@ -14,6 +14,8 @@ const { app, BrowserWindow, session, ipcMain } = require('electron');
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
+const zipcodes = require('zipcodes'); // офлайн-база ZIP → город/координаты США
+const tzlookup = require('tz-lookup'); // офлайн: координаты → IANA часовой пояс
 
 const PROFILE_PREFIX = 'chromecastinum-';
 const PARTITION = 'throwaway'; // без "persist:" => только в памяти
@@ -142,18 +144,48 @@ app.on('web-contents-created', (_event, contents) => {
   contents.once('dom-ready', () => applyOverrides(contents));
 });
 
-// Настройки подмены из интерфейса.
-ipcMain.handle('set-overrides', (_e, next) => {
-  const lat = Number(next.latitude);
-  const lon = Number(next.longitude);
-  overrides.latitude = Number.isFinite(lat) ? lat : null;
-  overrides.longitude = Number.isFinite(lon) ? lon : null;
-  overrides.timezone = next.timezone || null;
+// Ввод ZIP-кода США: определяем координаты и часовой пояс и применяем их.
+ipcMain.handle('apply-zip', (_e, rawZip) => {
+  const zip = String(rawZip || '').trim().slice(0, 5);
+  if (!/^\d{5}$/.test(zip)) {
+    return { ok: false, error: 'Введите 5-значный ZIP-код США' };
+  }
+  const rec = zipcodes.lookup(zip);
+  if (!rec || rec.country !== 'US') {
+    return { ok: false, error: 'ZIP-код не найден в базе США' };
+  }
+
+  let timezone;
+  try {
+    timezone = tzlookup(rec.latitude, rec.longitude);
+  } catch {
+    return { ok: false, error: 'Не удалось определить часовой пояс' };
+  }
+
+  overrides.latitude = rec.latitude;
+  overrides.longitude = rec.longitude;
+  overrides.timezone = timezone;
   applyToAllGuests();
-  return overrides;
+
+  return {
+    ok: true,
+    zip,
+    city: rec.city,
+    state: rec.state,
+    latitude: rec.latitude,
+    longitude: rec.longitude,
+    timezone
+  };
 });
 
-ipcMain.handle('get-overrides', () => overrides);
+// Сброс подмены — вернуть реальные данные системы.
+ipcMain.handle('clear-overrides', () => {
+  overrides.latitude = null;
+  overrides.longitude = null;
+  overrides.timezone = null;
+  applyToAllGuests();
+  return { ok: true };
+});
 
 // Кнопка "стереть всё сейчас" — чистим куки/хранилища/кэш прямо во время работы.
 ipcMain.handle('wipe-session', async () => {

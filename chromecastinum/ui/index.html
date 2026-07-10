@@ -214,7 +214,7 @@
     <input id="address" type="text" spellcheck="false"
            placeholder="Введите адрес или поисковый запрос…">
     <span id="badge">&#128274; куки не сохраняются</span>
-    <button id="settingsBtn" title="Местоположение и время">&#9881;</button>
+    <button id="settingsBtn" title="Местоположение по ZIP-коду США">&#127482;&#127480;</button>
     <button id="wipe" title="Стереть куки и данные всех сайтов прямо сейчас">&#129529;</button>
   </div>
 
@@ -222,29 +222,14 @@
 
   <div id="settings">
     <button class="close-x" id="settingsClose" title="Закрыть">&times;</button>
-    <h2>Местоположение и время</h2>
-    <div class="hint">Сайты будут «видеть» указанные здесь координаты и часовой пояс вместо ваших настоящих.</div>
+    <h2>Местоположение США &#127482;&#127480;</h2>
+    <div class="hint">Введите почтовый индекс (ZIP-код) США — сайты будут «видеть» координаты этого места, а время браузера подстроится под его часовой пояс.</div>
 
-    <label for="preset">Быстрый выбор города</label>
-    <select id="preset">
-      <option value="">— выбрать вручную —</option>
-    </select>
+    <label for="zip">ZIP-код</label>
+    <input id="zip" type="text" inputmode="numeric" maxlength="5"
+           placeholder="напр. 90210" autocomplete="off">
 
-    <div class="row">
-      <div>
-        <label for="lat">Широта</label>
-        <input id="lat" type="text" inputmode="decimal" placeholder="напр. 55.7558">
-      </div>
-      <div>
-        <label for="lon">Долгота</label>
-        <input id="lon" type="text" inputmode="decimal" placeholder="напр. 37.6173">
-      </div>
-    </div>
-
-    <label for="tz">Часовой пояс</label>
-    <select id="tz"></select>
-
-    <div class="status" id="ovStatus"></div>
+    <div class="status" id="ovStatus">Подмена выключена — используются реальные данные.</div>
 
     <div class="actions">
       <button id="reset">Сбросить</button>
@@ -272,10 +257,7 @@
   const settingsBtn = document.getElementById('settingsBtn');
   const settingsPanel = document.getElementById('settings');
   const settingsClose = document.getElementById('settingsClose');
-  const presetSel = document.getElementById('preset');
-  const latInput = document.getElementById('lat');
-  const lonInput = document.getElementById('lon');
-  const tzSel = document.getElementById('tz');
+  const zipInput = document.getElementById('zip');
   const applyBtn = document.getElementById('apply');
   const resetBtn = document.getElementById('reset');
   const ovStatus = document.getElementById('ovStatus');
@@ -405,96 +387,70 @@
     setTimeout(() => toast.classList.remove('show'), 2500);
   });
 
-  // ---- Настройки: местоположение и время ----
-  // Города: [название, широта, долгота, часовой пояс IANA]
-  const CITIES = [
-    ['Москва',           55.7558,  37.6173, 'Europe/Moscow'],
-    ['Санкт-Петербург',  59.9311,  30.3609, 'Europe/Moscow'],
-    ['Киев',             50.4501,  30.5234, 'Europe/Kyiv'],
-    ['Минск',            53.9006,  27.5590, 'Europe/Minsk'],
-    ['Алматы',           43.2380,  76.9450, 'Asia/Almaty'],
-    ['Лондон',           51.5074,  -0.1278, 'Europe/London'],
-    ['Париж',            48.8566,   2.3522, 'Europe/Paris'],
-    ['Берлин',           52.5200,  13.4050, 'Europe/Berlin'],
-    ['Нью-Йорк',         40.7128, -74.0060, 'America/New_York'],
-    ['Лос-Анджелес',     34.0522,-118.2437, 'America/Los_Angeles'],
-    ['Дубай',            25.2048,  55.2708, 'Asia/Dubai'],
-    ['Стамбул',          41.0082,  28.9784, 'Europe/Istanbul'],
-    ['Токио',            35.6762, 139.6503, 'Asia/Tokyo'],
-    ['Сингапур',          1.3521, 103.8198, 'Asia/Singapore'],
-    ['Сидней',          -33.8688, 151.2093, 'Australia/Sydney']
-  ];
-  const TIMEZONES = [
-    'Europe/Moscow','Europe/Kaliningrad','Europe/Kyiv','Europe/Minsk',
-    'Europe/London','Europe/Paris','Europe/Berlin','Europe/Istanbul',
-    'Asia/Almaty','Asia/Yekaterinburg','Asia/Novosibirsk','Asia/Dubai',
-    'Asia/Tokyo','Asia/Shanghai','Asia/Singapore','Asia/Kolkata',
-    'America/New_York','America/Chicago','America/Los_Angeles','America/Sao_Paulo',
-    'Australia/Sydney','Pacific/Auckland','UTC'
-  ];
+  // ---- Настройки: местоположение США по ZIP-коду ----
+  let currentTz = null; // выбранный часовой пояс — для «живых» часов в статусе
 
-  CITIES.forEach((c, i) => {
-    const o = document.createElement('option');
-    o.value = String(i); o.textContent = c[0];
-    presetSel.appendChild(o);
-  });
-  tzSel.appendChild(new Option('— не менять (системный) —', ''));
-  TIMEZONES.forEach(tz => tzSel.appendChild(new Option(tz, tz)));
-
-  presetSel.addEventListener('change', () => {
-    const c = CITIES[Number(presetSel.value)];
-    if (!c) return;
-    latInput.value = c[1];
-    lonInput.value = c[2];
-    tzSel.value = c[3];
-  });
-
-  function refreshStatus() {
-    const lat = parseFloat(latInput.value), lon = parseFloat(lonInput.value);
-    const loc = (Number.isFinite(lat) && Number.isFinite(lon))
-      ? `${lat}, ${lon}` : 'реальное (не подменяется)';
-    const tz = tzSel.value || 'системный';
-    let now = '';
-    try {
-      now = tzSel.value
-        ? new Intl.DateTimeFormat('ru-RU', { timeZone: tzSel.value, hour: '2-digit', minute: '2-digit' }).format(new Date())
-        : '';
-    } catch {}
-    ovStatus.innerHTML =
-      `Местоположение: <b>${loc}</b><br>Часовой пояс: <b>${tz}</b>` +
-      (now ? ` &middot; сейчас там <b>${now}</b>` : '');
+  function showToast(text) {
+    toast.textContent = text;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
   }
-  latInput.addEventListener('input', refreshStatus);
-  lonInput.addEventListener('input', refreshStatus);
-  tzSel.addEventListener('change', refreshStatus);
 
-  function openSettings() { settingsPanel.classList.add('open'); refreshStatus(); }
+  function clockIn(tz) {
+    try {
+      return new Intl.DateTimeFormat('ru-RU', {
+        timeZone: tz, hour: '2-digit', minute: '2-digit'
+      }).format(new Date());
+    } catch { return ''; }
+  }
+
+  function showResolved(r) {
+    currentTz = r.timezone;
+    ovStatus.innerHTML =
+      `<b>${r.city}, ${r.state}</b> &middot; ZIP ${r.zip}<br>` +
+      `Координаты: <b>${r.latitude.toFixed(4)}, ${r.longitude.toFixed(4)}</b><br>` +
+      `Часовой пояс: <b>${r.timezone}</b> &middot; сейчас там <b>${clockIn(r.timezone)}</b>`;
+  }
+
+  // Раз в минуту обновляем время в статусе, пока подмена активна.
+  setInterval(() => {
+    if (currentTz) {
+      const el = ovStatus.querySelector('b:last-child');
+      if (el) el.textContent = clockIn(currentTz);
+    }
+  }, 30000);
+
+  zipInput.addEventListener('input', () => {
+    zipInput.value = zipInput.value.replace(/\D/g, '').slice(0, 5);
+  });
+
+  function openSettings() { settingsPanel.classList.add('open'); zipInput.focus(); }
   function closeSettings() { settingsPanel.classList.remove('open'); }
   settingsBtn.addEventListener('click', () =>
     settingsPanel.classList.contains('open') ? closeSettings() : openSettings());
   settingsClose.addEventListener('click', closeSettings);
 
-  applyBtn.addEventListener('click', async () => {
-    await window.chromecastinum.setOverrides({
-      latitude: latInput.value.trim(),
-      longitude: lonInput.value.trim(),
-      timezone: tzSel.value
-    });
+  async function applyZip() {
+    const res = await window.chromecastinum.applyZip(zipInput.value);
+    if (!res.ok) {
+      currentTz = null;
+      ovStatus.innerHTML = `<span style="color:#e2795b">${res.error}</span>`;
+      return;
+    }
+    showResolved(res);
     for (const t of tabs) t.view.reload();
-    closeSettings();
-    toast.textContent = 'Местоположение и время применены';
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 2500);
-  });
+    showToast(`Местоположение: ${res.city}, ${res.state}`);
+  }
+  applyBtn.addEventListener('click', applyZip);
+  zipInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') applyZip(); });
 
   resetBtn.addEventListener('click', async () => {
-    latInput.value = ''; lonInput.value = ''; tzSel.value = ''; presetSel.value = '';
-    await window.chromecastinum.setOverrides({ latitude: '', longitude: '', timezone: '' });
+    zipInput.value = '';
+    currentTz = null;
+    await window.chromecastinum.clearOverrides();
     for (const t of tabs) t.view.reload();
-    refreshStatus();
-    toast.textContent = 'Подмена сброшена — используются реальные данные';
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 2500);
+    ovStatus.textContent = 'Подмена выключена — используются реальные данные.';
+    showToast('Подмена сброшена — используются реальные данные');
   });
 
   // Ссылки target="_blank" из main-процесса

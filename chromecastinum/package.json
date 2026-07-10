@@ -10,6 +10,10 @@
     "start": "electron .",
     "dist": "electron-builder --win"
   },
+  "dependencies": {
+    "zipcodes": "^8.0.0",
+    "tz-lookup": "^6.1.25"
+  },
   "devDependencies": {
     "electron": "^31.0.0",
     "electron-builder": "^24.13.3"

@@ -5,6 +5,6 @@ contextBridge.exposeInMainWorld('chromecastinum', {
     ipcRenderer.on('open-in-new-tab', (_event, url) => handler(url));
   },
   wipeSession: () => ipcRenderer.invoke('wipe-session'),
-  setOverrides: (o) => ipcRenderer.invoke('set-overrides', o),
-  getOverrides: () => ipcRenderer.invoke('get-overrides')
+  applyZip: (zip) => ipcRenderer.invoke('apply-zip', zip),
+  clearOverrides: () => ipcRenderer.invoke('clear-overrides')
 });
