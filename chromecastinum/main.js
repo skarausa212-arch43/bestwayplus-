@@ -101,6 +101,7 @@ function createWindow() {
     minHeight: 400,
     backgroundColor: '#1b1e24',
     title: 'Chromecastinum',
+    icon: path.join(__dirname, 'build', process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       webviewTag: true,

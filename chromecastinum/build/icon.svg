@@ -1,0 +1,67 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Фон плитки -->
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2b3350"/>
+      <stop offset="0.55" stop-color="#1b2030"/>
+      <stop offset="1" stop-color="#11141d"/>
+    </linearGradient>
+    <!-- Свечение сверху -->
+    <radialGradient id="glow" cx="0.5" cy="0.28" r="0.75">
+      <stop offset="0" stop-color="#5b9dff" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#5b9dff" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Глобус -->
+    <radialGradient id="globe" cx="0.38" cy="0.32" r="0.85">
+      <stop offset="0" stop-color="#7fb4ff"/>
+      <stop offset="0.5" stop-color="#4f8ff5"/>
+      <stop offset="1" stop-color="#2f63d6"/>
+    </radialGradient>
+    <!-- Булавка местоположения -->
+    <linearGradient id="pin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff7a6b"/>
+      <stop offset="1" stop-color="#e64a37"/>
+    </linearGradient>
+    <clipPath id="globeClip"><circle cx="512" cy="470" r="250"/></clipPath>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="26" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+    <filter id="pinShadow" x="-60%" y="-60%" width="220%" height="220%">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <!-- Плитка -->
+  <rect x="64" y="64" width="896" height="896" rx="205" fill="url(#bg)"/>
+  <rect x="64" y="64" width="896" height="896" rx="205" fill="url(#glow)"/>
+  <rect x="65.5" y="65.5" width="893" height="893" rx="203.5" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="3"/>
+
+  <!-- Глобус -->
+  <g filter="url(#soft)">
+    <circle cx="512" cy="470" r="250" fill="url(#globe)"/>
+    <g clip-path="url(#globeClip)" stroke="#ffffff" stroke-opacity="0.42" stroke-width="7" fill="none">
+      <!-- параллели -->
+      <line x1="262" y1="410" x2="762" y2="410"/>
+      <line x1="262" y1="470" x2="762" y2="470"/>
+      <line x1="262" y1="530" x2="762" y2="530"/>
+      <!-- меридианы -->
+      <ellipse cx="512" cy="470" rx="90" ry="250"/>
+      <ellipse cx="512" cy="470" rx="185" ry="250"/>
+      <line x1="512" y1="220" x2="512" y2="720"/>
+    </g>
+    <!-- блик -->
+    <ellipse cx="430" cy="360" rx="120" ry="70" fill="#ffffff" opacity="0.18"/>
+  </g>
+
+  <!-- Булавка местоположения (США / ZIP) -->
+  <g filter="url(#pinShadow)" transform="translate(512 452)">
+    <path d="M0 -150
+             C 82 -150 148 -86 148 -6
+             C 148 84 44 168 6 232
+             C 2 238 -2 238 -6 232
+             C -44 168 -148 84 -148 -6
+             C -148 -86 -82 -150 0 -150 Z" fill="url(#pin)"/>
+    <circle cx="0" cy="-6" r="58" fill="#fff"/>
+    <circle cx="0" cy="-6" r="58" fill="none" stroke="#000" stroke-opacity="0.06" stroke-width="2"/>
+  </g>
+</svg>
