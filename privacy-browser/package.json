@@ -1,0 +1,34 @@
+{
+  "name": "privacy-browser",
+  "productName": "Privacy Browser",
+  "version": "1.0.0",
+  "description": "Браузер для Windows, который никогда не сохраняет куки, историю и кэш на диск",
+  "main": "main.js",
+  "author": "bestwayplus",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.bestwayplus.privacybrowser",
+    "productName": "Privacy Browser",
+    "win": {
+      "target": [
+        { "target": "portable", "arch": ["x64"] }
+      ]
+    },
+    "portable": {
+      "artifactName": "PrivacyBrowser.exe"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "ui/**/*"
+    ]
+  }
+}

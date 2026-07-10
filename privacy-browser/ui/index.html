@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Privacy Browser</title>
+<style>
+  :root {
+    --bg: #1b1e24;
+    --bar: #242832;
+    --tab: #2c313d;
+    --tab-active: #3a4150;
+    --text: #e8eaf0;
+    --muted: #9aa3b2;
+    --accent: #5b9dff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 13px/1.4 "Segoe UI", system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ---- Вкладки ---- */
+  #tabbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 8px 0;
+    background: var(--bg);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  #tabbar::-webkit-scrollbar { display: none; }
+  .tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 220px;
+    min-width: 110px;
+    padding: 7px 10px;
+    background: var(--tab);
+    border-radius: 8px 8px 0 0;
+    cursor: default;
+    user-select: none;
+    flex-shrink: 1;
+    overflow: hidden;
+  }
+  .tab.active { background: var(--tab-active); }
+  .tab .title {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--muted);
+  }
+  .tab.active .title { color: var(--text); }
+  .tab .close {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 2px 5px;
+  }
+  .tab .close:hover { background: rgba(255,255,255,.12); color: var(--text); }
+  #newtab {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+  #newtab:hover { background: var(--tab); color: var(--text); }
+
+  /* ---- Панель навигации ---- */
+  #toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    background: var(--bar);
+  }
+  #toolbar button {
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font-size: 15px;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  #toolbar button:hover { background: rgba(255,255,255,.1); }
+  #toolbar button:disabled { color: #555c69; cursor: default; background: transparent; }
+  #address {
+    flex: 1;
+    height: 34px;
+    border: 1px solid transparent;
+    border-radius: 17px;
+    background: var(--bg);
+    color: var(--text);
+    padding: 0 16px;
+    font-size: 13px;
+    outline: none;
+  }
+  #address:focus { border-color: var(--accent); }
+  #wipe { font-size: 14px; }
+  #badge {
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+    padding: 0 6px;
+  }
+
+  /* ---- Контент ---- */
+  #views { flex: 1; position: relative; background: #fff; }
+  #views webview {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+  }
+  #views webview.active { display: flex; }
+
+  #toast {
+    position: fixed;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #2f9e5f;
+    color: #fff;
+    padding: 9px 18px;
+    border-radius: 20px;
+    font-size: 13px;
+    opacity: 0;
+    transition: opacity .25s;
+    pointer-events: none;
+    z-index: 10;
+  }
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+  <div id="tabbar">
+    <button id="newtab" title="Новая вкладка (Ctrl+T)">+</button>
+  </div>
+
+  <div id="toolbar">
+    <button id="back" title="Назад">&#10094;</button>
+    <button id="forward" title="Вперёд">&#10095;</button>
+    <button id="reload" title="Обновить (F5)">&#8635;</button>
+    <input id="address" type="text" spellcheck="false"
+           placeholder="Введите адрес или поисковый запрос…">
+    <span id="badge">&#128274; куки не сохраняются</span>
+    <button id="wipe" title="Стереть куки и данные всех сайтов прямо сейчас">&#129529;</button>
+  </div>
+
+  <div id="views"></div>
+  <div id="toast"></div>
+
+<script>
+(() => {
+  const HOME = 'https://duckduckgo.com/';
+  const PARTITION = 'throwaway'; // in-memory сессия (см. main.js)
+
+  const tabbar  = document.getElementById('tabbar');
+  const views   = document.getElementById('views');
+  const address = document.getElementById('address');
+  const newtabBtn = document.getElementById('newtab');
+  const backBtn = document.getElementById('back');
+  const fwdBtn  = document.getElementById('forward');
+  const reloadBtn = document.getElementById('reload');
+  const wipeBtn = document.getElementById('wipe');
+  const toast   = document.getElementById('toast');
+
+  let tabs = [];      // { id, tabEl, titleEl, view }
+  let activeId = null;
+  let nextId = 1;
+
+  function toUrl(input) {
+    const s = input.trim();
+    if (!s) return null;
+    if (/^https?:\/\//i.test(s)) return s;
+    // похоже на домен: без пробелов и есть точка (или localhost)
+    if (!/\s/.test(s) && (s.includes('.') || s.startsWith('localhost'))) {
+      return 'https://' + s;
+    }
+    return 'https://duckduckgo.com/?q=' + encodeURIComponent(s);
+  }
+
+  function activeTab() {
+    return tabs.find(t => t.id === activeId) || null;
+  }
+
+  function updateNavButtons() {
+    const t = activeTab();
+    const canBack = t && t.view.canGoBack ? t.view.canGoBack() : false;
+    const canFwd  = t && t.view.canGoForward ? t.view.canGoForward() : false;
+    backBtn.disabled = !canBack;
+    fwdBtn.disabled = !canFwd;
+  }
+
+  function setActive(id) {
+    activeId = id;
+    for (const t of tabs) {
+      t.tabEl.classList.toggle('active', t.id === id);
+      t.view.classList.toggle('active', t.id === id);
+    }
+    const t = activeTab();
+    if (t) {
+      address.value = t.view.getURL ? (t.view.getURL() || '') : '';
+      if (address.value === HOME) address.value = '';
+    }
+    updateNavButtons();
+  }
+
+  function closeTab(id) {
+    const idx = tabs.findIndex(t => t.id === id);
+    if (idx === -1) return;
+    const [t] = tabs.splice(idx, 1);
+    t.tabEl.remove();
+    t.view.remove();
+    if (tabs.length === 0) {
+      window.close();
+      return;
+    }
+    if (activeId === id) setActive(tabs[Math.max(0, idx - 1)].id);
+  }
+
+  function createTab(url) {
+    const id = nextId++;
+
+    const tabEl = document.createElement('div');
+    tabEl.className = 'tab';
+    const titleEl = document.createElement('span');
+    titleEl.className = 'title';
+    titleEl.textContent = 'Новая вкладка';
+    const closeEl = document.createElement('button');
+    closeEl.className = 'close';
+    closeEl.textContent = '×';
+    closeEl.title = 'Закрыть вкладку';
+    tabEl.append(titleEl, closeEl);
+    tabbar.insertBefore(tabEl, newtabBtn);
+
+    const view = document.createElement('webview');
+    view.setAttribute('partition', PARTITION);
+    view.setAttribute('allowpopups', '');
+    view.src = url || HOME;
+    views.appendChild(view);
+
+    const tab = { id, tabEl, titleEl, view };
+    tabs.push(tab);
+
+    tabEl.addEventListener('mousedown', (e) => {
+      if (e.target === closeEl) return;
+      if (e.button === 1) { closeTab(id); return; } // средняя кнопка мыши
+      setActive(id);
+    });
+    closeEl.addEventListener('click', () => closeTab(id));
+
+    view.addEventListener('page-title-updated', (e) => {
+      titleEl.textContent = e.title || 'Без названия';
+      tabEl.title = e.title || '';
+    });
+    const syncUrl = () => {
+      if (id !== activeId) return;
+      const u = view.getURL();
+      address.value = (u === HOME) ? '' : u;
+      updateNavButtons();
+    };
+    view.addEventListener('did-navigate', syncUrl);
+    view.addEventListener('did-navigate-in-page', syncUrl);
+    view.addEventListener('did-stop-loading', updateNavButtons);
+
+    setActive(id);
+    return tab;
+  }
+
+  // ---- Навигация ----
+  address.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const url = toUrl(address.value);
+    const t = activeTab();
+    if (url && t) { t.view.src = url; t.view.focus(); }
+  });
+  address.addEventListener('focus', () => address.select());
+
+  backBtn.addEventListener('click', () => { const t = activeTab(); if (t && t.view.canGoBack()) t.view.goBack(); });
+  fwdBtn.addEventListener('click',  () => { const t = activeTab(); if (t && t.view.canGoForward()) t.view.goForward(); });
+  reloadBtn.addEventListener('click', () => { const t = activeTab(); if (t) t.view.reload(); });
+  newtabBtn.addEventListener('click', () => { createTab(); address.focus(); });
+
+  wipeBtn.addEventListener('click', async () => {
+    await window.privacyBrowser.wipeSession();
+    for (const t of tabs) t.view.reload();
+    toast.textContent = 'Куки и данные всех сайтов стёрты';
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+  });
+
+  // Ссылки target="_blank" из main-процесса
+  window.privacyBrowser.onOpenInNewTab((url) => createTab(url));
+
+  // ---- Горячие клавиши ----
+  window.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key.toLowerCase() === 't') { e.preventDefault(); createTab(); address.focus(); }
+    else if (e.ctrlKey && e.key.toLowerCase() === 'w') { e.preventDefault(); if (activeId !== null) closeTab(activeId); }
+    else if (e.ctrlKey && e.key.toLowerCase() === 'l') { e.preventDefault(); address.focus(); }
+    else if (e.key === 'F5') { e.preventDefault(); const t = activeTab(); if (t) t.view.reload(); }
+  });
+
+  createTab();
+  address.focus();
+})();
+</script>
+</body>
+</html>
