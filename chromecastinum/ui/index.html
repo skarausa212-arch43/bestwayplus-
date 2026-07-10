@@ -147,6 +147,59 @@
     z-index: 10;
   }
   #toast.show { opacity: 1; }
+
+  /* ---- Панель настроек (местоположение и время) ---- */
+  #settings {
+    position: absolute;
+    top: 0; right: 0;
+    width: 340px;
+    max-width: 90vw;
+    height: 100%;
+    background: var(--bar);
+    border-left: 1px solid rgba(255,255,255,.08);
+    box-shadow: -8px 0 24px rgba(0,0,0,.35);
+    padding: 18px;
+    z-index: 20;
+    overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform .22s ease;
+  }
+  #settings.open { transform: translateX(0); }
+  #settings h2 { font-size: 15px; margin-bottom: 4px; }
+  #settings .hint { color: var(--muted); font-size: 11px; margin-bottom: 16px; line-height: 1.5; }
+  #settings label { display: block; color: var(--muted); font-size: 11px; margin: 12px 0 5px; }
+  #settings input, #settings select {
+    width: 100%;
+    height: 34px;
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text);
+    padding: 0 10px;
+    font-size: 13px;
+    outline: none;
+  }
+  #settings input:focus, #settings select:focus { border-color: var(--accent); }
+  #settings .row { display: flex; gap: 10px; }
+  #settings .row > div { flex: 1; }
+  #settings .status {
+    font-size: 12px; color: var(--muted);
+    background: var(--bg); border-radius: 8px;
+    padding: 9px 11px; margin: 14px 0 4px; line-height: 1.5;
+  }
+  #settings .status b { color: var(--text); font-weight: 600; }
+  #settings .actions { display: flex; gap: 10px; margin-top: 18px; }
+  #settings .actions button {
+    flex: 1; height: 38px; border: none; border-radius: 9px;
+    font-size: 13px; cursor: pointer;
+  }
+  #settings #apply { background: var(--accent); color: #fff; }
+  #settings #reset { background: transparent; color: var(--muted); border: 1px solid rgba(255,255,255,.14); }
+  #settings .close-x {
+    position: absolute; top: 14px; right: 14px;
+    border: none; background: transparent; color: var(--muted);
+    font-size: 20px; cursor: pointer; line-height: 1;
+  }
 </style>
 </head>
 <body>
@@ -161,10 +214,44 @@
     <input id="address" type="text" spellcheck="false"
            placeholder="Введите адрес или поисковый запрос…">
     <span id="badge">&#128274; куки не сохраняются</span>
+    <button id="settingsBtn" title="Местоположение и время">&#9881;</button>
     <button id="wipe" title="Стереть куки и данные всех сайтов прямо сейчас">&#129529;</button>
   </div>
 
   <div id="views"></div>
+
+  <div id="settings">
+    <button class="close-x" id="settingsClose" title="Закрыть">&times;</button>
+    <h2>Местоположение и время</h2>
+    <div class="hint">Сайты будут «видеть» указанные здесь координаты и часовой пояс вместо ваших настоящих.</div>
+
+    <label for="preset">Быстрый выбор города</label>
+    <select id="preset">
+      <option value="">— выбрать вручную —</option>
+    </select>
+
+    <div class="row">
+      <div>
+        <label for="lat">Широта</label>
+        <input id="lat" type="text" inputmode="decimal" placeholder="напр. 55.7558">
+      </div>
+      <div>
+        <label for="lon">Долгота</label>
+        <input id="lon" type="text" inputmode="decimal" placeholder="напр. 37.6173">
+      </div>
+    </div>
+
+    <label for="tz">Часовой пояс</label>
+    <select id="tz"></select>
+
+    <div class="status" id="ovStatus"></div>
+
+    <div class="actions">
+      <button id="reset">Сбросить</button>
+      <button id="apply">Применить</button>
+    </div>
+  </div>
+
   <div id="toast"></div>
 
 <script>
@@ -181,6 +268,17 @@
   const reloadBtn = document.getElementById('reload');
   const wipeBtn = document.getElementById('wipe');
   const toast   = document.getElementById('toast');
+
+  const settingsBtn = document.getElementById('settingsBtn');
+  const settingsPanel = document.getElementById('settings');
+  const settingsClose = document.getElementById('settingsClose');
+  const presetSel = document.getElementById('preset');
+  const latInput = document.getElementById('lat');
+  const lonInput = document.getElementById('lon');
+  const tzSel = document.getElementById('tz');
+  const applyBtn = document.getElementById('apply');
+  const resetBtn = document.getElementById('reset');
+  const ovStatus = document.getElementById('ovStatus');
 
   let tabs = [];      // { id, tabEl, titleEl, view }
   let activeId = null;
@@ -303,6 +401,98 @@
     await window.chromecastinum.wipeSession();
     for (const t of tabs) t.view.reload();
     toast.textContent = 'Куки и данные всех сайтов стёрты';
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+  });
+
+  // ---- Настройки: местоположение и время ----
+  // Города: [название, широта, долгота, часовой пояс IANA]
+  const CITIES = [
+    ['Москва',           55.7558,  37.6173, 'Europe/Moscow'],
+    ['Санкт-Петербург',  59.9311,  30.3609, 'Europe/Moscow'],
+    ['Киев',             50.4501,  30.5234, 'Europe/Kyiv'],
+    ['Минск',            53.9006,  27.5590, 'Europe/Minsk'],
+    ['Алматы',           43.2380,  76.9450, 'Asia/Almaty'],
+    ['Лондон',           51.5074,  -0.1278, 'Europe/London'],
+    ['Париж',            48.8566,   2.3522, 'Europe/Paris'],
+    ['Берлин',           52.5200,  13.4050, 'Europe/Berlin'],
+    ['Нью-Йорк',         40.7128, -74.0060, 'America/New_York'],
+    ['Лос-Анджелес',     34.0522,-118.2437, 'America/Los_Angeles'],
+    ['Дубай',            25.2048,  55.2708, 'Asia/Dubai'],
+    ['Стамбул',          41.0082,  28.9784, 'Europe/Istanbul'],
+    ['Токио',            35.6762, 139.6503, 'Asia/Tokyo'],
+    ['Сингапур',          1.3521, 103.8198, 'Asia/Singapore'],
+    ['Сидней',          -33.8688, 151.2093, 'Australia/Sydney']
+  ];
+  const TIMEZONES = [
+    'Europe/Moscow','Europe/Kaliningrad','Europe/Kyiv','Europe/Minsk',
+    'Europe/London','Europe/Paris','Europe/Berlin','Europe/Istanbul',
+    'Asia/Almaty','Asia/Yekaterinburg','Asia/Novosibirsk','Asia/Dubai',
+    'Asia/Tokyo','Asia/Shanghai','Asia/Singapore','Asia/Kolkata',
+    'America/New_York','America/Chicago','America/Los_Angeles','America/Sao_Paulo',
+    'Australia/Sydney','Pacific/Auckland','UTC'
+  ];
+
+  CITIES.forEach((c, i) => {
+    const o = document.createElement('option');
+    o.value = String(i); o.textContent = c[0];
+    presetSel.appendChild(o);
+  });
+  tzSel.appendChild(new Option('— не менять (системный) —', ''));
+  TIMEZONES.forEach(tz => tzSel.appendChild(new Option(tz, tz)));
+
+  presetSel.addEventListener('change', () => {
+    const c = CITIES[Number(presetSel.value)];
+    if (!c) return;
+    latInput.value = c[1];
+    lonInput.value = c[2];
+    tzSel.value = c[3];
+  });
+
+  function refreshStatus() {
+    const lat = parseFloat(latInput.value), lon = parseFloat(lonInput.value);
+    const loc = (Number.isFinite(lat) && Number.isFinite(lon))
+      ? `${lat}, ${lon}` : 'реальное (не подменяется)';
+    const tz = tzSel.value || 'системный';
+    let now = '';
+    try {
+      now = tzSel.value
+        ? new Intl.DateTimeFormat('ru-RU', { timeZone: tzSel.value, hour: '2-digit', minute: '2-digit' }).format(new Date())
+        : '';
+    } catch {}
+    ovStatus.innerHTML =
+      `Местоположение: <b>${loc}</b><br>Часовой пояс: <b>${tz}</b>` +
+      (now ? ` &middot; сейчас там <b>${now}</b>` : '');
+  }
+  latInput.addEventListener('input', refreshStatus);
+  lonInput.addEventListener('input', refreshStatus);
+  tzSel.addEventListener('change', refreshStatus);
+
+  function openSettings() { settingsPanel.classList.add('open'); refreshStatus(); }
+  function closeSettings() { settingsPanel.classList.remove('open'); }
+  settingsBtn.addEventListener('click', () =>
+    settingsPanel.classList.contains('open') ? closeSettings() : openSettings());
+  settingsClose.addEventListener('click', closeSettings);
+
+  applyBtn.addEventListener('click', async () => {
+    await window.chromecastinum.setOverrides({
+      latitude: latInput.value.trim(),
+      longitude: lonInput.value.trim(),
+      timezone: tzSel.value
+    });
+    for (const t of tabs) t.view.reload();
+    closeSettings();
+    toast.textContent = 'Местоположение и время применены';
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+  });
+
+  resetBtn.addEventListener('click', async () => {
+    latInput.value = ''; lonInput.value = ''; tzSel.value = ''; presetSel.value = '';
+    await window.chromecastinum.setOverrides({ latitude: '', longitude: '', timezone: '' });
+    for (const t of tabs) t.view.reload();
+    refreshStatus();
+    toast.textContent = 'Подмена сброшена — используются реальные данные';
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 2500);
   });

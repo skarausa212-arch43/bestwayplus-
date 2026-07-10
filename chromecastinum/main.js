@@ -36,8 +36,59 @@ app.commandLine.appendSwitch('disable-http-cache');
 
 let mainWin = null;
 
+// Текущая подмена местоположения и времени, которую видят сайты.
+// null-поля => не подменяем (реальное значение системы).
+const overrides = { latitude: null, longitude: null, timezone: null };
+
+// webContents всех вкладок — чтобы применять подмену к каждой.
+const guests = new Set();
+
 function browserSession() {
   return session.fromPartition(PARTITION);
+}
+
+// Применить текущую подмену к одной вкладке через протокол Chrome DevTools.
+async function applyOverrides(contents) {
+  if (!contents || contents.isDestroyed()) return;
+  try {
+    if (!contents.debugger.isAttached()) contents.debugger.attach('1.3');
+  } catch {
+    return; // debugger уже занят кем-то другим — пропускаем
+  }
+  const dbg = contents.debugger;
+
+  // Часовой пояс: пустая строка = вернуть системный.
+  try {
+    await dbg.sendCommand('Emulation.setTimezoneOverride', {
+      timezoneId: overrides.timezone || ''
+    });
+  } catch {}
+
+  // Геолокация.
+  try {
+    if (overrides.latitude != null && overrides.longitude != null) {
+      await dbg.sendCommand('Emulation.setGeolocationOverride', {
+        latitude: overrides.latitude,
+        longitude: overrides.longitude,
+        accuracy: 20
+      });
+    } else {
+      await dbg.sendCommand('Emulation.clearGeolocationOverride');
+    }
+  } catch {}
+}
+
+function applyToAllGuests() {
+  for (const c of guests) applyOverrides(c);
+}
+
+// Пускать геолокацию к сайту только когда координаты подменены —
+// тогда сайт получает выдуманную точку, а не реальную.
+function permissionHandler(_wc, permission, callback) {
+  if (permission === 'geolocation') {
+    return callback(overrides.latitude != null && overrides.longitude != null);
+  }
+  return callback(false);
 }
 
 function createWindow() {
@@ -64,8 +115,8 @@ function createWindow() {
 app.whenReady().then(() => {
   const ses = browserSession();
 
-  // Сайтам по умолчанию запрещены геолокация, уведомления, камера и т.п.
-  ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
+  // Уведомления, камера и т.п. запрещены; геолокация — только если задана подмена.
+  ses.setPermissionRequestHandler(permissionHandler);
 
   createWindow();
 
@@ -76,15 +127,33 @@ app.whenReady().then(() => {
 
 // Ссылки target="_blank" и window.open открываем новой вкладкой, а не новым окном.
 app.on('web-contents-created', (_event, contents) => {
-  if (contents.getType() === 'webview') {
-    contents.setWindowOpenHandler(({ url }) => {
-      if (mainWin && (url.startsWith('https://') || url.startsWith('http://'))) {
-        mainWin.webContents.send('open-in-new-tab', url);
-      }
-      return { action: 'deny' };
-    });
-  }
+  if (contents.getType() !== 'webview') return;
+
+  contents.setWindowOpenHandler(({ url }) => {
+    if (mainWin && (url.startsWith('https://') || url.startsWith('http://'))) {
+      mainWin.webContents.send('open-in-new-tab', url);
+    }
+    return { action: 'deny' };
+  });
+
+  guests.add(contents);
+  contents.on('destroyed', () => guests.delete(contents));
+  // Применяем подмену, как только у вкладки появится страница.
+  contents.once('dom-ready', () => applyOverrides(contents));
 });
+
+// Настройки подмены из интерфейса.
+ipcMain.handle('set-overrides', (_e, next) => {
+  const lat = Number(next.latitude);
+  const lon = Number(next.longitude);
+  overrides.latitude = Number.isFinite(lat) ? lat : null;
+  overrides.longitude = Number.isFinite(lon) ? lon : null;
+  overrides.timezone = next.timezone || null;
+  applyToAllGuests();
+  return overrides;
+});
+
+ipcMain.handle('get-overrides', () => overrides);
 
 // Кнопка "стереть всё сейчас" — чистим куки/хранилища/кэш прямо во время работы.
 ipcMain.handle('wipe-session', async () => {
