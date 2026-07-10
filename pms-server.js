@@ -25,7 +25,18 @@ const { ArbitrationService } = require('./escrow-engine/core/arbitration');
 const { fromBaseUnits, toBaseUnits } = require('./escrow-engine/core/fees');
 
 const PORT = process.env.PORT || 3001;
-const DEV_MODE = process.env.DEV_MODE !== '0'; // по умолчанию включён
+
+// ─── Режим работы ───────────────────────────────────────────────────
+// LIVE включается САМ, как только на сервере есть оба секрета в env:
+//   HOT_WALLET_KEY   — приватный ключ горячего кошелька (выплаты)
+//   ESCROW_MASTER_KEY — мастер-ключ для шифрования депозитных ключей
+// Без них платформа работает в DEV: депозиты симулируются, реальные
+// деньги не двигаются. Так прод не переключится на реальные средства
+// случайно — только осознанной установкой ключей.
+const LIVE = !!(process.env.HOT_WALLET_KEY && process.env.ESCROW_MASTER_KEY);
+const DEV_MODE = !LIVE && process.env.DEV_MODE !== '0';
+const TRON_NETWORK = process.env.TRON_NETWORK || 'nile'; // 'mainnet' | 'nile' (testnet)
+const TRONGRID_KEY = process.env.TRONGRID_KEY || '';
 
 /**
  * Кошелёк платформы для пополнений (Tron, TRC-20 USDT).
@@ -141,10 +152,53 @@ if (ADMIN_PASSWORD && !users[ADMIN_EMAIL]) {
 
 // ─────────────────────────── ДВИЖОК, ЧАТ, АРБИТРАЖ ───────────────────────────
 
+let walletService, payoutService = null, depositWatcher = null;
+
+if (LIVE) {
+  // Реальный TRON. Модули требуют `tronweb` (npm i tronweb на сервере).
+  // Их подключаем ЛЕНИВО, только в LIVE — чтобы DEV-режим работал без tronweb.
+  let TronWalletService, PayoutService;
+  try {
+    ({ TronWalletService } = require('./escrow-engine/tron/tron-wallet'));
+    ({ PayoutService } = require('./escrow-engine/tron/payout-service'));
+    require('./escrow-engine/tron/deposit-watcher'); // проверяем, что модуль грузится
+  } catch (e) {
+    console.error('\n[LIVE] Не удалось загрузить TRON-модули. Установите зависимость на сервере:');
+    console.error('       cd /opt/paymesafe && npm i tronweb\n       Причина:', e.message, '\n');
+    process.exit(1);
+  }
+  try {
+    walletService = new TronWalletService({
+      keystorePath: path.join(DATA_DIR, 'keystore.json'),
+      masterKeyHex: process.env.ESCROW_MASTER_KEY,
+    });
+    payoutService = new PayoutService({
+      network: TRON_NETWORK,
+      hotWalletKey: process.env.HOT_WALLET_KEY,
+      trongridKey: TRONGRID_KEY,
+    });
+  } catch (e) {
+    console.error('\n[LIVE] Ошибка инициализации TRON:', e.message, '\n');
+    process.exit(1);
+  }
+} else {
+  // DEV: один адрес-заглушка на все сделки, депозиты симулируются.
+  walletService = { createDepositAddress: async () => PLATFORM_DEPOSIT_ADDRESS };
+}
+
 const engine = new EscrowEngine({
   storePath: path.join(DATA_DIR, 'ledger.json'),
-  walletService: { createDepositAddress: async () => PLATFORM_DEPOSIT_ADDRESS },
+  walletService,
+  payoutService, // null в DEV → движок пишет demo_tx; в LIVE реально шлёт USDT
 });
+
+if (LIVE) {
+  const { DepositWatcher } = require('./escrow-engine/tron/deposit-watcher');
+  depositWatcher = new DepositWatcher({
+    engine, wallets: walletService, network: TRON_NETWORK, trongridKey: TRONGRID_KEY,
+  });
+}
+
 const chat = new DealChat(engine.ledger, path.join(DATA_DIR, 'chat.json'));
 const arbiters = Object.values(users).filter(u => u.isArbiter).map(u => u.email);
 const arbitration = new ArbitrationService(engine, chat, { arbiters });
@@ -670,6 +724,21 @@ route('POST', /^\/api\/admin\/deals\/([\w-]+)\/takeover$/, async (req, res, user
   send(res, 200, { deal: dealView(d, user.email) });
 });
 
+// Статус TRON-подсистемы (для мониторинга оператором)
+route('GET', /^\/api\/admin\/tron$/, async (req, res, user) => {
+  if (!requireAdmin(res, user)) return;
+  const info = { mode: LIVE ? 'LIVE' : 'DEV', network: LIVE ? TRON_NETWORK : null,
+    hotWallet: null, hotBalance: null, watcher: !!depositWatcher };
+  if (LIVE && payoutService) {
+    info.hotWallet = payoutService.hotAddress;
+    try {
+      const b = await payoutService.hotWalletBalance();
+      info.hotBalance = { usdt: fromBaseUnits(b.usdtUnits), trxSun: String(b.trxSun) };
+    } catch (e) { info.hotBalance = { error: e.message }; }
+  }
+  send(res, 200, { tron: info });
+});
+
 // ─────────────────────────── СЕРВЕР ───────────────────────────
 
 const PUBLIC_ROUTES = [/^\/api\/auth\//, /^\/api\/stats$/, /^\/api\/invite\/[A-Za-z0-9]+$/];
@@ -703,13 +772,19 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
+  const mode = LIVE ? `LIVE · TRON ${TRON_NETWORK}` : (DEV_MODE ? 'DEV (депозиты симулируются)' : 'DEV');
   console.log(`
 ╔══════════════════════════════════════════════════╗
 ║  PayMeSafe — платформа запущена                   ║
-║  http://localhost:${PORT}                            ║
-║  DEV_MODE: ${DEV_MODE ? 'ON (депозиты симулируются)' : 'OFF'}         ║
-║  Арбитр: arbiter@paymesafe.online / arbiter123    ║
+║  http://localhost:${PORT}
+║  Режим: ${mode}
 ╚══════════════════════════════════════════════════╝`);
+  if (LIVE && depositWatcher) {
+    console.log(`[LIVE] Горячий кошелёк: ${payoutService.hotAddress}`);
+    depositWatcher.start()
+      .then(() => console.log('[LIVE] deposit-watcher запущен'))
+      .catch(e => console.error('[LIVE] deposit-watcher не стартовал:', e.message));
+  }
 });
 
 module.exports = server;
