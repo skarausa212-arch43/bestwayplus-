@@ -793,6 +793,14 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
   .adm-pill.warn { background: rgba(181,112,26,.18); }
   .adm-pill.dispute { background: rgba(192,57,43,.2); }
 }
+
+/* ── Переключатель языка ── */
+.lang-toggle { display: inline-flex; border: 1px solid rgba(255,255,255,.28); border-radius: 999px; overflow: hidden; }
+.lang-toggle button { background: transparent; color: rgba(255,255,255,.72); border: none; font-size: 12px; font-weight: 700;
+  padding: 5px 11px; cursor: pointer; letter-spacing: .3px; }
+.lang-toggle button.on { background: var(--pms-violet); color: #fff; }
+#langToggleApp { border-color: rgba(255,255,255,.22); }
+@media (max-width: 560px) { .lang-toggle button { padding: 5px 8px; } }
 </style>
 </head>
 <body>
@@ -807,11 +815,12 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
     PayMeSafe
   </a>
   <div class="links">
-    <a href="#" onclick="go('landing');return false;">Home</a><a href="#" onclick="go('faq');return false;">FAQ</a><a href="#">Partners</a><a href="#">Docs</a><a href="#">Blog</a>
+    <a href="#" onclick="go('landing');return false;" data-i18n="nav.home">Home</a><a href="#" onclick="go('faq');return false;" data-i18n="nav.faq">FAQ</a><a href="#" data-i18n="nav.partners">Partners</a><a href="#" data-i18n="nav.docs">Docs</a><a href="#" data-i18n="nav.blog">Blog</a>
   </div>
   <div class="actions">
-    <a class="login" href="#" onclick="go('auth');return false;">Log in</a>
-    <button class="btn btn-violet" onclick="go('createModal')">Create a Deal</button>
+    <div class="lang-toggle" id="langToggle"><button data-lang="ru" onclick="setLang('ru')">RU</button><button data-lang="en" onclick="setLang('en')">EN</button></div>
+    <a class="login" href="#" onclick="go('auth');return false;" data-i18n="nav.login">Log in</a>
+    <button class="btn btn-violet" onclick="go('createModal')" data-i18n="nav.create">Create a Deal</button>
   </div>
 </nav>
 
@@ -835,13 +844,13 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
     </div>
 
     <div class="fhero-inner">
-      <div class="f-eyebrow"><span class="dot-live"></span>Escrow protocol · live on TRON</div>
-      <h1>Trust, engineered.</h1>
-      <p class="fsub">PayMeSafe держит платёж в криптосейфе, пока обе стороны не выполнят условия. Любая сделка, любая страна — деньги двигаются только по правилам, о которых вы договорились.</p>
+      <div class="f-eyebrow"><span class="dot-live"></span><span data-i18n="hero.eyebrow">Escrow protocol · live on TRON</span></div>
+      <h1 data-i18n="hero.title">Trust, engineered.</h1>
+      <p class="fsub" data-i18n="hero.sub">PayMeSafe держит платёж в криптосейфе, пока обе стороны не выполнят условия. Любая сделка, любая страна — деньги двигаются только по правилам, о которых вы договорились.</p>
 
       <!-- СИГНАТУРА: живой поток сделки -->
       <div class="fflow" aria-hidden="true">
-        <div class="fparty buyer"><div class="pavatar">👤</div><div class="plabel">Buyer</div></div>
+        <div class="fparty buyer"><div class="pavatar">👤</div><div class="plabel" data-i18n="role.buyer">Buyer</div></div>
         <div class="fline in"></div>
         <span class="fpulse p-in"></span><span class="fpulse p-in2"></span>
         <div class="fcore fpx" data-px="-10">
@@ -854,17 +863,17 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
         </div>
         <div class="fline out"></div>
         <span class="fpulse p-out"></span>
-        <div class="fparty seller"><div class="pavatar">🏪</div><div class="plabel">Seller</div></div>
+        <div class="fparty seller"><div class="pavatar">🏪</div><div class="plabel" data-i18n="role.seller">Seller</div></div>
         <div class="fstatus">
-          <span>USDT заблокирован в эскроу</span>
-          <span>Условия сделки выполнены</span>
-          <span>Выплата продавцу отправлена</span>
+          <span data-i18n="hero.status1">USDT заблокирован в эскроу</span>
+          <span data-i18n="hero.status2">Условия сделки выполнены</span>
+          <span data-i18n="hero.status3">Выплата продавцу отправлена</span>
         </div>
       </div>
 
       <div class="fcta">
-        <button class="btn btn-glow" onclick="go('createModal')">Create a Deal</button>
-        <button class="btn btn-dark-ghost" onclick="go('auth')">Open Dashboard</button>
+        <button class="btn btn-glow" onclick="go('createModal')" data-i18n="nav.create">Create a Deal</button>
+        <button class="btn btn-dark-ghost" onclick="go('auth')" data-i18n="hero.dashboard">Open Dashboard</button>
       </div>
     </div>
   </div>
@@ -884,20 +893,20 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
   <!-- счётчики -->
   <div class="fstats">
     <div class="grid4">
-      <div class="fstat-card"><div class="num" data-count="14382500" data-prefix="$">0</div><div class="lbl">Защищено объёма</div></div>
-      <div class="fstat-card"><div class="num" data-count="3891">0</div><div class="lbl">Сделок проведено</div></div>
-      <div class="fstat-card"><div class="num" data-count="98.6" data-suffix="%">0</div><div class="lbl">Споров решено</div></div>
-      <div class="fstat-card"><div class="num" data-count="0" data-suffix="">0</div><div class="lbl">Средств потеряно</div></div>
+      <div class="fstat-card"><div class="num" data-count="14382500" data-prefix="$">0</div><div class="lbl" data-i18n="stat.volume">Защищено объёма</div></div>
+      <div class="fstat-card"><div class="num" data-count="3891">0</div><div class="lbl" data-i18n="stat.deals">Сделок проведено</div></div>
+      <div class="fstat-card"><div class="num" data-count="98.6" data-suffix="%">0</div><div class="lbl" data-i18n="stat.disputes">Споров решено</div></div>
+      <div class="fstat-card"><div class="num" data-count="0" data-suffix="">0</div><div class="lbl" data-i18n="stat.lost">Средств потеряно</div></div>
     </div>
   </div>
 
   <!-- как это работает -->
   <div class="fsteps">
-    <h2>Деньги двигаются только по правилам</h2>
+    <h2 data-i18n="steps.title">Деньги двигаются только по правилам</h2>
     <div class="grid3">
-      <div class="fcard"><div class="fico">📝</div><h3>Договоритесь об условиях</h3><p>Шаблон Copart, недвижимости или свой контракт. Обе стороны подтверждают условия — после этого их нельзя изменить.</p></div>
-      <div class="fcard"><div class="fico">🔒</div><h3>USDT уходит в сейф</h3><p>Покупатель переводит на эскроу-адрес. Леджер блокирует средства: продавец видит деньги, но забрать их досрочно не может никто.</p></div>
-      <div class="fcard"><div class="fico">⚖</div><h3>Выплата или арбитраж</h3><p>Условия выполнены — деньги мгновенно уходят продавцу. Спор — арбитр изучает доказательства в чате и делит сумму решением, вплоть до 70/30.</p></div>
+      <div class="fcard"><div class="fico">📝</div><h3 data-i18n="steps.s1t">Договоритесь об условиях</h3><p data-i18n="steps.s1p">Шаблон Copart, недвижимости или свой контракт. Обе стороны подтверждают условия — после этого их нельзя изменить.</p></div>
+      <div class="fcard"><div class="fico">🔒</div><h3 data-i18n="steps.s2t">USDT уходит в сейф</h3><p data-i18n="steps.s2p">Покупатель переводит на эскроу-адрес. Леджер блокирует средства: продавец видит деньги, но забрать их досрочно не может никто.</p></div>
+      <div class="fcard"><div class="fico">⚖</div><h3 data-i18n="steps.s3t">Выплата или арбитраж</h3><p data-i18n="steps.s3p">Условия выполнены — деньги мгновенно уходят продавцу. Спор — арбитр изучает доказательства в чате и делит сумму решением, вплоть до 70/30.</p></div>
     </div>
   </div>
 </section>
@@ -913,15 +922,15 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
       PayMeSafe
     </a>
     <div class="app-tabs">
-      <button class="on" onclick="go('dashboard')">Deals</button>
-      <button onclick="go('profile')">Profile</button>
-      <button id="adminTab" style="display:none" onclick="go('admin')">⚙ Админ</button>
+      <button class="on" onclick="go('dashboard')" data-i18n="app.deals">Deals</button>
+      <button onclick="go('profile')" data-i18n="app.profile">Profile</button>
+      <button id="adminTab" style="display:none" onclick="go('admin')" data-i18n="app.admin">⚙ Админ</button>
     </div>
   </div>
   <div class="right">
-    <button class="icon-btn">⚙</button>
+    <div class="lang-toggle" id="langToggleApp"><button data-lang="ru" onclick="setLang('ru')">RU</button><button data-lang="en" onclick="setLang('en')">EN</button></div>
     <button class="icon-btn">🔔</button>
-    <button class="wallet-pill" onclick="go('profile')">◈ Wallet</button>
+    <button class="wallet-pill" onclick="go('profile')" data-i18n="app.wallet">◈ Wallet</button>
     <div class="user-chip">
       <div class="avatar">R</div>
       <div class="meta">
@@ -936,26 +945,24 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
 <section class="view" id="dashboard">
   <div class="page">
     <div class="page-head">
-      <h2>Deals</h2>
+      <h2 data-i18n="app.deals">Deals</h2>
       <div class="head-actions">
-        <div class="select-like">Use template <span style="font-size:10px;">▾</span></div>
-        <button class="btn btn-violet" onclick="go('createModal')">◈ Create Deal</button>
+        <button class="btn btn-violet" onclick="go('createModal')" data-i18n="nav.create">◈ Create Deal</button>
       </div>
     </div>
 
     <div class="filters">
-      <button class="filter on"><span class="dot gray"></span>All</button>
-      <button class="filter"><span class="dot gray"></span>Drafts</button>
-      <button class="filter"><span class="dot violet"></span>In Progress</button>
-      <button class="filter"><span class="dot green"></span>Completed</button>
-      <button class="filter"><span class="dot blue"></span>Archived</button>
+      <button class="filter on"><span class="dot gray"></span><span data-i18n="filter.all">All</span></button>
+      <button class="filter"><span class="dot violet"></span><span data-i18n="filter.progress">In Progress</span></button>
+      <button class="filter"><span class="dot green"></span><span data-i18n="filter.completed">Completed</span></button>
+      <button class="filter"><span class="dot blue"></span><span data-i18n="filter.disputed">Disputed</span></button>
     </div>
 
     <div class="deals-table">
       <table>
         <thead>
           <tr>
-            <th>Deal</th><th>Partner</th><th>Last update</th><th>Status</th><th style="text-align:right;">Actions</th>
+            <th data-i18n="th.deal">Deal</th><th data-i18n="th.partner">Partner</th><th data-i18n="th.updated">Last update</th><th data-i18n="th.status">Status</th><th style="text-align:right;" data-i18n="th.actions">Actions</th>
           </tr>
         </thead>
         <tbody id="dealsBody">
@@ -1037,32 +1044,32 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
             </g>
           </svg>
         </div>
-        <h3>Create your first secured P2P deal</h3>
+        <h3 data-i18n="cm.title">Create your first secured P2P deal</h3>
         <div class="steps">
-          <div class="step"><span class="ic">✎</span><div><div class="tt">Fill in the form</div><div class="dd">Use a quick template or set up your custom deal conditions.</div></div></div>
-          <div class="step"><span class="ic">👤</span><div><div class="tt">Sign Up</div><div class="dd">A super-fast free registration in a couple of clicks.</div></div></div>
-          <div class="step"><span class="ic">✉</span><div><div class="tt">Invite your partner</div><div class="dd">Send a unique secure link or QR-code by email or messenger.</div></div></div>
+          <div class="step"><span class="ic">✎</span><div><div class="tt" data-i18n="cm.s1t">Fill in the form</div><div class="dd" data-i18n="cm.s1d">Use a quick template or set up your custom deal conditions.</div></div></div>
+          <div class="step"><span class="ic">👤</span><div><div class="tt" data-i18n="cm.s2t">Sign Up</div><div class="dd" data-i18n="cm.s2d">A super-fast free registration in a couple of clicks.</div></div></div>
+          <div class="step"><span class="ic">✉</span><div><div class="tt" data-i18n="cm.s3t">Invite your partner</div><div class="dd" data-i18n="cm.s3d">Send a unique secure link or QR-code by email or messenger.</div></div></div>
         </div>
       </div>
       <div class="modal-right">
         <button class="close" onclick="go('dashboard')">✕</button>
-        <h3 id="catHeading">Choose a deal category</h3>
+        <h3 id="catHeading" data-i18n="cm.choose">Choose a deal category</h3>
 
         <div class="cat-search">
           <span class="cat-search-ic">🔎</span>
-          <input type="text" id="catSearch" placeholder="Search category or type…" oninput="filterCats(this.value)" autocomplete="off">
+          <input type="text" id="catSearch" placeholder="Search category or type…" data-i18n-ph="cm.search" oninput="filterCats(this.value)" autocomplete="off">
         </div>
 
         <div id="catGrid" class="cat-grid"></div>
 
         <div id="subWrap" class="sub-wrap" style="display:none">
-          <button class="sub-back" onclick="closeSub()">← All categories</button>
+          <button class="sub-back" onclick="closeSub()" data-i18n="cm.allcats">← All categories</button>
           <div id="subHead" class="sub-head"></div>
           <div id="subGrid" class="sub-grid"></div>
         </div>
 
         <div id="catResults" class="sub-grid cat-results" style="display:none"></div>
-        <div id="catNoResults" class="cat-empty" style="display:none">Nothing found — try another word or pick a category above.</div>
+        <div id="catNoResults" class="cat-empty" style="display:none" data-i18n="cm.nothing">Nothing found — try another word or pick a category above.</div>
       </div>
     </div>
   </div>
@@ -1072,21 +1079,21 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
 <section class="view" id="profile">
   <div class="page" style="max-width: 760px;">
     <div class="page-head">
-      <h2>Профиль и кошельки</h2>
-      <button class="btn btn-violet" onclick="go('dashboard')">← К сделкам</button>
+      <h2 data-i18n="prof.title">Профиль и кошельки</h2>
+      <button class="btn btn-violet" onclick="go('dashboard')" data-i18n="prof.back">← К сделкам</button>
     </div>
     <div id="profileMsg"></div>
     <div class="prof-card">
       <div class="prof-row"><span class="k">Email</span><span class="v" id="profEmail">—</span></div>
-      <div class="prof-row"><span class="k">Роль</span><span class="v" id="profRole">—</span></div>
+      <div class="prof-row"><span class="k" data-i18n="prof.role">Роль</span><span class="v" id="profRole">—</span></div>
     </div>
-    <h3 class="prof-h3">Кошельки для выплат и возвратов</h3>
-    <p class="prof-sub">Основной кошелёк — адрес, на который приходят выплаты и возвраты по вашим сделкам. Можно добавить несколько и переключать основной.</p>
+    <h3 class="prof-h3" data-i18n="prof.wallets">Кошельки для выплат и возвратов</h3>
+    <p class="prof-sub" data-i18n="prof.walletsSub">Основной кошелёк — адрес, на который приходят выплаты и возвраты по вашим сделкам. Можно добавить несколько и переключать основной.</p>
     <div id="walletList" class="wallet-list"></div>
     <div class="wallet-add">
-      <input type="text" id="wLabel" placeholder="Название (напр. Binance)">
-      <input type="text" id="wAddr" placeholder="TRC-20 / адрес кошелька">
-      <button class="btn btn-violet" onclick="addWallet()">+ Добавить</button>
+      <input type="text" id="wLabel" placeholder="Название (напр. Binance)" data-i18n-ph="prof.wLabel">
+      <input type="text" id="wAddr" placeholder="TRC-20 / адрес кошелька" data-i18n-ph="prof.wAddr">
+      <button class="btn btn-violet" onclick="addWallet()" data-i18n="prof.add">+ Добавить</button>
     </div>
   </div>
 </section>
@@ -1095,15 +1102,15 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
 <section class="view" id="admin">
   <div class="page" style="max-width: 1000px;">
     <div class="page-head">
-      <h2>Панель администратора</h2>
-      <button class="btn btn-violet" onclick="go('dashboard')">← К сделкам</button>
+      <h2 data-i18n="adm.title">Панель администратора</h2>
+      <button class="btn btn-violet" onclick="go('dashboard')" data-i18n="prof.back">← К сделкам</button>
     </div>
     <div id="adminMsg"></div>
     <div id="adminStats" class="admin-stats"></div>
     <div class="admin-subtabs">
-      <button class="admin-subtab on" data-tab="deals" onclick="adminTabSelect('deals')">Сделки</button>
-      <button class="admin-subtab" data-tab="disputes" onclick="adminTabSelect('disputes')">Арбитраж</button>
-      <button class="admin-subtab" data-tab="users" onclick="adminTabSelect('users')">Пользователи</button>
+      <button class="admin-subtab on" data-tab="deals" onclick="adminTabSelect('deals')" data-i18n="adm.deals">Сделки</button>
+      <button class="admin-subtab" data-tab="disputes" onclick="adminTabSelect('disputes')" data-i18n="adm.arb">Арбитраж</button>
+      <button class="admin-subtab" data-tab="users" onclick="adminTabSelect('users')" data-i18n="adm.users">Пользователи</button>
     </div>
     <div id="adminPanel"></div>
   </div>
@@ -1115,61 +1122,49 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
     <div class="deal-form">
       <div class="form-head">
         <span class="hex-badge"><svg width="30" height="30" viewBox="0 0 26 26" fill="none"><path d="M13 1.5L23 7.25v11.5L13 24.5 3 18.75V7.25L13 1.5z" stroke="#7c5ce8" stroke-width="1.6"/><path d="M13 6.5l6 3.45v6.9l-6 3.45-6-3.45v-6.9L13 6.5z" stroke="#7c5ce8" stroke-width="1.6" stroke-opacity=".5"/></svg></span>
-        <h3 id="formTemplateName">New Deal</h3>
+        <h3 id="formTemplateName" data-i18n="form.new">New Deal</h3>
       </div>
-      <p class="form-sub">Средства блокируются до выполнения условий. Контрагент должен быть зарегистрирован на платформе — укажите его email ниже.</p>
+      <p class="form-sub" data-i18n="form.sub">Средства блокируются до выполнения условий. Контрагент должен быть зарегистрирован на платформе — укажите его email ниже.</p>
 
       <div class="role-toggle" id="roleToggle">
-        <button class="on" onclick="setFormRole('buyer',this)">I'm a Buyer</button>
-        <button onclick="setFormRole('seller',this)">I'm a Seller</button>
+        <button class="on" onclick="setFormRole('buyer',this)" data-i18n="form.imBuyer">I'm a Buyer</button>
+        <button onclick="setFormRole('seller',this)" data-i18n="form.imSeller">I'm a Seller</button>
       </div>
 
       <div id="formMsg" class="form-msg"></div>
 
       <div class="fld">
-        <label>Deal Title <span class="req">*</span></label>
-        <input type="text" id="fTitle" placeholder="Enter deal title">
-      </div>
-      <div class="fld">
-        <label>Buyer role</label>
-        <input type="text" placeholder="Select or enter buyer role">
-      </div>
-      <div class="fld">
-        <label>Property type <span class="req">*</span></label>
-        <input type="text" placeholder="Select or enter property type">
-      </div>
-      <div class="fld">
-        <label>Property address <span class="req">*</span></label>
-        <input type="text" placeholder="Enter property address">
+        <label><span data-i18n="form.dealTitle">Deal Title</span> <span class="req">*</span></label>
+        <input type="text" id="fTitle" placeholder="Enter deal title" data-i18n-ph="form.dealTitlePh">
       </div>
       <div class="fld-row">
         <div class="fld">
-          <label>Amount you lock <span class="req">*</span></label>
+          <label><span data-i18n="form.amount">Amount you lock</span> <span class="req">*</span></label>
           <input type="number" id="fAmount" placeholder="0.000000" step="0.01">
         </div>
         <div class="fld">
-          <label>Counterparty email <span style="color:var(--pms-text-soft);font-weight:400;">(если уже зарегистрирован — иначе пригласите ссылкой)</span></label>
+          <label><span data-i18n="form.cpEmail">Counterparty email</span> <span style="color:var(--pms-text-soft);font-weight:400;" data-i18n="form.cpEmailHint">(если уже зарегистрирован — иначе пригласите ссылкой)</span></label>
           <input type="email" id="fPartner" placeholder="partner@example.com">
         </div>
       </div>
 
       <div class="fld-row">
         <div class="fld">
-          <label>Execution time <span class="req">*</span></label>
+          <label><span data-i18n="form.execTime">Execution time</span> <span class="req">*</span></label>
           <div class="deadline-row">
             <input type="number" id="fDeadlineVal" value="30" min="1" step="1">
             <select id="fDeadlineUnit">
-              <option value="days">days</option>
-              <option value="hours">hours</option>
+              <option value="days" data-i18n="form.days">days</option>
+              <option value="hours" data-i18n="form.hours">hours</option>
             </select>
           </div>
         </div>
         <div class="fld">
-          <label>Who pays the 2% fee? <span class="req">*</span></label>
+          <label><span data-i18n="form.whoFee">Who pays the 2% fee?</span> <span class="req">*</span></label>
           <div class="role-toggle" id="feePayerToggle">
             <button type="button" class="on" onclick="setFeePayer('split',this)">50 / 50</button>
-            <button type="button" onclick="setFeePayer('buyer',this)">Buyer</button>
-            <button type="button" onclick="setFeePayer('seller',this)">Seller</button>
+            <button type="button" onclick="setFeePayer('buyer',this)" data-i18n="role.buyer">Buyer</button>
+            <button type="button" onclick="setFeePayer('seller',this)" data-i18n="role.seller">Seller</button>
           </div>
         </div>
       </div>
@@ -1180,27 +1175,14 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
       </div>
 
       <div class="fld">
-        <label>Funds release criteria <span class="req">*</span></label>
-        <input type="text" value="Only after land registration" readonly>
+        <label><span data-i18n="form.terms">Условия сделки / договор</span> <span style="color:var(--pms-text-soft);font-weight:400;" data-i18n="form.termsHint">(для проверки ИИ)</span></label>
+        <textarea id="fTerms" rows="4" placeholder="Опишите, что и когда каждая сторона обязана сделать, что считается выполнением, штрафы, сроки…" data-i18n-ph="form.termsPh" style="width:100%;padding:12px 13px;border:1px solid var(--pms-border);border-radius:11px;background:var(--pms-white);color:var(--pms-text);font-size:14px;font-family:inherit;resize:vertical;outline:none"></textarea>
       </div>
-      <div class="fld">
-        <label>Upload contract <span class="req">*</span></label>
-        <div class="upload">📎 Select image or PDF…</div>
-      </div>
-      <div class="fld">
-        <label>Upload ownership certificate</label>
-        <div class="upload">📎 Select image or PDF…</div>
-      </div>
-
-      <div class="fld">
-        <label>Условия сделки / договор <span style="color:var(--pms-text-soft);font-weight:400;">(для проверки ИИ)</span></label>
-        <textarea id="fTerms" rows="4" placeholder="Опишите, что и когда каждая сторона обязана сделать, что считается выполнением, штрафы, сроки…" style="width:100%;padding:12px 13px;border:1px solid var(--pms-border);border-radius:11px;background:var(--pms-white);color:var(--pms-text);font-size:14px;font-family:inherit;resize:vertical;outline:none"></textarea>
-      </div>
-      <button class="btn btn-lg btn-full" style="background:#eef0ff;color:#4b3ca8;margin-bottom:10px;border:1px solid #d9dcff" onclick="aiReview()">🤖 Проверить договор ИИ-ассистентом</button>
+      <button class="btn btn-lg btn-full" style="background:#eef0ff;color:#4b3ca8;margin-bottom:10px;border:1px solid #d9dcff" onclick="aiReview()" data-i18n="form.aiBtn">🤖 Проверить договор ИИ-ассистентом</button>
       <div id="aiResult"></div>
 
-      <button class="btn btn-violet btn-lg btn-full" onclick="submitDeal()">Create a Deal</button>
-      <button class="btn btn-lg btn-full" style="background:var(--pms-gray-bg);color:var(--pms-text);margin-top:10px;" onclick="createInvite()">🔗 Пригласить участника по ссылке</button>
+      <button class="btn btn-violet btn-lg btn-full" onclick="submitDeal()" data-i18n="nav.create">Create a Deal</button>
+      <button class="btn btn-lg btn-full" style="background:var(--pms-gray-bg);color:var(--pms-text);margin-top:10px;" onclick="createInvite()" data-i18n="form.inviteBtn">🔗 Пригласить участника по ссылке</button>
       <div id="inviteResult"></div>
     </div>
   </div>
@@ -1211,7 +1193,7 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
   <div class="page">
     <div class="page-head">
       <h2 id="dcTitle">Deal</h2>
-      <button class="btn btn-violet" onclick="go('dashboard');loadDeals()">← Back to Deals</button>
+      <button class="btn btn-violet" onclick="go('dashboard');loadDeals()" data-i18n="chat.back">← Back to Deals</button>
     </div>
 
     <div class="chat-layout">
@@ -1220,7 +1202,7 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
           <div class="who">
             <span class="hex-badge"><svg width="30" height="30" viewBox="0 0 26 26" fill="none"><path d="M13 1.5L23 7.25v11.5L13 24.5 3 18.75V7.25L13 1.5z" stroke="#7c5ce8" stroke-width="1.6"/><path d="M13 6.5l6 3.45v6.9l-6 3.45-6-3.45v-6.9L13 6.5z" stroke="#7c5ce8" stroke-width="1.6" stroke-opacity=".5"/></svg></span>
             <div>
-              <div class="tt">Deal chat</div>
+              <div class="tt" data-i18n="chat.title">Deal chat</div>
               <div class="sub" id="dcSub">—</div>
             </div>
           </div>
@@ -1228,19 +1210,19 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
         <div class="chat-body" id="chatBody"></div>
         <div class="chat-input">
           <button class="clip" id="evidenceBtn" onclick="submitEvidence()" title="Приложить доказательство" style="display:none;">📎</button>
-          <input type="text" id="chatText" placeholder="Написать сообщение…" onkeydown="if(event.key==='Enter')sendChat()">
-          <button class="btn btn-violet" id="sendBtn" onclick="sendChat()">Send</button>
+          <input type="text" id="chatText" placeholder="Написать сообщение…" data-i18n-ph="chat.write" onkeydown="if(event.key==='Enter')sendChat()">
+          <button class="btn btn-violet" id="sendBtn" onclick="sendChat()" data-i18n="chat.send">Send</button>
         </div>
       </div>
 
       <div>
         <div class="side-card">
-          <h4>Deal summary</h4>
+          <h4 data-i18n="chat.summary">Deal summary</h4>
           <div id="dealSummary"></div>
         </div>
 
         <div class="side-card" id="actionsCard">
-          <h4>Actions</h4>
+          <h4 data-i18n="chat.actions">Actions</h4>
           <div id="dealActions"></div>
         </div>
 
@@ -1248,7 +1230,7 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
           <div class="arb-head">
             <span class="ic">⚖</span>
             <div>
-              <div class="tt">Arbitration — ваше решение</div>
+              <div class="tt" data-i18n="chat.arbTitle">Arbitration — ваше решение</div>
               <div class="sub" id="arbSub"></div>
             </div>
           </div>
@@ -1259,15 +1241,15 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
             <div class="split-sums"><span id="splitSeller">—</span><span id="splitBuyer">—</span></div>
           </div>
           <div class="fld" style="margin-top:14px;">
-            <label>Обоснование решения *</label>
-            <textarea id="arbRationale" rows="3" placeholder="Обязательно: почему именно такое распределение"></textarea>
+            <label data-i18n="chat.rationale">Обоснование решения *</label>
+            <textarea id="arbRationale" rows="3" placeholder="Обязательно: почему именно такое распределение" data-i18n-ph="chat.rationalePh"></textarea>
           </div>
-          <button class="btn btn-violet btn-full" onclick="decideCase()">⚖ Вынести решение</button>
+          <button class="btn btn-violet btn-full" onclick="decideCase()" data-i18n="chat.decide">⚖ Вынести решение</button>
         </div>
 
         <div class="side-card">
-          <h4>Money trail</h4>
-          <div id="moneyTrail"><div class="kv"><span class="k">Пока нет движений</span></div></div>
+          <h4 data-i18n="chat.money">Money trail</h4>
+          <div id="moneyTrail"><div class="kv"><span class="k" data-i18n="chat.noMoves">Пока нет движений</span></div></div>
         </div>
       </div>
     </div>
@@ -1278,55 +1260,55 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
 <section class="view" id="faq">
   <div class="faq-page">
     <div class="faq-hero">
-      <div class="faq-eyebrow">◆ Help center</div>
-      <h1>Frequently asked questions</h1>
-      <p>Everything about how PayMeSafe secures your deals. Can't find an answer? <a href="#" onclick="go('createModal');return false;">Start a deal</a> or reach us anytime.</p>
+      <div class="faq-eyebrow" data-i18n="faq.help">◆ Help center</div>
+      <h1 data-i18n="faq.title">Frequently asked questions</h1>
+      <p><span data-i18n="faq.introA">Everything about how PayMeSafe secures your deals. Can't find an answer?</span> <a href="#" onclick="go('createModal');return false;" data-i18n="faq.introLink">Start a deal</a> <span data-i18n="faq.introB">or reach us anytime.</span></p>
     </div>
     <div class="faq-list">
       <details class="faq-item" open>
-        <summary>What is PayMeSafe?<span class="faq-x">+</span></summary>
-        <div class="faq-a">PayMeSafe is a P2P escrow platform. It holds the payment in a secure crypto vault until both sides fulfil the agreed conditions — so no one has to trust a stranger with their money. Any kind of deal, any country: funds move only by the rules you agreed on.</div>
+        <summary><span data-i18n="faq.q1">What is PayMeSafe?</span><span class="faq-x">+</span></summary>
+        <div class="faq-a" data-i18n="faq.a1">PayMeSafe is a P2P escrow platform. It holds the payment in a secure crypto vault until both sides fulfil the agreed conditions — so no one has to trust a stranger with their money. Any kind of deal, any country: funds move only by the rules you agreed on.</div>
       </details>
       <details class="faq-item">
-        <summary>How does an escrow deal work?<span class="faq-x">+</span></summary>
-        <div class="faq-a">Four simple steps: <b>1)</b> create a deal and pick a category, <b>2)</b> invite your counterparty by a secure link, <b>3)</b> the buyer funds the escrow — money is locked, visible to both, spendable by neither, <b>4)</b> once the conditions are met the funds are released to the seller. If something goes wrong, either side can open a dispute for arbitration.</div>
+        <summary><span data-i18n="faq.q2">How does an escrow deal work?</span><span class="faq-x">+</span></summary>
+        <div class="faq-a" data-i18n="faq.a2">Four simple steps: 1) create a deal and pick a category, 2) invite your counterparty by a secure link, 3) the buyer funds the escrow — money is locked, visible to both, spendable by neither, 4) once the conditions are met the funds are released to the seller. If something goes wrong, either side can open a dispute for arbitration.</div>
       </details>
       <details class="faq-item">
-        <summary>What can I trade through PayMeSafe?<span class="faq-x">+</span></summary>
-        <div class="faq-a">Practically anything: 💰 Crypto & OTC, 🚗 Vehicles, 🏠 Real estate, 💼 Business & shares, 📦 Goods, 💻 Digital assets (domains, websites, apps, channels, NFTs), 🌍 International trade, and ⭐ any custom deal. You choose the exact type when creating a deal.</div>
+        <summary><span data-i18n="faq.q3">What can I trade through PayMeSafe?</span><span class="faq-x">+</span></summary>
+        <div class="faq-a" data-i18n="faq.a3">Practically anything: 💰 Crypto & OTC, 🚗 Vehicles, 🏠 Real estate, 💼 Business & shares, 📦 Goods, 💻 Digital assets (domains, websites, apps, channels, NFTs), 🌍 International trade, and ⭐ any custom deal. You choose the exact type when creating a deal.</div>
       </details>
       <details class="faq-item">
-        <summary>What currency is held in escrow?<span class="faq-x">+</span></summary>
-        <div class="faq-a">Deals are secured in <b>USDT on the TRON network (TRC-20)</b> — fast, low fees, stable value. The escrow is on-chain, so the locked amount is verifiable at any time.</div>
+        <summary><span data-i18n="faq.q4">What currency is held in escrow?</span><span class="faq-x">+</span></summary>
+        <div class="faq-a" data-i18n="faq.a4">Deals are secured in USDT on the TRON network (TRC-20) — fast, low fees, stable value. The escrow is on-chain, so the locked amount is verifiable at any time.</div>
       </details>
       <details class="faq-item">
-        <summary>What are the fees?<span class="faq-x">+</span></summary>
-        <div class="faq-a">Two components: our <b>service fee</b>, which depends on the deal volume (shown transparently before you confirm — currently 0% on the pilot), and the <b>network fee</b> charged by the blockchain itself, which doesn't depend on us. You always see the exact numbers before locking any funds.</div>
+        <summary><span data-i18n="faq.q5">What are the fees?</span><span class="faq-x">+</span></summary>
+        <div class="faq-a" data-i18n="faq.a5">Total platform fee is 2%. You choose who covers it — the buyer, the seller, or split 50/50 (1% each). You always see the exact numbers before locking any funds. The network (TRON) fee is charged by the blockchain itself and doesn't depend on us.</div>
       </details>
       <details class="faq-item">
-        <summary>Is my money safe?<span class="faq-x">+</span></summary>
-        <div class="faq-a">Funds are locked in escrow and released strictly according to the conditions both parties agreed on — never unilaterally. Every movement is recorded on-chain. Note: the platform is currently in a <b>pilot / DEV stage</b>; before handling real client funds at scale it goes through a security audit and the required licensing.</div>
+        <summary><span data-i18n="faq.q6">Is my money safe?</span><span class="faq-x">+</span></summary>
+        <div class="faq-a" data-i18n="faq.a6">Funds are locked in escrow and released strictly according to the conditions both parties agreed on — never unilaterally. Every movement is recorded on-chain. Note: the platform is currently in a pilot / DEV stage; before handling real client funds at scale it goes through a security audit and the required licensing.</div>
       </details>
       <details class="faq-item">
-        <summary>What happens if there's a dispute?<span class="faq-x">+</span></summary>
-        <div class="faq-a">Either side can open a dispute from the deal page. A platform <b>arbiter</b> then reviews the deal chat and the evidence both parties submitted, and decides how the escrow is split (fully to the seller, refunded to the buyer, or a partial split). The decision is applied automatically to the locked funds.</div>
+        <summary><span data-i18n="faq.q7">What happens if there's a dispute?</span><span class="faq-x">+</span></summary>
+        <div class="faq-a" data-i18n="faq.a7">Either side can open a dispute from the deal page. A platform arbiter then reviews the deal chat and the evidence both parties submitted, and decides how the escrow is split (fully to the seller, refunded to the buyer, or a partial split). The decision is applied automatically to the locked funds.</div>
       </details>
       <details class="faq-item">
-        <summary>How do I invite my counterparty?<span class="faq-x">+</span></summary>
-        <div class="faq-a">When you create a deal you get a unique secure invite link (and email/QR options) to send your partner. They open it, join the deal, and both of you see the same live status and chat.</div>
+        <summary><span data-i18n="faq.q8">How do I invite my counterparty?</span><span class="faq-x">+</span></summary>
+        <div class="faq-a" data-i18n="faq.a8">When you create a deal you get a unique secure invite link to send your partner. They open it, join the deal, and both of you see the same live status and chat.</div>
       </details>
       <details class="faq-item">
-        <summary>Do I need to pass KYC?<span class="faq-x">+</span></summary>
-        <div class="faq-a">No KYC at the MVP stage — registration is a free, super-fast couple of clicks. You confirm your email to activate the account, add a payout wallet, and you're ready to deal.</div>
+        <summary><span data-i18n="faq.q9">Do I need to pass KYC?</span><span class="faq-x">+</span></summary>
+        <div class="faq-a" data-i18n="faq.a9">No KYC at the MVP stage — registration is a free, super-fast couple of clicks. You confirm your email to activate the account, add a payout wallet, and you're ready to deal.</div>
       </details>
       <details class="faq-item">
-        <summary>Can I get a refund?<span class="faq-x">+</span></summary>
-        <div class="faq-a">Yes. If the agreed conditions aren't met, or an arbiter rules in your favour, the escrowed amount is returned to the payout wallet on your account — that's exactly why we ask for your TRON address at sign-up.</div>
+        <summary><span data-i18n="faq.q10">Can I get a refund?</span><span class="faq-x">+</span></summary>
+        <div class="faq-a" data-i18n="faq.a10">Yes. If the agreed conditions aren't met, or an arbiter rules in your favour, the escrowed amount is returned to the payout wallet on your account — that's exactly why we ask for your TRON address at sign-up.</div>
       </details>
     </div>
     <div class="faq-cta">
-      <h3>Ready to make your first secured deal?</h3>
-      <button class="btn btn-violet btn-lg" onclick="go('createModal')">Create a Deal</button>
+      <h3 data-i18n="faq.ctaTitle">Ready to make your first secured deal?</h3>
+      <button class="btn btn-violet btn-lg" onclick="go('createModal')" data-i18n="nav.create">Create a Deal</button>
     </div>
   </div>
 </section>
@@ -1338,11 +1320,11 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
         <svg width="28" height="28" viewBox="0 0 26 26" fill="none"><path d="M13 1.5L23 7.25v11.5L13 24.5 3 18.75V7.25L13 1.5z" stroke="#14102b" stroke-width="1.8"/><path d="M13 6.5l6 3.45v6.9l-6 3.45-6-3.45v-6.9L13 6.5z" stroke="#7c5ce8" stroke-width="1.8"/></svg>
         PayMeSafe
       </div>
-      <p class="sub">Приглашение в защищённую сделку</p>
+      <p class="sub" data-i18n="join.sub">Приглашение в защищённую сделку</p>
       <div id="joinInfo"></div>
       <div id="joinMsg"></div>
-      <button class="btn btn-violet btn-lg btn-full" id="joinAcceptBtn" onclick="acceptInvite()" style="display:none">Принять и войти в сделку</button>
-      <button class="btn btn-lg btn-full" id="joinAuthBtn" style="background:var(--pms-gray-bg);color:var(--pms-text);margin-top:10px;display:none" onclick="go('auth')">Войти / зарегистрироваться, чтобы принять</button>
+      <button class="btn btn-violet btn-lg btn-full" id="joinAcceptBtn" onclick="acceptInvite()" style="display:none" data-i18n="join.accept">Принять и войти в сделку</button>
+      <button class="btn btn-lg btn-full" id="joinAuthBtn" style="background:var(--pms-gray-bg);color:var(--pms-text);margin-top:10px;display:none" onclick="go('auth')" data-i18n="join.auth">Войти / зарегистрироваться, чтобы принять</button>
     </div>
   </div>
 </section>
@@ -1366,7 +1348,7 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
         </svg>
         PayMeSafe
       </div>
-      <p class="sub">Secure Payments Made Easy</p>
+      <p class="sub" data-i18n="auth.tagline">Secure Payments Made Easy</p>
 
       <div id="authMsg"></div>
 
@@ -1375,18 +1357,18 @@ input[type="range"].split-range { width: 100%; margin-top: 10px; accent-color: v
         <input type="email" id="aEmail" placeholder="your@email.com">
       </div>
       <div class="fld">
-        <label>Password</label>
+        <label data-i18n="auth.password">Password</label>
         <input type="password" id="aPass" placeholder="••••••••">
       </div>
       <div class="fld">
-        <label>Wallet address <span style="color:var(--pms-text-soft);font-weight:400;">(registration only)</span></label>
+        <label><span data-i18n="auth.wallet">Wallet address</span> <span style="color:var(--pms-text-soft);font-weight:400;" data-i18n="auth.walletHint">(registration only)</span></label>
         <input type="text" id="aWallet" placeholder="0x… or TRC-20 address">
       </div>
 
-      <button class="btn btn-violet btn-lg btn-full" onclick="authAction('register')">Create account</button>
-      <button class="btn btn-lg btn-full" style="background:var(--pms-gray-bg);color:var(--pms-text);margin-top:10px;" onclick="authAction('login')">Log in</button>
+      <button class="btn btn-violet btn-lg btn-full" onclick="authAction('register')" data-i18n="auth.register">Create account</button>
+      <button class="btn btn-lg btn-full" style="background:var(--pms-gray-bg);color:var(--pms-text);margin-top:10px;" onclick="authAction('login')" data-i18n="auth.login">Log in</button>
 
-      <div class="auth-note">No KYC on MVP stage. Just a super-fast free registration in a couple of clicks.</div>
+      <div class="auth-note" data-i18n="auth.note">No KYC on MVP stage. Just a super-fast free registration in a couple of clicks.</div>
     </div>
   </div>
 </section>
@@ -1396,6 +1378,143 @@ const API = location.origin.startsWith('http') ? '' : 'http://localhost:3001';
 let token = localStorage.getItem('pms_token');
 let me = JSON.parse(localStorage.getItem('pms_me') || 'null');
 let curDeal = null, chatTimer = null, formRole = 'buyer', feePayer = 'split';
+
+// ─────────── i18n: переключатель RU / EN ───────────
+const I18N = {
+  ru: {
+    'nav.home':'Главная','nav.faq':'FAQ','nav.partners':'Партнёрам','nav.docs':'Документация','nav.blog':'Блог',
+    'nav.login':'Войти','nav.create':'Создать сделку',
+    'app.wallet':'◈ Кошелёк','app.deals':'Сделки','app.profile':'Профиль','app.admin':'⚙ Админ',
+    'hero.eyebrow':'Escrow-протокол · работает на TRON','hero.title':'Доверие как технология.',
+    'hero.sub':'PayMeSafe держит платёж в криптосейфе, пока обе стороны не выполнят условия. Любая сделка, любая страна — деньги двигаются только по правилам, о которых вы договорились.',
+    'hero.status1':'USDT заблокирован в эскроу','hero.status2':'Условия сделки выполнены','hero.status3':'Выплата продавцу отправлена',
+    'hero.dashboard':'Открыть кабинет',
+    'role.buyer':'Покупатель','role.seller':'Продавец',
+    'stat.volume':'Защищено объёма','stat.deals':'Сделок проведено','stat.disputes':'Споров решено','stat.lost':'Средств потеряно',
+    'steps.title':'Деньги двигаются только по правилам',
+    'steps.s1t':'Договоритесь об условиях','steps.s1p':'Шаблон Copart, недвижимости или свой контракт. Обе стороны подтверждают условия — после этого их нельзя изменить.',
+    'steps.s2t':'USDT уходит в сейф','steps.s2p':'Покупатель переводит на эскроу-адрес. Леджер блокирует средства: продавец видит деньги, но забрать их досрочно не может никто.',
+    'steps.s3t':'Выплата или арбитраж','steps.s3p':'Условия выполнены — деньги мгновенно уходят продавцу. Спор — арбитр изучает доказательства в чате и делит сумму решением, вплоть до 70/30.',
+    'filter.all':'Все','filter.progress':'В работе','filter.completed':'Завершённые','filter.disputed':'Споры',
+    'th.deal':'Сделка','th.partner':'Контрагент','th.updated':'Обновлено','th.status':'Статус','th.actions':'Действия',
+    'cm.title':'Создайте первую защищённую P2P-сделку',
+    'cm.s1t':'Заполните форму','cm.s1d':'Быстрый шаблон или свои условия сделки.',
+    'cm.s2t':'Регистрация','cm.s2d':'Быстрая бесплатная регистрация в пару кликов.',
+    'cm.s3t':'Пригласите партнёра','cm.s3d':'Отправьте защищённую ссылку по email или в мессенджере.',
+    'cm.choose':'Выберите категорию сделки','cm.search':'Поиск категории или типа…','cm.allcats':'← Все категории',
+    'cm.nothing':'Ничего не найдено — попробуйте другое слово или выберите категорию выше.',
+    'prof.title':'Профиль и кошельки','prof.back':'← К сделкам','prof.role':'Роль',
+    'prof.wallets':'Кошельки для выплат и возвратов',
+    'prof.walletsSub':'Основной кошелёк — адрес, на который приходят выплаты и возвраты по вашим сделкам. Можно добавить несколько и переключать основной.',
+    'prof.wLabel':'Название (напр. Binance)','prof.wAddr':'TRC-20 / адрес кошелька','prof.add':'+ Добавить',
+    'adm.title':'Панель администратора','adm.deals':'Сделки','adm.arb':'Арбитраж','adm.users':'Пользователи',
+    'form.new':'Новая сделка',
+    'form.sub':'Средства блокируются до выполнения условий. Контрагент должен быть зарегистрирован на платформе — укажите его email ниже, либо пригласите ссылкой.',
+    'form.imBuyer':'Я покупатель','form.imSeller':'Я продавец',
+    'form.dealTitle':'Название сделки','form.dealTitlePh':'Введите название сделки',
+    'form.amount':'Сумма к блокировке','form.cpEmail':'Email контрагента','form.cpEmailHint':'(если уже зарегистрирован — иначе пригласите ссылкой)',
+    'form.execTime':'Срок исполнения','form.days':'дней','form.hours':'часов','form.whoFee':'Кто платит комиссию 2%?',
+    'form.terms':'Условия сделки / договор','form.termsHint':'(для проверки ИИ)',
+    'form.termsPh':'Опишите, что и когда каждая сторона обязана сделать, что считается выполнением, штрафы, сроки…',
+    'form.aiBtn':'🤖 Проверить договор ИИ-ассистентом','form.inviteBtn':'🔗 Пригласить участника по ссылке',
+    'chat.back':'← К сделкам','chat.title':'Чат сделки','chat.write':'Написать сообщение…','chat.send':'Отправить',
+    'chat.summary':'О сделке','chat.actions':'Действия','chat.arbTitle':'Арбитраж — ваше решение',
+    'chat.rationale':'Обоснование решения *','chat.rationalePh':'Обязательно: почему именно такое распределение',
+    'chat.decide':'⚖ Вынести решение','chat.money':'Движение средств','chat.noMoves':'Пока нет движений',
+    'faq.help':'◆ Центр помощи','faq.title':'Частые вопросы',
+    'faq.introA':'Всё о том, как PayMeSafe защищает ваши сделки. Не нашли ответ?','faq.introLink':'Начните сделку','faq.introB':'или свяжитесь с нами.',
+    'faq.q1':'Что такое PayMeSafe?','faq.a1':'PayMeSafe — это P2P эскроу-платформа. Она держит платёж в защищённом криптосейфе, пока обе стороны не выполнят условия — так никому не приходится доверять деньги незнакомцу. Любая сделка, любая страна: средства двигаются только по вашим правилам.',
+    'faq.q2':'Как работает эскроу-сделка?','faq.a2':'Четыре простых шага: 1) создайте сделку и выберите категорию, 2) пригласите контрагента защищённой ссылкой, 3) покупатель пополняет эскроу — деньги заблокированы, видны обоим, но недоступны никому, 4) после выполнения условий средства уходят продавцу. Если что-то пошло не так — любая сторона может открыть спор для арбитража.',
+    'faq.q3':'Что можно продавать через PayMeSafe?','faq.a3':'Практически всё: 💰 Крипта и OTC, 🚗 Транспорт, 🏠 Недвижимость, 💼 Бизнес и доли, 📦 Товары, 💻 Цифровые активы (домены, сайты, приложения, каналы, NFT), 🌍 Международная торговля и ⭐ любая своя сделка. Точный тип выбираете при создании сделки.',
+    'faq.q4':'В какой валюте хранится эскроу?','faq.a4':'Сделки защищены в USDT в сети TRON (TRC-20) — быстро, дёшево, стабильная стоимость. Эскроу он-чейн, поэтому заблокированную сумму можно проверить в любой момент.',
+    'faq.q5':'Какие комиссии?','faq.a5':'Общая комиссия платформы — 2%. Вы выбираете, кто её платит: покупатель, продавец или пополам (по 1%). Точные цифры вы видите до блокировки средств. Сетевая комиссия (TRON) берётся самим блокчейном и от нас не зависит.',
+    'faq.q6':'Мои деньги в безопасности?','faq.a6':'Средства заблокированы в эскроу и выплачиваются строго по условиям, о которых договорились обе стороны — никогда в одностороннем порядке. Каждое движение записано он-чейн. Важно: платформа сейчас на стадии пилота / DEV; перед работой с реальными средствами клиентов в масштабе проходит security-аудит и необходимое лицензирование.',
+    'faq.q7':'Что если возник спор?','faq.a7':'Любая сторона может открыть спор со страницы сделки. Арбитр платформы изучает чат сделки и предоставленные доказательства и решает, как разделить эскроу (полностью продавцу, возврат покупателю или частичное деление). Решение автоматически применяется к заблокированным средствам.',
+    'faq.q8':'Как пригласить контрагента?','faq.a8':'При создании сделки вы получаете уникальную защищённую ссылку-приглашение для партнёра. Он открывает её, вступает в сделку — и вы оба видите один и тот же статус и чат.',
+    'faq.q9':'Нужно ли проходить KYC?','faq.a9':'На стадии MVP — без KYC. Регистрация бесплатная и занимает пару кликов. Вы подтверждаете email для активации, добавляете кошелёк для выплат — и готовы к сделкам.',
+    'faq.q10':'Можно ли получить возврат?','faq.a10':'Да. Если условия не выполнены или арбитр решил в вашу пользу, сумма эскроу возвращается на кошелёк для выплат в вашем аккаунте — именно поэтому мы просим TRON-адрес при регистрации.',
+    'faq.ctaTitle':'Готовы к первой защищённой сделке?',
+    'join.sub':'Приглашение в защищённую сделку','join.accept':'Принять и войти в сделку','join.auth':'Войти / зарегистрироваться, чтобы принять',
+    'auth.tagline':'Безопасные платежи — это просто','auth.password':'Пароль','auth.wallet':'Адрес кошелька','auth.walletHint':'(только при регистрации)',
+    'auth.register':'Создать аккаунт','auth.login':'Войти','auth.note':'Без KYC на стадии MVP. Быстрая бесплатная регистрация в пару кликов.',
+  },
+  en: {
+    'nav.home':'Home','nav.faq':'FAQ','nav.partners':'Partners','nav.docs':'Docs','nav.blog':'Blog',
+    'nav.login':'Log in','nav.create':'Create a Deal',
+    'app.wallet':'◈ Wallet','app.deals':'Deals','app.profile':'Profile','app.admin':'⚙ Admin',
+    'hero.eyebrow':'Escrow protocol · live on TRON','hero.title':'Trust, engineered.',
+    'hero.sub':'PayMeSafe holds the payment in a crypto vault until both sides fulfil the conditions. Any deal, any country — money moves only by the rules you agreed on.',
+    'hero.status1':'USDT locked in escrow','hero.status2':'Deal conditions met','hero.status3':'Payout sent to seller',
+    'hero.dashboard':'Open Dashboard',
+    'role.buyer':'Buyer','role.seller':'Seller',
+    'stat.volume':'Volume protected','stat.deals':'Deals completed','stat.disputes':'Disputes resolved','stat.lost':'Funds lost',
+    'steps.title':'Money moves only by the rules',
+    'steps.s1t':'Agree on the terms','steps.s1p':'A Copart or real-estate template, or your own contract. Both sides confirm the terms — after that they can’t be changed.',
+    'steps.s2t':'USDT goes into the vault','steps.s2p':'The buyer sends funds to the escrow address. The ledger locks them: the seller sees the money, but no one can withdraw it early.',
+    'steps.s3t':'Release or arbitration','steps.s3p':'Conditions met — money goes to the seller instantly. In a dispute, an arbiter reviews the chat evidence and splits the amount, up to 70/30.',
+    'filter.all':'All','filter.progress':'In Progress','filter.completed':'Completed','filter.disputed':'Disputed',
+    'th.deal':'Deal','th.partner':'Partner','th.updated':'Last update','th.status':'Status','th.actions':'Actions',
+    'cm.title':'Create your first secured P2P deal',
+    'cm.s1t':'Fill in the form','cm.s1d':'Use a quick template or set up your custom deal conditions.',
+    'cm.s2t':'Sign Up','cm.s2d':'A super-fast free registration in a couple of clicks.',
+    'cm.s3t':'Invite your partner','cm.s3d':'Send a unique secure link or QR-code by email or messenger.',
+    'cm.choose':'Choose a deal category','cm.search':'Search category or type…','cm.allcats':'← All categories',
+    'cm.nothing':'Nothing found — try another word or pick a category above.',
+    'prof.title':'Profile & wallets','prof.back':'← Back to deals','prof.role':'Role',
+    'prof.wallets':'Wallets for payouts and refunds',
+    'prof.walletsSub':'Your primary wallet is where payouts and refunds for your deals arrive. You can add several and switch the primary one.',
+    'prof.wLabel':'Label (e.g. Binance)','prof.wAddr':'TRC-20 / wallet address','prof.add':'+ Add',
+    'adm.title':'Admin panel','adm.deals':'Deals','adm.arb':'Arbitration','adm.users':'Users',
+    'form.new':'New Deal',
+    'form.sub':'Funds are locked until the conditions are met. The counterparty must be registered on the platform — enter their email below, or invite them by link.',
+    'form.imBuyer':'I’m a Buyer','form.imSeller':'I’m a Seller',
+    'form.dealTitle':'Deal Title','form.dealTitlePh':'Enter deal title',
+    'form.amount':'Amount you lock','form.cpEmail':'Counterparty email','form.cpEmailHint':'(if already registered — otherwise invite by link)',
+    'form.execTime':'Execution time','form.days':'days','form.hours':'hours','form.whoFee':'Who pays the 2% fee?',
+    'form.terms':'Deal terms / contract','form.termsHint':'(for AI review)',
+    'form.termsPh':'Describe what each side must do and by when, what counts as completion, penalties, deadlines…',
+    'form.aiBtn':'🤖 Check the contract with the AI assistant','form.inviteBtn':'🔗 Invite a participant by link',
+    'chat.back':'← Back to Deals','chat.title':'Deal chat','chat.write':'Write a message…','chat.send':'Send',
+    'chat.summary':'Deal summary','chat.actions':'Actions','chat.arbTitle':'Arbitration — your decision',
+    'chat.rationale':'Decision rationale *','chat.rationalePh':'Required: why exactly this split',
+    'chat.decide':'⚖ Make the decision','chat.money':'Money trail','chat.noMoves':'No movements yet',
+    'faq.help':'◆ Help center','faq.title':'Frequently asked questions',
+    'faq.introA':'Everything about how PayMeSafe secures your deals. Can’t find an answer?','faq.introLink':'Start a deal','faq.introB':'or reach us anytime.',
+    'faq.q1':'What is PayMeSafe?','faq.a1':'PayMeSafe is a P2P escrow platform. It holds the payment in a secure crypto vault until both sides fulfil the agreed conditions — so no one has to trust a stranger with their money. Any kind of deal, any country: funds move only by the rules you agreed on.',
+    'faq.q2':'How does an escrow deal work?','faq.a2':'Four simple steps: 1) create a deal and pick a category, 2) invite your counterparty by a secure link, 3) the buyer funds the escrow — money is locked, visible to both, spendable by neither, 4) once the conditions are met the funds are released to the seller. If something goes wrong, either side can open a dispute for arbitration.',
+    'faq.q3':'What can I trade through PayMeSafe?','faq.a3':'Practically anything: 💰 Crypto & OTC, 🚗 Vehicles, 🏠 Real estate, 💼 Business & shares, 📦 Goods, 💻 Digital assets (domains, websites, apps, channels, NFTs), 🌍 International trade, and ⭐ any custom deal. You choose the exact type when creating a deal.',
+    'faq.q4':'What currency is held in escrow?','faq.a4':'Deals are secured in USDT on the TRON network (TRC-20) — fast, low fees, stable value. The escrow is on-chain, so the locked amount is verifiable at any time.',
+    'faq.q5':'What are the fees?','faq.a5':'The total platform fee is 2%. You choose who covers it — the buyer, the seller, or split 50/50 (1% each). You always see the exact numbers before locking any funds. The network (TRON) fee is charged by the blockchain itself and doesn’t depend on us.',
+    'faq.q6':'Is my money safe?','faq.a6':'Funds are locked in escrow and released strictly according to the conditions both parties agreed on — never unilaterally. Every movement is recorded on-chain. Note: the platform is currently in a pilot / DEV stage; before handling real client funds at scale it goes through a security audit and the required licensing.',
+    'faq.q7':'What happens if there’s a dispute?','faq.a7':'Either side can open a dispute from the deal page. A platform arbiter then reviews the deal chat and the evidence both parties submitted, and decides how the escrow is split (fully to the seller, refunded to the buyer, or a partial split). The decision is applied automatically to the locked funds.',
+    'faq.q8':'How do I invite my counterparty?','faq.a8':'When you create a deal you get a unique secure invite link to send your partner. They open it, join the deal, and both of you see the same live status and chat.',
+    'faq.q9':'Do I need to pass KYC?','faq.a9':'No KYC at the MVP stage — registration is a free, super-fast couple of clicks. You confirm your email to activate the account, add a payout wallet, and you’re ready to deal.',
+    'faq.q10':'Can I get a refund?','faq.a10':'Yes. If the agreed conditions aren’t met, or an arbiter rules in your favour, the escrowed amount is returned to the payout wallet on your account — that’s exactly why we ask for your TRON address at sign-up.',
+    'faq.ctaTitle':'Ready to make your first secured deal?',
+    'join.sub':'Invitation to a secured deal','join.accept':'Accept and enter the deal','join.auth':'Log in / sign up to accept',
+    'auth.tagline':'Secure Payments Made Easy','auth.password':'Password','auth.wallet':'Wallet address','auth.walletHint':'(registration only)',
+    'auth.register':'Create account','auth.login':'Log in','auth.note':'No KYC on MVP stage. Just a super-fast free registration in a couple of clicks.',
+  },
+};
+let lang = (function(){ try { return localStorage.getItem('pms_lang') || 'ru'; } catch (e) { return 'ru'; } })();
+function applyI18n(l) {
+  const dict = I18N[l] || I18N.ru;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = dict[el.getAttribute('data-i18n')];
+    if (v != null) el.textContent = v;
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const v = dict[el.getAttribute('data-i18n-ph')];
+    if (v != null) el.setAttribute('placeholder', v);
+  });
+  document.documentElement.lang = l;
+  document.querySelectorAll('.lang-toggle button').forEach(b => b.classList.toggle('on', b.dataset.lang === l));
+}
+function setLang(l) {
+  lang = l;
+  try { localStorage.setItem('pms_lang', l); } catch (e) {}
+  applyI18n(l);
+}
 
 // ─────────── API helper ───────────
 async function api(path, method = 'GET', body = null) {
@@ -2131,6 +2250,7 @@ async function adminDecide(id) {
 }
 
 // ─────────── Boot ───────────
+applyI18n(lang);
 renderCats();
 if (token && me) setUserChip();
 (function bootRoute() {
