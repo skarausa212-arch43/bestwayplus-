@@ -197,7 +197,9 @@ async function applyProxy() {
   const ses = browserSession();
   const p = activeProxy();
   if (!p) {
-    await ses.setProxy({ mode: 'direct' });
+    // Режим "system" — уважать системные настройки прокси/VPN, а не рвать их.
+    // (mode:'direct' обходил бы системный VPN, и браузер светил бы реальный IP.)
+    await ses.setProxy({ mode: 'system' });
   } else {
     const scheme = p.scheme === 'socks5' ? 'socks5'
                  : p.scheme === 'socks4' ? 'socks4' : 'http';
@@ -342,6 +344,9 @@ app.on('web-contents-created', (_event, contents) => {
 
   guests.add(contents);
   contents.on('destroyed', () => guests.delete(contents));
+
+  // Не давать WebRTC светить реальный IP в обход VPN/прокси.
+  try { contents.setWebRTCIPHandlingPolicy('default_public_interface_only'); } catch {}
 
   // Сразу маскируем вкладку под обычный Chrome (до первой загрузки страницы)
   // и применяем подмену местоположения/времени, если она задана.
