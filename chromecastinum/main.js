@@ -93,6 +93,61 @@ function browserSession() {
   return session.fromPartition(PARTITION);
 }
 
+// ---- Прокси-профили ----------------------------------------------------
+// Список профилей и активный профиль. Хранятся в постоянном конфиге
+// (не в одноразовом профиле браузера) — это настройка, а не данные слежки,
+// поэтому переживает перезапуск. Активным может быть один профиль:
+// Chromium задаёт прокси на всю сессию.
+let proxyState = { profiles: [], activeId: null };
+let PROXY_STORE = null; // путь вычисляется после app.whenReady
+
+function loadProxies() {
+  try {
+    const data = JSON.parse(fs.readFileSync(PROXY_STORE, 'utf8'));
+    if (data && Array.isArray(data.profiles)) {
+      proxyState = { profiles: data.profiles, activeId: data.activeId || null };
+    }
+  } catch {}
+}
+
+function saveProxies() {
+  try {
+    fs.mkdirSync(path.dirname(PROXY_STORE), { recursive: true });
+    fs.writeFileSync(PROXY_STORE, JSON.stringify(proxyState, null, 2));
+  } catch {}
+}
+
+function activeProxy() {
+  return proxyState.profiles.find(p => p.id === proxyState.activeId) || null;
+}
+
+// Что отдавать в интерфейс — без паролей.
+function publicProxyState() {
+  return {
+    activeId: proxyState.activeId,
+    profiles: proxyState.profiles.map(p => ({
+      id: p.id, name: p.name, scheme: p.scheme,
+      host: p.host, port: p.port,
+      hasAuth: !!p.username
+    }))
+  };
+}
+
+async function applyProxy() {
+  const ses = browserSession();
+  const p = activeProxy();
+  if (!p) {
+    await ses.setProxy({ mode: 'direct' });
+  } else {
+    const scheme = p.scheme === 'socks5' ? 'socks5'
+                 : p.scheme === 'socks4' ? 'socks4' : 'http';
+    await ses.setProxy({ proxyRules: `${scheme}://${p.host}:${p.port}` });
+  }
+  // Сбросить закешированные соединения/авторизацию через старый прокси.
+  try { await ses.closeAllConnections(); } catch {}
+  try { await ses.clearAuthCache(); } catch {}
+}
+
 // Применить текущую подмену к одной вкладке через протокол Chrome DevTools.
 async function applyOverrides(contents) {
   if (!contents || contents.isDestroyed()) return;
@@ -200,6 +255,11 @@ app.whenReady().then(() => {
   // Уведомления, камера и т.п. запрещены; геолокация — только если задана подмена.
   ses.setPermissionRequestHandler(permissionHandler);
 
+  // Загрузить сохранённые прокси-профили и применить активный.
+  PROXY_STORE = path.join(app.getPath('appData'), 'Chromecastinum', 'proxies.json');
+  loadProxies();
+  applyProxy();
+
   createWindow();
 
   app.on('activate', () => {
@@ -260,6 +320,50 @@ ipcMain.handle('apply-zip', (_e, rawZip) => {
   };
 });
 
+// ---- Прокси: обработчики из интерфейса ----
+ipcMain.handle('proxy-list', () => publicProxyState());
+
+ipcMain.handle('proxy-add', async (_e, prof) => {
+  const name = String(prof.name || '').trim();
+  const host = String(prof.host || '').trim();
+  const port = parseInt(prof.port, 10);
+  const scheme = ['http', 'socks5', 'socks4'].includes(prof.scheme) ? prof.scheme : 'http';
+  if (!host) return { ok: false, error: 'Укажите адрес (хост) прокси' };
+  if (!(port >= 1 && port <= 65535)) return { ok: false, error: 'Порт должен быть от 1 до 65535' };
+
+  const profile = {
+    id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    name: name || `${host}:${port}`,
+    scheme, host, port,
+    username: String(prof.username || '').trim(),
+    password: String(prof.password || '')
+  };
+  proxyState.profiles.push(profile);
+  saveProxies();
+  return { ok: true, state: publicProxyState() };
+});
+
+ipcMain.handle('proxy-delete', async (_e, id) => {
+  proxyState.profiles = proxyState.profiles.filter(p => p.id !== id);
+  if (proxyState.activeId === id) {
+    proxyState.activeId = null;
+    await applyProxy();
+  }
+  saveProxies();
+  return { ok: true, state: publicProxyState() };
+});
+
+// Выбрать активный профиль (id = null → без прокси).
+ipcMain.handle('proxy-select', async (_e, id) => {
+  proxyState.activeId = id || null;
+  if (id && !proxyState.profiles.some(p => p.id === id)) {
+    proxyState.activeId = null;
+  }
+  await applyProxy();
+  saveProxies();
+  return { ok: true, state: publicProxyState() };
+});
+
 // Сброс подмены — вернуть реальные данные системы.
 ipcMain.handle('clear-overrides', () => {
   overrides.latitude = null;
@@ -276,6 +380,17 @@ ipcMain.handle('wipe-session', async () => {
   await ses.clearCache();
   await ses.clearAuthCache();
   return true;
+});
+
+// Автоматическая авторизация на прокси (логин/пароль из активного профиля).
+// Для обычных сайтов НЕ отвечаем — там сработает штатное окно ввода.
+app.on('login', (event, _webContents, _details, authInfo, callback) => {
+  if (!authInfo.isProxy) return;
+  const p = activeProxy();
+  if (p && p.username) {
+    event.preventDefault();
+    callback(p.username, p.password || '');
+  }
 });
 
 app.on('window-all-closed', () => app.quit());

@@ -200,6 +200,63 @@
     border: none; background: transparent; color: var(--muted);
     font-size: 20px; cursor: pointer; line-height: 1;
   }
+
+  /* ---- Панель прокси (те же базовые стили, что у настроек) ---- */
+  #proxy {
+    position: absolute; top: 0; right: 0;
+    width: 360px; max-width: 92vw; height: 100%;
+    background: var(--bar);
+    border-left: 1px solid rgba(255,255,255,.08);
+    box-shadow: -8px 0 24px rgba(0,0,0,.35);
+    padding: 18px; z-index: 21; overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform .22s ease;
+  }
+  #proxy.open { transform: translateX(0); }
+  #proxy h2 { font-size: 15px; margin-bottom: 4px; }
+  #proxy .hint { color: var(--muted); font-size: 11px; margin-bottom: 14px; line-height: 1.5; }
+  #proxy label { display: block; color: var(--muted); font-size: 11px; margin: 10px 0 5px; }
+  #proxy input, #proxy select {
+    width: 100%; height: 34px;
+    border: 1px solid rgba(255,255,255,.12); border-radius: 8px;
+    background: var(--bg); color: var(--text); padding: 0 10px; font-size: 13px; outline: none;
+  }
+  #proxy input:focus, #proxy select:focus { border-color: var(--accent); }
+  #proxy .row { display: flex; gap: 10px; }
+  #proxy .close-x {
+    position: absolute; top: 14px; right: 14px;
+    border: none; background: transparent; color: var(--muted);
+    font-size: 20px; cursor: pointer; line-height: 1;
+  }
+  /* Список профилей */
+  #proxyList { margin-bottom: 6px; }
+  .pxrow {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 11px; margin-bottom: 7px;
+    background: var(--bg); border: 1px solid rgba(255,255,255,.08);
+    border-radius: 9px; cursor: pointer;
+  }
+  .pxrow.active { border-color: var(--accent); }
+  .pxrow .dot {
+    width: 15px; height: 15px; border-radius: 50%; flex-shrink: 0;
+    border: 2px solid var(--muted); box-sizing: border-box;
+  }
+  .pxrow.active .dot { border-color: var(--accent); background: var(--accent); box-shadow: inset 0 0 0 3px var(--bg); }
+  .pxrow .info { flex: 1; overflow: hidden; }
+  .pxrow .nm { color: var(--text); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pxrow .sub { color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pxrow .del {
+    border: none; background: transparent; color: var(--muted);
+    font-size: 16px; cursor: pointer; border-radius: 6px; padding: 2px 7px; flex-shrink: 0;
+  }
+  .pxrow .del:hover { background: rgba(255,90,80,.18); color: #ff7a6b; }
+  #proxy .divider { height: 1px; background: rgba(255,255,255,.08); margin: 16px 0 4px; }
+  #proxy .addtitle { font-size: 13px; color: var(--text); margin-bottom: 2px; }
+  #proxyAdd {
+    width: 100%; height: 38px; margin-top: 14px; border: none; border-radius: 9px;
+    background: var(--accent); color: #fff; font-size: 13px; cursor: pointer;
+  }
+  #proxyErr { color: #e2795b; font-size: 12px; margin-top: 8px; min-height: 14px; }
 </style>
 </head>
 <body>
@@ -214,6 +271,7 @@
     <input id="address" type="text" spellcheck="false"
            placeholder="Введите адрес или поисковый запрос…">
     <span id="badge">&#128274; куки не сохраняются</span>
+    <button id="proxyBtn" title="Прокси-профили">&#128268;</button>
     <button id="settingsBtn" title="Местоположение по ZIP-коду США">&#127482;&#127480;</button>
     <button id="wipe" title="Стереть куки и данные всех сайтов прямо сейчас">&#129529;</button>
   </div>
@@ -235,6 +293,53 @@
       <button id="reset">Сбросить</button>
       <button id="apply">Применить</button>
     </div>
+  </div>
+
+  <div id="proxy">
+    <button class="close-x" id="proxyClose" title="Закрыть">&times;</button>
+    <h2>Прокси-профили &#128268;</h2>
+    <div class="hint">Добавьте сколько угодно прокси и переключайтесь между ними одним кликом. Активный прокси используется всеми вкладками. Профили сохраняются между запусками.</div>
+
+    <div id="proxyList"></div>
+
+    <div class="divider"></div>
+    <div class="addtitle">Новый профиль</div>
+
+    <label for="pxName">Название (необязательно)</label>
+    <input id="pxName" type="text" placeholder="напр. США — Нью-Йорк" autocomplete="off">
+
+    <div class="row">
+      <div style="flex:0 0 120px">
+        <label for="pxScheme">Тип</label>
+        <select id="pxScheme">
+          <option value="http">HTTP</option>
+          <option value="socks5">SOCKS5</option>
+          <option value="socks4">SOCKS4</option>
+        </select>
+      </div>
+      <div style="flex:1">
+        <label for="pxHost">Хост / IP</label>
+        <input id="pxHost" type="text" placeholder="напр. 203.0.113.7" autocomplete="off">
+      </div>
+      <div style="flex:0 0 88px">
+        <label for="pxPort">Порт</label>
+        <input id="pxPort" type="text" inputmode="numeric" placeholder="8080" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="row">
+      <div style="flex:1">
+        <label for="pxUser">Логин (если нужен)</label>
+        <input id="pxUser" type="text" autocomplete="off">
+      </div>
+      <div style="flex:1">
+        <label for="pxPass">Пароль</label>
+        <input id="pxPass" type="password" autocomplete="off">
+      </div>
+    </div>
+
+    <div id="proxyErr"></div>
+    <button id="proxyAdd">Добавить профиль</button>
   </div>
 
   <div id="toast"></div>
@@ -261,6 +366,19 @@
   const applyBtn = document.getElementById('apply');
   const resetBtn = document.getElementById('reset');
   const ovStatus = document.getElementById('ovStatus');
+
+  const proxyBtn = document.getElementById('proxyBtn');
+  const proxyPanel = document.getElementById('proxy');
+  const proxyClose = document.getElementById('proxyClose');
+  const proxyListEl = document.getElementById('proxyList');
+  const proxyAddBtn = document.getElementById('proxyAdd');
+  const proxyErr = document.getElementById('proxyErr');
+  const pxName = document.getElementById('pxName');
+  const pxScheme = document.getElementById('pxScheme');
+  const pxHost = document.getElementById('pxHost');
+  const pxPort = document.getElementById('pxPort');
+  const pxUser = document.getElementById('pxUser');
+  const pxPass = document.getElementById('pxPass');
 
   let tabs = [];      // { id, tabEl, titleEl, view }
   let activeId = null;
@@ -452,6 +570,93 @@
     ovStatus.textContent = 'Подмена выключена — используются реальные данные.';
     showToast('Подмена сброшена — используются реальные данные');
   });
+
+  // ---- Прокси-профили ----
+  const SCHEME_LABEL = { http: 'HTTP', socks5: 'SOCKS5', socks4: 'SOCKS4' };
+
+  function renderProxies(state) {
+    proxyListEl.innerHTML = '';
+
+    // Строка «Без прокси»
+    proxyListEl.appendChild(makeProxyRow({
+      id: null,
+      name: 'Без прокси (прямое соединение)',
+      sub: 'Реальный IP вашего провайдера'
+    }, state.activeId == null));
+
+    for (const p of state.profiles) {
+      proxyListEl.appendChild(makeProxyRow({
+        id: p.id,
+        name: p.name,
+        sub: `${SCHEME_LABEL[p.scheme] || p.scheme} · ${p.host}:${p.port}` + (p.hasAuth ? ' · с логином' : ''),
+        deletable: true
+      }, state.activeId === p.id));
+    }
+  }
+
+  function makeProxyRow(item, active) {
+    const row = document.createElement('div');
+    row.className = 'pxrow' + (active ? ' active' : '');
+
+    const dot = document.createElement('div');
+    dot.className = 'dot';
+
+    const info = document.createElement('div');
+    info.className = 'info';
+    const nm = document.createElement('div');
+    nm.className = 'nm'; nm.textContent = item.name;
+    const sub = document.createElement('div');
+    sub.className = 'sub'; sub.textContent = item.sub;
+    info.append(nm, sub);
+
+    row.append(dot, info);
+
+    if (item.deletable) {
+      const del = document.createElement('button');
+      del.className = 'del'; del.textContent = '×'; del.title = 'Удалить профиль';
+      del.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const res = await window.chromecastinum.proxyDelete(item.id);
+        renderProxies(res.state);
+        for (const t of tabs) t.view.reload();
+      });
+      row.appendChild(del);
+    }
+
+    row.addEventListener('click', async () => {
+      const res = await window.chromecastinum.proxySelect(item.id);
+      renderProxies(res.state);
+      for (const t of tabs) t.view.reload();
+      showToast(item.id ? `Прокси включён: ${item.name}` : 'Прокси выключен');
+    });
+    return row;
+  }
+
+  async function refreshProxies() {
+    renderProxies(await window.chromecastinum.proxyList());
+  }
+
+  proxyAddBtn.addEventListener('click', async () => {
+    proxyErr.textContent = '';
+    const res = await window.chromecastinum.proxyAdd({
+      name: pxName.value,
+      scheme: pxScheme.value,
+      host: pxHost.value,
+      port: pxPort.value,
+      username: pxUser.value,
+      password: pxPass.value
+    });
+    if (!res.ok) { proxyErr.textContent = res.error; return; }
+    pxName.value = pxHost.value = pxPort.value = pxUser.value = pxPass.value = '';
+    renderProxies(res.state);
+    showToast('Профиль добавлен');
+  });
+
+  function openProxy() { proxyPanel.classList.add('open'); refreshProxies(); }
+  function closeProxy() { proxyPanel.classList.remove('open'); }
+  proxyBtn.addEventListener('click', () =>
+    proxyPanel.classList.contains('open') ? closeProxy() : openProxy());
+  proxyClose.addEventListener('click', closeProxy);
 
   // Ссылки target="_blank" из main-процесса
   window.chromecastinum.onOpenInNewTab((url) => createTab(url));
