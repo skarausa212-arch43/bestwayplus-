@@ -1,22 +1,42 @@
 import React from 'react';
-import { View, Text } from 'react-native';
-import { Button, Card, H1, Sub } from '@/components/UI';
-import { t } from '@/i18n';
-import { colors, spacing } from '@/theme';
+import { View, Text, ScrollView } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Button, Card, Sub } from '@/components/UI';
+import { FadeSlideIn } from '@/components/Anim';
+import { useT } from '@/i18n';
+import { APP_CONFIG } from '@/config/app';
+import { colors, gradients, spacing, radius } from '@/theme';
 
-export const RoleSelectScreen: React.FC<{ navigation: any }> = ({ navigation }) => (
-  <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: 'center', padding: spacing.xl }}>
-    <Text style={{ fontSize: 44, textAlign: 'center', marginBottom: spacing.l }}>🚚</Text>
-    <H1 style={{ textAlign: 'center', marginBottom: spacing.xxl }}>{t('role.title')}</H1>
-    <Card style={{ marginBottom: spacing.m }}>
-      <Text style={{ fontSize: 28, marginBottom: 8 }}>📦</Text>
-      <Sub style={{ marginBottom: spacing.m }}>Przewieziesz meble, AGD, palety lub auto — szybko i bezpiecznie.</Sub>
-      <Button title={t('role.customer')} onPress={() => navigation.navigate('CustomerAuth')} />
-    </Card>
-    <Card>
-      <Text style={{ fontSize: 28, marginBottom: 8 }}>🧑‍✈️</Text>
-      <Sub style={{ marginBottom: spacing.m }}>Masz busa lub lawetę? Zarabiaj na zleceniach w Twojej okolicy.</Sub>
-      <Button title={t('role.driver')} variant="secondary" onPress={() => navigation.navigate('DriverAuth')} />
-    </Card>
-  </View>
-);
+export const RoleSelectScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+  const t = useT();
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      {/* Градиентная шапка-«герой» */}
+      <LinearGradient colors={gradients.splash} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        style={{ paddingTop: 90, paddingBottom: 56, paddingHorizontal: spacing.xl, borderBottomLeftRadius: radius.xl + 8, borderBottomRightRadius: radius.xl + 8 }}>
+        <FadeSlideIn>
+          <Text style={{ fontSize: 46 }}>🚚</Text>
+          <Text style={{ fontSize: 32, fontWeight: '900', color: '#FFF', letterSpacing: -1, marginTop: 8 }}>{APP_CONFIG.name}</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.9)', marginTop: 6, fontSize: 15 }}>{t('role.title')}</Text>
+        </FadeSlideIn>
+      </LinearGradient>
+
+      <ScrollView contentContainerStyle={{ padding: spacing.xl, paddingTop: spacing.xl }}>
+        <FadeSlideIn delay={120}>
+          <Card style={{ marginBottom: spacing.m }}>
+            <Text style={{ fontSize: 30, marginBottom: 8 }}>📦</Text>
+            <Sub style={{ marginBottom: spacing.m }}>Przewieziesz meble, AGD, palety lub auto — szybko i bezpiecznie.</Sub>
+            <Button title={t('role.customer')} onPress={() => navigation.navigate('CustomerAuth')} />
+          </Card>
+        </FadeSlideIn>
+        <FadeSlideIn delay={240}>
+          <Card>
+            <Text style={{ fontSize: 30, marginBottom: 8 }}>🧑‍✈️</Text>
+            <Sub style={{ marginBottom: spacing.m }}>Masz busa lub lawetę? Zarabiaj na zleceniach w Twojej okolicy.</Sub>
+            <Button title={t('role.driver')} variant="secondary" onPress={() => navigation.navigate('DriverAuth')} />
+          </Card>
+        </FadeSlideIn>
+      </ScrollView>
+    </View>
+  );
+};

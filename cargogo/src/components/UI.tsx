@@ -1,6 +1,7 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, TextInput, ViewStyle, TextStyle, ActivityIndicator } from 'react-native';
-import { colors, radius, spacing, shadows, typography } from '@/theme';
+import React, { useRef } from 'react';
+import { View, Text, TouchableOpacity, TextInput, ViewStyle, TextStyle, ActivityIndicator, Animated } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { colors, gradients, radius, spacing, shadows, typography } from '@/theme';
 
 export const Card: React.FC<{ children: React.ReactNode; style?: ViewStyle }> = ({ children, style }) => (
   <View style={[{ backgroundColor: colors.card, borderRadius: radius.xl, padding: spacing.l, ...shadows.card }, style]}>
@@ -8,23 +9,40 @@ export const Card: React.FC<{ children: React.ReactNode; style?: ViewStyle }> = 
   </View>
 );
 
+// Кнопка с пружинным нажатием; primary/danger — на градиенте
 export const Button: React.FC<{
   title: string; onPress: () => void; disabled?: boolean; loading?: boolean;
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost'; style?: ViewStyle;
 }> = ({ title, onPress, disabled, loading, variant = 'primary', style }) => {
-  const bg = disabled ? colors.line
-    : variant === 'primary' ? colors.brand
-    : variant === 'danger' ? colors.danger
-    : variant === 'secondary' ? colors.brandSoft : 'transparent';
+  const scale = useRef(new Animated.Value(1)).current;
+  const springTo = (v: number) =>
+    Animated.spring(scale, { toValue: v, useNativeDriver: true, speed: 40, bounciness: 5 }).start();
+
+  const gradient = !disabled && (variant === 'primary' ? gradients.brand : variant === 'danger' ? gradients.danger : null);
+  const bg = disabled ? colors.line : variant === 'secondary' ? colors.brandSoft : 'transparent';
   const fg = disabled ? colors.faint
     : variant === 'primary' || variant === 'danger' ? '#FFF'
-    : variant === 'secondary' ? colors.brand : colors.sub;
+    : variant === 'secondary' ? colors.brandDark : colors.sub;
+
+  const inner = loading
+    ? <ActivityIndicator color={fg} />
+    : <Text style={{ color: fg, fontWeight: '800', fontSize: 16 }}>{title}</Text>;
+  const box: ViewStyle = { paddingVertical: 15, borderRadius: radius.l, alignItems: 'center' };
+
   return (
-    <TouchableOpacity disabled={disabled || loading} onPress={onPress} activeOpacity={0.8}
-      style={[{ backgroundColor: bg, paddingVertical: 15, borderRadius: radius.l, alignItems: 'center' }, style]}>
-      {loading ? <ActivityIndicator color={fg} /> :
-        <Text style={{ color: fg, fontWeight: '700', fontSize: 16 }}>{title}</Text>}
-    </TouchableOpacity>
+    <Animated.View style={[{ transform: [{ scale }] }, style]}>
+      <TouchableOpacity
+        disabled={disabled || loading} activeOpacity={0.9} onPress={onPress}
+        onPressIn={() => springTo(0.96)} onPressOut={() => springTo(1)}>
+        {gradient ? (
+          <LinearGradient colors={gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={box}>
+            {inner}
+          </LinearGradient>
+        ) : (
+          <View style={[box, { backgroundColor: bg }]}>{inner}</View>
+        )}
+      </TouchableOpacity>
+    </Animated.View>
   );
 };
 
@@ -37,9 +55,9 @@ export const Input: React.FC<{
     <TextInput
       placeholderTextColor={colors.faint}
       style={{
-        backgroundColor: '#F8F9FB', borderRadius: radius.m, paddingHorizontal: 14, paddingVertical: 12,
+        backgroundColor: '#F6F8FB', borderRadius: radius.m, paddingHorizontal: 14, paddingVertical: 12,
         fontSize: 15, color: colors.ink,
-        borderWidth: 1, borderColor: error ? colors.danger : 'transparent',
+        borderWidth: 1.5, borderColor: error ? colors.danger : 'transparent',
       }}
       {...props}
     />
@@ -49,13 +67,13 @@ export const Input: React.FC<{
 
 export const StatusPill: React.FC<{ label: string; tone?: 'brand' | 'warn' | 'danger' | 'info' }> = ({ label, tone = 'brand' }) => {
   const map = {
-    brand: [colors.brandSoft, colors.brand], warn: [colors.warnSoft, colors.warn],
+    brand: [colors.brandSoft, colors.brandDark], warn: [colors.warnSoft, colors.warn],
     danger: [colors.dangerSoft, colors.danger], info: [colors.infoSoft, colors.info],
   } as const;
   const [bg, fg] = map[tone];
   return (
     <View style={{ backgroundColor: bg, borderRadius: radius.full, paddingHorizontal: 12, paddingVertical: 5, alignSelf: 'flex-start' }}>
-      <Text style={{ color: fg, fontWeight: '700', fontSize: 12 }}>{label}</Text>
+      <Text style={{ color: fg, fontWeight: '800', fontSize: 12 }}>{label}</Text>
     </View>
   );
 };

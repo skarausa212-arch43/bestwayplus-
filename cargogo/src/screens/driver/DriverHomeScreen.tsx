@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Switch } from 'react-native';
-import { MockMap } from '@/components/MockMap';
+import { AppMap, orderPoints } from '@/components/Map';
+import { FadeSlideIn } from '@/components/Anim';
 import { Card, Button, H2, Sub, Row } from '@/components/UI';
 import { NotificationBell } from '@/components/NotificationBell';
 import { useDriverStore } from '@/store/driver';
@@ -47,7 +48,7 @@ export const DriverHomeScreen: React.FC<{ navigation: any }> = ({ navigation }) 
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <MockMap height={999} style={{ borderRadius: 0, flex: 1 }} />
+      <AppMap height={999} style={{ borderRadius: 0, flex: 1 }} showRoute={!!order} points={orderPoints(order)} searching={isOnline && !order} />
       <View style={{ position: 'absolute', top: 54, left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Card style={{ paddingVertical: 8, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center' }}>
           <Text style={{ fontWeight: '800', color: colors.ink, marginRight: 12 }}>{balance} zł</Text>
@@ -59,6 +60,7 @@ export const DriverHomeScreen: React.FC<{ navigation: any }> = ({ navigation }) 
       {/* Входящий заказ с таймером (раздел 32 ТЗ) */}
       {order && (
         <View style={{ position: 'absolute', left: 16, right: 16, top: 120 }}>
+          <FadeSlideIn>
           <Card style={{ borderWidth: 2, borderColor: colors.brand }}>
             <Row style={{ justifyContent: 'space-between', marginBottom: spacing.s }}>
               <H2 style={{ fontSize: 17 }}>{t('driver.newOrder')}</H2>
@@ -82,6 +84,7 @@ export const DriverHomeScreen: React.FC<{ navigation: any }> = ({ navigation }) 
               <Button title={t('driver.accept')} onPress={accept} style={{ flex: 2 }} />
             </Row>
           </Card>
+          </FadeSlideIn>
         </View>
       )}
 

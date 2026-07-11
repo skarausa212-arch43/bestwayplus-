@@ -1,6 +1,7 @@
 import React from 'react';
 import { ScrollView, View, Text, TouchableOpacity, Alert } from 'react-native';
-import { MockMap } from '@/components/MockMap';
+import { AppMap, orderPoints } from '@/components/Map';
+import { ProgressBar } from '@/components/Anim';
 import { WaitBanner } from '@/components/WaitBanner';
 import { Card, Button, Sub, Row, StatusPill } from '@/components/UI';
 import { useOrderStore } from '@/store/orders';
@@ -23,12 +24,13 @@ export const ActiveOrderScreen: React.FC<{ navigation: any }> = ({ navigation })
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: spacing.l, paddingTop: 60 }}>
-      <MockMap height={230} showRoute driverProgress={progress} style={{ marginBottom: spacing.m }} />
+      <AppMap height={230} showRoute driverProgress={progress} points={orderPoints(order)} style={{ marginBottom: spacing.m }} />
       <Card style={{ marginBottom: spacing.m }}>
         <Row style={{ justifyContent: 'space-between', marginBottom: spacing.s }}>
           <StatusPill label={t(`status.${order.status}`)} tone={done ? 'brand' : 'info'} />
           <Text style={{ fontWeight: '900', fontSize: 20, color: colors.ink }}>{order.price.total} zł</Text>
         </Row>
+        <ProgressBar progress={done ? 1 : progress} style={{ marginBottom: spacing.s }} />
         <Sub>📍 {order.pickup.full}</Sub>
         {order.stops.map((s, i) => (
           <Sub key={i} style={{ marginTop: 2 }}>🔸 {s.full}</Sub>

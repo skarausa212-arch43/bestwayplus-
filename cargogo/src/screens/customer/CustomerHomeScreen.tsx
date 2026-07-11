@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { MockMap } from '@/components/MockMap';
+import { AppMap, orderPoints } from '@/components/Map';
+import { FadeSlideIn } from '@/components/Anim';
 import { Card, Button, H2, Sub, Row } from '@/components/UI';
 import { NotificationBell } from '@/components/NotificationBell';
 import { useOrderStore } from '@/store/orders';
@@ -13,21 +14,21 @@ export const CustomerHomeScreen: React.FC<{ navigation: any }> = ({ navigation }
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <MockMap height={999} style={{ borderRadius: 0, flex: 1 }} showRoute={!!active} />
+      <AppMap height={999} style={{ borderRadius: 0, flex: 1 }} showRoute={!!active} points={orderPoints(active)} />
       <View style={{ position: 'absolute', top: 54, right: 16 }}><NotificationBell navigation={navigation} /></View>
 
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: spacing.l }}>
         {active ? (
-          <Card>
+          <FadeSlideIn><Card>
             <Row style={{ justifyContent: 'space-between', marginBottom: spacing.s }}>
               <H2>{t('home.activeOrder')}</H2>
               <Text style={{ color: colors.brand, fontWeight: '800' }}>{active.price.total} zł</Text>
             </Row>
             <Sub style={{ marginBottom: spacing.m }}>{t(`status.${active.status}`)}</Sub>
             <Button title={t('home.details')} onPress={() => navigation.navigate('ActiveOrder')} />
-          </Card>
+          </Card></FadeSlideIn>
         ) : (
-          <Card>
+          <FadeSlideIn><Card>
             <H2 style={{ marginBottom: spacing.m }}>{t('home.whatToMove')}</H2>
             <TouchableOpacity onPress={() => navigation.navigate('OrderWizard')}
               style={{ backgroundColor: '#F8F9FB', borderRadius: radius.m, padding: 14, marginBottom: spacing.s }}>
@@ -38,7 +39,7 @@ export const CustomerHomeScreen: React.FC<{ navigation: any }> = ({ navigation }
               <Text style={{ color: colors.faint }}>🏁 {t('home.to')}</Text>
             </TouchableOpacity>
             <Button title={t('home.order')} onPress={() => navigation.navigate('OrderWizard')} />
-          </Card>
+          </Card></FadeSlideIn>
         )}
       </View>
     </View>
