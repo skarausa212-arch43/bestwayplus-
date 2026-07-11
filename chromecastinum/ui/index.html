@@ -256,6 +256,12 @@
     width: 100%; height: 38px; margin-top: 14px; border: none; border-radius: 9px;
     background: var(--accent); color: #fff; font-size: 13px; cursor: pointer;
   }
+  #proxyCheck {
+    width: 100%; height: 34px; margin: 4px 0 2px; border-radius: 8px;
+    background: transparent; color: var(--muted);
+    border: 1px solid rgba(255,255,255,.14); font-size: 12px; cursor: pointer;
+  }
+  #proxyCheck:hover { color: var(--text); border-color: var(--accent); }
   #proxyErr { color: #e2795b; font-size: 12px; margin-top: 8px; min-height: 14px; }
 </style>
 </head>
@@ -301,6 +307,8 @@
     <div class="hint">Добавьте сколько угодно прокси и переключайтесь между ними одним кликом. Активный прокси используется всеми вкладками. Профили сохраняются между запусками.</div>
 
     <div id="proxyList"></div>
+
+    <button id="proxyCheck">Проверить мой IP и страну</button>
 
     <div class="divider"></div>
     <div class="addtitle">Новый профиль</div>
@@ -657,6 +665,11 @@
   proxyBtn.addEventListener('click', () =>
     proxyPanel.classList.contains('open') ? closeProxy() : openProxy());
   proxyClose.addEventListener('click', closeProxy);
+
+  document.getElementById('proxyCheck').addEventListener('click', () => {
+    closeProxy();
+    createTab('https://ipinfo.io/what-is-my-ip');
+  });
 
   // Ссылки target="_blank" из main-процесса
   window.chromecastinum.onOpenInNewTab((url) => createTab(url));
