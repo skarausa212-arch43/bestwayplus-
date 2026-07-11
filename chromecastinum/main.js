@@ -74,9 +74,69 @@ const UA_METADATA = {
 const SEC_CH_UA =
   `"Chromium";v="${CHROME_MAJOR}", "Google Chrome";v="${CHROME_MAJOR}", "Not.A/Brand";v="24"`;
 
-// Скрипт, выполняемый до кода страницы: прячет navigator.webdriver.
-const STEALTH_JS =
-  "try{Object.defineProperty(navigator,'webdriver',{get:()=>undefined});}catch(e){}";
+// Скрипт, выполняемый ДО кода страницы: убирает признаки Electron/автоматизации
+// и дорисовывает отпечаток до обычного Chrome (плагины, WebGL, chrome.runtime и т.п.).
+const STEALTH_JS = `
+(() => {
+  const def = (o, p, v) => { try { Object.defineProperty(o, p, { get: () => v }); } catch (e) {} };
+
+  // Признак автоматизации.
+  def(navigator, 'webdriver', undefined);
+
+  // Языки — как у пользователя из США (согласуется с US-геолокацией).
+  def(navigator, 'languages', ['en-US', 'en']);
+
+  // Объект window.chrome, как у настоящего Chrome.
+  try {
+    window.chrome = window.chrome || {};
+    if (!window.chrome.runtime) window.chrome.runtime = {};
+  } catch (e) {}
+
+  // Набор PDF-плагинов, как в Chrome (у «пустого» Electron их нет).
+  try {
+    const data = [
+      ['PDF Viewer', 'internal-pdf-viewer'],
+      ['Chrome PDF Viewer', 'internal-pdf-viewer'],
+      ['Chromium PDF Viewer', 'internal-pdf-viewer'],
+      ['Microsoft Edge PDF Viewer', 'internal-pdf-viewer'],
+      ['WebKit built-in PDF', 'internal-pdf-viewer']
+    ];
+    const arr = data.map(([name, filename]) => ({
+      name, filename, description: 'Portable Document Format', length: 1
+    }));
+    def(navigator, 'plugins', arr);
+    def(navigator, 'mimeTypes', [
+      { type: 'application/pdf', suffixes: 'pdf', description: 'Portable Document Format' }
+    ]);
+  } catch (e) {}
+
+  // Согласованный ответ на запрос разрешения уведомлений.
+  try {
+    const q = navigator.permissions && navigator.permissions.query;
+    if (q) {
+      navigator.permissions.query = (p) =>
+        (p && p.name === 'notifications')
+          ? Promise.resolve({ state: (typeof Notification !== 'undefined' ? Notification.permission : 'prompt') })
+          : q.call(navigator.permissions, p);
+    }
+  } catch (e) {}
+
+  // WebGL: типичный производитель/видеокарта вместо «пустого» значения.
+  try {
+    const patch = (proto) => {
+      if (!proto) return;
+      const orig = proto.getParameter;
+      proto.getParameter = function (p) {
+        if (p === 37445) return 'Google Inc. (Intel)';
+        if (p === 37446) return 'ANGLE (Intel, Intel(R) UHD Graphics Direct3D11 vs_5_0 ps_5_0, D3D11)';
+        return orig.call(this, p);
+      };
+    };
+    patch(window.WebGLRenderingContext && WebGLRenderingContext.prototype);
+    patch(window.WebGL2RenderingContext && WebGL2RenderingContext.prototype);
+  } catch (e) {}
+})();
+`;
 
 app.userAgentFallback = USER_AGENT;
 
@@ -249,6 +309,8 @@ app.whenReady().then(() => {
     h['User-Agent'] = USER_AGENT;
     if ('sec-ch-ua' in h) h['sec-ch-ua'] = SEC_CH_UA;
     if ('Sec-CH-UA' in h) h['Sec-CH-UA'] = SEC_CH_UA;
+    // Язык — как у пользователя из США (согласуется с navigator.languages).
+    h['Accept-Language'] = 'en-US,en;q=0.9';
     callback({ requestHeaders: h });
   });
 
