@@ -1,40 +1,17 @@
 // Chromecastinum — главный процесс Electron.
 //
-// Гарантии приватности:
-//  1. Все вкладки живут в partition "throwaway" БЕЗ префикса "persist:" —
-//     в Electron это означает чисто in-memory сессию: куки, localStorage,
-//     IndexedDB и кэш существуют только в оперативной памяти.
-//  2. HTTP-кэш на диск отключён флагом Chromium.
-//  3. Служебный профиль Electron (userData) уносится во временную папку,
-//     которая удаляется при выходе; устаревшие папки от прошлых запусков
-//     подчищаются при старте (на случай аварийного завершения).
-//  4. При выходе дополнительно вызывается clearStorageData() по всей сессии.
+// Обычный браузер: куки, вход в аккаунты, история и кэш СОХРАНЯЮТСЯ между
+// запусками (partition с префиксом "persist:"). Стереть всё можно одной
+// кнопкой 🧹 — она чистит куки, хранилища и кэш всех сайтов.
 
 const { app, BrowserWindow, session, ipcMain } = require('electron');
 const path = require('path');
-const os = require('os');
 const fs = require('fs');
 const zipcodes = require('zipcodes'); // офлайн-база ZIP → город/координаты США
 const tzlookup = require('tz-lookup'); // офлайн: координаты → IANA часовой пояс
 
-const PROFILE_PREFIX = 'chromecastinum-';
-const PARTITION = 'throwaway'; // без "persist:" => только в памяти
+const PARTITION = 'persist:main'; // "persist:" => данные сохраняются на диск
 
-// Подчистить временные профили, оставшиеся после аварийных завершений.
-try {
-  for (const name of fs.readdirSync(os.tmpdir())) {
-    if (name.startsWith(PROFILE_PREFIX)) {
-      fs.rmSync(path.join(os.tmpdir(), name), { recursive: true, force: true });
-    }
-  }
-} catch {}
-
-// Служебные файлы Electron — во временную одноразовую папку, не в AppData.
-const tmpProfile = fs.mkdtempSync(path.join(os.tmpdir(), PROFILE_PREFIX));
-app.setPath('userData', tmpProfile);
-
-// Никакого дискового HTTP-кэша.
-app.commandLine.appendSwitch('disable-http-cache');
 // Не выдавать себя за автоматизацию (убирает признаки WebDriver у Blink).
 app.commandLine.appendSwitch('disable-blink-features', 'AutomationControlled');
 
@@ -461,15 +438,4 @@ app.on('login', (event, _webContents, _details, authInfo, callback) => {
 });
 
 app.on('window-all-closed', () => app.quit());
-
-app.on('will-quit', async (event) => {
-  event.preventDefault();
-  try { await browserSession().clearStorageData(); } catch {}
-  app.exit(0);
-});
-
-app.on('quit', () => {
-  // На Windows часть файлов может быть ещё заблокирована — тогда их
-  // удалит зачистка при следующем запуске (см. блок в начале файла).
-  try { fs.rmSync(tmpProfile, { recursive: true, force: true }); } catch {}
-});
+// Данные сохраняются между запусками — при выходе ничего не стираем.

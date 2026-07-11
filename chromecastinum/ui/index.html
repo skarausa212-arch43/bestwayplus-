@@ -276,7 +276,7 @@
     <button id="reload" title="Обновить (F5)">&#8635;</button>
     <input id="address" type="text" spellcheck="false"
            placeholder="Введите адрес или поисковый запрос…">
-    <span id="badge">&#128274; куки не сохраняются</span>
+    <span id="badge">&#128274; приватный браузер</span>
     <button id="proxyBtn" title="Прокси-профили">&#128268;</button>
     <button id="settingsBtn" title="Местоположение по ZIP-коду США">&#127482;&#127480;</button>
     <button id="wipe" title="Стереть куки и данные всех сайтов прямо сейчас">&#129529;</button>
@@ -354,8 +354,8 @@
 
 <script>
 (() => {
-  const HOME = 'https://duckduckgo.com/';
-  const PARTITION = 'throwaway'; // in-memory сессия (см. main.js)
+  const HOME = 'https://2ip.ru/';
+  const PARTITION = 'persist:main'; // данные сохраняются (см. main.js)
 
   const tabbar  = document.getElementById('tabbar');
   const views   = document.getElementById('views');
@@ -423,8 +423,8 @@
     }
     const t = activeTab();
     if (t) {
-      address.value = t.view.getURL ? (t.view.getURL() || '') : '';
-      if (address.value === HOME) address.value = '';
+      const u0 = t.view.getURL ? (t.view.getURL() || '') : '';
+      address.value = (u0 === 'about:blank') ? '' : u0;
     }
     updateNavButtons();
   }
@@ -480,7 +480,7 @@
     const syncUrl = () => {
       if (id !== activeId) return;
       const u = view.getURL();
-      address.value = (u === HOME) ? '' : u;
+      address.value = (u === 'about:blank') ? '' : u;
       updateNavButtons();
     };
     view.addEventListener('did-navigate', syncUrl);
@@ -506,11 +506,10 @@
   newtabBtn.addEventListener('click', () => { createTab(); address.focus(); });
 
   wipeBtn.addEventListener('click', async () => {
+    if (!confirm('Стереть все куки, данные сайтов и входы в аккаунты?\nПосле этого везде придётся войти заново.')) return;
     await window.chromecastinum.wipeSession();
     for (const t of tabs) t.view.reload();
-    toast.textContent = 'Куки и данные всех сайтов стёрты';
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 2500);
+    showToast('Все куки и данные сайтов стёрты');
   });
 
   // ---- Настройки: местоположение США по ZIP-коду ----
