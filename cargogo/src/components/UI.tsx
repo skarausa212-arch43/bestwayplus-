@@ -19,10 +19,10 @@ export const Button: React.FC<{
     Animated.spring(scale, { toValue: v, useNativeDriver: true, speed: 40, bounciness: 5 }).start();
 
   const gradient = !disabled && (variant === 'primary' ? gradients.brand : variant === 'danger' ? gradients.danger : null);
-  const bg = disabled ? colors.line : variant === 'secondary' ? colors.brandSoft : 'transparent';
+  const bg = disabled ? colors.line : variant === 'secondary' ? colors.surface : 'transparent';
   const fg = disabled ? colors.faint
     : variant === 'primary' || variant === 'danger' ? '#FFF'
-    : variant === 'secondary' ? colors.brandDark : colors.sub;
+    : variant === 'secondary' ? colors.ink : colors.sub;
 
   const inner = loading
     ? <ActivityIndicator color={fg} />

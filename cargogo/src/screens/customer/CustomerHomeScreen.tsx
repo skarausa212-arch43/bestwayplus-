@@ -1,21 +1,36 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { AppMap, orderPoints } from '@/components/Map';
 import { FadeSlideIn } from '@/components/Anim';
 import { Card, Button, H2, Sub, Row } from '@/components/UI';
 import { NotificationBell } from '@/components/NotificationBell';
 import { useOrderStore } from '@/store/orders';
+import { usePricingStore } from '@/features/pricing/pricingService';
+import { getScenario } from '@/features/pricing/pricingMocks';
 import { useT } from '@/i18n';
 import { colors, spacing, radius } from '@/theme';
 
 export const CustomerHomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const t = useT();
   const active = useOrderStore((s) => s.orders.find((o) => o.id === s.activeOrderId));
+  // Машинки онлайн вокруг клиента — из текущего сценария доступности
+  const demandScenarioId = usePricingStore((s) => s.demandScenarioId);
+  const onlineDrivers = getScenario(demandScenarioId).drivers;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <AppMap height={999} style={{ borderRadius: 0, flex: 1 }} showRoute={!!active} points={orderPoints(active)} />
+      <AppMap height={999} style={{ borderRadius: 0, flex: 1 }} showRoute={!!active} points={orderPoints(active)}
+        onlineDrivers={active ? undefined : onlineDrivers} />
       <View style={{ position: 'absolute', top: 54, right: 16 }}><NotificationBell navigation={navigation} /></View>
+      {!active && onlineDrivers.length > 0 && (
+        <View style={{ position: 'absolute', top: 58, left: 16 }}>
+          <Card style={{ paddingVertical: 8, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.brand, marginRight: 7 }} />
+            <Text style={{ fontWeight: '700', color: colors.ink, fontSize: 12 }}>{t('map.online', [onlineDrivers.length])}</Text>
+          </Card>
+        </View>
+      )}
 
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: spacing.l }}>
         {active ? (

@@ -10,7 +10,7 @@ export const EarningsScreen: React.FC = () => {
   const t = useT();
   const { balance, earnings } = useDriverStore();
   const today = earnings.filter((e) => new Date(e.at).toDateString() === new Date().toDateString());
-  const sumToday = today.reduce((s, e) => s + e.net, 0);
+  const sumToday = Math.round(today.reduce((s, e) => s + e.payout + e.tip, 0) * 100) / 100;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, padding: spacing.l, paddingTop: 60 }}>
@@ -29,9 +29,9 @@ export const EarningsScreen: React.FC = () => {
             <Row style={{ justifyContent: 'space-between' }}>
               <View>
                 <Text style={{ fontWeight: '700', color: colors.ink }}>{t('earn.order')} {item.orderId.slice(-6)}</Text>
-                <Sub>{item.gross} zł − {t('earn.commission')} {item.commission} zł{item.tip ? ` + ${t('earn.tip')} ${item.tip} zł` : ''}</Sub>
+                <Sub>{t('driver.payout')}: {item.payout.toFixed(2)} zł{item.tip ? ` + ${t('earn.tip')} ${item.tip} zł` : ''}</Sub>
               </View>
-              <Text style={{ fontWeight: '900', color: colors.brand, fontSize: 17 }}>+{item.net} zł</Text>
+              <Text style={{ fontWeight: '900', color: colors.brand, fontSize: 17 }}>+{(item.payout + item.tip).toFixed(2)} zł</Text>
             </Row>
           </Card>
         )} />

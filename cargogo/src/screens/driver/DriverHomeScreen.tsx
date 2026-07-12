@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Switch } from 'react-native';
+import { View, Text, Switch, TouchableOpacity } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { AppMap, orderPoints } from '@/components/Map';
 import { FadeSlideIn, Breathe } from '@/components/Anim';
 import { Card, Button, H2, Sub, Row } from '@/components/UI';
@@ -7,27 +8,31 @@ import { NotificationBell } from '@/components/NotificationBell';
 import { useDriverStore } from '@/store/driver';
 import { useOrderStore } from '@/store/orders';
 import { APP_CONFIG } from '@/config/app';
-import { TARIFF } from '@/constants';
+import { getDriverPricingView } from '@/features/pricing/pricingSelectors';
+import { formatGr, haversineKm } from '@/features/pricing/pricingHelpers';
 import { useT } from '@/i18n';
 import { colors, spacing, radius } from '@/theme';
 
 export const DriverHomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const t = useT();
-  const { isOnline, setOnline, balance, rating } = useDriverStore();
+  const { isOnline, setOnline, balance, rating, searchRadiusKm, setSearchRadius, position } = useDriverStore();
   const orders = useOrderStore((s) => s.orders);
   const assignDriver = useOrderStore((s) => s.assignDriver);
   const [offer, setOffer] = useState<string | null>(null);
   const [timer, setTimer] = useState(APP_CONFIG.offerTimeoutSec);
 
-  // Когда водитель Online — показываем входящий заказ со статусом searching
+  // Когда водитель Online — заказ показывается, только если он в радиусе приёма
   const searchingOrder = orders.find((o) => o.status === 'searching');
+  const orderInRadius = searchingOrder
+    ? haversineKm(position.lat, position.lng, searchingOrder.pickup.lat, searchingOrder.pickup.lng) <= searchRadiusKm
+    : false;
 
   useEffect(() => {
-    if (isOnline && searchingOrder && offer !== searchingOrder.id) {
+    if (isOnline && searchingOrder && orderInRadius && offer !== searchingOrder.id) {
       setOffer(searchingOrder.id);
       setTimer(APP_CONFIG.offerTimeoutSec);
     }
-  }, [isOnline, searchingOrder?.id]);
+  }, [isOnline, searchingOrder?.id, orderInRadius]);
 
   useEffect(() => {
     if (!offer) return;
@@ -37,7 +42,8 @@ export const DriverHomeScreen: React.FC<{ navigation: any }> = ({ navigation }) 
   }, [offer, timer]);
 
   const order = orders.find((o) => o.id === offer);
-  const driverNet = order ? Math.round(order.price.total * (1 - TARIFF.commissionPct)) : 0;
+  // §8: водитель видит СВОЮ выплату (нетто), а не цену клиента и не % комиссии
+  const payoutView = order?.pricing ? getDriverPricingView(order.pricing) : null;
 
   const accept = () => {
     if (!order) return;
@@ -48,7 +54,10 @@ export const DriverHomeScreen: React.FC<{ navigation: any }> = ({ navigation }) 
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <AppMap height={999} style={{ borderRadius: 0, flex: 1 }} showRoute={!!order} points={orderPoints(order)} searching={isOnline && !order} />
+      <AppMap height={999} style={{ borderRadius: 0, flex: 1 }} showRoute={!!order} points={orderPoints(order)}
+        searching={isOnline && !order}
+        radiusKm={isOnline && !order ? searchRadiusKm : undefined}
+        center={{ latitude: position.lat, longitude: position.lng }} />
       <View style={{ position: 'absolute', top: 54, left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Card style={{ paddingVertical: 8, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center' }}>
           <Text style={{ fontWeight: '800', color: colors.ink, marginRight: 12 }}>{balance} zł</Text>
@@ -78,8 +87,8 @@ export const DriverHomeScreen: React.FC<{ navigation: any }> = ({ navigation }) 
             <Sub style={{ marginTop: 4 }}>📦 {order.cargo.name} · {order.cargo.weightKg} kg · {order.distanceKm.toFixed(0)} km</Sub>
             {order.cargo.loadersCount > 0 && <Sub>💪 {order.cargo.loadersCount} · {order.cargo.floorFrom}→{order.cargo.floorTo}</Sub>}
             <Row style={{ justifyContent: 'space-between', marginVertical: spacing.m }}>
-              <Sub style={{ flex: 1 }}>{t('driver.yourNet', [TARIFF.commissionPct * 100])}</Sub>
-              <Text style={{ fontWeight: '900', fontSize: 22, color: colors.brand }}>{driverNet} zł</Text>
+              <Sub style={{ flex: 1 }}>{t('driver.payout')}</Sub>
+              <Text style={{ fontWeight: '900', fontSize: 22, color: colors.brand }}>{formatGr(payoutView?.totalGr ?? 0, 2)}</Text>
             </Row>
             <Row>
               <Button title={t('driver.reject')} variant="ghost" onPress={() => setOffer(null)} style={{ flex: 1, marginRight: 8 }} />
@@ -102,6 +111,25 @@ export const DriverHomeScreen: React.FC<{ navigation: any }> = ({ navigation }) 
             </View>
             <Switch value={isOnline} onValueChange={setOnline} trackColor={{ true: colors.brand }} />
           </Row>
+
+          {/* Радиус приёма заказов: заказы вне круга водителю не приходят */}
+          <View style={{ marginTop: spacing.m, borderTopWidth: 1, borderColor: colors.line, paddingTop: spacing.m }}>
+            <Row style={{ justifyContent: 'space-between', marginBottom: spacing.s }}>
+              <Row>
+                <Feather name="target" size={15} color={colors.brandDark} />
+                <Sub style={{ marginLeft: 6, fontWeight: '700', color: colors.ink }}>{t('driver.radius')}</Sub>
+              </Row>
+              <Text style={{ fontWeight: '900', color: colors.brandDark, fontSize: 16 }}>{searchRadiusKm} km</Text>
+            </Row>
+            <Row>
+              <RadiusBtn icon="minus" onPress={() => setSearchRadius(searchRadiusKm - 5)} />
+              <View style={{ flex: 1, height: 6, backgroundColor: colors.line, borderRadius: 3, marginHorizontal: 10 }}>
+                <View style={{ height: 6, width: `${((searchRadiusKm - 5) / 95) * 100}%`, backgroundColor: colors.brand, borderRadius: 3 }} />
+              </View>
+              <RadiusBtn icon="plus" onPress={() => setSearchRadius(searchRadiusKm + 5)} />
+            </Row>
+          </View>
+
           {isOnline && !order && (
             <Sub style={{ marginTop: spacing.s }}>{t('driver.demoHint')}</Sub>
           )}
@@ -110,3 +138,10 @@ export const DriverHomeScreen: React.FC<{ navigation: any }> = ({ navigation }) 
     </View>
   );
 };
+
+const RadiusBtn: React.FC<{ icon: 'plus' | 'minus'; onPress: () => void }> = ({ icon, onPress }) => (
+  <TouchableOpacity onPress={onPress}
+    style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.brandSoft, alignItems: 'center', justifyContent: 'center' }}>
+    <Feather name={icon} size={18} color={colors.brandDark} />
+  </TouchableOpacity>
+);

@@ -3,6 +3,8 @@ import { ScrollView, View, Text } from 'react-native';
 import { Card, H2, Sub, Row, StatusPill, Button } from '@/components/UI';
 import { useOrderStore } from '@/store/orders';
 import { useDriverStore } from '@/store/driver';
+import { getCustomerPricingView } from '@/features/pricing/pricingSelectors';
+import { formatGr } from '@/features/pricing/pricingHelpers';
 import { useT } from '@/i18n';
 import { BackButton } from '@/components/BackButton';
 import { colors, spacing } from '@/theme';
@@ -20,15 +22,21 @@ export const OrderDetailsScreen: React.FC<{ navigation: any; route: any }> = ({ 
     </View>
   );
 
-  const priceRows: [string, number][] = [
-    [t('sum.transport'), order.price.transport],
-    [`${t('sum.dist')} · ${order.distanceKm.toFixed(0)} km`, order.price.distance],
-    ...(order.price.loaders ? [[t('sum.loader'), order.price.loaders] as [string, number]] : []),
-    ...(order.price.extraStops ? [[t('sum.stops'), order.price.extraStops] as [string, number]] : []),
-    ...(order.price.urgentFee ? [[t('sum.urgent'), order.price.urgentFee] as [string, number]] : []),
-    [t('sum.svc'), order.price.serviceFee],
-    ...(order.price.waiting ? [[t('details.waiting'), order.price.waiting] as [string, number]] : []),
-  ];
+  // §5: клиент видит только CustomerPriceView (без сервисного сбора/маржи).
+  // Заказы из engine — по снапшоту; старые мок-заказы — по устаревшей разбивке, но БЕЗ строки сбора.
+  const priceRows: [string, string][] = order.pricing
+    ? getCustomerPricingView(order.pricing).lines.map((l) => [
+        l.labelKey === 'sum.transport' ? `${t(l.labelKey)} · ${order.distanceKm.toFixed(0)} km` : t(l.labelKey),
+        formatGr(l.amountGr),
+      ])
+    : [
+        [t('sum.transport'), `${order.price.transport} zł`],
+        [`${t('sum.dist')} · ${order.distanceKm.toFixed(0)} km`, `${order.price.distance} zł`],
+        ...(order.price.loaders ? [[t('sum.loader'), `${order.price.loaders} zł`] as [string, string]] : []),
+        ...(order.price.extraStops ? [[t('sum.stops'), `${order.price.extraStops} zł`] as [string, string]] : []),
+        ...(order.price.urgentFee ? [[t('sum.urgent'), `${order.price.urgentFee} zł`] as [string, string]] : []),
+        ...(order.price.waiting ? [[t('details.waiting'), `${order.price.waiting} zł`] as [string, string]] : []),
+      ];
 
   return (
     <View style={{ flex: 1 }}>
@@ -66,7 +74,7 @@ export const OrderDetailsScreen: React.FC<{ navigation: any; route: any }> = ({ 
         <Sub style={{ fontWeight: '700', marginBottom: 4 }}>{t('details.price')}</Sub>
         {priceRows.map(([label, val]) => (
           <Row key={label} style={{ justifyContent: 'space-between', marginBottom: 4 }}>
-            <Sub>{label}</Sub><Sub>{val} zł</Sub>
+            <Sub>{label}</Sub><Sub>{val}</Sub>
           </Row>
         ))}
         <Row style={{ justifyContent: 'space-between', borderTopWidth: 1, borderColor: colors.line, paddingTop: spacing.s, marginTop: 4 }}>

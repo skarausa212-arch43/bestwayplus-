@@ -1,3 +1,5 @@
+import type { PricingSnapshot, PricingRevision, PriceChangeReason } from '@/features/pricing/pricingTypes';
+
 export type Role = 'customer' | 'driver' | 'admin';
 export type VehicleType = 'small_bus' | 'big_bus' | 'laweta';
 
@@ -82,6 +84,10 @@ export interface Order {
   paymentStatus: 'pending' | 'blocked' | 'captured' | 'refunded';
   statusHistory: { status: OrderStatus; at: string }[];
   confirmationCode?: string; createdAt: string;
+  /** §12: снапшот цены на момент подтверждения — не пересчитывается новыми тарифами */
+  pricing?: PricingSnapshot;
+  /** §13: история ревизий цены (ожидание, одобренные доплаты) */
+  pricingRevisions?: PricingRevision[];
 }
 
 export interface ChatMessage {
@@ -114,11 +120,12 @@ export interface AppNotification {
   orderId?: string; read: boolean; createdAt: string;
 }
 
-// §37 — запрос изменения цены водителем
+// §37/§13 — запрос изменения цены водителем (сумма в грошах + типовая причина)
 export interface PriceRequest {
   orderId: string;
-  amount: number;
-  reason: string;
+  amountGr: number;
+  reason: PriceChangeReason;
+  comment?: string;
   status: 'pending';
 }
 

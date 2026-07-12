@@ -56,8 +56,8 @@ export const ActiveOrderScreen: React.FC<{ navigation: any }> = ({ navigation })
         <Card style={{ marginBottom: spacing.m, borderWidth: 2, borderColor: colors.info }}>
           <Text style={{ fontWeight: '800', color: colors.ink }}>{t('pr.title')}</Text>
           <Row style={{ justifyContent: 'space-between', marginVertical: spacing.s }}>
-            <Sub style={{ flex: 1, marginRight: 8 }}>{priceReq.reason}</Sub>
-            <Text style={{ fontWeight: '900', fontSize: 20, color: colors.info }}>{priceReq.amount} zł</Text>
+            <Sub style={{ flex: 1, marginRight: 8 }}>{t(`prr.${priceReq.reason}`)}{priceReq.comment ? ` · ${priceReq.comment}` : ''}</Sub>
+            <Text style={{ fontWeight: '900', fontSize: 20, color: colors.info }}>+{Math.round(priceReq.amountGr / 100)} zł</Text>
           </Row>
           <Row>
             <Button title={t('pr.decline')} variant="ghost" onPress={() => answerPriceReq(false)} style={{ flex: 1, marginRight: 8 }} />

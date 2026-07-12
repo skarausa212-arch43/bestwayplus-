@@ -1,17 +1,30 @@
-import React, { useState } from 'react';
-import { ScrollView, View, Text, TouchableOpacity, Alert } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ScrollView, View, Text, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { Card, Button, Input, H2, Sub, Row } from '@/components/UI';
-import { VEHICLE_TYPES, CARGO_CATEGORIES, TARIFF } from '@/constants';
-import { calcPrice, useOrderStore } from '@/store/orders';
+import { VEHICLE_TYPES, CARGO_CATEGORIES } from '@/constants';
+import { useOrderStore } from '@/store/orders';
 import { MOCK_CUSTOMER_PROFILE } from '@/mocks';
 import { VehicleType, Address } from '@/types';
 import { useT } from '@/i18n';
 import { FadeSlideIn, AnimatedNumber } from '@/components/Anim';
 import { BackButton } from '@/components/BackButton';
 import { colors, spacing, radius } from '@/theme';
+import { buildInput, calculateQuote, usePricingStore } from '@/features/pricing/pricingService';
+import { getCustomerPricingView } from '@/features/pricing/pricingSelectors';
+import { mockRouteKm } from '@/features/pricing/pricingMocks';
+import { formatGr } from '@/features/pricing/pricingHelpers';
+import { CustomerPriceView } from '@/features/pricing/pricingTypes';
 
 const TOTAL_STEPS = 5;
 const MAX_STOPS = 3;
+
+// Фото транспорта из ассетов бренда
+const VEHICLE_PHOTOS: Record<VehicleType, any> = {
+  small_bus: require('../../../assets/vehicles/van-small.png'),
+  big_bus: require('../../../assets/vehicles/van-big.png'),
+  laweta: require('../../../assets/vehicles/laweta.png'),
+};
 
 export const OrderWizardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const t = useT();
@@ -33,10 +46,37 @@ export const OrderWizardScreen: React.FC<{ navigation: any }> = ({ navigation })
   const createOrder = useOrderStore((s) => s.createOrder);
   const payOrder = useOrderStore((s) => s.payOrder);
 
+  // Конфиг прайсинга — из стора (редактируется админкой, НЕ хардкод)
+  const cfg = usePricingStore((s) => s.config);
+  const demandScenarioId = usePricingStore((s) => s.demandScenarioId);
+
   const filledStops = stops.filter((s) => s.trim());
-  const distanceKm = Math.max(3, Math.min(40, (from.length + to.length) * 0.4)); // mock-дистанция
-  const cargoDraft = { loadersCount: loaders, carRunning };
-  const price = calcPrice(vehicleType, distanceKm, cargoDraft, filledStops.length, urgent);
+  const distanceKm = mockRouteKm(from, to);
+  const floorsNoElevator = elevator
+    ? 0
+    : Math.max(0, Number(floorFrom) || 0) + Math.max(0, Number(floorTo) || 0);
+
+  // §11: живой пересчёт с защитой от гонок — устаревший ответ не затирает новый
+  const [view, setView] = useState<CustomerPriceView | null>(null);
+  const [calculating, setCalculating] = useState(false);
+  const reqRef = useRef(0);
+  useEffect(() => {
+    const reqId = ++reqRef.current;
+    setCalculating(true);
+    // имитация запроса к бэкенду расчёта (в production — API)
+    const timer = setTimeout(() => {
+      const breakdown = calculateQuote(buildInput({
+        vehicleType, distanceKm,
+        extraStops: filledStops.length,
+        loaders, floorsNoElevator, urgent,
+      }));
+      if (reqRef.current !== reqId) return; // пришёл более новый расчёт
+      setView(getCustomerPricingView(breakdown));
+      setCalculating(false);
+    }, 250);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicleType, distanceKm, filledStops.length, loaders, floorsNoElevator, urgent, cfg.version, demandScenarioId]);
 
   const next = () => {
     if (step === 1 && (!from.trim() || !to.trim())) return Alert.alert(t('common.error'), t('alert.addr'));
@@ -64,6 +104,11 @@ export const OrderWizardScreen: React.FC<{ navigation: any }> = ({ navigation })
     navigation.replace('Searching');
   };
 
+  const chip = (active: boolean) => ({
+    backgroundColor: active ? colors.brand : colors.surface,
+    borderRadius: radius.full, paddingHorizontal: 12, paddingVertical: 6, margin: 3,
+  });
+
   return (
     <View style={{ flex: 1 }}>
     <BackButton navigation={navigation} />
@@ -82,15 +127,18 @@ export const OrderWizardScreen: React.FC<{ navigation: any }> = ({ navigation })
           <Row style={{ marginBottom: spacing.m }}>
             {[MOCK_CUSTOMER_PROFILE.homeAddress, MOCK_CUSTOMER_PROFILE.workAddress].map((a) => a && (
               <TouchableOpacity key={a.label} onPress={() => setFrom(a.full)}
-                style={{ backgroundColor: colors.brandSoft, borderRadius: radius.full, paddingHorizontal: 12, paddingVertical: 6, marginRight: 8 }}>
-                <Text style={{ color: colors.brand, fontWeight: '700', fontSize: 12 }}>
-                  {a.label === 'Dom' ? `🏠 ${t('profile.home')}` : `💼 ${t('profile.work')}`}
+                style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.brandSoft, borderRadius: radius.full, paddingHorizontal: 12, paddingVertical: 6, marginRight: 8 }}>
+                <Feather name={a.label === 'Dom' ? 'home' : 'briefcase'} size={13} color={colors.brandDark} />
+                <Text style={{ color: colors.brandDark, fontWeight: '700', fontSize: 12, marginLeft: 5 }}>
+                  {a.label === 'Dom' ? t('profile.home') : t('profile.work')}
                 </Text>
               </TouchableOpacity>
             ))}
           </Row>
-          {/* Доп. остановки — до 3, тарифицируются по TARIFF.extraStopPrice */}
-          <Sub style={{ marginBottom: 6, fontWeight: '600' }}>{t('wizard.stops')} · {t('wizard.stopPrice', [TARIFF.extraStopPrice])}</Sub>
+          {/* Доп. остановки — до 3, тариф из конфига прайсинга */}
+          <Sub style={{ marginBottom: 6, fontWeight: '600' }}>
+            {t('wizard.stops')} · {t('wizard.stopPrice', [Math.round(cfg.additions.extraStopGr / 100)])}
+          </Sub>
           {stops.map((s, i) => (
             <Row key={i}>
               <Input label={t('wizard.stop', [i + 1])} value={s}
@@ -98,14 +146,15 @@ export const OrderWizardScreen: React.FC<{ navigation: any }> = ({ navigation })
                 placeholder={t('ph.from')} style={{ flex: 1, marginRight: 8 }} />
               <TouchableOpacity onPress={() => setStops(stops.filter((_, j) => j !== i))}
                 style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.dangerSoft, alignItems: 'center', justifyContent: 'center', marginTop: 8 }}>
-                <Text style={{ color: colors.danger, fontWeight: '800' }}>✕</Text>
+                <Feather name="x" size={16} color={colors.danger} />
               </TouchableOpacity>
             </Row>
           ))}
           {stops.length < MAX_STOPS && (
             <TouchableOpacity onPress={() => setStops([...stops, ''])}
-              style={{ borderRadius: radius.m, borderWidth: 2, borderStyle: 'dashed', borderColor: colors.line, padding: spacing.m, marginBottom: spacing.m }}>
-              <Text style={{ color: colors.brand, fontWeight: '700' }}>{t('wizard.addStop')}</Text>
+              style={{ flexDirection: 'row', alignItems: 'center', borderRadius: radius.m, borderWidth: 2, borderStyle: 'dashed', borderColor: colors.line, padding: spacing.m, marginBottom: spacing.m }}>
+              <Feather name="plus-circle" size={16} color={colors.brand} />
+              <Text style={{ color: colors.brand, fontWeight: '700', marginLeft: 8 }}>{t('wizard.addStop')}</Text>
             </TouchableOpacity>
           )}
           <Input label={t('wizard.to')} value={to} onChangeText={setTo} placeholder={t('ph.to')} />
@@ -120,11 +169,20 @@ export const OrderWizardScreen: React.FC<{ navigation: any }> = ({ navigation })
             const active = vehicleType === k;
             return (
               <TouchableOpacity key={k} onPress={() => setVehicleType(k)}
-                style={{ borderRadius: radius.l, borderWidth: 2, borderColor: active ? colors.brand : colors.line, padding: spacing.m, marginBottom: spacing.s, backgroundColor: active ? colors.brandSoft : '#FFF' }}>
-                <Row style={{ justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 24 }}>{v.emoji}</Text>
-                  <Text style={{ fontWeight: '800', color: colors.ink }}>{t(v.labelKey)}</Text>
-                  <Text style={{ color: colors.sub, fontSize: 12 }}>{t('wizard.upTo', [v.maxPayload])}</Text>
+                style={{ borderRadius: radius.l, borderWidth: 2, borderColor: active ? colors.brand : colors.line, padding: spacing.m, marginBottom: spacing.s, backgroundColor: active ? colors.brandSoft : colors.card }}>
+                <Row>
+                  <Image source={VEHICLE_PHOTOS[k]} style={{ width: 84, height: 56 }} resizeMode="contain" />
+                  <View style={{ flex: 1, marginLeft: spacing.m }}>
+                    <Row style={{ justifyContent: 'space-between' }}>
+                      <Text style={{ fontWeight: '800', color: colors.ink }}>{t(v.labelKey)}</Text>
+                      {active && <Feather name="check-circle" size={18} color={colors.brand} />}
+                    </Row>
+                    <Sub style={{ marginTop: 2 }}>{t('wizard.upTo', [v.maxPayload])}</Sub>
+                    {/* минимальная цена — из конфига, не из хардкода */}
+                    <Text style={{ color: colors.brandDark, fontWeight: '800', fontSize: 13, marginTop: 4 }}>
+                      {t('wizard.fromPrice', [Math.round(cfg.vehicles[k].minimumGr / 100)])}
+                    </Text>
+                  </View>
                 </Row>
                 <Sub style={{ marginTop: 6 }}>{t(v.descKey)}</Sub>
               </TouchableOpacity>
@@ -139,8 +197,7 @@ export const OrderWizardScreen: React.FC<{ navigation: any }> = ({ navigation })
           <Sub style={{ marginBottom: 6, fontWeight: '600' }}>{t('wizard.category')}</Sub>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.m }}>
             {CARGO_CATEGORIES.map((c) => (
-              <TouchableOpacity key={c} onPress={() => setCategory(c)}
-                style={{ backgroundColor: category === c ? colors.brand : '#F1F3F7', borderRadius: radius.full, paddingHorizontal: 12, paddingVertical: 6, margin: 3 }}>
+              <TouchableOpacity key={c} onPress={() => setCategory(c)} style={chip(category === c)}>
                 <Text style={{ color: category === c ? '#FFF' : colors.sub, fontWeight: '700', fontSize: 12 }}>{c}</Text>
               </TouchableOpacity>
             ))}
@@ -153,9 +210,9 @@ export const OrderWizardScreen: React.FC<{ navigation: any }> = ({ navigation })
               <Row>
                 {[true, false].map((v) => (
                   <TouchableOpacity key={String(v)} onPress={() => setCarRunning(v)}
-                    style={{ backgroundColor: carRunning === v ? colors.brand : '#F1F3F7', borderRadius: radius.full, paddingHorizontal: 14, paddingVertical: 7, marginLeft: 6 }}>
+                    style={{ backgroundColor: carRunning === v ? colors.brand : colors.surface, borderRadius: radius.full, paddingHorizontal: 14, paddingVertical: 7, marginLeft: 6 }}>
                     <Text style={{ color: carRunning === v ? '#FFF' : colors.sub, fontWeight: '700', fontSize: 12 }}>
-                      {v ? t('common.yes') : t('wizard.noWinch', [TARIFF.winchFee])}
+                      {v ? t('common.yes') : t('common.no')}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -168,8 +225,21 @@ export const OrderWizardScreen: React.FC<{ navigation: any }> = ({ navigation })
                 <Row>
                   {[0, 1, 2].map((n) => (
                     <TouchableOpacity key={n} onPress={() => setLoaders(n)}
-                      style={{ backgroundColor: loaders === n ? colors.brand : '#F1F3F7', borderRadius: radius.full, width: 38, height: 32, alignItems: 'center', justifyContent: 'center', marginLeft: 6 }}>
+                      style={{ backgroundColor: loaders === n ? colors.brand : colors.surface, borderRadius: radius.full, width: 38, height: 32, alignItems: 'center', justifyContent: 'center', marginLeft: 6 }}>
                       <Text style={{ color: loaders === n ? '#FFF' : colors.sub, fontWeight: '700' }}>{n === 0 ? '—' : n}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </Row>
+              </Row>
+              <Row style={{ justifyContent: 'space-between', marginBottom: spacing.s }}>
+                <Text style={{ fontWeight: '700', color: colors.ink }}>{t('wizard.elevator')}</Text>
+                <Row>
+                  {[true, false].map((v) => (
+                    <TouchableOpacity key={String(v)} onPress={() => setElevator(v)}
+                      style={{ backgroundColor: elevator === v ? colors.brand : colors.surface, borderRadius: radius.full, paddingHorizontal: 14, paddingVertical: 7, marginLeft: 6 }}>
+                      <Text style={{ color: elevator === v ? '#FFF' : colors.sub, fontWeight: '700', fontSize: 12 }}>
+                        {v ? t('common.yes') : t('common.no')}
+                      </Text>
                     </TouchableOpacity>
                   ))}
                 </Row>
@@ -186,11 +256,14 @@ export const OrderWizardScreen: React.FC<{ navigation: any }> = ({ navigation })
       {step === 4 && (
         <FadeSlideIn key="s4"><Card>
           <H2 style={{ marginBottom: spacing.m }}>{t('wizard.when')}</H2>
-          {[{ v: true, label: t('wizard.asap'), sub: t('wizard.asapSub', [TARIFF.urgentFee]) },
+          {[{ v: true, label: t('wizard.asap'), sub: t('wizard.asapSub', [Math.round(cfg.coefficients.urgentPct * 100)]) },
             { v: false, label: t('wizard.schedule'), sub: t('wizard.scheduleSub') }].map((o) => (
             <TouchableOpacity key={String(o.v)} onPress={() => setUrgent(o.v)}
-              style={{ borderRadius: radius.l, borderWidth: 2, borderColor: urgent === o.v ? colors.brand : colors.line, padding: spacing.m, marginBottom: spacing.s }}>
-              <Text style={{ fontWeight: '800', color: colors.ink }}>{o.label}</Text>
+              style={{ borderRadius: radius.l, borderWidth: 2, borderColor: urgent === o.v ? colors.brand : colors.line, padding: spacing.m, marginBottom: spacing.s, backgroundColor: urgent === o.v ? colors.brandSoft : colors.card }}>
+              <Row style={{ justifyContent: 'space-between' }}>
+                <Text style={{ fontWeight: '800', color: colors.ink }}>{o.label}</Text>
+                {urgent === o.v && <Feather name="check-circle" size={18} color={colors.brand} />}
+              </Row>
               <Sub>{o.sub}</Sub>
             </TouchableOpacity>
           ))}
@@ -200,27 +273,33 @@ export const OrderWizardScreen: React.FC<{ navigation: any }> = ({ navigation })
       {step === 5 && (
         <FadeSlideIn key="s5"><Card>
           <H2 style={{ marginBottom: spacing.m }}>{t('wizard.summary')}</H2>
-          {([
-            [t('sum.transport'), price.transport],
-            [`${t('sum.dist')} · ${distanceKm.toFixed(0)} km`, price.distance],
-            ...(price.loaders ? [[t('sum.loader'), price.loaders] as [string, number]] : []),
-            ...(price.extraStops ? [[`${t('sum.stops')} × ${filledStops.length}`, price.extraStops] as [string, number]] : []),
-            [t('sum.svc'), price.serviceFee],
-            ...(price.urgentFee ? [[t('sum.urgent'), price.urgentFee] as [string, number]] : []),
-          ] as [string, number][]).map(([label, val]) => (
-            <Row key={label} style={{ justifyContent: 'space-between', marginBottom: 6 }}>
-              <Sub>{label}</Sub><Sub>{val} zł</Sub>
+          {/* §5: клиент видит ТОЛЬКО CustomerPriceView — без маржи, коэффициентов и выплат */}
+          {view?.lines.map((l) => (
+            <Row key={l.labelKey} style={{ justifyContent: 'space-between', marginBottom: 6 }}>
+              <Sub>{l.labelKey === 'sum.transport' ? `${t(l.labelKey)} · ${distanceKm.toFixed(0)} km` : t(l.labelKey)}</Sub>
+              <Sub>{formatGr(l.amountGr)}</Sub>
             </Row>
           ))}
+          {view?.demandNotice && (
+            <Row style={{ backgroundColor: colors.infoSoft, borderRadius: radius.m, padding: spacing.s, marginTop: 4 }}>
+              <Feather name="info" size={14} color={colors.info} style={{ marginTop: 1 }} />
+              <Sub style={{ color: colors.info, marginLeft: 6, flex: 1 }}>{t('price.demandNote')}</Sub>
+            </Row>
+          )}
           <Row style={{ justifyContent: 'space-between', borderTopWidth: 1, borderColor: colors.line, paddingTop: spacing.s, marginTop: spacing.s, marginBottom: spacing.m }}>
             <Text style={{ fontWeight: '800', color: colors.ink }}>{t('order.total')}</Text>
-            <AnimatedNumber value={price.total} textStyle={{ fontWeight: '900', fontSize: 24, color: colors.ink }} />
+            {calculating || !view
+              ? <Row><ActivityIndicator size="small" color={colors.brand} /><Sub style={{ marginLeft: 8 }}>{t('price.calculating')}</Sub></Row>
+              : <AnimatedNumber value={Math.round(view.totalGr / 100)} textStyle={{ fontWeight: '900', fontSize: 24, color: colors.ink }} />}
           </Row>
           {MOCK_CUSTOMER_PROFILE.paymentMethods.map((pm) => (
             <TouchableOpacity key={pm.id} onPress={() => setPayMethod(pm.id)}
-              style={{ flexDirection: 'row', justifyContent: 'space-between', padding: spacing.m, borderRadius: radius.m, borderWidth: 2, borderColor: payMethod === pm.id ? colors.brand : colors.line, marginBottom: spacing.s }}>
-              <Text style={{ fontWeight: '700', color: colors.ink }}>{pm.type === 'card' ? '💳' : '📱'} {pm.label}</Text>
-              {payMethod === pm.id && <Text style={{ color: colors.brand }}>✓</Text>}
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.m, borderRadius: radius.m, borderWidth: 2, borderColor: payMethod === pm.id ? colors.brand : colors.line, marginBottom: spacing.s }}>
+              <Row>
+                <Feather name={pm.type === 'card' ? 'credit-card' : 'smartphone'} size={16} color={colors.ink} />
+                <Text style={{ fontWeight: '700', color: colors.ink, marginLeft: 8 }}>{pm.label}</Text>
+              </Row>
+              {payMethod === pm.id && <Feather name="check" size={18} color={colors.brand} />}
             </TouchableOpacity>
           ))}
           <Sub style={{ marginBottom: spacing.m }}>{t('pay.note')}</Sub>
@@ -230,7 +309,7 @@ export const OrderWizardScreen: React.FC<{ navigation: any }> = ({ navigation })
       <View style={{ marginTop: spacing.l }}>
         {step < TOTAL_STEPS
           ? <Button title={t('common.next')} onPress={next} />
-          : <Button title={t('order.toPayment')} onPress={submit} />}
+          : <Button title={t('order.toPayment')} onPress={submit} disabled={calculating} />}
         {step > 1 && <Button title={t('common.back')} variant="ghost" onPress={() => setStep(step - 1)} style={{ marginTop: spacing.s }} />}
       </View>
     </ScrollView>

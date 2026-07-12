@@ -112,7 +112,7 @@ export const Confetti: React.FC<{ count?: number }> = ({ count = 26 }) => {
     x: Math.random() * 360,
     delay: Math.random() * 600,
     rot: Math.random() > 0.5 ? 1 : -1,
-    color: ['#00C98D', '#F5A623', '#3E7BFA', '#E5484D', '#FFC531'][i % 5],
+    color: ['#0FB5BE', '#1BC8D2', '#3E7BFA', '#F5A623', '#0E1826'][i % 5],
     size: 6 + Math.random() * 6,
     v: new Animated.Value(0),
   }))).current;

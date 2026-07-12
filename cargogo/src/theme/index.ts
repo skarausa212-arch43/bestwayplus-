@@ -1,13 +1,16 @@
-// Дизайн-система v2: глубже контраст, фирменный градиент, крупные радиусы
+// Дизайн-система v4 (фирменный стиль PakujGo): светлая база,
+// тиффани-акцент из логотипа (#00D8E0 → приглушён для контраста),
+// тёмно-синий ink как в логотипе. Кнопки — тиффани.
 export const colors = {
-  brand: '#00B37E',
-  brandDark: '#008F63',
-  brandSoft: '#E6F9F1',
-  ink: '#0B1220',
-  sub: '#5B6474',
-  faint: '#9AA3B2',
-  line: '#E8ECF2',
-  bg: '#F2F5F9',
+  brand: '#0FB5BE',        // тиффани — акцент и primary-кнопки
+  brandDark: '#0A8F98',
+  brandSoft: '#E2F8F9',
+  ink: '#0E1826',          // тёмно-синий из логотипа
+  sub: '#64748B',
+  faint: '#94A3B8',
+  line: '#E5E9EE',
+  surface: '#EEF1F4',      // серые чипы и secondary-кнопки
+  bg: '#F5F6F8',
   card: '#FFFFFF',
   danger: '#E5484D',
   dangerSoft: '#FDECEC',
@@ -20,16 +23,16 @@ export const colors = {
   vehicleL: '#3E7BFA',
 };
 
-// Градиенты (expo-linear-gradient): кнопки, splash, шапки
+// Градиенты: primary-кнопки — тиффани; тёмные элементы — navy из логотипа
 export const gradients = {
-  brand: ['#00C98D', '#00A876'] as const,
+  brand: ['#1BC8D2', '#0A9AA4'] as const,   // primary-кнопки (тиффани)
   danger: ['#F0565B', '#D93036'] as const,
-  splash: ['#00C98D', '#007A5C'] as const,
-  ink: ['#1B2434', '#0B1220'] as const,
+  splash: ['#FFFFFF', '#E6F7F8'] as const,  // светлая заставка с лёгким тиффани
+  ink: ['#1C2A3E', '#0E1826'] as const,     // navy (шапки, тёмные карточки)
 };
 
 export const spacing = { xs: 4, s: 8, m: 12, l: 16, xl: 24, xxl: 32 };
-export const radius = { s: 10, m: 14, l: 18, xl: 26, full: 999 };
+export const radius = { s: 10, m: 14, l: 18, xl: 24, full: 999 };
 export const typography = {
   h1: { fontSize: 28, fontWeight: '800' as const, color: colors.ink, letterSpacing: -0.5 },
   h2: { fontSize: 20, fontWeight: '800' as const, color: colors.ink, letterSpacing: -0.3 },
@@ -40,11 +43,11 @@ export const typography = {
 };
 export const shadows = {
   card: {
-    shadowColor: '#0F172A', shadowOpacity: 0.08, shadowRadius: 16,
+    shadowColor: '#0E1826', shadowOpacity: 0.06, shadowRadius: 16,
     shadowOffset: { width: 0, height: 8 }, elevation: 4,
   },
   soft: {
-    shadowColor: '#0F172A', shadowOpacity: 0.05, shadowRadius: 8,
+    shadowColor: '#0E1826', shadowOpacity: 0.05, shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 }, elevation: 2,
   },
 };

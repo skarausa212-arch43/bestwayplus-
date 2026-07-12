@@ -1,24 +1,24 @@
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, Image, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { Button, Card, Sub } from '@/components/UI';
 import { FadeSlideIn } from '@/components/Anim';
 import { useT } from '@/i18n';
-import { APP_CONFIG } from '@/config/app';
 import { colors, gradients, spacing, radius } from '@/theme';
+
+const { width } = Dimensions.get('window');
 
 export const RoleSelectScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const t = useT();
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      {/* Градиентная шапка-«герой» */}
+      {/* Светлая шапка-«герой» с фирменным логотипом */}
       <LinearGradient colors={gradients.splash} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-        style={{ paddingTop: 90, paddingBottom: 56, paddingHorizontal: spacing.xl, borderBottomLeftRadius: radius.xl + 8, borderBottomRightRadius: radius.xl + 8 }}>
+        style={{ paddingTop: 80, paddingBottom: 48, paddingHorizontal: spacing.xl, borderBottomLeftRadius: radius.xl + 8, borderBottomRightRadius: radius.xl + 8, alignItems: 'center' }}>
         <FadeSlideIn>
-          <Text style={{ fontSize: 46 }}>🚚</Text>
-          <Text style={{ fontSize: 32, fontWeight: '900', color: '#FFF', letterSpacing: -1, marginTop: 8 }}>{APP_CONFIG.name}</Text>
-          <Text style={{ color: 'rgba(255,255,255,0.9)', marginTop: 6, fontSize: 15 }}>{t('role.title')}</Text>
+          <Image source={require('../../../assets/brand/logo-light.png')} style={{ width: width * 0.6, height: width * 0.36 }} resizeMode="contain" />
+          <Text style={{ color: colors.sub, marginTop: 4, fontSize: 15, textAlign: 'center', fontWeight: '600' }}>{t('role.title')}</Text>
         </FadeSlideIn>
       </LinearGradient>
 

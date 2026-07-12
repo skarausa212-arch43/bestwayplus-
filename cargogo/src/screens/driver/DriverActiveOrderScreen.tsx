@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ScrollView, View, Text, Alert } from 'react-native';
+import { ScrollView, View, Text, TouchableOpacity, Alert } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { AppMap, orderPoints } from '@/components/Map';
 import { ProgressBar } from '@/components/Anim';
 import { WaitBanner } from '@/components/WaitBanner';
@@ -9,8 +10,11 @@ import { useOrderStore } from '@/store/orders';
 import { useDriverStore } from '@/store/driver';
 import { DRIVER_STATUS_FLOW } from '@/constants';
 import { OrderStatus } from '@/types';
+import { getDriverPricingView } from '@/features/pricing/pricingSelectors';
+import { formatGr } from '@/features/pricing/pricingHelpers';
+import { PriceChangeReason } from '@/features/pricing/pricingTypes';
 import { useT } from '@/i18n';
-import { colors, spacing } from '@/theme';
+import { colors, spacing, radius } from '@/theme';
 
 // Порядок ручных переключений статусов водителем (раздел 35 ТЗ); подписи — ключи a.*
 const NEXT: Partial<Record<OrderStatus, OrderStatus>> = {
@@ -22,6 +26,12 @@ const NEXT: Partial<Record<OrderStatus, OrderStatus>> = {
   arrived_destination: 'unloading',
   unloading: 'awaiting_confirmation',
 };
+
+// Типовые причины доплаты (§13) — ключи prr.*
+const PRICE_REASONS: PriceChangeReason[] = [
+  'bigger_cargo', 'heavier_cargo', 'extra_loading', 'no_elevator',
+  'restricted_access', 'extra_stop', 'waiting_exceeded', 'wrong_info',
+];
 
 export const DriverActiveOrderScreen: React.FC<{ navigation: any; route?: any }> = ({ navigation, route }) => {
   const t = useT();
@@ -35,7 +45,7 @@ export const DriverActiveOrderScreen: React.FC<{ navigation: any; route?: any }>
   const [code, setCode] = useState('');
   const [showPrForm, setShowPrForm] = useState(false);
   const [prAmount, setPrAmount] = useState('');
-  const [prReason, setPrReason] = useState('');
+  const [prReason, setPrReason] = useState<PriceChangeReason>('bigger_cargo');
 
   if (!order) return (
     <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
@@ -47,9 +57,13 @@ export const DriverActiveOrderScreen: React.FC<{ navigation: any; route?: any }>
   const progress = Math.max(0, DRIVER_STATUS_FLOW.indexOf(order.status)) / (DRIVER_STATUS_FLOW.length - 1);
   const canProposePrice = !['completed', 'cancelled', 'awaiting_payment', 'searching'].includes(order.status);
 
+  // §8: водитель видит ТОЛЬКО свою выплату — цена клиента ему недоступна
+  const payout = order.pricing ? getDriverPricingView(order.pricing) : null;
+  const payoutPln = payout ? payout.totalGr / 100 : 0;
+
   const confirmCode = () => {
     if (completeWithCode(order.id, code.trim())) {
-      addEarning(order.id, order.price.total);
+      addEarning(order.id, payoutPln);
       Alert.alert(t('code.doneTitle'), t('code.done'));
       navigation.goBack();
     } else {
@@ -58,12 +72,11 @@ export const DriverActiveOrderScreen: React.FC<{ navigation: any; route?: any }>
   };
 
   const submitPriceReq = () => {
-    const amount = parseInt(prAmount, 10);
-    if (!amount || amount <= 0) return Alert.alert(t('common.error'), t('pr.amount'));
-    sendPriceReq(amount, prReason);
+    const amountPln = parseInt(prAmount, 10);
+    if (!amountPln || amountPln <= 0) return Alert.alert(t('common.error'), t('pr.amount'));
+    sendPriceReq(amountPln * 100, prReason); // грощи
     setShowPrForm(false);
     setPrAmount('');
-    setPrReason('');
   };
 
   return (
@@ -73,7 +86,11 @@ export const DriverActiveOrderScreen: React.FC<{ navigation: any; route?: any }>
       <Card style={{ marginBottom: spacing.m }}>
         <Row style={{ justifyContent: 'space-between', marginBottom: spacing.s }}>
           <StatusPill label={t(`status.${order.status}`)} tone="info" />
-          <Text style={{ fontWeight: '900', fontSize: 20, color: colors.ink }}>{order.price.total} zł</Text>
+          {/* Выплата водителю (нетто), НЕ цена клиента */}
+          <View style={{ alignItems: 'flex-end' }}>
+            <Sub style={{ fontSize: 11 }}>{t('driver.payout')}</Sub>
+            <Text style={{ fontWeight: '900', fontSize: 20, color: colors.brandDark }}>{formatGr(payout?.totalGr ?? 0, 2)}</Text>
+          </View>
         </Row>
         <ProgressBar progress={order.status === 'completed' ? 1 : progress} style={{ marginBottom: spacing.s }} />
         <Sub>📍 {order.pickup.full}</Sub>
@@ -94,7 +111,7 @@ export const DriverActiveOrderScreen: React.FC<{ navigation: any; route?: any }>
         <Button title={t(`a.${next}`)} onPress={() => setStatus(order.id, next)} style={{ marginBottom: spacing.s }} />
       )}
 
-      {/* §37 — запрос изменения цены: форма (сумма + причина) / ожидание решения клиента */}
+      {/* §37/§13 — запрос доплаты: сумма + типовая причина / ожидание решения клиента */}
       {canProposePrice && (
         priceReq && priceReq.orderId === order.id ? (
           <Card style={{ marginBottom: spacing.s }}>
@@ -102,9 +119,20 @@ export const DriverActiveOrderScreen: React.FC<{ navigation: any; route?: any }>
           </Card>
         ) : showPrForm ? (
           <Card style={{ marginBottom: spacing.s }}>
-            <Input label={t('pr.amount')} value={prAmount} onChangeText={setPrAmount} keyboardType="numeric" placeholder={String(order.price.total + 20)} />
-            <Input label={t('pr.reason')} value={prReason} onChangeText={setPrReason} placeholder={t('pr.reason')} />
-            <Button title={t('pr.send')} onPress={submitPriceReq} />
+            <Input label={t('pr.amount')} value={prAmount} onChangeText={setPrAmount} keyboardType="numeric" placeholder="20" />
+            <Sub style={{ marginBottom: 6, fontWeight: '600' }}>{t('prr.pickReason')}</Sub>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.m }}>
+              {PRICE_REASONS.map((r) => (
+                <TouchableOpacity key={r} onPress={() => setPrReason(r)}
+                  style={{ backgroundColor: prReason === r ? colors.brand : colors.surface, borderRadius: radius.full, paddingHorizontal: 12, paddingVertical: 7, margin: 3 }}>
+                  <Text style={{ color: prReason === r ? '#FFF' : colors.sub, fontWeight: '700', fontSize: 12 }}>{t(`prr.${r}`)}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Row>
+              <Button title={t('common.back')} variant="ghost" onPress={() => setShowPrForm(false)} style={{ flex: 1, marginRight: 8 }} />
+              <Button title={t('pr.send')} onPress={submitPriceReq} style={{ flex: 2 }} />
+            </Row>
           </Card>
         ) : (
           <Button title={t('pr.btn')} variant="secondary" onPress={() => setShowPrForm(true)} style={{ marginBottom: spacing.s }} />
