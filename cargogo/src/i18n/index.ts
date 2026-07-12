@@ -6,15 +6,14 @@ import pl from './pl';
 import ru from './ru';
 import en from './en';
 import uk from './uk';
-import be from './be';
 import de from './de';
 
-// pl — эталон структуры; ru/en — полные копии (Dict), uk/be/de — заглушки (Partial<Dict>)
+// pl — эталон структуры; ru/en/uk/de — полные словари (Dict)
 export type Dict = Record<keyof typeof pl, string>;
 export type TKey = keyof typeof pl;
 export type TParams = (string | number)[] | Record<string, string | number>;
 
-const dictionaries: Record<Locale, Partial<Dict>> = { pl, ru, en, uk, be, de };
+const dictionaries: Record<Locale, Partial<Dict>> = { pl, ru, en, uk, de };
 
 // Язык конкретной роли (у каждого пользователя свой — поле профиля)
 export const langOf = (role: Role): Locale =>

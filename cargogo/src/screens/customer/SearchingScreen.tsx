@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Animated, Easing } from 'react-native';
 import { AppMap, orderPoints } from '@/components/Map';
-import { Card, Button, H2, Sub } from '@/components/UI';
+import { Button, H2, Sub } from '@/components/UI';
+import { GlassSheet } from '@/components/Glass';
 import { FadeSlideIn } from '@/components/Anim';
 import { useOrderStore } from '@/store/orders';
 import { useT } from '@/i18n';
@@ -35,23 +36,21 @@ export const SearchingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <AppMap height={999} style={{ borderRadius: 0, flex: 1 }} searching points={orderPoints(order)} showRoute />
-      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: spacing.l }}>
-        <FadeSlideIn>
-          <Card>
-            <H2 style={{ marginBottom: 4 }}>{t('order.searching')}</H2>
-            <Sub style={{ marginBottom: spacing.m }}>
-              {order.pickup.full} → {order.destination.full} · {order.price.total} zł
-            </Sub>
-            <View style={{ height: 6, backgroundColor: colors.line, borderRadius: 3, marginBottom: spacing.l, overflow: 'hidden' }}>
-              <Animated.View style={{
-                height: 6, width: '38%', backgroundColor: colors.brand, borderRadius: 3,
-                transform: [{ translateX: shimmer.interpolate({ inputRange: [0, 1], outputRange: [-140, 320] }) }],
-              }} />
-            </View>
-            <Button title={t('order.cancel')} variant="danger" onPress={() => { cancelOrder(order.id, 'customer'); navigation.goBack(); }} />
-          </Card>
-        </FadeSlideIn>
-      </View>
+      <FadeSlideIn>
+        <GlassSheet>
+          <H2 style={{ marginBottom: 4 }}>{t('order.searching')}</H2>
+          <Sub style={{ marginBottom: spacing.m }}>
+            {order.pickup.full} → {order.destination.full} · {order.price.total} zł
+          </Sub>
+          <View style={{ height: 6, backgroundColor: colors.line, borderRadius: 3, marginBottom: spacing.l, overflow: 'hidden' }}>
+            <Animated.View style={{
+              height: 6, width: '38%', backgroundColor: colors.brand, borderRadius: 3,
+              transform: [{ translateX: shimmer.interpolate({ inputRange: [0, 1], outputRange: [-140, 320] }) }],
+            }} />
+          </View>
+          <Button title={t('order.cancel')} variant="ghost" onPress={() => { cancelOrder(order.id, 'customer'); navigation.goBack(); }} />
+        </GlassSheet>
+      </FadeSlideIn>
     </View>
   );
 };

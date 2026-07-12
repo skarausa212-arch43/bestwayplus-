@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { AppMap, orderPoints } from '@/components/Map';
 import { FadeSlideIn, Breathe } from '@/components/Anim';
 import { Card, Button, H2, Sub, Row } from '@/components/UI';
+import { GlassSheet, GlassBadge, Spark } from '@/components/Glass';
 import { NotificationBell } from '@/components/NotificationBell';
 import { useDriverStore } from '@/store/driver';
 import { useOrderStore } from '@/store/orders';
@@ -61,10 +62,12 @@ export const DriverHomeScreen: React.FC<{ navigation: any }> = ({ navigation }) 
         radiusKm={isOnline && !order ? searchRadiusKm : undefined}
         center={{ latitude: position.lat, longitude: position.lng }} />
       <View style={{ position: 'absolute', top: 54, left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Card style={{ paddingVertical: 8, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center' }}>
-          <Text style={{ fontWeight: '800', color: colors.ink, marginRight: 12 }}>{balance} zł</Text>
-          <Text style={{ color: colors.warn, fontWeight: '700' }}>★ {rating}</Text>
-        </Card>
+        <GlassBadge>
+          <Feather name="credit-card" size={16} color={colors.ink} />
+          <Text style={{ fontWeight: '800', color: colors.ink, marginLeft: 8, marginRight: 12 }}>{balance} zł</Text>
+          <Feather name="star" size={15} color={colors.warn} />
+          <Text style={{ color: colors.ink, fontWeight: '800', marginLeft: 4 }}>{rating}</Text>
+        </GlassBadge>
         <NotificationBell navigation={navigation} />
       </View>
 
@@ -88,16 +91,15 @@ export const DriverHomeScreen: React.FC<{ navigation: any }> = ({ navigation }) 
               </View>
               </Breathe>
             </Row>
-            <Sub>📍 {order.pickup.full}</Sub>
+            <Row style={{ marginBottom: 3 }}><Feather name="map-pin" size={14} color={colors.brandDark} /><Sub style={{ marginLeft: 8 }}>{order.pickup.full}</Sub></Row>
             {order.stops.map((s, i) => (
-              <Sub key={i}>🔸 {s.full}</Sub>
+              <Row key={i} style={{ marginBottom: 3 }}><Feather name="circle" size={14} color={colors.sub} /><Sub style={{ marginLeft: 8 }}>{s.full}</Sub></Row>
             ))}
-            <Sub>🏁 {order.destination.full}</Sub>
-            <Sub style={{ marginTop: 4 }}>📦 {order.cargo.name} · {order.cargo.weightKg} kg · {order.distanceKm.toFixed(0)} km</Sub>
-            {order.cargo.loadersCount > 0 && <Sub>💪 {order.cargo.loadersCount} · {order.cargo.floorFrom}→{order.cargo.floorTo}</Sub>}
-            <Row style={{ justifyContent: 'space-between', marginVertical: spacing.m }}>
-              <Sub style={{ flex: 1 }}>{t('driver.payout')}</Sub>
-              <Text style={{ fontWeight: '900', fontSize: 22, color: colors.brand }}>{formatGr(payoutView?.totalGr ?? 0, 2)}</Text>
+            <Row style={{ marginBottom: 3 }}><Feather name="flag" size={14} color={colors.ink} /><Sub style={{ marginLeft: 8 }}>{order.destination.full}</Sub></Row>
+            <Row style={{ marginTop: 4 }}><Feather name="package" size={14} color={colors.brandDark} /><Sub style={{ marginLeft: 8 }}>{order.cargo.name} · {order.cargo.weightKg} kg · {order.distanceKm.toFixed(0)} km</Sub></Row>
+            <Row style={{ justifyContent: 'space-between', alignItems: 'center', marginVertical: spacing.m, backgroundColor: colors.brandSoft, borderRadius: radius.m, padding: spacing.m }}>
+              <Sub style={{ flex: 1, fontWeight: '700' }}>{t('driver.payout')}</Sub>
+              <Text style={{ fontWeight: '900', fontSize: 24, color: colors.brandDark }}>{formatGr(payoutView?.totalGr ?? 0, 2)}</Text>
             </Row>
             <Row>
               <Button title={t('driver.reject')} variant="ghost" onPress={() => setOffer(null)} style={{ flex: 1, marginRight: 8 }} />
@@ -108,13 +110,13 @@ export const DriverHomeScreen: React.FC<{ navigation: any }> = ({ navigation }) 
         </View>
       )}
 
-      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: spacing.l }}>
-        <Card>
+      {!order && (
+        <GlassSheet>
           <Row style={{ justifyContent: 'space-between' }}>
             <View style={{ flex: 1 }}>
               <Row>
-                {isOnline && <Breathe><View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.brand, marginRight: 8 }} /></Breathe>}
-                <H2 style={{ fontSize: 18 }}>{isOnline ? t('driver.online') : t('driver.offline')}</H2>
+                {isOnline && <Breathe><View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: colors.brand, marginRight: 8 }} /></Breathe>}
+                <H2 style={{ fontSize: 20 }}>{isOnline ? t('driver.online') : t('driver.offline')}</H2>
               </Row>
               <Sub>{isOnline ? t('driver.onlineSub') : t('driver.offlineSub')}</Sub>
             </View>
@@ -122,28 +124,33 @@ export const DriverHomeScreen: React.FC<{ navigation: any }> = ({ navigation }) 
           </Row>
 
           {/* Радиус приёма заказов: заказы вне круга водителю не приходят */}
-          <View style={{ marginTop: spacing.m, borderTopWidth: 1, borderColor: colors.line, paddingTop: spacing.m }}>
+          <View style={{ marginTop: spacing.m, backgroundColor: colors.card, borderRadius: radius.l, padding: spacing.m }}>
             <Row style={{ justifyContent: 'space-between', marginBottom: spacing.s }}>
               <Row>
-                <Feather name="target" size={15} color={colors.brandDark} />
-                <Sub style={{ marginLeft: 6, fontWeight: '700', color: colors.ink }}>{t('driver.radius')}</Sub>
+                <Feather name="target" size={16} color={colors.brandDark} />
+                <Sub style={{ marginLeft: 8, fontWeight: '800', color: colors.ink }}>{t('driver.radius')}</Sub>
               </Row>
-              <Text style={{ fontWeight: '900', color: colors.brandDark, fontSize: 16 }}>{searchRadiusKm} km</Text>
+              <Text style={{ fontWeight: '900', color: colors.brandDark, fontSize: 18 }}>{searchRadiusKm} km</Text>
             </Row>
             <Row>
               <RadiusBtn icon="minus" onPress={() => setSearchRadius(searchRadiusKm - 5)} />
-              <View style={{ flex: 1, height: 6, backgroundColor: colors.line, borderRadius: 3, marginHorizontal: 10 }}>
-                <View style={{ height: 6, width: `${((searchRadiusKm - 5) / 95) * 100}%`, backgroundColor: colors.brand, borderRadius: 3 }} />
+              <View style={{ flex: 1, height: 8, backgroundColor: colors.line, borderRadius: 4, marginHorizontal: 12 }}>
+                <View style={{ height: 8, width: `${((searchRadiusKm - 5) / 95) * 100}%`, backgroundColor: colors.brand, borderRadius: 4 }} />
               </View>
               <RadiusBtn icon="plus" onPress={() => setSearchRadius(searchRadiusKm + 5)} />
             </Row>
           </View>
 
-          {isOnline && !order && (
-            <Sub style={{ marginTop: spacing.s }}>{t('driver.demoHint')}</Sub>
-          )}
-        </Card>
-      </View>
+          {/* Заработок за сегодня — мини-график */}
+          <View style={{ marginTop: spacing.m, backgroundColor: colors.ink, borderRadius: radius.l, padding: spacing.m, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View>
+              <Text style={{ color: '#9FB3C9', fontWeight: '700', fontSize: 13 }}>{t('earn.today')}</Text>
+              <Text style={{ color: '#FFF', fontWeight: '900', fontSize: 26, letterSpacing: -1 }}>+248 zł</Text>
+            </View>
+            <View style={{ width: 120 }}><Spark data={[40, 65, 50, 80, 60, 95, 70]} height={44} /></View>
+          </View>
+        </GlassSheet>
+      )}
     </View>
   );
 };

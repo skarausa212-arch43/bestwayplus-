@@ -1,44 +1,47 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { APP_CONFIG, Locale } from '@/config/app';
 import { setLocale, useT } from '@/i18n';
 import { useLocaleStore } from '@/store/locale';
 import { useNotificationStore } from '@/store/notifications';
 import { colors, radius, spacing } from '@/theme';
 
-// PL/RU/EN — полные переводы; uk/be/de — заглушки (падают на pl)
-const MAIN_LANGS: Locale[] = ['pl', 'ru', 'en'];
-const STUB_LANGS: Locale[] = APP_CONFIG.supportedLocales.filter((l) => !MAIN_LANGS.includes(l));
+// Все языки полные и равноправные: PL / EN / RU / UK / DE (выбор в настройках)
+const META: Record<Locale, { flag: string; name: string }> = {
+  pl: { flag: '🇵🇱', name: 'Polski' },
+  en: { flag: '🇬🇧', name: 'English' },
+  ru: { flag: '🇷🇺', name: 'Русский' },
+  uk: { flag: '🇺🇦', name: 'Українська' },
+  de: { flag: '🇩🇪', name: 'Deutsch' },
+};
 
 export const LangSwitcher: React.FC = () => {
   const t = useT();
   const role = useNotificationStore((s) => s.activeRole) ?? 'customer';
   const lang = useLocaleStore((s) => s.langs[role]);
 
-  const pill = (l: Locale, main: boolean) => {
-    const active = lang === l;
-    return (
-      <TouchableOpacity key={l} onPress={() => setLocale(l)}
-        style={{
-          paddingHorizontal: main ? 16 : 10, paddingVertical: main ? 8 : 5,
-          borderRadius: radius.full, marginRight: 6, marginBottom: 6,
-          backgroundColor: active ? colors.brand : '#F1F3F7',
-          opacity: main ? 1 : 0.7,
-        }}>
-        <Text style={{ color: active ? '#FFF' : colors.sub, fontWeight: '800', fontSize: main ? 14 : 11 }}>
-          {l.toUpperCase()}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
-
   return (
     <View>
-      <Text style={{ fontWeight: '700', color: colors.ink, marginBottom: spacing.s }}>{t('profile.language')}</Text>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' }}>
-        {MAIN_LANGS.map((l) => pill(l, true))}
-        {STUB_LANGS.map((l) => pill(l, false))}
-      </View>
+      <Text style={{ fontWeight: '800', color: colors.ink, marginBottom: spacing.s, fontSize: 16 }}>{t('profile.language')}</Text>
+      {APP_CONFIG.supportedLocales.map((l) => {
+        const active = lang === l;
+        const m = META[l];
+        return (
+          <TouchableOpacity key={l} onPress={() => setLocale(l)}
+            style={{
+              flexDirection: 'row', alignItems: 'center',
+              paddingVertical: 12, paddingHorizontal: 14, borderRadius: radius.l, marginBottom: 8,
+              backgroundColor: active ? colors.brandSoft : colors.surface,
+              borderWidth: 1.5, borderColor: active ? colors.brand : 'transparent',
+            }}>
+            <Text style={{ fontSize: 22, marginRight: 12 }}>{m.flag}</Text>
+            <Text style={{ flex: 1, fontWeight: '700', color: colors.ink, fontSize: 15 }}>{m.name}</Text>
+            <Text style={{ color: active ? colors.brandDark : colors.faint, fontWeight: '800', fontSize: 12, marginRight: 8 }}>{l.toUpperCase()}</Text>
+            {active && <Feather name="check-circle" size={20} color={colors.brand} />}
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 };

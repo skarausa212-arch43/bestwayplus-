@@ -184,6 +184,18 @@ const en: Dict = {
   'demand.sc.noLaweta': 'No tow trucks available',
   'demand.sc.nightPeak': 'Weekend night peak',
   'map.demo': 'Demo map · production: Mapbox / Google Maps',
+  // ── Educational slides (per reference) ──
+  'info.cta': 'Order transport', 'info.next': 'Next',
+  'info.chip.delivery': 'About delivery', 'info.chip.body': 'About the body',
+  'info.chip.loaders': 'About loaders', 'info.chip.waiting': 'About waiting',
+  'info.delivery.title': 'Delivery of large items across the city',
+  'info.delivery.body': 'In 10–15 minutes a van arrives, picks up your heavy and bulky items and drives them to the address you set.',
+  'info.body.title': 'Body size — your choice',
+  'info.body.body': 'Bodies differ in capacity and price. Pick a small van, big van or tow truck depending on your cargo.',
+  'info.loaders.title': 'Loaders help with heavy things',
+  'info.loaders.body': 'They load and unload your items and carry them to your floor. Just pick the option in the order details.',
+  'info.waiting.title': '10 minutes for loading and unloading are included',
+  'info.waiting.body': 'If more time is needed, the meter starts — the per-minute rate is known upfront.',
 };
 
 export default en;

@@ -10,6 +10,7 @@ import { SplashScreen } from '@/screens/shared/SplashScreen';
 import { RoleSelectScreen } from '@/screens/shared/RoleSelectScreen';
 import { NotificationsScreen } from '@/screens/shared/NotificationsScreen';
 import { ReportProblemScreen } from '@/screens/shared/ReportProblemScreen';
+import { InfoSlidesScreen } from '@/screens/shared/InfoSlidesScreen';
 import { CustomerAuthScreen } from '@/screens/auth/CustomerAuthScreen';
 import { DriverAuthScreen } from '@/screens/auth/DriverAuthScreen';
 import { CustomerHomeScreen } from '@/screens/customer/CustomerHomeScreen';
@@ -82,6 +83,7 @@ export const RootNavigator = () => (
       <Stack.Screen name="DriverActiveOrder" component={DriverActiveOrderScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="ReportProblem" component={ReportProblemScreen} />
+      <Stack.Screen name="InfoSlides" component={InfoSlidesScreen} />
       <Stack.Screen name="AdminPanel" component={AdminPanelScreen} />
     </Stack.Navigator>
   </NavigationContainer>

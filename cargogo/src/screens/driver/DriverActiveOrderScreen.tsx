@@ -6,6 +6,7 @@ import { ProgressBar } from '@/components/Anim';
 import { WaitBanner } from '@/components/WaitBanner';
 import { BackButton } from '@/components/BackButton';
 import { Card, Button, H2, Sub, Row, StatusPill, Input } from '@/components/UI';
+import { Timeline } from '@/components/Glass';
 import { useOrderStore } from '@/store/orders';
 import { useDriverStore } from '@/store/driver';
 import { DRIVER_STATUS_FLOW } from '@/constants';
@@ -92,13 +93,12 @@ export const DriverActiveOrderScreen: React.FC<{ navigation: any; route?: any }>
             <Text style={{ fontWeight: '900', fontSize: 20, color: colors.brandDark }}>{formatGr(payout?.totalGr ?? 0, 2)}</Text>
           </View>
         </Row>
-        <ProgressBar progress={order.status === 'completed' ? 1 : progress} style={{ marginBottom: spacing.s }} />
-        <Sub>📍 {order.pickup.full}</Sub>
-        {order.stops.map((s, i) => (
-          <Sub key={i}>🔸 {s.full}</Sub>
-        ))}
-        <Sub>🏁 {order.destination.full}</Sub>
-        <Sub style={{ marginTop: 4 }}>📦 {order.cargo.name} · {order.cargo.weightKg} kg</Sub>
+        <ProgressBar progress={order.status === 'completed' ? 1 : progress} style={{ marginBottom: spacing.m }} />
+        <Timeline points={[
+          { title: order.pickup.full, sub: t('details.route'), done: progress > 0.4 },
+          ...order.stops.map((s) => ({ title: s.full, sub: undefined as string | undefined, done: progress > 0.4 })),
+          { title: order.destination.full, sub: `${order.cargo.name} · ${order.cargo.weightKg} kg`, done: order.status === 'completed' },
+        ]} />
         <Row style={{ marginTop: spacing.m }}>
           <Button title={t('driver.chat')} variant="secondary" onPress={() => navigation.navigate('DriverChat')} style={{ flex: 1, marginRight: 8 }} />
           <Button title={t('driver.nav')} variant="secondary" onPress={() => Alert.alert(t('nav.title'), t('nav.body'))} style={{ flex: 1 }} />

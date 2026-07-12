@@ -194,4 +194,16 @@ export default {
   'demand.sc.noLaweta': 'Brak dostępnych lawet',
   'demand.sc.nightPeak': 'Nocny szczyt weekendowy',
   'map.demo': 'Mapa demo · produkcja: Mapbox / Google Maps',
+  // ── Poznawcze slajdy (jak w referencji) ──
+  'info.cta': 'Zamów transport', 'info.next': 'Dalej',
+  'info.chip.delivery': 'O dostawie', 'info.chip.body': 'O nadwoziu',
+  'info.chip.loaders': 'O ładowaczach', 'info.chip.waiting': 'O oczekiwaniu',
+  'info.delivery.title': 'Dostawa dużych rzeczy po mieście',
+  'info.delivery.body': 'W 10–15 minut przyjeżdża bus, zabiera Twoje ciężkie i duże rzeczy i wiezie pod wskazany adres.',
+  'info.body.title': 'Rozmiar nadwozia — do wyboru',
+  'info.body.body': 'Nadwozia różnią się pojemnością i ceną. Wybierz mały, duży bus lub lawetę zależnie od ładunku.',
+  'info.loaders.title': 'Ładowacze pomogą z ciężarami',
+  'info.loaders.body': 'Załadują i rozładują rzeczy, a także wniosą je na piętro. Wystarczy wybrać opcję w szczegółach zamówienia.',
+  'info.waiting.title': '10 minut na załadunek i rozładunek w cenie',
+  'info.waiting.body': 'Jeśli potrzeba więcej czasu, naliczanie idzie według licznika — stawka za minutę z góry znana.',
 };

@@ -3,7 +3,7 @@ export const APP_CONFIG = {
   name: 'PakujGo',
   tagline: 'Szybki transport na terenie całej Polski',
   defaultLocale: 'pl' as const,
-  supportedLocales: ['pl', 'ru', 'en', 'uk', 'be', 'de'] as const,
+  supportedLocales: ['pl', 'en', 'ru', 'uk', 'de'] as const,
   currency: 'zł',
   city: 'Wrocław',
   freeWaitingMinutes: 10,

@@ -19,6 +19,18 @@ import { CustomerPriceView } from '@/features/pricing/pricingTypes';
 const TOTAL_STEPS = 5;
 const MAX_STOPS = 3;
 
+// Инфо-чип «О…» — открывает познавательный слайд (как в референсе)
+const InfoChip: React.FC<{ navigation: any; start: number; labelKey: string }> = ({ navigation, start, labelKey }) => {
+  const t = useT();
+  return (
+    <TouchableOpacity onPress={() => navigation.navigate('InfoSlides', { start })}
+      style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.full, paddingHorizontal: 12, paddingVertical: 8, marginRight: 8, marginBottom: 8 }}>
+      <Text style={{ color: colors.ink, fontWeight: '700', fontSize: 13, marginRight: 5 }}>{t(labelKey)}</Text>
+      <Feather name="info" size={14} color={colors.brandDark} />
+    </TouchableOpacity>
+  );
+};
+
 // Фото транспорта из ассетов бренда
 const VEHICLE_PHOTOS: Record<VehicleType, any> = {
   small_bus: require('../../../assets/vehicles/van-small.png'),
@@ -163,7 +175,11 @@ export const OrderWizardScreen: React.FC<{ navigation: any }> = ({ navigation })
 
       {step === 2 && (
         <FadeSlideIn key="s2"><Card>
-          <H2 style={{ marginBottom: spacing.m }}>{t('wizard.vehicleType')}</H2>
+          <H2 style={{ marginBottom: spacing.s }}>{t('wizard.vehicleType')}</H2>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.s }}>
+            <InfoChip navigation={navigation} start={1} labelKey="info.chip.body" />
+            <InfoChip navigation={navigation} start={0} labelKey="info.chip.delivery" />
+          </View>
           {(Object.keys(VEHICLE_TYPES) as VehicleType[]).map((k) => {
             const v = VEHICLE_TYPES[k];
             const active = vehicleType === k;
@@ -193,7 +209,10 @@ export const OrderWizardScreen: React.FC<{ navigation: any }> = ({ navigation })
 
       {step === 3 && (
         <FadeSlideIn key="s3"><Card>
-          <H2 style={{ marginBottom: spacing.m }}>{t('wizard.cargo')}</H2>
+          <H2 style={{ marginBottom: spacing.s }}>{t('wizard.cargo')}</H2>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.s }}>
+            <InfoChip navigation={navigation} start={2} labelKey="info.chip.loaders" />
+          </View>
           <Sub style={{ marginBottom: 6, fontWeight: '600' }}>{t('wizard.category')}</Sub>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.m }}>
             {CARGO_CATEGORIES.map((c) => (
@@ -272,7 +291,11 @@ export const OrderWizardScreen: React.FC<{ navigation: any }> = ({ navigation })
 
       {step === 5 && (
         <FadeSlideIn key="s5"><Card>
-          <H2 style={{ marginBottom: spacing.m }}>{t('wizard.summary')}</H2>
+          <H2 style={{ marginBottom: spacing.s }}>{t('wizard.summary')}</H2>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.s }}>
+            <InfoChip navigation={navigation} start={3} labelKey="info.chip.waiting" />
+            <InfoChip navigation={navigation} start={0} labelKey="info.chip.delivery" />
+          </View>
           {/* §5: клиент видит ТОЛЬКО CustomerPriceView — без маржи, коэффициентов и выплат */}
           {view?.lines.map((l) => (
             <Row key={l.labelKey} style={{ justifyContent: 'space-between', marginBottom: 6 }}>
