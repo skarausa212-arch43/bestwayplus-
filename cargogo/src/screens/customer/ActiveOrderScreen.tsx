@@ -3,6 +3,7 @@ import { ScrollView, View, Text, TouchableOpacity, Alert } from 'react-native';
 import { AppMap, orderPoints } from '@/components/Map';
 import { ProgressBar } from '@/components/Anim';
 import { WaitBanner } from '@/components/WaitBanner';
+import { BackButton } from '@/components/BackButton';
 import { FadeSlideIn, AnimatedNumber } from '@/components/Anim';
 import { Card, Button, Sub, Row, StatusPill } from '@/components/UI';
 import { useOrderStore } from '@/store/orders';
@@ -26,6 +27,7 @@ export const ActiveOrderScreen: React.FC<{ navigation: any }> = ({ navigation })
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: spacing.l, paddingTop: 60 }}>
       <AppMap height={230} showRoute driverProgress={progress} points={orderPoints(order)} style={{ marginBottom: spacing.m }} />
+      <BackButton navigation={navigation} style={{ top: 70, left: 28 }} />
       <Card style={{ marginBottom: spacing.m }}>
         <Row style={{ justifyContent: 'space-between', marginBottom: spacing.s }}>
           <StatusPill label={t(`status.${order.status}`)} tone={done ? 'brand' : 'info'} />

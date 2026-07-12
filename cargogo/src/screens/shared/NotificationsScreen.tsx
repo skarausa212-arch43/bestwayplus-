@@ -5,9 +5,10 @@ import { useAuthStore } from '@/store/auth';
 import { renderNotifTitle, renderNotifBody } from '@/services/notifications';
 import { Card, H2, Sub } from '@/components/UI';
 import { useT } from '@/i18n';
+import { BackButton } from '@/components/BackButton';
 import { colors, spacing } from '@/theme';
 
-export const NotificationsScreen: React.FC = () => {
+export const NotificationsScreen: React.FC<{ navigation?: any }> = ({ navigation }) => {
   const t = useT();
   const role = useAuthStore((s) => s.user?.role) ?? 'customer';
   const items = useNotificationStore((s) => s.items.filter((i) => i.role === role));
@@ -16,7 +17,8 @@ export const NotificationsScreen: React.FC = () => {
   useEffect(() => { markAllRead(role); }, []);
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg, padding: spacing.l, paddingTop: 60 }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg, padding: spacing.l, paddingTop: 110 }}>
+      <BackButton navigation={navigation} />
       <H2 style={{ marginBottom: spacing.l }}>{t('notif.title')}</H2>
       <FlatList
         data={items}

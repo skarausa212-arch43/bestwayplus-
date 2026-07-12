@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, ScrollView, Text, TouchableOpacity, Alert } from 'react-native';
 import { Button, Card, Input, H1, Sub } from '@/components/UI';
 import { useAuthStore } from '@/store/auth';
+import { BackButton } from '@/components/BackButton';
 import { colors, spacing } from '@/theme';
 
 export const CustomerAuthScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
@@ -25,7 +26,8 @@ export const CustomerAuthScreen: React.FC<{ navigation: any }> = ({ navigation }
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: spacing.xl, paddingTop: 60 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: spacing.xl, paddingTop: 110 }}>
+      <BackButton navigation={navigation} style={{ top: 54, left: 24 }} />
       <H1 style={{ marginBottom: 4 }}>{mode === 'login' ? 'Witaj ponownie!' : 'Załóż konto'}</H1>
       <Sub style={{ marginBottom: spacing.xl }}>Konto klienta</Sub>
       <Card>

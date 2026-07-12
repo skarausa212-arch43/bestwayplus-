@@ -3,6 +3,7 @@ import { ScrollView, View, Text, Alert } from 'react-native';
 import { AppMap, orderPoints } from '@/components/Map';
 import { ProgressBar } from '@/components/Anim';
 import { WaitBanner } from '@/components/WaitBanner';
+import { BackButton } from '@/components/BackButton';
 import { Card, Button, H2, Sub, Row, StatusPill, Input } from '@/components/UI';
 import { useOrderStore } from '@/store/orders';
 import { useDriverStore } from '@/store/driver';
@@ -22,7 +23,7 @@ const NEXT: Partial<Record<OrderStatus, OrderStatus>> = {
   unloading: 'awaiting_confirmation',
 };
 
-export const DriverActiveOrderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+export const DriverActiveOrderScreen: React.FC<{ navigation: any; route?: any }> = ({ navigation, route }) => {
   const t = useT();
   const order = useOrderStore((s) => s.orders.find((o) => o.id === s.activeOrderId));
   const setStatus = useOrderStore((s) => s.setStatus);
@@ -68,6 +69,7 @@ export const DriverActiveOrderScreen: React.FC<{ navigation: any }> = ({ navigat
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: spacing.l, paddingTop: 60 }}>
       <AppMap height={200} showRoute driverProgress={progress} points={orderPoints(order)} style={{ marginBottom: spacing.m }} />
+      {route?.name === 'DriverActiveOrder' && <BackButton navigation={navigation} style={{ top: 70, left: 28 }} />}
       <Card style={{ marginBottom: spacing.m }}>
         <Row style={{ justifyContent: 'space-between', marginBottom: spacing.s }}>
           <StatusPill label={t(`status.${order.status}`)} tone="info" />

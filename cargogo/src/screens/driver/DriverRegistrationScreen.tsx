@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ScrollView, View, Text, TouchableOpacity, Alert } from 'react-native';
 import { Card, Button, Input, Stepper, H2, Sub } from '@/components/UI';
 import { useDriverStore } from '@/store/driver';
+import { BackButton } from '@/components/BackButton';
 import { colors, spacing, radius } from '@/theme';
 
 const TOTAL = 8;
@@ -44,7 +45,9 @@ export const DriverRegistrationScreen: React.FC<{ navigation: any }> = ({ naviga
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: spacing.l, paddingTop: 60, paddingBottom: 40 }}>
+    <View style={{ flex: 1 }}>
+    <BackButton navigation={navigation} />
+    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: spacing.l, paddingTop: 110, paddingBottom: 40 }}>
       <Stepper step={step} total={TOTAL} />
       <H2 style={{ marginBottom: spacing.m }}>{STEP_TITLES[step - 1]}</H2>
       <Card>
@@ -128,5 +131,6 @@ export const DriverRegistrationScreen: React.FC<{ navigation: any }> = ({ naviga
       </View>
       <Sub style={{ textAlign: 'center', marginTop: spacing.m }}>Szkic zapisuje się automatycznie — możesz wrócić później.</Sub>
     </ScrollView>
+    </View>
   );
 };

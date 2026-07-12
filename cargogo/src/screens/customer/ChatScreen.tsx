@@ -6,11 +6,12 @@ import { ChatLang } from '@/types';
 import { QUICK_MESSAGE_KEYS } from '@/constants';
 import { useT, langOf } from '@/i18n';
 import { FadeSlideIn } from '@/components/Anim';
+import { BackButton } from '@/components/BackButton';
 import { colors, spacing, radius } from '@/theme';
 
 // Чат с автопереводом: быстрые фразы — ключи словаря (мгновенно),
 // свободный текст — {text, lang, tr, pending} с серверным переводом и пометкой «🌐 переведено»
-export const ChatScreen: React.FC = () => {
+export const ChatScreen: React.FC<{ navigation?: any; route?: any }> = ({ navigation, route }) => {
   const t = useT();
   const user = useAuthStore((s) => s.user);
   const role: 'customer' | 'driver' = user?.role === 'driver' ? 'driver' : 'customer';
@@ -29,7 +30,8 @@ export const ChatScreen: React.FC = () => {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: 54 }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: 104 }}>
+      {(route?.name === 'Chat' || route?.name === 'DriverChat') && <BackButton navigation={navigation} />}
       <FlatList
         data={messages} keyExtractor={(m) => m.id}
         contentContainerStyle={{ padding: spacing.l }}

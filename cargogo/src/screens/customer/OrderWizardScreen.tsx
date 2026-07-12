@@ -7,6 +7,7 @@ import { MOCK_CUSTOMER_PROFILE } from '@/mocks';
 import { VehicleType, Address } from '@/types';
 import { useT } from '@/i18n';
 import { FadeSlideIn, AnimatedNumber } from '@/components/Anim';
+import { BackButton } from '@/components/BackButton';
 import { colors, spacing, radius } from '@/theme';
 
 const TOTAL_STEPS = 5;
@@ -64,7 +65,9 @@ export const OrderWizardScreen: React.FC<{ navigation: any }> = ({ navigation })
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: spacing.l, paddingTop: 60, paddingBottom: 40 }}>
+    <View style={{ flex: 1 }}>
+    <BackButton navigation={navigation} />
+    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: spacing.l, paddingTop: 110, paddingBottom: 40 }}>
       <View style={{ marginBottom: spacing.l }}>
         <Text style={{ fontSize: 13, color: colors.sub, fontWeight: '700', marginBottom: 6 }}>{t('step.of', [step, TOTAL_STEPS])}</Text>
         <View style={{ height: 6, backgroundColor: colors.line, borderRadius: 3 }}>
@@ -231,5 +234,6 @@ export const OrderWizardScreen: React.FC<{ navigation: any }> = ({ navigation })
         {step > 1 && <Button title={t('common.back')} variant="ghost" onPress={() => setStep(step - 1)} style={{ marginTop: spacing.s }} />}
       </View>
     </ScrollView>
+    </View>
   );
 };

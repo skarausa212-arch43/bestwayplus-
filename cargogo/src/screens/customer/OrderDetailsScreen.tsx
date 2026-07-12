@@ -4,6 +4,7 @@ import { Card, H2, Sub, Row, StatusPill, Button } from '@/components/UI';
 import { useOrderStore } from '@/store/orders';
 import { useDriverStore } from '@/store/driver';
 import { useT } from '@/i18n';
+import { BackButton } from '@/components/BackButton';
 import { colors, spacing } from '@/theme';
 
 // Экран деталей заказа из истории: маршрут, груз, разбивка цены, история статусов
@@ -30,7 +31,9 @@ export const OrderDetailsScreen: React.FC<{ navigation: any; route: any }> = ({ 
   ];
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: spacing.l, paddingTop: 60, paddingBottom: 40 }}>
+    <View style={{ flex: 1 }}>
+    <BackButton navigation={navigation} />
+    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: spacing.l, paddingTop: 110, paddingBottom: 40 }}>
       <H2 style={{ marginBottom: spacing.m }}>{t('details.title')}</H2>
 
       <Card style={{ marginBottom: spacing.m }}>
@@ -86,5 +89,6 @@ export const OrderDetailsScreen: React.FC<{ navigation: any; route: any }> = ({ 
 
       <Button title={t('common.close')} variant="ghost" onPress={() => navigation.goBack()} />
     </ScrollView>
+    </View>
   );
 };
