@@ -192,6 +192,16 @@ const de: Dict = {
   'info.loaders.body': 'Sie be- und entladen deine Sachen und tragen sie in die Etage. Wähle einfach die Option in den Bestelldetails.',
   'info.waiting.title': 'Je 10 Minuten fürs Be- und Entladen sind inklusive',
   'info.waiting.body': 'Wird mehr Zeit gebraucht, läuft der Zähler — der Minutenpreis ist vorab bekannt.',
+  // ── Fahrer-Slides ──
+  'dinfo.chip': 'Wie funktioniert’s?', 'dinfo.cta': 'Los geht’s',
+  'dinfo.earn.title': 'Verdiene mit Aufträgen in deiner Nähe',
+  'dinfo.earn.body': 'Geh Online, nimm Aufträge an und werde nach jeder Fahrt bezahlt. Trinkgeld gehört zu 100% dir.',
+  'dinfo.radius.title': 'Lege deinen Radius fest und arbeite nah zuhause',
+  'dinfo.radius.body': 'Aufträge außerhalb deines Radius erreichen dich einfach nicht — du entscheidest, wie weit du fährst.',
+  'dinfo.verify.title': 'Prüfung innerhalb von 24 Stunden',
+  'dinfo.verify.body': 'Lade deine Dokumente in der App hoch. Wir prüfen sie meist an einem Tag und du kannst loslegen.',
+  'dinfo.payout.title': 'Auszahlungen direkt aufs Konto',
+  'dinfo.payout.body': 'Dein Saldo wächst nach jedem Auftrag. Zahle mit einem Tipp aus — in 1 Werktag auf dem Konto.',
 };
 
 export default de;

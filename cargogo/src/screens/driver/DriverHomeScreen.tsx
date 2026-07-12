@@ -123,6 +123,13 @@ export const DriverHomeScreen: React.FC<{ navigation: any }> = ({ navigation }) 
             <Switch value={isOnline} onValueChange={setOnline} trackColor={{ true: colors.brand }} />
           </Row>
 
+          {/* Познавательные слайды для водителя */}
+          <TouchableOpacity onPress={() => navigation.navigate('InfoSlides', { set: 'driver', start: 0 })}
+            style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', backgroundColor: colors.surface, borderRadius: radius.full, paddingHorizontal: 14, paddingVertical: 8, marginTop: spacing.s }}>
+            <Feather name="help-circle" size={16} color={colors.brandDark} />
+            <Text style={{ color: colors.ink, fontWeight: '700', fontSize: 13, marginLeft: 6 }}>{t('dinfo.chip')}</Text>
+          </TouchableOpacity>
+
           {/* Радиус приёма заказов: заказы вне круга водителю не приходят */}
           <View style={{ marginTop: spacing.m, backgroundColor: colors.card, borderRadius: radius.l, padding: spacing.m }}>
             <Row style={{ justifyContent: 'space-between', marginBottom: spacing.s }}>

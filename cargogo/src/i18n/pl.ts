@@ -206,4 +206,14 @@ export default {
   'info.loaders.body': 'Załadują i rozładują rzeczy, a także wniosą je na piętro. Wystarczy wybrać opcję w szczegółach zamówienia.',
   'info.waiting.title': '10 minut na załadunek i rozładunek w cenie',
   'info.waiting.body': 'Jeśli potrzeba więcej czasu, naliczanie idzie według licznika — stawka za minutę z góry znana.',
+  // ── Slajdy dla kierowcy ──
+  'dinfo.chip': 'Jak to działa?', 'dinfo.cta': 'Zaczynam',
+  'dinfo.earn.title': 'Zarabiaj na zleceniach w okolicy',
+  'dinfo.earn.body': 'Wejdź Online, przyjmuj zlecenia i otrzymuj wynagrodzenie po każdym kursie. Napiwki są w 100% Twoje.',
+  'dinfo.radius.title': 'Ustaw promień i pracuj blisko domu',
+  'dinfo.radius.body': 'Zlecenia spoza Twojego promienia po prostu do Ciebie nie trafiają — sam decydujesz, jak daleko jeździsz.',
+  'dinfo.verify.title': 'Weryfikacja w 24 godziny',
+  'dinfo.verify.body': 'Wgraj dokumenty w aplikacji. Sprawdzamy je zwykle w ciągu jednego dnia i możesz ruszać.',
+  'dinfo.payout.title': 'Wypłaty prosto na konto',
+  'dinfo.payout.body': 'Saldo rośnie po każdym zleceniu. Wypłać środki jednym przyciskiem — trafią na konto w 1 dzień roboczy.',
 };

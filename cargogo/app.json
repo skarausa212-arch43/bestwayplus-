@@ -13,6 +13,10 @@
       "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.png", "backgroundColor": "#0E1826" }
     },
     "web": { "favicon": "./assets/favicon.png" },
-    "plugins": ["expo-location", "expo-notifications"]
+    "plugins": [
+      "expo-location",
+      "expo-notifications",
+      ["expo-image-picker", { "photosPermission": "PakujGo potrzebuje dostępu do zdjęć, aby ustawić Twój awatar." }]
+    ]
   }
 }

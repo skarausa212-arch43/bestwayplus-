@@ -4,6 +4,7 @@ import { Card, Button, H2, Sub, Row } from '@/components/UI';
 import { LangSwitcher } from '@/components/LangSwitcher';
 import { useAuthStore } from '@/store/auth';
 import { useCommunityStore } from '@/store/community';
+import { AvatarPicker } from '@/components/AvatarPicker';
 import { MOCK_CUSTOMER_PROFILE } from '@/mocks';
 import { useT } from '@/i18n';
 import { Feather } from '@expo/vector-icons';
@@ -17,7 +18,7 @@ export const CustomerProfileScreen: React.FC<{ navigation: any }> = ({ navigatio
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: spacing.l, paddingTop: 60 }}>
       <Card style={{ marginBottom: spacing.m, alignItems: 'center' }}>
-        <View style={{ width: 76, height: 76, borderRadius: 38, backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center', marginBottom: 6 }}><Feather name="user" size={36} color="#FFF" /></View>
+        <View style={{ marginBottom: 10 }}><AvatarPicker role="customer" size={84} icon="user" bg={colors.brand} /></View>
         <H2>{user?.firstName} {user?.lastName}</H2>
         <Sub>{user?.email} · {user?.phone}</Sub>
         {/* Рейтинг клиента (оценки в обе стороны) */}

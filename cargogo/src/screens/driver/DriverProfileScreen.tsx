@@ -2,6 +2,7 @@ import React from 'react';
 import { ScrollView, View, Text } from 'react-native';
 import { Card, Button, H2, Sub, Row, StatusPill } from '@/components/UI';
 import { LangSwitcher } from '@/components/LangSwitcher';
+import { AvatarPicker } from '@/components/AvatarPicker';
 import { useAuthStore } from '@/store/auth';
 import { useDriverStore } from '@/store/driver';
 import { useT } from '@/i18n';
@@ -17,9 +18,12 @@ export const DriverProfileScreen: React.FC<{ navigation: any }> = ({ navigation 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: spacing.l, paddingTop: 60 }}>
       <Card style={{ marginBottom: spacing.m, alignItems: 'center' }}>
-        <View style={{ width: 76, height: 76, borderRadius: 38, backgroundColor: colors.infoSoft, alignItems: 'center', justifyContent: 'center', marginBottom: 6 }}><Feather name="truck" size={34} color={colors.info} /></View>
+        <View style={{ marginBottom: 10 }}><AvatarPicker role="driver" size={84} icon="truck" bg={colors.ink} /></View>
         <H2>{user?.firstName} {user?.lastName}</H2>
-        <Sub>★ {rating} · {totalOrders}</Sub>
+        <Row style={{ marginTop: 2 }}>
+          <Feather name="star" size={14} color={colors.warn} />
+          <Sub style={{ marginLeft: 4 }}>{rating} · {totalOrders}</Sub>
+        </Row>
       </Card>
       <Card style={{ marginBottom: spacing.m }}>
         <LangSwitcher />

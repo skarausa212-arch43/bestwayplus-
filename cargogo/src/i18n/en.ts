@@ -196,6 +196,16 @@ const en: Dict = {
   'info.loaders.body': 'They load and unload your items and carry them to your floor. Just pick the option in the order details.',
   'info.waiting.title': '10 minutes for loading and unloading are included',
   'info.waiting.body': 'If more time is needed, the meter starts — the per-minute rate is known upfront.',
+  // ── Driver slides ──
+  'dinfo.chip': 'How it works?', 'dinfo.cta': 'Let’s start',
+  'dinfo.earn.title': 'Earn on jobs near you',
+  'dinfo.earn.body': 'Go Online, accept jobs and get paid after every trip. Tips are 100% yours.',
+  'dinfo.radius.title': 'Set your radius and work close to home',
+  'dinfo.radius.body': 'Jobs outside your radius simply don’t reach you — you decide how far you drive.',
+  'dinfo.verify.title': 'Verification within 24 hours',
+  'dinfo.verify.body': 'Upload your documents in the app. We usually check them within a day and you’re ready to go.',
+  'dinfo.payout.title': 'Payouts straight to your account',
+  'dinfo.payout.body': 'Your balance grows after every job. Cash out with one tap — it arrives within 1 business day.',
 };
 
 export default en;
