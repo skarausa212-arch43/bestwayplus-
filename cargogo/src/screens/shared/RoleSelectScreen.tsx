@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Feather } from '@expo/vector-icons';
 import { Button, Card, Sub } from '@/components/UI';
 import { FadeSlideIn } from '@/components/Anim';
 import { useT } from '@/i18n';
@@ -24,14 +25,14 @@ export const RoleSelectScreen: React.FC<{ navigation: any }> = ({ navigation }) 
       <ScrollView contentContainerStyle={{ padding: spacing.xl, paddingTop: spacing.xl }}>
         <FadeSlideIn delay={120}>
           <Card style={{ marginBottom: spacing.m }}>
-            <Text style={{ fontSize: 30, marginBottom: 8 }}>📦</Text>
+            <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: colors.brandSoft, alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}><Feather name="package" size={26} color={colors.brandDark} /></View>
             <Sub style={{ marginBottom: spacing.m }}>Przewieziesz meble, AGD, palety lub auto — szybko i bezpiecznie.</Sub>
             <Button title={t('role.customer')} onPress={() => navigation.navigate('CustomerAuth')} />
           </Card>
         </FadeSlideIn>
         <FadeSlideIn delay={240}>
           <Card>
-            <Text style={{ fontSize: 30, marginBottom: 8 }}>🧑‍✈️</Text>
+            <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: colors.infoSoft, alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}><Feather name="truck" size={26} color={colors.info} /></View>
             <Sub style={{ marginBottom: spacing.m }}>Masz busa lub lawetę? Zarabiaj na zleceniach w Twojej okolicy.</Sub>
             <Button title={t('role.driver')} variant="secondary" onPress={() => navigation.navigate('DriverAuth')} />
           </Card>

@@ -5,6 +5,7 @@ import { LangSwitcher } from '@/components/LangSwitcher';
 import { useAuthStore } from '@/store/auth';
 import { useDriverStore } from '@/store/driver';
 import { useT } from '@/i18n';
+import { Feather } from '@expo/vector-icons';
 import { colors, spacing } from '@/theme';
 
 const SECTIONS = ['Dane osobowe', 'Dokument tożsamości', 'Prawo jazdy', 'Pojazdy', 'Dokumenty pojazdu', 'Dane do wypłat', 'Obszar pracy', 'Oceny', 'Pomoc', 'Regulamin'];
@@ -16,7 +17,7 @@ export const DriverProfileScreen: React.FC<{ navigation: any }> = ({ navigation 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: spacing.l, paddingTop: 60 }}>
       <Card style={{ marginBottom: spacing.m, alignItems: 'center' }}>
-        <Text style={{ fontSize: 44 }}>👨‍🔧</Text>
+        <View style={{ width: 76, height: 76, borderRadius: 38, backgroundColor: colors.infoSoft, alignItems: 'center', justifyContent: 'center', marginBottom: 6 }}><Feather name="truck" size={34} color={colors.info} /></View>
         <H2>{user?.firstName} {user?.lastName}</H2>
         <Sub>★ {rating} · {totalOrders}</Sub>
       </Card>

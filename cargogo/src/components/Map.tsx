@@ -3,6 +3,7 @@ import { View, Text, ViewStyle, Platform } from 'react-native';
 import MapView, { Marker, Polyline, LatLng } from 'react-native-maps';
 import { Order } from '@/types';
 import { Pulse } from '@/components/Anim';
+import { Feather } from '@expo/vector-icons';
 import { colors } from '@/theme';
 
 /**
@@ -75,19 +76,19 @@ export const AppMap: React.FC<{
             <Polyline coordinates={points} strokeWidth={4} strokeColor={colors.brand}
               lineDashPattern={Platform.OS === 'android' ? undefined : undefined} />
             <Marker coordinate={points[0]} anchor={{ x: 0.5, y: 0.5 }}>
-              <MapPin emoji="📍" />
+              <MapPin icon="map-pin" />
             </Marker>
             {points.slice(1, -1).map((p, i) => (
               <Marker key={i} coordinate={p} anchor={{ x: 0.5, y: 0.5 }}>
-                <MapPin emoji="🔸" small />
+                <MapPin icon="circle" small />
               </Marker>
             ))}
             <Marker coordinate={points[points.length - 1]} anchor={{ x: 0.5, y: 0.5 }}>
-              <MapPin emoji="🏁" />
+              <MapPin icon="flag" />
             </Marker>
             {driverPos && (
               <Marker coordinate={driverPos} anchor={{ x: 0.5, y: 0.5 }} zIndex={10}>
-                <MapPin emoji="🚚" big />
+                <MapPin icon="truck" big />
               </Marker>
             )}
           </>
@@ -103,8 +104,8 @@ export const AppMap: React.FC<{
   );
 };
 
-const MapPin: React.FC<{ emoji: string; big?: boolean; small?: boolean }> = ({ emoji, big, small }) => {
-  const size = big ? 40 : small ? 22 : 30;
+const MapPin: React.FC<{ icon: React.ComponentProps<typeof Feather>['name']; big?: boolean; small?: boolean }> = ({ icon, big, small }) => {
+  const size = big ? 40 : small ? 20 : 30;
   return (
     <View style={{
       width: size, height: size, borderRadius: size / 2,
@@ -112,7 +113,7 @@ const MapPin: React.FC<{ emoji: string; big?: boolean; small?: boolean }> = ({ e
       borderWidth: 2, borderColor: colors.brand,
       shadowColor: '#0F172A', shadowOpacity: 0.2, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 4,
     }}>
-      <Text style={{ fontSize: big ? 19 : small ? 10 : 13 }}>{emoji}</Text>
+      <Feather name={icon} size={big ? 20 : small ? 9 : 14} color={big ? colors.brandDark : colors.ink} />
     </View>
   );
 };

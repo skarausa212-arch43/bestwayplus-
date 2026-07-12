@@ -6,6 +6,7 @@ import { ChatLang } from '@/types';
 import { QUICK_MESSAGE_KEYS } from '@/constants';
 import { useT, langOf } from '@/i18n';
 import { FadeSlideIn } from '@/components/Anim';
+import { Feather } from '@expo/vector-icons';
 import { BackButton } from '@/components/BackButton';
 import { colors, spacing, radius } from '@/theme';
 
@@ -73,7 +74,7 @@ export const ChatScreen: React.FC<{ navigation?: any; route?: any }> = ({ naviga
           style={{ flex: 1, backgroundColor: '#F8F9FB', borderRadius: radius.full, paddingHorizontal: 16, paddingVertical: 10 }} />
         <TouchableOpacity onPress={send}
           style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center', marginLeft: 8 }}>
-          <Text style={{ color: '#FFF', fontSize: 16 }}>➤</Text>
+          <Feather name="send" size={18} color="#FFF" />
         </TouchableOpacity>
       </View>
     </View>

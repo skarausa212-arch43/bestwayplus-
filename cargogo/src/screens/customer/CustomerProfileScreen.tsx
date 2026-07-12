@@ -1,10 +1,11 @@
 import React from 'react';
-import { Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
 import { Card, Button, H2, Sub, Row } from '@/components/UI';
 import { LangSwitcher } from '@/components/LangSwitcher';
 import { useAuthStore } from '@/store/auth';
 import { MOCK_CUSTOMER_PROFILE } from '@/mocks';
 import { useT } from '@/i18n';
+import { Feather } from '@expo/vector-icons';
 import { colors, spacing } from '@/theme';
 
 export const CustomerProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
@@ -13,7 +14,7 @@ export const CustomerProfileScreen: React.FC<{ navigation: any }> = ({ navigatio
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: spacing.l, paddingTop: 60 }}>
       <Card style={{ marginBottom: spacing.m, alignItems: 'center' }}>
-        <Text style={{ fontSize: 44 }}>👤</Text>
+        <View style={{ width: 76, height: 76, borderRadius: 38, backgroundColor: colors.brandSoft, alignItems: 'center', justifyContent: 'center', marginBottom: 6 }}><Feather name="user" size={36} color={colors.brandDark} /></View>
         <H2>{user?.firstName} {user?.lastName}</H2>
         <Sub>{user?.email} · {user?.phone}</Sub>
       </Card>

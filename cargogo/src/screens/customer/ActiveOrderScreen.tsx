@@ -4,6 +4,7 @@ import { AppMap, orderPoints } from '@/components/Map';
 import { ProgressBar } from '@/components/Anim';
 import { WaitBanner } from '@/components/WaitBanner';
 import { BackButton } from '@/components/BackButton';
+import { Feather } from '@expo/vector-icons';
 import { FadeSlideIn, AnimatedNumber } from '@/components/Anim';
 import { Card, Button, Sub, Row, StatusPill } from '@/components/UI';
 import { useOrderStore } from '@/store/orders';
@@ -76,11 +77,11 @@ export const ActiveOrderScreen: React.FC<{ navigation: any }> = ({ navigation })
             </View>
             <TouchableOpacity onPress={() => navigation.navigate('Chat')}
               style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: colors.brandSoft, alignItems: 'center', justifyContent: 'center', marginRight: 8 }}>
-              <Text>💬</Text>
+              <Feather name="message-circle" size={19} color={colors.brandDark} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => Alert.alert(t('call.title'), t('call.body'))}
               style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: colors.brandSoft, alignItems: 'center', justifyContent: 'center' }}>
-              <Text>📞</Text>
+              <Feather name="phone" size={19} color={colors.brandDark} />
             </TouchableOpacity>
           </Row>
         </Card>

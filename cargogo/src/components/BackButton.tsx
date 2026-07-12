@@ -1,5 +1,6 @@
 import React from 'react';
-import { TouchableOpacity, Text, ViewStyle } from 'react-native';
+import { TouchableOpacity, ViewStyle } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useT } from '@/i18n';
 import { colors, shadows } from '@/theme';
 
@@ -16,7 +17,7 @@ export const BackButton: React.FC<{ navigation: any; style?: ViewStyle }> = ({ n
         width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFF',
         alignItems: 'center', justifyContent: 'center', ...shadows.card,
       }, style]}>
-      <Text style={{ fontSize: 20, color: colors.ink, fontWeight: '800' }}>←</Text>
+      <Feather name="arrow-left" size={22} color={colors.ink} />
     </TouchableOpacity>
   );
 };
