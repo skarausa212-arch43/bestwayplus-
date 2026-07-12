@@ -10,12 +10,14 @@ import { useOrderStore } from '@/store/orders';
 import { APP_CONFIG } from '@/config/app';
 import { getDriverPricingView } from '@/features/pricing/pricingSelectors';
 import { formatGr, haversineKm } from '@/features/pricing/pricingHelpers';
+import { useCommunityStore } from '@/store/community';
 import { useT } from '@/i18n';
 import { colors, spacing, radius } from '@/theme';
 
 export const DriverHomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const t = useT();
   const { isOnline, setOnline, balance, rating, searchRadiusKm, setSearchRadius, position } = useDriverStore();
+  const customerRating = useCommunityStore((s) => s.customerRating);
   const orders = useOrderStore((s) => s.orders);
   const assignDriver = useOrderStore((s) => s.assignDriver);
   const [offer, setOffer] = useState<string | null>(null);
@@ -72,7 +74,14 @@ export const DriverHomeScreen: React.FC<{ navigation: any }> = ({ navigation }) 
           <FadeSlideIn>
           <Card style={{ borderWidth: 2, borderColor: colors.brand }}>
             <Row style={{ justifyContent: 'space-between', marginBottom: spacing.s }}>
-              <H2 style={{ fontSize: 17 }}>{t('driver.newOrder')}</H2>
+              <View style={{ flex: 1 }}>
+                <H2 style={{ fontSize: 17 }}>{t('driver.newOrder')}</H2>
+                {/* Рейтинг клиента виден водителю (оценки в обе стороны) */}
+                <Row style={{ marginTop: 2 }}>
+                  <Feather name="star" size={13} color={colors.warn} />
+                  <Text style={{ color: colors.sub, fontWeight: '700', fontSize: 12, marginLeft: 4 }}>{customerRating.toFixed(1)} · {t('offer.clientRating')}</Text>
+                </Row>
+              </View>
               <Breathe active={timer <= 5}>
               <View style={{ backgroundColor: timer <= 5 ? colors.dangerSoft : colors.brandSoft, borderRadius: radius.full, width: 38, height: 38, alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={{ fontWeight: '900', color: timer <= 5 ? colors.danger : colors.brand }}>{timer}</Text>

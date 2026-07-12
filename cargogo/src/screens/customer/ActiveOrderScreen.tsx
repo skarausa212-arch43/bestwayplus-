@@ -87,8 +87,15 @@ export const ActiveOrderScreen: React.FC<{ navigation: any }> = ({ navigation })
         </Card>
       )}
       {done
-        ? <Button title={t('rate.rate')} onPress={() => navigation.replace('RateOrder', { orderId: order.id })} />
+        ? <Button title={t('rate.rate')} onPress={() => navigation.replace('RateOrder', { orderId: order.id, target: 'driver' })} />
         : <Button title={t('order.cancel')} variant="ghost" onPress={() => { cancelOrder(order.id, 'customer'); navigation.goBack(); }} />}
+
+      {/* «Проблема с заказом» — доступно клиенту в любой момент */}
+      <TouchableOpacity onPress={() => navigation.navigate('ReportProblem', { orderId: order.id })}
+        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: spacing.m, paddingVertical: spacing.s }}>
+        <Feather name="alert-triangle" size={16} color={colors.warn} />
+        <Text style={{ color: colors.warn, fontWeight: '800', marginLeft: 8 }}>{t('rep.btn')}</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 };

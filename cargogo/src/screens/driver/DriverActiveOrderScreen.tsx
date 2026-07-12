@@ -64,8 +64,8 @@ export const DriverActiveOrderScreen: React.FC<{ navigation: any; route?: any }>
   const confirmCode = () => {
     if (completeWithCode(order.id, code.trim())) {
       addEarning(order.id, payoutPln);
-      Alert.alert(t('code.doneTitle'), t('code.done'));
-      navigation.goBack();
+      // Водитель оценивает клиента (оценки в обе стороны)
+      navigation.replace('RateOrder', { orderId: order.id, target: 'customer' });
     } else {
       Alert.alert(t('common.error'), t('code.bad'));
     }
@@ -149,6 +149,13 @@ export const DriverActiveOrderScreen: React.FC<{ navigation: any; route?: any }>
       {order.status !== 'completed' && (
         <Button title={t('order.cancel')} variant="ghost" onPress={() => { cancelOrder(order.id, 'driver'); navigation.goBack(); }} />
       )}
+
+      {/* «Проблема с заказом» — доступно и водителю */}
+      <TouchableOpacity onPress={() => navigation.navigate('ReportProblem', { orderId: order.id })}
+        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: spacing.m, paddingVertical: spacing.s }}>
+        <Feather name="alert-triangle" size={16} color={colors.warn} />
+        <Text style={{ color: colors.warn, fontWeight: '800', marginLeft: 8 }}>{t('rep.btn')}</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 };

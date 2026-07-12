@@ -138,4 +138,19 @@ export interface DriverPayout {
 export interface Review {
   id: string; orderId: string; customerId: string; driverId: string;
   rating: number; comment?: string; createdAt: string;
+  /** Кто кого оценил (оценки двусторонние) */
+  raterRole: 'customer' | 'driver';
+  tags?: string[];
+}
+
+// «Проблема с заказом» — жалобу может подать любая сторона (§ поддержка)
+export type ReportReason =
+  | 'damaged_cargo' | 'driver_no_show' | 'wrong_price'
+  | 'behavior' | 'delay' | 'other';
+
+export interface OrderReport {
+  id: string; orderId: string; byRole: Role;
+  reason: ReportReason; comment?: string;
+  status: 'open' | 'in_review' | 'resolved';
+  createdAt: string;
 }

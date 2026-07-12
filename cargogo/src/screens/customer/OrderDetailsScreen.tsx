@@ -1,5 +1,6 @@
 import React from 'react';
-import { ScrollView, View, Text } from 'react-native';
+import { ScrollView, View, Text, TouchableOpacity } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { Card, H2, Sub, Row, StatusPill, Button } from '@/components/UI';
 import { useOrderStore } from '@/store/orders';
 import { useDriverStore } from '@/store/driver';
@@ -95,6 +96,11 @@ export const OrderDetailsScreen: React.FC<{ navigation: any; route: any }> = ({ 
         ))}
       </Card>
 
+      <TouchableOpacity onPress={() => navigation.navigate('ReportProblem', { orderId: order.id })}
+        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.s, marginBottom: spacing.s }}>
+        <Feather name="alert-triangle" size={16} color={colors.warn} />
+        <Text style={{ color: colors.warn, fontWeight: '800', marginLeft: 8 }}>{t('rep.btn')}</Text>
+      </TouchableOpacity>
       <Button title={t('common.close')} variant="ghost" onPress={() => navigation.goBack()} />
     </ScrollView>
     </View>

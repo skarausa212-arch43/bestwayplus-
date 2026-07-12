@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Card, H2, Sub, Row, StatusPill, Button } from '@/components/UI';
 import { useOrderStore } from '@/store/orders';
+import { useCommunityStore } from '@/store/community';
 import { usePricingStore } from '@/features/pricing/pricingService';
 import { getAdminPricingView } from '@/features/pricing/pricingSelectors';
 import { DEMAND_SCENARIOS } from '@/features/pricing/pricingMocks';
@@ -18,6 +19,7 @@ export const AdminPanelScreen: React.FC = () => {
   const t = useT();
   const [tab, setTab] = useState('Dashboard');
   const orders = useOrderStore((s) => s.orders);
+  const reports = useCommunityStore((s) => s.reports);
   const cfg = usePricingStore((s) => s.config);
   const setConfig = usePricingStore((s) => s.setConfig);
   const demandScenarioId = usePricingStore((s) => s.demandScenarioId);
@@ -55,7 +57,7 @@ export const AdminPanelScreen: React.FC = () => {
       {tab === 'Dashboard' && (
         <>
           <Row style={{ flexWrap: 'wrap' }}>
-            {([['Zamówienia', orders.length], ['Kierowcy online', 1], ['Przychód platformy', formatGr(revenueGr)], ['Spory', 0]] as [string, any][]).map(([l, v]) => (
+            {([['Zamówienia', orders.length], ['Kierowcy online', 1], ['Przychód platformy', formatGr(revenueGr)], [t('admin.reports'), reports.length]] as [string, any][]).map(([l, v]) => (
               <Card key={l} style={{ width: '47%', marginRight: '3%', marginBottom: spacing.s }}>
                 <Sub>{l}</Sub><Text style={{ fontSize: 22, fontWeight: '900', color: colors.ink }}>{v}</Text>
               </Card>

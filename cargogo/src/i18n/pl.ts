@@ -82,6 +82,22 @@ export default {
   'rate.delivered': 'Dostarczono!', 'rate.driver': 'Oceń kierowcę Marka',
   'rate.tip': 'Napiwek dla kierowcy', 'rate.noTip': 'Bez',
   'rate.send': 'Wyślij ocenę', 'rate.rate': 'Oceń przejazd', 'ph.comment': 'Komentarz (opcjonalnie)',
+  // ── Oceny dwustronne + profil ──
+  'rate.customer': 'Oceń klienta', 'rate.customerName': 'Oceń klienta {0}',
+  'rate.twoWay': 'Oceny działają w obie strony — budują zaufanie kierowców i klientów.',
+  'rate.t.punctual': 'Punktualny', 'rate.t.polite': 'Uprzejmy', 'rate.t.careful': 'Ostrożny',
+  'rate.t.cargoOk': 'Ładunek zgodny', 'rate.t.reachable': 'Kontaktowy', 'rate.t.onTime': 'Gotowy na czas',
+  'profile.rating': 'Ocena klienta', 'profile.reportProblem': 'Zgłoś problem',
+  'offer.clientRating': 'Ocena klienta',
+  // ── «Problem z zamówieniem» (dla obu ról) ──
+  'rep.btn': 'Problem z zamówieniem',
+  'rep.title': 'Problem z zamówieniem', 'rep.sub': 'Zgłoszenie trafia do wsparcia PakujGo',
+  'rep.what': 'Co się stało?', 'rep.details': 'Opisz szczegóły…', 'rep.send': 'Wyślij zgłoszenie',
+  'rep.damaged_cargo': 'Uszkodzony ładunek', 'rep.driver_no_show': 'Kierowca się nie pojawił',
+  'rep.wrong_price': 'Zła cena', 'rep.behavior': 'Zachowanie', 'rep.delay': 'Opóźnienie', 'rep.other': 'Inne',
+  'rep.sentTitle': 'Zgłoszenie wysłane', 'rep.sentBody': 'Wsparcie PakujGo zajmie się sprawą.',
+  'rep.adminTitle': 'Nowe zgłoszenie', 'rep.adminBody': 'Klient lub kierowca zgłosił problem z zamówieniem.',
+  'rep.pickReason': 'Wybierz powód', 'admin.reports': 'Zgłoszenia',
   // ── Чат ──
   'chat.placeholder': 'Napisz wiadomość…', 'chat.first': 'Napisz pierwszą wiadomość.',
   'chat.translated': '🌐 przetłumaczono', 'chat.translating': 'tłumaczę…',
