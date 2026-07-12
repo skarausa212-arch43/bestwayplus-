@@ -6,7 +6,7 @@ import { useDriverStore } from '@/store/driver';
 import { colors, spacing } from '@/theme';
 
 export const DriverAuthScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const [email, setEmail] = useState('driver@cargogo.pl');
+  const [email, setEmail] = useState('driver@pakujgo.pl');
   const [password, setPassword] = useState('Test1234!');
   const login = useAuthStore((s) => s.login);
   const status = useDriverStore((s) => s.verificationStatus);
@@ -25,11 +25,11 @@ export const DriverAuthScreen: React.FC<{ navigation: any }> = ({ navigation }) 
         <Input label="E-mail" value={email} onChangeText={setEmail} keyboardType="email-address" />
         <Input label="Hasło" value={password} onChangeText={setPassword} secureTextEntry />
         <Button title="Zaloguj się" onPress={submit} style={{ marginTop: spacing.s }} />
-        <TouchableOpacity onPress={() => { login('driver@cargogo.pl', 'Test1234!'); navigation.navigate('DriverRegistration'); }} style={{ marginTop: spacing.l }}>
+        <TouchableOpacity onPress={() => { login('driver@pakujgo.pl', 'Test1234!'); navigation.navigate('DriverRegistration'); }} style={{ marginTop: spacing.l }}>
           <Text style={{ color: colors.brand, textAlign: 'center', fontWeight: '700' }}>Nowy kierowca? Rozpocznij rejestrację</Text>
         </TouchableOpacity>
       </Card>
-      <Sub style={{ textAlign: 'center', marginTop: spacing.l }}>Demo: driver@cargogo.pl / Test1234!</Sub>
+      <Sub style={{ textAlign: 'center', marginTop: spacing.l }}>Demo: driver@pakujgo.pl / Test1234!</Sub>
     </ScrollView>
   );
 };

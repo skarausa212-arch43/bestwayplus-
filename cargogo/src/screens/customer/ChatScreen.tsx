@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/auth';
 import { ChatLang } from '@/types';
 import { QUICK_MESSAGE_KEYS } from '@/constants';
 import { useT, langOf } from '@/i18n';
+import { FadeSlideIn } from '@/components/Anim';
 import { colors, spacing, radius } from '@/theme';
 
 // Чат с автопереводом: быстрые фразы — ключи словаря (мгновенно),
@@ -40,6 +41,7 @@ export const ChatScreen: React.FC = () => {
           );
           const mine = item.senderId === user?.id;
           return (
+            <FadeSlideIn>
             <View style={{
               alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '78%',
               backgroundColor: mine ? colors.brand : '#FFF',
@@ -52,6 +54,7 @@ export const ChatScreen: React.FC = () => {
                 <Text style={{ color: mine ? '#CFEFE3' : colors.faint, fontSize: 10, marginTop: 3 }}>{t('chat.translated')}</Text>
               ) : null}
             </View>
+            </FadeSlideIn>
           );
         }}
       />

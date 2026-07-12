@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "CargoGo",
-    "slug": "cargogo",
+    "name": "PakujGo",
+    "slug": "pakujgo",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "splash": { "backgroundColor": "#00A876", "resizeMode": "contain" },
-    "ios": { "supportsTablet": false, "bundleIdentifier": "pl.cargogo.app" },
-    "android": { "package": "pl.cargogo.app" },
+    "ios": { "supportsTablet": false, "bundleIdentifier": "pl.pakujgo.app" },
+    "android": { "package": "pl.pakujgo.app" },
     "plugins": ["expo-location", "expo-notifications"]
   }
 }

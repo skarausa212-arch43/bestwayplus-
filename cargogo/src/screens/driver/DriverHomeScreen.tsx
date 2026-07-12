@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Switch } from 'react-native';
 import { AppMap, orderPoints } from '@/components/Map';
-import { FadeSlideIn } from '@/components/Anim';
+import { FadeSlideIn, Breathe } from '@/components/Anim';
 import { Card, Button, H2, Sub, Row } from '@/components/UI';
 import { NotificationBell } from '@/components/NotificationBell';
 import { useDriverStore } from '@/store/driver';
@@ -64,9 +64,11 @@ export const DriverHomeScreen: React.FC<{ navigation: any }> = ({ navigation }) 
           <Card style={{ borderWidth: 2, borderColor: colors.brand }}>
             <Row style={{ justifyContent: 'space-between', marginBottom: spacing.s }}>
               <H2 style={{ fontSize: 17 }}>{t('driver.newOrder')}</H2>
+              <Breathe active={timer <= 5}>
               <View style={{ backgroundColor: timer <= 5 ? colors.dangerSoft : colors.brandSoft, borderRadius: radius.full, width: 38, height: 38, alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={{ fontWeight: '900', color: timer <= 5 ? colors.danger : colors.brand }}>{timer}</Text>
               </View>
+              </Breathe>
             </Row>
             <Sub>📍 {order.pickup.full}</Sub>
             {order.stops.map((s, i) => (
@@ -92,7 +94,10 @@ export const DriverHomeScreen: React.FC<{ navigation: any }> = ({ navigation }) 
         <Card>
           <Row style={{ justifyContent: 'space-between' }}>
             <View style={{ flex: 1 }}>
-              <H2 style={{ fontSize: 18 }}>{isOnline ? t('driver.online') : t('driver.offline')}</H2>
+              <Row>
+                {isOnline && <Breathe><View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.brand, marginRight: 8 }} /></Breathe>}
+                <H2 style={{ fontSize: 18 }}>{isOnline ? t('driver.online') : t('driver.offline')}</H2>
+              </Row>
               <Sub>{isOnline ? t('driver.onlineSub') : t('driver.offlineSub')}</Sub>
             </View>
             <Switch value={isOnline} onValueChange={setOnline} trackColor={{ true: colors.brand }} />

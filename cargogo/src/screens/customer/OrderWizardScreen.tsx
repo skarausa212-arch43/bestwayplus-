@@ -6,6 +6,7 @@ import { calcPrice, useOrderStore } from '@/store/orders';
 import { MOCK_CUSTOMER_PROFILE } from '@/mocks';
 import { VehicleType, Address } from '@/types';
 import { useT } from '@/i18n';
+import { FadeSlideIn, AnimatedNumber } from '@/components/Anim';
 import { colors, spacing, radius } from '@/theme';
 
 const TOTAL_STEPS = 5;
@@ -72,7 +73,7 @@ export const OrderWizardScreen: React.FC<{ navigation: any }> = ({ navigation })
       </View>
 
       {step === 1 && (
-        <Card>
+        <FadeSlideIn key="s1"><Card>
           <H2 style={{ marginBottom: spacing.m }}>{t('wizard.addresses')}</H2>
           <Input label={t('wizard.from')} value={from} onChangeText={setFrom} placeholder={t('ph.from')} />
           <Row style={{ marginBottom: spacing.m }}>
@@ -105,11 +106,11 @@ export const OrderWizardScreen: React.FC<{ navigation: any }> = ({ navigation })
             </TouchableOpacity>
           )}
           <Input label={t('wizard.to')} value={to} onChangeText={setTo} placeholder={t('ph.to')} />
-        </Card>
+        </Card></FadeSlideIn>
       )}
 
       {step === 2 && (
-        <Card>
+        <FadeSlideIn key="s2"><Card>
           <H2 style={{ marginBottom: spacing.m }}>{t('wizard.vehicleType')}</H2>
           {(Object.keys(VEHICLE_TYPES) as VehicleType[]).map((k) => {
             const v = VEHICLE_TYPES[k];
@@ -126,11 +127,11 @@ export const OrderWizardScreen: React.FC<{ navigation: any }> = ({ navigation })
               </TouchableOpacity>
             );
           })}
-        </Card>
+        </Card></FadeSlideIn>
       )}
 
       {step === 3 && (
-        <Card>
+        <FadeSlideIn key="s3"><Card>
           <H2 style={{ marginBottom: spacing.m }}>{t('wizard.cargo')}</H2>
           <Sub style={{ marginBottom: 6, fontWeight: '600' }}>{t('wizard.category')}</Sub>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.m }}>
@@ -176,11 +177,11 @@ export const OrderWizardScreen: React.FC<{ navigation: any }> = ({ navigation })
               </Row>
             </>
           )}
-        </Card>
+        </Card></FadeSlideIn>
       )}
 
       {step === 4 && (
-        <Card>
+        <FadeSlideIn key="s4"><Card>
           <H2 style={{ marginBottom: spacing.m }}>{t('wizard.when')}</H2>
           {[{ v: true, label: t('wizard.asap'), sub: t('wizard.asapSub', [TARIFF.urgentFee]) },
             { v: false, label: t('wizard.schedule'), sub: t('wizard.scheduleSub') }].map((o) => (
@@ -190,11 +191,11 @@ export const OrderWizardScreen: React.FC<{ navigation: any }> = ({ navigation })
               <Sub>{o.sub}</Sub>
             </TouchableOpacity>
           ))}
-        </Card>
+        </Card></FadeSlideIn>
       )}
 
       {step === 5 && (
-        <Card>
+        <FadeSlideIn key="s5"><Card>
           <H2 style={{ marginBottom: spacing.m }}>{t('wizard.summary')}</H2>
           {([
             [t('sum.transport'), price.transport],
@@ -210,7 +211,7 @@ export const OrderWizardScreen: React.FC<{ navigation: any }> = ({ navigation })
           ))}
           <Row style={{ justifyContent: 'space-between', borderTopWidth: 1, borderColor: colors.line, paddingTop: spacing.s, marginTop: spacing.s, marginBottom: spacing.m }}>
             <Text style={{ fontWeight: '800', color: colors.ink }}>{t('order.total')}</Text>
-            <Text style={{ fontWeight: '900', fontSize: 24, color: colors.ink }}>{price.total} zł</Text>
+            <AnimatedNumber value={price.total} textStyle={{ fontWeight: '900', fontSize: 24, color: colors.ink }} />
           </Row>
           {MOCK_CUSTOMER_PROFILE.paymentMethods.map((pm) => (
             <TouchableOpacity key={pm.id} onPress={() => setPayMethod(pm.id)}
@@ -220,7 +221,7 @@ export const OrderWizardScreen: React.FC<{ navigation: any }> = ({ navigation })
             </TouchableOpacity>
           ))}
           <Sub style={{ marginBottom: spacing.m }}>{t('pay.note')}</Sub>
-        </Card>
+        </Card></FadeSlideIn>
       )}
 
       <View style={{ marginTop: spacing.l }}>

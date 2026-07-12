@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { useOrderStore } from '@/store/orders';
 import { useT } from '@/i18n';
+import { Breathe } from '@/components/Anim';
 import { APP_CONFIG } from '@/config/app';
 import { colors, radius, spacing } from '@/theme';
 
@@ -22,6 +23,7 @@ export const WaitBanner: React.FC = () => {
     : t('wait.free', [APP_CONFIG.freeWaitingMinutes - waitMins]);
 
   return (
+    <Breathe active={paid}>
     <View style={{
       backgroundColor: paid ? colors.warnSoft : colors.card,
       borderWidth: 2, borderColor: paid ? colors.warn : colors.line,
@@ -29,5 +31,6 @@ export const WaitBanner: React.FC = () => {
     }}>
       <Text style={{ fontWeight: '800', color: paid ? colors.warn : colors.ink }}>{text}</Text>
     </View>
+    </Breathe>
   );
 };

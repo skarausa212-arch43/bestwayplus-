@@ -1,6 +1,6 @@
 // Единая точка конфигурации — название меняется здесь
 export const APP_CONFIG = {
-  name: 'CargoGo',
+  name: 'PakujGo',
   tagline: 'Szybki transport na terenie całej Polski',
   defaultLocale: 'pl' as const,
   supportedLocales: ['pl', 'ru', 'en', 'uk', 'be', 'de'] as const,

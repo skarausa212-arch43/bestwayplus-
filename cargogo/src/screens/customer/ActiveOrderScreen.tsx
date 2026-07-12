@@ -3,6 +3,7 @@ import { ScrollView, View, Text, TouchableOpacity, Alert } from 'react-native';
 import { AppMap, orderPoints } from '@/components/Map';
 import { ProgressBar } from '@/components/Anim';
 import { WaitBanner } from '@/components/WaitBanner';
+import { FadeSlideIn, AnimatedNumber } from '@/components/Anim';
 import { Card, Button, Sub, Row, StatusPill } from '@/components/UI';
 import { useOrderStore } from '@/store/orders';
 import { useDriverStore } from '@/store/driver';
@@ -28,7 +29,7 @@ export const ActiveOrderScreen: React.FC<{ navigation: any }> = ({ navigation })
       <Card style={{ marginBottom: spacing.m }}>
         <Row style={{ justifyContent: 'space-between', marginBottom: spacing.s }}>
           <StatusPill label={t(`status.${order.status}`)} tone={done ? 'brand' : 'info'} />
-          <Text style={{ fontWeight: '900', fontSize: 20, color: colors.ink }}>{order.price.total} zł</Text>
+          <AnimatedNumber value={order.price.total} textStyle={{ fontWeight: '900', fontSize: 20, color: colors.ink }} />
         </Row>
         <ProgressBar progress={done ? 1 : progress} style={{ marginBottom: spacing.s }} />
         <Sub>📍 {order.pickup.full}</Sub>
@@ -48,6 +49,7 @@ export const ActiveOrderScreen: React.FC<{ navigation: any }> = ({ navigation })
 
       {/* §37 — карточка предложения новой цены: принять / отклонить */}
       {priceReq && priceReq.orderId === order.id && (
+        <FadeSlideIn>
         <Card style={{ marginBottom: spacing.m, borderWidth: 2, borderColor: colors.info }}>
           <Text style={{ fontWeight: '800', color: colors.ink }}>{t('pr.title')}</Text>
           <Row style={{ justifyContent: 'space-between', marginVertical: spacing.s }}>
@@ -59,6 +61,7 @@ export const ActiveOrderScreen: React.FC<{ navigation: any }> = ({ navigation })
             <Button title={t('pr.accept')} onPress={() => answerPriceReq(true)} style={{ flex: 2 }} />
           </Row>
         </Card>
+        </FadeSlideIn>
       )}
 
       {order.driverId && (

@@ -1,9 +1,9 @@
 import { User, DriverProfile, Vehicle, Order, CustomerProfile } from '@/types';
 
 export const MOCK_USERS: (User & { password: string })[] = [
-  { id: 'u-cust-1', role: 'customer', firstName: 'Anna', lastName: 'Kowalska', phone: '+48 600 100 200', email: 'customer@cargogo.pl', password: 'Test1234!', status: 'active', createdAt: '2026-01-10T10:00:00Z' },
-  { id: 'u-drv-1', role: 'driver', firstName: 'Marek', lastName: 'Kaczmarek', phone: '+48 700 300 400', email: 'driver@cargogo.pl', password: 'Test1234!', status: 'active', createdAt: '2026-01-05T10:00:00Z' },
-  { id: 'u-adm-1', role: 'admin', firstName: 'Admin', lastName: 'CargoGo', phone: '+48 800 500 600', email: 'admin@cargogo.pl', password: 'Test1234!', status: 'active', createdAt: '2026-01-01T10:00:00Z' },
+  { id: 'u-cust-1', role: 'customer', firstName: 'Anna', lastName: 'Kowalska', phone: '+48 600 100 200', email: 'customer@pakujgo.pl', password: 'Test1234!', status: 'active', createdAt: '2026-01-10T10:00:00Z' },
+  { id: 'u-drv-1', role: 'driver', firstName: 'Marek', lastName: 'Kaczmarek', phone: '+48 700 300 400', email: 'driver@pakujgo.pl', password: 'Test1234!', status: 'active', createdAt: '2026-01-05T10:00:00Z' },
+  { id: 'u-adm-1', role: 'admin', firstName: 'Admin', lastName: 'PakujGo', phone: '+48 800 500 600', email: 'admin@pakujgo.pl', password: 'Test1234!', status: 'active', createdAt: '2026-01-01T10:00:00Z' },
 ];
 
 export const MOCK_CUSTOMER_PROFILE: CustomerProfile = {

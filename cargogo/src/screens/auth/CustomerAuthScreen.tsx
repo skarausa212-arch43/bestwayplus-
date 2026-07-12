@@ -6,7 +6,7 @@ import { colors, spacing } from '@/theme';
 
 export const CustomerAuthScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', email: 'customer@cargogo.pl', password: 'Test1234!', password2: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', email: 'customer@pakujgo.pl', password: 'Test1234!', password2: '' });
   const { login, registerCustomer } = useAuthStore();
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -45,7 +45,7 @@ export const CustomerAuthScreen: React.FC<{ navigation: any }> = ({ navigation }
           </Text>
         </TouchableOpacity>
       </Card>
-      <Sub style={{ textAlign: 'center', marginTop: spacing.l }}>Demo: customer@cargogo.pl / Test1234!</Sub>
+      <Sub style={{ textAlign: 'center', marginTop: spacing.l }}>Demo: customer@pakujgo.pl / Test1234!</Sub>
     </ScrollView>
   );
 };
