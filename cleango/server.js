@@ -32,6 +32,35 @@ fs.mkdirSync(DATA_DIR, { recursive: true });
 // Platform economics
 const COMMISSION_RATE = 0.20;      // hidden platform cut on each completed job
 const CURRENCY = 'PLN';
+const PREMIUM_DISCOUNT = 0.10;     // LUMI+ members save 10% on every booking
+
+// Launch market — Poland first (Product Vision, phase 1)
+const CITIES = ['Warsaw', 'Kraków', 'Wrocław', 'Poznań', 'Gdańsk', 'Łódź'];
+
+// Home-services verticals. Cleaning is live; the rest are the roadmap
+// (Phase 5: Home Services Marketplace) and surface as "coming soon".
+const SERVICE_CATEGORIES = [
+  { key: 'cleaning',  label: 'Cleaning',          active: true,  desc: 'Homes, offices, move-outs' },
+  { key: 'handyman',  label: 'Handyman',          active: false, desc: 'Repairs & odd jobs' },
+  { key: 'electrical',label: 'Electrician',       active: false, desc: 'Wiring, fixtures, sockets' },
+  { key: 'plumbing',  label: 'Plumbing',          active: false, desc: 'Leaks, taps, drains' },
+  { key: 'garden',    label: 'Garden',            active: false, desc: 'Lawn, hedges, care' },
+  { key: 'laundry',   label: 'Laundry',           active: false, desc: 'Wash, dry & iron' },
+  { key: 'assembly',  label: 'Furniture assembly',active: false, desc: 'Flat-pack & mounting' },
+  { key: 'windows',   label: 'Windows',           active: true,  desc: 'Interior & exterior glass' },
+];
+
+// Smart Home maintenance model — recurring home tasks and how often they're
+// due (days). Used to compute the per-property Smart Home dashboard.
+const MAINTENANCE = [
+  { key: 'standard', label: 'Standard cleaning',  interval: 14,  book: 'standard' },
+  { key: 'deep',     label: 'Deep cleaning',      interval: 90,  book: 'deep' },
+  { key: 'windows',  label: 'Window cleaning',    interval: 60,  book: 'windows' },
+  { key: 'sofa',     label: 'Sofa & upholstery',  interval: 180, book: 'deep' },
+  { key: 'mattress', label: 'Mattress cleaning',  interval: 180, book: 'deep' },
+  { key: 'garden',   label: 'Garden maintenance', interval: 30,  book: null },
+];
+const DAY = 86400000;
 
 // ─────────────────────────── Persistence ───────────────────────────
 // Tiny JSON "collections". Everything is loaded into memory and flushed
@@ -57,6 +86,7 @@ function saveJSON(name, value) {
 
 const db = {
   users: loadJSON('users.json', {}),         // id -> user
+  properties: loadJSON('properties.json', {}), // id -> property (Family Home aware)
   bookings: loadJSON('bookings.json', {}),   // id -> booking
   messages: loadJSON('messages.json', {}),   // bookingId -> [msg]
   reviews: loadJSON('reviews.json', {}),     // id -> review
@@ -64,6 +94,7 @@ const db = {
 };
 const persist = {
   users: () => saveJSON('users.json', db.users),
+  properties: () => saveJSON('properties.json', db.properties),
   bookings: () => saveJSON('bookings.json', db.bookings),
   messages: () => saveJSON('messages.json', db.messages),
   reviews: () => saveJSON('reviews.json', db.reviews),
@@ -264,11 +295,16 @@ route('POST', '/api/register', async (req, res) => {
     rating: role === 'cleaner' ? 5 : null,
     jobsDone: 0,
     verified: role !== 'cleaner',    // cleaners require KYC verification
-    city: String(b.city || 'Warsaw'),
+    city: CITIES.includes(b.city) ? b.city : 'Warsaw',
     online: false,
+    subscription: null,              // 'plus' when a LUMI+ member
   };
   db.users[id] = user;
   persist.users();
+  // Give new customers a starter property so booking works in one tap.
+  if (role === 'customer') {
+    createProperty(user, { label: 'My home', city: user.city, type: 'apartment', rooms: 2, baths: 1 });
+  }
   return send(res, 200, { token: signToken(id), user: publicUser(user) });
 });
 
@@ -307,33 +343,219 @@ route('POST', '/api/estimate', async (req, res) => {
   const b = await readBody(req);
   send(res, 200, { estimate: estimatePrice(b) });
 });
+route('GET', '/api/cities', async (req, res) => send(res, 200, { cities: CITIES }));
+route('GET', '/api/categories', async (req, res) => send(res, 200, { categories: SERVICE_CATEGORIES }));
+
+// AI Concierge — natural-language intent → a ready-to-book suggestion.
+// e.g. "I have guests tomorrow" → Deep clean + windows + ironing, today.
+function conciergeSuggest(text) {
+  const t = String(text || '').toLowerCase();
+  const has = (...w) => w.some((x) => t.includes(x));
+  let service = 'standard', extras = [], urgency = 'scheduled', title, reason;
+
+  if (has('move out', 'move-out', 'moving out', 'moving', 'vacate', 'end of lease', 'wyprowadz')) {
+    service = 'moveout'; extras = ['oven', 'fridge', 'windows'];
+    title = 'Move-out deep clean'; reason = 'A move-out needs the whole place spotless — including oven, fridge and windows.';
+  } else if (has('guest', 'visitor', 'family coming', 'in-laws', 'parents coming', 'party', 'dinner', 'friends over', 'gości')) {
+    service = 'deep'; extras = ['windows', 'laundry']; urgency = 'today';
+    title = 'Guest-ready deep clean'; reason = 'Guests tomorrow — a deep clean with sparkling windows and fresh ironing makes the place shine.';
+  } else if (has('office', 'workplace', 'company', 'biuro')) {
+    service = 'office'; extras = [];
+    title = 'Office refresh'; reason = 'A professional office clean before the team is back.';
+  } else if (has('window', 'glass', 'okna')) {
+    service = 'windows'; extras = [];
+    title = 'Window cleaning'; reason = 'Crystal-clear interior and exterior glass.';
+  } else if (has('pet', 'dog', 'puppy', 'cat', 'kitten', 'fur', 'shedding', 'allerg', 'zwierz')) {
+    service = 'deep'; extras = ['pets'];
+    title = 'Pet-friendly deep clean'; reason = 'Extra attention to fur, dander and allergens.';
+  } else if (has('baby', 'newborn', 'sick', 'flu', 'disinfect', 'sanit')) {
+    service = 'deep'; extras = [];
+    title = 'Sanitizing deep clean'; reason = 'A thorough, sanitizing clean for a healthy home.';
+  } else if (has('quick', 'fast', 'now', 'urgent', 'asap', 'emergency', 'help now', 'szybko')) {
+    service = 'standard'; urgency = 'flash';
+    title = 'FlashClean now'; reason = 'A fast standard clean, dispatched right away.';
+  } else if (has('deep', 'thorough', 'proper', 'spring')) {
+    service = 'deep';
+    title = 'Deep clean'; reason = 'A top-to-bottom deep clean.';
+  } else {
+    title = 'Standard clean'; reason = "We'll keep your home fresh with a standard clean.";
+  }
+  const svc = SERVICE_CATALOG[service];
+  const bullets = [svc.label, ...extras.map((e) => EXTRAS_CATALOG[e] ? EXTRAS_CATALOG[e].label : e)];
+  return { service, extras, urgency, title, reason, bullets };
+}
+route('POST', '/api/concierge', async (req, res) => {
+  const b = await readBody(req);
+  send(res, 200, { suggestion: conciergeSuggest(b.text) });
+});
+
+// ---- Properties (multi-property + Family Home) ----
+function canAccessProperty(user, prop) {
+  if (!prop) return false;
+  if (prop.ownerId === user.id) return true;
+  return (prop.members || []).some((m) => m.userId === user.id);
+}
+function memberRole(user, prop) {
+  if (prop.ownerId === user.id) return 'owner';
+  const m = (prop.members || []).find((x) => x.userId === user.id);
+  return m ? m.role : null;
+}
+function createProperty(owner, data, createdAt) {
+  const id = uid('p_');
+  const p = {
+    id, ownerId: owner.id,
+    label: String(data.label || 'Home').slice(0, 60),
+    address: String(data.address || '').slice(0, 200),
+    city: CITIES.includes(data.city) ? data.city : (owner.city || 'Warsaw'),
+    type: ['apartment', 'house', 'office'].includes(data.type) ? data.type : 'apartment',
+    rooms: Math.max(1, Math.min(12, Number(data.rooms) || 2)),
+    baths: Math.max(0, Math.min(8, Number(data.baths) || 1)),
+    area: Math.max(0, Math.min(600, Number(data.area) || 0)),
+    members: [],
+    createdAt: createdAt || now(),
+  };
+  db.properties[id] = p;
+  persist.properties();
+  return p;
+}
+function propertyView(p) {
+  const members = (p.members || []).map((m) => {
+    const u = db.users[m.userId];
+    return { userId: m.userId, role: m.role, name: u ? u.name : 'Member', email: u ? u.email : '' };
+  });
+  const owner = db.users[p.ownerId];
+  return { ...p, members, ownerName: owner ? owner.name : '' };
+}
+route('GET', '/api/properties', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const list = Object.values(db.properties).filter((p) => canAccessProperty(user, p));
+  list.sort((a, b) => a.createdAt - b.createdAt);
+  send(res, 200, { properties: list.map((p) => ({ ...propertyView(p), myRole: memberRole(user, p) })) });
+});
+route('POST', '/api/properties', async (req, res) => {
+  const user = authUser(req);
+  if (!user || user.role !== 'customer') return send(res, 403, { error: 'Customers only.' });
+  const b = await readBody(req);
+  const p = createProperty(user, b);
+  send(res, 200, { property: { ...propertyView(p), myRole: 'owner' } });
+});
+route('DELETE', '/api/properties/:id', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const p = db.properties[params.id];
+  if (!p) return send(res, 404, { error: 'Not found.' });
+  if (p.ownerId !== user.id) return send(res, 403, { error: 'Only the owner can remove a property.' });
+  delete db.properties[params.id];
+  persist.properties();
+  send(res, 200, { ok: true });
+});
+// Family Home — invite an existing user to a property with a role.
+route('POST', '/api/properties/:id/invite', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const p = db.properties[params.id];
+  if (!p || p.ownerId !== user.id) return send(res, 403, { error: 'Only the owner can invite.' });
+  const b = await readBody(req);
+  const email = String(b.email || '').trim().toLowerCase();
+  const role = ['family', 'guest'].includes(b.role) ? b.role : 'family';
+  const target = Object.values(db.users).find((u) => u.email === email);
+  if (!target) return send(res, 404, { error: 'No LUMI user with that email yet.' });
+  if (target.id === p.ownerId) return send(res, 409, { error: 'That person is the owner.' });
+  p.members = p.members || [];
+  if (p.members.some((m) => m.userId === target.id)) return send(res, 409, { error: 'Already a member.' });
+  p.members.push({ userId: target.id, role });
+  persist.properties();
+  send(res, 200, { property: propertyView(p) });
+});
+
+// Smart Home dashboard — per-property recurring maintenance + AI recommendations.
+route('GET', '/api/properties/:id/smart', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const p = db.properties[params.id];
+  if (!p || !canAccessProperty(user, p)) return send(res, 403, { error: 'Forbidden.' });
+  const bookings = Object.values(db.bookings).filter((b) => b.propertyId === p.id);
+  const completed = bookings.filter((b) => b.status === 'completed');
+  const upcoming = bookings.filter((b) => ['searching', 'accepted', 'in_progress'].includes(b.status))
+    .sort((a, b) => a.createdAt - b.createdAt);
+  const lastCleaning = completed.filter((b) => b.service !== 'windows').sort((a, b) => b.updatedAt - a.updatedAt)[0] || null;
+
+  const tasks = MAINTENANCE.map((m) => {
+    const last = completed.filter((b) => b.service === m.book).sort((a, b) => b.updatedAt - a.updatedAt)[0];
+    // Simulate a plausible history for tasks never booked, seeded off property age.
+    const lastAt = last ? last.updatedAt : (p.createdAt - Math.floor((hashInt(p.id + m.key) & 0x3f)) * DAY);
+    const dueAt = lastAt + m.interval * DAY;
+    const daysLeft = Math.round((dueAt - now()) / DAY);
+    const status = daysLeft < 0 ? 'overdue' : daysLeft <= 7 ? 'soon' : 'ok';
+    return { key: m.key, label: m.label, book: m.book, interval: m.interval, lastAt, dueAt, daysLeft, status };
+  });
+  // AI recommendations: surface the most pressing due tasks.
+  const recs = tasks.filter((t) => t.status !== 'ok').sort((a, b) => a.daysLeft - b.daysLeft).slice(0, 3)
+    .map((t) => ({
+      key: t.key, label: t.label, book: t.book,
+      text: t.status === 'overdue'
+        ? `${t.label} is ${Math.abs(t.daysLeft)} days overdue — book now to keep your home fresh.`
+        : `${t.label} is due in ${t.daysLeft} day${t.daysLeft === 1 ? '' : 's'}.`,
+    }));
+  send(res, 200, {
+    smart: {
+      property: propertyView(p),
+      lastCleaning: lastCleaning ? { at: lastCleaning.updatedAt, service: lastCleaning.serviceLabel } : null,
+      tasks, recommendations: recs,
+      upcoming: upcoming.map((b) => ({ id: b.id, service: b.serviceLabel, status: b.status, price: b.price, createdAt: b.createdAt })),
+    },
+  });
+});
+
+// ---- Premium (LUMI+) ----
+route('POST', '/api/subscribe', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const b = await readBody(req);
+  user.subscription = b.active === false ? null : 'plus';
+  if (user.subscription === 'plus') user.premiumSince = now();
+  persist.users();
+  send(res, 200, { user: publicUser(user) });
+});
 
 // ---- Bookings ----
 route('POST', '/api/bookings', async (req, res) => {
   const user = authUser(req);
   if (!user || user.role !== 'customer') return send(res, 403, { error: 'Customers only.' });
   const b = await readBody(req);
-  const est = estimatePrice(b);
+  // Prefer a saved property; fall back to raw address for one-off bookings.
+  const prop = b.propertyId ? db.properties[b.propertyId] : null;
+  if (b.propertyId && (!prop || !canAccessProperty(user, prop))) {
+    return send(res, 403, { error: 'Property not found.' });
+  }
+  const est = estimatePrice(prop ? { ...b, rooms: b.rooms || prop.rooms, baths: b.baths || prop.baths, area: b.area || prop.area, city: prop.city } : b);
+  // LUMI+ members get a members' discount; commission/payout scale with it.
+  const isPlus = user.subscription === 'plus';
+  const price = isPlus ? Math.round(est.total * (1 - PREMIUM_DISCOUNT)) : est.total;
+  const commission = Math.round(price * COMMISSION_RATE);
   const id = uid('b_');
   const booking = {
     id,
     customerId: user.id,
+    propertyId: prop ? prop.id : null,
     cleanerId: null,
     status: 'searching',   // searching -> accepted -> in_progress -> completed | cancelled
     service: est.service,
     serviceLabel: est.serviceLabel,
-    address: String(b.address || '').slice(0, 200),
-    city: String(b.city || user.city || 'Warsaw'),
-    rooms: Number(b.rooms) || 1,
-    baths: Number(b.baths) || 1,
-    area: Number(b.area) || 0,
+    address: prop ? prop.address : String(b.address || '').slice(0, 200),
+    city: prop ? prop.city : (CITIES.includes(b.city) ? b.city : user.city || 'Warsaw'),
+    rooms: prop ? prop.rooms : (Number(b.rooms) || 1),
+    baths: prop ? prop.baths : (Number(b.baths) || 1),
+    area: prop ? prop.area : (Number(b.area) || 0),
     extras: Array.isArray(b.extras) ? b.extras : [],
     notes: String(b.notes || '').slice(0, 500),
     urgency: b.urgency || 'scheduled',
     scheduledFor: b.scheduledFor || null,
-    price: est.total,
-    payout: est.payout,
-    commission: est.commission,
+    price,
+    payout: price - commission,
+    commission,
+    plusDiscount: isPlus,
     currency: est.currency,
     durationHours: est.durationHours,
     createdAt: now(),
@@ -379,8 +601,10 @@ route('GET', '/api/bookings/:id', async (req, res, params) => {
 function enrich(bk, viewer) {
   const customer = db.users[bk.customerId];
   const cleaner = bk.cleanerId ? db.users[bk.cleanerId] : null;
+  const prop = bk.propertyId ? db.properties[bk.propertyId] : null;
   const out = {
     ...bk,
+    propertyLabel: prop ? prop.label : null,
     customer: customer ? { id: customer.id, name: customer.name, city: customer.city } : null,
     cleaner: cleaner ? { id: cleaner.id, name: cleaner.name, rating: cleaner.rating, jobsDone: cleaner.jobsDone } : null,
   };
@@ -520,9 +744,17 @@ route('POST', '/api/bookings/:id/review', async (req, res, params) => {
   if (bk.status !== 'completed') return send(res, 409, { error: 'You can review completed jobs only.' });
   if (bk.reviewed) return send(res, 409, { error: 'Already reviewed.' });
   const b = await readBody(req);
-  const stars = Math.max(1, Math.min(5, Number(b.stars) || 5));
+  // Multi-dimensional rating (PRD): quality, speed, communication, professionalism.
+  const clamp = (v) => Math.max(1, Math.min(5, Number(v) || 5));
+  const dims = {
+    quality: clamp(b.quality),
+    speed: clamp(b.speed),
+    communication: clamp(b.communication),
+    professionalism: clamp(b.professionalism),
+  };
+  const stars = Math.round(((dims.quality + dims.speed + dims.communication + dims.professionalism) / 4) * 10) / 10;
   const id = uid('r_');
-  db.reviews[id] = { id, bookingId: bk.id, cleanerId: bk.cleanerId, customerId: user.id, stars, text: String(b.text || '').slice(0, 400), at: now() };
+  db.reviews[id] = { id, bookingId: bk.id, cleanerId: bk.cleanerId, customerId: user.id, stars, dims, text: String(b.text || '').slice(0, 400), at: now() };
   persist.reviews();
   bk.reviewed = true;
   persist.bookings();
@@ -622,19 +854,24 @@ function seed() {
       id, email, name, role, password: hashPassword('cleango123'),
       createdAt: now(), wallet: 0, rating: role === 'cleaner' ? 4.9 : null,
       jobsDone: 0, verified: role !== 'cleaner' ? true : true, city: 'Warsaw', online: role === 'cleaner',
+      subscription: null,
       ...extra,
     };
     return id;
   };
-  mk('admin', 'CleanGo Admin', 'admin@cleango.app');
-  mk('customer', 'Anna Nowak', 'anna@example.com');
+  mk('admin', 'LUMI Admin', 'admin@cleango.app');
+  const annaId = mk('customer', 'Anna Nowak', 'anna@example.com', { subscription: 'plus', premiumSince: now() });
+  mk('customer', 'Marek Wiśniewski', 'marek@example.com', { city: 'Kraków' });
   mk('cleaner', 'Piotr Kowalski', 'piotr@example.com', { jobsDone: 128, rating: 4.9 });
+  // A couple of demo properties (aged so the Smart Home dashboard has due tasks).
+  createProperty(db.users[annaId], { label: 'Apartment · Mokotów', address: 'ul. Puławska 12', city: 'Warsaw', type: 'apartment', rooms: 3, baths: 2, area: 74 }, now() - 40 * DAY);
+  createProperty(db.users[annaId], { label: 'Airbnb · Old Town', address: 'ul. Freta 8', city: 'Warsaw', type: 'apartment', rooms: 2, baths: 1, area: 48 }, now() - 100 * DAY);
   persist.users();
   console.log('Seeded demo accounts (password: cleango123):');
-  console.log('  admin@cleango.app  •  anna@example.com  •  piotr@example.com');
+  console.log('  admin@cleango.app  •  anna@example.com (LUMI+)  •  marek@example.com  •  piotr@example.com');
 }
 seed();
 
 server.listen(PORT, () => {
-  console.log(`\n  CleanGo running →  http://localhost:${PORT}\n`);
+  console.log(`\n  LUMI running →  http://localhost:${PORT}\n`);
 });
