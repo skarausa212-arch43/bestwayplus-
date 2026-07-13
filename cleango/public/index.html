@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#14C871" />
+<title>CleanGo — Premium home cleaning, on demand</title>
+<style>
+:root{
+  --primary:#14C871; --primary-600:#0FB365; --primary-050:#E7FBF1;
+  --ink:#0B1220; --ink-2:#5A6472; --ink-3:#8A94A3;
+  --bg:#F6F8FA; --surface:#FFFFFF; --surface-2:#F1F4F7;
+  --line:#E7ECF1; --danger:#F04438; --warn:#F79009; --star:#FFB020;
+  --radius:20px; --radius-sm:14px; --radius-lg:28px;
+  --shadow:0 1px 2px rgba(11,18,32,.04), 0 12px 32px rgba(11,18,32,.06);
+  --shadow-lg:0 20px 60px rgba(11,18,32,.14);
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --sp:8px;
+}
+:root[data-theme="dark"]{
+  --ink:#F4F7FA; --ink-2:#A7B0BD; --ink-3:#7A8494;
+  --bg:#0A0E14; --surface:#141A22; --surface-2:#1C242E;
+  --line:#242E3A; --primary-050:#0E2A1E;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 12px 32px rgba(0,0,0,.4);
+  --shadow-lg:0 24px 70px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--font); background:var(--bg); color:var(--ink);
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  min-height:100vh; overflow-x:hidden;
+}
+button,input,select,textarea{font-family:inherit;font-size:16px;color:inherit}
+button{cursor:pointer;border:none;background:none}
+a{color:inherit;text-decoration:none}
+h1,h2,h3,h4{margin:0;letter-spacing:-.02em;font-weight:700}
+p{margin:0}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px}
+
+/* ---------- App shell ---------- */
+.app{max-width:1180px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+.topbar{
+  position:sticky;top:0;z-index:40;backdrop-filter:saturate(180%) blur(20px);
+  background:color-mix(in srgb,var(--bg) 82%,transparent);
+  border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:16px;padding:12px 20px;
+}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;letter-spacing:-.03em}
+.brand .logo{width:34px;height:34px;flex:none}
+.nav{display:flex;gap:4px;margin-left:8px}
+.nav button{
+  padding:8px 14px;border-radius:12px;color:var(--ink-2);font-weight:600;font-size:14.5px;
+  display:flex;align-items:center;gap:7px;transition:.15s;
+}
+.nav button svg{width:18px;height:18px}
+.nav button:hover{background:var(--surface-2);color:var(--ink)}
+.nav button.active{background:var(--primary);color:#fff}
+.nav button.active svg{color:#fff}
+.spacer{flex:1}
+.iconbtn{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--ink-2);background:var(--surface-2)}
+.iconbtn:hover{color:var(--ink)}
+.avatar{width:40px;height:40px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center;font-weight:700;font-size:15px}
+.main{flex:1;padding:24px 20px 80px}
+
+/* ---------- Bottom nav (mobile) ---------- */
+.tabbar{display:none}
+@media(max-width:760px){
+  .nav{display:none}
+  .tabbar{
+    display:flex;position:fixed;bottom:0;left:0;right:0;z-index:50;
+    background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(20px);
+    border-top:1px solid var(--line);padding:8px 6px calc(8px + env(safe-area-inset-bottom));
+    justify-content:space-around;
+  }
+  .tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--ink-3);font-size:11px;font-weight:600;padding:4px}
+  .tabbar button svg{width:24px;height:24px}
+  .tabbar button.active{color:var(--primary)}
+  .main{padding:16px 14px 96px}
+  .topbar{padding:12px 14px}
+}
+
+/* ---------- Cards & primitives ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.pad{padding:20px}
+.grid{display:grid;gap:16px}
+.row{display:flex;gap:12px;align-items:center}
+.muted{color:var(--ink-2)}
+.tiny{font-size:12.5px}
+.hint{color:var(--ink-3);font-size:13px}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  background:var(--primary);color:#fff;font-weight:700;font-size:15.5px;
+  padding:14px 20px;border-radius:14px;transition:.15s;box-shadow:0 6px 18px rgba(20,200,113,.28);
+}
+.btn:hover{background:var(--primary-600);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none;transform:none}
+.btn.block{width:100%}
+.btn.ghost{background:var(--surface-2);color:var(--ink);box-shadow:none}
+.btn.ghost:hover{background:var(--line)}
+.btn.danger{background:var(--danger);box-shadow:0 6px 18px rgba(240,68,56,.28)}
+.btn.sm{padding:9px 14px;font-size:14px;border-radius:11px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:var(--surface-2);font-size:13px;font-weight:600;color:var(--ink-2)}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;font-size:12.5px;font-weight:700}
+.badge.green{background:var(--primary-050);color:var(--primary-600)}
+.badge.blue{background:#E8F0FE;color:#1A73E8}
+.badge.amber{background:#FEF3E2;color:#B25E09}
+.badge.grey{background:var(--surface-2);color:var(--ink-2)}
+.badge.red{background:#FEECEB;color:#C4342A}
+:root[data-theme="dark"] .badge.blue{background:#12233F;color:#7DA9F5}
+:root[data-theme="dark"] .badge.amber{background:#2E2410;color:#E9A94B}
+:root[data-theme="dark"] .badge.red{background:#2E1512;color:#F08A82}
+label.field{display:block;margin-bottom:14px}
+label.field span{display:block;font-size:13.5px;font-weight:600;color:var(--ink-2);margin-bottom:7px}
+.input,select.input,textarea.input{
+  width:100%;padding:13px 14px;border-radius:13px;border:1.5px solid var(--line);
+  background:var(--surface);transition:.15s;outline:none;
+}
+.input:focus{border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-050)}
+textarea.input{resize:vertical;min-height:80px}
+.divider{height:1px;background:var(--line);margin:16px 0}
+
+/* ---------- Auth ---------- */
+.auth-wrap{min-height:100vh;display:grid;place-items:center;padding:24px;
+  background:radial-gradient(1200px 600px at 80% -10%,var(--primary-050),transparent),var(--bg)}
+.auth{width:100%;max-width:420px}
+.auth .card{padding:28px}
+.seg{display:flex;background:var(--surface-2);border-radius:14px;padding:4px;margin-bottom:18px}
+.seg button{flex:1;padding:10px;border-radius:11px;font-weight:600;color:var(--ink-2);font-size:14px}
+.seg button.active{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+
+/* ---------- Hero / home ---------- */
+.hero{
+  border-radius:var(--radius-lg);padding:32px;color:#fff;position:relative;overflow:hidden;
+  background:linear-gradient(135deg,#12B268,#14C871 55%,#3BE39A);
+  box-shadow:0 24px 60px rgba(20,200,113,.35);
+}
+.hero h1{font-size:30px;line-height:1.1;max-width:520px}
+.hero p{opacity:.92;margin-top:10px;max-width:460px;font-size:15px}
+.hero .sparkle{position:absolute;right:-30px;top:-30px;width:220px;height:220px;opacity:.28}
+.svc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+.svc{padding:18px;cursor:pointer;transition:.15s;border:1.5px solid var(--line)}
+.svc:hover{border-color:var(--primary);transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+.svc .ico{width:46px;height:46px;border-radius:13px;background:var(--primary-050);display:grid;place-items:center;color:var(--primary-600);margin-bottom:12px}
+.svc h4{font-size:15.5px}
+.svc .from{color:var(--ink-3);font-size:13px;margin-top:3px}
+.stat{display:flex;flex-direction:column;gap:2px}
+.stat b{font-size:26px;letter-spacing:-.03em}
+
+/* ---------- Booking wizard ---------- */
+.steps{display:flex;gap:8px;margin-bottom:22px}
+.steps .s{flex:1;height:5px;border-radius:5px;background:var(--line)}
+.steps .s.done{background:var(--primary)}
+.opt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px}
+.opt{padding:16px;border:1.5px solid var(--line);border-radius:15px;cursor:pointer;transition:.15s;text-align:center}
+.opt:hover{border-color:var(--primary)}
+.opt.sel{border-color:var(--primary);background:var(--primary-050)}
+.opt .ico{width:40px;height:40px;margin:0 auto 8px;color:var(--primary-600)}
+.opt h4{font-size:14.5px}
+.opt small{color:var(--ink-3)}
+.stepper{display:flex;align-items:center;gap:14px;background:var(--surface-2);border-radius:13px;padding:6px}
+.stepper button{width:40px;height:40px;border-radius:10px;background:var(--surface);font-size:22px;font-weight:600;box-shadow:var(--shadow);display:grid;place-items:center}
+.stepper b{flex:1;text-align:center;font-size:18px}
+.extra-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.extra{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--line);border-radius:13px;cursor:pointer;transition:.15s;font-size:14px;font-weight:600}
+.extra.sel{border-color:var(--primary);background:var(--primary-050)}
+.extra .cb{width:20px;height:20px;border-radius:6px;border:2px solid var(--line);display:grid;place-items:center;flex:none}
+.extra.sel .cb{background:var(--primary);border-color:var(--primary);color:#fff}
+
+/* estimate */
+.est{background:linear-gradient(135deg,var(--surface),var(--surface-2));border:1.5px solid var(--line)}
+.est .big{font-size:40px;font-weight:800;letter-spacing:-.03em}
+.est .rng{color:var(--ink-3);font-size:13.5px}
+.brk{display:flex;justify-content:space-between;padding:8px 0;font-size:14px}
+.brk span:first-child{color:var(--ink-2)}
+.aiband{display:flex;gap:10px;align-items:center;background:var(--primary-050);border-radius:13px;padding:12px 14px;color:var(--primary-600);font-weight:600;font-size:13.5px}
+/* Default size for inline icons rendered as raw SVG inside text/controls */
+.btn svg,.chip svg,.badge svg,.aiband svg,.section-title svg,.bk .muted svg,.hero .badge svg,.est svg{width:17px;height:17px;flex:none}
+.aiband svg{width:20px;height:20px}
+.modal .row svg,.est svg,.stat b svg{width:17px;height:17px;flex:none}
+
+/* ---------- Booking list & detail ---------- */
+.bk{padding:16px;display:flex;gap:14px;align-items:center;cursor:pointer;transition:.15s}
+.bk:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.bk .thumb{width:52px;height:52px;border-radius:14px;background:var(--primary-050);display:grid;place-items:center;color:var(--primary-600);flex:none}
+.bk .meta{flex:1;min-width:0}
+.bk .meta h4{font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bk .price{text-align:right;font-weight:800;font-size:16px}
+.timeline{position:relative;padding-left:26px}
+.timeline .ev{position:relative;padding-bottom:18px}
+.timeline .ev::before{content:"";position:absolute;left:-22px;top:2px;width:12px;height:12px;border-radius:50%;background:var(--primary);box-shadow:0 0 0 4px var(--primary-050)}
+.timeline .ev::after{content:"";position:absolute;left:-17px;top:14px;bottom:-4px;width:2px;background:var(--line)}
+.timeline .ev:last-child::after{display:none}
+.timeline .ev.pending::before{background:var(--line);box-shadow:0 0 0 4px var(--surface-2)}
+.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px}
+.photos img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px;border:1px solid var(--line)}
+.uploadbox{border:2px dashed var(--line);border-radius:15px;padding:20px;text-align:center;cursor:pointer;transition:.15s;color:var(--ink-2)}
+.uploadbox:hover{border-color:var(--primary);color:var(--primary-600)}
+
+/* chat */
+.chat{display:flex;flex-direction:column;height:420px}
+.msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:78%;padding:10px 14px;border-radius:16px;font-size:14.5px;line-height:1.4}
+.msg.me{align-self:flex-end;background:var(--primary);color:#fff;border-bottom-right-radius:5px}
+.msg.them{align-self:flex-start;background:var(--surface-2);border-bottom-left-radius:5px}
+.msg.sys{align-self:center;background:transparent;color:var(--ink-3);font-size:12.5px;font-weight:600}
+.msg .who{font-size:11px;opacity:.7;margin-bottom:2px;font-weight:700}
+.chatbar{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+
+/* stars */
+.stars{display:inline-flex;gap:3px;color:var(--star)}
+.stars svg{width:18px;height:18px}
+.starpick svg{width:34px;height:34px;cursor:pointer;color:var(--line)}
+.starpick svg.on{color:var(--star)}
+
+/* admin table */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);padding:10px 12px;border-bottom:1px solid var(--line)}
+.tbl td{padding:12px;border-bottom:1px solid var(--line);font-size:14px}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px}
+.kpi b{font-size:28px;letter-spacing:-.03em;display:block}
+.kpi .lab{color:var(--ink-2);font-size:13px;margin-top:2px}
+.kpi .ico{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;margin-bottom:10px}
+
+/* toast + modal */
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(120px);z-index:200;
+  background:var(--ink);color:var(--bg);padding:13px 20px;border-radius:14px;font-weight:600;font-size:14px;
+  box-shadow:var(--shadow-lg);transition:.35s cubic-bezier(.2,.9,.3,1);max-width:90vw}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.err{background:var(--danger);color:#fff}
+.modal-bg{position:fixed;inset:0;z-index:150;background:rgba(11,18,32,.5);backdrop-filter:blur(4px);
+  display:grid;place-items:center;padding:20px;opacity:0;pointer-events:none;transition:.2s}
+.modal-bg.show{opacity:1;pointer-events:auto}
+.modal{width:100%;max-width:460px;transform:translateY(20px) scale(.98);transition:.2s}
+.modal-bg.show .modal{transform:none}
+
+.empty{text-align:center;padding:48px 20px;color:var(--ink-3)}
+.empty svg{width:60px;height:60px;margin-bottom:14px;opacity:.5}
+.sk{background:linear-gradient(90deg,var(--surface-2),var(--line),var(--surface-2));background-size:200% 100%;animation:sk 1.3s infinite;border-radius:12px}
+@keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.fadein{animation:fade .4s ease both}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.section-title{font-size:20px;margin:4px 0 16px;display:flex;align-items:center;gap:10px}
+.pulse{width:9px;height:9px;border-radius:50%;background:var(--primary);box-shadow:0 0 0 0 rgba(20,200,113,.6);animation:pulse 1.6s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 12px rgba(20,200,113,0)}100%{box-shadow:0 0 0 0 rgba(20,200,113,0)}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================================
+   CleanGo SPA — vanilla JS, no build step, no dependencies.
+   ========================================================================= */
+const API = '';
+let state = {
+  token: localStorage.getItem('cg_token') || null,
+  user: null,
+  view: 'home',
+  catalog: null,
+  draft: null,        // booking wizard draft
+  activeBooking: null,
+};
+
+/* ---------- Icons (inline SVG) ---------- */
+const I = {
+  logo:`<svg class="logo" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="11" fill="url(#lg)"/><path d="M11 21.5 20 13l9 8.5" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.5 20v7.5h13V20" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M25.5 11.5l.9 2 2 .9-2 .9-.9 2-.9-2-2-.9 2-.9.9-2Z" fill="#fff"/><defs><linearGradient id="lg" x1="0" y1="0" x2="40" y2="40"><stop stop-color="#12B268"/><stop offset="1" stop-color="#3BE39A"/></linearGradient></defs></svg>`,
+  home:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>`,
+  book:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>`,
+  jobs:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H4a1 1 0 00-1 1v11a1 1 0 001 1h16a1 1 0 001-1V8a1 1 0 00-1-1Z"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>`,
+  wallet:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M16 12h2"/><path d="M3 10h18"/></svg>`,
+  admin:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4Z"/><path d="M9 12l2 2 4-4"/></svg>`,
+  chat:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10Z"/></svg>`,
+  bell:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>`,
+  sun:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>`,
+  moon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1111.2 3 7 7 0 0021 12.8Z"/></svg>`,
+  spark:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></svg>`,
+  ai:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="7" width="14" height="12" rx="3"/><path d="M9 3v4M15 3v4M9 13h.01M15 13h.01M9 16h6"/></svg>`,
+  star:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 6 20.6l1.4-6.8L2.3 9.1l6.9-.8L12 2Z"/></svg>`,
+  clock:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`,
+  pin:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6 7-11a7 7 0 10-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>`,
+  cam:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1Z"/><circle cx="12" cy="13" r="3.5"/></svg>`,
+  check:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>`,
+  flash:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8Z"/></svg>`,
+  send:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7Z"/></svg>`,
+  arrow:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`,
+  users:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3 2.7-5 6-5s6 2 6 5"/><path d="M16 5.5a3 3 0 010 5.5M21 20c0-2.3-1.4-4-3.5-4.6"/></svg>`,
+  cash:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>`,
+  window:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M12 4v16M4 12h16"/></svg>`,
+  office:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V5a1 1 0 011-1h9a1 1 0 011 1v16"/><path d="M15 9h4a1 1 0 011 1v11M8 8h.01M11 8h.01M8 12h.01M11 12h.01M8 16h.01M11 16h.01"/></svg>`,
+  broom:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5l-7 7M13 11l-6 6 3 3 6-6M7 17l-3 3"/></svg>`,
+  sofa:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11V8a2 2 0 012-2h12a2 2 0 012 2v3"/><path d="M2 13a2 2 0 012 2v3h16v-3a2 2 0 012-2"/><path d="M4 18v2M20 18v2"/></svg>`,
+};
+const SVC_ICON = {standard:I.broom, deep:I.spark, moveout:I.sofa, windows:I.window, office:I.office};
+
+/* ---------- Utilities ---------- */
+const $ = (s,el=document)=>el.querySelector(s);
+const el = (html)=>{const t=document.createElement('template');t.innerHTML=html.trim();return t.content.firstChild};
+const money = (n)=>`${Math.round(n)} zł`;
+function toast(msg,err){const t=$('#toast');t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.className='toast',2600);}
+function timeAgo(ts){const s=(Date.now()-ts)/1000;if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago';}
+function fmtTime(ts){return new Date(ts).toLocaleString(undefined,{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'});}
+
+async function api(path,method='GET',body){
+  const h={'Content-Type':'application/json'};
+  if(state.token) h['Authorization']='Bearer '+state.token;
+  const r=await fetch(API+path,{method,headers:h,body:body?JSON.stringify(body):undefined});
+  const data=await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(data.error||'Something went wrong');
+  return data;
+}
+
+/* ---------- Theme ---------- */
+function initTheme(){
+  const saved=localStorage.getItem('cg_theme');
+  const dark=saved?saved==='dark':window.matchMedia('(prefers-color-scheme:dark)').matches;
+  document.documentElement.dataset.theme=dark?'dark':'light';
+}
+function toggleTheme(){
+  const d=document.documentElement.dataset.theme==='dark';
+  document.documentElement.dataset.theme=d?'light':'dark';
+  localStorage.setItem('cg_theme',d?'light':'dark');
+  render();
+}
+const isDark=()=>document.documentElement.dataset.theme==='dark';
+
+/* =========================================================================
+   AUTH SCREEN
+   ========================================================================= */
+function renderAuth(){
+  let mode='login', role='customer';
+  const root=$('#root');
+  root.innerHTML='';
+  const wrap=el(`<div class="auth-wrap"><div class="auth fadein"></div></div>`);
+  const box=$('.auth',wrap);
+  function draw(){
+    box.innerHTML=`
+      <div style="text-align:center;margin-bottom:22px">
+        <div style="display:inline-flex;align-items:center;gap:10px;font-weight:800;font-size:24px;letter-spacing:-.03em">
+          ${I.logo}<span>CleanGo</span>
+        </div>
+        <p class="muted" style="margin-top:8px;font-size:14.5px">Premium home cleaning, on demand.</p>
+      </div>
+      <div class="card pad">
+        <div class="seg">
+          <button data-m="login" class="${mode==='login'?'active':''}">Log in</button>
+          <button data-m="register" class="${mode==='register'?'active':''}">Sign up</button>
+        </div>
+        <form id="authForm">
+          ${mode==='register'?`
+          <label class="field"><span>I want to</span>
+            <div class="seg" style="margin:0">
+              <button type="button" data-r="customer" class="${role==='customer'?'active':''}">Book cleanings</button>
+              <button type="button" data-r="cleaner" class="${role==='cleaner'?'active':''}">Work as cleaner</button>
+            </div>
+          </label>
+          <label class="field"><span>Full name</span><input class="input" name="name" placeholder="Anna Nowak" required></label>`:''}
+          <label class="field"><span>Email</span><input class="input" type="email" name="email" placeholder="you@example.com" required></label>
+          <label class="field"><span>Password</span><input class="input" type="password" name="password" placeholder="••••••••" minlength="6" required></label>
+          <button class="btn block" type="submit">${mode==='login'?'Log in':'Create account'} ${I.arrow}</button>
+        </form>
+        <div class="divider"></div>
+        <p class="hint" style="text-align:center">Demo: <b>admin@cleango.app</b> · <b>anna@example.com</b> · <b>piotr@example.com</b> — password <b>cleango123</b></p>
+      </div>`;
+    box.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;draw();});
+    box.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{role=b.dataset.r;draw();});
+    $('#authForm',box).onsubmit=async(e)=>{
+      e.preventDefault();
+      const f=new FormData(e.target);
+      const btn=e.target.querySelector('button[type=submit]');
+      btn.disabled=true;btn.textContent='Please wait…';
+      try{
+        const payload=Object.fromEntries(f);
+        if(mode==='register')payload.role=role;
+        const res=await api(mode==='login'?'/api/login':'/api/register','POST',payload);
+        state.token=res.token;state.user=res.user;
+        localStorage.setItem('cg_token',res.token);
+        state.view=res.user.role==='admin'?'admin':res.user.role==='cleaner'?'jobs':'home';
+        await loadCatalog();
+        render();
+        toast(`Welcome, ${res.user.name.split(' ')[0]}!`);
+      }catch(err){toast(err.message,true);btn.disabled=false;draw();}
+    };
+  }
+  draw();
+  root.appendChild(wrap);
+}
+
+/* =========================================================================
+   APP SHELL
+   ========================================================================= */
+function navItems(){
+  const r=state.user.role;
+  if(r==='admin') return [['admin','Dashboard',I.admin],['bookings','Bookings',I.jobs]];
+  if(r==='cleaner') return [['jobs','Jobs',I.jobs],['bookings','My jobs',I.book],['wallet','Wallet',I.wallet]];
+  return [['home','Home',I.home],['book','Book',I.book],['bookings','My bookings',I.jobs],['wallet','Wallet',I.wallet]];
+}
+function shell(content){
+  const u=state.user;
+  const items=navItems();
+  const root=$('#root');
+  root.innerHTML='';
+  const app=el(`<div class="app">
+    <div class="topbar">
+      <div class="brand">${I.logo}<span>CleanGo</span></div>
+      <div class="nav"></div>
+      <div class="spacer"></div>
+      <button class="iconbtn" id="themeBtn" title="Theme">${isDark()?I.sun:I.moon}</button>
+      <button class="iconbtn" title="Notifications">${I.bell}</button>
+      <button class="avatar" id="meBtn" title="${u.name}">${u.name[0].toUpperCase()}</button>
+    </div>
+    <div class="main"><div class="content fadein"></div></div>
+    <div class="tabbar"></div>
+  </div>`);
+  const nav=$('.nav',app), tab=$('.tabbar',app);
+  items.forEach(([v,label,icon])=>{
+    const b=el(`<button class="${state.view===v?'active':''}">${icon}<span>${label}</span></button>`);
+    b.onclick=()=>{state.view=v;render();};
+    nav.appendChild(b);
+    const tb=el(`<button class="${state.view===v?'active':''}">${icon}<span>${label}</span></button>`);
+    tb.onclick=()=>{state.view=v;render();};
+    tab.appendChild(tb);
+  });
+  $('#themeBtn',app).onclick=toggleTheme;
+  $('#meBtn',app).onclick=openProfile;
+  $('.content',app).appendChild(content);
+  root.appendChild(app);
+}
+
+function openProfile(){
+  const u=state.user;
+  showModal(`
+    <div class="card pad">
+      <div class="row" style="margin-bottom:16px">
+        <div class="avatar" style="width:56px;height:56px;font-size:22px">${u.name[0].toUpperCase()}</div>
+        <div><h3>${u.name}</h3><p class="muted tiny">${u.email}</p>
+        <span class="badge grey" style="margin-top:6px;text-transform:capitalize">${u.role}${u.role==='cleaner'?(u.verified?' · verified':' · pending KYC'):''}</span></div>
+      </div>
+      ${u.role==='cleaner'?`<div class="row" style="gap:24px;margin-bottom:16px">
+        <div class="stat"><b>${u.rating||'5.0'} ${I.star}</b><span class="muted tiny">Rating</span></div>
+        <div class="stat"><b>${u.jobsDone||0}</b><span class="muted tiny">Jobs done</span></div>
+        <div class="stat"><b>${money(u.wallet||0)}</b><span class="muted tiny">Balance</span></div>
+      </div>`:''}
+      <button class="btn ghost block" id="logoutBtn">Log out</button>
+    </div>`);
+  $('#logoutBtn').onclick=()=>{
+    state.token=null;state.user=null;localStorage.removeItem('cg_token');
+    closeModal();renderAuth();
+  };
+}
+
+/* =========================================================================
+   VIEWS
+   ========================================================================= */
+async function loadCatalog(){ if(!state.catalog){try{state.catalog=await api('/api/catalog');}catch{}} }
+
+function render(){
+  if(!state.user){ renderAuth(); return; }
+  const map={home:viewHome,book:viewBook,bookings:viewBookings,wallet:viewWallet,jobs:viewJobs,admin:viewAdmin};
+  const fn=map[state.view]||viewHome;
+  fn();
+}
+
+/* ---------- HOME (customer) ---------- */
+function viewHome(){
+  const u=state.user;
+  const c=el(`<div class="grid" style="gap:22px"></div>`);
+  c.appendChild(el(`
+    <div class="hero">
+      <div class="sparkle">${I.spark}</div>
+      <div class="badge" style="background:rgba(255,255,255,.22);color:#fff;margin-bottom:14px">${I.flash}<span>FlashClean available now</span></div>
+      <h1>A spotless home is<br>two taps away, ${u.name.split(' ')[0]}.</h1>
+      <p>Vetted cleaners near you. Transparent AI pricing. Track every job live from your phone.</p>
+      <button class="btn" id="ctaBook" style="margin-top:20px;background:#fff;color:var(--primary-600);box-shadow:0 8px 24px rgba(0,0,0,.18)">Book a cleaning ${I.arrow}</button>
+    </div>`));
+  $('#ctaBook',c).onclick=()=>{state.view='book';render();};
+
+  // services
+  const svcWrap=el(`<div><div class="section-title">Choose a service</div><div class="svc-grid"></div></div>`);
+  const sg=$('.svc-grid',svcWrap);
+  const cat=state.catalog?.services||{};
+  Object.entries(cat).forEach(([key,s])=>{
+    const card=el(`<div class="card svc"><div class="ico">${SVC_ICON[key]||I.broom}</div><h4>${s.label}</h4><div class="from">from ${money(s.base)}</div></div>`);
+    card.onclick=()=>{startBooking(key);};
+    sg.appendChild(card);
+  });
+  c.appendChild(svcWrap);
+
+  // value props
+  c.appendChild(el(`<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+    ${valueCard(I.ai,'AI price estimate','Instant, fair pricing from photos and room details — no surprises.')}
+    ${valueCard(I.check,'Before / after proof','Every cleaner uploads verified before & after photos.')}
+    ${valueCard(I.pin,'Live tracking','Watch your cleaner arrive and follow the job in real time.')}
+  </div>`));
+  shell(c);
+  loadRecent(c);
+}
+function valueCard(ico,t,d){return `<div class="card pad"><div class="svc-ico" style="width:44px;height:44px;border-radius:12px;background:var(--primary-050);color:var(--primary-600);display:grid;place-items:center;margin-bottom:12px">${ico}</div><h4 style="font-size:16px">${t}</h4><p class="muted tiny" style="margin-top:6px;line-height:1.5">${d}</p></div>`;}
+async function loadRecent(c){
+  try{
+    const {bookings}=await api('/api/bookings');
+    if(!bookings.length)return;
+    const w=el(`<div><div class="section-title">Recent bookings</div><div class="grid"></div></div>`);
+    const g=$('.grid',w);
+    bookings.slice(0,3).forEach(b=>g.appendChild(bookingRow(b)));
+    c.appendChild(w);
+  }catch{}
+}
+
+/* ---------- BOOKING WIZARD ---------- */
+function startBooking(service){
+  state.draft={service:service||'standard',rooms:2,baths:1,area:0,extras:[],urgency:'scheduled',address:'',city:state.user.city||'Warsaw',notes:'',step:0,estimate:null};
+  state.view='book';render();
+}
+function viewBook(){
+  if(!state.draft) state.draft={service:'standard',rooms:2,baths:1,area:0,extras:[],urgency:'scheduled',address:'',city:state.user.city||'Warsaw',notes:'',step:0,estimate:null};
+  const d=state.draft;
+  const c=el(`<div style="max-width:640px;margin:0 auto"></div>`);
+  const steps=4;
+  c.appendChild(el(`<div class="steps">${Array.from({length:steps}).map((_,i)=>`<div class="s ${i<=d.step?'done':''}"></div>`).join('')}</div>`));
+
+  const body=el(`<div class="fadein"></div>`);
+  c.appendChild(body);
+
+  if(d.step===0){ // service + size
+    const cat=state.catalog?.services||{};
+    body.innerHTML=`<h2 style="margin-bottom:4px">What needs cleaning?</h2><p class="muted" style="margin-bottom:20px">Pick a service and tell us the size.</p>
+      <div class="opt-grid" id="svcOpts" style="margin-bottom:22px"></div>
+      <div class="card pad">
+        <label class="field"><span>Bedrooms / rooms</span></label>
+        <div class="stepper" data-k="rooms"><button data-d="-1">−</button><b>${d.rooms}</b><button data-d="1">+</button></div>
+        <div style="height:14px"></div>
+        <label class="field"><span>Bathrooms</span></label>
+        <div class="stepper" data-k="baths"><button data-d="-1">−</button><b>${d.baths}</b><button data-d="1">+</button></div>
+        <div style="height:14px"></div>
+        <label class="field"><span>Approx. area (m²) — optional</span><input class="input" type="number" min="0" max="600" value="${d.area||''}" id="area" placeholder="e.g. 60"></label>
+      </div>`;
+    const so=$('#svcOpts',body);
+    Object.entries(cat).forEach(([key,s])=>{
+      const o=el(`<div class="opt ${d.service===key?'sel':''}"><div class="ico">${SVC_ICON[key]||I.broom}</div><h4>${s.label.replace(' Cleaning','')}</h4><small>from ${money(s.base)}</small></div>`);
+      o.onclick=()=>{d.service=key;viewBook();};
+      so.appendChild(o);
+    });
+    body.querySelectorAll('.stepper').forEach(st=>{
+      const k=st.dataset.k;
+      st.querySelectorAll('button').forEach(btn=>btn.onclick=()=>{
+        d[k]=Math.max(k==='baths'?0:1,Math.min(12,d[k]+Number(btn.dataset.d)));viewBook();
+      });
+    });
+    const area=$('#area',body); if(area) area.oninput=()=>{d.area=Number(area.value)||0;};
+  }
+  else if(d.step===1){ // extras
+    const ex=state.catalog?.extras||{};
+    body.innerHTML=`<h2 style="margin-bottom:4px">Add extras</h2><p class="muted" style="margin-bottom:20px">Optional deep-clean add-ons.</p><div class="extra-grid" id="exg"></div>`;
+    const g=$('#exg',body);
+    Object.entries(ex).forEach(([key,e])=>{
+      const sel=d.extras.includes(key);
+      const it=el(`<div class="extra ${sel?'sel':''}"><div class="cb">${sel?I.check:''}</div><div style="flex:1">${e.label}</div><span class="muted tiny">+${e.price}</span></div>`);
+      it.onclick=()=>{d.extras=sel?d.extras.filter(x=>x!==key):[...d.extras,key];viewBook();};
+      g.appendChild(it);
+    });
+  }
+  else if(d.step===2){ // when + where
+    body.innerHTML=`<h2 style="margin-bottom:4px">When & where?</h2><p class="muted" style="margin-bottom:20px">We'll match you with a nearby cleaner.</p>
+      <div class="card pad">
+        <label class="field"><span>Urgency</span></label>
+        <div class="opt-grid" id="urg" style="margin-bottom:16px">
+          ${urgOpt('scheduled','Scheduled',I.clock,'Pick a time')}
+          ${urgOpt('today','Today',I.clock,'+15% fee')}
+          ${urgOpt('flash','FlashClean',I.flash,'ASAP · +40%')}
+        </div>
+        <label class="field"><span>Address</span><input class="input" id="addr" value="${d.address}" placeholder="Street, building, apt"></label>
+        <label class="field"><span>City</span><input class="input" id="city" value="${d.city}"></label>
+        <label class="field"><span>Notes for the cleaner — optional</span><textarea class="input" id="notes" placeholder="Access code, pets, focus areas…">${d.notes}</textarea></label>
+      </div>`;
+    body.querySelectorAll('#urg .opt').forEach(o=>o.onclick=()=>{d.urgency=o.dataset.u;viewBook();});
+    const bind=(id,k)=>{const e=$('#'+id,body);e.oninput=()=>d[k]=e.value;};
+    bind('addr','address');bind('city','city');bind('notes','notes');
+  }
+  else if(d.step===3){ // AI estimate + confirm
+    body.innerHTML=`<h2 style="margin-bottom:4px">Your AI estimate</h2><p class="muted" style="margin-bottom:20px">Fair price, calculated instantly.</p>
+      <div id="estBox"><div class="card pad"><div class="sk" style="height:120px"></div></div></div>`;
+    computeEstimate(body);
+  }
+
+  // nav buttons
+  const nav=el(`<div class="row" style="margin-top:22px;gap:12px">
+    ${d.step>0?`<button class="btn ghost" id="back">Back</button>`:''}
+    <div class="spacer" style="flex:1"></div>
+    ${d.step<3?`<button class="btn" id="next">Continue ${I.arrow}</button>`:`<button class="btn" id="confirm">Confirm booking ${I.check}</button>`}
+  </div>`);
+  c.appendChild(nav);
+  const back=$('#back',nav); if(back)back.onclick=()=>{d.step--;viewBook();};
+  const next=$('#next',nav); if(next)next.onclick=()=>{
+    if(d.step===2 && !d.address.trim()){toast('Please enter an address',true);return;}
+    d.step++;viewBook();
+  };
+  const conf=$('#confirm',nav); if(conf)conf.onclick=confirmBooking;
+
+  shell(c);
+}
+function urgOpt(v,t,ico,sub){const d=state.draft;return `<div class="opt ${d.urgency===v?'sel':''}" data-u="${v}"><div class="ico">${ico}</div><h4>${t}</h4><small>${sub}</small></div>`;}
+
+async function computeEstimate(body){
+  const d=state.draft;
+  try{
+    const {estimate}=await api('/api/estimate','POST',d);
+    d.estimate=estimate;
+    const b=estimate.breakdown;
+    $('#estBox',body).innerHTML=`
+      <div class="card est pad" style="text-align:center;margin-bottom:16px">
+        <div class="muted tiny" style="text-transform:uppercase;letter-spacing:.05em;font-weight:700">${estimate.serviceLabel}</div>
+        <div class="big" style="color:var(--primary-600);margin:6px 0">${money(estimate.total)}</div>
+        <div class="rng">estimated range ${money(estimate.rangeLow)}–${money(estimate.rangeHigh)}</div>
+        <div class="aiband" style="margin-top:16px;justify-content:center">${I.ai}<span>AI estimate · ~${estimate.durationHours}h · ${b.surge>0?`+${b.surge}% live demand`:'standard demand'}</span></div>
+      </div>
+      <div class="card pad">
+        <div class="brk"><span>Base service</span><b>${money(b.base)}</b></div>
+        <div class="brk"><span>Rooms</span><b>${money(b.rooms)}</b></div>
+        ${b.baths?`<div class="brk"><span>Bathrooms</span><b>${money(b.baths)}</b></div>`:''}
+        ${b.area?`<div class="brk"><span>Area</span><b>${money(b.area)}</b></div>`:''}
+        ${b.extras?`<div class="brk"><span>Extras (${d.extras.length})</span><b>${money(b.extras)}</b></div>`:''}
+        ${b.urgencyMult>1?`<div class="brk"><span>Urgency</span><b>×${b.urgencyMult}</b></div>`:''}
+        <div class="divider"></div>
+        <div class="brk" style="font-size:17px"><span style="color:var(--ink);font-weight:700">Total</span><b style="color:var(--primary-600)">${money(estimate.total)}</b></div>
+      </div>
+      <div class="row" style="margin-top:14px;gap:10px;flex-wrap:wrap">
+        <span class="chip">${I.pin}${d.city}</span>
+        <span class="chip">${I.clock}${d.urgency==='flash'?'ASAP':d.urgency==='today'?'Today':'Scheduled'}</span>
+        <span class="chip">${d.rooms} rooms · ${d.baths} baths</span>
+      </div>`;
+  }catch(err){ $('#estBox',body).innerHTML=`<div class="card pad muted">Couldn't load estimate: ${err.message}</div>`; }
+}
+async function confirmBooking(){
+  const d=state.draft;
+  try{
+    const {booking}=await api('/api/bookings','POST',d);
+    state.draft=null;
+    toast('Booking created — finding a cleaner…');
+    state.activeBooking=booking.id;state.view='bookings';
+    render();openBooking(booking.id);
+  }catch(err){toast(err.message,true);}
+}
+
+/* ---------- BOOKINGS LIST ---------- */
+async function viewBookings(){
+  const c=el(`<div><div class="section-title">${state.user.role==='cleaner'?'My jobs':state.user.role==='admin'?'All bookings':'My bookings'}</div><div class="grid" id="list"></div></div>`);
+  shell(c);
+  try{
+    const {bookings}=await api('/api/bookings');
+    const list=$('#list');
+    const mine=state.user.role==='cleaner'?bookings.filter(b=>b.cleanerId===state.user.id):bookings;
+    if(!mine.length){list.appendChild(emptyState('No bookings yet','Your bookings will appear here.'));return;}
+    mine.forEach(b=>list.appendChild(bookingRow(b)));
+  }catch(err){toast(err.message,true);}
+}
+function statusBadge(s){
+  const m={searching:['amber','Finding cleaner'],accepted:['blue','Cleaner assigned'],in_progress:['blue','In progress'],completed:['green','Completed'],cancelled:['red','Cancelled']};
+  const [cl,lab]=m[s]||['grey',s];
+  return `<span class="badge ${cl}">${s==='searching'?'<span class="pulse"></span>':''}${lab}</span>`;
+}
+function bookingRow(b){
+  const row=el(`<div class="card bk">
+    <div class="thumb">${SVC_ICON[b.service]||I.broom}</div>
+    <div class="meta">
+      <h4>${b.serviceLabel}</h4>
+      <div class="muted tiny" style="margin:3px 0 6px">${I.pin.replace('width="18"','')} ${b.city} · ${b.rooms} rooms · ${timeAgo(b.createdAt)}</div>
+      ${statusBadge(b.status)}
+    </div>
+    <div class="price">${b.price!=null?money(b.price):money(b.payout)}<div class="muted tiny" style="font-weight:500">${b.price!=null?'total':'your payout'}</div></div>
+  </div>`);
+  row.onclick=()=>openBooking(b.id);
+  return row;
+}
+
+/* ---------- BOOKING DETAIL (modal-like full view) ---------- */
+async function openBooking(id){
+  state.activeBooking=id;
+  showModal(`<div class="card pad" style="max-height:88vh;overflow-y:auto"><div class="sk" style="height:200px"></div></div>`,'wide');
+  await renderBookingDetail(id);
+}
+async function renderBookingDetail(id){
+  try{
+    const {booking:b}=await api('/api/bookings/'+id);
+    const u=state.user;
+    const isCleaner=u.role==='cleaner';
+    const isCustomer=u.role==='customer';
+    const assignedToMe=isCleaner && b.cleanerId===u.id;
+    const canAccept=isCleaner && b.status==='searching';
+
+    const box=$('.modal .card')||$('.modal');
+    box.innerHTML=`
+      <div class="row" style="margin-bottom:14px">
+        <div class="thumb" style="width:48px;height:48px;border-radius:13px;background:var(--primary-050);color:var(--primary-600);display:grid;place-items:center">${SVC_ICON[b.service]||I.broom}</div>
+        <div style="flex:1"><h3>${b.serviceLabel}</h3><div class="muted tiny">${b.city} · ${fmtTime(b.createdAt)}</div></div>
+        ${statusBadge(b.status)}
+      </div>
+
+      <div class="card pad" style="background:var(--surface-2);margin-bottom:14px">
+        <div class="row" style="justify-content:space-between"><span class="muted">${isCleaner?'Your payout':'Total price'}</span><b style="font-size:22px;color:var(--primary-600)">${money(isCleaner?b.payout:b.price)}</b></div>
+        <div class="row tiny muted" style="gap:14px;margin-top:8px;flex-wrap:wrap">
+          <span>${b.rooms} rooms · ${b.baths} baths</span>${b.area?`<span>${b.area} m²</span>`:''}<span>~${b.durationHours}h</span>
+          ${b.extras.length?`<span>${b.extras.length} extras</span>`:''}
+        </div>
+        ${b.address?`<div class="row tiny" style="margin-top:8px;color:var(--ink-2)">${I.pin}<span>${b.address}, ${b.city}</span></div>`:''}
+        ${b.notes?`<div class="tiny muted" style="margin-top:8px;font-style:italic">"${b.notes}"</div>`:''}
+      </div>
+
+      ${b.cleaner?`<div class="card pad" style="margin-bottom:14px"><div class="row">
+        <div class="avatar">${b.cleaner.name[0]}</div>
+        <div style="flex:1"><b>${b.cleaner.name}</b><div class="tiny muted">${b.cleaner.jobsDone} jobs · ⭐ ${b.cleaner.rating}</div></div>
+        <span class="badge green">Assigned</span></div></div>`:''}
+
+      <div class="card pad" style="margin-bottom:14px">
+        <h4 style="margin-bottom:14px">Progress</h4>
+        <div class="timeline">${timelineHtml(b)}</div>
+      </div>
+
+      <div id="photoZone"></div>
+      <div id="actionZone" style="margin:14px 0"></div>
+      <div id="chatZone"></div>
+    `;
+    renderPhotos(b);
+    renderActions(b,{isCleaner,isCustomer,assignedToMe,canAccept});
+    renderChat(b);
+  }catch(err){toast(err.message,true);closeModal();}
+}
+function timelineHtml(b){
+  const order=['searching','accepted','in_progress','completed'];
+  const done=b.timeline.map(t=>t.status);
+  if(b.status==='cancelled'){
+    return b.timeline.map(t=>`<div class="ev"><b style="text-transform:capitalize">${t.status.replace('_',' ')}</b><div class="tiny muted">${fmtTime(t.at)}</div></div>`).join('');
+  }
+  const labels={searching:'Searching for cleaner',accepted:'Cleaner assigned',in_progress:'Cleaning in progress',completed:'Completed & paid'};
+  return order.map(s=>{
+    const ev=b.timeline.find(t=>t.status===s);
+    const pend=!ev;
+    return `<div class="ev ${pend?'pending':''}"><b style="${pend?'color:var(--ink-3)':''}">${labels[s]}</b>${ev?`<div class="tiny muted">${fmtTime(ev.at)}</div>`:''}</div>`;
+  }).join('');
+}
+function renderPhotos(b){
+  const z=$('#photoZone'); if(!z)return;
+  const has=b.photosBefore.length||b.photosAfter.length;
+  if(!has && state.user.role!=='cleaner'){z.innerHTML='';return;}
+  z.innerHTML=`<div class="card pad" style="margin-bottom:14px">
+    <h4 style="margin-bottom:12px">Before / After</h4>
+    <div class="grid" style="grid-template-columns:1fr 1fr;gap:14px">
+      <div><div class="tiny muted" style="margin-bottom:6px;font-weight:700">BEFORE</div><div class="photos" id="pb">${b.photosBefore.map(p=>`<img src="${p.url}">`).join('')||'<div class="hint">—</div>'}</div></div>
+      <div><div class="tiny muted" style="margin-bottom:6px;font-weight:700">AFTER</div><div class="photos" id="pa">${b.photosAfter.map(p=>`<img src="${p.url}">`).join('')||'<div class="hint">—</div>'}</div></div>
+    </div>
+  </div>`;
+}
+function renderActions(b,ctx){
+  const z=$('#actionZone'); if(!z)return;
+  const {isCleaner,isCustomer,assignedToMe,canAccept}=ctx;
+  let html='';
+  if(canAccept){
+    html=`<button class="btn block" id="acceptBtn">Accept this job · earn ${money(b.payout)} ${I.check}</button>`;
+  } else if(assignedToMe && b.status==='accepted'){
+    html=`<div class="uploadbox" id="upBefore">${I.cam}<div style="margin-top:8px;font-weight:600">Upload "before" photo${b.photosBefore.length?` (${b.photosBefore.length})`:''}</div></div>
+      <button class="btn block" id="startBtn" style="margin-top:12px" ${b.photosBefore.length?'':'disabled'}>Start cleaning ${I.arrow}</button>`;
+  } else if(assignedToMe && b.status==='in_progress'){
+    html=`<div class="uploadbox" id="upAfter">${I.cam}<div style="margin-top:8px;font-weight:600">Upload "after" photo${b.photosAfter.length?` (${b.photosAfter.length})`:''}</div></div>
+      <button class="btn block" id="completeBtn" style="margin-top:12px" ${b.photosAfter.length?'':'disabled'}>Mark complete & get paid ${I.check}</button>`;
+  } else if(isCustomer && b.status==='completed' && !b.reviewed){
+    html=`<button class="btn block" id="reviewBtn">Rate your cleaner ${I.star}</button>`;
+  } else if(isCustomer && b.status==='completed' && b.reviewed){
+    html=`<div class="aiband" style="justify-content:center">${I.check}<span>Thanks for your review!</span></div>`;
+  }
+  if(isCustomer && ['searching','accepted'].includes(b.status)){
+    html+=`<button class="btn ghost block" id="cancelBtn" style="margin-top:12px">Cancel booking</button>`;
+  }
+  z.innerHTML=html;
+  const bind=(id,fn)=>{const e=$('#'+id);if(e)e.onclick=fn;};
+  bind('acceptBtn',async()=>{try{await api('/api/bookings/'+b.id+'/accept','POST');toast('Job accepted!');renderBookingDetail(b.id);}catch(e){toast(e.message,true);}});
+  bind('startBtn',()=>transition(b.id,'in_progress'));
+  bind('completeBtn',()=>transition(b.id,'completed'));
+  bind('cancelBtn',()=>transition(b.id,'cancelled'));
+  bind('reviewBtn',()=>openReview(b.id));
+  const up=(id,phase)=>{const e=$('#'+id);if(e)e.onclick=()=>uploadPhoto(b.id,phase);};
+  up('upBefore','before');up('upAfter','after');
+}
+async function transition(id,status){
+  try{await api('/api/bookings/'+id+'/status','POST',{status});
+    toast(status==='completed'?'Completed — payment released!':status==='cancelled'?'Booking cancelled':'Cleaning started');
+    if(status==='completed'&&state.user.role==='cleaner'){const {user}=await api('/api/me');state.user=user;}
+    renderBookingDetail(id);
+  }catch(e){toast(e.message,true);}
+}
+function uploadPhoto(id,phase){
+  const inp=el('<input type="file" accept="image/*" capture="environment" style="display:none">');
+  document.body.appendChild(inp);
+  inp.onchange=async()=>{
+    const file=inp.files[0]; if(!file){inp.remove();return;}
+    try{
+      const dataUrl=await downscale(file,900,0.7);
+      await api('/api/bookings/'+id+'/photos','POST',{phase,photo:dataUrl});
+      toast('Photo uploaded');renderBookingDetail(id);
+    }catch(e){toast(e.message||'Upload failed',true);}
+    inp.remove();
+  };
+  inp.click();
+}
+function downscale(file,max,q){
+  return new Promise((res,rej)=>{
+    const img=new Image();const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      let{width:w,height:h}=img;
+      if(w>h&&w>max){h=h*max/w;w=max;} else if(h>max){w=w*max/h;h=max;}
+      const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+      cv.getContext('2d').drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      res(cv.toDataURL('image/jpeg',q));
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('Bad image'));};
+    img.src=url;
+  });
+}
+function openReview(id){
+  let stars=5;
+  const inner=el(`<div class="card pad" style="text-align:center">
+    <h3 style="margin-bottom:6px">Rate your cleaner</h3><p class="muted tiny" style="margin-bottom:18px">How was the cleaning?</p>
+    <div class="starpick" id="sp" style="margin-bottom:18px"></div>
+    <textarea class="input" id="rvText" placeholder="Share a few words (optional)" style="margin-bottom:14px"></textarea>
+    <button class="btn block" id="submitRv">Submit review</button>
+  </div>`);
+  showModalNode(inner);
+  const sp=$('#sp',inner);
+  function drawStars(){sp.innerHTML=Array.from({length:5}).map((_,i)=>`<span data-s="${i+1}" class="${i<stars?'on':''}">${I.star}</span>`).join('');
+    sp.querySelectorAll('span').forEach(s=>s.onclick=()=>{stars=Number(s.dataset.s);drawStars();});}
+  drawStars();
+  $('#submitRv',inner).onclick=async()=>{
+    try{await api('/api/bookings/'+id+'/review','POST',{stars,text:$('#rvText',inner).value});
+      toast('Thanks for your review!');closeModal();
+      if(state.view==='bookings')viewBookings();
+    }catch(e){toast(e.message,true);}
+  };
+}
+
+/* ---------- CHAT ---------- */
+async function renderChat(b){
+  const z=$('#chatZone'); if(!z)return;
+  if(!b.cleanerId){z.innerHTML='';return;}
+  z.innerHTML=`<div class="card" style="overflow:hidden"><div class="chat"><div class="msgs" id="msgs"></div>
+    <div class="chatbar"><input class="input" id="chatInput" placeholder="Message…" style="border-radius:12px"><button class="btn sm" id="chatSend">${I.send}</button></div>
+  </div></div>`;
+  await loadMessages(b.id);
+  const input=$('#chatInput',z), sendBtn=$('#chatSend',z);
+  const doSend=async()=>{
+    const text=input.value.trim();if(!text)return;input.value='';
+    try{await api('/api/bookings/'+b.id+'/messages','POST',{text});await loadMessages(b.id);}
+    catch(e){toast(e.message,true);}
+  };
+  sendBtn.onclick=doSend;
+  input.onkeydown=(e)=>{if(e.key==='Enter')doSend();};
+}
+async function loadMessages(id){
+  const box=$('#msgs'); if(!box)return;
+  try{
+    const {messages}=await api('/api/bookings/'+id+'/messages');
+    box.innerHTML=messages.map(m=>{
+      if(m.from==='system')return `<div class="msg sys">${m.text}</div>`;
+      const me=m.from===state.user.id;
+      return `<div class="msg ${me?'me':'them'}">${me?'':`<div class="who">${m.name}</div>`}${m.text}</div>`;
+    }).join('');
+    box.scrollTop=box.scrollHeight;
+  }catch{}
+}
+
+/* ---------- WALLET ---------- */
+async function viewWallet(){
+  const u=state.user;
+  const c=el(`<div style="max-width:640px;margin:0 auto"></div>`);
+  c.appendChild(el(`
+    <div class="card pad" style="background:linear-gradient(135deg,#12B268,#14C871);color:#fff;margin-bottom:20px;box-shadow:0 20px 50px rgba(20,200,113,.35)">
+      <div style="opacity:.85;font-size:14px">${u.role==='cleaner'?'Available balance':'CleanGo balance'}</div>
+      <div style="font-size:40px;font-weight:800;letter-spacing:-.03em;margin:4px 0">${money(u.wallet||0)}</div>
+      <div class="row" style="gap:10px;margin-top:14px">
+        ${u.role==='cleaner'?`<button class="btn" id="withdraw" style="background:#fff;color:var(--primary-600)">Withdraw</button>`:`<button class="btn" id="topup" style="background:#fff;color:var(--primary-600)">Top up</button>`}
+      </div>
+    </div>`));
+  const hist=el(`<div><div class="section-title">Activity</div><div class="grid" id="hist"></div></div>`);
+  c.appendChild(hist);
+  shell(c);
+  const w=$('#withdraw',c);if(w)w.onclick=()=>toast('Withdrawal requested — funds arrive in 1–2 days');
+  const t=$('#topup',c);if(t)t.onclick=()=>toast('Top-up flow coming soon');
+  try{
+    const {bookings}=await api('/api/bookings');
+    const done=bookings.filter(b=>b.status==='completed');
+    const list=$('#hist',c);
+    if(!done.length){list.appendChild(emptyState('No transactions yet','Completed jobs will show here.'));return;}
+    done.forEach(b=>{
+      const amt=u.role==='cleaner'?b.payout:b.price;
+      list.appendChild(el(`<div class="card bk" style="cursor:default">
+        <div class="thumb">${I.cash}</div>
+        <div class="meta"><h4>${b.serviceLabel}</h4><div class="muted tiny">${fmtTime(b.updatedAt)}</div></div>
+        <div class="price" style="color:var(--primary-600)">${u.role==='cleaner'?'+':'−'}${money(amt)}</div>
+      </div>`));
+    });
+  }catch{}
+}
+
+/* ---------- CLEANER JOBS FEED ---------- */
+async function viewJobs(){
+  const u=state.user;
+  const c=el(`<div style="max-width:720px;margin:0 auto"></div>`);
+  c.appendChild(el(`<div class="card pad" style="margin-bottom:18px">
+    <div class="row"><div style="flex:1"><h3>Ready to work?</h3><p class="muted tiny" style="margin-top:4px">${u.verified?'Toggle availability to receive jobs.':'⏳ Account pending verification by admin.'}</p></div>
+    <label style="position:relative;display:inline-block;width:56px;height:32px">
+      <input type="checkbox" id="onlineTog" ${u.online?'checked':''} ${u.verified?'':'disabled'} style="opacity:0;width:0;height:0">
+      <span id="togTrack" style="position:absolute;inset:0;background:${u.online?'var(--primary)':'var(--line)'};border-radius:999px;transition:.2s;cursor:pointer"></span>
+      <span id="togDot" style="position:absolute;top:3px;left:${u.online?'27px':'3px'};width:26px;height:26px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 2px 6px rgba(0,0,0,.2)"></span>
+    </label></div>
+  </div>`));
+  c.appendChild(el(`<div class="section-title"><span class="pulse"></span>Available jobs near you</div>`));
+  const list=el(`<div class="grid" id="jobsList"></div>`);
+  c.appendChild(list);
+  shell(c);
+  const tog=$('#onlineTog',c);
+  if(tog)tog.onchange=async()=>{
+    try{const {user}=await api('/api/cleaner/online','POST',{online:tog.checked});state.user=user;viewJobs();}
+    catch(e){toast(e.message,true);tog.checked=!tog.checked;}
+  };
+  try{
+    const {bookings}=await api('/api/bookings');
+    const open=bookings.filter(b=>b.status==='searching');
+    if(!open.length){list.appendChild(emptyState('No open jobs right now','New jobs will appear here in real time.'));return;}
+    open.forEach(b=>{
+      const row=el(`<div class="card bk">
+        <div class="thumb">${SVC_ICON[b.service]||I.broom}</div>
+        <div class="meta"><h4>${b.serviceLabel}</h4>
+          <div class="muted tiny" style="margin:3px 0 6px">${b.city} · ${b.rooms} rooms · ~${b.durationHours}h · ${timeAgo(b.createdAt)}</div>
+          ${b.urgency==='flash'?'<span class="badge amber">⚡ FlashClean</span>':''}
+        </div>
+        <div class="price" style="color:var(--primary-600)">${money(b.payout)}<div class="muted tiny" style="font-weight:500">your payout</div></div>
+      </div>`);
+      row.onclick=()=>openBooking(b.id);
+      list.appendChild(row);
+    });
+  }catch(e){toast(e.message,true);}
+}
+
+/* ---------- ADMIN ---------- */
+async function viewAdmin(){
+  const c=el(`<div><div class="section-title">Admin dashboard</div><div id="adminBody"></div></div>`);
+  shell(c);
+  try{
+    const {stats,recent,cleaners}=await api('/api/admin/stats');
+    const body=$('#adminBody',c);
+    body.innerHTML=`
+      <div class="kpi-grid" style="margin-bottom:24px">
+        ${kpi(I.cash,money(stats.revenue),'Gross revenue','var(--primary-050)','var(--primary-600)')}
+        ${kpi(I.wallet,money(stats.commission),'Platform commission','#E8F0FE','#1A73E8')}
+        ${kpi(I.check,stats.completedJobs,'Completed jobs','#FEF3E2','#B25E09')}
+        ${kpi(I.pin,stats.activeJobs,'Active now','#FEECEB','#C4342A')}
+        ${kpi(I.users,stats.customers,'Customers','var(--surface-2)','var(--ink)')}
+        ${kpi(I.broom,stats.cleaners,'Cleaners','var(--surface-2)','var(--ink)')}
+      </div>
+      <div class="grid" style="grid-template-columns:1fr;gap:20px">
+        <div class="card pad" style="overflow-x:auto">
+          <h4 style="margin-bottom:14px">Cleaners ${stats.pendingKyc?`<span class="badge amber" style="margin-left:8px">${stats.pendingKyc} pending KYC</span>`:''}</h4>
+          <table class="tbl"><thead><tr><th>Name</th><th>Rating</th><th>Jobs</th><th>Balance</th><th>Status</th><th></th></tr></thead><tbody id="clBody"></tbody></table>
+        </div>
+        <div class="card pad" style="overflow-x:auto">
+          <h4 style="margin-bottom:14px">Recent bookings</h4>
+          <table class="tbl"><thead><tr><th>Service</th><th>City</th><th>Customer</th><th>Status</th><th>Total</th><th>Commission</th></tr></thead><tbody id="bkBody"></tbody></table>
+        </div>
+      </div>`;
+    const clBody=$('#clBody',body);
+    cleaners.forEach(cl=>{
+      const tr=el(`<tr><td><b>${cl.name}</b></td><td>⭐ ${cl.rating}</td><td>${cl.jobsDone}</td><td>${money(cl.wallet||0)}</td>
+        <td>${cl.verified?'<span class="badge green">Verified</span>':'<span class="badge amber">Pending</span>'}</td>
+        <td>${cl.verified?'':`<button class="btn sm" data-v="${cl.id}">Verify</button>`}</td></tr>`);
+      clBody.appendChild(tr);
+    });
+    clBody.querySelectorAll('[data-v]').forEach(btn=>btn.onclick=async()=>{
+      try{await api('/api/admin/verify-cleaner','POST',{cleanerId:btn.dataset.v,verified:true});toast('Cleaner verified');viewAdmin();}
+      catch(e){toast(e.message,true);}
+    });
+    const bkBody=$('#bkBody',body);
+    recent.forEach(b=>{
+      bkBody.appendChild(el(`<tr><td>${b.serviceLabel}</td><td>${b.city}</td><td>${b.customer?.name||'—'}</td>
+        <td>${statusBadge(b.status)}</td><td><b>${money(b.price)}</b></td><td style="color:var(--primary-600)">${money(b.commission)}</td></tr>`));
+    });
+  }catch(err){toast(err.message,true);}
+}
+function kpi(ico,val,lab,bg,fg){return `<div class="card pad kpi"><div class="ico" style="background:${bg};color:${fg}">${ico}</div><b>${val}</b><div class="lab">${lab}</div></div>`;}
+
+/* ---------- Shared UI ---------- */
+function emptyState(title,sub){return el(`<div class="empty">${I.jobs}<h3 style="color:var(--ink-2)">${title}</h3><p class="tiny">${sub}</p></div>`);}
+let modalEl=null;
+function showModal(html,wide){const n=el(`<div class="modal ${wide?'':''}" style="${wide?'max-width:560px':''}">${html}</div>`);showModalNode(n);}
+function showModalNode(node){
+  closeModal();
+  const bg=el(`<div class="modal-bg"></div>`);
+  bg.appendChild(node);
+  bg.onclick=(e)=>{if(e.target===bg)closeModal();};
+  document.body.appendChild(bg);
+  modalEl=bg;
+  requestAnimationFrame(()=>bg.classList.add('show'));
+}
+function closeModal(){if(modalEl){modalEl.remove();modalEl=null;}}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+/* ---------- Boot ---------- */
+async function boot(){
+  initTheme();
+  if(state.token){
+    try{
+      const {user}=await api('/api/me');
+      state.user=user;
+      state.view=user.role==='admin'?'admin':user.role==='cleaner'?'jobs':'home';
+      await loadCatalog();
+    }catch{ state.token=null;localStorage.removeItem('cg_token'); }
+  }
+  render();
+}
+boot();
+</script>
+</body>
+</html>
