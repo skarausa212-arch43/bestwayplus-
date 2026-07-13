@@ -52,4 +52,31 @@ for f in "$MIG"/*.sql; do
 done
 echo "→ running smoke test"
 transform < "$DIR/test/smoke.sql" | psql_run
-echo "✓ all migrations applied and smoke test passed"
+
+# §50 critical test — two providers race to accept the same booking. ----------
+echo "→ concurrency: two providers race to accept one booking"
+transform < "$DIR/test/concurrency_setup.sql" | psql_run
+BK='00000000-0000-0000-0000-0000000000bb'
+A1='00000000-0000-0000-0000-0000000000a1'
+A2='00000000-0000-0000-0000-0000000000a2'
+TA="$(mktemp)"; TB="$(mktemp)"
+psql_c() { "${RUN[@]}" "$PGBIN/psql" -h "$WORK" -p "$PORT" -U postgres -d lumi_test -tAc "$1"; }
+# Fire both acceptances in parallel; capture each result/error.
+psql_c "select (accept_booking_offer('$BK','$A1')).status" >"$TA" 2>&1 &
+psql_c "select (accept_booking_offer('$BK','$A2')).status" >"$TB" 2>&1 &
+wait
+BOTH="$(cat "$TA" "$TB")"
+OK_COUNT="$(grep -c '^accepted$' <<<"$BOTH" || true)"
+ERR_COUNT="$(grep -c 'BOOKING_ALREADY_ACCEPTED' <<<"$BOTH" || true)"
+rm -f "$TA" "$TB"
+WINNERS="$(psql_c "select count(*) from bookings where id='$BK' and status='accepted' and provider_id is not null")"
+CONVS="$(psql_c "select count(*) from conversations where booking_id='$BK'")"
+DECLINED="$(psql_c "select count(*) from booking_offers where booking_id='$BK' and decline_reason='accepted_by_other_provider'")"
+[ "$OK_COUNT" = "1" ]  || { echo "✗ expected exactly 1 successful accept, got $OK_COUNT"; echo "$BOTH"; exit 1; }
+[ "$ERR_COUNT" = "1" ] || { echo "✗ expected exactly 1 BOOKING_ALREADY_ACCEPTED, got $ERR_COUNT"; echo "$BOTH"; exit 1; }
+[ "$WINNERS" = "1" ]   || { echo "✗ expected exactly 1 winning assignment, got $WINNERS"; exit 1; }
+[ "$CONVS" = "1" ]     || { echo "✗ expected exactly 1 conversation, got $CONVS"; exit 1; }
+[ "$DECLINED" = "1" ]  || { echo "✗ expected exactly 1 auto-declined offer, got $DECLINED"; exit 1; }
+echo "  ✓ one winner, one BOOKING_ALREADY_ACCEPTED, one conversation, loser's offer auto-declined"
+
+echo "✓ all migrations applied; smoke + concurrency tests passed"

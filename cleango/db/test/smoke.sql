@@ -25,8 +25,21 @@ begin
     values (cust, prop, cat, prov, 'instant', 'searching', 200, 160, 40)
     returning id into bk;
 
-  update bookings set status = 'accepted' where id = bk;                    -- conversation + status history
+  -- Full valid lifecycle — every step is a transition the state machine allows.
+  update bookings set status = 'accepted' where id = bk;   -- conversation + status history
+  update bookings set status = 'provider_en_route' where id = bk;
+  update bookings set status = 'provider_arrived' where id = bk;
+  update bookings set status = 'in_progress' where id = bk;
+  update bookings set status = 'awaiting_completion_confirmation' where id = bk;
   update bookings set status = 'completed', completed_at = now() where id = bk;  -- stats + service history
+
+  -- The state machine must reject an illegal jump.
+  begin
+    update bookings set status = 'in_progress' where id = bk;
+    raise exception 'guard-failed: completed -> in_progress should be rejected';
+  exception when others then
+    assert sqlerrm like 'BOOKING_TRANSITION_FORBIDDEN%', 'unexpected error: ' || sqlerrm;
+  end;
 
   insert into wallet_transactions(provider_id, booking_id, type, amount)
     values (prov, bk, 'payout', 160);                                       -- wallet balance trigger

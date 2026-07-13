@@ -62,9 +62,17 @@ cluster.
 - **RLS** is enabled on every user-facing table; helper functions `is_staff()`
   and `can_access_property()` back the policies. Column shaping is done with
   views/RPC — never by trusting the client (§22).
-- **Race-safe acceptance** — `booking_offers` has a `unique(booking_id,
-  provider_id)`; the atomic acceptance transaction (§31) belongs in the
-  `accept-booking-offer` Edge Function.
+- **Race-safe acceptance** — `accept_booking_offer(booking_id, provider_id)`
+  (migration 0011) implements the atomic §31 flow: it `SELECT … FOR UPDATE`s the
+  booking, so concurrent acceptances serialize and only the first flips it to
+  `accepted`; every later caller gets a stable `BOOKING_ALREADY_ACCEPTED`, and
+  all other offers are declined in the same transaction. `verify.sh` runs the
+  backend-doc §50 critical test — two parallel acceptances of one booking — and
+  asserts one winner, one `BOOKING_ALREADY_ACCEPTED`, one conversation, one
+  auto-declined offer.
+- **Server-enforced status machine** — `enforce_booking_transition()` rejects
+  illegal jumps (e.g. `completed → in_progress`, `searching → completed`) in the
+  database, per backend §9.
 - **Partitioning** — `provider_location_events` is range-partitioned by
   `recorded_at` (a default partition ships; a job rolls monthly ones).
 - **Post-MVP** (Phase 2, per §32) — Airbnb integrations, corporate
