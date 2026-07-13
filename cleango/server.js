@@ -62,6 +62,43 @@ const MAINTENANCE = [
 ];
 const DAY = 86400000;
 
+// LUMI Score — each home gets a health rating across dimensions. Derived from
+// how fresh each maintenance task is. AI nudges the user to raise it, which
+// turns LUMI from "call a cleaner" into a home you actively maintain.
+const SCORE_DIMS = [
+  { key: 'cleanliness', label: 'Cleanliness', task: 'standard' },
+  { key: 'air',         label: 'Air & freshness', task: 'deep' },
+  { key: 'windows',     label: 'Windows', task: 'windows' },
+  { key: 'mattress',    label: 'Mattresses', task: 'mattress' },
+  { key: 'sofa',        label: 'Upholstery', task: 'sofa' },
+  { key: 'garden',      label: 'Garden', task: 'garden' },
+];
+function propertyTasks(p) {
+  const completed = Object.values(db.bookings).filter((b) => b.propertyId === p.id && b.status === 'completed');
+  return MAINTENANCE.map((m) => {
+    const last = completed.filter((b) => b.service === m.book).sort((a, b) => b.updatedAt - a.updatedAt)[0];
+    // Simulate a plausible history for tasks never booked, seeded off property age.
+    const lastAt = last ? last.updatedAt : (p.createdAt - Math.floor((hashInt(p.id + m.key) & 0x3f)) * DAY);
+    const dueAt = lastAt + m.interval * DAY;
+    const daysLeft = Math.round((dueAt - now()) / DAY);
+    const status = daysLeft < 0 ? 'overdue' : daysLeft <= 7 ? 'soon' : 'ok';
+    return { key: m.key, label: m.label, book: m.book, interval: m.interval, lastAt, dueAt, daysLeft, status };
+  });
+}
+function computeLumiScore(tasks) {
+  const byKey = Object.fromEntries(tasks.map((t) => [t.key, t]));
+  const dims = SCORE_DIMS.map((d) => {
+    const t = byKey[d.task];
+    const ratio = t ? t.daysLeft / t.interval : 1;      // 1 = just done, <0 = overdue
+    const pct = Math.max(0, Math.min(1, 0.5 + ratio * 0.5));
+    return { key: d.key, label: d.label, task: d.task, book: t ? t.book : null, pct, stars: Math.max(1, Math.round(pct * 5)) };
+  });
+  const overall = Math.round((dims.reduce((s, d) => s + d.pct, 0) / dims.length) * 100);
+  const grade = overall >= 85 ? 'Excellent' : overall >= 70 ? 'Great' : overall >= 50 ? 'Fair' : 'Needs care';
+  const worst = [...dims].sort((a, b) => a.pct - b.pct)[0];
+  return { overall, grade, dims, focus: worst && worst.book ? worst : null };
+}
+
 // ─────────────────────────── Persistence ───────────────────────────
 // Tiny JSON "collections". Everything is loaded into memory and flushed
 // to disk on write. Fine for an MVP / demo; swap for Postgres later.
@@ -424,7 +461,8 @@ function propertyView(p) {
     return { userId: m.userId, role: m.role, name: u ? u.name : 'Member', email: u ? u.email : '' };
   });
   const owner = db.users[p.ownerId];
-  return { ...p, members, ownerName: owner ? owner.name : '' };
+  const score = computeLumiScore(propertyTasks(p));
+  return { ...p, members, ownerName: owner ? owner.name : '', lumiScore: score.overall, lumiGrade: score.grade };
 }
 route('GET', '/api/properties', async (req, res) => {
   const user = authUser(req);
@@ -481,15 +519,7 @@ route('GET', '/api/properties/:id/smart', async (req, res, params) => {
     .sort((a, b) => a.createdAt - b.createdAt);
   const lastCleaning = completed.filter((b) => b.service !== 'windows').sort((a, b) => b.updatedAt - a.updatedAt)[0] || null;
 
-  const tasks = MAINTENANCE.map((m) => {
-    const last = completed.filter((b) => b.service === m.book).sort((a, b) => b.updatedAt - a.updatedAt)[0];
-    // Simulate a plausible history for tasks never booked, seeded off property age.
-    const lastAt = last ? last.updatedAt : (p.createdAt - Math.floor((hashInt(p.id + m.key) & 0x3f)) * DAY);
-    const dueAt = lastAt + m.interval * DAY;
-    const daysLeft = Math.round((dueAt - now()) / DAY);
-    const status = daysLeft < 0 ? 'overdue' : daysLeft <= 7 ? 'soon' : 'ok';
-    return { key: m.key, label: m.label, book: m.book, interval: m.interval, lastAt, dueAt, daysLeft, status };
-  });
+  const tasks = propertyTasks(p);
   // AI recommendations: surface the most pressing due tasks.
   const recs = tasks.filter((t) => t.status !== 'ok').sort((a, b) => a.daysLeft - b.daysLeft).slice(0, 3)
     .map((t) => ({
@@ -503,6 +533,12 @@ route('GET', '/api/properties/:id/smart', async (req, res, params) => {
       property: propertyView(p),
       lastCleaning: lastCleaning ? { at: lastCleaning.updatedAt, service: lastCleaning.serviceLabel } : null,
       tasks, recommendations: recs,
+      score: computeLumiScore(tasks),
+      // NOTE: LUMI Vault (post-MVP) — a home's digital archive lives off the
+      // same booking history (before/after photos, invoices, service log). The
+      // data is already captured per booking, so Vault can be layered on later
+      // without a schema change; `vault` on a property is reserved for it.
+      vault: p.vault || null,
       upcoming: upcoming.map((b) => ({ id: b.id, service: b.serviceLabel, status: b.status, price: b.price, createdAt: b.createdAt })),
     },
   });

@@ -581,7 +581,7 @@ function propertyCard(p){
     <div class="thumb">${p.type==='office'?I.office:I.building}</div>
     <div class="meta"><h4>${p.label}</h4>
       <div class="muted tiny" style="margin:3px 0 6px">${I.pin}${p.address?p.address+', ':''}${p.city} · ${p.rooms} rooms${p.members&&p.members.length?` · ${p.members.length+1} members`:''}</div>
-      <span class="badge green">${I.smart}Smart Home</span>
+      <div class="row" style="gap:6px"><span class="badge green">${I.smart}Smart Home</span>${p.lumiScore!=null?`<span class="badge ${p.lumiScore>=70?'green':p.lumiScore>=50?'amber':'red'}">LUMI ${p.lumiScore}</span>`:''}</div>
     </div>
     ${I.arrow}
   </div>`);
@@ -635,7 +635,7 @@ async function viewProperties(){
       <div class="row" style="align-items:flex-start">
         <div class="thumb" style="width:48px;height:48px;border-radius:13px;background:var(--primary-050);color:var(--primary-600);display:grid;place-items:center;flex:none">${p.type==='office'?I.office:I.building}</div>
         <div style="flex:1;min-width:0">
-          <div class="row" style="gap:8px"><h4>${p.label}</h4><span class="badge grey" style="text-transform:capitalize">${p.type}</span>${p.myRole!=='owner'?`<span class="badge blue" style="text-transform:capitalize">${p.myRole}</span>`:''}</div>
+          <div class="row" style="gap:8px;flex-wrap:wrap"><h4>${p.label}</h4><span class="badge grey" style="text-transform:capitalize">${p.type}</span>${p.myRole!=='owner'?`<span class="badge blue" style="text-transform:capitalize">${p.myRole}</span>`:''}${p.lumiScore!=null?`<span class="badge ${p.lumiScore>=70?'green':p.lumiScore>=50?'amber':'red'}">LUMI ${p.lumiScore}</span>`:''}</div>
           <div class="muted tiny" style="margin:4px 0">${p.address?p.address+', ':''}${p.city} · ${p.rooms} rooms · ${p.baths} baths${p.area?` · ${p.area} m²`:''}</div>
         </div>
       </div>
@@ -701,6 +701,33 @@ function openInvite(pid){
   };
 }
 
+/* ---------- LUMI Score ---------- */
+function scoreColor(v){return v>=85?'var(--primary)':v>=70?'#3B9BE3':v>=50?'var(--warn)':'var(--danger)';}
+function starRow(n){return `<span class="stars" style="color:var(--star)">${Array.from({length:5}).map((_,i)=>`<span style="${i<n?'':'opacity:.22'}">${I.star}</span>`).join('')}</span>`;}
+function lumiScoreCard(score,pid){
+  if(!score)return '';
+  const col=scoreColor(score.overall);
+  const deg=Math.round(score.overall*3.6);
+  return `<div class="card pad" style="margin-bottom:20px">
+    <div class="row" style="gap:20px;align-items:center;flex-wrap:wrap">
+      <div style="width:112px;height:112px;border-radius:50%;flex:none;display:grid;place-items:center;background:conic-gradient(${col} ${deg}deg,var(--surface-2) 0)">
+        <div style="width:88px;height:88px;border-radius:50%;background:var(--surface);display:grid;place-items:center;text-align:center">
+          <div><div style="font-size:30px;font-weight:800;letter-spacing:-.03em;color:${col};line-height:1">${score.overall}</div><div class="tiny muted" style="font-weight:700">LUMI Score</div></div>
+        </div>
+      </div>
+      <div style="flex:1;min-width:220px">
+        <div class="row" style="gap:8px;margin-bottom:4px"><h3>Home health</h3><span class="badge ${score.overall>=70?'green':score.overall>=50?'amber':'red'}">${score.grade}</span></div>
+        <p class="muted tiny" style="margin-bottom:12px;line-height:1.5">A living rating of your home across cleaning, air, windows, upholstery and more. LUMI keeps it climbing.</p>
+        ${score.focus?`<button class="btn sm" data-rec="${score.focus.book}">${I.spark} Raise your score — book ${score.focus.label.toLowerCase()}</button>`:`<span class="badge green">${I.check}Your home is in great shape</span>`}
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">
+      ${score.dims.map(d=>`<div class="row" style="justify-content:space-between"><span class="tiny" style="font-weight:600">${d.label}</span>${starRow(d.stars)}</div>`).join('')}
+    </div>
+  </div>`;
+}
+
 /* ---------- SMART HOME (per property) ---------- */
 async function viewSmart(){
   const pid=state.activeProperty;
@@ -727,6 +754,7 @@ async function viewSmart(){
           <div class="stat"><b style="color:#fff;font-size:18px">${smart.tasks.filter(t=>t.status!=='ok').length}</b><span style="opacity:.8;font-size:12px">Due soon</span></div>
         </div>
       </div>
+      ${lumiScoreCard(smart.score,pid)}
       ${smart.recommendations.length?`<div class="card pad" style="margin-bottom:20px;border:1.5px solid var(--primary)">
         <div class="aiband" style="margin-bottom:14px">${I.ai}<span>AI recommendations for this home</span></div>
         ${smart.recommendations.map(r=>`<div class="row" style="justify-content:space-between;padding:8px 0;gap:12px">

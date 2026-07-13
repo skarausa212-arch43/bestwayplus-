@@ -32,6 +32,7 @@ Seeded automatically on first run (password: `cleango123`):
 ### The home OS
 - **Multiple properties** — customers manage many homes (apartment / house / office); each is a booking target and a Smart Home.
 - **Smart Home dashboard** (per property) — last cleaning, a recurring **maintenance schedule** (standard, deep, windows, sofa, mattress, garden) with overdue / due-soon status, **AI recommendations**, and upcoming jobs. Book any task in one tap.
+- **LUMI Score** — every home gets a living health rating (0–100) derived from how fresh each maintenance dimension is (Cleanliness, Air, Windows, Mattresses, Upholstery, Garden), shown as a score ring + per-dimension stars. LUMI always surfaces the weakest dimension with a one-tap "raise your score" booking — turning the app from "call a cleaner" into a home you actively maintain.
 - **Family Home** — invite others to a property as **family** or **guest**; they can view and book for it.
 - **Service categories** — Cleaning & Windows are live; Handyman, Electrician, Plumbing, Garden, Laundry & Assembly surface as the roadmap ("coming soon").
 - **Multi-city** — Warsaw, Kraków, Wrocław, Poznań, Gdańsk, Łódź.
@@ -99,3 +100,11 @@ Supabase/Postgres later does not change the frontend.
 Phase 1 Cleaning marketplace · Phase 2 Cleaning companies · Phase 3 Airbnb
 automation · Phase 4 Corporate · Phase 5 Home-services marketplace · then
 Germany, Czech Republic, Netherlands.
+
+**LUMI Vault** (post-MVP, architected-for): a digital archive per home — the full
+cleaning history, before/after photos, repairs, invoices, warranties and property
+docs; a "medical record" for the home. The data is already captured per booking
+(each job stores before/after photos, price and a timeline), so the Vault layers on
+top of the existing model without a schema change. A reserved `vault` field on each
+property and the `smart` endpoint already expose the seam — deliberately left empty
+in the MVP.
