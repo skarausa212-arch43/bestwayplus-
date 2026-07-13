@@ -65,7 +65,14 @@ cleango/
   server.js          Zero-dependency HTTP server + JSON API + file storage
   public/index.html  Single-page app (vanilla JS, inline SVG icons, no deps)
   data/              Auto-created JSON "database" (gitignored)
+  db/                Production Postgres/Supabase schema (docs/04) — migrations,
+                     RLS, secure views, triggers, atomic dispatch + verify.sh
+  openapi/           OpenAPI 3.1 API contract (docs/06) — lumi-api-v1.yaml + validate.sh
 ```
+
+The running app uses a JSON store as an MVP stand-in. `db/` and `openapi/` are
+the production persistence layer and API contract the platform graduates to —
+each self-verifying (`db/verify.sh`, `openapi/validate.sh`).
 
 Storage is JSON files under `data/` — fine for an MVP/demo. The API surface
 mirrors the documented Edge Functions, so swapping the persistence layer for
