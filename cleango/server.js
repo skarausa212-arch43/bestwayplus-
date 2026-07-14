@@ -24,6 +24,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { createAIProvider, envelope: aiEnvelope } = require('./ai/ai-provider');
+const dispatch = require('./dispatch/ranking');
 
 const PORT = process.env.PORT || 4000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -968,6 +969,42 @@ route('GET', '/api/admin/stats', async (req, res) => {
     cleaners: users.filter((u) => u.role === 'cleaner').map(publicUser),
   });
 });
+// Dispatch ranking (admin/operational view) — shows which providers the engine
+// would offer a booking to, with an explainability breakdown (12_DISPATCH §43/§45).
+route('GET', '/api/admin/dispatch/:bookingId/rank', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user || user.role !== 'admin') return send(res, 403, { error: 'Admins only.' });
+  const bk = db.bookings[params.bookingId];
+  if (!bk) return send(res, 404, { error: 'Booking not found.' });
+  const mode = bk.urgency === 'flash' ? 'flashclean' : bk.urgency === 'today' ? 'instant' : 'scheduled';
+  const booking = {
+    id: bk.id, customerId: bk.customerId, mode, serviceCategory: 'cleaning',
+    serviceLabel: bk.serviceLabel, payout: bk.payout, price: bk.price, platformFee: bk.commission,
+    city: bk.city, estimatedDurationMinutes: Math.round((bk.durationHours || 2) * 60), urgency: bk.urgency,
+  };
+  // Build provider candidates from cleaner accounts, synthesizing operational
+  // features deterministically (no live GPS in the MVP store).
+  const providers = Object.values(db.users).filter((u) => u.role === 'cleaner').map((u) => {
+    const seed = Math.abs(hashInt(u.id + bk.id));
+    const prevGood = Object.values(db.bookings).some((x) => x.cleanerId === u.id && x.customerId === bk.customerId && x.status === 'completed');
+    return {
+      id: u.id, name: u.name, verified: u.verified, online: u.online, status: 'active',
+      categories: ['cleaning'], serviceRadiusKm: 15,
+      distanceKm: (seed % 22) * 0.9,                 // 0..~19 km
+      rating: u.rating || 4.8, ratingCount: u.jobsDone || 5,
+      categoryCompleted: u.jobsDone || 0, completionRate: 0.9, acceptanceRate: 0.85, punctuality: 0.92,
+      idleHours: (seed % 12), recentOffers: (seed >> 3) % 6, repeatCustomer: prevGood,
+    };
+  });
+  const ranked = dispatch.rankCandidates(booking, providers);
+  const nameById = Object.fromEntries(providers.map((p) => [p.id, p.name]));
+  send(res, 200, {
+    booking: { id: bk.id, service: bk.serviceLabel, mode, city: bk.city, payout: bk.payout },
+    eligibleCount: ranked.length,
+    candidates: ranked.map((r) => ({ ...r, name: nameById[r.providerId] })),
+  });
+});
+
 route('POST', '/api/admin/verify-cleaner', async (req, res) => {
   const user = authUser(req);
   if (!user || user.role !== 'admin') return send(res, 403, { error: 'Admins only.' });
