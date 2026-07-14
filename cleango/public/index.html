@@ -394,6 +394,10 @@ const I = {
   leaf:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20c8 2 16-4 16-15C10 5 3 10 4 20Z"/><path d="M4 20c2-6 6-9 10-10"/></svg>`,
   shirt:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3l3 2 3-2 5 3-2 4-2-1v9H8v-9l-2 1-2-4 5-3Z"/></svg>`,
   tool:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11M3 12h8M3 17h14"/><path d="M17 4l4 4-6 6-4-4 6-6Z"/></svg>`,
+  receipt:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2Z"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>`,
+  search:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>`,
+  doc:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6Z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>`,
+  share:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>`,
 };
 const CAT_ICON={cleaning:I.broom,handyman:I.wrench,electrical:I.bolt,plumbing:I.drop,garden:I.leaf,laundry:I.shirt,assembly:I.tool,windows:I.window};
 const CAT_COLOR={cleaning:'c-cleaning',windows:'c-windows',handyman:'c-assembly',electrical:'c-electrical',plumbing:'c-plumbing',garden:'c-garden',laundry:'c-laundry',assembly:'c-assembly',painting:'c-painting',sofa:'c-sofa',ironing:'c-ironing'};
@@ -422,6 +426,7 @@ function toast(msg,err){const t=$('#toast');t.textContent=msg;t.className='toast
 function plural(n,one,few,many){const m=n%10,h=n%100;return h>=11&&h<=14?many:m===1?one:m>=2&&m<=4?few:many;}
 function timeAgo(ts){const s=(Date.now()-ts)/1000;if(s<60)return'только что';if(s<3600){const m=Math.floor(s/60);return m+' '+plural(m,'мин','мин','мин')+' назад';}if(s<86400){const h=Math.floor(s/3600);return h+' '+plural(h,'час','часа','часов')+' назад';}const d=Math.floor(s/86400);return d+' '+plural(d,'день','дня','дней')+' назад';}
 function fmtTime(ts){return new Date(ts).toLocaleString('ru-RU',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'});}
+function fmtDate(ts){return new Date(ts).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});}
 function roomsWord(n){return n+' '+plural(n,'комната','комнаты','комнат');}
 function bathsWord(n){return n+' '+plural(n,'санузел','санузла','санузлов');}
 
@@ -597,7 +602,7 @@ async function loadProperties(){
 
 function render(){
   if(!state.user){ renderAuth(); return; }
-  const map={home:viewHome,properties:viewProperties,smart:viewSmart,premium:viewPremium,book:viewBook,bookings:viewBookings,wallet:viewWallet,jobs:viewJobs,admin:viewAdmin};
+  const map={home:viewHome,properties:viewProperties,smart:viewSmart,passport:viewPassport,premium:viewPremium,book:viewBook,bookings:viewBookings,wallet:viewWallet,jobs:viewJobs,admin:viewAdmin};
   const fn=map[state.view]||viewHome;
   fn();
 }
@@ -869,6 +874,7 @@ async function viewSmart(){
           <div class="stat"><b style="color:#fff;font-size:18px">${smart.upcoming.length}</b><span style="opacity:.8;font-size:12px">Предстоящие</span></div>
           <div class="stat"><b style="color:#fff;font-size:18px">${smart.tasks.filter(t=>t.status!=='ok').length}</b><span style="opacity:.8;font-size:12px">Скоро нужно</span></div>
         </div>
+        <button class="btn sm" id="passportBtn" style="margin-top:18px;background:rgba(255,255,255,.16);color:#fff">${I.receipt} Паспорт дома ${I.arrow}</button>
       </div>
       ${lumiScoreCard(smart.score,pid)}
       ${smart.recommendations.length?`<div class="card pad reveal" style="margin-bottom:20px;border:1.5px solid var(--primary)">
@@ -888,12 +894,144 @@ async function viewSmart(){
     // animate the LUMI Score ring + number
     const ring=$('#scoreRing',c);
     if(ring){ animateRing(ring, +ring.dataset.score, ring.dataset.col); countUp($('#scoreNum',c), +ring.dataset.score); }
+    const passBtn=$('#passportBtn',c); if(passBtn)passBtn.onclick=()=>{state.activeProperty=pid;state.view='passport';render();};
     stagger($('#mgrid',c));
     $('#smartBody',c).querySelectorAll('[data-rec]').forEach(b=>b.onclick=()=>startBooking(b.dataset.rec,pid));
     const upc=$('#upc',c);
     if(upc)smart.upcoming.forEach(b=>upc.appendChild(el(`<div class="card bk" style="cursor:pointer" onclick=""><div class="thumb">${I.clock}</div><div class="meta"><h4>${b.service}</h4><div class="muted tiny">${statusBadge(b.status)}</div></div><div class="price">${money(b.price)}</div></div>`)));
     if(upc)upc.querySelectorAll('.bk').forEach((row,i)=>row.onclick=()=>openBooking(smart.upcoming[i].id));
   }catch(e){toast(e.message,true);}
+}
+
+/* ---------- DIGITAL HOME PASSPORT (LUMI Vault) ---------- */
+async function viewPassport(){
+  const pid=state.activeProperty;
+  const c=el(`<div style="max-width:820px;margin:0 auto"></div>`);
+  const back=el(`<button class="btn ghost sm" style="margin-bottom:16px">← Умный дом</button>`);
+  back.onclick=()=>{state.view='smart';render();};
+  c.appendChild(back);
+  const wrap=el(`<div id="passBody"><div class="card pad"><div class="sk" style="height:200px"></div></div></div>`);
+  c.appendChild(wrap);
+  shell(c);
+  try{
+    const {passport:P}=await api('/api/properties/'+pid+'/passport');
+    const p=P.property;
+    const col=scoreColor(P.score.overall);
+    const catList=Object.entries(P.byService).sort((a,b)=>b[1].total-a[1].total);
+    const maxTotal=Math.max(1,...catList.map(([,v])=>v.total));
+    $('#passBody',c).innerHTML=`
+      <div class="hero" style="padding:26px;margin-bottom:20px;background:linear-gradient(135deg,#0B1220,#1b2740);box-shadow:0 20px 50px rgba(11,18,32,.3)">
+        <div class="badge" style="background:rgba(233,196,106,.2);color:#F0D488;margin-bottom:12px">${I.receipt}Паспорт дома</div>
+        <h1 style="font-size:24px">${p.label}</h1>
+        <p style="margin-top:6px">${p.address?p.address+', ':''}${p.city} · история обслуживания с ${fmtDate(P.since)}</p>
+        <div class="row" style="gap:24px;margin-top:16px;flex-wrap:wrap">
+          <div class="stat"><b style="color:#fff;font-size:20px">${P.totalServices}</b><span style="opacity:.8;font-size:12px">${plural(P.totalServices,'услуга','услуги','услуг')} всего</span></div>
+          <div class="stat"><b style="color:#fff;font-size:20px"><span id="annNum">0</span> zł</b><span style="opacity:.8;font-size:12px">за год</span></div>
+          <div class="stat"><b style="color:${col};font-size:20px">${P.score.overall}</b><span style="opacity:.8;font-size:12px">LUMI Score</span></div>
+        </div>
+      </div>
+
+      <div class="card pad reveal" style="margin-bottom:20px;border:1.5px solid var(--primary)">
+        <div class="aiband" style="margin-bottom:12px">${I.search}<span>AI-поиск по истории дома</span></div>
+        <div class="row" style="gap:8px"><input class="input" id="passSearch" placeholder="напр.: когда мыли окна?" style="flex:1"><button class="btn" id="passAsk">Найти</button></div>
+        <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px" id="passChips"></div>
+        <div id="passAns" style="margin-top:12px"></div>
+      </div>
+
+      ${catList.length?`<div class="card pad reveal" style="margin-bottom:20px">
+        <div class="row" style="justify-content:space-between;margin-bottom:14px"><h3>Годовая аналитика</h3><button class="btn ghost sm" id="saleBtn">${I.share} Режим продажи</button></div>
+        <div class="grid" style="gap:12px">
+          ${catList.map(([k,v])=>`<div>
+            <div class="row" style="justify-content:space-between;margin-bottom:4px"><span class="tiny" style="font-weight:600">${SVC_LABEL_RU[v.label]||v.label} · ${v.count}</span><b class="tiny">${money(v.total)}</b></div>
+            <div style="height:8px;border-radius:6px;background:var(--surface-2);overflow:hidden"><div class="passbar" style="height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,var(--primary),#3BE39A)" data-w="${Math.round(v.total/maxTotal*100)}"></div></div>
+          </div>`).join('')}
+        </div>
+      </div>`:''}
+
+      <div class="section-title">${I.clock} Хронология обслуживания</div>
+      <div class="grid" id="tl">${P.timeline.length?'':'<div class="card pad muted">Пока нет завершённых услуг. История появится после первой уборки.</div>'}</div>
+
+      ${P.documents.length?`<div class="section-title" style="margin-top:22px">${I.doc} Документы</div>
+      <div class="grid" id="docs"></div>`:''}`;
+
+    countUp($('#annNum',c),Math.round(P.annualCost),900);
+    setTimeout(()=>c.querySelectorAll('.passbar').forEach(b=>b.style.width=b.dataset.w+'%'),120);
+
+    // timeline events
+    const tl=$('#tl',c);
+    P.timeline.forEach(ev=>{
+      const photos=[...ev.photosBefore.slice(0,2),...ev.photosAfter.slice(0,2)];
+      tl.appendChild(el(`<div class="card pad">
+        <div class="row" style="align-items:flex-start;gap:14px">
+          <div class="thumb" style="width:46px;height:46px;border-radius:13px;background:var(--primary-050);color:var(--primary-600);display:grid;place-items:center;flex:none">${SVC_ICON[ev.service]||I.broom}</div>
+          <div style="flex:1;min-width:0">
+            <div class="row" style="justify-content:space-between;gap:8px"><b>${svcLabelRu(ev.serviceLabel)}</b><b style="color:var(--primary-600)">${money(ev.price)}</b></div>
+            <div class="muted tiny" style="margin:3px 0">${fmtDate(ev.at)}${ev.provider?` · ${ev.provider}`:''} · <span style="color:var(--primary-600);font-weight:700">✓ проверено</span></div>
+            <div class="tiny" style="color:var(--ink-2);margin-top:4px">${svcLabelRu(ev.serviceLabel)} выполнена${ev.provider?` · ${ev.provider}`:''} · ${(ev.photosAfter&&ev.photosAfter.length)?'подтверждено фото «до/после»':'без фото'}</div>
+            ${photos.length?`<div class="photos" style="margin-top:8px;grid-template-columns:repeat(auto-fill,minmax(64px,1fr))">${photos.map(u=>`<img src="${u}">`).join('')}</div>`:''}
+            ${ev.notes?`<div class="tiny muted" style="margin-top:6px;font-style:italic">«${ev.notes}»</div>`:''}
+          </div>
+        </div>
+      </div>`));
+    });
+    stagger(tl);
+
+    // documents
+    const docs=$('#docs',c);
+    if(docs)P.documents.forEach(d=>docs.appendChild(el(`<div class="card bk" style="cursor:default">
+      <div class="thumb">${I.doc}</div>
+      <div class="meta"><h4>${d.title}</h4><div class="muted tiny">${fmtDate(d.at)}</div></div>
+      <div class="price">${money(d.amount)}</div></div>`)));
+    if(docs)stagger(docs);
+
+    // AI search
+    const doSearch=(q)=>{
+      const ans=$('#passAns',c); if(!ans)return;
+      const res=passportSearch(q,P.timeline);
+      ans.innerHTML=`<div class="card pad reveal" style="background:var(--surface-2)"><div class="tiny" style="line-height:1.5">${res}</div></div>`;
+    };
+    const chips=$('#passChips',c);
+    ['Когда мыли окна?','История генеральной уборки','Сколько потратили за год?'].forEach(q=>{
+      const ch=el(`<span class="chip" style="cursor:pointer">${q}</span>`);
+      ch.onclick=()=>{$('#passSearch',c).value=q;doSearch(q);};chips.appendChild(ch);
+    });
+    $('#passAsk',c).onclick=()=>doSearch($('#passSearch',c).value);
+    $('#passSearch',c).onkeydown=(e)=>{if(e.key==='Enter')doSearch(e.target.value);};
+    const sale=$('#saleBtn',c); if(sale)sale.onclick=()=>openSaleReport(P);
+  }catch(e){toast(e.message,true);}
+}
+function passportSearch(q,timeline){
+  const t=(q||'').toLowerCase();
+  if(!t.trim())return 'Задайте вопрос об истории дома.';
+  const totalMatch=/потрат|сколько|стоим|расход/.test(t);
+  if(totalMatch){const sum=timeline.reduce((s,e)=>s+e.price,0);return `Всего на обслуживание этого дома потрачено <b>${money(sum)}</b> за ${timeline.length} ${plural(timeline.length,'услугу','услуги','услуг')}.`;}
+  const keymap=[['окн','windows'],['окон','windows'],['окна','windows'],['генеральн','deep'],['глубок','deep'],['обычн','standard'],['стандарт','standard'],['диван','deep'],['матрас','deep'],['переезд','moveout'],['офис','office']];
+  let svc=null; for(const [k,s] of keymap){ if(t.includes(k)){svc=s;break;} }
+  const items=svc?timeline.filter(e=>e.service===svc):timeline;
+  if(!items.length)return svc?`По этой услуге пока нет записей в истории.`:`Ничего не найдено. Попробуйте: «когда мыли окна?».`;
+  const last=items[0];
+  const list=items.slice(0,4).map(e=>`${fmtDate(e.at)} — ${svcLabelRu(e.serviceLabel)}${e.provider?` (${e.provider})`:''} · ${money(e.price)}`).join('<br>');
+  return `Последняя запись: <b>${svcLabelRu(last.serviceLabel)}</b> — ${fmtDate(last.at)}.<br><br>${list}`;
+}
+function openSaleReport(P){
+  const p=P.property;
+  const lines=P.timeline.slice(0,8).map(e=>`• ${fmtDate(e.at)} — ${svcLabelRu(e.serviceLabel)} (${money(e.price)})`).join('\n');
+  const inner=el(`<div class="card pad">
+    <div class="row" style="margin-bottom:12px"><div style="width:44px;height:44px;border-radius:12px;background:var(--primary-050);color:var(--primary-600);display:grid;place-items:center">${I.share}</div>
+      <div><h3>Отчёт для продажи</h3><p class="muted tiny">Проверенная история обслуживания дома</p></div></div>
+    <div class="card pad" style="background:var(--surface-2);font-size:13px;line-height:1.6">
+      <b>${p.label}</b> · ${p.city}<br>
+      LUMI Score: <b style="color:${scoreColor(P.score.overall)}">${P.score.overall}/100</b> · ${P.totalServices} ${plural(P.totalServices,'услуга','услуги','услуг')} · ${money(P.annualCost)} за год<br><br>
+      <b>Последние работы:</b><br>${lines.replace(/\n/g,'<br>')||'—'}
+      <br><br><span class="muted tiny">Каждая запись подтверждена фото «до/после» на платформе LUMI.</span>
+    </div>
+    <button class="btn block" id="copyRep" style="margin-top:14px">${I.check} Скопировать отчёт</button>
+  </div>`);
+  showModalNode(inner);
+  $('#copyRep',inner).onclick=()=>{
+    const txt=`Паспорт дома LUMI — ${p.label}, ${p.city}\nLUMI Score: ${P.score.overall}/100\nУслуг: ${P.totalServices} · за год: ${money(P.annualCost)}\n\n${lines}`;
+    (navigator.clipboard?.writeText(txt)||Promise.resolve()).then(()=>toast('Отчёт скопирован')).catch(()=>toast('Отчёт готов'));
+  };
 }
 
 /* ---------- PREMIUM (LUMI+) ---------- */

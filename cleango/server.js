@@ -544,6 +544,59 @@ route('GET', '/api/properties/:id/smart', async (req, res, params) => {
   });
 });
 
+// Digital Home Passport (LUMI Vault) — permanent maintenance history,
+// annual analytics, documents (invoices) and a shareable sale-mode report.
+route('GET', '/api/properties/:id/passport', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const p = db.properties[params.id];
+  if (!p || !canAccessProperty(user, p)) return send(res, 403, { error: 'Forbidden.' });
+  const completed = Object.values(db.bookings)
+    .filter((b) => b.propertyId === p.id && b.status === 'completed')
+    .sort((a, b) => b.updatedAt - a.updatedAt);
+
+  const timeline = completed.map((b) => {
+    const cleaner = b.cleanerId ? db.users[b.cleanerId] : null;
+    return {
+      id: b.id, service: b.service, serviceLabel: b.serviceLabel,
+      at: b.updatedAt, provider: cleaner ? cleaner.name : null,
+      price: b.price, currency: b.currency,
+      photosBefore: (b.photosBefore || []).map((x) => x.url),
+      photosAfter: (b.photosAfter || []).map((x) => x.url),
+      notes: b.notes || '',
+      aiSummary: `${b.serviceLabel} выполнена${cleaner ? ` исполнителем ${cleaner.name}` : ''} · ${b.rooms} комн. · ${b.photosAfter && b.photosAfter.length ? 'подтверждено фото' : 'без фото'}`,
+    };
+  });
+
+  const now_ = now();
+  const yearAgo = now_ - 365 * DAY;
+  const lastYear = completed.filter((b) => b.updatedAt >= yearAgo);
+  const annualCost = lastYear.reduce((s, b) => s + b.price, 0);
+  const byService = {};
+  for (const b of completed) {
+    byService[b.service] = byService[b.service] || { label: b.serviceLabel, count: 0, total: 0 };
+    byService[b.service].count++;
+    byService[b.service].total += b.price;
+  }
+  const documents = completed.map((b) => ({
+    id: 'inv_' + b.id, type: 'invoice', title: `Счёт · ${b.serviceLabel}`,
+    at: b.updatedAt, amount: b.price, currency: b.currency, bookingId: b.id,
+  }));
+
+  send(res, 200, {
+    passport: {
+      property: propertyView(p),
+      score: computeLumiScore(propertyTasks(p)),
+      totalServices: completed.length,
+      annualCost, annualServices: lastYear.length, currency: CURRENCY,
+      byService,
+      timeline,
+      documents,
+      since: p.createdAt,
+    },
+  });
+});
+
 // ---- Premium (LUMI+) ----
 route('POST', '/api/subscribe', async (req, res) => {
   const user = authUser(req);
