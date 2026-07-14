@@ -25,6 +25,8 @@ const path = require('path');
 const crypto = require('crypto');
 const { createAIProvider, envelope: aiEnvelope } = require('./ai/ai-provider');
 const dispatch = require('./dispatch/ranking');
+const pricing = require('./pricing/pricing-engine');
+const { createLedger } = require('./pricing/ledger');
 
 const PORT = process.env.PORT || 4000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -175,6 +177,18 @@ const persist = {
   reviews: () => saveJSON('reviews.json', db.reviews),
   ledger: () => saveJSON('ledger.json', db.ledger),
 };
+
+// Immutable, append-only financial ledger in minor units (14_PAYMENT §8).
+const ledger = createLedger({
+  load: () => loadJSON('ledger-v2.json', []),
+  persist: (rows) => saveJSON('ledger-v2.json', rows),
+});
+// Live demand context for surge (12/13): open searches vs online providers.
+function demandContext() {
+  const openBookings = Object.values(db.bookings).filter((b) => b.status === 'searching').length;
+  const onlineProviders = Object.values(db.users).filter((u) => u.role === 'cleaner' && u.online).length;
+  return { openBookings, onlineProviders };
+}
 
 // ─────────────────────────── Helpers ───────────────────────────
 
@@ -450,6 +464,37 @@ route('POST', '/api/estimate', async (req, res) => {
   const estimate = estimatePrice(b);
   const signals = ai.estimateBooking(b);
   send(res, 200, { estimate, ai: signals.meta, aiSignals: signals.data });
+});
+// Customer quote — authoritative, versioned, customer-safe (no platform fee) (13 §55).
+route('POST', '/api/quote', async (req, res) => {
+  const user = authUser(req);
+  const b = await readBody(req);
+  const ctx = { ...demandContext(), subscription: user && user.subscription, promo: b.promo, aiSignals: ai.estimateBooking(b).data ? { ...ai.estimateBooking(b).data, fallback: ai.estimateBooking(b).meta.fallback } : null };
+  const q = pricing.quote(b, ctx);
+  send(res, 200, { quote: pricing.customerView(q) });
+});
+// Admin pricing simulator — full breakdown incl. internal fee + guardrail warnings (13 §48).
+route('POST', '/api/admin/pricing/simulate', async (req, res) => {
+  const user = authUser(req);
+  if (!user || user.role !== 'admin') return send(res, 403, { error: 'Admins only.' });
+  const b = await readBody(req);
+  const q = pricing.quote(b, { openBookings: b.openBookings || 0, onlineProviders: b.onlineProviders || 1, subscription: b.subscription, promo: b.promo, aiSignals: b.aiSignals });
+  const i = q._internal;
+  const warnings = [...i.warnings];
+  if (i.providerGrossMinor <= 0) warnings.push('provider_payout_nonpositive');
+  if (q.surgeMultiplier >= 1.5) warnings.push('surge_at_cap');
+  send(res, 200, {
+    simulation: {
+      pricingVersion: q.pricingVersion, currency: q.currency, mode: q.mode,
+      customerTotal: pricing.toMajor(q.customerTotalMinor),
+      providerGross: pricing.toMajor(i.providerGrossMinor),
+      platformFee: pricing.toMajor(i.platformFeeMinor),      // admin-only
+      net: pricing.toMajor(i.netMinor), tax: pricing.toMajor(i.taxMinor),
+      surgeMultiplier: q.surgeMultiplier,
+      breakdown: q.breakdown.map((x) => ({ ...x, amount: pricing.toMajor(x.amount) })),
+      warnings,
+    },
+  });
 });
 // AI photo analysis — advisory signals only, never auto-charges (§ Photo Analysis).
 route('POST', '/api/ai/photo-analysis', async (req, res) => {
@@ -744,6 +789,10 @@ route('POST', '/api/bookings', async (req, res) => {
     reviewed: false,
     timeline: [{ status: 'searching', at: now() }],
   };
+  // Versioned quote snapshot for history / price-lock (13 §29/§31). Customer-safe.
+  const q = pricing.quote({ ...b, service: booking.service, rooms: booking.rooms, baths: booking.baths, area: booking.area, extras: booking.extras, city: booking.city },
+    { ...demandContext(), subscription: isPlus ? 'plus' : null });
+  booking.quote = { quoteId: q.quoteId, pricingVersion: q.pricingVersion, currency: q.currency, breakdown: q.breakdown, expiresAt: q.expiresAt, createdAt: q.createdAt };
   db.bookings[id] = booking;
   persist.bookings();
   db.messages[id] = [];
@@ -841,6 +890,15 @@ route('POST', '/api/bookings/:id/status', async (req, res, params) => {
   } else if (target === 'cancelled') {
     if (!isCustomer && !isCleaner) return send(res, 403, { error: 'Forbidden.' });
     if (['completed', 'cancelled'].includes(bk.status)) return send(res, 409, { error: 'Cannot cancel now.' });
+    // Customer cancellation fee by provider state + LUMI+ softening (13 §34).
+    if (isCustomer) {
+      const providerState = bk.status;
+      const feeMinor = pricing.cancellationFee(Math.round(bk.price * 100), { hoursBefore: 48, providerState, subscription: bk.plusDiscount ? 'plus' : null });
+      if (feeMinor > 0) {
+        ledger.record({ type: 'cancellation_fee', bookingId: bk.id, amountMinor: feeMinor, currency: bk.currency, actor: user.id, reason: 'customer_cancellation' }, `cancelfee:${bk.id}`);
+        bk.cancellationFee = pricing.toMajor(feeMinor);
+      }
+    }
     bk.status = 'cancelled';
     bk.timeline.push({ status: 'cancelled', at: now(), by: user.id });
     sysMessage(bk.id, `Booking cancelled by ${user.name}.`);
@@ -861,7 +919,14 @@ function settlePayment(bk) {
     cleaner.jobsDone = (cleaner.jobsDone || 0) + 1;
     persist.users();
   }
-  db.ledger.push({ id: uid('l_'), bookingId: bk.id, at: now(), gross: bk.price, payout: bk.payout, commission: bk.commission, currency: bk.currency });
+  // Immutable, idempotent ledger entries in minor units (grosz). Keyed by
+  // booking so a replayed completion never double-books money (14_PAYMENT §2/§8).
+  const cur = bk.currency;
+  ledger.record({ type: 'capture', bookingId: bk.id, amountMinor: Math.round(bk.price * 100), currency: cur, reason: 'service_completed' }, `capture:${bk.id}`);
+  ledger.record({ type: 'provider_payout', bookingId: bk.id, amountMinor: -Math.round(bk.payout * 100), currency: cur, actor: bk.cleanerId, reason: 'provider_gross' }, `payout:${bk.id}`);
+  ledger.record({ type: 'platform_revenue', bookingId: bk.id, amountMinor: Math.round(bk.commission * 100), currency: cur, reason: 'commission' }, `revenue:${bk.id}`);
+  // Legacy summary retained for existing wallet history.
+  db.ledger.push({ id: uid('l_'), bookingId: bk.id, at: now(), gross: bk.price, payout: bk.payout, commission: bk.commission, currency: cur });
   persist.ledger();
 }
 
