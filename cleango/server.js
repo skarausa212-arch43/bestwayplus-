@@ -23,11 +23,48 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { createAIProvider, envelope: aiEnvelope } = require('./ai/ai-provider');
 
 const PORT = process.env.PORT || 4000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const DATA_DIR = path.join(__dirname, 'data');
 fs.mkdirSync(DATA_DIR, { recursive: true });
+
+const ai = createAIProvider();   // swappable AI layer (10_AI_ARCHITECTURE.md)
+
+// ─────────────────────────── Security (11_AUTHENTICATION_SECURITY.md) ─────────
+// Security headers on every response (§47). CSP is self-only + data: images
+// (the SPA inlines its styles/scripts and stores photo thumbnails as data URLs).
+const SECURITY_HEADERS = {
+  'Content-Security-Policy': "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'geolocation=(self), camera=(self), microphone=()',
+  'X-Frame-Options': 'DENY',
+  'Strict-Transport-Security': 'max-age=15552000; includeSubDomains',
+};
+
+// In-memory rate limiter (§24/§25). Per key+window; returns false when exceeded.
+const rlBuckets = new Map();
+function rateLimit(key, max, windowMs) {
+  const now_ = Date.now();
+  const b = rlBuckets.get(key);
+  if (!b || now_ > b.reset) { rlBuckets.set(key, { count: 1, reset: now_ + windowMs }); return { ok: true }; }
+  b.count++;
+  if (b.count > max) return { ok: false, retryAfter: Math.ceil((b.reset - now_) / 1000) };
+  return { ok: true };
+}
+setInterval(() => { const t = Date.now(); for (const [k, v] of rlBuckets) if (t > v.reset) rlBuckets.delete(k); }, 60000).unref?.();
+function clientIp(req) {
+  return (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || 'unknown';
+}
+
+// Append-only audit log for sensitive actions (§30). Never logs tokens/PII bodies.
+const auditFile = path.join(DATA_DIR, 'audit.log');
+function audit(action, actorId, target, meta) {
+  const line = JSON.stringify({ at: Date.now(), action, actorId: actorId || null, target: target || null, ...(meta || {}) });
+  try { fs.appendFileSync(auditFile, line + '\n'); } catch {}
+}
 
 // Platform economics
 const COMMISSION_RATE = 0.20;      // hidden platform cut on each completed job
@@ -263,6 +300,7 @@ function send(res, status, body, headers = {}) {
   res.writeHead(status, {
     'Content-Type': typeof body === 'string' ? 'text/plain; charset=utf-8' : 'application/json; charset=utf-8',
     'Cache-Control': 'no-store',
+    ...SECURITY_HEADERS,
     ...headers,
   });
   res.end(data);
@@ -284,7 +322,9 @@ function authUser(req) {
   const h = req.headers['authorization'] || '';
   const token = h.startsWith('Bearer ') ? h.slice(7) : '';
   const userId = verifyToken(token);
-  return userId ? db.users[userId] : null;
+  const u = userId ? db.users[userId] : null;
+  if (u && u.deletedAt) return null;     // revoked: deleted accounts can't act (§42)
+  return u;
 }
 
 const MIME = {
@@ -312,14 +352,16 @@ function route(method, pattern, handler) {
 
 // ---- Auth ----
 route('POST', '/api/register', async (req, res) => {
+  const rl = rateLimit('reg:' + clientIp(req), 10, 3600000);   // 10/hour/IP (§24)
+  if (!rl.ok) return send(res, 429, { error: 'Too many attempts. Try again later.', code: 'RATE_LIMITED' }, { 'Retry-After': rl.retryAfter });
   const b = await readBody(req);
   const email = String(b.email || '').trim().toLowerCase();
   const name = String(b.name || '').trim();
   const password = String(b.password || '');
   const role = ['customer', 'cleaner'].includes(b.role) ? b.role : 'customer';
-  if (!email || !password || password.length < 6 || !name) {
-    return send(res, 400, { error: 'Name, email and a 6+ char password are required.' });
-  }
+  // Password policy §6: min 12 chars, no silent truncation, passphrases allowed.
+  if (!email || !name) return send(res, 400, { error: 'Name and email are required.' });
+  if (password.length < 12) return send(res, 400, { error: 'Password must be at least 12 characters.', code: 'VALIDATION_ERROR' });
   if (Object.values(db.users).some((u) => u.email === email)) {
     return send(res, 409, { error: 'An account with this email already exists.' });
   }
@@ -338,6 +380,7 @@ route('POST', '/api/register', async (req, res) => {
   };
   db.users[id] = user;
   persist.users();
+  audit('user.created', id, id, { role });
   // Give new customers a starter property so booking works in one tap.
   if (role === 'customer') {
     createProperty(user, { label: 'My home', city: user.city, type: 'apartment', rooms: 2, baths: 1 });
@@ -346,12 +389,17 @@ route('POST', '/api/register', async (req, res) => {
 });
 
 route('POST', '/api/login', async (req, res) => {
+  // Rate limit by IP and by email (§24). Generic error — no account enumeration (§32).
+  const ipRl = rateLimit('login-ip:' + clientIp(req), 15, 600000);   // 15 / 10min / IP
+  if (!ipRl.ok) return send(res, 429, { error: 'Too many attempts. Try again later.', code: 'RATE_LIMITED' }, { 'Retry-After': ipRl.retryAfter });
   const b = await readBody(req);
   const email = String(b.email || '').trim().toLowerCase();
   const password = String(b.password || '');
+  const emRl = rateLimit('login-em:' + email, 10, 600000);           // 10 / 10min / email
+  if (!emRl.ok) return send(res, 429, { error: 'Too many attempts. Try again later.', code: 'RATE_LIMITED' }, { 'Retry-After': emRl.retryAfter });
   const user = Object.values(db.users).find((u) => u.email === email);
-  if (!user || !verifyPassword(password, user.password)) {
-    return send(res, 401, { error: 'Invalid email or password.' });
+  if (!user || user.deletedAt || !verifyPassword(password, user.password)) {
+    return send(res, 401, { error: 'Invalid email or password.', code: 'AUTH_INVALID' });
   }
   return send(res, 200, { token: signToken(user.id), user: publicUser(user) });
 });
@@ -360,6 +408,25 @@ route('GET', '/api/me', async (req, res) => {
   const user = authUser(req);
   if (!user) return send(res, 401, { error: 'Not authenticated.' });
   return send(res, 200, { user: publicUser(user) });
+});
+
+// GDPR account deletion request (§42): re-auth via valid session, anonymize PII,
+// keep the id for financial records, revoke the session by flagging deletedAt.
+route('POST', '/api/me/delete-request', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const active = Object.values(db.bookings).some((bk) =>
+    (bk.customerId === user.id || bk.cleanerId === user.id) &&
+    ['searching', 'accepted', 'in_progress'].includes(bk.status));
+  if (active) return send(res, 409, { error: 'Finish or cancel active bookings first.', code: 'HAS_ACTIVE_BOOKINGS' });
+  user.deletedAt = now();
+  user.name = 'Удалённый пользователь';
+  user.email = `deleted+${user.id}@lumi.invalid`;
+  user.password = hashPassword(crypto.randomBytes(24).toString('hex'));
+  user.city = null;
+  persist.users();
+  audit('user.deleted', user.id, user.id, {});   // append-only audit (§30)
+  return send(res, 200, { ok: true });
 });
 
 // Cleaner toggles availability
@@ -378,7 +445,18 @@ route('GET', '/api/catalog', async (req, res) => {
 });
 route('POST', '/api/estimate', async (req, res) => {
   const b = await readBody(req);
-  send(res, 200, { estimate: estimatePrice(b) });
+  // Backend pricing engine is authoritative; AI adds advisory signals + meta.
+  const estimate = estimatePrice(b);
+  const signals = ai.estimateBooking(b);
+  send(res, 200, { estimate, ai: signals.meta, aiSignals: signals.data });
+});
+// AI photo analysis — advisory signals only, never auto-charges (§ Photo Analysis).
+route('POST', '/api/ai/photo-analysis', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const b = await readBody(req);
+  const r = ai.analyzeImages(b.images || []);
+  send(res, 200, { analysis: r.data, ai: r.meta });
 });
 route('GET', '/api/cities', async (req, res) => send(res, 200, { cities: CITIES }));
 route('GET', '/api/categories', async (req, res) => send(res, 200, { categories: SERVICE_CATEGORIES }));
@@ -390,32 +468,37 @@ function conciergeSuggest(text) {
   const has = (...w) => w.some((x) => t.includes(x));
   let service = 'standard', extras = [], urgency = 'scheduled', title, reason;
 
-  if (has('move out', 'move-out', 'moving out', 'moving', 'vacate', 'end of lease', 'wyprowadz')) {
+  if (has('move out', 'move-out', 'moving out', 'moving', 'vacate', 'end of lease', 'wyprowadz',
+          'переезд', 'съезжа', 'выезжа', 'освобожда', 'сдаю кварт', 'сдать кварт')) {
     service = 'moveout'; extras = ['oven', 'fridge', 'windows'];
-    title = 'Move-out deep clean'; reason = 'A move-out needs the whole place spotless — including oven, fridge and windows.';
-  } else if (has('guest', 'visitor', 'family coming', 'in-laws', 'parents coming', 'party', 'dinner', 'friends over', 'gości')) {
+    title = 'Уборка при переезде'; reason = 'При переезде нужна уборка всего — включая духовку, холодильник и окна.';
+  } else if (has('guest', 'visitor', 'family coming', 'in-laws', 'parents coming', 'party', 'dinner', 'friends over', 'gości',
+                 'гост', 'вечеринк', 'день рожд', 'праздник', 'родител', 'друзья прид', 'принима')) {
     service = 'deep'; extras = ['windows', 'laundry']; urgency = 'today';
-    title = 'Guest-ready deep clean'; reason = 'Guests tomorrow — a deep clean with sparkling windows and fresh ironing makes the place shine.';
-  } else if (has('office', 'workplace', 'company', 'biuro')) {
+    title = 'Генеральная уборка к приёму гостей'; reason = 'Завтра гости — генеральная уборка с чистыми окнами и глажкой сделает дом безупречным.';
+  } else if (has('office', 'workplace', 'company', 'biuro', 'офис', 'рабоч')) {
     service = 'office'; extras = [];
-    title = 'Office refresh'; reason = 'A professional office clean before the team is back.';
-  } else if (has('window', 'glass', 'okna')) {
+    title = 'Уборка офиса'; reason = 'Профессиональная уборка офиса перед выходом команды.';
+  } else if (has('window', 'glass', 'okna', 'окн', 'стекл')) {
     service = 'windows'; extras = [];
-    title = 'Window cleaning'; reason = 'Crystal-clear interior and exterior glass.';
-  } else if (has('pet', 'dog', 'puppy', 'cat', 'kitten', 'fur', 'shedding', 'allerg', 'zwierz')) {
+    title = 'Мытьё окон'; reason = 'Кристально чистые окна снаружи и внутри.';
+  } else if (has('pet', 'dog', 'puppy', 'cat', 'kitten', 'fur', 'shedding', 'allerg', 'zwierz',
+                 'пёс', 'пес', 'собак', 'кот', 'котён', 'щенок', 'шерст', 'аллерг', 'животн')) {
     service = 'deep'; extras = ['pets'];
-    title = 'Pet-friendly deep clean'; reason = 'Extra attention to fur, dander and allergens.';
-  } else if (has('baby', 'newborn', 'sick', 'flu', 'disinfect', 'sanit')) {
+    title = 'Уборка для дома с животными'; reason = 'Особое внимание шерсти, перхоти и аллергенам.';
+  } else if (has('baby', 'newborn', 'sick', 'flu', 'disinfect', 'sanit',
+                 'малыш', 'ребён', 'новорожд', 'болел', 'грипп', 'дезинф')) {
     service = 'deep'; extras = [];
-    title = 'Sanitizing deep clean'; reason = 'A thorough, sanitizing clean for a healthy home.';
-  } else if (has('quick', 'fast', 'now', 'urgent', 'asap', 'emergency', 'help now', 'szybko')) {
+    title = 'Дезинфицирующая уборка'; reason = 'Тщательная уборка с дезинфекцией для здорового дома.';
+  } else if (has('quick', 'fast', 'now', 'urgent', 'asap', 'emergency', 'help now', 'szybko',
+                 'быстр', 'срочн', 'сейчас', 'неотложн', 'скорее')) {
     service = 'standard'; urgency = 'flash';
-    title = 'FlashClean now'; reason = 'A fast standard clean, dispatched right away.';
-  } else if (has('deep', 'thorough', 'proper', 'spring')) {
+    title = 'FlashClean сейчас'; reason = 'Быстрая обычная уборка, исполнитель выезжает сразу.';
+  } else if (has('deep', 'thorough', 'proper', 'spring', 'генеральн', 'глубок', 'тщательн', 'капитальн')) {
     service = 'deep';
-    title = 'Deep clean'; reason = 'A top-to-bottom deep clean.';
+    title = 'Генеральная уборка'; reason = 'Уборка сверху донизу.';
   } else {
-    title = 'Standard clean'; reason = "We'll keep your home fresh with a standard clean.";
+    title = 'Обычная уборка'; reason = 'Поддержим свежесть вашего дома обычной уборкой.';
   }
   const svc = SERVICE_CATALOG[service];
   const bullets = [svc.label, ...extras.map((e) => EXTRAS_CATALOG[e] ? EXTRAS_CATALOG[e].label : e)];
@@ -423,7 +506,11 @@ function conciergeSuggest(text) {
 }
 route('POST', '/api/concierge', async (req, res) => {
   const b = await readBody(req);
-  send(res, 200, { suggestion: conciergeSuggest(b.text) });
+  const suggestion = conciergeSuggest(b.text);
+  // Confidence: high when we matched a specific intent, low for the generic fallback.
+  const matched = suggestion.title !== 'Обычная уборка';
+  const { meta } = aiEnvelope('concierge', suggestion, matched ? 0.85 : 0.4);
+  send(res, 200, { suggestion, ai: meta });
 });
 
 // ---- Properties (multi-property + Family Home) ----
@@ -605,6 +692,7 @@ route('POST', '/api/subscribe', async (req, res) => {
   user.subscription = b.active === false ? null : 'plus';
   if (user.subscription === 'plus') user.premiumSince = now();
   persist.users();
+  audit('subscription.' + (user.subscription === 'plus' ? 'started' : 'cancelled'), user.id, user.id, {});
   send(res, 200, { user: publicUser(user) });
 });
 
@@ -888,6 +976,8 @@ route('POST', '/api/admin/verify-cleaner', async (req, res) => {
   if (!c || c.role !== 'cleaner') return send(res, 404, { error: 'Cleaner not found.' });
   c.verified = !!b.verified;
   persist.users();
+  // High-risk admin action — audited with actor, target and reason (§28/§30).
+  audit('provider.verification_' + (c.verified ? 'approved' : 'revoked'), user.id, c.id, { reason: String(b.reason || '') });
   send(res, 200, { user: publicUser(c) });
 });
 
@@ -903,12 +993,12 @@ function serveStatic(req, res) {
       // SPA fallback
       return fs.readFile(path.join(PUBLIC_DIR, 'index.html'), (e2, html) => {
         if (e2) return send(res, 404, 'Not found');
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', ...SECURITY_HEADERS });
         res.end(html);
       });
     }
     const ext = path.extname(filePath);
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
+    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', ...SECURITY_HEADERS });
     res.end(data);
   });
 }

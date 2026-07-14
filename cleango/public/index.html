@@ -502,7 +502,7 @@ function renderAuth(){
           <label class="field"><span>Имя и фамилия</span><input class="input" name="name" placeholder="Анна Ковальская" required></label>
           <label class="field"><span>Город</span><select class="input" name="city">${state.cities.map(c=>`<option>${c}</option>`).join('')||'<option>Warsaw</option>'}</select></label>`:''}
           <label class="field"><span>Email</span><input class="input" type="email" name="email" placeholder="you@example.com" required></label>
-          <label class="field"><span>Пароль</span><input class="input" type="password" name="password" placeholder="••••••••" minlength="6" required></label>
+          <label class="field"><span>Пароль</span><input class="input" type="password" name="password" placeholder="минимум 12 символов" minlength="${mode==='register'?12:1}" required>${mode==='register'?'<span class="hint" style="margin-top:6px;display:block">Не меньше 12 символов. Можно фразу — так надёжнее.</span>':''}</label>
           <button class="btn block" type="submit">${mode==='login'?'Войти':'Создать аккаунт'} ${I.arrow}</button>
         </form>
         <div class="divider"></div>
@@ -594,11 +594,19 @@ function openProfile(){
       </div>`:''}
       ${u.role==='customer'?`<button class="btn ghost block" id="premiumBtn" style="margin-bottom:10px">${I.crown} ${u.subscription==='plus'?'Управление LUMI+':'Оформить LUMI+'}</button>`:''}
       <button class="btn ghost block" id="logoutBtn">Выйти</button>
+      <button class="btn tertiary block" id="delBtn" style="background:transparent;color:var(--danger);box-shadow:none;margin-top:6px">Удалить аккаунт</button>
     </div>`);
   const pb=$('#premiumBtn'); if(pb)pb.onclick=()=>{closeModal();state.view='premium';render();};
   $('#logoutBtn').onclick=()=>{
     state.token=null;state.user=null;localStorage.removeItem('cg_token');
     closeModal();renderAuth();
+  };
+  $('#delBtn').onclick=async()=>{
+    if(!confirm('Удалить аккаунт? Данные будут обезличены, действие необратимо.'))return;
+    try{await api('/api/me/delete-request','POST',{});
+      state.token=null;state.user=null;localStorage.removeItem('cg_token');
+      closeModal();renderAuth();toast('Аккаунт удалён');
+    }catch(e){toast(e.message,true);}
   };
 }
 
@@ -725,7 +733,7 @@ async function runConcierge(conc){
         <b style="font-size:16px">${s.title}</b><span class="badge ${s.urgency==='flash'?'amber':'green'}">${urg}</span>
       </div>
       <p class="muted tiny" style="margin-bottom:10px;line-height:1.5">${s.reason}</p>
-      <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:14px">${s.bullets.map(b=>`<span class="chip">${I.check}${b}</span>`).join('')}</div>
+      <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:14px">${s.bullets.map(b=>`<span class="chip">${I.check}${SVC_LABEL_RU[b]||EXTRA_RU[b]||b}</span>`).join('')}</div>
       <button class="btn block" id="concBook">Заказать в один тап ${I.arrow}</button>
     </div>`;
     $('#concBook',out).onclick=()=>{

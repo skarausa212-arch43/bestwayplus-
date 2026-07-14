@@ -1,0 +1,9 @@
+{
+  "id": "photo_analysis",
+  "version": "v1",
+  "model": "lumi-heuristic",
+  "purpose": "Analyze before/property photos for dirt/clutter/area signals (10_AI_ARCHITECTURE.md · Photo Analysis).",
+  "inputSchema": { "images": "dataUrl[]" },
+  "outputSchema": { "estimatedArea": "number|null", "dirtLevel": "enum(low,medium,high)", "clutterLevel": "enum(low,medium,high)", "windowsDetected": "bool", "confidence": "number(0..1)" },
+  "notes": "Never auto-charge from photo output. Low confidence -> manual confirmation."
+}
