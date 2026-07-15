@@ -28,6 +28,8 @@ const dispatch = require('./dispatch/ranking');
 const pricing = require('./pricing/pricing-engine');
 const { createLedger } = require('./pricing/ledger');
 const { renderTemplate } = require('./notifications/templates');
+const chat = require('./chat/realtime');
+const smartHome = require('./smart-home/registry');
 
 const PORT = process.env.PORT || 4000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -170,6 +172,7 @@ const db = {
   reviews: loadJSON('reviews.json', {}),     // id -> review
   ledger: loadJSON('ledger.json', []),       // wallet/commission entries
   notifications: loadJSON('notifications.json', {}), // userId -> [notification]
+  appliances: loadJSON('appliances.json', {}), // propertyId -> [appliance] (Smart Home registry)
 };
 const persist = {
   users: () => saveJSON('users.json', db.users),
@@ -179,6 +182,7 @@ const persist = {
   reviews: () => saveJSON('reviews.json', db.reviews),
   ledger: () => saveJSON('ledger.json', db.ledger),
   notifications: () => saveJSON('notifications.json', db.notifications),
+  appliances: () => saveJSON('appliances.json', db.appliances),
 };
 
 // ─────────── Notifications (15_NOTIFICATION_SYSTEM.md) ───────────
@@ -820,6 +824,63 @@ route('GET', '/api/properties/:id/passport', async (req, res, params) => {
   });
 });
 
+// Appliance Registry (17_SMART_HOME.md §8) — per-property inventory.
+route('GET', '/api/properties/:id/appliances', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const p = db.properties[params.id];
+  if (!p || !canAccessProperty(user, p)) return send(res, 403, { error: 'Forbidden.' });
+  const list = db.appliances[p.id] || [];
+  send(res, 200, {
+    appliances: list.map((a) => ({ ...a, warranty: smartHome.warrantyStatus(a, now()) })),
+    warranty: smartHome.warrantyTracker(list, now()),   // §9 tracker view
+  });
+});
+route('POST', '/api/properties/:id/appliances', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const p = db.properties[params.id];
+  // Guests are read-only; owner/family may edit the home (§11 permission controlled).
+  const role = memberRole(user, p);
+  if (!p || !['owner', 'family'].includes(role)) return send(res, 403, { error: 'Forbidden.' });
+  const b = await readBody(req);
+  const appliance = smartHome.normalizeAppliance(b, { id: uid('ap_'), propertyId: p.id, at: now() });
+  db.appliances[p.id] = db.appliances[p.id] || [];
+  db.appliances[p.id].push(appliance);
+  persist.appliances();
+  // §9/§14 warranty reminder if it's already expiring — respects Smart Home prefs.
+  const w = smartHome.warrantyStatus(appliance, now());
+  if (w.state === 'expiring') {
+    notify(p.ownerId, 'smart_home.recommendation', { propertyId: p.id, text: `Гарантия на «${appliance.name}» истекает через ${w.daysLeft} дн.` });
+  }
+  send(res, 200, { appliance: { ...appliance, warranty: w } });
+});
+route('DELETE', '/api/properties/:id/appliances/:apId', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const p = db.properties[params.id];
+  const role = memberRole(user, p);
+  if (!p || !['owner', 'family'].includes(role)) return send(res, 403, { error: 'Forbidden.' });
+  const list = db.appliances[p.id] || [];
+  const idx = list.findIndex((a) => a.id === params.apId);
+  if (idx < 0) return send(res, 404, { error: 'Not found.' });
+  list.splice(idx, 1);
+  persist.appliances();
+  send(res, 200, { ok: true });
+});
+// Cost Analytics (§10) — spend by category, monthly & yearly, incl. appliances.
+route('GET', '/api/properties/:id/analytics', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const p = db.properties[params.id];
+  if (!p || !canAccessProperty(user, p)) return send(res, 403, { error: 'Forbidden.' });
+  const services = Object.values(db.bookings)
+    .filter((b) => b.propertyId === p.id && b.status === 'completed')
+    .map((b) => ({ at: b.updatedAt, price: b.price, category: b.service === 'deep' || b.service === 'standard' ? 'cleaning' : b.service }));
+  const analytics = smartHome.costAnalytics(services, db.appliances[p.id] || [], now());
+  send(res, 200, { analytics: { ...analytics, currency: CURRENCY } });
+});
+
 // ---- Premium (LUMI+) ----
 route('POST', '/api/subscribe', async (req, res) => {
   const user = authUser(req);
@@ -1053,34 +1114,130 @@ route('POST', '/api/bookings/:id/photos', async (req, res, params) => {
   send(res, 200, { booking: enrich(bk, user) });
 });
 
-// ---- Chat ----
-function sysMessage(bookingId, text) {
-  if (!db.messages[bookingId]) db.messages[bookingId] = [];
-  db.messages[bookingId].push({ id: uid('m_'), from: 'system', name: 'CleanGo', text, at: now() });
-  persist.messages();
+// ---- Chat & Realtime (16_CHAT_REALTIME.md) ----
+// Typing indicators are realtime-only and never persisted (§8): a plain
+// in-memory map, garbage-collected by TTL on read.
+const typingByBooking = {};   // bookingId -> { userId: { name, at } }
+
+// Only booking participants (or admin) may touch a conversation (§17).
+function chatParticipant(user, bk) {
+  return user.role === 'admin' || bk.customerId === user.id || bk.cleanerId === user.id;
 }
+// Store a message keeping BOTH the legacy fields the SPA renders (from/name/text/at)
+// and the full §5 schema so the model is contract-complete.
+function pushMessage(bookingId, sender, input) {
+  if (!db.messages[bookingId]) db.messages[bookingId] = [];
+  const at = now();
+  const base = chat.normalizeMessage(input, { id: uid('m_'), conversationId: bookingId, sender, at });
+  const msg = { ...base, from: sender.id, name: sender.name, role: sender.role, text: base.body, at };
+  db.messages[bookingId].push(msg);
+  persist.messages();
+  return msg;
+}
+function sysMessage(bookingId, text) {
+  return pushMessage(bookingId, { id: 'system', role: 'system', name: 'LUMI' }, { type: 'system', body: text });
+}
+// Attach per-viewer read receipts + typing state to a message list (§6/§7/§8).
+function chatState(bk, user) {
+  const msgs = db.messages[bk.id] || [];
+  const reads = bk.reads || {};
+  const decorated = msgs.map((m) => ({ ...m, delivery: chat.deliveryStatus(m, reads, user.id) }));
+  return {
+    messages: decorated,
+    typing: chat.activeTypers(typingByBooking[bk.id], user.id, now()),
+    unread: chat.unreadCount(msgs, reads, user.id),
+    location: bk.providerLocation && ['accepted', 'in_progress'].includes(bk.status) ? bk.providerLocation : null,
+    reads,
+  };
+}
+
 route('GET', '/api/bookings/:id/messages', async (req, res, params) => {
   const user = authUser(req);
   if (!user) return send(res, 401, { error: 'Not authenticated.' });
   const bk = db.bookings[params.id];
   if (!bk) return send(res, 404, { error: 'Not found.' });
-  send(res, 200, { messages: db.messages[params.id] || [] });
+  if (!chatParticipant(user, bk)) return send(res, 403, { error: 'Forbidden.' });   // §17 participants only
+  send(res, 200, chatState(bk, user));
 });
 route('POST', '/api/bookings/:id/messages', async (req, res, params) => {
   const user = authUser(req);
   if (!user) return send(res, 401, { error: 'Not authenticated.' });
   const bk = db.bookings[params.id];
   if (!bk) return send(res, 404, { error: 'Not found.' });
-  const allowed = user.role === 'admin' || bk.customerId === user.id || bk.cleanerId === user.id;
-  if (!allowed) return send(res, 403, { error: 'Forbidden.' });
+  if (!chatParticipant(user, bk)) return send(res, 403, { error: 'Forbidden.' });
   const b = await readBody(req);
-  const text = String(b.text || '').trim().slice(0, 800);
-  if (!text) return send(res, 400, { error: 'Empty message.' });
-  if (!db.messages[params.id]) db.messages[params.id] = [];
-  const msg = { id: uid('m_'), from: user.id, name: user.name, role: user.role, text, at: now() };
-  db.messages[params.id].push(msg);
+  const type = ['text', 'image'].includes(b.type) ? b.type : 'text';
+  const text = String(b.text || b.body || '').trim().slice(0, 800);
+  let attachments = [];
+  if (type === 'image') {
+    const img = String((b.attachments && b.attachments[0]) || b.image || '');
+    if (!img.startsWith('data:image/')) return send(res, 400, { error: 'Invalid image.' });
+    attachments = [img];
+  } else if (!text) {
+    return send(res, 400, { error: 'Empty message.' });
+  }
+  const msg = pushMessage(bk.id, user, { type, body: text, attachments, language: 'ru' });
+  // Sending clears your own typing flag and marks you caught up on the thread.
+  if (typingByBooking[bk.id]) delete typingByBooking[bk.id][user.id];
+  bk.reads = bk.reads || {};
+  bk.reads[user.id] = { at: msg.createdAt, lastReadId: msg.id };
+  persist.bookings();
+  send(res, 200, { message: { ...msg, delivery: 'sent' } });
+});
+// §7 mark the conversation read up to now for this participant.
+route('POST', '/api/bookings/:id/messages/read', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const bk = db.bookings[params.id];
+  if (!bk || !chatParticipant(user, bk)) return send(res, 403, { error: 'Forbidden.' });
+  const msgs = db.messages[bk.id] || [];
+  const last = msgs[msgs.length - 1];
+  bk.reads = bk.reads || {};
+  bk.reads[user.id] = { at: now(), lastReadId: last ? last.id : null };
+  persist.bookings();
+  send(res, 200, { ok: true, unread: 0 });
+});
+// §8 typing ping (ephemeral). Client sends this while composing.
+route('POST', '/api/bookings/:id/typing', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const bk = db.bookings[params.id];
+  if (!bk || !chatParticipant(user, bk)) return send(res, 403, { error: 'Forbidden.' });
+  typingByBooking[bk.id] = typingByBooking[bk.id] || {};
+  typingByBooking[bk.id][user.id] = { name: user.name, at: now() };
+  send(res, 200, { ok: true });
+});
+// §11 translate a message on demand — stored beside the original, never over it.
+route('POST', '/api/bookings/:id/messages/:mid/translate', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const bk = db.bookings[params.id];
+  if (!bk || !chatParticipant(user, bk)) return send(res, 403, { error: 'Forbidden.' });
+  const b = await readBody(req);
+  const target = ['en', 'pl', 'uk'].includes(b.target) ? b.target : 'en';
+  const msg = (db.messages[bk.id] || []).find((m) => m.id === params.mid);
+  if (!msg) return send(res, 404, { error: 'Message not found.' });
+  const r = chat.translate(msg.text || msg.body || '', target);
+  msg.translatedBody = r.translated;   // original body untouched (§11)
+  msg.translatedTarget = target;
   persist.messages();
-  send(res, 200, { message: msg });
+  send(res, 200, { translatedBody: r.translated, target });
+});
+// §13 live provider location during an active booking (cleaner posts, customer polls).
+route('POST', '/api/bookings/:id/location', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user || user.role !== 'cleaner') return send(res, 403, { error: 'Cleaners only.' });
+  const bk = db.bookings[params.id];
+  if (!bk || bk.cleanerId !== user.id) return send(res, 403, { error: 'Forbidden.' });
+  if (!['accepted', 'in_progress'].includes(bk.status)) return send(res, 409, { error: 'Booking is not active.' });
+  const b = await readBody(req);
+  const distanceKm = Math.max(0, Math.min(60, Number(b.distanceKm) || 0));
+  bk.providerLocation = {
+    lat: Number(b.lat) || null, lng: Number(b.lng) || null,
+    distanceKm, etaMinutes: chat.etaMinutes(distanceKm), at: now(),
+  };
+  persist.bookings();
+  send(res, 200, { location: bk.providerLocation });
 });
 
 // ---- Reviews ----

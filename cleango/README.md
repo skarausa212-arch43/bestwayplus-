@@ -33,7 +33,9 @@ Seeded automatically on first run (password: `cleango123`):
 - **Multiple properties** — customers manage many homes (apartment / house / office); each is a booking target and a Smart Home.
 - **Smart Home dashboard** (per property) — last cleaning, a recurring **maintenance schedule** (standard, deep, windows, sofa, mattress, garden) with overdue / due-soon status, **AI recommendations**, and upcoming jobs. Book any task in one tap.
 - **LUMI Score** — every home gets a living health rating (0–100) derived from how fresh each maintenance dimension is (Cleanliness, Air, Windows, Mattresses, Upholstery, Garden), shown as a score ring + per-dimension stars. LUMI always surfaces the weakest dimension with a one-tap "raise your score" booking — turning the app from "call a cleaner" into a home you actively maintain.
-- **Family Home** — invite others to a property as **family** or **guest**; they can view and book for it.
+- **Family Home** — invite others to a property as **family** or **guest**; they can view and book for it (guests are read-only on the registry).
+- **Appliance registry & warranty tracker** — log appliances/furniture (brand, model, price, warranty date) per home; LUMI surfaces warranties that are **expiring or expired** and reminds the owner before they lapse.
+- **Cost analytics** — home spend rolled up by category (cleaning, appliances, furniture…) with monthly and yearly windows.
 - **Service categories** — Cleaning & Windows are live; Handyman, Electrician, Plumbing, Garden, Laundry & Assembly surface as the roadmap ("coming soon").
 - **Multi-city** — Warsaw, Kraków, Wrocław, Poznań, Gdańsk, Łódź.
 
@@ -43,7 +45,7 @@ Seeded automatically on first run (password: `cleango123`):
 - **AI price estimate** — transparent, itemized, with duration, live-demand surge and a price range.
 - **Dispatch** — cleaners see open jobs in real time and accept them.
 - **Job lifecycle** — `searching → accepted → in_progress → completed`, gated by required before/after photo verification.
-- **Chat** — per-booking messaging + system events.
+- **Chat & realtime** — per-booking messaging (participants only) with **read receipts** (sent/delivered/read ticks), **typing indicators**, image attachments, on-demand **translation** (original never overwritten), automatic **system events** on every lifecycle step, and a **live provider-location/ETA** bar during an active job. Delivered by short-poll in the zero-dep MVP; the state model matches a socket implementation.
 - **Multi-dimensional reviews** — quality, speed, communication, professionalism; cleaner rating auto-recomputes.
 
 ### Money
@@ -68,7 +70,13 @@ cleango/
   db/                Production Postgres/Supabase schema (docs/04) — migrations,
                      RLS, secure views, triggers, atomic dispatch + verify.sh
   openapi/           OpenAPI 3.1 API contract (docs/06) — lumi-api-v1.yaml + validate.sh
+  chat/              Chat & realtime core (docs/16) — realtime.js + test.js
+  smart-home/        Appliance registry, warranty, cost analytics (docs/17) — registry.js + test.js
 ```
+
+Domain logic lives in small, pure, dependency-free modules the server composes
+over the JSON store, each with a `node <dir>/test.js` self-check:
+`ai/`, `dispatch/`, `pricing/`, `notifications/`, `chat/`, `smart-home/`.
 
 The running app uses a JSON store as an MVP stand-in. `db/` and `openapi/` are
 the production persistence layer and API contract the platform graduates to —
@@ -91,13 +99,19 @@ Supabase/Postgres later does not change the frontend.
 | DELETE | `/api/properties/:id`             | Remove a home                  |
 | POST   | `/api/properties/:id/invite`      | Family Home invite             |
 | GET    | `/api/properties/:id/smart`       | Smart Home dashboard           |
+| GET/POST/DELETE | `/api/properties/:id/appliances` | Appliance registry + warranty tracker |
+| GET    | `/api/properties/:id/analytics`   | Cost analytics (by category, month/year) |
 | POST   | `/api/subscribe`                  | Toggle LUMI+ membership        |
 | POST   | `/api/bookings`                   | Create booking (property-aware, LUMI+ discount) |
 | GET    | `/api/bookings` · `/:id`          | List / read (role-scoped)      |
 | POST   | `/api/bookings/:id/accept`        | Cleaner accepts                |
 | POST   | `/api/bookings/:id/status`        | Lifecycle transitions          |
 | POST   | `/api/bookings/:id/photos`        | Before/after photo upload      |
-| GET/POST | `/api/bookings/:id/messages`    | Chat                           |
+| GET/POST | `/api/bookings/:id/messages`    | Chat (with typing, read state, provider location) |
+| POST   | `/api/bookings/:id/messages/read` | Mark conversation read         |
+| POST   | `/api/bookings/:id/typing`        | Typing ping (ephemeral)        |
+| POST   | `/api/bookings/:id/messages/:mid/translate` | Translate a message |
+| POST   | `/api/bookings/:id/location`      | Cleaner posts live location/ETA |
 | POST   | `/api/bookings/:id/review`        | Multi-dimensional review       |
 | GET    | `/api/admin/stats`                | Admin analytics                |
 | POST   | `/api/admin/verify-cleaner`       | KYC verification               |

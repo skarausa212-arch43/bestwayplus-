@@ -226,7 +226,20 @@ textarea.input{resize:vertical;min-height:80px}
 .msg.them{align-self:flex-start;background:var(--surface-2);border-bottom-left-radius:5px}
 .msg.sys{align-self:center;background:transparent;color:var(--ink-3);font-size:12.5px;font-weight:600}
 .msg .who{font-size:11px;opacity:.7;margin-bottom:2px;font-weight:700}
+.msg img{display:block;max-width:200px;border-radius:10px;margin-top:2px}
+.msg .tick{font-size:11px;opacity:.85;margin-left:6px;font-weight:700;letter-spacing:-1px}
+.msg .tick.read{color:#7cc0ff}
+.msg .tr{margin-top:6px;padding-top:6px;border-top:1px solid var(--line);font-size:13px;opacity:.9}
+.msg .trbtn{font-size:11px;font-weight:700;color:var(--primary-600);cursor:pointer;margin-top:4px;display:inline-block}
+.msg.me .trbtn{color:rgba(255,255,255,.9)}
+.typing{align-self:flex-start;font-size:12.5px;color:var(--ink-3);font-weight:600;display:flex;align-items:center;gap:5px;padding:2px 4px}
+.typing .dot{width:5px;height:5px;border-radius:50%;background:var(--ink-3);animation:tblink 1.2s infinite}
+.typing .dot:nth-child(2){animation-delay:.2s}.typing .dot:nth-child(3){animation-delay:.4s}
+@keyframes tblink{0%,60%,100%{opacity:.25}30%{opacity:1}}
+.locbar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--primary-050);color:var(--primary-600);font-weight:700;font-size:13.5px;border-bottom:1px solid var(--line)}
+.locbar .eta{margin-left:auto;background:var(--primary);color:#fff;padding:3px 10px;border-radius:20px;font-size:12px}
 .chatbar{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+.chatbar .attach{display:grid;place-items:center;width:40px;flex:none;background:var(--surface-2);border-radius:12px;cursor:pointer}
 
 /* stars */
 .stars{display:inline-flex;gap:3px;color:var(--star)}
@@ -990,7 +1003,9 @@ async function viewSmart(){
           ${t.book?`<button class="btn ghost sm block" data-rec="${t.book}" style="margin-top:12px">Заказать</button>`:'<div class="tiny hint" style="margin-top:12px">Услуга сада скоро</div>'}
         </div>`).join('')}
       </div>
-      ${smart.upcoming.length?`<div class="section-title" style="margin-top:22px">Предстоящее в этом доме</div><div class="grid" id="upc"></div>`:''}`;
+      ${smart.upcoming.length?`<div class="section-title" style="margin-top:22px">Предстоящее в этом доме</div><div class="grid" id="upc"></div>`:''}
+      <div id="applianceZone"></div>
+      <div id="analyticsZone"></div>`;
     // animate the LUMI Score ring + number
     const ring=$('#scoreRing',c);
     if(ring){ animateRing(ring, +ring.dataset.score, ring.dataset.col); countUp($('#scoreNum',c), +ring.dataset.score); }
@@ -1000,7 +1015,80 @@ async function viewSmart(){
     const upc=$('#upc',c);
     if(upc)smart.upcoming.forEach(b=>upc.appendChild(el(`<div class="card bk" style="cursor:pointer" onclick=""><div class="thumb">${I.clock}</div><div class="meta"><h4>${b.service}</h4><div class="muted tiny">${statusBadge(b.status)}</div></div><div class="price">${money(b.price)}</div></div>`)));
     if(upc)upc.querySelectorAll('.bk').forEach((row,i)=>row.onclick=()=>openBooking(smart.upcoming[i].id));
+    loadAppliances(pid);
+    loadAnalytics(pid);
   }catch(e){toast(e.message,true);}
+}
+
+/* ---------- SMART HOME: Appliance Registry + Warranty (17 §8/§9) ---------- */
+const AP_CAT_RU={appliance:'Техника',hvac:'Климат',furniture:'Мебель',electronics:'Электроника',renovation:'Ремонт',other:'Другое'};
+const WARR_RU={active:['green','гарантия активна'],expiring:['amber','гарантия истекает'],expired:['red','гарантия истекла'],none:['',' ']};
+async function loadAppliances(pid){
+  const z=$('#applianceZone'); if(!z)return;
+  try{
+    const {appliances,warranty}=await api('/api/properties/'+pid+'/appliances');
+    const warn=[...warranty.expiringSoon,...warranty.expired];
+    z.innerHTML=`<div class="section-title" style="margin-top:22px">Техника и гарантии
+        <button class="btn sm" id="addAp" style="float:right">${I.plus||'+'} Добавить</button></div>
+      ${warn.length?`<div class="card pad" style="margin-bottom:14px;border:1.5px solid var(--amber,#f0a020);background:var(--amber-050,rgba(240,160,32,.08))">
+        <div class="row" style="gap:8px;margin-bottom:6px">${I.warn||I.info||''}<b>Требуют внимания</b></div>
+        ${warn.map(w=>`<div class="tiny" style="padding:3px 0">${esc(w.name)} — ${w.state==='expired'?`гарантия истекла ${Math.abs(w.daysLeft)} дн. назад`:`гарантия истекает через ${w.daysLeft} дн.`}</div>`).join('')}
+      </div>`:''}
+      <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">
+        ${appliances.length?appliances.map(a=>{const w=WARR_RU[a.warranty.state]||WARR_RU.none;return `<div class="card pad">
+          <div class="row" style="justify-content:space-between;margin-bottom:6px"><b style="font-size:14.5px">${esc(a.name)}</b>${a.warranty.state!=='none'?`<span class="badge ${w[0]}">${w[1]}</span>`:''}</div>
+          <div class="tiny muted">${AP_CAT_RU[a.category]||a.category}${a.brand?' · '+esc(a.brand):''}</div>
+          ${a.price?`<div class="tiny" style="margin-top:4px">${money(a.price)}</div>`:''}
+          ${a.warrantyUntil?`<div class="tiny muted" style="margin-top:4px">Гарантия до ${fmtDate(a.warrantyUntil)}</div>`:''}
+          <button class="btn ghost sm block" data-del="${a.id}" style="margin-top:10px">Удалить</button>
+        </div>`;}).join(''):`<div class="card pad muted tiny">Пока нет техники. Добавьте бытовую технику, чтобы отслеживать гарантии и обслуживание.</div>`}
+      </div>`;
+    const add=$('#addAp',z);if(add)add.onclick=()=>openApplianceModal(pid);
+    z.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
+      try{await api('/api/properties/'+pid+'/appliances/'+b.dataset.del,'DELETE');toast('Удалено');loadAppliances(pid);loadAnalytics(pid);}catch(e){toast(e.message,true);}
+    });
+  }catch(e){z.innerHTML='';}
+}
+function openApplianceModal(pid){
+  const cats=Object.entries(AP_CAT_RU).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+  showModal(`<div class="card pad"><h3 style="margin-bottom:14px">Новое устройство</h3>
+    <input class="input" id="apName" placeholder="Название (напр. Холодильник)" style="margin-bottom:10px">
+    <div class="row" style="gap:10px;margin-bottom:10px"><input class="input" id="apBrand" placeholder="Бренд"><input class="input" id="apModel" placeholder="Модель"></div>
+    <select class="input" id="apCat" style="margin-bottom:10px">${cats}</select>
+    <div class="row" style="gap:10px;margin-bottom:10px"><input class="input" id="apPrice" type="number" placeholder="Цена, zł"><input class="input" id="apWarr" type="date" title="Гарантия до"></div>
+    <button class="btn block" id="apSave">Сохранить</button></div>`);
+  $('#apSave').onclick=async()=>{
+    const name=$('#apName').value.trim();if(!name){toast('Укажите название',true);return;}
+    const wd=$('#apWarr').value;
+    try{await api('/api/properties/'+pid+'/appliances','POST',{
+        name,brand:$('#apBrand').value.trim(),model:$('#apModel').value.trim(),category:$('#apCat').value,
+        price:Number($('#apPrice').value)||0, warrantyUntil:wd?new Date(wd).getTime():null});
+      confetti();toast('Устройство добавлено');closeModal();loadAppliances(pid);loadAnalytics(pid);
+    }catch(e){toast(e.message,true);}
+  };
+}
+
+/* ---------- SMART HOME: Cost Analytics (17 §10) ---------- */
+const AN_CAT_RU={cleaning:'Уборка',repairs:'Ремонт',appliances:'Техника',furniture:'Мебель',windows:'Окна',garden:'Сад'};
+async function loadAnalytics(pid){
+  const z=$('#analyticsZone'); if(!z)return;
+  try{
+    const {analytics:A}=await api('/api/properties/'+pid+'/analytics');
+    if(!A.total){z.innerHTML='';return;}
+    const max=Math.max(1,...A.categories.map(c=>c.total));
+    z.innerHTML=`<div class="section-title" style="margin-top:22px">Расходы на дом</div>
+      <div class="card pad">
+        <div class="row" style="gap:24px;margin-bottom:16px">
+          <div class="stat"><b style="font-size:20px;color:var(--primary-600)">${money(A.month)}</b><span class="tiny muted">за месяц</span></div>
+          <div class="stat"><b style="font-size:20px;color:var(--primary-600)">${money(A.year)}</b><span class="tiny muted">за год</span></div>
+          <div class="stat"><b style="font-size:20px">${money(A.total)}</b><span class="tiny muted">всего</span></div>
+        </div>
+        ${A.categories.map(c=>`<div style="margin-bottom:10px">
+          <div class="row" style="justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${AN_CAT_RU[c.category]||c.category}</span><b>${money(c.total)}</b></div>
+          <div style="height:8px;border-radius:6px;background:var(--surface-2);overflow:hidden"><div style="height:100%;width:${Math.round(c.total/max*100)}%;background:linear-gradient(90deg,var(--primary),var(--primary-600));border-radius:6px"></div></div>
+        </div>`).join('')}
+      </div>`;
+  }catch(e){z.innerHTML='';}
 }
 
 /* ---------- DIGITAL HOME PASSPORT (LUMI Vault) ---------- */
@@ -1528,12 +1616,20 @@ function openReview(id){
   };
 }
 
-/* ---------- CHAT ---------- */
+/* ---------- CHAT & REALTIME (16_CHAT_REALTIME.md) ---------- */
+let chatTimer=null, chatTyping=0;
 async function renderChat(b){
-  const z=$('#chatZone'); if(!z)return;
-  if(!b.cleanerId){z.innerHTML='';return;}
-  z.innerHTML=`<div class="card" style="overflow:hidden"><div class="chat"><div class="msgs" id="msgs"></div>
-    <div class="chatbar"><input class="input" id="chatInput" placeholder="Сообщение…" style="border-radius:12px"><button class="btn sm" id="chatSend">${I.send}</button></div>
+  const z=$('#chatZone'); if(!z){if(chatTimer){clearInterval(chatTimer);chatTimer=null;}return;}
+  if(!b.cleanerId){z.innerHTML='';if(chatTimer){clearInterval(chatTimer);chatTimer=null;}return;}
+  const isCleaner=state.user.role==='cleaner';
+  z.innerHTML=`<div class="card" style="overflow:hidden"><div class="chat">
+    <div id="locBar"></div>
+    <div class="msgs" id="msgs"></div>
+    <div class="chatbar">
+      <div class="attach" id="chatAttach" title="Фото">${I.cam}</div>
+      <input class="input" id="chatInput" placeholder="Сообщение…" style="border-radius:12px">
+      <button class="btn sm" id="chatSend">${I.send}</button>
+    </div>
   </div></div>`;
   await loadMessages(b.id);
   const input=$('#chatInput',z), sendBtn=$('#chatSend',z);
@@ -1544,19 +1640,52 @@ async function renderChat(b){
   };
   sendBtn.onclick=doSend;
   input.onkeydown=(e)=>{if(e.key==='Enter')doSend();};
+  // §8 typing ping — throttled to once per 3s while composing.
+  input.oninput=()=>{const t=Date.now();if(t-chatTyping>3000){chatTyping=t;api('/api/bookings/'+b.id+'/typing','POST').catch(()=>{});}};
+  // §9 image attachment.
+  $('#chatAttach',z).onclick=()=>sendChatImage(b.id);
+  // §14 short-poll for realtime updates while the chat is open.
+  if(chatTimer)clearInterval(chatTimer);
+  chatTimer=setInterval(()=>{ if($('#msgs')){loadMessages(b.id);} else {clearInterval(chatTimer);chatTimer=null;} },4000);
 }
+function sendChatImage(id){
+  const inp=el('<input type="file" accept="image/*" style="display:none">');document.body.appendChild(inp);
+  inp.onchange=async()=>{const f=inp.files[0];if(!f){inp.remove();return;}
+    try{const dataUrl=await downscale(f,800,0.7);await api('/api/bookings/'+id+'/messages','POST',{type:'image',attachments:[dataUrl]});await loadMessages(id);}
+    catch(e){toast(e.message||'Не удалось',true);}
+    inp.remove();};
+  inp.click();
+}
+const TICK={sent:'✓',delivered:'✓✓',read:'✓✓'};
 async function loadMessages(id){
   const box=$('#msgs'); if(!box)return;
   try{
-    const {messages}=await api('/api/bookings/'+id+'/messages');
+    const {messages,typing,location}=await api('/api/bookings/'+id+'/messages');
+    // §13 live provider location bar (customer view during active booking).
+    const lb=$('#locBar');
+    if(lb)lb.innerHTML=location?`<div class="locbar">${I.pin}<span>Исполнитель в пути</span><span class="eta">~${location.etaMinutes} мин</span></div>`:'';
     box.innerHTML=messages.map(m=>{
-      if(m.from==='system')return `<div class="msg sys">${m.text}</div>`;
+      if(m.from==='system'||m.type==='system')return `<div class="msg sys">${esc(m.text)}</div>`;
       const me=m.from===state.user.id;
-      return `<div class="msg ${me?'me':'them'}">${me?'':`<div class="who">${m.name}</div>`}${m.text}</div>`;
-    }).join('');
+      const img=(m.type==='image'&&m.attachments&&m.attachments[0])?`<img src="${m.attachments[0]}">`:'';
+      const body=m.text?esc(m.text):'';
+      // §7 delivery ticks on my own outgoing messages.
+      const tick=me&&m.delivery?`<span class="tick ${m.delivery==='read'?'read':''}">${TICK[m.delivery]||''}</span>`:'';
+      // §11 translation (never overwrites original) — offered on the other party's messages.
+      const tr=m.translatedBody?`<div class="tr">${esc(m.translatedBody)}</div>`:'';
+      const trBtn=(!me&&m.text&&!m.translatedBody)?`<span class="trbtn" data-tr="${m.id}">Перевести</span>`:'';
+      return `<div class="msg ${me?'me':'them'}">${me?'':`<div class="who">${esc(m.name)}</div>`}${body}${img}${tick}${tr}${trBtn}</div>`;
+    }).join('') + ((typing&&typing.length)?`<div class="typing">${esc(typing[0].name)} печатает<span class="dot"></span><span class="dot"></span><span class="dot"></span></div>`:'');
     box.scrollTop=box.scrollHeight;
+    box.querySelectorAll('.trbtn').forEach(btn=>btn.onclick=async()=>{
+      try{await api('/api/bookings/'+id+'/messages/'+btn.dataset.tr+'/translate','POST',{target:'en'});await loadMessages(id);}catch(e){toast(e.message,true);}
+    });
+    // §7 mark read once I've viewed the thread.
+    api('/api/bookings/'+id+'/messages/read','POST').catch(()=>{});
+    loadNotifBadge&&loadNotifBadge();
   }catch{}
 }
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 
 /* ---------- WALLET ---------- */
 async function viewWallet(){
