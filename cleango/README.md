@@ -82,12 +82,32 @@ cleango/
   smart-home/        Appliance registry, warranty, cost analytics (docs/17) — registry.js + test.js
   admin/             Capability-based access model (docs/18) — rbac.js + test.js
   analytics/         Platform metrics & alerts (docs/22) — metrics.js + test.js
+  test/              Test runner + API/integration suite (docs/24)
+  ops/               Secret scan + infrastructure docs (docs/23)
+  Dockerfile         Zero-dep production image w/ health probe (docs/23)
 ```
 
 Domain logic lives in small, pure, dependency-free modules the server composes
 over the JSON store, each with a `node <dir>/test.js` self-check:
 `ai/`, `dispatch/`, `pricing/`, `notifications/`, `chat/`, `smart-home/`, `admin/`,
 `analytics/`.
+
+## Testing & Ops
+
+```bash
+npm test        # full release gate — unit + API/integration suites (docs/24)
+npm run lint    # node --check syntax gate
+npm run security-scan   # fail on any committed secret (docs/23)
+docker build -t lumi . && docker run -p 4000:4000 lumi   # zero-dep image
+```
+
+`npm test` (`test/run.js`) runs every module suite plus `test/api.test.js`, which
+boots a real server on an isolated data dir and asserts the critical flows and
+security invariants (hidden commission, participant-only chat, capability gates,
+idempotent settlement, suspended-token revocation). It exits non-zero on any
+failure, so CI blocks the release. Ops endpoints: **`/healthz`**, **`/readyz`**,
+**`/metrics`** (Prometheus), with per-request correlation IDs. See
+`TESTING.md` and `ops/INFRASTRUCTURE.md`. CI pipeline: `.github/workflows/lumi-ci.yml`.
 
 The running app uses a JSON store as an MVP stand-in. `db/` and `openapi/` are
 the production persistence layer and API contract the platform graduates to —

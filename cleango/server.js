@@ -35,7 +35,7 @@ const analytics = require('./analytics/metrics');
 
 const PORT = process.env.PORT || 4000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
-const DATA_DIR = path.join(__dirname, 'data');
+const DATA_DIR = process.env.LUMI_DATA_DIR || path.join(__dirname, 'data');   // overridable for tests/ops
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const ai = createAIProvider();   // swappable AI layer (10_AI_ARCHITECTURE.md)
@@ -1742,8 +1742,80 @@ function serveStatic(req, res) {
   });
 }
 
+// ─────────────── Observability (23_DEVOPS_INFRASTRUCTURE.md) ───────────────
+// Health checks + metrics so every instance is probeable (§"Every service must
+// expose health checks and metrics"). No secrets are ever emitted here.
+const STARTED_AT = Date.now();
+const metrics = { requests: 0, errors: 0, byStatus: {}, latencyMsTotal: 0 };
+function recordMetric(status, ms) {
+  metrics.requests++;
+  metrics.byStatus[status] = (metrics.byStatus[status] || 0) + 1;
+  metrics.latencyMsTotal += ms;
+  if (status >= 500) metrics.errors++;
+}
+// Liveness: process is up. Readiness: data dir writable + session secret loaded.
+function readiness() {
+  const checks = { dataDir: false, secret: !!SECRET };
+  try { fs.accessSync(DATA_DIR, fs.constants.W_OK); checks.dataDir = true; } catch {}
+  return { ok: Object.values(checks).every(Boolean), checks };
+}
+// Prometheus text-exposition metrics (§Monitoring). Cheap gauges/counters.
+function metricsText() {
+  const users = Object.values(db.users);
+  const bookings = Object.values(db.bookings);
+  const avgLatency = metrics.requests ? metrics.latencyMsTotal / metrics.requests : 0;
+  const lines = [
+    '# HELP lumi_uptime_seconds Process uptime.',
+    '# TYPE lumi_uptime_seconds gauge',
+    `lumi_uptime_seconds ${Math.round((Date.now() - STARTED_AT) / 1000)}`,
+    '# HELP lumi_http_requests_total Total HTTP requests handled.',
+    '# TYPE lumi_http_requests_total counter',
+    `lumi_http_requests_total ${metrics.requests}`,
+    '# HELP lumi_http_errors_total HTTP 5xx responses.',
+    '# TYPE lumi_http_errors_total counter',
+    `lumi_http_errors_total ${metrics.errors}`,
+    '# HELP lumi_http_request_latency_ms_avg Average request latency.',
+    '# TYPE lumi_http_request_latency_ms_avg gauge',
+    `lumi_http_request_latency_ms_avg ${avgLatency.toFixed(2)}`,
+    '# HELP lumi_users Total user accounts by role.',
+    '# TYPE lumi_users gauge',
+    `lumi_users{role="customer"} ${users.filter((u) => u.role === 'customer').length}`,
+    `lumi_users{role="cleaner"} ${users.filter((u) => u.role === 'cleaner').length}`,
+    `lumi_users{role="company"} ${users.filter((u) => u.role === 'company').length}`,
+    '# HELP lumi_bookings Total bookings by status.',
+    '# TYPE lumi_bookings gauge',
+    `lumi_bookings{status="searching"} ${bookings.filter((b) => b.status === 'searching').length}`,
+    `lumi_bookings{status="completed"} ${bookings.filter((b) => b.status === 'completed').length}`,
+  ];
+  return lines.join('\n') + '\n';
+}
+
 const server = http.createServer(async (req, res) => {
+  const startedAt = Date.now();
+  // Correlation ID for structured logs / tracing (§Logging). Echoed back so the
+  // client and downstream services share one id across a request.
+  const requestId = (req.headers['x-request-id'] || crypto.randomUUID()).slice(0, 64);
+  res.setHeader('X-Request-Id', requestId);
+  const origWriteHead = res.writeHead.bind(res);
+  res.writeHead = (status, ...rest) => { res._status = status; return origWriteHead(status, ...rest); };
+  res.on('finish', () => {
+    const status = res._status || res.statusCode || 0;
+    recordMetric(status, Date.now() - startedAt);
+    // One structured line per request; never logs bodies/tokens/PII.
+    // Silenced under LUMI_QUIET (test runs) to keep CI output readable.
+    if (req.url.startsWith('/api/') && !process.env.LUMI_QUIET) {
+      console.log(JSON.stringify({ at: new Date().toISOString(), requestId, method: req.method, path: req.url.split('?')[0], status, ms: Date.now() - startedAt }));
+    }
+  });
   try {
+    // Ops endpoints (unauthenticated liveness; metrics are non-sensitive gauges).
+    const bare = req.url.split('?')[0];
+    if (bare === '/healthz') return send(res, 200, { status: 'ok', uptime: Math.round((Date.now() - STARTED_AT) / 1000) });
+    if (bare === '/readyz') { const r = readiness(); return send(res, r.ok ? 200 : 503, r); }
+    if (bare === '/metrics') {
+      res.writeHead(200, { 'Content-Type': 'text/plain; version=0.0.4; charset=utf-8', ...SECURITY_HEADERS });
+      return res.end(metricsText());
+    }
     if (req.url.startsWith('/api/')) {
       const urlPath = req.url.split('?')[0];
       for (const r of routes) {
@@ -1758,7 +1830,7 @@ const server = http.createServer(async (req, res) => {
     }
     serveStatic(req, res);
   } catch (err) {
-    console.error('Server error:', err);
+    console.error(JSON.stringify({ at: new Date().toISOString(), requestId, level: 'error', msg: String(err && err.message || err) }));
     if (!res.headersSent) send(res, 500, { error: 'Internal server error.' });
   }
 });

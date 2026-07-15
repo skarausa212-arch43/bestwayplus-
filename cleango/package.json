@@ -1,0 +1,17 @@
+{
+  "name": "lumi",
+  "version": "1.0.0",
+  "private": true,
+  "description": "LUMI — premium on-demand home-services platform (zero-dependency Node.js server + vanilla-JS SPA).",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/run.js",
+    "test:api": "node test/api.test.js",
+    "lint": "node -e \"['server.js'].forEach(f=>require('child_process').execFileSync(process.execPath,['--check',f],{stdio:'inherit'}));console.log('lint ok')\"",
+    "security-scan": "node ops/secret-scan.js"
+  },
+  "dependencies": {}
+}

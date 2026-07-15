@@ -1,0 +1,59 @@
+# LUMI CI pipeline (23_DEVOPS_INFRASTRUCTURE.md §Pipeline):
+#   Lint → Tests → Security Scan → Build → Smoke Tests
+# Zero-dependency app, so there is nothing to `npm install`.
+name: LUMI CI
+
+on:
+  push:
+    paths:
+      - 'cleango/**'
+      - '.github/workflows/lumi-ci.yml'
+  pull_request:
+    paths:
+      - 'cleango/**'
+      - '.github/workflows/lumi-ci.yml'
+
+defaults:
+  run:
+    working-directory: cleango
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Lint (syntax check)
+        run: npm run lint
+
+      - name: Security scan (no committed secrets)
+        run: npm run security-scan
+
+      - name: Tests (unit + integration release gate)
+        run: npm test
+
+  build-and-smoke:
+    runs-on: ubuntu-latest
+    needs: quality-gate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t lumi:ci .
+
+      - name: Smoke test (health + readiness probes)
+        run: |
+          docker run -d --name lumi -p 4000:4000 lumi:ci
+          for i in $(seq 1 20); do
+            if curl -sf http://127.0.0.1:4000/healthz; then ready=1; break; fi
+            sleep 1
+          done
+          test "${ready:-0}" = "1" || { echo "server never became healthy"; docker logs lumi; exit 1; }
+          curl -sf http://127.0.0.1:4000/readyz
+          curl -sf http://127.0.0.1:4000/metrics | grep lumi_http_requests_total
+          docker rm -f lumi
