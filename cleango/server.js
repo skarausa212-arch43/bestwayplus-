@@ -32,6 +32,7 @@ const chat = require('./chat/realtime');
 const smartHome = require('./smart-home/registry');
 const rbac = require('./admin/rbac');
 const analytics = require('./analytics/metrics');
+const flags = require('./flags/flags');
 
 const PORT = process.env.PORT || 4000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -175,6 +176,7 @@ const db = {
   ledger: loadJSON('ledger.json', []),       // wallet/commission entries
   notifications: loadJSON('notifications.json', {}), // userId -> [notification]
   appliances: loadJSON('appliances.json', {}), // propertyId -> [appliance] (Smart Home registry)
+  flagOverrides: loadJSON('flags.json', {}), // key -> { enabled, rollout, roles } (feature flags)
 };
 const persist = {
   users: () => saveJSON('users.json', db.users),
@@ -185,6 +187,7 @@ const persist = {
   ledger: () => saveJSON('ledger.json', db.ledger),
   notifications: () => saveJSON('notifications.json', db.notifications),
   appliances: () => saveJSON('appliances.json', db.appliances),
+  flagOverrides: () => saveJSON('flags.json', db.flagOverrides),
 };
 
 // ─────────── Notifications (15_NOTIFICATION_SYSTEM.md) ───────────
@@ -1623,6 +1626,31 @@ route('GET', '/api/admin/analytics', async (req, res) => {
     now: now(),
   });
   send(res, 200, { metrics, currency: CURRENCY });
+});
+
+// ───────────── Feature flags (26_ROADMAP_V2.md) ─────────────
+// Effective on/off map for the current viewer (roadmap features ship dark).
+route('GET', '/api/flags', async (req, res) => {
+  const user = authUser(req);   // anonymous allowed → user null
+  send(res, 200, { flags: flags.flagsFor(user, db.flagOverrides) });
+});
+// Admin flag catalogue (definition + current override) — capability gated.
+route('GET', '/api/admin/flags', async (req, res) => {
+  const user = requireCap(req, res, 'analytics.view'); if (!user) return;
+  send(res, 200, { flags: flags.catalogue(db.flagOverrides) });
+});
+// Toggle / roll out a flag (audited — releasing a roadmap feature is a real event).
+route('PATCH', '/api/admin/flags/:key', async (req, res, params) => {
+  const admin = requireCap(req, res, 'analytics.view'); if (!admin) return;
+  if (!flags.FLAGS[params.key]) return send(res, 404, { error: 'Unknown flag.' });
+  const b = await readBody(req);
+  const ov = { ...(db.flagOverrides[params.key] || {}) };
+  if (typeof b.enabled === 'boolean') ov.enabled = b.enabled;
+  if (b.rollout != null) ov.rollout = Math.max(0, Math.min(100, Number(b.rollout) || 0));
+  db.flagOverrides[params.key] = ov;
+  persist.flagOverrides();
+  audit('flag.updated', admin.id, params.key, { enabled: ov.enabled, rollout: ov.rollout });
+  send(res, 200, { key: params.key, override: ov, enabled: flags.isEnabled(params.key, null, db.flagOverrides) });
 });
 
 // ───────────── Provider workspace (19_PROVIDER_APP.md) ─────────────

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LUMI — операционная система вашего дома</title>
+<meta name="description" content="LUMI — премиальная платформа бытовых услуг: уборка за минуты, прозрачная цена, умный дом и живое отслеживание исполнителя.">
+<style>
+  :root{--p:#14C871;--ink:#0b1220;--bg:#fff;--muted:#5b6472;--card:#f6f8fa;--line:#e7ebf0}
+  @media(prefers-color-scheme:dark){:root{--ink:#eef1f5;--bg:#0b1220;--muted:#9aa4b2;--card:#131c2e;--line:#222d42}}
+  *{box-sizing:border-box}
+  body{margin:0;font:17px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 22px}
+  header{display:flex;align-items:center;justify-content:space-between;padding:22px 0}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:-.02em}
+  .brand .mark{width:30px;height:30px}
+  .btn{display:inline-block;background:var(--p);color:#fff;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:12px;transition:transform .15s}
+  .btn:hover{transform:translateY(-2px)}
+  .hero{text-align:center;padding:70px 0 50px}
+  .hero h1{font-size:clamp(34px,6vw,58px);line-height:1.05;letter-spacing:-.03em;margin:0 0 18px}
+  .hero p{font-size:20px;color:var(--muted);max-width:640px;margin:0 auto 30px}
+  .grad{background:linear-gradient(120deg,#14C871,#0EA5A5);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:20px;padding:30px 0 60px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px}
+  .card h3{margin:0 0 8px;font-size:18px}
+  .card p{margin:0;color:var(--muted);font-size:15px}
+  .ico{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;margin-bottom:14px;background:rgba(20,200,113,.12);color:var(--p);font-size:22px}
+  .cta{text-align:center;background:linear-gradient(135deg,#0B1220,#1b2740);color:#fff;border-radius:24px;padding:56px 22px;margin:20px 0 60px}
+  .cta h2{font-size:30px;margin:0 0 12px}
+  .cta .btn{background:#fff;color:#0b1220}
+  footer{border-top:1px solid var(--line);padding:26px 0;color:var(--muted);font-size:14px;display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+  footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <svg class="mark" viewBox="0 0 32 32" fill="none"><path d="M6 15L16 6l10 9v10a1 1 0 01-1 1h-6v-7h-6v7H7a1 1 0 01-1-1V15Z" fill="#E9C46A"/><path d="M22 5l1 2 2 1-2 1-1 2-1-2-2-1 2-1 1-2Z" fill="#14C871"/></svg>
+        LUMI
+      </div>
+      <a class="btn" href="/">Войти</a>
+    </header>
+
+    <section class="hero">
+      <h1>Дом, который <span class="grad">заботится о себе</span></h1>
+      <p>Премиальные бытовые услуги: уборка за минуты, честная цена до заказа,
+      живое отслеживание исполнителя и умный дом, который сам напоминает, что пора обслужить.</p>
+      <a class="btn" href="/">Заказать уборку →</a>
+    </section>
+
+    <section class="grid">
+      <div class="card"><div class="ico">⚡</div><h3>FlashClean</h3><p>Исполнитель рядом — приедет как можно скорее. Прозрачная динамическая цена с ограничением надбавки.</p></div>
+      <div class="card"><div class="ico">✨</div><h3>AI-оценка</h3><p>Мгновенная понятная смета: длительность, состав работ и диапазон цены до подтверждения.</p></div>
+      <div class="card"><div class="ico">🏠</div><h3>Умный дом</h3><p>LUMI Score, календарь обслуживания, реестр техники и напоминания о гарантиях.</p></div>
+      <div class="card"><div class="ico">📍</div><h3>Живое отслеживание</h3><p>Статус заказа, ETA и чат с исполнителем — с уведомлениями на каждом шаге.</p></div>
+      <div class="card"><div class="ico">🗂️</div><h3>Паспорт дома</h3><p>Полная история обслуживания, фото «до/после» и счета — цифровой архив вашего дома.</p></div>
+      <div class="card"><div class="ico">👑</div><h3>LUMI+</h3><p>Скидка на все заказы, приоритетная диспетчеризация и любимые исполнители.</p></div>
+    </section>
+
+    <section class="cta">
+      <h2>Готовы к сияющему дому?</h2>
+      <p style="opacity:.85;max-width:520px;margin:0 auto 24px">Создайте аккаунт за минуту — первый заказ можно оформить сразу.</p>
+      <a class="btn" href="/">Начать бесплатно</a>
+    </section>
+
+    <footer>
+      <span>© 2026 LUMI</span>
+      <a href="/privacy.html">Конфиденциальность</a>
+      <a href="/terms.html">Условия</a>
+      <span>Warszawa · Kraków · Wrocław · Poznań · Gdańsk · Łódź</span>
+    </footer>
+  </div>
+</body>
+</html>

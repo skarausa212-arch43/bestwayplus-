@@ -82,9 +82,11 @@ cleango/
   smart-home/        Appliance registry, warranty, cost analytics (docs/17) — registry.js + test.js
   admin/             Capability-based access model (docs/18) — rbac.js + test.js
   analytics/         Platform metrics & alerts (docs/22) — metrics.js + test.js
+  flags/             Feature-flag registry & rollout (docs/26) — flags.js + test.js
   test/              Test runner + API/integration suite (docs/24)
-  ops/               Secret scan + infrastructure docs (docs/23)
+  ops/               Secret scan, launch-check + infrastructure docs (docs/23,25)
   Dockerfile         Zero-dep production image w/ health probe (docs/23)
+  public/landing.html · privacy.html · terms.html   Marketing & legal (docs/25)
 ```
 
 Domain logic lives in small, pure, dependency-free modules the server composes
@@ -108,6 +110,17 @@ idempotent settlement, suspended-token revocation). It exits non-zero on any
 failure, so CI blocks the release. Ops endpoints: **`/healthz`**, **`/readyz`**,
 **`/metrics`** (Prometheus), with per-request correlation IDs. See
 `TESTING.md` and `ops/INFRASTRUCTURE.md`. CI pipeline: `.github/workflows/lumi-ci.yml`.
+
+```bash
+npm run launch-check    # MVP launch-readiness verifier — Go / No-Go (docs/25)
+```
+
+`ops/launch-check.js` walks the launch checklist against the actual repo
+(product, backend, infra, security, QA, marketing) and prints a **Go / No-Go**,
+failing on any critical gap. **Feature flags** (`docs/26`) gate roadmap
+verticals: `GET /api/flags` returns the per-viewer map, admins toggle them in the
+Analytics panel (`GET/PATCH /api/admin/flags`), and Phase-2 service flags flip a
+"coming soon" tile into a bookable category. See `ROADMAP.md`.
 
 The running app uses a JSON store as an MVP stand-in. `db/` and `openapi/` are
 the production persistence layer and API contract the platform graduates to —

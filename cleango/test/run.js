@@ -21,6 +21,7 @@ const suites = [
   ['unit', 'smart-home/test.js'],
   ['unit', 'admin/test.js'],
   ['unit', 'analytics/test.js'],
+  ['unit', 'flags/test.js'],
   ['integration', 'test/api.test.js'],
 ];
 

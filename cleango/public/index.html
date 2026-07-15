@@ -389,6 +389,7 @@ let state = {
   view: 'home',
   catalog: null,
   categories: null,
+  flags: {},
   cities: [],
   properties: [],
   draft: null,          // booking wizard draft
@@ -533,8 +534,13 @@ function renderAuth(){
           <button class="btn block" type="submit">${mode==='login'?'Войти':'Создать аккаунт'} ${I.arrow}</button>
         </form>
         <div class="divider"></div>
-        <p class="hint" style="text-align:center">Демо: <b>anna@example.com</b> (LUMI+) · <b>piotr@example.com</b> · <b>admin@cleango.app</b> — пароль <b>cleango123</b></p>
-      </div>`;
+        <p class="hint" style="text-align:center">Демо: <b>anna@example.com</b> (LUMI+) · <b>piotr@example.com</b> · <b>admin@cleango.app</b> · <b>company@cleango.app</b> — пароль <b>cleango123</b></p>
+      </div>
+      <p class="hint" style="text-align:center;margin-top:16px">
+        <a href="/landing.html" style="color:var(--ink-3)">О LUMI</a> ·
+        <a href="/privacy.html" style="color:var(--ink-3)">Конфиденциальность</a> ·
+        <a href="/terms.html" style="color:var(--ink-3)">Условия</a>
+      </p>`;
     box.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;draw();});
     box.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{role=b.dataset.r;draw();});
     $('#authForm',box).onsubmit=async(e)=>{
@@ -710,6 +716,7 @@ async function loadCatalog(){
     if(!state.catalog) state.catalog=await api('/api/catalog');
     if(!state.categories){const r=await api('/api/categories');state.categories=r.categories;}
     if(!state.cities.length){const r=await api('/api/cities');state.cities=r.cities;}
+    try{const r=await api('/api/flags');state.flags=r.flags||{};}catch{}
   }catch{}
 }
 async function loadProperties(){
@@ -771,16 +778,21 @@ function viewHome(){
   // категории услуг (уборка/окна активны, остальные — скоро)
   const catWrap=el(`<div><div class="section-title">Что нужно сделать?</div><div class="svc-grid" id="catGrid"></div></div>`);
   const cg=$('#catGrid',catWrap);
+  // Roadmap verticals go live via feature flags (26_ROADMAP_V2) — a flag flip,
+  // not a deploy. A gated category becomes bookable the moment its flag is on.
+  const FLAG_FOR_CAT={handyman:'service_handyman',electrical:'service_electrical',plumbing:'service_plumbing',garden:'service_gardening'};
   (state.categories||[]).forEach(cat=>{
     const label=CAT_LABEL_RU[cat.key]||cat.label;
-    const card=el(`<div class="card svc" style="${cat.active?'':'opacity:.7'}">
+    const flagOn=FLAG_FOR_CAT[cat.key] && state.flags && state.flags[FLAG_FOR_CAT[cat.key]];
+    const active=cat.active || !!flagOn;
+    const card=el(`<div class="card svc" style="${active?'':'opacity:.7'}">
       <div class="ico ${CAT_COLOR[cat.key]||'c-cleaning'}">${CAT_ICON[cat.key]||I.broom}</div>
       <h4>${label}</h4>
-      <div class="from">${cat.active?(CAT_DESC_RU[cat.key]||cat.desc):'Скоро'}</div>
-      ${cat.active?'':'<span class="badge grey" style="position:absolute;top:12px;right:12px">Скоро</span>'}
+      <div class="from">${active?(CAT_DESC_RU[cat.key]||cat.desc):'Скоро'}</div>
+      ${active?(flagOn?'<span class="badge green" style="position:absolute;top:12px;right:12px">Новинка</span>':''):'<span class="badge grey" style="position:absolute;top:12px;right:12px">Скоро</span>'}
     </div>`);
     card.style.position='relative';
-    card.onclick=()=>{ cat.active?startBooking(cat.key==='windows'?'windows':'standard'):toast(`${label} — скоро в вашем городе`); };
+    card.onclick=()=>{ active?startBooking(cat.key==='windows'?'windows':'standard'):toast(`${label} — скоро в вашем городе`); };
     cg.appendChild(card);
   });
   c.appendChild(catWrap);
@@ -1972,9 +1984,31 @@ async function viewAnalytics(){
         </div>
       </div>
       <div class="section-title" style="margin-top:22px">Воронка</div>
-      <div class="card pad">${funnelHtml(M.funnel)}</div>`;
+      <div class="card pad">${funnelHtml(M.funnel)}</div>
+      <div class="section-title" style="margin-top:22px">Флаги функций (роадмап)</div>
+      <div id="flagsBody"><div class="card pad"><div class="sk" style="height:120px"></div></div></div>`;
     stagger($('.kpi-grid',c));
+    loadAdminFlags();
   }catch(e){toast(e.message,true);}
+}
+async function loadAdminFlags(){
+  const z=$('#flagsBody'); if(!z)return;
+  try{
+    const {flags}=await api('/api/admin/flags');
+    const byPhase={};
+    flags.forEach(f=>{(byPhase[f.phase]=byPhase[f.phase]||[]).push(f);});
+    z.innerHTML=`<div class="card pad">${Object.keys(byPhase).sort().map(ph=>`
+      <div style="margin-bottom:14px"><div class="tiny muted" style="font-weight:700;margin-bottom:8px">Фаза ${ph}</div>
+      ${byPhase[ph].map(f=>`<div class="row" style="justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line)">
+        <span style="font-size:14px">${f.label} ${f.enabled?'<span class="badge green" style="margin-left:6px">вкл</span>':'<span class="badge grey" style="margin-left:6px">выкл</span>'}</span>
+        <button class="btn ghost sm" data-flag="${f.key}" data-on="${f.enabled?1:0}">${f.enabled?'Выключить':'Включить'}</button>
+      </div>`).join('')}</div>`).join('')}</div>`;
+    z.querySelectorAll('[data-flag]').forEach(btn=>btn.onclick=async()=>{
+      try{await api('/api/admin/flags/'+btn.dataset.flag,'PATCH',{enabled:btn.dataset.on!=='1'});
+        toast('Флаг обновлён');loadAdminFlags();
+      }catch(e){toast(e.message,true);}
+    });
+  }catch(e){z.innerHTML='';}
 }
 function metricRow(label,val){return `<div class="row" style="justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)"><span class="muted tiny">${label}</span><b>${val}</b></div>`;}
 function funnelHtml(funnel){
