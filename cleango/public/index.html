@@ -510,6 +510,54 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
   .hero-h1{font-size:30px}
   .hero-orb{display:none}
 }
+
+/* ═══════════════ AUTH · premium split screen ═══════════════ */
+.auth-split{min-height:100vh;display:grid;grid-template-columns:1.02fr .98fr}
+.auth-brand{position:relative;overflow:hidden;color:#fff;display:flex;align-items:center;padding:56px min(6vw,72px);
+  background:linear-gradient(150deg,#13211F 0%,#0C2F32 55%,#152318 100%)}
+#authFX{position:absolute;inset:0;width:100%;height:100%;opacity:.92;z-index:0}
+.auth-brand-veil{position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(6,12,13,.28),rgba(6,12,13,.5)),radial-gradient(90% 70% at 15% 25%,transparent 40%,rgba(6,12,13,.5))}
+.auth-brand-in{position:relative;z-index:2;max-width:480px}
+.brand-lockup{display:flex;align-items:center;gap:16px;margin-bottom:36px}
+.brand-lockup .word{font-size:34px;font-weight:850;letter-spacing:-.03em}
+.auth-tag{font-size:clamp(30px,3.4vw,44px);line-height:1.04;letter-spacing:-.03em;font-weight:850;text-wrap:balance}
+.auth-tag .grad-text{background:linear-gradient(100deg,#FFB067,#FF7A3D 42%,#3FDCC9);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.auth-lede{margin-top:18px;font-size:17px;line-height:1.55;color:rgba(255,255,255,.8);max-width:40ch}
+.auth-feats{margin-top:28px;display:flex;flex-direction:column;gap:13px}
+.auth-feats div{display:flex;align-items:center;gap:12px;font-size:15.5px;font-weight:600;color:rgba(255,255,255,.94)}
+.auth-feats .fk{width:26px;height:26px;border-radius:9px;background:rgba(47,214,206,.22);color:#67e9e0;display:grid;place-items:center;flex:none}
+.auth-feats .fk svg{width:15px;height:15px}
+.auth-cities{margin-top:34px;font-size:12.5px;letter-spacing:.08em;color:rgba(255,255,255,.5)}
+/* form side */
+.auth-form-side{display:flex;align-items:center;justify-content:center;padding:40px 28px;background:var(--bg);position:relative}
+.auth-theme{position:absolute;top:22px;right:22px}
+.auth-card{width:100%;max-width:396px}
+.auth-mobilemark{display:none}
+.auth-head{margin-bottom:20px}
+.auth-head h2{font-size:27px;letter-spacing:-.02em}
+.auth-head p{margin-top:5px;font-size:14.5px}
+.auth-card .seg{margin-bottom:20px}
+.auth-legal{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
+.auth-legal a{color:var(--ink-3);font-size:12.5px;font-weight:600}
+.auth-legal a:hover{color:var(--primary-600)}
+/* animated logo badge */
+.logo-badge{flex:none;animation:bob 6s ease-in-out infinite}
+.logo-badge svg{width:74px;height:74px;overflow:visible;filter:drop-shadow(0 16px 32px rgba(255,122,61,.45))}
+.brand-lockup .logo-badge svg{width:64px;height:64px}
+.lb-house{stroke-dasharray:240;stroke-dashoffset:240;animation:lbdraw 1s .2s cubic-bezier(.6,0,.2,1) forwards}
+.lb-door{stroke-dasharray:44;stroke-dashoffset:44;animation:lbdraw .5s 1s ease forwards}
+@keyframes lbdraw{to{stroke-dashoffset:0}}
+.lb-spark{transform-box:fill-box;transform-origin:center;opacity:0;animation:lbspark .6s 1.15s cubic-bezier(.2,1.6,.4,1) forwards,twk 2.8s 2s ease-in-out infinite}
+@keyframes lbspark{from{opacity:0;transform:scale(.2) rotate(-45deg)}to{opacity:1;transform:none}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@media(max-width:860px){
+  .auth-split{grid-template-columns:1fr}
+  .auth-brand{display:none}
+  .auth-form-side{padding:32px 22px;min-height:100vh}
+  .auth-mobilemark{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:24px;font-size:26px;font-weight:850;letter-spacing:-.03em}
+  .auth-mobilemark .logo-badge svg{width:52px;height:52px}
+}
 </style>
 </head>
 <body>
@@ -638,52 +686,82 @@ const isDark=()=>document.documentElement.dataset.theme==='dark';
 /* =========================================================================
    AUTH SCREEN
    ========================================================================= */
+// Unique gradient ids per instance (two badges can coexist in the DOM — the
+// desktop brand lockup and the mobile mark — and shared ids would collide).
+function logoBadge(id){return `<div class="logo-badge"><svg viewBox="0 0 96 96" fill="none">
+  <defs>
+    <linearGradient id="lbg-${id}" x1="8" y1="8" x2="88" y2="88" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFB569"/><stop offset=".48" stop-color="#FF7A3D"/><stop offset="1" stop-color="#12C4BE"/>
+    </linearGradient>
+    <linearGradient id="lbgloss-${id}" x1="20" y1="10" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="6" y="6" width="84" height="84" rx="25" fill="url(#lbg-${id})"/>
+  <rect x="6" y="6" width="84" height="46" rx="25" fill="url(#lbgloss-${id})"/>
+  <path class="lb-house" d="M28 50 L48 32 L68 50 V70 a2 2 0 0 1 -2 2 H30 a2 2 0 0 1 -2 -2 Z" stroke="#fff" stroke-width="4.6" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+  <path class="lb-door" d="M43 72 V60 h10 v12" stroke="#fff" stroke-width="4.6" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+  <path class="lb-spark" d="M67 25 l2.3 5.2 5.2 2.3 -5.2 2.3 L67 40 l-2.3 -5.2 -5.2 -2.3 5.2 -2.3 Z" fill="#F1FFFD"/>
+</svg></div>`;}
+
 function renderAuth(){
   let mode='login', role='customer';
   const root=$('#root');
   root.innerHTML='';
-  const wrap=el(`<div class="auth-wrap"><div class="auth fadein"></div></div>`);
-  const box=$('.auth',wrap);
+  const wrap=el(`<div class="auth-split">
+    <div class="auth-brand">
+      <canvas id="authFX"></canvas>
+      <div class="auth-brand-veil"></div>
+      <div class="auth-brand-in">
+        <div class="brand-lockup">${logoBadge('a')}<span class="word">LUMI</span></div>
+        <h1 class="auth-tag">Ваш дом под контролем —<br><span class="grad-text">в одном приложении</span></h1>
+        <p class="auth-lede">Уборка за минуты, честная AI-цена и умный дом, который сам напоминает, что пора обслужить.</p>
+        <div class="auth-feats">
+          <div><span class="fk">${I.check}</span>Заказ за пару минут</div>
+          <div><span class="fk">${I.check}</span>Честная AI-цена ещё до заказа</div>
+          <div><span class="fk">${I.check}</span>Живое отслеживание исполнителя</div>
+          <div><span class="fk">${I.check}</span>Умный дом и история обслуживания</div>
+        </div>
+        <div class="auth-cities">Warszawa · Kraków · Wrocław · Poznań · Gdańsk · Łódź</div>
+      </div>
+    </div>
+    <div class="auth-form-side">
+      <button class="iconbtn auth-theme" id="authTheme" title="Тема"></button>
+      <div class="auth-card" id="authCard"></div>
+    </div>
+  </div>`);
+  const card=$('#authCard',wrap);
   function draw(){
-    box.innerHTML=`
-      <div style="text-align:center;margin-bottom:22px">
-        <div style="display:inline-flex;align-items:center;gap:10px;font-weight:800;font-size:26px;letter-spacing:-.03em">
-          ${I.logo}<span>LUMI</span>
-        </div>
-        <p class="muted" style="margin-top:8px;font-size:14.5px">Операционная система для вашего дома.</p>
+    card.innerHTML=`
+      <div class="auth-mobilemark">${logoBadge('b')}<span class="word">LUMI</span></div>
+      <div class="auth-head">
+        <h2>${mode==='login'?'С возвращением':'Создайте аккаунт'}</h2>
+        <p class="muted">${mode==='login'?'Войдите, чтобы продолжить.':'Пара шагов — и дом под контролем.'}</p>
       </div>
-      <div class="card pad">
-        <div class="seg">
-          <button data-m="login" class="${mode==='login'?'active':''}">Войти</button>
-          <button data-m="register" class="${mode==='register'?'active':''}">Регистрация</button>
-        </div>
-        <form id="authForm">
-          ${mode==='register'?`
-          <label class="field"><span>Я хочу</span>
-            <div class="seg" style="margin:0">
-              <button type="button" data-r="customer" class="${role==='customer'?'active':''}">Заказывать услуги</button>
-              <button type="button" data-r="cleaner" class="${role==='cleaner'?'active':''}">Работать исполнителем</button>
-            </div>
-          </label>
-          <label class="field"><span>Имя и фамилия</span><input class="input" name="name" placeholder="Анна Ковальская" required></label>
-          <label class="field"><span>Город</span><select class="input" name="city">${state.cities.map(c=>`<option>${c}</option>`).join('')||'<option>Warsaw</option>'}</select></label>`:''}
-          <label class="field"><span>Email</span><input class="input" type="email" name="email" placeholder="you@example.com" required></label>
-          <label class="field"><span>Пароль</span><input class="input" type="password" name="password" placeholder="минимум 12 символов" minlength="${mode==='register'?12:1}" required>${mode==='register'?'<span class="hint" style="margin-top:6px;display:block">Не меньше 12 символов. Можно фразу — так надёжнее.</span>':''}</label>
-          <button class="btn block" type="submit">${mode==='login'?'Войти':'Создать аккаунт'} ${I.arrow}</button>
-        </form>
-        <div class="divider"></div>
-        <p class="hint" style="text-align:center">Демо: <b>anna@example.com</b> (LUMI+) · <b>piotr@example.com</b> · <b>admin@cleango.app</b> · <b>company@cleango.app</b> — пароль <b>cleango123</b></p>
+      <div class="seg">
+        <button data-m="login" class="${mode==='login'?'active':''}">Войти</button>
+        <button data-m="register" class="${mode==='register'?'active':''}">Регистрация</button>
       </div>
-      <p class="hint" style="text-align:center;margin-top:16px">
-        <a href="/landing.html" style="color:var(--ink-3)">О LUMI</a> ·
-        <a href="/brand.html" style="color:var(--ink-3)">Бренд</a> ·
-        <a href="/investors.html" style="color:var(--ink-3)">Инвесторам</a> ·
-        <a href="/privacy.html" style="color:var(--ink-3)">Конфиденциальность</a> ·
-        <a href="/terms.html" style="color:var(--ink-3)">Условия</a>
-      </p>`;
-    box.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;draw();});
-    box.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{role=b.dataset.r;draw();});
-    $('#authForm',box).onsubmit=async(e)=>{
+      <form id="authForm">
+        ${mode==='register'?`
+        <label class="field"><span>Я хочу</span>
+          <div class="seg" style="margin:0">
+            <button type="button" data-r="customer" class="${role==='customer'?'active':''}">Заказывать</button>
+            <button type="button" data-r="cleaner" class="${role==='cleaner'?'active':''}">Работать</button>
+          </div>
+        </label>
+        <label class="field"><span>Имя и фамилия</span><input class="input" name="name" placeholder="Анна Ковальская" required></label>
+        <label class="field"><span>Город</span><select class="input" name="city">${state.cities.map(c=>`<option>${c}</option>`).join('')||'<option>Warsaw</option>'}</select></label>`:''}
+        <label class="field"><span>Email</span><input class="input" type="email" name="email" placeholder="you@example.com" required></label>
+        <label class="field"><span>Пароль</span><input class="input" type="password" name="password" placeholder="${mode==='register'?'минимум 12 символов':'ваш пароль'}" minlength="${mode==='register'?12:1}" required>${mode==='register'?'<span class="hint" style="margin-top:6px;display:block">Не меньше 12 символов. Можно фразу — так надёжнее.</span>':''}</label>
+        <button class="btn block" type="submit" style="margin-top:6px">${mode==='login'?'Войти':'Создать аккаунт'} ${I.arrow}</button>
+      </form>
+      <div class="auth-legal">
+        <a href="/landing.html">О LUMI</a><a href="/brand.html">Бренд</a><a href="/privacy.html">Конфиденциальность</a><a href="/terms.html">Условия</a>
+      </div>`;
+    card.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;draw();});
+    card.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{role=b.dataset.r;draw();});
+    $('#authForm',card).onsubmit=async(e)=>{
       e.preventDefault();
       const f=new FormData(e.target);
       const btn=e.target.querySelector('button[type=submit]');
@@ -704,6 +782,9 @@ function renderAuth(){
   }
   draw();
   root.appendChild(wrap);
+  const fx=$('#authFX',wrap); if(fx) heroAurora(fx);
+  const tb=$('#authTheme',wrap);
+  if(tb){ tb.innerHTML=isDark()?I.sun:I.moon; tb.onclick=()=>{toggleTheme();tb.innerHTML=isDark()?I.sun:I.moon;}; }
 }
 
 /* =========================================================================
