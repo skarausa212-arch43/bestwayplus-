@@ -87,6 +87,9 @@ cleango/
   ops/               Secret scan, launch-check + infrastructure docs (docs/23,25)
   Dockerfile         Zero-dep production image w/ health probe (docs/23)
   public/landing.html · privacy.html · terms.html   Marketing & legal (docs/25)
+  public/brand.html · investors.html   Brand guidelines & investor overview (docs/27,30)
+  assets/            Logos, icons, illustrations — naming-checked (docs/28)
+  CLAUDE.md          Engineering master rules (docs/29) — enforced by ops/rules-check.js
 ```
 
 Domain logic lives in small, pure, dependency-free modules the server composes
@@ -117,7 +120,10 @@ npm run launch-check    # MVP launch-readiness verifier — Go / No-Go (docs/25)
 
 `ops/launch-check.js` walks the launch checklist against the actual repo
 (product, backend, infra, security, QA, marketing) and prints a **Go / No-Go**,
-failing on any critical gap. **Feature flags** (`docs/26`) gate roadmap
+failing on any critical gap. `npm run rules-check` enforces the engineering
+master rules (`CLAUDE.md`) — hidden commission, idempotent ledger, RLS, audit,
+design tokens, tests — and `npm run asset-check` enforces the asset-library
+naming conventions. **Feature flags** (`docs/26`) gate roadmap
 verticals: `GET /api/flags` returns the per-viewer map, admins toggle them in the
 Analytics panel (`GET/PATCH /api/admin/flags`), and Phase-2 service flags flip a
 "coming soon" tile into a bookable category. See `ROADMAP.md`.

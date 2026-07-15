@@ -34,8 +34,17 @@ jobs:
       - name: Security scan (no committed secrets)
         run: npm run security-scan
 
+      - name: Master-rules conformance
+        run: npm run rules-check
+
+      - name: Asset-library conventions
+        run: npm run asset-check
+
       - name: Tests (unit + integration release gate)
         run: npm test
+
+      - name: Launch readiness (Go/No-Go)
+        run: npm run launch-check
 
   build-and-smoke:
     runs-on: ubuntu-latest
