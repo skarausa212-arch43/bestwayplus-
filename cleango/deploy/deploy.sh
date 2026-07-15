@@ -96,6 +96,41 @@ if command -v ufw >/dev/null 2>&1; then
   ufw allow 443/tcp >/dev/null 2>&1 || true
 fi
 
+echo "▶ Auto-update (self-pull every 5 min)…"
+# make sure the updater is present even if the app tree didn't carry deploy/
+mkdir -p "$APP_DIR/deploy"
+cp "$SRC/auto-update.sh" "$APP_DIR/deploy/auto-update.sh" 2>/dev/null \
+  || cp "$APP_SRC/deploy/auto-update.sh" "$APP_DIR/deploy/auto-update.sh"
+# record what we just deployed so the first timer tick is a no-op
+curl -fsSL -H 'Accept: application/vnd.github.sha' \
+  https://api.github.com/repos/skarausa212-arch43/bestwayplus-/commits/claude/cleango-app-yd4rzj \
+  2>/dev/null > "$APP_DIR/.deployed_sha" || true
+chown -R "$APP_USER:$APP_USER" "$APP_DIR"
+cat >/etc/systemd/system/lumi-update.service <<UNIT
+[Unit]
+Description=LUMI self-update (pull latest branch & restart if changed)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/env bash $APP_DIR/deploy/auto-update.sh
+UNIT
+cat >/etc/systemd/system/lumi-update.timer <<TIMER
+[Unit]
+Description=Check for LUMI updates every 5 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+TIMER
+systemctl daemon-reload
+systemctl enable --now lumi-update.timer
+
 sleep 1
 echo ""
 echo "✅ LUMI is running."
@@ -104,3 +139,7 @@ echo ""
 echo "  Local check : curl -s -o /dev/null -w '%{http_code}\\n' http://127.0.0.1:$PORT/"
 echo "  Public (HTTP): http://$DOMAIN   (once DNS A-record → this server)"
 echo "  Enable HTTPS : sudo bash tls.sh"
+echo ""
+echo "🔄 Auto-update is ON: this server pulls the latest from GitHub every 5 min"
+echo "   and restarts itself — no further action needed. Watch it with:"
+echo "   journalctl -u lumi-update.service -f"

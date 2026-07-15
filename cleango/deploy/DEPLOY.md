@@ -49,6 +49,24 @@ sudo bash tls.sh
 Issues a Let's Encrypt certificate and switches the site to HTTPS with
 auto-redirect and auto-renewal. Done → **https://lumi.bestwayplus.pl**
 
+## Auto-updates (hands-off)
+`deploy.sh` also installs a `lumi-update.timer` that runs every 5 minutes: it
+checks the branch on GitHub, and **only if it changed** pulls the new code,
+syntax-checks it, and restarts the service. So after this one install you never
+touch the server again — a push to `claude/cleango-app-yd4rzj` goes live within
+~5 minutes automatically. The data dir is never overwritten. Watch updates:
+
+```bash
+journalctl -u lumi-update.service -f
+systemctl list-timers lumi-update.timer
+```
+
+Turn it off any time: `sudo systemctl disable --now lumi-update.timer`.
+Force an update now: `sudo systemctl start lumi-update.service`.
+
+> Security note: with auto-update on, whoever can push to that branch controls
+> the server. Keep the repo/branch protected.
+
 ## Notes
 - **Demo accounts are OFF by default** in production (`LUMI_SEED=off` in the
   service unit), so there are no public `cleango123` logins. Remove that line
