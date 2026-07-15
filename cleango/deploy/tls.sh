@@ -9,6 +9,14 @@ EMAIL="${LUMI_EMAIL:-skarausa212@gmail.com}"   # Let's Encrypt expiry notices
 
 [ "$(id -u)" = "0" ] || { echo "run as root: sudo bash tls.sh"; exit 1; }
 
+# Caddy handles HTTPS automatically — nothing to do here.
+if command -v caddy >/dev/null 2>&1 && systemctl is-active --quiet caddy; then
+  echo "✅ Caddy is serving this site — HTTPS is automatic (Let's Encrypt) as soon"
+  echo "   as $DOMAIN resolves to this server. No certbot step needed."
+  echo "   Watch it: journalctl -u caddy -f"
+  exit 0
+fi
+
 echo "▶ Checking DNS for $DOMAIN…"
 ip="$(getent hosts "$DOMAIN" | awk '{print $1}' | head -1 || true)"
 here="$(curl -fsS https://api.ipify.org 2>/dev/null || true)"

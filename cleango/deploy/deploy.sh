@@ -68,11 +68,31 @@ systemctl daemon-reload
 systemctl enable --now lumi
 systemctl restart lumi
 
-echo "▶ nginx reverse proxy…"
-cat >/etc/nginx/sites-available/lumi <<NGINX
+SRV_IP="$(curl -fsS --max-time 6 https://api.ipify.org 2>/dev/null || true)"
+if command -v caddy >/dev/null 2>&1; then
+  # The image already ships Caddy on :80 — use it. Caddy does automatic HTTPS
+  # via Let's Encrypt with zero extra steps once DNS points at this server.
+  echo "▶ Caddy reverse proxy (automatic HTTPS)…"
+  # nginx (if a previous run installed it) must not fight for :80
+  systemctl disable --now nginx >/dev/null 2>&1 || true
+  mkdir -p /etc/caddy
+  cat >/etc/caddy/Caddyfile <<CADDY
+# LUMI — managed by deploy.sh
+$DOMAIN {
+	reverse_proxy 127.0.0.1:$PORT
+}
+${SRV_IP:+http://$SRV_IP} {
+	reverse_proxy 127.0.0.1:$PORT
+}
+CADDY
+  systemctl enable caddy >/dev/null 2>&1 || true
+  systemctl restart caddy
+  WEB_MSG="Caddy · HTTPS is automatic once DNS points here (no tls.sh needed)"
+else
+  echo "▶ nginx reverse proxy…"
+  cat >/etc/nginx/sites-available/lumi <<NGINX
 server {
   listen 80;
-  listen [::]:80;
   server_name $DOMAIN;
   client_max_body_size 12m;
   location / {
@@ -85,13 +105,13 @@ server {
   }
 }
 NGINX
-ln -sf /etc/nginx/sites-available/lumi /etc/nginx/sites-enabled/lumi
-rm -f /etc/nginx/sites-enabled/default
-nginx -t
-# start nginx if it isn't running yet, otherwise reload — `reload` fails on a
-# stopped unit, so use enable --now + restart which works in both cases.
-systemctl enable nginx >/dev/null 2>&1 || true
-systemctl restart nginx
+  ln -sf /etc/nginx/sites-available/lumi /etc/nginx/sites-enabled/lumi
+  rm -f /etc/nginx/sites-enabled/default
+  nginx -t
+  systemctl enable nginx >/dev/null 2>&1 || true
+  systemctl restart nginx
+  WEB_MSG="nginx on :80 — run 'bash tls.sh' for HTTPS"
+fi
 
 if command -v ufw >/dev/null 2>&1; then
   ufw allow OpenSSH >/dev/null 2>&1 || ufw allow 22/tcp >/dev/null 2>&1 || true
@@ -139,9 +159,10 @@ echo ""
 echo "✅ LUMI is running."
 systemctl --no-pager --lines=0 status lumi | head -3 || true
 echo ""
+echo "  Web         : $WEB_MSG"
 echo "  Local check : curl -s -o /dev/null -w '%{http_code}\\n' http://127.0.0.1:$PORT/"
-echo "  Public (HTTP): http://$DOMAIN   (once DNS A-record → this server)"
-echo "  Enable HTTPS : sudo bash tls.sh"
+[ -n "$SRV_IP" ] && echo "  Live now    : http://$SRV_IP   (works before DNS)"
+echo "  Domain      : https://$DOMAIN   (after A-record lumi → this server)"
 echo ""
 echo "🔄 Auto-update is ON: this server pulls the latest from GitHub every 5 min"
 echo "   and restarts itself — no further action needed. Watch it with:"
