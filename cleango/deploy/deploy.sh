@@ -88,7 +88,10 @@ NGINX
 ln -sf /etc/nginx/sites-available/lumi /etc/nginx/sites-enabled/lumi
 rm -f /etc/nginx/sites-enabled/default
 nginx -t
-systemctl reload nginx
+# start nginx if it isn't running yet, otherwise reload — `reload` fails on a
+# stopped unit, so use enable --now + restart which works in both cases.
+systemctl enable nginx >/dev/null 2>&1 || true
+systemctl restart nginx
 
 if command -v ufw >/dev/null 2>&1; then
   ufw allow OpenSSH >/dev/null 2>&1 || ufw allow 22/tcp >/dev/null 2>&1 || true

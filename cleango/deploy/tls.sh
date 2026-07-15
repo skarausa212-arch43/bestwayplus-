@@ -21,5 +21,5 @@ fi
 export DEBIAN_FRONTEND=noninteractive
 apt-get install -y -qq certbot python3-certbot-nginx
 certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos -m "$EMAIL" --redirect
-systemctl reload nginx
+systemctl restart nginx
 echo "✅ HTTPS ready → https://$DOMAIN  (auto-renews via certbot timer)"
