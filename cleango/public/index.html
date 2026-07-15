@@ -347,6 +347,18 @@ textarea.input{resize:vertical;min-height:80px}
 .svc .ico.c-garden{background:linear-gradient(135deg,#E4F7D9,#D0F0BE);color:#4F9E2E}
 .svc .ico.c-painting{background:linear-gradient(135deg,#EBE1FF,#E7D6FF);color:#8A50E0}
 :root[data-theme="dark"] .svc .ico{filter:saturate(1.1) brightness(1.05)}
+
+/* notifications */
+.notif-badge{position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;padding:0 4px;border-radius:999px;background:var(--danger);color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center;box-shadow:0 0 0 2px var(--bg);animation:pop .3s cubic-bezier(.2,1.5,.4,1)}
+.notif{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:14px;cursor:pointer;transition:background .15s}
+.notif:hover{background:var(--surface-2)}
+.notif.unread{background:var(--primary-050)}
+.notif .ni{width:38px;height:38px;border-radius:11px;flex:none;display:grid;place-items:center;background:var(--surface-2);color:var(--ink-2)}
+.notif .ni.operational{background:var(--primary-050);color:var(--primary-600)}
+.notif .ni.account{background:#E8F0FE;color:#1A73E8}
+.notif .ni.smart_home{background:#F0EAFF;color:#7A5AF0}
+.notif .ni.marketing{background:#FEF3E2;color:#B25E09}
+.notif .ni svg{width:19px;height:19px}
 </style>
 </head>
 <body>
@@ -553,7 +565,7 @@ function shell(content){
       <div class="nav"></div>
       <div class="spacer"></div>
       <button class="iconbtn" id="themeBtn" title="Тема">${isDark()?I.sun:I.moon}</button>
-      <button class="iconbtn" title="Уведомления">${I.bell}</button>
+      <button class="iconbtn" id="bellBtn" title="Уведомления" style="position:relative">${I.bell}<span id="bellBadge" class="notif-badge" style="display:none"></span></button>
       <button class="avatar" id="meBtn" title="${u.name}">${u.name[0].toUpperCase()}</button>
     </div>
     <div class="main"><div class="content view-enter"></div></div>
@@ -569,9 +581,71 @@ function shell(content){
     tab.appendChild(tb);
   });
   $('#themeBtn',app).onclick=toggleTheme;
+  $('#bellBtn',app).onclick=openNotifications;
   $('#meBtn',app).onclick=openProfile;
   $('.content',app).appendChild(content);
   root.appendChild(app);
+  loadNotifBadge();
+}
+
+/* ---------- Notifications ---------- */
+async function loadNotifBadge(){
+  try{
+    const {unreadCount}=await api('/api/notifications');
+    const badge=$('#bellBadge');
+    if(badge){ badge.textContent=unreadCount>9?'9+':unreadCount; badge.style.display=unreadCount?'grid':'none'; }
+  }catch{}
+}
+const NOTIF_ICON={operational:I.book,account:I.check,smart_home:I.smart,marketing:I.spark};
+function notifDeepLink(link){
+  closeModal();
+  const m=/^lumi:\/\/(.+)$/.exec(link||''); if(!m)return;
+  const [seg,arg]=m[1].split('/');
+  if(seg==='booking'&&arg){openBooking(arg);}
+  else if(seg==='smart-home'){if(arg)state.activeProperty=arg;state.view='smart';render();}
+  else if(seg==='provider'){/* offer */ const id=link.split('/').pop(); openBooking(id);}
+  else if(seg==='wallet'){state.view='wallet';render();}
+  else if(seg==='premium'){state.view='premium';render();}
+  else if(seg==='profile'){openProfile();}
+  else {state.view='home';render();}
+}
+async function openNotifications(){
+  showModal(`<div class="card pad" style="max-height:80vh;overflow-y:auto"><div class="sk" style="height:120px"></div></div>`);
+  try{
+    const {notifications:list}=await api('/api/notifications');
+    const box=$('.modal .card');
+    if(!list.length){box.innerHTML=`<div class="row" style="justify-content:space-between;margin-bottom:8px"><h3>Уведомления</h3></div>${emptyState('Пока пусто','Здесь появятся события по вашим заказам.').outerHTML}`;return;}
+    // group by day
+    const groups={};
+    list.forEach(n=>{const d=new Date(n.createdAt);const key=d.toLocaleDateString('ru-RU',{day:'numeric',month:'long'});(groups[key]=groups[key]||[]).push(n);});
+    box.innerHTML=`<div class="row" style="justify-content:space-between;margin-bottom:14px"><h3>Уведомления</h3><button class="btn ghost sm" id="readAll">Прочитать все</button></div>
+      ${Object.entries(groups).map(([day,ns])=>`<div class="tiny muted" style="font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin:10px 0 8px">${day}</div>
+        ${ns.map(n=>`<div class="notif ${n.read?'':'unread'}" data-link="${n.deepLink}" data-id="${n.id}">
+          <div class="ni ${n.category}">${NOTIF_ICON[n.category]||I.bell}</div>
+          <div style="flex:1;min-width:0"><b style="font-size:14.5px">${n.title}</b><div class="muted tiny" style="margin-top:2px">${n.body}</div><div class="hint tiny" style="margin-top:3px">${timeAgo(n.createdAt)}</div></div>
+          ${n.read?'':'<span class="pulse" style="align-self:center"></span>'}
+        </div>`).join('')}`).join('')}`;
+    box.querySelectorAll('.notif').forEach(el=>el.onclick=async()=>{
+      try{await api('/api/notifications/'+el.dataset.id+'/read','POST',{});}catch{}
+      notifDeepLink(el.dataset.link);
+    });
+    $('#readAll',box).onclick=async()=>{try{await api('/api/notifications/read-all','POST',{});openNotifications();loadNotifBadge();}catch(e){toast(e.message,true);}};
+  }catch(e){toast(e.message,true);closeModal();}
+}
+function openNotifPrefs(){
+  const labels={marketingPush:'Акции — push',marketingEmail:'Акции — email',operationalEmail:'Письма о заказах',smartHomeReminders:'Напоминания умного дома',weeklySummary:'Еженедельная сводка',sound:'Звук',vibration:'Вибрация'};
+  const inner=el(`<div class="card pad" style="max-height:80vh;overflow-y:auto"><h3 style="margin-bottom:4px">Настройки уведомлений</h3><p class="muted tiny" style="margin-bottom:16px">Критичные уведомления о безопасности и заказах отключить нельзя.</p><div id="prefRows"><div class="sk" style="height:120px"></div></div></div>`);
+  showModalNode(inner);
+  api('/api/notification-preferences').then(({preferences})=>{
+    $('#prefRows',inner).innerHTML=Object.keys(labels).map(k=>`<label class="row" style="justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line);cursor:pointer">
+      <span style="font-size:14.5px">${labels[k]}</span>
+      <input type="checkbox" data-k="${k}" ${preferences[k]?'checked':''} style="width:20px;height:20px;accent-color:var(--primary)">
+    </label>`).join('');
+    $('#prefRows',inner).querySelectorAll('input').forEach(inp=>inp.onchange=async()=>{
+      try{await api('/api/notification-preferences','PATCH',{[inp.dataset.k]:inp.checked});toast('Сохранено');}
+      catch(e){toast(e.message,true);inp.checked=!inp.checked;}
+    });
+  }).catch(()=>{});
 }
 
 function openProfile(){
@@ -593,10 +667,12 @@ function openProfile(){
         <div class="stat"><b>${money(u.wallet||0)}</b><span class="muted tiny">Баланс</span></div>
       </div>`:''}
       ${u.role==='customer'?`<button class="btn ghost block" id="premiumBtn" style="margin-bottom:10px">${I.crown} ${u.subscription==='plus'?'Управление LUMI+':'Оформить LUMI+'}</button>`:''}
+      <button class="btn ghost block" id="prefsBtn" style="margin-bottom:10px">${I.bell} Настройки уведомлений</button>
       <button class="btn ghost block" id="logoutBtn">Выйти</button>
       <button class="btn tertiary block" id="delBtn" style="background:transparent;color:var(--danger);box-shadow:none;margin-top:6px">Удалить аккаунт</button>
     </div>`);
   const pb=$('#premiumBtn'); if(pb)pb.onclick=()=>{closeModal();state.view='premium';render();};
+  $('#prefsBtn').onclick=()=>openNotifPrefs();
   $('#logoutBtn').onclick=()=>{
     state.token=null;state.user=null;localStorage.removeItem('cg_token');
     closeModal();renderAuth();

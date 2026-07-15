@@ -1,0 +1,97 @@
+/**
+ * LUMI notification templates (15_NOTIFICATION_SYSTEM.md §16).
+ *
+ * Templates are addressed by ID (never hardcode strings §19). Each carries a
+ * category, priority, the channels it may use, a deep link, and localized
+ * title/body with {placeholders}. Only `ru` is filled here (the app UI is
+ * Russian); add `pl/en/uk` the same way — the delivery code reads by locale.
+ *
+ * Categories drive the delivery matrix + preference gating (§4/§11):
+ *   operational / account  → critical, cannot be disabled
+ *   smart_home / marketing → gated by user preferences
+ */
+'use strict';
+
+const T = {
+  'booking.created': {
+    category: 'operational', priority: 'high', channels: ['in_app', 'push'],
+    deepLink: 'lumi://booking/{bookingId}',
+    ru: { title: 'Заказ создан', body: 'Ищем исполнителя для «{service}».' },
+  },
+  'booking.accepted': {
+    category: 'operational', priority: 'high', channels: ['in_app', 'push'],
+    deepLink: 'lumi://booking/{bookingId}',
+    ru: { title: 'Исполнитель найден', body: '{provider} принял заказ и скоро приедет.' },
+  },
+  'booking.in_progress': {
+    category: 'operational', priority: 'normal', channels: ['in_app', 'push'],
+    deepLink: 'lumi://booking/{bookingId}',
+    ru: { title: 'Уборка началась', body: '{provider} приступил к работе.' },
+  },
+  'booking.completed': {
+    category: 'operational', priority: 'high', channels: ['in_app', 'push', 'email'],
+    deepLink: 'lumi://booking/{bookingId}',
+    ru: { title: 'Заказ завершён', body: '«{service}» выполнена. Пожалуйста, оцените исполнителя.' },
+  },
+  'booking.cancelled': {
+    category: 'operational', priority: 'high', channels: ['in_app', 'push'],
+    deepLink: 'lumi://booking/{bookingId}',
+    ru: { title: 'Заказ отменён', body: '«{service}» отменён.' },
+  },
+  'payment.captured': {
+    category: 'operational', priority: 'normal', channels: ['in_app', 'email'],
+    deepLink: 'lumi://wallet',
+    ru: { title: 'Оплата прошла', body: 'Списано {amount} за «{service}».' },
+  },
+  'provider.new_offer': {
+    category: 'operational', priority: 'high', channels: ['in_app', 'push'],
+    deepLink: 'lumi://provider/offer/{bookingId}',
+    ru: { title: 'Новый заказ рядом', body: '«{service}» · +{payout}' },
+  },
+  'provider.verification_approved': {
+    category: 'account', priority: 'high', channels: ['in_app', 'push', 'email'],
+    deepLink: 'lumi://profile',
+    ru: { title: 'Аккаунт подтверждён', body: 'Вы прошли проверку — можно выходить на линию.' },
+  },
+  'provider.verification_revoked': {
+    category: 'account', priority: 'high', channels: ['in_app', 'push', 'email'],
+    deepLink: 'lumi://profile',
+    ru: { title: 'Верификация отозвана', body: 'Обратитесь в поддержку для восстановления.' },
+  },
+  'review.received': {
+    category: 'operational', priority: 'normal', channels: ['in_app', 'push'],
+    deepLink: 'lumi://booking/{bookingId}',
+    ru: { title: 'Новый отзыв', body: 'Клиент оценил ваш заказ на {stars}★.' },
+  },
+  'subscription.started': {
+    category: 'account', priority: 'normal', channels: ['in_app', 'push', 'email'],
+    deepLink: 'lumi://premium',
+    ru: { title: 'LUMI+ активирован', body: 'Скидка 10% на все заказы теперь ваша.' },
+  },
+  'smart_home.recommendation': {
+    category: 'smart_home', priority: 'normal', channels: ['in_app', 'push'],
+    deepLink: 'lumi://smart-home/{propertyId}',
+    ru: { title: 'Пора обслужить дом', body: '{text}' },
+  },
+  'marketing.promo': {
+    category: 'marketing', priority: 'low', channels: ['in_app', 'push', 'email'],
+    deepLink: 'lumi://home',
+    ru: { title: '{title}', body: '{body}' },
+  },
+};
+
+function render(str, params = {}) {
+  return String(str).replace(/\{(\w+)\}/g, (_, k) => (params[k] != null ? params[k] : ''));
+}
+function getTemplate(id) { return T[id] || null; }
+function renderTemplate(id, params, locale = 'ru') {
+  const t = T[id]; if (!t) return null;
+  const loc = t[locale] || t.ru;
+  return {
+    templateId: id, category: t.category, priority: t.priority, channels: t.channels.slice(),
+    title: render(loc.title, params), body: render(loc.body, params),
+    deepLink: render(t.deepLink, params),
+  };
+}
+
+module.exports = { getTemplate, renderTemplate, TEMPLATES: T };

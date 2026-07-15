@@ -27,6 +27,7 @@ const { createAIProvider, envelope: aiEnvelope } = require('./ai/ai-provider');
 const dispatch = require('./dispatch/ranking');
 const pricing = require('./pricing/pricing-engine');
 const { createLedger } = require('./pricing/ledger');
+const { renderTemplate } = require('./notifications/templates');
 
 const PORT = process.env.PORT || 4000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -168,6 +169,7 @@ const db = {
   messages: loadJSON('messages.json', {}),   // bookingId -> [msg]
   reviews: loadJSON('reviews.json', {}),     // id -> review
   ledger: loadJSON('ledger.json', []),       // wallet/commission entries
+  notifications: loadJSON('notifications.json', {}), // userId -> [notification]
 };
 const persist = {
   users: () => saveJSON('users.json', db.users),
@@ -176,7 +178,45 @@ const persist = {
   messages: () => saveJSON('messages.json', db.messages),
   reviews: () => saveJSON('reviews.json', db.reviews),
   ledger: () => saveJSON('ledger.json', db.ledger),
+  notifications: () => saveJSON('notifications.json', db.notifications),
 };
+
+// ─────────── Notifications (15_NOTIFICATION_SYSTEM.md) ───────────
+const DEFAULT_NOTIF_PREFS = {
+  marketingPush: true, marketingEmail: false, operationalEmail: true,
+  smartHomeReminders: true, weeklySummary: true, sound: true, vibration: true,
+};
+// Resolve which channels actually fire given category + user preferences (§4/§11).
+function resolveChannels(channels, category, prefs) {
+  const p = { ...DEFAULT_NOTIF_PREFS, ...(prefs || {}) };
+  return channels.filter((ch) => {
+    if (category === 'operational' || category === 'account') return true;   // critical — cannot disable
+    if (category === 'smart_home') return p.smartHomeReminders;
+    if (category === 'marketing') return ch === 'push' ? p.marketingPush : ch === 'email' ? p.marketingEmail : true;
+    return true;
+  });
+}
+// Emit a notification: always stored in the in-app center; push/email/sms are
+// simulated deliveries in the MVP (Firebase/email provider in production §15).
+function notify(userId, templateId, params) {
+  const u = db.users[userId];
+  if (!u || u.deletedAt) return null;
+  const r = renderTemplate(templateId, params || {}, u.locale || 'ru');
+  if (!r) return null;
+  const channels = resolveChannels(r.channels, r.category, u.notifPrefs);
+  const id = uid('n_');
+  const notif = {
+    id, userId, templateId, category: r.category, priority: r.priority,
+    title: r.title, body: r.body, deepLink: r.deepLink,
+    read: false, createdAt: now(),
+    deliveries: channels.map((ch) => ({ channel: ch, status: ch === 'in_app' ? 'delivered' : 'sent', at: now() })),
+  };
+  if (!db.notifications[userId]) db.notifications[userId] = [];
+  db.notifications[userId].unshift(notif);
+  if (db.notifications[userId].length > 100) db.notifications[userId].length = 100;
+  persist.notifications();
+  return notif;
+}
 
 // Immutable, append-only financial ledger in minor units (14_PAYMENT §8).
 const ledger = createLedger({
@@ -442,6 +482,56 @@ route('POST', '/api/me/delete-request', async (req, res) => {
   persist.users();
   audit('user.deleted', user.id, user.id, {});   // append-only audit (§30)
   return send(res, 200, { ok: true });
+});
+
+// ---- Notification center + preferences (15_NOTIFICATION_SYSTEM) ----
+route('GET', '/api/notifications', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const list = (db.notifications[user.id] || []).slice(0, 50);
+  send(res, 200, { notifications: list, unreadCount: list.filter((n) => !n.read).length });
+});
+route('POST', '/api/notifications/:id/read', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const n = (db.notifications[user.id] || []).find((x) => x.id === params.id);
+  if (n) { n.read = true; persist.notifications(); }
+  send(res, 200, { ok: true });
+});
+route('POST', '/api/notifications/read-all', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  (db.notifications[user.id] || []).forEach((n) => (n.read = true));
+  persist.notifications();
+  send(res, 200, { ok: true });
+});
+route('GET', '/api/notification-preferences', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  send(res, 200, { preferences: { ...DEFAULT_NOTIF_PREFS, ...(user.notifPrefs || {}) } });
+});
+route('PATCH', '/api/notification-preferences', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const b = await readBody(req);
+  const allowed = Object.keys(DEFAULT_NOTIF_PREFS);
+  user.notifPrefs = { ...DEFAULT_NOTIF_PREFS, ...(user.notifPrefs || {}) };
+  for (const k of allowed) if (typeof b[k] === 'boolean') user.notifPrefs[k] = b[k];
+  persist.users();
+  send(res, 200, { preferences: user.notifPrefs });
+});
+// Admin broadcast — audited; targets by role/city (§17).
+route('POST', '/api/admin/notifications/broadcast', async (req, res) => {
+  const user = authUser(req);
+  if (!user || user.role !== 'admin') return send(res, 403, { error: 'Admins only.' });
+  const b = await readBody(req);
+  if (!b.title || !b.body || !b.reason) return send(res, 400, { error: 'title, body and reason are required.' });
+  const targets = Object.values(db.users).filter((u) => !u.deletedAt && u.role !== 'admin'
+    && (!b.targetRole || u.role === b.targetRole) && (!b.targetCity || u.city === b.targetCity));
+  let sent = 0;
+  for (const u of targets) if (notify(u.id, 'marketing.promo', { title: b.title, body: b.body })) sent++;
+  audit('notification.broadcast', user.id, null, { reason: b.reason, sent, targetRole: b.targetRole || null, targetCity: b.targetCity || null });
+  send(res, 200, { sent });
 });
 
 // Cleaner toggles availability
@@ -739,6 +829,7 @@ route('POST', '/api/subscribe', async (req, res) => {
   if (user.subscription === 'plus') user.premiumSince = now();
   persist.users();
   audit('subscription.' + (user.subscription === 'plus' ? 'started' : 'cancelled'), user.id, user.id, {});
+  if (user.subscription === 'plus') notify(user.id, 'subscription.started', {});
   send(res, 200, { user: publicUser(user) });
 });
 
@@ -797,6 +888,13 @@ route('POST', '/api/bookings', async (req, res) => {
   persist.bookings();
   db.messages[id] = [];
   persist.messages();
+  notify(user.id, 'booking.created', { service: booking.serviceLabel, bookingId: id });
+  // Notify online, verified cleaners of the new open job (dispatch offer).
+  for (const c of Object.values(db.users)) {
+    if (c.role === 'cleaner' && c.online && c.verified) {
+      notify(c.id, 'provider.new_offer', { service: booking.serviceLabel, payout: `${booking.payout} zł`, bookingId: id });
+    }
+  }
   return send(res, 200, { booking });
 });
 
@@ -857,6 +955,7 @@ route('POST', '/api/bookings/:id/accept', async (req, res, params) => {
   bk.timeline.push({ status: 'accepted', at: now(), by: user.id });
   persist.bookings();
   sysMessage(bk.id, `${user.name} accepted the job and is on the way.`);
+  notify(bk.customerId, 'booking.accepted', { provider: user.name, service: bk.serviceLabel, bookingId: bk.id });
   send(res, 200, { booking: enrich(bk, user) });
 });
 
@@ -879,6 +978,7 @@ route('POST', '/api/bookings/:id/status', async (req, res, params) => {
     bk.status = 'in_progress';
     bk.timeline.push({ status: 'in_progress', at: now() });
     sysMessage(bk.id, 'Cleaning started.');
+    notify(bk.customerId, 'booking.in_progress', { provider: user.name, bookingId: bk.id });
   } else if (target === 'completed') {
     if (!isCleaner) return send(res, 403, { error: 'Only the assigned cleaner can complete.' });
     if (bk.status !== 'in_progress') return send(res, 409, { error: 'Invalid transition.' });
@@ -887,6 +987,8 @@ route('POST', '/api/bookings/:id/status', async (req, res, params) => {
     bk.timeline.push({ status: 'completed', at: now() });
     settlePayment(bk);
     sysMessage(bk.id, 'Job completed. Payment released. Please leave a review!');
+    notify(bk.customerId, 'booking.completed', { service: bk.serviceLabel, bookingId: bk.id });
+    notify(bk.customerId, 'payment.captured', { amount: `${bk.price} zł`, service: bk.serviceLabel });
   } else if (target === 'cancelled') {
     if (!isCustomer && !isCleaner) return send(res, 403, { error: 'Forbidden.' });
     if (['completed', 'cancelled'].includes(bk.status)) return send(res, 409, { error: 'Cannot cancel now.' });
@@ -902,6 +1004,9 @@ route('POST', '/api/bookings/:id/status', async (req, res, params) => {
     bk.status = 'cancelled';
     bk.timeline.push({ status: 'cancelled', at: now(), by: user.id });
     sysMessage(bk.id, `Booking cancelled by ${user.name}.`);
+    // Notify the other party (customer cancels -> tell provider, and vice-versa).
+    const other = isCustomer ? bk.cleanerId : bk.customerId;
+    if (other) notify(other, 'booking.cancelled', { service: bk.serviceLabel, bookingId: bk.id });
   } else {
     return send(res, 400, { error: 'Unknown status target.' });
   }
@@ -1001,6 +1106,7 @@ route('POST', '/api/bookings/:id/review', async (req, res, params) => {
   persist.reviews();
   bk.reviewed = true;
   persist.bookings();
+  if (bk.cleanerId) notify(bk.cleanerId, 'review.received', { stars, bookingId: bk.id });
   // recompute cleaner rating
   const cleaner = db.users[bk.cleanerId];
   if (cleaner) {
@@ -1080,6 +1186,7 @@ route('POST', '/api/admin/verify-cleaner', async (req, res) => {
   persist.users();
   // High-risk admin action — audited with actor, target and reason (§28/§30).
   audit('provider.verification_' + (c.verified ? 'approved' : 'revoked'), user.id, c.id, { reason: String(b.reason || '') });
+  notify(c.id, c.verified ? 'provider.verification_approved' : 'provider.verification_revoked', {});
   send(res, 200, { user: publicUser(c) });
 });
 
