@@ -1892,7 +1892,9 @@ function seed() {
   console.log('Seeded demo accounts (password: cleango123):');
   console.log('  admin@cleango.app  •  anna@example.com (LUMI+)  •  marek@example.com  •  piotr@example.com  •  company@cleango.app');
 }
-seed();
+// Demo accounts are convenient for a preview but must not exist on a public
+// server. Set LUMI_SEED=off in production to skip seeding entirely.
+if (process.env.LUMI_SEED !== 'off') seed();
 
 server.listen(PORT, () => {
   console.log(`\n  LUMI running →  http://localhost:${PORT}\n`);
