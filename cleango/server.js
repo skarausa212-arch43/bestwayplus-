@@ -30,6 +30,7 @@ const { createLedger } = require('./pricing/ledger');
 const { renderTemplate } = require('./notifications/templates');
 const chat = require('./chat/realtime');
 const smartHome = require('./smart-home/registry');
+const rbac = require('./admin/rbac');
 
 const PORT = process.env.PORT || 4000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -383,6 +384,7 @@ function authUser(req) {
   const userId = verifyToken(token);
   const u = userId ? db.users[userId] : null;
   if (u && u.deletedAt) return null;     // revoked: deleted accounts can't act (§42)
+  if (u && u.suspended) return null;     // admin-suspended tokens are dead (18_ADMIN §4)
   return u;
 }
 
@@ -460,6 +462,8 @@ route('POST', '/api/login', async (req, res) => {
   if (!user || user.deletedAt || !verifyPassword(password, user.password)) {
     return send(res, 401, { error: 'Invalid email or password.', code: 'AUTH_INVALID' });
   }
+  // Admin-suspended accounts cannot obtain a session (18_ADMIN §4).
+  if (user.suspended) return send(res, 403, { error: 'Account suspended. Contact support.', code: 'ACCOUNT_SUSPENDED' });
   return send(res, 200, { token: signToken(user.id), user: publicUser(user) });
 });
 
@@ -543,7 +547,15 @@ route('POST', '/api/cleaner/online', async (req, res) => {
   const user = authUser(req);
   if (!user || user.role !== 'cleaner') return send(res, 403, { error: 'Cleaners only.' });
   const b = await readBody(req);
-  user.online = !!b.online;
+  // §4 presence states: offline / online / busy / break. Only `online` receives
+  // instant offers. Keep the legacy boolean in sync for dispatch eligibility.
+  if (b.status && ['offline', 'online', 'busy', 'break'].includes(b.status)) {
+    user.presence = b.status;
+    user.online = b.status === 'online';
+  } else {
+    user.online = !!b.online;
+    user.presence = user.online ? 'online' : 'offline';
+  }
   persist.users();
   return send(res, 200, { user: publicUser(user) });
 });
@@ -1345,6 +1357,192 @@ route('POST', '/api/admin/verify-cleaner', async (req, res) => {
   audit('provider.verification_' + (c.verified ? 'approved' : 'revoked'), user.id, c.id, { reason: String(b.reason || '') });
   notify(c.id, c.verified ? 'provider.verification_approved' : 'provider.verification_revoked', {});
   send(res, 200, { user: publicUser(c) });
+});
+
+// Capability guard for the admin panel (18_ADMIN §2/§20). Returns the user when
+// authorized, else writes the error response and returns null.
+function requireCap(req, res, cap) {
+  const user = authUser(req);
+  if (!user || user.role !== 'admin') { send(res, 403, { error: 'Admins only.' }); return null; }
+  if (!rbac.can(user, cap)) { send(res, 403, { error: 'Insufficient permissions.', code: 'FORBIDDEN_CAP', need: cap }); return null; }
+  return user;
+}
+// What can the signed-in admin do? Drives which panels the UI renders.
+route('GET', '/api/admin/capabilities', async (req, res) => {
+  const user = authUser(req);
+  if (!user || user.role !== 'admin') return send(res, 403, { error: 'Admins only.' });
+  const tier = user.adminRole || 'super';
+  send(res, 200, { adminRole: tier, capabilities: tier === 'super' ? rbac.CAPS : rbac.capsFor(tier) });
+});
+// §17 audit-log viewer (append-only). Reading it is itself audited.
+route('GET', '/api/admin/audit', async (req, res) => {
+  const user = requireCap(req, res, 'audit.view'); if (!user) return;
+  let lines = [];
+  try { lines = fs.readFileSync(auditFile, 'utf8').trim().split('\n').filter(Boolean); } catch {}
+  const entries = lines.slice(-200).reverse().map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+  audit('audit.viewed', user.id, null, { count: entries.length });
+  send(res, 200, { entries });
+});
+// §4 user management — list with light filtering.
+route('GET', '/api/admin/users', async (req, res) => {
+  const user = requireCap(req, res, 'users.view'); if (!user) return;
+  const url = new URL(req.url, 'http://x');
+  const role = url.searchParams.get('role');
+  const q = (url.searchParams.get('q') || '').toLowerCase();
+  let list = Object.values(db.users).filter((u) => !u.deletedAt);
+  if (role) list = list.filter((u) => u.role === role);
+  if (q) list = list.filter((u) => (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q));
+  send(res, 200, {
+    users: list.sort((a, b) => b.createdAt - a.createdAt).slice(0, 100).map((u) => ({
+      id: u.id, name: u.name, email: u.email, role: u.role, city: u.city,
+      verified: u.verified, online: u.online, suspended: !!u.suspended,
+      jobsDone: u.jobsDone || 0, rating: u.rating || null, createdAt: u.createdAt,
+    })),
+  });
+});
+// §4 suspend / reactivate (audited high-risk action §17).
+route('POST', '/api/admin/users/:id/suspend', async (req, res, params) => {
+  const admin = requireCap(req, res, 'users.suspend'); if (!admin) return;
+  const target = db.users[params.id];
+  if (!target || target.deletedAt) return send(res, 404, { error: 'User not found.' });
+  if (target.role === 'admin') return send(res, 403, { error: 'Cannot suspend an admin.' });
+  const b = await readBody(req);
+  target.suspended = true; target.online = false;
+  persist.users();
+  audit('user.suspended', admin.id, target.id, { reason: String(b.reason || '') });
+  send(res, 200, { ok: true });
+});
+route('POST', '/api/admin/users/:id/reactivate', async (req, res, params) => {
+  const admin = requireCap(req, res, 'users.suspend'); if (!admin) return;
+  const target = db.users[params.id];
+  if (!target || target.deletedAt) return send(res, 404, { error: 'User not found.' });
+  target.suspended = false;
+  persist.users();
+  audit('user.reactivated', admin.id, target.id, {});
+  send(res, 200, { ok: true });
+});
+// §6 booking management — force re-dispatch (release the provider back to search).
+route('POST', '/api/admin/bookings/:id/redispatch', async (req, res, params) => {
+  const admin = requireCap(req, res, 'bookings.manage'); if (!admin) return;
+  const bk = db.bookings[params.id];
+  if (!bk) return send(res, 404, { error: 'Booking not found.' });
+  if (!['accepted'].includes(bk.status)) return send(res, 409, { error: 'Only an accepted (not-yet-started) booking can be re-dispatched.' });
+  const prev = bk.cleanerId;
+  bk.cleanerId = null; bk.status = 'searching'; bk.updatedAt = now();
+  bk.timeline.push({ status: 'searching', at: now(), by: admin.id });
+  persist.bookings();
+  audit('booking.redispatched', admin.id, bk.id, { previousProvider: prev });
+  sysMessage(bk.id, 'Заказ переназначен оператором — ищем нового исполнителя.');
+  send(res, 200, { booking: enrich(bk, admin) });
+});
+// §6 admin-forced cancellation (audited).
+route('POST', '/api/admin/bookings/:id/cancel', async (req, res, params) => {
+  const admin = requireCap(req, res, 'bookings.manage'); if (!admin) return;
+  const bk = db.bookings[params.id];
+  if (!bk) return send(res, 404, { error: 'Booking not found.' });
+  if (['completed', 'cancelled'].includes(bk.status)) return send(res, 409, { error: 'Cannot cancel now.' });
+  const b = await readBody(req);
+  bk.status = 'cancelled'; bk.updatedAt = now();
+  bk.timeline.push({ status: 'cancelled', at: now(), by: admin.id });
+  persist.bookings();
+  audit('booking.admin_cancelled', admin.id, bk.id, { reason: String(b.reason || '') });
+  [bk.customerId, bk.cleanerId].filter(Boolean).forEach((uid) => notify(uid, 'booking.cancelled', { service: bk.serviceLabel, bookingId: bk.id }));
+  send(res, 200, { booking: enrich(bk, admin) });
+});
+
+// ───────────── Provider workspace (19_PROVIDER_APP.md) ─────────────
+// §12 earnings report — periods + breakdown. Commission is NEVER exposed (§12/§20):
+// providers only ever see payout, tips, bonuses, cancellations — never platform cut.
+route('GET', '/api/provider/earnings', async (req, res) => {
+  const user = authUser(req);
+  if (!user || user.role !== 'cleaner') return send(res, 403, { error: 'Cleaners only.' });
+  const mine = Object.values(db.bookings).filter((b) => b.cleanerId === user.id);
+  const done = mine.filter((b) => b.status === 'completed');
+  const cutoffs = { today: now() - DAY, week: now() - 7 * DAY, month: now() - 30 * DAY, year: now() - 365 * DAY };
+  const period = (since) => {
+    const jobs = done.filter((b) => b.updatedAt >= since);
+    return {
+      payout: Math.round(jobs.reduce((s, b) => s + (b.payout || 0), 0)),
+      tips: Math.round(jobs.reduce((s, b) => s + (b.tip || 0), 0)),
+      jobs: jobs.length,
+    };
+  };
+  send(res, 200, {
+    currency: CURRENCY,
+    balance: Math.round(user.wallet || 0),
+    pending: 0,
+    today: period(cutoffs.today), week: period(cutoffs.week),
+    month: period(cutoffs.month), year: period(cutoffs.year),
+    breakdown: {
+      completedJobs: done.length,
+      tips: Math.round(done.reduce((s, b) => s + (b.tip || 0), 0)),
+      bonuses: 0,
+      cancellations: mine.filter((b) => b.status === 'cancelled').length,
+    },
+  });
+});
+// §14 performance metrics (also feed dispatch internally).
+route('GET', '/api/provider/performance', async (req, res) => {
+  const user = authUser(req);
+  if (!user || user.role !== 'cleaner') return send(res, 403, { error: 'Cleaners only.' });
+  const mine = Object.values(db.bookings).filter((b) => b.cleanerId === user.id);
+  const completed = mine.filter((b) => b.status === 'completed').length;
+  const cancelled = mine.filter((b) => b.status === 'cancelled').length;
+  const total = mine.length || 1;
+  const reviews = Object.values(db.reviews).filter((r) => r.cleanerId === user.id);
+  send(res, 200, {
+    metrics: {
+      rating: user.rating || null,
+      reviews: reviews.length,
+      completionRate: Math.round((completed / total) * 100),
+      cancellations: cancelled,
+      acceptanceRate: 92,   // synthesized in MVP (no offer-decline log yet)
+      punctuality: 96,
+      jobsDone: user.jobsDone || 0,
+    },
+  });
+});
+
+// ───────────── Customer favorites & messages (20_CUSTOMER_APP.md) ─────────────
+// §11 favorite providers — toggle.
+route('POST', '/api/favorites/providers/:id', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user || user.role !== 'customer') return send(res, 403, { error: 'Customers only.' });
+  const prov = db.users[params.id];
+  if (!prov || prov.role !== 'cleaner') return send(res, 404, { error: 'Provider not found.' });
+  user.favoriteProviders = user.favoriteProviders || [];
+  const i = user.favoriteProviders.indexOf(prov.id);
+  const favorited = i < 0;
+  if (favorited) user.favoriteProviders.push(prov.id); else user.favoriteProviders.splice(i, 1);
+  persist.users();
+  send(res, 200, { favorited });
+});
+route('GET', '/api/favorites', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const ids = user.favoriteProviders || [];
+  const providers = ids.map((id) => db.users[id]).filter(Boolean).map((u) => ({ id: u.id, name: u.name, rating: u.rating || null, jobsDone: u.jobsDone || 0, online: !!u.online }));
+  send(res, 200, { providers });
+});
+// §2 Messages tab — every booking conversation the user takes part in.
+route('GET', '/api/conversations', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const mine = Object.values(db.bookings).filter((b) => b.customerId === user.id || b.cleanerId === user.id);
+  const convos = mine.map((b) => {
+    const msgs = db.messages[b.id] || [];
+    if (!msgs.length && !b.cleanerId) return null;
+    const last = msgs[msgs.length - 1] || null;
+    const other = b.customerId === user.id ? (b.cleanerId ? db.users[b.cleanerId] : null) : db.users[b.customerId];
+    return {
+      bookingId: b.id, service: b.serviceLabel, status: b.status,
+      withName: other ? other.name : 'LUMI',
+      lastText: last ? (last.type === 'image' ? '📷 Фото' : (last.text || last.body || '')) : '',
+      lastAt: last ? last.at : b.createdAt,
+      unread: chat.unreadCount(msgs, b.reads || {}, user.id),
+    };
+  }).filter(Boolean).sort((a, b) => b.lastAt - a.lastAt);
+  send(res, 200, { conversations: convos });
 });
 
 // ─────────────────────────── Static + dispatcher ───────────────────────────

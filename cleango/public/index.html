@@ -439,6 +439,8 @@ const I = {
   search:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>`,
   doc:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6Z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>`,
   share:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>`,
+  heart:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0112 5a5 5 0 019.5 7c-2.5 4.5-9.5 9-9.5 9Z"/></svg>`,
+  chart:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>`,
 };
 const CAT_ICON={cleaning:I.broom,handyman:I.wrench,electrical:I.bolt,plumbing:I.drop,garden:I.leaf,laundry:I.shirt,assembly:I.tool,windows:I.window};
 const CAT_COLOR={cleaning:'c-cleaning',windows:'c-windows',handyman:'c-assembly',electrical:'c-electrical',plumbing:'c-plumbing',garden:'c-garden',laundry:'c-laundry',assembly:'c-assembly',painting:'c-painting',sofa:'c-sofa',ironing:'c-ironing'};
@@ -563,9 +565,9 @@ function renderAuth(){
    ========================================================================= */
 function navItems(){
   const r=state.user.role;
-  if(r==='admin') return [['admin','Панель',I.admin],['bookings','Заказы',I.jobs]];
-  if(r==='cleaner') return [['jobs','Заявки',I.jobs],['bookings','Мои работы',I.book],['wallet','Кошелёк',I.wallet]];
-  return [['home','Главная',I.home],['properties','Дома',I.building],['book','Заказать',I.book],['bookings','Заказы',I.jobs],['wallet','Кошелёк',I.wallet]];
+  if(r==='admin') return [['admin','Панель',I.admin],['bookings','Заказы',I.jobs],['audit','Аудит',I.receipt]];
+  if(r==='cleaner') return [['jobs','Заявки',I.jobs],['bookings','Мои работы',I.book],['earnings','Доход',I.chart],['wallet','Кошелёк',I.wallet]];
+  return [['home','Главная',I.home],['properties','Дома',I.building],['book','Заказать',I.book],['bookings','Заказы',I.jobs],['messages','Чаты',I.send],['wallet','Кошелёк',I.wallet]];
 }
 function shell(content){
   const u=state.user;
@@ -715,7 +717,7 @@ async function loadProperties(){
 
 function render(){
   if(!state.user){ renderAuth(); return; }
-  const map={home:viewHome,properties:viewProperties,smart:viewSmart,passport:viewPassport,premium:viewPremium,book:viewBook,bookings:viewBookings,wallet:viewWallet,jobs:viewJobs,admin:viewAdmin};
+  const map={home:viewHome,properties:viewProperties,smart:viewSmart,passport:viewPassport,premium:viewPremium,book:viewBook,bookings:viewBookings,wallet:viewWallet,jobs:viewJobs,admin:viewAdmin,messages:viewMessages,earnings:viewEarnings,audit:viewAudit};
   const fn=map[state.view]||viewHome;
   fn();
 }
@@ -1478,7 +1480,7 @@ async function renderBookingDetail(id){
       ${b.cleaner?`<div class="card pad" style="margin-bottom:14px"><div class="row">
         <div class="avatar">${b.cleaner.name[0]}</div>
         <div style="flex:1"><b>${b.cleaner.name}</b><div class="tiny muted">${b.cleaner.jobsDone} ${plural(b.cleaner.jobsDone,'заказ','заказа','заказов')} · ⭐ ${b.cleaner.rating}</div></div>
-        <span class="badge green">Назначен</span></div></div>`:''}
+        ${isCustomer?`<button class="iconbtn" id="favBtn" data-fav="${b.cleanerId}" title="В избранное" style="color:${(state.user.favoriteProviders||[]).includes(b.cleanerId)?'var(--danger)':'var(--ink-3)'}">${I.heart}</button>`:'<span class="badge green">Назначен</span>'}</div></div>`:''}
 
       <div class="card pad" style="margin-bottom:14px">
         <h4 style="margin-bottom:14px">Ход выполнения</h4>
@@ -1492,6 +1494,16 @@ async function renderBookingDetail(id){
     renderPhotos(b);
     renderActions(b,{isCleaner,isCustomer,assignedToMe,canAccept});
     renderChat(b);
+    const fav=$('#favBtn');
+    if(fav)fav.onclick=async()=>{
+      try{const {favorited}=await api('/api/favorites/providers/'+fav.dataset.fav,'POST');
+        state.user.favoriteProviders=state.user.favoriteProviders||[];
+        if(favorited)state.user.favoriteProviders.push(fav.dataset.fav);
+        else state.user.favoriteProviders=state.user.favoriteProviders.filter(x=>x!==fav.dataset.fav);
+        fav.style.color=favorited?'var(--danger)':'var(--ink-3)';
+        toast(favorited?'Добавлено в избранное':'Убрано из избранного');
+      }catch(e){toast(e.message,true);}
+    };
   }catch(err){toast(err.message,true);closeModal();}
 }
 function timelineHtml(b){
@@ -1726,23 +1738,22 @@ async function viewWallet(){
 async function viewJobs(){
   const u=state.user;
   const c=el(`<div style="max-width:720px;margin:0 auto"></div>`);
+  const cur=u.presence||(u.online?'online':'offline');
+  const PRESENCE=[['online','На линии','var(--primary)'],['busy','Занят','#F2A93B'],['break','Перерыв','#8B93A7'],['offline','Не в сети','var(--line)']];
   c.appendChild(el(`<div class="card pad" style="margin-bottom:18px">
-    <div class="row"><div style="flex:1"><h3>Готовы работать?</h3><p class="muted tiny" style="margin-top:4px">${u.verified?'Включите доступность, чтобы получать заказы.':'⏳ Аккаунт на проверке у администратора.'}</p></div>
-    <label style="position:relative;display:inline-block;width:56px;height:32px">
-      <input type="checkbox" id="onlineTog" ${u.online?'checked':''} ${u.verified?'':'disabled'} style="opacity:0;width:0;height:0">
-      <span id="togTrack" style="position:absolute;inset:0;background:${u.online?'var(--primary)':'var(--line)'};border-radius:999px;transition:.2s;cursor:pointer"></span>
-      <span id="togDot" style="position:absolute;top:3px;left:${u.online?'27px':'3px'};width:26px;height:26px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 2px 6px rgba(0,0,0,.2)"></span>
-    </label></div>
+    <div style="flex:1"><h3>Статус доступности</h3><p class="muted tiny" style="margin:4px 0 12px">${u.verified?'Заказы приходят только когда вы «На линии».':'⏳ Аккаунт на проверке у администратора.'}</p></div>
+    <div class="row" id="presence" style="gap:8px;flex-wrap:wrap">
+      ${PRESENCE.map(([k,label,col])=>`<button class="btn sm ${k===cur?'':'ghost'}" data-pres="${k}" ${u.verified?'':'disabled'} style="${k===cur?`background:${col};color:${k==='offline'?'var(--ink)':'#fff'}`:''}">${label}</button>`).join('')}
+    </div>
   </div>`));
   c.appendChild(el(`<div class="section-title"><span class="pulse"></span>Доступные заказы рядом</div>`));
   const list=el(`<div class="grid" id="jobsList"></div>`);
   c.appendChild(list);
   shell(c);
-  const tog=$('#onlineTog',c);
-  if(tog)tog.onchange=async()=>{
-    try{const {user}=await api('/api/cleaner/online','POST',{online:tog.checked});state.user=user;viewJobs();}
-    catch(e){toast(e.message,true);tog.checked=!tog.checked;}
-  };
+  $('#presence',c).querySelectorAll('[data-pres]').forEach(btn=>btn.onclick=async()=>{
+    try{const {user}=await api('/api/cleaner/online','POST',{status:btn.dataset.pres});state.user=user;viewJobs();}
+    catch(e){toast(e.message,true);}
+  });
   try{
     const {bookings}=await api('/api/bookings');
     const open=bookings.filter(b=>b.status==='searching');
@@ -1786,7 +1797,7 @@ async function viewAdmin(){
         </div>
         <div class="card pad" style="overflow-x:auto">
           <h4 style="margin-bottom:14px">Недавние заказы</h4>
-          <table class="tbl"><thead><tr><th>Услуга</th><th>Город</th><th>Клиент</th><th>Статус</th><th>Итого</th><th>Комиссия</th></tr></thead><tbody id="bkBody"></tbody></table>
+          <table class="tbl"><thead><tr><th>Услуга</th><th>Город</th><th>Клиент</th><th>Статус</th><th>Итого</th><th>Комиссия</th><th>Действия</th></tr></thead><tbody id="bkBody"></tbody></table>
         </div>
       </div>`;
     const kg=$('.kpi-grid',body);stagger(kg);
@@ -1803,12 +1814,103 @@ async function viewAdmin(){
     });
     const bkBody=$('#bkBody',body);
     recent.forEach(b=>{
-      bkBody.appendChild(el(`<tr><td>${svcLabelRu(b.serviceLabel)}</td><td>${b.city}</td><td>${b.customer?.name||'—'}</td>
-        <td>${statusBadge(b.status)}</td><td><b>${money(b.price)}</b></td><td style="color:var(--primary-600)">${money(b.commission)}</td></tr>`));
+      const canRedis=b.status==='accepted';
+      const canCancel=!['completed','cancelled'].includes(b.status);
+      const tr=el(`<tr><td>${svcLabelRu(b.serviceLabel)}</td><td>${b.city}</td><td>${b.customer?.name||'—'}</td>
+        <td>${statusBadge(b.status)}</td><td><b>${money(b.price)}</b></td><td style="color:var(--primary-600)">${money(b.commission)}</td>
+        <td style="white-space:nowrap">${canRedis?`<button class="btn ghost sm" data-redis="${b.id}">Переназначить</button> `:''}${canCancel?`<button class="btn ghost sm" data-cancel="${b.id}">Отменить</button>`:'—'}</td></tr>`);
+      bkBody.appendChild(tr);
+    });
+    bkBody.querySelectorAll('[data-redis]').forEach(btn=>btn.onclick=async()=>{
+      try{await api('/api/admin/bookings/'+btn.dataset.redis+'/redispatch','POST');toast('Заказ переназначен');viewAdmin();}catch(e){toast(e.message,true);}
+    });
+    bkBody.querySelectorAll('[data-cancel]').forEach(btn=>btn.onclick=async()=>{
+      if(!confirm('Отменить этот заказ?'))return;
+      try{await api('/api/admin/bookings/'+btn.dataset.cancel+'/cancel','POST',{reason:'admin'});toast('Заказ отменён');viewAdmin();}catch(e){toast(e.message,true);}
     });
   }catch(err){toast(err.message,true);}
 }
 function kpi(ico,val,lab,bg,fg){return `<div class="card pad kpi"><div class="ico" style="background:${bg};color:${fg}">${ico}</div><b>${val}</b><div class="lab">${lab}</div></div>`;}
+
+/* ---------- CUSTOMER: MESSAGES TAB (20 §2) ---------- */
+async function viewMessages(){
+  const c=el(`<div style="max-width:640px;margin:0 auto"><div class="section-title">Сообщения</div><div id="convos"></div></div>`);
+  shell(c);
+  try{
+    const {conversations}=await api('/api/conversations');
+    const box=$('#convos',c);
+    if(!conversations.length){box.appendChild(emptyState('Пока нет диалогов','Чат появится, когда исполнитель примет ваш заказ.'));return;}
+    conversations.forEach(cv=>{
+      const row=el(`<div class="card bk" style="cursor:pointer">
+        <div class="avatar">${(cv.withName||'L')[0]}</div>
+        <div class="meta" style="min-width:0"><h4 style="display:flex;align-items:center;gap:8px">${esc(cv.withName)}${cv.unread?`<span class="notif-badge" style="position:static;display:inline-flex">${cv.unread}</span>`:''}</h4>
+          <div class="muted tiny" style="margin:3px 0 4px">${esc(svcLabelRu(cv.service))} · ${statusBadge(cv.status)}</div>
+          <div class="tiny" style="color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(cv.lastText)||'—'}</div>
+        </div>
+        <div class="muted tiny" style="align-self:flex-start">${timeAgo(cv.lastAt)}</div>
+      </div>`);
+      row.onclick=()=>openBooking(cv.bookingId);
+      box.appendChild(row);
+    });
+    stagger(box);
+  }catch(e){toast(e.message,true);}
+}
+
+/* ---------- PROVIDER: EARNINGS & PERFORMANCE (19 §12/§14) ---------- */
+async function viewEarnings(){
+  const c=el(`<div style="max-width:680px;margin:0 auto"><div class="section-title">Доход и показатели</div><div id="earnBody"><div class="card pad"><div class="sk" style="height:140px"></div></div></div></div>`);
+  shell(c);
+  try{
+    const [E,P]=await Promise.all([api('/api/provider/earnings'),api('/api/provider/performance')]);
+    const m=P.metrics;
+    const per=(t,label)=>`<div class="card pad" style="text-align:center"><b style="font-size:22px;color:var(--primary-600)">${money(t.payout)}</b><div class="tiny muted">${label}</div><div class="tiny" style="margin-top:4px">${t.jobs} ${plural(t.jobs,'заказ','заказа','заказов')}</div></div>`;
+    $('#earnBody',c).innerHTML=`
+      <div class="card pad" style="background:linear-gradient(135deg,#12B268,#14C871);color:#fff;margin-bottom:18px">
+        <div style="opacity:.85;font-size:14px">Доступно к выводу</div>
+        <div style="font-size:38px;font-weight:800;margin:4px 0">${money(E.balance)}</div>
+        <div class="tiny" style="opacity:.85">Комиссия платформы вас не касается — вы видите только свою выплату.</div>
+      </div>
+      <div class="grid" style="grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+        ${per(E.today,'Сегодня')}${per(E.week,'Неделя')}${per(E.month,'Месяц')}${per(E.year,'Год')}
+      </div>
+      <div class="section-title">Показатели</div>
+      <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px">
+        ${perfCard('Рейтинг',m.rating?('⭐ '+m.rating):'—',m.reviews+' отзыв.')}
+        ${perfCard('Завершаемость',m.completionRate+'%','')}
+        ${perfCard('Приём заказов',m.acceptanceRate+'%','')}
+        ${perfCard('Пунктуальность',m.punctuality+'%','')}
+        ${perfCard('Выполнено',m.jobsDone,'заказов')}
+        ${perfCard('Отмены',m.cancellations,'')}
+      </div>
+      <div class="card pad" style="margin-top:18px">
+        <h4 style="margin-bottom:10px">Разбивка</h4>
+        <div class="row" style="justify-content:space-between;padding:5px 0"><span class="muted">Чаевые</span><b>${money(E.breakdown.tips)}</b></div>
+        <div class="row" style="justify-content:space-between;padding:5px 0"><span class="muted">Бонусы</span><b>${money(E.breakdown.bonuses)}</b></div>
+        <div class="row" style="justify-content:space-between;padding:5px 0"><span class="muted">Отменённые заказы</span><b>${E.breakdown.cancellations}</b></div>
+      </div>`;
+  }catch(e){toast(e.message,true);}
+}
+function perfCard(label,val,sub){return `<div class="card pad" style="text-align:center"><b style="font-size:19px">${val}</b><div class="tiny muted" style="margin-top:2px">${label}</div>${sub?`<div class="tiny hint">${sub}</div>`:''}</div>`;}
+
+/* ---------- ADMIN: AUDIT LOG (18 §17) ---------- */
+const AUDIT_RU={'user.created':'Регистрация','user.deleted':'Удаление аккаунта','user.suspended':'Блокировка','user.reactivated':'Разблокировка','provider.verification_approved':'KYC одобрен','provider.verification_revoked':'KYC отозван','booking.redispatched':'Переназначение','booking.admin_cancelled':'Отмена оператором','notification.broadcast':'Рассылка','audit.viewed':'Просмотр аудита','subscription.started':'LUMI+ включён','subscription.cancelled':'LUMI+ отменён'};
+async function viewAudit(){
+  const c=el(`<div><div class="section-title">Журнал аудита <span class="badge" style="background:var(--surface-2)">append-only</span></div><div id="auditBody"><div class="card pad"><div class="sk" style="height:200px"></div></div></div></div>`);
+  shell(c);
+  try{
+    const {entries}=await api('/api/admin/audit');
+    const uname=(id)=>{const u=(state._adminUsers||{})[id];return u?u.name:(id||'—');};
+    $('#auditBody',c).innerHTML=`<div class="card pad" style="overflow-x:auto">
+      <table class="tbl"><thead><tr><th>Время</th><th>Действие</th><th>Кто</th><th>Объект</th><th>Причина</th></tr></thead>
+      <tbody>${entries.map(e=>`<tr>
+        <td class="tiny muted" style="white-space:nowrap">${fmtTime(e.at)}</td>
+        <td><b>${AUDIT_RU[e.action]||e.action}</b></td>
+        <td class="tiny">${e.actorId||'—'}</td>
+        <td class="tiny">${e.target||'—'}</td>
+        <td class="tiny muted">${esc(e.reason||'')}</td>
+      </tr>`).join('')||'<tr><td colspan="5" class="muted">Записей пока нет.</td></tr>'}</tbody></table></div>`;
+  }catch(e){toast(e.message,true);}
+}
 
 /* ---------- Shared UI ---------- */
 function emptyState(title,sub){return el(`<div class="empty">${I.jobs}<h3 style="color:var(--ink-2)">${title}</h3><p class="tiny">${sub}</p></div>`);}

@@ -48,6 +48,11 @@ Seeded automatically on first run (password: `cleango123`):
 - **Chat & realtime** — per-booking messaging (participants only) with **read receipts** (sent/delivered/read ticks), **typing indicators**, image attachments, on-demand **translation** (original never overwritten), automatic **system events** on every lifecycle step, and a **live provider-location/ETA** bar during an active job. Delivered by short-poll in the zero-dep MVP; the state model matches a socket implementation.
 - **Multi-dimensional reviews** — quality, speed, communication, professionalism; cleaner rating auto-recomputes.
 
+### Role apps
+- **Customer app** — Home, Homes, Book, Orders, a dedicated **Messages** tab (all booking chats with unread counts), Wallet; plus **favorite providers**.
+- **Provider app** — 4-state presence (**online / busy / break / offline**; only *online* receives offers), open-jobs feed, job workflow, and an **earnings & performance** screen: payout by day/week/month/year and rating, completion, acceptance, punctuality. **Platform commission is never shown to providers.**
+- **Admin panel** — **capability-based access** (support / operations / finance / kyc / marketing / admin / super) enforced per-endpoint; KYC verification, **user suspend / reactivate** (kills the session, blocks login), **booking management** (force re-dispatch, admin-cancel), an append-only **audit-log viewer**, and audited notification broadcasts. High-risk actions (impersonation) are super-only.
+
 ### Money
 - **Wallet & payouts** — cleaner earnings ledger; automatic settlement on completion.
 - **Hidden platform commission** — 20% on every completed job. Cleaners only ever see their **payout** — commission and gross price are stripped from their API responses.
@@ -72,11 +77,12 @@ cleango/
   openapi/           OpenAPI 3.1 API contract (docs/06) — lumi-api-v1.yaml + validate.sh
   chat/              Chat & realtime core (docs/16) — realtime.js + test.js
   smart-home/        Appliance registry, warranty, cost analytics (docs/17) — registry.js + test.js
+  admin/             Capability-based access model (docs/18) — rbac.js + test.js
 ```
 
 Domain logic lives in small, pure, dependency-free modules the server composes
 over the JSON store, each with a `node <dir>/test.js` self-check:
-`ai/`, `dispatch/`, `pricing/`, `notifications/`, `chat/`, `smart-home/`.
+`ai/`, `dispatch/`, `pricing/`, `notifications/`, `chat/`, `smart-home/`, `admin/`.
 
 The running app uses a JSON store as an MVP stand-in. `db/` and `openapi/` are
 the production persistence layer and API contract the platform graduates to —
@@ -113,7 +119,18 @@ Supabase/Postgres later does not change the frontend.
 | POST   | `/api/bookings/:id/messages/:mid/translate` | Translate a message |
 | POST   | `/api/bookings/:id/location`      | Cleaner posts live location/ETA |
 | POST   | `/api/bookings/:id/review`        | Multi-dimensional review       |
+| POST   | `/api/cleaner/online`             | Provider presence (online/busy/break/offline) |
+| GET    | `/api/provider/earnings`          | Earnings by period (commission hidden) |
+| GET    | `/api/provider/performance`       | Performance metrics            |
+| POST   | `/api/favorites/providers/:id`    | Toggle favorite provider       |
+| GET    | `/api/favorites`                  | Favorite providers             |
+| GET    | `/api/conversations`              | Messages tab (all chats)       |
 | GET    | `/api/admin/stats`                | Admin analytics                |
+| GET    | `/api/admin/capabilities`         | Current admin's capabilities   |
+| GET    | `/api/admin/users`                | User management list           |
+| POST   | `/api/admin/users/:id/suspend` · `/reactivate` | Suspend / reactivate (audited) |
+| POST   | `/api/admin/bookings/:id/redispatch` · `/cancel` | Booking management (audited) |
+| GET    | `/api/admin/audit`                | Append-only audit-log viewer   |
 | POST   | `/api/admin/verify-cleaner`       | KYC verification               |
 
 ## Roadmap (from the product vision)
