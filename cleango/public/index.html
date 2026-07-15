@@ -457,6 +457,59 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 /* dark-mode success/operational tints */
 :root[data-theme="dark"] .badge.green{background:var(--accent-050);color:#57e6dd}
 :root[data-theme="dark"] .notif .ni.operational{background:var(--accent-050);color:#57e6dd}
+
+/* ═══════════ HOME CONSOLE HERO (generative aurora) ═══════════ */
+.hero.console{background:linear-gradient(140deg,#13201F 0%,#0C2E31 55%,#12201A 100%);
+  animation:none;background-size:auto;min-height:280px;padding:34px 38px;
+  display:flex;align-items:center;gap:24px;color:#fff;
+  box-shadow:0 30px 70px -26px rgba(var(--glow),.5)}
+.hero.console::before{display:none}
+.hero-fx{position:absolute;inset:0;width:100%;height:100%;z-index:0;opacity:.92}
+.hero-veil{position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(102deg,rgba(6,12,13,.82) 0%,rgba(6,12,13,.5) 40%,rgba(6,12,13,.05) 72%,transparent 100%),
+             radial-gradient(120% 90% at 100% 0%,transparent 55%,rgba(6,12,13,.35))}
+.hero-body{position:relative;z-index:2;flex:1;min-width:0}
+.hero-eyebrow{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;letter-spacing:.02em;
+  color:rgba(255,255,255,.82);margin-bottom:14px;font-variant-numeric:tabular-nums}
+.hero-eyebrow .dim{color:rgba(255,255,255,.5)}
+.hero-eyebrow .live-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);
+  box-shadow:0 0 0 0 rgba(47,214,206,.6);animation:pulse2 1.8s infinite}
+.hero-h1{font-size:38px;line-height:1.03;letter-spacing:-.03em;font-weight:850;text-wrap:balance;margin:0}
+.hero-h1 .grad-text{background:linear-gradient(100deg,#FFB067,#FF7A3D 40%,#3FDCC9);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero-status{margin-top:12px;font-size:16px;color:rgba(255,255,255,.78);font-weight:500}
+.hero-chips{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap}
+.gpill{display:inline-flex;align-items:center;gap:8px;padding:11px 16px;border-radius:14px;font-weight:700;font-size:14px;
+  color:#fff;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(10px);
+  transition:transform .16s cubic-bezier(.2,.8,.3,1),background .16s,box-shadow .16s}
+.gpill svg{width:17px;height:17px}
+.gpill:hover{transform:translateY(-2px);background:rgba(255,255,255,.18)}
+.gpill.hot{background:linear-gradient(120deg,#FF8A4C,#FF6B2C);border-color:transparent;box-shadow:0 10px 24px -8px rgba(var(--glow),.7)}
+.gpill.hot:hover{box-shadow:0 16px 30px -8px rgba(var(--glow),.8)}
+/* right-side living orb */
+.hero-orb{position:relative;z-index:2;width:186px;height:186px;flex:none;display:grid;place-items:center}
+.hero-orb .orb-ring,.hero-orb .orb-conic{position:absolute;border-radius:50%;inset:0;margin:auto}
+.orb-ring{border:1.5px solid rgba(255,255,255,.14)}
+.orb-ring.r1{width:186px;height:186px;animation:orbPulse 3.4s ease-in-out infinite}
+.orb-ring.r2{width:132px;height:132px;border-color:rgba(63,220,201,.4);animation:orbPulse 3.4s ease-in-out infinite .7s}
+.orb-conic{width:170px;height:170px;border:none;
+  background:conic-gradient(from 0deg,transparent,rgba(255,122,61,.9),rgba(47,214,206,.9),transparent 65%);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2px));
+          mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2px));
+  animation:orbSpin 7s linear infinite}
+.orb-core{width:92px;height:92px;border-radius:50%;display:grid;place-items:center;
+  background:radial-gradient(120% 120% at 30% 25%,rgba(255,255,255,.16),rgba(255,255,255,.03));
+  border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(6px);box-shadow:inset 0 0 22px rgba(47,214,206,.25)}
+.orb-core svg{width:44px;height:44px;color:#fff;filter:drop-shadow(0 3px 8px rgba(0,0,0,.35))}
+.orb-tag{position:absolute;bottom:-6px;right:-4px;background:rgba(10,16,17,.72);border:1px solid rgba(255,255,255,.16);
+  border-radius:12px;padding:6px 11px;display:flex;flex-direction:column;line-height:1;backdrop-filter:blur(8px)}
+.orb-tag b{font-size:18px;font-weight:850}.orb-tag{font-size:11px;color:rgba(255,255,255,.65);font-weight:600}
+@keyframes orbPulse{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.05);opacity:.5}}
+@keyframes orbSpin{to{transform:rotate(360deg)}}
+@media(max-width:760px){
+  .hero.console{flex-direction:column;align-items:flex-start;padding:26px 22px;min-height:0}
+  .hero-h1{font-size:30px}
+  .hero-orb{display:none}
+}
 </style>
 </head>
 <body>
@@ -822,15 +875,36 @@ function viewHome(){
   const u=state.user;
   const plus=u.subscription==='plus';
   const c=el(`<div class="grid" style="gap:22px"></div>`);
+  const hh=new Date().getHours();
+  const greet=hh<5?'Доброй ночи':hh<12?'Доброе утро':hh<18?'Добрый день':'Добрый вечер';
+  const fname=u.name.split(' ')[0];
+  const homes=(state.properties||[]).length;
+  const statusLine=plus
+    ? 'LUMI+ активен — 10% на каждый заказ'
+    : (homes?`${homes} ${plural(homes,'дом','дома','домов')} на связи · всё спокойно`:'Добавьте первый дом за 30 секунд');
   c.appendChild(el(`
-    <div class="hero">
-      <div class="sparkle">${I.smart}</div>
-      <div class="badge" style="background:rgba(185,255,102,.24);color:#F0FFDA;margin-bottom:14px">${I.flash}<span>FlashClean · за 60 минут</span></div>
-      <h1>Привет, ${u.name.split(' ')[0]}! Ваш дом<br>под контролем — в одном приложении.</h1>
-      <p>Уборка сегодня, любая домашняя услуга завтра. Проверенные исполнители, честные AI-цены, отслеживание в реальном времени.</p>
-      <button class="btn" id="ctaBook" style="margin-top:20px;background:#fff;color:var(--primary-600);box-shadow:0 8px 24px rgba(0,0,0,.18)">Заказать услугу ${I.arrow}</button>
+    <div class="hero console">
+      <canvas class="hero-fx" id="heroFX"></canvas>
+      <div class="hero-veil"></div>
+      <div class="hero-body">
+        <div class="hero-eyebrow"><span class="live-dot"></span>LUMI · <span id="heroClock">—</span><span class="dim"> · ${u.city||'ваш город'}</span></div>
+        <h1 class="hero-h1">${greet},<br><span class="grad-text">${fname}</span></h1>
+        <p class="hero-status">${statusLine}</p>
+        <div class="hero-chips">
+          <button class="gpill hot" id="ctaFlash">${I.flash}<span>FlashClean · 60 мин</span></button>
+          <button class="gpill" id="ctaPlan">${I.receipt}<span>Запланировать</span></button>
+          <button class="gpill" id="ctaSmart">${I.smart}<span>Умный дом</span></button>
+        </div>
+      </div>
+      <div class="hero-orb" aria-hidden="true">
+        <span class="orb-ring r1"></span><span class="orb-ring r2"></span><span class="orb-conic"></span>
+        <span class="orb-core">${I.smart}</span>
+        <span class="orb-tag"><b>${homes}</b>${plural(homes,'дом','дома','домов')}</span>
+      </div>
     </div>`));
-  $('#ctaBook',c).onclick=()=>{startBooking('standard');};
+  $('#ctaFlash',c).onclick=()=>startBooking('standard',null,{urgency:'flash'});
+  $('#ctaPlan',c).onclick=()=>startBooking('standard');
+  $('#ctaSmart',c).onclick=()=>{ if(state.properties&&state.properties[0]){state.activeProperty=state.properties[0].id;state.view='smart';}else state.view='properties'; render(); };
 
   // LUMI+ upsell (только если нет подписки)
   if(!plus){
@@ -898,7 +972,57 @@ function viewHome(){
   $('#addHome',homesWrap).onclick=()=>openPropertyForm();
 
   shell(c);
+  const fx=document.getElementById('heroFX'); if(fx) heroAurora(fx);
+  startHeroClock();
   loadRecent(c);
+}
+// Generative aurora for the home console hero — soft coral/turquoise metaballs
+// drifting on canvas. Unique every load, self-stops when the view changes,
+// and honours prefers-reduced-motion (renders one static frame).
+function heroAurora(cv){
+  if(!cv||!cv.getContext) return;
+  const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const ctx=cv.getContext('2d');
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  let W=1,H=1;
+  function resize(){ if(!cv.isConnected)return; W=cv.width=Math.max(1,Math.round(cv.clientWidth*dpr)); H=cv.height=Math.max(1,Math.round(cv.clientHeight*dpr)); }
+  resize();
+  const cols=[[255,122,61],[18,196,190],[255,176,103],[63,220,201],[255,107,44]];
+  const blobs=Array.from({length:5},(_,i)=>({
+    x:Math.random()*W,y:Math.random()*H,
+    vx:(Math.random()*2-1)*0.22*dpr,vy:(Math.random()*2-1)*0.22*dpr,
+    r:(0.40+Math.random()*0.34)*Math.min(W,H),c:cols[i%cols.length]
+  }));
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.globalCompositeOperation='screen';
+    for(const b of blobs){
+      const g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+      g.addColorStop(0,`rgba(${b.c[0]},${b.c[1]},${b.c[2]},.5)`);
+      g.addColorStop(1,`rgba(${b.c[0]},${b.c[1]},${b.c[2]},0)`);
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,6.2832);ctx.fill();
+    }
+    ctx.globalCompositeOperation='source-over';
+  }
+  function step(){
+    if(!cv.isConnected)return;
+    for(const b of blobs){
+      b.x+=b.vx;b.y+=b.vy;
+      if(b.x<-b.r*0.5||b.x>W+b.r*0.5)b.vx*=-1;
+      if(b.y<-b.r*0.5||b.y>H+b.r*0.5)b.vy*=-1;
+    }
+    draw();requestAnimationFrame(step);
+  }
+  window.addEventListener('resize',resize,{passive:true});
+  draw();
+  if(!reduce)requestAnimationFrame(step);
+}
+function startHeroClock(){
+  const set=()=>{const e=document.getElementById('heroClock');if(!e)return false;
+    e.textContent=new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});return true;};
+  if(!set())return;
+  clearInterval(window.__heroClk);
+  window.__heroClk=setInterval(()=>{ if(!set())clearInterval(window.__heroClk); },30000);
 }
 function propertyCard(p){
   const row=el(`<div class="card bk" style="cursor:pointer">
