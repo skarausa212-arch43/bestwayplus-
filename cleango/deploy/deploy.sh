@@ -11,10 +11,13 @@ PORT="${LUMI_PORT:-4000}"
 APP_DIR=/opt/lumi
 APP_USER=lumi
 SRC="$(cd "$(dirname "$0")" && pwd)"
+# App source: bundle layout ($SRC/app) or repo layout (deploy/ inside cleango/, app is ..)
+if [ -f "$SRC/app/server.js" ]; then APP_SRC="$SRC/app";
+elif [ -f "$SRC/../server.js" ]; then APP_SRC="$(cd "$SRC/.." && pwd)";
+else echo "app not found (need app/server.js next to this script, or run from cleango/deploy)"; exit 1; fi
 
-echo "▶ LUMI deploy · domain=$DOMAIN · port=$PORT"
+echo "▶ LUMI deploy · domain=$DOMAIN · port=$PORT · src=$APP_SRC"
 [ "$(id -u)" = "0" ] || { echo "run as root: sudo bash deploy.sh"; exit 1; }
-[ -f "$SRC/app/server.js" ] || { echo "app/ not found next to deploy.sh — extract the bundle fully"; exit 1; }
 
 echo "▶ Packages (nginx, curl)…"
 export DEBIAN_FRONTEND=noninteractive
@@ -31,8 +34,9 @@ echo "  node $(node -v)"
 echo "▶ App files → $APP_DIR"
 id -u "$APP_USER" >/dev/null 2>&1 || useradd -r -m -d /home/$APP_USER -s /usr/sbin/nologin "$APP_USER"
 mkdir -p "$APP_DIR"
-# preserve the data dir (JSON store) across re-deploys
-rsync -a --delete --exclude data "$SRC/app/." "$APP_DIR/" 2>/dev/null || cp -r "$SRC/app/." "$APP_DIR/"
+# copy app (preserve the data dir / JSON store across re-deploys)
+find "$APP_SRC" -mindepth 1 -maxdepth 1 ! -name data ! -name .git ! -name node_modules \
+  -exec cp -r {} "$APP_DIR/" \;
 mkdir -p "$APP_DIR/data"
 chown -R "$APP_USER:$APP_USER" "$APP_DIR"
 
