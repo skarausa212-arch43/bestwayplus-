@@ -477,6 +477,41 @@ route('GET', '/api/me', async (req, res) => {
   return send(res, 200, { user: publicUser(user) });
 });
 
+// Editable profile bits. Images arrive as (client-downscaled) data URLs.
+function validImage(s, maxLen) {
+  return typeof s === 'string' && s.startsWith('data:image/') && s.length <= maxLen;
+}
+route('PATCH', '/api/me', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const b = await readBody(req);
+  if (typeof b.bio === 'string') user.bio = b.bio.slice(0, 280);
+  if (b.experienceYears != null) user.experienceYears = Math.max(0, Math.min(50, Number(b.experienceYears) || 0));
+  if (typeof b.name === 'string' && b.name.trim()) user.name = b.name.trim().slice(0, 60);
+  persist.users();
+  send(res, 200, { user: publicUser(user) });
+});
+route('POST', '/api/me/avatar', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const b = await readBody(req);
+  if (b.clear) { delete user.avatar; persist.users(); return send(res, 200, { user: publicUser(user) }); }
+  if (!validImage(b.image, 800000)) return send(res, 400, { error: 'Загрузите изображение (до ~0.6 МБ).' });
+  user.avatar = b.image;
+  persist.users();
+  send(res, 200, { user: publicUser(user) });
+});
+route('POST', '/api/me/banner', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const b = await readBody(req);
+  if (b.clear) { delete user.banner; persist.users(); return send(res, 200, { user: publicUser(user) }); }
+  if (!validImage(b.image, 2000000)) return send(res, 400, { error: 'Загрузите изображение (до ~1.5 МБ).' });
+  user.banner = b.image;
+  persist.users();
+  send(res, 200, { user: publicUser(user) });
+});
+
 // GDPR account deletion request (§42): re-auth via valid session, anonymize PII,
 // keep the id for financial records, revoke the session by flagging deletedAt.
 route('POST', '/api/me/delete-request', async (req, res) => {
@@ -1000,6 +1035,17 @@ route('GET', '/api/bookings/:id', async (req, res, params) => {
   send(res, 200, { booking: enrich(bk, user) });
 });
 
+// Public profile of a cleaner (safe to show to customers picking one).
+function cleanerPublic(u) {
+  if (!u) return null;
+  return {
+    id: u.id, name: u.name, avatar: u.avatar || null,
+    rating: u.rating || null, jobsDone: u.jobsDone || 0, city: u.city || null,
+    bio: u.bio || '', experienceYears: u.experienceYears || null,
+    online: !!u.online, verified: !!u.verified,
+  };
+}
+
 function enrich(bk, viewer) {
   const customer = db.users[bk.customerId];
   const cleaner = bk.cleanerId ? db.users[bk.cleanerId] : null;
@@ -1008,8 +1054,20 @@ function enrich(bk, viewer) {
     ...bk,
     propertyLabel: prop ? prop.label : null,
     customer: customer ? { id: customer.id, name: customer.name, city: customer.city } : null,
-    cleaner: cleaner ? { id: cleaner.id, name: cleaner.name, rating: cleaner.rating, jobsDone: cleaner.jobsDone } : null,
+    cleaner: cleaner ? { id: cleaner.id, name: cleaner.name, rating: cleaner.rating, jobsDone: cleaner.jobsDone, avatar: cleaner.avatar || null } : null,
   };
+  // Choosing among responders is a LUMI+ perk (customer picks who cleans).
+  const respIds = bk.responders || [];
+  if (viewer) {
+    const isOwner = viewer.id === bk.customerId;
+    const customerPlus = customer && customer.subscription === 'plus';
+    if (isOwner) {
+      out.responderCount = respIds.length;
+      out.canChoose = !!customerPlus;               // gated by subscription
+      if (customerPlus) out.responders = respIds.map((id) => cleanerPublic(db.users[id])).filter(Boolean);
+    }
+    if (viewer.role === 'cleaner') out.respondedByMe = respIds.includes(viewer.id);
+  }
   // Cleaners never see the platform commission — they only see their payout.
   if (viewer && viewer.role === 'cleaner') {
     delete out.commission;
@@ -1022,7 +1080,8 @@ function enrich(bk, viewer) {
   return out;
 }
 
-// Cleaner accepts an open job
+// Cleaner responds to an open job. Free customers get the first responder
+// auto-assigned (as before); LUMI+ customers collect responders and choose.
 route('POST', '/api/bookings/:id/accept', async (req, res, params) => {
   const user = authUser(req);
   if (!user || user.role !== 'cleaner') return send(res, 403, { error: 'Cleaners only.' });
@@ -1030,14 +1089,62 @@ route('POST', '/api/bookings/:id/accept', async (req, res, params) => {
   const bk = db.bookings[params.id];
   if (!bk) return send(res, 404, { error: 'Booking not found.' });
   if (bk.status !== 'searching') return send(res, 409, { error: 'This job is no longer available.' });
-  bk.cleanerId = user.id;
+  bk.responders = bk.responders || [];
+  if (!bk.responders.includes(user.id)) bk.responders.push(user.id);
+  const customer = db.users[bk.customerId];
+  const customerPlus = customer && customer.subscription === 'plus';
+  if (!customerPlus) {
+    // Free: first responder wins, assigned immediately.
+    bk.cleanerId = user.id;
+    bk.status = 'accepted';
+    bk.updatedAt = now();
+    bk.timeline.push({ status: 'accepted', at: now(), by: user.id });
+    persist.bookings();
+    sysMessage(bk.id, `${user.name} принял заказ и скоро приедет.`);
+    notify(bk.customerId, 'booking.accepted', { provider: user.name, service: bk.serviceLabel, bookingId: bk.id });
+    return send(res, 200, { booking: enrich(bk, user), assigned: true });
+  }
+  // LUMI+: accumulate offers, let the customer pick. Cleaner waits.
+  bk.updatedAt = now();
+  persist.bookings();
+  notify(bk.customerId, 'booking.responder', { service: bk.serviceLabel, bookingId: bk.id });
+  send(res, 200, { booking: enrich(bk, user), assigned: false, responded: true });
+});
+
+// Customer (LUMI+) chooses one of the responders.
+route('POST', '/api/bookings/:id/choose', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user || user.role !== 'customer') return send(res, 403, { error: 'Customers only.' });
+  const bk = db.bookings[params.id];
+  if (!bk || bk.customerId !== user.id) return send(res, 403, { error: 'Forbidden.' });
+  if (user.subscription !== 'plus') return send(res, 402, { error: 'Выбор исполнителя доступен в LUMI+.', code: 'NEEDS_PLUS' });
+  if (bk.status !== 'searching') return send(res, 409, { error: 'Заказ уже назначен.' });
+  const b = await readBody(req);
+  const chosen = db.users[b.cleanerId];
+  if (!chosen || chosen.role !== 'cleaner' || !(bk.responders || []).includes(chosen.id)) {
+    return send(res, 400, { error: 'Выберите одного из откликнувшихся исполнителей.' });
+  }
+  bk.cleanerId = chosen.id;
   bk.status = 'accepted';
   bk.updatedAt = now();
   bk.timeline.push({ status: 'accepted', at: now(), by: user.id });
   persist.bookings();
-  sysMessage(bk.id, `${user.name} accepted the job and is on the way.`);
-  notify(bk.customerId, 'booking.accepted', { provider: user.name, service: bk.serviceLabel, bookingId: bk.id });
+  sysMessage(bk.id, `${user.name} выбрал(а) исполнителя: ${chosen.name}.`);
+  notify(chosen.id, 'provider.chosen', { service: bk.serviceLabel, bookingId: bk.id });
+  (bk.responders || []).filter((id) => id !== chosen.id).forEach((id) => notify(id, 'provider.not_chosen', { service: bk.serviceLabel, bookingId: bk.id }));
   send(res, 200, { booking: enrich(bk, user) });
+});
+
+// Cleaner public profile + recent reviews (for a customer picking one).
+route('GET', '/api/cleaners/:id/profile', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const c = db.users[params.id];
+  if (!c || c.role !== 'cleaner') return send(res, 404, { error: 'Not found.' });
+  const reviews = Object.values(db.reviews).filter((r) => r.cleanerId === c.id)
+    .sort((a, b) => b.at - a.at).slice(0, 6)
+    .map((r) => ({ stars: r.stars, text: r.text, at: r.at }));
+  send(res, 200, { profile: { ...cleanerPublic(c), reviews } });
 });
 
 // Lifecycle transitions: start -> photos_before -> complete
@@ -1880,8 +1987,10 @@ function seed() {
   mk('admin', 'LUMI Admin', 'admin@cleango.app');
   const annaId = mk('customer', 'Anna Nowak', 'anna@example.com', { subscription: 'plus', premiumSince: now() });
   mk('customer', 'Marek Wiśniewski', 'marek@example.com', { city: 'Kraków' });
-  const piotrId = mk('cleaner', 'Piotr Kowalski', 'piotr@example.com', { jobsDone: 128, rating: 4.9 });
-  const zofiaId = mk('cleaner', 'Zofia Lewandowska', 'zofia@example.com', { jobsDone: 64, rating: 4.8 });
+  const piotrId = mk('cleaner', 'Piotr Kowalski', 'piotr@example.com', { jobsDone: 128, rating: 4.9, experienceYears: 5, bio: 'Аккуратная уборка квартир и офисов. Свои эко-средства, пунктуальность.' });
+  const zofiaId = mk('cleaner', 'Zofia Lewandowska', 'zofia@example.com', { jobsDone: 64, rating: 4.8, experienceYears: 3, bio: 'Люблю, когда дом сияет. Генеральная уборка и окна — моя специализация.' });
+  mk('cleaner', 'Marta Nowak', 'marta@example.com', { jobsDone: 210, rating: 4.9, experienceYears: 7, bio: 'Более 200 заказов. Уборка после ремонта и переезда, работа с деликатными поверхностями.' });
+  mk('cleaner', 'Kamil Zieliński', 'kamil@example.com', { jobsDone: 39, rating: 4.7, experienceYears: 2, bio: 'Быстро и честно. Регулярная уборка и мытьё окон.' });
   // A demo cleaning company employing two of the cleaners (21_COMPANY_DASHBOARD).
   const coId = mk('company', 'SparkClean Sp. z o.o.', 'company@cleango.app', { staff: [piotrId, zofiaId] });
   db.users[piotrId].companyId = coId; db.users[zofiaId].companyId = coId;

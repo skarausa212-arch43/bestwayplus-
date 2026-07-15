@@ -558,6 +558,21 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
   .auth-mobilemark{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:24px;font-size:26px;font-weight:850;letter-spacing:-.03em}
   .auth-mobilemark .logo-badge svg{width:52px;height:52px}
 }
+
+/* ═══════════ avatars, custom banner, profile edit ═══════════ */
+.avatar{background-repeat:no-repeat;overflow:hidden}
+/* custom hero banner photo */
+.hero-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+.hero.console.has-photo .hero-veil{background:linear-gradient(100deg,rgba(6,12,13,.86),rgba(6,12,13,.55) 46%,rgba(6,12,13,.28) 78%,rgba(6,12,13,.15))}
+.hero-editbanner{position:absolute;top:14px;right:14px;z-index:3;width:38px;height:38px;border-radius:11px;display:grid;place-items:center;
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.24);color:#fff;backdrop-filter:blur(8px);transition:transform .15s,background .15s}
+.hero-editbanner:hover{transform:translateY(-2px);background:rgba(255,255,255,.24)}
+.hero-editbanner svg{width:18px;height:18px}
+/* profile avatar with camera overlay */
+.avatar-edit{position:relative;border-radius:50%;background:linear-gradient(135deg,#FFA24C,#EF5F1E);color:#fff;display:grid;place-items:center;font-weight:700;cursor:pointer;overflow:hidden;flex:none;background-repeat:no-repeat}
+.avatar-edit .ava-cam{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.42);opacity:0;transition:opacity .15s}
+.avatar-edit .ava-cam svg{width:20px;height:20px;color:#fff}
+.avatar-edit:hover .ava-cam{opacity:1}
 </style>
 </head>
 <body>
@@ -704,6 +719,84 @@ function logoBadge(id){return `<div class="logo-badge"><svg viewBox="0 0 96 96" 
   <path class="lb-spark" d="M67 25 l2.3 5.2 5.2 2.3 -5.2 2.3 L67 40 l-2.3 -5.2 -5.2 -2.3 5.2 -2.3 Z" fill="#F1FFFD"/>
 </svg></div>`;}
 
+/* ---------- avatar / image upload helpers ---------- */
+function avatarStyle(av){return av?`background-image:url('${av}');background-size:cover;background-position:center`:'';}
+function avatarEl(u,size){
+  const av=u&&u.avatar; const ini=((u&&u.name?u.name[0]:'?')||'?').toUpperCase();
+  const sz=size?`width:${size}px;height:${size}px;font-size:${Math.round(size*0.4)}px;`:'';
+  return `<span class="avatar" style="${sz}${avatarStyle(av)}">${av?'':ini}</span>`;
+}
+function pickImage(cb,max,q){
+  const inp=el('<input type="file" accept="image/*" style="display:none">');document.body.appendChild(inp);
+  inp.onchange=async()=>{const f=inp.files[0];if(!f){inp.remove();return;}
+    try{const dataUrl=await downscale(f,max,q);await cb(dataUrl);}catch(e){toast(e.message||'Не удалось загрузить',true);}
+    inp.remove();};
+  inp.click();
+}
+async function refreshMe(){try{const {user}=await api('/api/me');state.user=user;}catch{}}
+function uploadAvatar(){pickImage(async(img)=>{await api('/api/me/avatar','POST',{image:img});await refreshMe();toast('Фото профиля обновлено');render();},320,0.82);}
+function uploadBanner(){pickImage(async(img)=>{await api('/api/me/banner','POST',{image:img});await refreshMe();toast('Баннер обновлён');render();},1400,0.72);}
+
+/* ---------- cleaner profile + choose ---------- */
+async function openCleanerProfile(id,bookingId){
+  showModal(`<div class="card pad"><div class="sk" style="height:220px"></div></div>`);
+  try{
+    const {profile:p}=await api('/api/cleaners/'+id+'/profile');
+    const inner=$('.modal .card')||$('.modal');
+    inner.innerHTML=`
+      <div class="row" style="gap:14px;margin-bottom:14px">
+        ${avatarEl(p,64)}
+        <div style="flex:1"><h3 style="display:flex;align-items:center;gap:6px">${esc(p.name)}${p.verified?`<span style="color:var(--accent-600);display:inline-flex">${I.check}</span>`:''}</h3>
+          <div class="tiny muted" style="margin-top:3px">⭐ ${p.rating||'—'} · ${p.jobsDone} ${plural(p.jobsDone,'заказ','заказа','заказов')}${p.experienceYears?` · ${p.experienceYears} ${plural(p.experienceYears,'год','года','лет')} опыта`:''}${p.city?` · ${p.city}`:''}</div>
+        </div>
+        ${p.online?'<span class="badge green">Свободен сегодня</span>':''}
+      </div>
+      ${p.bio?`<p class="muted" style="font-size:14.5px;line-height:1.5;margin-bottom:14px">${esc(p.bio)}</p>`:''}
+      ${p.reviews.length?`<div class="section-title" style="font-size:16px;margin-bottom:10px">Отзывы</div>${p.reviews.map(r=>`<div class="card pad" style="background:var(--surface-2);margin-bottom:8px"><div class="row" style="justify-content:space-between"><b>${'★'.repeat(Math.round(r.stars))}<span class="muted tiny" style="margin-left:6px">${r.stars}</span></b><span class="tiny muted">${timeAgo(r.at)}</span></div>${r.text?`<p class="tiny" style="margin-top:6px;line-height:1.5">${esc(r.text)}</p>`:''}</div>`).join('')}`:'<p class="tiny muted">Пока нет отзывов.</p>'}
+      ${bookingId?`<button class="btn block" id="chooseFromProfile" style="margin-top:14px">Выбрать этого исполнителя ${I.check}</button>`:''}`;
+    const cb=$('#chooseFromProfile'); if(cb)cb.onclick=()=>chooseCleaner(bookingId,id);
+  }catch(e){toast(e.message,true);closeModal();}
+}
+async function chooseCleaner(bookingId,cleanerId){
+  try{await api('/api/bookings/'+bookingId+'/choose','POST',{cleanerId});
+    confetti();toast('Исполнитель выбран!');closeModal();renderBookingDetail(bookingId);
+  }catch(e){
+    if(/LUMI\+/.test(e.message||'')){toast('Выбор исполнителя доступен в LUMI+');closeModal();state.view='premium';render();}
+    else toast(e.message,true);
+  }
+}
+function renderResponders(b){
+  const z=$('#respZone'); if(!z){return;}
+  if(state.user.role!=='customer' || b.customerId!==state.user.id || b.status!=='searching'){z.innerHTML='';return;}
+  const n=b.responderCount||0;
+  if(!n){z.innerHTML=`<div class="card pad" style="margin-bottom:14px;text-align:center"><div class="dots" style="justify-content:center;color:var(--primary)"><i></i><i></i><i></i></div><div class="muted tiny" style="margin-top:8px">Ищем исполнителей рядом…</div></div>`;return;}
+  if(!b.canChoose){
+    z.innerHTML=`<div class="card pad" style="margin-bottom:14px;border:1.5px solid var(--primary)">
+      <div class="row" style="gap:10px"><span style="font-size:22px">👑</span><div style="flex:1"><b>${n} ${plural(n,'исполнитель откликнулся','исполнителя откликнулись','исполнителей откликнулись')}</b><div class="tiny muted" style="margin-top:2px">Выбор конкретного исполнителя доступен в LUMI+.</div></div></div>
+      <button class="btn block" id="respUpsell" style="margin-top:12px">Открыть в LUMI+ ${I.crown}</button></div>`;
+    const u=$('#respUpsell',z); if(u)u.onclick=()=>{closeModal();state.view='premium';render();};
+    return;
+  }
+  z.innerHTML=`<div class="card pad" style="margin-bottom:14px">
+    <div class="row" style="justify-content:space-between;margin-bottom:12px"><b>Откликнулись · выберите исполнителя</b><span class="badge green">${n}</span></div>
+    <div class="grid" id="respList" style="gap:10px"></div></div>`;
+  const list=$('#respList',z);
+  (b.responders||[]).forEach(c=>{
+    const row=el(`<div class="card bk" style="cursor:default">
+      ${avatarEl(c,44)}
+      <div class="meta" style="min-width:0"><h4 style="display:flex;align-items:center;gap:5px">${esc(c.name)}${c.verified?`<span style="color:var(--accent-600);display:inline-flex">${I.check}</span>`:''}</h4>
+        <div class="muted tiny" style="margin:3px 0">⭐ ${c.rating||'—'} · ${c.jobsDone} ${plural(c.jobsDone,'заказ','заказа','заказов')}${c.experienceYears?` · ${c.experienceYears} ${plural(c.experienceYears,'год','года','лет')}`:''}</div>
+        ${c.online?'<span class="badge green">Свободен сегодня</span>':''}</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button class="btn sm" data-choose="${c.id}">Выбрать</button>
+        <button class="btn ghost sm" data-prof="${c.id}">Профиль</button></div>
+    </div>`);
+    list.appendChild(row);
+  });
+  list.querySelectorAll('[data-choose]').forEach(x=>x.onclick=()=>chooseCleaner(b.id,x.dataset.choose));
+  list.querySelectorAll('[data-prof]').forEach(x=>x.onclick=()=>openCleanerProfile(x.dataset.prof,b.id));
+}
+
 function renderAuth(){
   let mode='login', role='customer';
   const root=$('#root');
@@ -809,7 +902,7 @@ function shell(content){
       <div class="spacer"></div>
       <button class="iconbtn" id="themeBtn" title="Тема">${isDark()?I.sun:I.moon}</button>
       <button class="iconbtn" id="bellBtn" title="Уведомления" style="position:relative">${I.bell}<span id="bellBadge" class="notif-badge" style="display:none"></span></button>
-      <button class="avatar" id="meBtn" title="${u.name}">${u.name[0].toUpperCase()}</button>
+      <button class="avatar" id="meBtn" title="${u.name}" style="${avatarStyle(u.avatar)}">${u.avatar?'':u.name[0].toUpperCase()}</button>
     </div>
     <div class="main"><div class="content view-enter"></div></div>
     <div class="tabbar"></div>
@@ -896,9 +989,9 @@ function openProfile(){
   showModal(`
     <div class="card pad">
       <div class="row" style="margin-bottom:16px">
-        <div class="avatar" style="width:56px;height:56px;font-size:22px">${u.name[0].toUpperCase()}</div>
-        <div><h3>${u.name}</h3><p class="muted tiny">${u.email}</p>
-        <div class="row" style="gap:6px;margin-top:6px">
+        <div class="avatar-edit" id="avaEdit" title="Сменить фото" style="width:60px;height:60px;font-size:24px;${avatarStyle(u.avatar)}">${u.avatar?'':u.name[0].toUpperCase()}<span class="ava-cam">${I.cam}</span></div>
+        <div style="flex:1"><h3>${esc(u.name)}</h3><p class="muted tiny">${u.email}</p>
+        <div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap">
           <span class="badge grey">${ROLE_RU[u.role]||u.role}${u.role==='cleaner'?(u.verified?' · проверен':' · на проверке'):''}</span>
           ${u.subscription==='plus'?`<span class="badge green">${I.crown}LUMI+</span>`:''}
           ${u.city?`<span class="badge grey">${u.city}</span>`:''}
@@ -908,12 +1001,21 @@ function openProfile(){
         <div class="stat"><b>${u.rating||'5.0'} ${I.star}</b><span class="muted tiny">Рейтинг</span></div>
         <div class="stat"><b>${u.jobsDone||0}</b><span class="muted tiny">Заказов</span></div>
         <div class="stat"><b>${money(u.wallet||0)}</b><span class="muted tiny">Баланс</span></div>
-      </div>`:''}
+      </div>
+      <label class="field"><span>О себе (видно клиентам)</span><textarea class="input" id="bioInput" maxlength="280" placeholder="Например: аккуратная уборка, свои эко-средства…">${esc(u.bio||'')}</textarea></label>
+      <button class="btn ghost block" id="saveBio" style="margin-bottom:10px">Сохранить профиль</button>`:''}
+      <button class="btn ghost block" id="avaBtn" style="margin-bottom:10px">${I.cam} Загрузить фото профиля</button>
+      ${u.role==='customer'?`<button class="btn ghost block" id="bannerBtn" style="margin-bottom:10px">${I.cam} ${u.banner?'Сменить баннер':'Загрузить баннер'}</button>${u.banner?`<button class="btn ghost block" id="bannerClr" style="margin-bottom:10px;color:var(--danger)">Убрать баннер</button>`:''}`:''}
       ${u.role==='customer'?`<button class="btn ghost block" id="premiumBtn" style="margin-bottom:10px">${I.crown} ${u.subscription==='plus'?'Управление LUMI+':'Оформить LUMI+'}</button>`:''}
       <button class="btn ghost block" id="prefsBtn" style="margin-bottom:10px">${I.bell} Настройки уведомлений</button>
       <button class="btn ghost block" id="logoutBtn">Выйти</button>
       <button class="btn tertiary block" id="delBtn" style="background:transparent;color:var(--danger);box-shadow:none;margin-top:6px">Удалить аккаунт</button>
     </div>`);
+  const bindC=(id,fn)=>{const e=$('#'+id);if(e)e.onclick=fn;};
+  bindC('avaEdit',uploadAvatar); bindC('avaBtn',uploadAvatar);
+  bindC('bannerBtn',uploadBanner);
+  bindC('bannerClr',async()=>{try{await api('/api/me/banner','POST',{clear:true});await refreshMe();toast('Баннер убран');closeModal();render();}catch(e){toast(e.message,true);}});
+  bindC('saveBio',async()=>{try{await api('/api/me','PATCH',{bio:$('#bioInput').value});await refreshMe();toast('Профиль сохранён');}catch(e){toast(e.message,true);}});
   const pb=$('#premiumBtn'); if(pb)pb.onclick=()=>{closeModal();state.view='premium';render();};
   $('#prefsBtn').onclick=()=>openNotifPrefs();
   $('#logoutBtn').onclick=()=>{
@@ -964,9 +1066,10 @@ function viewHome(){
     ? 'LUMI+ активен — 10% на каждый заказ'
     : (homes?`${homes} ${plural(homes,'дом','дома','домов')} на связи · всё спокойно`:'Добавьте первый дом за 30 секунд');
   c.appendChild(el(`
-    <div class="hero console">
-      <canvas class="hero-fx" id="heroFX"></canvas>
+    <div class="hero console ${u.banner?'has-photo':''}">
+      ${u.banner?`<img class="hero-photo" src="${u.banner}" alt="">`:`<canvas class="hero-fx" id="heroFX"></canvas>`}
       <div class="hero-veil"></div>
+      <button class="hero-editbanner" id="heroBanner" title="${u.banner?'Сменить баннер':'Загрузить свой баннер'}">${I.cam}</button>
       <div class="hero-body">
         <div class="hero-eyebrow"><span class="live-dot"></span>LUMI · <span id="heroClock">—</span><span class="dim"> · ${u.city||'ваш город'}</span></div>
         <h1 class="hero-h1">${greet},<br><span class="grad-text">${fname}</span></h1>
@@ -1054,6 +1157,7 @@ function viewHome(){
 
   shell(c);
   const fx=document.getElementById('heroFX'); if(fx) heroAurora(fx);
+  const hb=document.getElementById('heroBanner'); if(hb) hb.onclick=uploadBanner;
   startHeroClock();
   loadRecent(c);
 }
@@ -1783,9 +1887,11 @@ async function renderBookingDetail(id){
       </div>
 
       ${b.cleaner?`<div class="card pad" style="margin-bottom:14px"><div class="row">
-        <div class="avatar">${b.cleaner.name[0]}</div>
-        <div style="flex:1"><b>${b.cleaner.name}</b><div class="tiny muted">${b.cleaner.jobsDone} ${plural(b.cleaner.jobsDone,'заказ','заказа','заказов')} · ⭐ ${b.cleaner.rating}</div></div>
-        ${isCustomer?`<button class="iconbtn" id="favBtn" data-fav="${b.cleanerId}" title="В избранное" style="color:${(state.user.favoriteProviders||[]).includes(b.cleanerId)?'var(--danger)':'var(--ink-3)'}">${I.heart}</button>`:'<span class="badge green">Назначен</span>'}</div></div>`:''}
+        ${avatarEl(b.cleaner,44)}
+        <div style="flex:1"><b>${esc(b.cleaner.name)}</b><div class="tiny muted">${b.cleaner.jobsDone} ${plural(b.cleaner.jobsDone,'заказ','заказа','заказов')} · ⭐ ${b.cleaner.rating||'—'}</div></div>
+        ${isCustomer?`<button class="iconbtn" data-prof="${b.cleanerId}" title="Профиль">${I.users}</button><button class="iconbtn" id="favBtn" data-fav="${b.cleanerId}" title="В избранное" style="color:${(state.user.favoriteProviders||[]).includes(b.cleanerId)?'var(--danger)':'var(--ink-3)'}">${I.heart}</button>`:'<span class="badge green">Назначен</span>'}</div></div>`:''}
+
+      <div id="respZone"></div>
 
       <div class="card pad" style="margin-bottom:14px">
         <h4 style="margin-bottom:14px">Ход выполнения</h4>
@@ -1796,9 +1902,11 @@ async function renderBookingDetail(id){
       <div id="actionZone" style="margin:14px 0"></div>
       <div id="chatZone"></div>
     `;
+    renderResponders(b);
     renderPhotos(b);
     renderActions(b,{isCleaner,isCustomer,assignedToMe,canAccept});
     renderChat(b);
+    const pf=$('[data-prof]'); if(pf)pf.onclick=()=>openCleanerProfile(pf.dataset.prof);
     const fav=$('#favBtn');
     if(fav)fav.onclick=async()=>{
       try{const {favorited}=await api('/api/favorites/providers/'+fav.dataset.fav,'POST');
@@ -1841,7 +1949,11 @@ function renderActions(b,ctx){
   const {isCleaner,isCustomer,assignedToMe,canAccept}=ctx;
   let html='';
   if(canAccept){
-    html=`<button class="btn block" id="acceptBtn">Принять заказ · +${money(b.payout)} ${I.check}</button>`;
+    if(b.respondedByMe){
+      html=`<div class="card pad" style="text-align:center;background:var(--surface-2)"><div class="dots" style="justify-content:center;color:var(--primary)"><i></i><i></i><i></i></div><div class="muted tiny" style="margin-top:8px">Вы откликнулись — ждём выбора клиента.</div></div>`;
+    } else {
+      html=`<button class="btn block" id="acceptBtn">Откликнуться · +${money(b.payout)} ${I.check}</button>`;
+    }
   } else if(assignedToMe && b.status==='accepted'){
     html=`<div class="uploadbox" id="upBefore">${I.cam}<div style="margin-top:8px;font-weight:600">Загрузить фото «до»${b.photosBefore.length?` (${b.photosBefore.length})`:''}</div></div>
       <button class="btn block" id="startBtn" style="margin-top:12px" ${b.photosBefore.length?'':'disabled'}>Начать уборку ${I.arrow}</button>`;
@@ -1858,7 +1970,10 @@ function renderActions(b,ctx){
   }
   z.innerHTML=html;
   const bind=(id,fn)=>{const e=$('#'+id);if(e)e.onclick=fn;};
-  bind('acceptBtn',async()=>{try{await api('/api/bookings/'+b.id+'/accept','POST');confetti();toast('Заказ принят!');renderBookingDetail(b.id);}catch(e){toast(e.message,true);}});
+  bind('acceptBtn',async()=>{try{const r=await api('/api/bookings/'+b.id+'/accept','POST');
+    if(r.assigned){confetti();toast('Заказ ваш!');}else{toast('Отклик отправлен — ждём выбора клиента');}
+    renderBookingDetail(b.id);
+  }catch(e){toast(e.message,true);}});
   bind('startBtn',()=>transition(b.id,'in_progress'));
   bind('completeBtn',()=>transition(b.id,'completed'));
   bind('cancelBtn',()=>transition(b.id,'cancelled'));

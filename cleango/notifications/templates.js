@@ -43,6 +43,21 @@ const T = {
     deepLink: 'lumi://wallet',
     ru: { title: 'Оплата прошла', body: 'Списано {amount} за «{service}».' },
   },
+  'booking.responder': {
+    category: 'operational', priority: 'normal', channels: ['in_app', 'push'],
+    deepLink: 'lumi://booking/{bookingId}',
+    ru: { title: 'Новый отклик', body: 'Исполнитель откликнулся на «{service}». Выберите, кто выполнит заказ.' },
+  },
+  'provider.chosen': {
+    category: 'operational', priority: 'high', channels: ['in_app', 'push'],
+    deepLink: 'lumi://booking/{bookingId}',
+    ru: { title: 'Вас выбрали! 🎉', body: 'Клиент выбрал вас для «{service}». Можно приступать.' },
+  },
+  'provider.not_chosen': {
+    category: 'operational', priority: 'low', channels: ['in_app'],
+    deepLink: 'lumi://home',
+    ru: { title: 'Заказ ушёл другому', body: 'На «{service}» выбрали другого исполнителя.' },
+  },
   'provider.new_offer': {
     category: 'operational', priority: 'high', channels: ['in_app', 'push'],
     deepLink: 'lumi://provider/offer/{bookingId}',
