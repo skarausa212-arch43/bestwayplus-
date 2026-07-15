@@ -25,7 +25,9 @@ Seeded automatically on first run (password: `cleango123`):
 | Customer | `anna@example.com`   | **LUMI+ member**, 2 seeded homes with Smart Home data |
 | Customer | `marek@example.com`  | Non-member (Kraków) — sees the LUMI+ upsell      |
 | Cleaner  | `piotr@example.com`  | Job feed, accept, before/after photos, payout wallet |
-| Admin    | `admin@cleango.app`  | Revenue, commission, KYC verification, live bookings |
+| Cleaner  | `zofia@example.com`  | SparkClean staff member                          |
+| Company  | `company@cleango.app`| **SparkClean** — booking board, staff, finance, analytics |
+| Admin    | `admin@cleango.app`  | Revenue, commission, KYC, analytics, audit log   |
 
 ## Features
 
@@ -51,7 +53,8 @@ Seeded automatically on first run (password: `cleango123`):
 ### Role apps
 - **Customer app** — Home, Homes, Book, Orders, a dedicated **Messages** tab (all booking chats with unread counts), Wallet; plus **favorite providers**.
 - **Provider app** — 4-state presence (**online / busy / break / offline**; only *online* receives offers), open-jobs feed, job workflow, and an **earnings & performance** screen: payout by day/week/month/year and rating, completion, acceptance, punctuality. **Platform commission is never shown to providers.**
-- **Admin panel** — **capability-based access** (support / operations / finance / kyc / marketing / admin / super) enforced per-endpoint; KYC verification, **user suspend / reactivate** (kills the session, blocks login), **booking management** (force re-dispatch, admin-cancel), an append-only **audit-log viewer**, and audited notification broadcasts. High-risk actions (impersonation) are super-only.
+- **Admin panel** — **capability-based access** (support / operations / finance / kyc / marketing / admin / super) enforced per-endpoint; KYC verification, **user suspend / reactivate** (kills the session, blocks login), **booking management** (force re-dispatch, admin-cancel), an append-only **audit-log viewer**, audited notification broadcasts, and a **platform analytics** dashboard (North Star, executive/marketplace/customer/provider KPIs, funnel, alerts). High-risk actions (impersonation) are super-only.
+- **Company dashboard** — cleaning companies employ staff (cleaners) and run their own **booking board** (unassigned → assigned → in-progress → completed / cancelled) with **assign / replace cleaner** (audited), staff management, finance (revenue, staff payouts, invoices) and analytics (utilization, productivity, response time). **Platform commission is hidden from companies.**
 
 ### Money
 - **Wallet & payouts** — cleaner earnings ledger; automatic settlement on completion.
@@ -78,11 +81,13 @@ cleango/
   chat/              Chat & realtime core (docs/16) — realtime.js + test.js
   smart-home/        Appliance registry, warranty, cost analytics (docs/17) — registry.js + test.js
   admin/             Capability-based access model (docs/18) — rbac.js + test.js
+  analytics/         Platform metrics & alerts (docs/22) — metrics.js + test.js
 ```
 
 Domain logic lives in small, pure, dependency-free modules the server composes
 over the JSON store, each with a `node <dir>/test.js` self-check:
-`ai/`, `dispatch/`, `pricing/`, `notifications/`, `chat/`, `smart-home/`, `admin/`.
+`ai/`, `dispatch/`, `pricing/`, `notifications/`, `chat/`, `smart-home/`, `admin/`,
+`analytics/`.
 
 The running app uses a JSON store as an MVP stand-in. `db/` and `openapi/` are
 the production persistence layer and API contract the platform graduates to —
@@ -131,7 +136,13 @@ Supabase/Postgres later does not change the frontend.
 | POST   | `/api/admin/users/:id/suspend` · `/reactivate` | Suspend / reactivate (audited) |
 | POST   | `/api/admin/bookings/:id/redispatch` · `/cancel` | Booking management (audited) |
 | GET    | `/api/admin/audit`                | Append-only audit-log viewer   |
+| GET    | `/api/admin/analytics`            | Platform metrics, funnel & alerts |
 | POST   | `/api/admin/verify-cleaner`       | KYC verification               |
+| GET    | `/api/company/overview` · `/analytics` | Company dashboard & metrics |
+| GET/POST/DELETE | `/api/company/staff`     | Company staff management       |
+| GET    | `/api/company/board`              | Booking board (grouped by state) |
+| POST   | `/api/company/bookings/:id/assign` | Assign / replace cleaner (audited) |
+| GET    | `/api/company/finance`            | Company finance (commission hidden) |
 
 ## Roadmap (from the product vision)
 

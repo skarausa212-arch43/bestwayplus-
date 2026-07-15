@@ -31,6 +31,7 @@ const { renderTemplate } = require('./notifications/templates');
 const chat = require('./chat/realtime');
 const smartHome = require('./smart-home/registry');
 const rbac = require('./admin/rbac');
+const analytics = require('./analytics/metrics');
 
 const PORT = process.env.PORT || 4000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -1011,6 +1012,10 @@ function enrich(bk, viewer) {
     delete out.commission;
     delete out.price;
   }
+  // Companies see revenue and staff payout, but never the platform commission (21 §"Hide platform commission").
+  if (viewer && viewer.role === 'company') {
+    delete out.commission;
+  }
   return out;
 }
 
@@ -1450,6 +1455,176 @@ route('POST', '/api/admin/bookings/:id/cancel', async (req, res, params) => {
   send(res, 200, { booking: enrich(bk, admin) });
 });
 
+// ───────────── Company dashboard (21_COMPANY_DASHBOARD.md) ─────────────
+// A cleaning company employs staff (cleaners) and dispatches its own bookings.
+function companyStaff(company) {
+  return (company.staff || []).map((id) => db.users[id]).filter(Boolean);
+}
+function companyBookings(company) {
+  const staffIds = new Set(company.staff || []);
+  return Object.values(db.bookings).filter((b) => b.cleanerId && staffIds.has(b.cleanerId));
+}
+route('GET', '/api/company/overview', async (req, res) => {
+  const user = authUser(req);
+  if (!user || user.role !== 'company') return send(res, 403, { error: 'Companies only.' });
+  const staff = companyStaff(user);
+  const bks = companyBookings(user);
+  const today = bks.filter((b) => b.createdAt >= now() - DAY);
+  const completed = bks.filter((b) => b.status === 'completed');
+  const revenue = completed.reduce((s, b) => s + b.price, 0);           // gross the company billed
+  const staffPayout = completed.reduce((s, b) => s + b.payout, 0);      // owed to its cleaners
+  const pendingPayouts = staff.reduce((s, u) => s + Math.round(u.wallet || 0), 0);
+  send(res, 200, {
+    company: { id: user.id, name: user.name, city: user.city },
+    overview: {
+      todayBookings: today.length,
+      onlineStaff: staff.filter((u) => u.online).length,
+      totalStaff: staff.length,
+      revenue, staffPayout, pendingPayouts, currency: CURRENCY,
+      activeJobs: bks.filter((b) => ['accepted', 'in_progress'].includes(b.status)).length,
+      alerts: (bks.filter((b) => b.status === 'searching').length ? [{ key: 'unassigned', text: 'Есть неназначенные заказы.' }] : []),
+    },
+  });
+});
+route('GET', '/api/company/staff', async (req, res) => {
+  const user = authUser(req);
+  if (!user || user.role !== 'company') return send(res, 403, { error: 'Companies only.' });
+  const staff = companyStaff(user).map((u) => ({
+    id: u.id, name: u.name, rating: u.rating, jobsDone: u.jobsDone || 0,
+    online: !!u.online, presence: u.presence || (u.online ? 'online' : 'offline'),
+    verified: u.verified, wallet: Math.round(u.wallet || 0), city: u.city,
+  }));
+  send(res, 200, { staff });
+});
+route('POST', '/api/company/staff/invite', async (req, res) => {
+  const user = authUser(req);
+  if (!user || user.role !== 'company') return send(res, 403, { error: 'Companies only.' });
+  const b = await readBody(req);
+  const email = String(b.email || '').trim().toLowerCase();
+  const target = Object.values(db.users).find((u) => u.email === email && !u.deletedAt);
+  if (!target || target.role !== 'cleaner') return send(res, 404, { error: 'No cleaner with that email.' });
+  if (target.companyId && target.companyId !== user.id) return send(res, 409, { error: 'This cleaner already works for another company.' });
+  user.staff = user.staff || [];
+  if (user.staff.includes(target.id)) return send(res, 409, { error: 'Already on your team.' });
+  user.staff.push(target.id);
+  target.companyId = user.id;
+  persist.users();
+  audit('company.staff_added', user.id, target.id, {});
+  send(res, 200, { ok: true });
+});
+route('DELETE', '/api/company/staff/:id', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user || user.role !== 'company') return send(res, 403, { error: 'Companies only.' });
+  const target = db.users[params.id];
+  user.staff = (user.staff || []).filter((id) => id !== params.id);
+  if (target && target.companyId === user.id) delete target.companyId;
+  persist.users();
+  audit('company.staff_removed', user.id, params.id, {});
+  send(res, 200, { ok: true });
+});
+// §Booking Board — grouped by state, plus the unassigned pool in the company's city.
+route('GET', '/api/company/board', async (req, res) => {
+  const user = authUser(req);
+  if (!user || user.role !== 'company') return send(res, 403, { error: 'Companies only.' });
+  const staffIds = new Set(user.staff || []);
+  const mine = Object.values(db.bookings).filter((b) => b.cleanerId && staffIds.has(b.cleanerId));
+  const unassigned = Object.values(db.bookings).filter((b) => b.status === 'searching' && b.city === user.city);
+  const col = (arr) => arr.sort((a, b) => b.createdAt - a.createdAt).map((b) => enrich(b, user));
+  send(res, 200, {
+    board: {
+      unassigned: col(unassigned),
+      assigned: col(mine.filter((b) => b.status === 'accepted')),
+      inProgress: col(mine.filter((b) => b.status === 'in_progress')),
+      completed: col(mine.filter((b) => b.status === 'completed')),
+      cancelled: col(mine.filter((b) => b.status === 'cancelled')),
+    },
+  });
+});
+// §"Assign cleaner / Replace cleaner" — audited assignment changes.
+route('POST', '/api/company/bookings/:id/assign', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user || user.role !== 'company') return send(res, 403, { error: 'Companies only.' });
+  const b = await readBody(req);
+  const bk = db.bookings[params.id];
+  if (!bk) return send(res, 404, { error: 'Booking not found.' });
+  const staffIds = new Set(user.staff || []);
+  const cleaner = db.users[b.cleanerId];
+  if (!cleaner || !staffIds.has(cleaner.id)) return send(res, 400, { error: 'Pick one of your staff.' });
+  if (!cleaner.verified) return send(res, 409, { error: 'That cleaner is not verified yet.' });
+  // Assign from the unassigned pool, or replace the current assignee (before start).
+  if (bk.status === 'searching' && (!bk.cleanerId || staffIds.has(bk.cleanerId))) {
+    const prev = bk.cleanerId;
+    bk.cleanerId = cleaner.id; bk.status = 'accepted'; bk.updatedAt = now();
+    bk.timeline.push({ status: 'accepted', at: now(), by: user.id });
+    audit('company.booking_assigned', user.id, bk.id, { cleaner: cleaner.id, previous: prev || null });
+    sysMessage(bk.id, `${cleaner.name} назначен(а) на заказ компанией ${user.name}.`);
+    notify(bk.customerId, 'booking.accepted', { provider: cleaner.name, service: bk.serviceLabel, bookingId: bk.id });
+  } else if (bk.status === 'accepted' && staffIds.has(bk.cleanerId)) {
+    const prev = bk.cleanerId;
+    bk.cleanerId = cleaner.id; bk.updatedAt = now();
+    bk.timeline.push({ status: 'reassigned', at: now(), by: user.id });
+    audit('company.booking_reassigned', user.id, bk.id, { cleaner: cleaner.id, previous: prev });
+    sysMessage(bk.id, `Исполнитель заменён на ${cleaner.name}.`);
+  } else {
+    return send(res, 409, { error: 'This booking cannot be (re)assigned now.' });
+  }
+  persist.bookings();
+  send(res, 200, { booking: enrich(bk, user) });
+});
+// §Finance & §Analytics — company money & performance. Commission stays hidden.
+route('GET', '/api/company/finance', async (req, res) => {
+  const user = authUser(req);
+  if (!user || user.role !== 'company') return send(res, 403, { error: 'Companies only.' });
+  const completed = companyBookings(user).filter((b) => b.status === 'completed');
+  const monthAgo = now() - 30 * DAY;
+  const revenue = completed.reduce((s, b) => s + b.price, 0);
+  const payout = completed.reduce((s, b) => s + b.payout, 0);
+  const monthRevenue = completed.filter((b) => b.updatedAt >= monthAgo).reduce((s, b) => s + b.price, 0);
+  const invoices = completed.sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 30).map((b) => ({
+    id: 'inv_' + b.id, service: b.serviceLabel, at: b.updatedAt, amount: b.price, payout: b.payout, currency: b.currency,
+  }));
+  send(res, 200, { finance: { revenue, payout, monthRevenue, jobs: completed.length, currency: CURRENCY, invoices } });
+});
+route('GET', '/api/company/analytics', async (req, res) => {
+  const user = authUser(req);
+  if (!user || user.role !== 'company') return send(res, 403, { error: 'Companies only.' });
+  const staff = companyStaff(user);
+  const bks = companyBookings(user);
+  const completed = bks.filter((b) => b.status === 'completed');
+  const etas = bks.filter((b) => b.cleanerId).map((b) => {
+    const c = (b.timeline || []).find((t) => t.status === 'searching');
+    const a = (b.timeline || []).find((t) => t.status === 'accepted');
+    return c && a ? (a.at - c.at) / 60000 : null;
+  }).filter((x) => x != null && x >= 0);
+  const ratings = staff.map((u) => u.rating).filter((x) => typeof x === 'number');
+  send(res, 200, {
+    analytics: {
+      utilization: staff.length ? Math.round((staff.filter((u) => u.online).length / staff.length) * 100) : 0,
+      revenue: completed.reduce((s, b) => s + b.price, 0),
+      productivity: staff.length ? Math.round((completed.length / staff.length) * 10) / 10 : 0,
+      avgResponseMinutes: etas.length ? Math.round((etas.reduce((s, x) => s + x, 0) / etas.length) * 10) / 10 : 0,
+      avgRating: ratings.length ? Math.round((ratings.reduce((s, x) => s + x, 0) / ratings.length) * 10) / 10 : null,
+      completedJobs: completed.length,
+      currency: CURRENCY,
+    },
+  });
+});
+
+// §14 platform analytics — the executive/marketplace/customer/provider KPI tree
+// + alerts (22_ANALYTICS_METRICS.md). Capability-gated (analytics.view).
+route('GET', '/api/admin/analytics', async (req, res) => {
+  const user = requireCap(req, res, 'analytics.view'); if (!user) return;
+  const lumiScores = Object.values(db.properties).map((p) => computeLumiScore(propertyTasks(p)).overall);
+  const metrics = analytics.computePlatformMetrics({
+    bookings: Object.values(db.bookings),
+    users: Object.values(db.users),
+    reviews: Object.values(db.reviews),
+    lumiScores,
+    now: now(),
+  });
+  send(res, 200, { metrics, currency: CURRENCY });
+});
+
 // ───────────── Provider workspace (19_PROVIDER_APP.md) ─────────────
 // §12 earnings report — periods + breakdown. Commission is NEVER exposed (§12/§20):
 // providers only ever see payout, tips, bonuses, cancellations — never platform cut.
@@ -1605,13 +1780,17 @@ function seed() {
   mk('admin', 'LUMI Admin', 'admin@cleango.app');
   const annaId = mk('customer', 'Anna Nowak', 'anna@example.com', { subscription: 'plus', premiumSince: now() });
   mk('customer', 'Marek Wiśniewski', 'marek@example.com', { city: 'Kraków' });
-  mk('cleaner', 'Piotr Kowalski', 'piotr@example.com', { jobsDone: 128, rating: 4.9 });
+  const piotrId = mk('cleaner', 'Piotr Kowalski', 'piotr@example.com', { jobsDone: 128, rating: 4.9 });
+  const zofiaId = mk('cleaner', 'Zofia Lewandowska', 'zofia@example.com', { jobsDone: 64, rating: 4.8 });
+  // A demo cleaning company employing two of the cleaners (21_COMPANY_DASHBOARD).
+  const coId = mk('company', 'SparkClean Sp. z o.o.', 'company@cleango.app', { staff: [piotrId, zofiaId] });
+  db.users[piotrId].companyId = coId; db.users[zofiaId].companyId = coId;
   // A couple of demo properties (aged so the Smart Home dashboard has due tasks).
   createProperty(db.users[annaId], { label: 'Apartment · Mokotów', address: 'ul. Puławska 12', city: 'Warsaw', type: 'apartment', rooms: 3, baths: 2, area: 74 }, now() - 40 * DAY);
   createProperty(db.users[annaId], { label: 'Airbnb · Old Town', address: 'ul. Freta 8', city: 'Warsaw', type: 'apartment', rooms: 2, baths: 1, area: 48 }, now() - 100 * DAY);
   persist.users();
   console.log('Seeded demo accounts (password: cleango123):');
-  console.log('  admin@cleango.app  •  anna@example.com (LUMI+)  •  marek@example.com  •  piotr@example.com');
+  console.log('  admin@cleango.app  •  anna@example.com (LUMI+)  •  marek@example.com  •  piotr@example.com  •  company@cleango.app');
 }
 seed();
 

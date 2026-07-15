@@ -548,7 +548,7 @@ function renderAuth(){
         const res=await api(mode==='login'?'/api/login':'/api/register','POST',payload);
         state.token=res.token;state.user=res.user;
         localStorage.setItem('cg_token',res.token);
-        state.view=res.user.role==='admin'?'admin':res.user.role==='cleaner'?'jobs':'home';
+        state.view=res.user.role==='admin'?'admin':res.user.role==='cleaner'?'jobs':res.user.role==='company'?'company':'home';
         await loadCatalog();
         if(res.user.role==='customer') await loadProperties();
         render();
@@ -565,7 +565,8 @@ function renderAuth(){
    ========================================================================= */
 function navItems(){
   const r=state.user.role;
-  if(r==='admin') return [['admin','Панель',I.admin],['bookings','Заказы',I.jobs],['audit','Аудит',I.receipt]];
+  if(r==='admin') return [['admin','Панель',I.admin],['analytics','Аналитика',I.chart],['bookings','Заказы',I.jobs],['audit','Аудит',I.receipt]];
+  if(r==='company') return [['company','Компания',I.building],['board','Заказы',I.jobs],['staff','Персонал',I.users],['finance','Финансы',I.chart]];
   if(r==='cleaner') return [['jobs','Заявки',I.jobs],['bookings','Мои работы',I.book],['earnings','Доход',I.chart],['wallet','Кошелёк',I.wallet]];
   return [['home','Главная',I.home],['properties','Дома',I.building],['book','Заказать',I.book],['bookings','Заказы',I.jobs],['messages','Чаты',I.send],['wallet','Кошелёк',I.wallet]];
 }
@@ -717,7 +718,7 @@ async function loadProperties(){
 
 function render(){
   if(!state.user){ renderAuth(); return; }
-  const map={home:viewHome,properties:viewProperties,smart:viewSmart,passport:viewPassport,premium:viewPremium,book:viewBook,bookings:viewBookings,wallet:viewWallet,jobs:viewJobs,admin:viewAdmin,messages:viewMessages,earnings:viewEarnings,audit:viewAudit};
+  const map={home:viewHome,properties:viewProperties,smart:viewSmart,passport:viewPassport,premium:viewPremium,book:viewBook,bookings:viewBookings,wallet:viewWallet,jobs:viewJobs,admin:viewAdmin,messages:viewMessages,earnings:viewEarnings,audit:viewAudit,analytics:viewAnalytics,company:viewCompany,board:viewBoard,staff:viewStaff,finance:viewFinance};
   const fn=map[state.view]||viewHome;
   fn();
 }
@@ -1912,6 +1913,191 @@ async function viewAudit(){
   }catch(e){toast(e.message,true);}
 }
 
+/* ---------- ADMIN: ANALYTICS & METRICS (22) ---------- */
+async function viewAnalytics(){
+  const c=el(`<div><div class="section-title">Аналитика и метрики <span class="badge" style="background:var(--surface-2)" id="schemaV"></span></div><div id="anBody"><div class="card pad"><div class="sk" style="height:200px"></div></div></div></div>`);
+  shell(c);
+  try{
+    const {metrics:M}=await api('/api/admin/analytics');
+    $('#schemaV',c).textContent='v'+M.schemaVersion;
+    const mk=(ico,val,lab,bg,fg)=>kpi(ico,val,lab,bg||'var(--surface-2)',fg||'var(--ink)');
+    const alertColor={high:'red',medium:'amber',low:'green'};
+    $('#anBody',c).innerHTML=`
+      <div class="card pad" style="background:linear-gradient(135deg,#0B1220,#1b2740);color:#fff;margin-bottom:20px">
+        <div class="badge" style="background:rgba(255,255,255,.16);color:#fff;margin-bottom:8px">★ North Star</div>
+        <div style="font-size:38px;font-weight:800">${M.northStar.value}</div>
+        <div class="tiny" style="opacity:.85">Завершённых заказов на активного клиента</div>
+      </div>
+      ${M.alerts.length?`<div class="card pad" style="margin-bottom:20px;border:1.5px solid var(--danger)">
+        <div class="row" style="gap:8px;margin-bottom:8px">${I.warn||''}<b>Активные алерты</b></div>
+        ${M.alerts.map(a=>`<div class="row" style="gap:8px;padding:4px 0"><span class="badge ${alertColor[a.severity]||'amber'}">${a.severity}</span><span class="tiny">${a.text}</span></div>`).join('')}
+      </div>`:''}
+      <div class="section-title">Руководителю</div>
+      <div class="kpi-grid" style="margin-bottom:20px">
+        ${mk(I.cash,money(M.executive.gmv),'GMV','var(--primary-050)','var(--primary-600)')}
+        ${mk(I.wallet,money(M.executive.netRevenue),'Чистая выручка','#E8F0FE','#1A73E8')}
+        ${mk(I.chart,M.executive.grossMargin+'%','Валовая маржа','#FEF3E2','#B25E09')}
+        ${mk(I.users,M.executive.activeCustomers,'Активные клиенты')}
+        ${mk(I.broom,M.executive.activeProviders,'Активные исполнители')}
+        ${mk(I.cash,money(M.executive.monthlyProfit),'Прибыль/мес')}
+      </div>
+      <div class="grid" style="grid-template-columns:1fr 1fr;gap:20px">
+        <div class="card pad">
+          <h4 style="margin-bottom:14px">Маркетплейс</h4>
+          ${metricRow('Конверсия заказов',M.marketplace.bookingConversion+'%')}
+          ${metricRow('Приём заказов',M.marketplace.acceptanceRate+'%')}
+          ${metricRow('Завершаемость',M.marketplace.completionRate+'%')}
+          ${metricRow('Отмены',M.marketplace.cancellationRate+'%')}
+          ${metricRow('Среднее время до приёма',M.marketplace.averageEtaMinutes+' мин')}
+        </div>
+        <div class="card pad">
+          <h4 style="margin-bottom:14px">Клиенты и подписка</h4>
+          ${metricRow('Всего клиентов',M.customer.totalCustomers)}
+          ${metricRow('Удержание (повторные)',M.customer.retention+'%')}
+          ${metricRow('Конверсия в LUMI+',M.customer.subscriptionConversion+'%')}
+          ${metricRow('Средний чек',money(M.financial.averageOrderValue))}
+          ${metricRow('Доля возвратов',M.financial.refundRate+'%')}
+        </div>
+        <div class="card pad">
+          <h4 style="margin-bottom:14px">Исполнители</h4>
+          ${metricRow('Всего',M.provider.totalProviders)}
+          ${metricRow('Сейчас на линии',M.provider.onlineProviders)}
+          ${metricRow('Утилизация',M.provider.utilization+'%')}
+          ${metricRow('Средний рейтинг',M.provider.ratingAverage?('⭐ '+M.provider.ratingAverage):'—')}
+        </div>
+        <div class="card pad">
+          <h4 style="margin-bottom:14px">Умный дом</h4>
+          ${metricRow('Средний LUMI Score',M.smartHome.averageLumiScore)}
+          ${metricRow('Домов отслеживается',M.smartHome.propertiesTracked)}
+        </div>
+      </div>
+      <div class="section-title" style="margin-top:22px">Воронка</div>
+      <div class="card pad">${funnelHtml(M.funnel)}</div>`;
+    stagger($('.kpi-grid',c));
+  }catch(e){toast(e.message,true);}
+}
+function metricRow(label,val){return `<div class="row" style="justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)"><span class="muted tiny">${label}</span><b>${val}</b></div>`;}
+function funnelHtml(funnel){
+  const max=Math.max(1,...funnel.map(f=>f.count));
+  return funnel.map(f=>`<div style="margin-bottom:12px">
+    <div class="row" style="justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${f.stage}</span><b>${f.count}</b></div>
+    <div style="height:12px;border-radius:6px;background:var(--surface-2);overflow:hidden"><div style="height:100%;width:${Math.round(f.count/max*100)}%;background:linear-gradient(90deg,var(--primary),var(--primary-600))"></div></div>
+  </div>`).join('');
+}
+
+/* ---------- COMPANY DASHBOARD (21) ---------- */
+async function viewCompany(){
+  const c=el(`<div><div class="section-title">Обзор компании</div><div id="coBody"><div class="card pad"><div class="sk" style="height:160px"></div></div></div></div>`);
+  shell(c);
+  try{
+    const [O,A]=await Promise.all([api('/api/company/overview'),api('/api/company/analytics')]);
+    const o=O.overview,a=A.analytics;
+    $('#coBody',c).innerHTML=`
+      <div class="card pad" style="background:linear-gradient(135deg,#0B1220,#1b2740);color:#fff;margin-bottom:20px">
+        <div class="badge" style="background:rgba(255,255,255,.16);color:#fff;margin-bottom:8px">${I.building||''} ${esc(O.company.name)}</div>
+        <div style="font-size:34px;font-weight:800">${money(o.revenue)}</div>
+        <div class="tiny" style="opacity:.85">Выручка компании · ${O.company.city}</div>
+      </div>
+      ${o.alerts.length?`<div class="card pad" style="margin-bottom:18px;border:1.5px solid var(--warn)"><div class="row" style="gap:8px">${I.warn||''}<b>${o.alerts.map(x=>x.text).join(' ')}</b></div></div>`:''}
+      <div class="kpi-grid" style="margin-bottom:20px">
+        ${kpi(I.jobs,o.todayBookings,'Заказы сегодня','var(--surface-2)','var(--ink)')}
+        ${kpi(I.users,o.onlineStaff+'/'+o.totalStaff,'Онлайн персонал','var(--primary-050)','var(--primary-600)')}
+        ${kpi(I.pin,o.activeJobs,'Активные заказы','#FEECEB','#C4342A')}
+        ${kpi(I.wallet,money(o.pendingPayouts),'К выплате персоналу','#E8F0FE','#1A73E8')}
+      </div>
+      <div class="section-title">Показатели</div>
+      <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px">
+        ${perfCard('Утилизация',a.utilization+'%','')}
+        ${perfCard('Производительность',a.productivity,'заказов/чел')}
+        ${perfCard('Ср. отклик',a.avgResponseMinutes+' мин','')}
+        ${perfCard('Ср. рейтинг',a.avgRating?('⭐ '+a.avgRating):'—','')}
+        ${perfCard('Завершено',a.completedJobs,'заказов')}
+      </div>`;
+    stagger($('.kpi-grid',c));
+  }catch(e){toast(e.message,true);}
+}
+async function viewBoard(){
+  const c=el(`<div><div class="section-title">Доска заказов</div><div id="boardBody"><div class="card pad"><div class="sk" style="height:200px"></div></div></div></div>`);
+  shell(c);
+  try{
+    const [{board},{staff}]=await Promise.all([api('/api/company/board'),api('/api/company/staff')]);
+    const cols=[['unassigned','Не назначены','amber'],['assigned','Назначены','blue'],['inProgress','В работе','green'],['completed','Завершены',''],['cancelled','Отменены','red']];
+    const staffOpts=staff.filter(s=>s.verified).map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
+    $('#boardBody',c).innerHTML=`<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;align-items:start">
+      ${cols.map(([k,label,color])=>`<div class="card pad">
+        <div class="row" style="justify-content:space-between;margin-bottom:10px"><b>${label}</b><span class="badge ${color}">${board[k].length}</span></div>
+        ${board[k].length?board[k].map(b=>`<div class="card pad" style="margin-bottom:10px;background:var(--surface-2)">
+          <div style="font-weight:700;font-size:14px">${esc(svcLabelRu(b.serviceLabel))}</div>
+          <div class="tiny muted" style="margin:3px 0">${b.city} · ${money(b.price)} · ${timeAgo(b.createdAt)}</div>
+          <div class="tiny">${b.cleaner?('👤 '+esc(b.cleaner.name)):'<span class="muted">без исполнителя</span>'}</div>
+          ${(k==='unassigned'||k==='assigned')&&staffOpts?`<div class="row" style="gap:6px;margin-top:8px">
+            <select class="input" data-sel="${b.id}" style="padding:6px;font-size:12px">${staffOpts}</select>
+            <button class="btn sm" data-assign="${b.id}">${k==='unassigned'?'Назначить':'Заменить'}</button>
+          </div>`:''}
+        </div>`).join(''):'<div class="tiny hint">—</div>'}
+      </div>`).join('')}
+    </div>`;
+    $('#boardBody',c).querySelectorAll('[data-assign]').forEach(btn=>btn.onclick=async()=>{
+      const sel=$('#boardBody',c).querySelector('[data-sel="'+btn.dataset.assign+'"]');
+      try{await api('/api/company/bookings/'+btn.dataset.assign+'/assign','POST',{cleanerId:sel.value});toast('Назначено');viewBoard();}
+      catch(e){toast(e.message,true);}
+    });
+  }catch(e){toast(e.message,true);}
+}
+async function viewStaff(){
+  const c=el(`<div style="max-width:720px;margin:0 auto"><div class="row" style="justify-content:space-between;align-items:center"><div class="section-title" style="margin:0">Персонал</div><button class="btn sm" id="inviteBtn">${I.plus} Пригласить</button></div><div id="staffBody" style="margin-top:16px"></div></div>`);
+  shell(c);
+  $('#inviteBtn',c).onclick=()=>{
+    showModal(`<div class="card pad"><h3 style="margin-bottom:12px">Пригласить исполнителя</h3>
+      <p class="tiny muted" style="margin-bottom:12px">Укажите email исполнителя LUMI, чтобы добавить его в команду.</p>
+      <input class="input" id="invEmail" placeholder="email@example.com" style="margin-bottom:12px">
+      <button class="btn block" id="invSave">Добавить в команду</button></div>`);
+    $('#invSave').onclick=async()=>{
+      try{await api('/api/company/staff/invite','POST',{email:$('#invEmail').value.trim()});toast('Добавлен в команду');closeModal();viewStaff();}
+      catch(e){toast(e.message,true);}
+    };
+  };
+  try{
+    const {staff}=await api('/api/company/staff');
+    const box=$('#staffBody',c);
+    if(!staff.length){box.appendChild(emptyState('Нет сотрудников','Пригласите исполнителей LUMI в свою команду.'));return;}
+    const PR={online:['green','На линии'],busy:['amber','Занят'],break:['','Перерыв'],offline:['','Не в сети']};
+    staff.forEach(s=>{
+      const pr=PR[s.presence]||PR.offline;
+      const row=el(`<div class="card bk">
+        <div class="avatar">${s.name[0]}</div>
+        <div class="meta"><h4>${esc(s.name)}</h4><div class="muted tiny" style="margin:3px 0">⭐ ${s.rating||'—'} · ${s.jobsDone} ${plural(s.jobsDone,'заказ','заказа','заказов')} · ${s.city}</div>
+          <span class="badge ${pr[0]}">${pr[1]}</span>${s.verified?'':' <span class="badge amber">на проверке</span>'}</div>
+        <div style="text-align:right"><b>${money(s.wallet)}</b><div><button class="btn ghost sm" data-rm="${s.id}" style="margin-top:6px">Убрать</button></div></div>
+      </div>`);
+      box.appendChild(row);
+    });
+    box.querySelectorAll('[data-rm]').forEach(btn=>btn.onclick=async()=>{
+      if(!confirm('Убрать из команды?'))return;
+      try{await api('/api/company/staff/'+btn.dataset.rm,'DELETE');toast('Убран');viewStaff();}catch(e){toast(e.message,true);}
+    });
+    stagger(box);
+  }catch(e){toast(e.message,true);}
+}
+async function viewFinance(){
+  const c=el(`<div style="max-width:760px;margin:0 auto"><div class="section-title">Финансы</div><div id="finBody"><div class="card pad"><div class="sk" style="height:160px"></div></div></div></div>`);
+  shell(c);
+  try{
+    const {finance:F}=await api('/api/company/finance');
+    $('#finBody',c).innerHTML=`
+      <div class="grid" style="grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px">
+        ${perfCard('Выручка всего',money(F.revenue),'')}
+        ${perfCard('За месяц',money(F.monthRevenue),'')}
+        ${perfCard('Выплаты персоналу',money(F.payout),F.jobs+' заказов')}
+      </div>
+      <div class="section-title">Счета</div>
+      <div class="card pad" style="overflow-x:auto">
+        <table class="tbl"><thead><tr><th>Услуга</th><th>Дата</th><th>Сумма</th><th>Выплата</th></tr></thead>
+        <tbody>${F.invoices.map(inv=>`<tr><td>${esc(svcLabelRu(inv.service))}</td><td class="tiny muted">${fmtTime(inv.at)}</td><td><b>${money(inv.amount)}</b></td><td style="color:var(--primary-600)">${money(inv.payout)}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">Пока нет завершённых заказов.</td></tr>'}</tbody></table>
+      </div>`;
+  }catch(e){toast(e.message,true);}
+}
+
 /* ---------- Shared UI ---------- */
 function emptyState(title,sub){return el(`<div class="empty">${I.jobs}<h3 style="color:var(--ink-2)">${title}</h3><p class="tiny">${sub}</p></div>`);}
 let modalEl=null;
@@ -1936,7 +2122,7 @@ async function boot(){
     try{
       const {user}=await api('/api/me');
       state.user=user;
-      state.view=user.role==='admin'?'admin':user.role==='cleaner'?'jobs':'home';
+      state.view=user.role==='admin'?'admin':user.role==='cleaner'?'jobs':user.role==='company'?'company':'home';
       if(user.role==='customer') await loadProperties();
     }catch{ state.token=null;localStorage.removeItem('cg_token'); }
   }
