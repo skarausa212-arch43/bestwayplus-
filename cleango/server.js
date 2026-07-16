@@ -287,8 +287,10 @@ function verifyToken(token) {
 
 function publicUser(u) {
   if (!u) return null;
-  const { password, ...rest } = u;
-  return rest;
+  // Strip credentials and sensitive PII. The identity document is only ever
+  // returned by the dedicated admin profile endpoint (never in self/list payloads).
+  const { password, idDocument, ...rest } = u;
+  return { ...rest, hasIdDocument: !!idDocument };
 }
 
 // ─────────────────────────── AI price estimate ───────────────────────────
@@ -509,6 +511,14 @@ route('POST', '/api/register', async (req, res) => {
   if (Object.values(db.users).some((u) => u.email === email)) {
     return send(res, 409, { error: 'An account with this email already exists.' });
   }
+  // Cleaners must complete KYC at sign-up: a face photo, an ID document photo,
+  // and an "About me" describing skills/experience (§ provider onboarding).
+  const bio = String(b.bio || '').trim();
+  if (role === 'cleaner') {
+    if (!validImage(b.avatar, 1200000)) return send(res, 400, { error: 'Загрузите своё фото.', code: 'AVATAR_REQUIRED' });
+    if (!validImage(b.idDocument, 3000000)) return send(res, 400, { error: 'Загрузите фото документа, удостоверяющего личность.', code: 'ID_REQUIRED' });
+    if (bio.length < 20) return send(res, 400, { error: 'Расскажите о себе — что умеете и опыт (минимум 20 символов).', code: 'BIO_REQUIRED' });
+  }
   const id = uid('u_');
   const user = {
     id, email, name, role,
@@ -522,6 +532,12 @@ route('POST', '/api/register', async (req, res) => {
     online: false,
     subscription: null,              // 'plus' when a LUMI+ member
   };
+  if (role === 'cleaner') {
+    user.avatar = b.avatar;
+    user.idDocument = b.idDocument;           // sensitive PII — admin-only, never in public payloads
+    user.bio = bio.slice(0, 600);
+    user.experienceYears = Math.max(0, Math.min(50, Number(b.experienceYears) || 0));
+  }
   db.users[id] = user;
   persist.users();
   audit('user.created', id, id, { role });
@@ -1610,6 +1626,34 @@ route('GET', '/api/admin/users', async (req, res) => {
       verified: u.verified, online: u.online, suspended: !!u.suspended,
       jobsDone: u.jobsDone || 0, rating: u.rating || null, createdAt: u.createdAt,
     })),
+  });
+});
+// §4 full user profile for the admin panel. Returns the identity document
+// (sensitive PII) — admin-only and audited on every view.
+route('GET', '/api/admin/users/:id', async (req, res, params) => {
+  const admin = requireCap(req, res, 'users.view'); if (!admin) return;
+  const u = db.users[params.id];
+  if (!u || u.deletedAt) return send(res, 404, { error: 'User not found.' });
+  const bookings = Object.values(db.bookings);
+  const asCustomer = bookings.filter((x) => x.customerId === u.id).length;
+  const asCleaner = bookings.filter((x) => x.cleanerId === u.id).length;
+  const recentReviews = u.role === 'cleaner'
+    ? Object.values(db.reviews || {}).filter((r) => r.cleanerId === u.id).sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 5)
+    : [];
+  audit('user.profile_viewed', admin.id, u.id, { role: u.role });   // viewing PII is itself audited
+  send(res, 200, {
+    profile: {
+      id: u.id, name: u.name, email: u.email, role: u.role, adminRole: u.adminRole || null,
+      city: u.city, verified: !!u.verified, online: !!u.online, suspended: !!u.suspended,
+      subscription: u.subscription || null, wallet: u.wallet || 0,
+      rating: u.rating || null, jobsDone: u.jobsDone || 0,
+      bio: u.bio || '', experienceYears: u.experienceYears || 0,
+      avatar: u.avatar || null,
+      idDocument: u.idDocument || null,          // admin-only
+      createdAt: u.createdAt,
+      bookingsAsCustomer: asCustomer, bookingsAsCleaner: asCleaner,
+      reviews: recentReviews,
+    },
   });
 });
 // §4 suspend / reactivate (audited high-risk action §17).
