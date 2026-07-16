@@ -194,6 +194,34 @@ textarea.input{resize:vertical;min-height:80px}
 .extra.sel{border-color:var(--primary);background:var(--primary-050)}
 .extra .cb{width:20px;height:20px;border-radius:6px;border:2px solid var(--line);display:grid;place-items:center;flex:none}
 .extra.sel .cb{background:var(--primary);border-color:var(--primary);color:#fff}
+/* à-la-carte extras (booking step 1) */
+.ex-top{margin-bottom:14px}
+.ex-total{position:sticky;top:8px;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:linear-gradient(135deg,#0F2A20,#0B3A32);color:#fff;border-radius:16px;padding:14px 18px;margin-bottom:18px;
+  box-shadow:0 14px 30px -16px rgba(var(--glow),.6)}
+.ex-total .muted{color:rgba(255,255,255,.65)!important}
+.ex-total-v{font-size:24px;font-weight:850;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.1;margin-top:2px}
+.ex-time{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.82);text-align:right}
+.ex-time svg{width:15px;height:15px}
+.ex-cat{margin-bottom:14px}
+.ex-cat-h{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin:6px 2px 8px}
+.ex-row{display:flex;align-items:center;gap:12px;padding:12px 6px;border-bottom:1px solid var(--line)}
+.ex-cat .ex-row:last-child{border-bottom:none}
+.ex-info{width:24px;height:24px;flex:none;border-radius:50%;background:var(--surface-2);color:var(--ink-3);font-weight:800;font-size:13px;display:grid;place-items:center}
+.ex-info:hover{background:var(--primary-050);color:var(--primary-600)}
+.ex-name{flex:1;min-width:0;font-size:14.5px;font-weight:600;line-height:1.3}
+.ex-desc{max-height:0;overflow:hidden;opacity:0;transition:max-height .25s,opacity .2s,margin .2s;font-size:12.5px;font-weight:500;color:var(--ink-2);line-height:1.45}
+.ex-row.open .ex-desc{max-height:80px;opacity:1;margin-top:5px}
+.ex-ctrl{flex:none}
+.ex-pill{display:inline-flex;align-items:center;gap:4px;height:38px;padding:0 16px;border-radius:11px;background:var(--primary);color:#fff;font-weight:700;font-size:14px;box-shadow:0 6px 14px -6px rgba(var(--glow),.6);transition:transform .12s,filter .12s}
+.ex-pill:hover{transform:translateY(-1px)}
+.ex-pill.on{background:var(--primary-600)}
+.ex-pill svg{width:15px;height:15px}
+.ex-row.sel .ex-name{color:var(--primary-600)}
+.ex-step{display:flex;align-items:center;gap:2px;background:var(--primary-050);border-radius:12px;padding:4px}
+.ex-step button{width:34px;height:34px;border-radius:9px;background:var(--surface);color:var(--primary-600);font-size:20px;font-weight:700;box-shadow:var(--shadow);display:grid;place-items:center}
+.ex-step b{min-width:44px;text-align:center;font-size:15px;font-weight:800;color:var(--primary-600);display:inline-flex;gap:3px;align-items:baseline;justify-content:center}
+.ex-step b span{font-size:11px;font-weight:600;opacity:.8}
 
 /* estimate */
 .est{background:linear-gradient(135deg,var(--surface),var(--surface-2));border:1.5px solid var(--line)}
@@ -1519,7 +1547,7 @@ async function runConcierge(conc){
     </div>`;
     $('#concBook',out).onclick=()=>{
       const d=newDraft(s.service);
-      d.extras=s.extras;d.urgency=s.urgency;d.step=3;   // jump straight to the AI estimate
+      d.extras=(s.extras||[]).map(k=>({key:k,qty:1}));d.urgency=s.urgency;d.step=3;   // jump straight to the AI estimate
       state.draft=d;state.view='book';render();
     };
   }catch(e){out.innerHTML=`<div class="muted tiny">${e.message}</div>`;}
@@ -1956,6 +1984,53 @@ function startBooking(service,propertyId,overrides){
   state.draft=Object.assign(newDraft(service,propertyId),overrides||{});
   state.view='book';render();
 }
+/* ---------- à-la-carte extras helpers (booking step 1) ---------- */
+function extQty(key){const e=(state.draft.extras||[]).find(x=>x.key===key);return e?(e.qty||1):0;}
+function setExt(key,qty){
+  const d=state.draft;let arr=(d.extras||[]).filter(x=>x.key!==key);
+  if(qty>0)arr.push({key,qty});d.extras=arr;
+}
+function renderExCtrl(box,key,e){
+  if(!box)return;
+  const q=extQty(key);
+  if(e.type==='percent'){
+    box.innerHTML=`<button class="ex-pill ${q?'on':''}">${q?I.check:''}+40%</button>`;
+    box.firstChild.onclick=()=>{setExt(key,q?0:1);updateExRow(key);refreshExTotal();};
+  }else if(e.type==='qty'){
+    if(q>0){
+      box.innerHTML=`<div class="ex-step"><button data-d="-1">−</button><b>${q}<span>${e.unit||''}</span></b><button data-d="1">+</button></div>`;
+      box.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+        const nq=Math.max(0,Math.min(e.max||20,q+ +b.dataset.d));setExt(key,nq);updateExRow(key);refreshExTotal();
+      });
+    }else{
+      box.innerHTML=`<button class="ex-pill">+${e.price} zł</button>`;
+      box.firstChild.onclick=()=>{setExt(key,1);updateExRow(key);refreshExTotal();};
+    }
+  }else{ // flat
+    box.innerHTML=`<button class="ex-pill ${q?'on':''}">${q?I.check:''}+${e.price} zł</button>`;
+    box.firstChild.onclick=()=>{setExt(key,q?0:1);updateExRow(key);refreshExTotal();};
+  }
+}
+function updateExRow(key){
+  const row=document.querySelector(`.ex-row[data-k="${key}"]`);if(!row)return;
+  const e=(state.catalog?.extras||{})[key];if(!e)return;
+  row.classList.toggle('sel',extQty(key)>0);
+  renderExCtrl($('.ex-ctrl',row),key,e);
+}
+let _exT=null;
+function refreshExTotal(){
+  const v=document.getElementById('exTotalV');if(!v)return;
+  clearTimeout(_exT);
+  _exT=setTimeout(async()=>{
+    try{
+      const {estimate}=await api('/api/estimate','POST',state.draft);
+      const vv=document.getElementById('exTotalV');if(!vv)return;
+      vv.textContent=money(estimate.total);
+      const t=document.getElementById('exTime');
+      if(t)t.innerHTML=`${I.clock}<span>до ${Math.ceil(estimate.durationHours)} ч${estimate.extrasCount?` · ${estimate.extrasCount} ${plural(estimate.extrasCount,'опция','опции','опций')}`:''}</span>`;
+    }catch(err){}
+  },180);
+}
 function viewBook(){
   if(!state.draft) state.draft=newDraft('standard');
   const d=state.draft;
@@ -2005,16 +2080,38 @@ function viewBook(){
     });
     const area=$('#area',body); if(area) area.oninput=()=>{d.area=Number(area.value)||0;};
   }
-  else if(d.step===1){ // extras
+  else if(d.step===1){ // extras — à-la-carte add-ons
     const ex=state.catalog?.extras||{};
-    body.innerHTML=`<h2 style="margin-bottom:4px">Дополнительно</h2><p class="muted" style="margin-bottom:20px">Дополнительные опции — по желанию.</p><div class="extra-grid" id="exg"></div>`;
-    const g=$('#exg',body);
-    Object.entries(ex).forEach(([key,e])=>{
-      const sel=d.extras.includes(key);
-      const it=el(`<div class="extra ${sel?'sel':''}"><div class="cb">${sel?I.check:''}</div><div style="flex:1">${EXTRA_RU[e.label]||e.label}</div><span class="muted tiny">+${e.price}</span></div>`);
-      it.onclick=()=>{d.extras=sel?d.extras.filter(x=>x!==key):[...d.extras,key];viewBook();};
-      g.appendChild(it);
+    const cats=state.catalog?.extraCategories||{};
+    body.innerHTML=`
+      <div class="ex-top">
+        <div><h2 style="margin-bottom:2px">Дополнительные услуги</h2><p class="muted tiny">Добавьте, что нужно — цена пересчитается сразу.</p></div>
+      </div>
+      <div class="ex-total" id="exTotal">
+        <div><span class="muted tiny">Итого за уборку</span><div class="ex-total-v" id="exTotalV">—</div></div>
+        <div class="ex-time" id="exTime"></div>
+      </div>
+      <div id="exList"></div>`;
+    const list=$('#exList',body);
+    // group by category, preserving catalog order
+    const groups={};
+    Object.entries(ex).forEach(([key,e])=>{(groups[e.cat]=groups[e.cat]||[]).push([key,e]);});
+    Object.keys(groups).forEach(cat=>{
+      const sec=el(`<div class="ex-cat"><div class="ex-cat-h">${cats[cat]||cat}</div></div>`);
+      groups[cat].forEach(([key,e])=>{
+        const row=el(`<div class="ex-row" data-k="${key}">
+          <button class="ex-info" title="Подробнее" aria-label="Подробнее">?</button>
+          <div class="ex-name">${e.label}${e.type==='qty'&&e.unit?`<span class="muted tiny"> · за ${e.unit}</span>`:''}
+            <div class="ex-desc">${e.desc||''}</div></div>
+          <div class="ex-ctrl"></div>
+        </div>`);
+        $('.ex-info',row).onclick=(ev)=>{ev.stopPropagation();row.classList.toggle('open');};
+        renderExCtrl($('.ex-ctrl',row),key,e);
+        sec.appendChild(row);
+      });
+      list.appendChild(sec);
     });
+    refreshExTotal();
   }
   else if(d.step===2){ // when + where
     body.innerHTML=`<h2 style="margin-bottom:4px">Когда и где?</h2><p class="muted" style="margin-bottom:20px">Подберём ближайшего исполнителя.</p>

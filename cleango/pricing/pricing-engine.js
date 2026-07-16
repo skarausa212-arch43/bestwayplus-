@@ -63,7 +63,9 @@ function quote(input, context = {}) {
   const rooms = Math.max(1, Math.min(12, +input.rooms || 1));
   const baths = Math.max(0, Math.min(8, +input.baths || 1));
   const area = Math.max(0, Math.min(600, +input.area || 0));
-  const extras = Array.isArray(input.extras) ? input.extras.filter((e) => ADDONS[e]) : [];
+  const extras = Array.isArray(input.extras)
+    ? input.extras.map((e) => (typeof e === 'string' ? e : e && e.key)).filter((e) => ADDONS[e])
+    : [];
   const mode = input.mode || (input.urgency === 'flash' ? 'flashclean' : input.urgency === 'today' ? 'instant' : 'scheduled');
   const urgency = input.urgency || (mode === 'flashclean' ? 'flash' : mode === 'instant' ? 'today' : 'scheduled');
 

@@ -302,14 +302,77 @@ const SERVICE_CATALOG = {
   windows:   { label: 'Window Cleaning',   base: 70,  perRoom: 12, perBath: 0,  rate: 0.9 },
   office:    { label: 'Office Cleaning',   base: 120, perRoom: 26, perBath: 30, rate: 1.15 },
 };
-const EXTRAS_CATALOG = {
-  fridge:   { label: 'Inside fridge',   price: 25 },
-  oven:     { label: 'Inside oven',     price: 30 },
-  windows:  { label: 'Interior windows', price: 20 },
-  laundry:  { label: 'Laundry & ironing', price: 35 },
-  balcony:  { label: 'Balcony',         price: 18 },
-  pets:     { label: 'Pet-friendly deep', price: 22 },
+// À-la-carte add-ons (à-la «Заказать уборку» flow). Money in whole zł (the
+// estimator works in major units). `type`:
+//   'flat'    — one-off, toggled on/off
+//   'qty'     — per-unit with a quantity stepper (price × qty)
+//   'percent' — a surcharge on the base cleaning (e.g. eco cleaning +40%)
+// Server-authoritative: the client only SELECTS keys/quantities, never prices.
+const EXTRAS_CATEGORIES = {
+  kitchen:   'Кухня',
+  bath:      'Санузел',
+  windows:   'Окна и балкон',
+  care:      'Уход и бельё',
+  pets:      'Питомцы',
+  logistics: 'Логистика',
+  dry:       'Химчистка',
 };
+const EXTRAS_CATALOG = {
+  // kitchen
+  oven:       { label: 'Помыть духовку внутри',  price: 30, type: 'qty',  unit: 'шт', max: 3,  cat: 'kitchen', desc: 'Отмоем духовку изнутри от жира и нагара.' },
+  microwave:  { label: 'Помыть микроволновку',   price: 15, type: 'qty',  unit: 'шт', max: 3,  cat: 'kitchen', desc: 'Очистка СВЧ внутри и снаружи.' },
+  fridge:     { label: 'Помыть холодильник внутри', price: 35, type: 'qty', unit: 'шт', max: 2, cat: 'kitchen', desc: 'Моем полки и стенки (разморозка не входит).' },
+  cabinets:   { label: 'Помыть шкафы на кухне',  price: 40, type: 'flat', cat: 'kitchen', desc: 'Фасады и внутренние полки кухонных шкафов.' },
+  // bath
+  descale:    { label: 'Удалить налёт и ржавчину в санузле', price: 40, type: 'flat', cat: 'bath', desc: 'Удаление известкового налёта и ржавчины.' },
+  bathroom:   { label: 'Дополнительный санузел',  price: 30, type: 'qty', unit: 'шт', max: 5, cat: 'bath', desc: 'Полная уборка дополнительного санузла.' },
+  // windows / balcony
+  windows:    { label: 'Мойка окон',             price: 20, type: 'qty', unit: 'шт', max: 15, cat: 'windows', desc: 'Мойка окна с двух сторон, рама и подоконник.' },
+  glazing:    { label: 'Помыть балконное остекление', price: 80, type: 'flat', cat: 'windows', desc: 'Мойка панорамного остекления балкона.' },
+  balcony:    { label: 'Убрать балкон',          price: 45, type: 'flat', cat: 'windows', desc: 'Подметём и вымоем пол, протрём поверхности.' },
+  // care / linen
+  ironing:    { label: 'Глажка (1 час)',         price: 35, type: 'qty', unit: 'ч', max: 4, cat: 'care', desc: 'Глажка вещей, час работы.' },
+  laundry:    { label: 'Стирка и глажка',        price: 35, type: 'flat', cat: 'care', desc: 'Загрузка стирки и глажка вещей.' },
+  linen:      { label: 'Поменять постельное бельё', price: 18, type: 'flat', cat: 'care', desc: 'Смена и заправка постельного белья.' },
+  chandelier: { label: 'Почистить люстру',       price: 25, type: 'qty', unit: 'шт', max: 5, cat: 'care', desc: 'Аккуратная чистка люстры и плафонов.' },
+  wardrobe:   { label: 'Убраться в гардеробной', price: 35, type: 'flat', cat: 'care', desc: 'Наведём порядок в гардеробной.' },
+  steam:      { label: 'Обработка парогенератором', price: 20, type: 'flat', cat: 'care', desc: 'Пароочистка выбранных поверхностей.' },
+  special:    { label: 'Особые поручения',       price: 25, type: 'flat', cat: 'care', desc: 'Небольшое доп. поручение по договорённости.' },
+  eco:        { label: 'Эко-уборка (эко-средства)', percent: 0.40, type: 'percent', cat: 'care', desc: 'Только гипоаллергенные эко-средства. +40% к базовой уборке.' },
+  // pets
+  petfur:     { label: 'Удаление шерсти питомца', price: 25, type: 'flat', cat: 'pets', desc: 'Тщательное удаление шерсти с мебели и пола.' },
+  petlitter:  { label: 'Помыть лоток питомца',   price: 15, type: 'flat', cat: 'pets', desc: 'Мойка и дезинфекция лотка.' },
+  pets:       { label: 'Уборка для питомцев',    price: 22, type: 'flat', cat: 'pets', desc: 'Глубокая уборка с учётом питомцев.' },
+  // logistics
+  keys_pickup:{ label: 'Заехать за ключами',     price: 40, type: 'flat', cat: 'logistics', desc: 'Заберём ключи по адресу в пределах города.' },
+  equipment:  { label: 'Доставка оборудования',  price: 40, type: 'flat', cat: 'logistics', desc: 'Привезём профессиональное оборудование.' },
+  // dry cleaning
+  dc_sofa:    { label: 'Химчистка дивана',       price: 75, type: 'qty', unit: 'шт', max: 4,  cat: 'dry', desc: 'Глубокая химчистка дивана, от 75 zł.' },
+  dc_chair:   { label: 'Химчистка кресла',       price: 25, type: 'qty', unit: 'шт', max: 8,  cat: 'dry', desc: 'Химчистка кресла, от 25 zł.' },
+  dc_mattress:{ label: 'Химчистка матраса',      price: 55, type: 'qty', unit: 'шт', max: 6,  cat: 'dry', desc: 'Химчистка матраса, от 55 zł.' },
+  dc_carpet:  { label: 'Химчистка ковра',        price: 12, type: 'qty', unit: 'шт', max: 10, cat: 'dry', desc: 'Химчистка ковра, от 12 zł/м².' },
+  dc_curtains:{ label: 'Химчистка штор и тюля',  price: 20, type: 'qty', unit: 'шт', max: 10, cat: 'dry', desc: 'Снятие, химчистка и возврат штор.' },
+};
+
+// Accept extras as ['oven', ...] (legacy/concierge) or [{key, qty}, ...].
+// Returns a de-duped, validated [{key, qty}] with quantities clamped to `max`.
+function normalizeExtras(raw) {
+  const out = [], seen = new Set();
+  if (!Array.isArray(raw)) return out;
+  for (const item of raw) {
+    const key = typeof item === 'string' ? item : (item && item.key);
+    const def = key && EXTRAS_CATALOG[key];
+    if (!def || seen.has(key)) continue;
+    seen.add(key);
+    let qty = 1;
+    if (def.type === 'qty') {
+      const req = (typeof item === 'object' && item && Number(item.qty)) || 1;
+      qty = Math.max(1, Math.min(def.max || 20, Math.round(req)));
+    }
+    out.push({ key, qty });
+  }
+  return out;
+}
 
 function estimatePrice(input) {
   const svc = SERVICE_CATALOG[input.service] || SERVICE_CATALOG.standard;
@@ -319,12 +382,17 @@ function estimatePrice(input) {
 
   let price = svc.base + rooms * svc.perRoom + baths * svc.perBath;
   if (area) price += area * 0.6 * svc.rate;
+  const baseSubtotal = price;                       // cleaning base — % add-ons apply to this
 
-  const extras = Array.isArray(input.extras) ? input.extras : [];
-  let extrasTotal = 0;
-  for (const e of extras) {
-    if (EXTRAS_CATALOG[e]) extrasTotal += EXTRAS_CATALOG[e].price;
+  const extras = normalizeExtras(input.extras);
+  let extrasTotal = 0, percentSum = 0, extraDurH = 0;
+  for (const { key, qty } of extras) {
+    const def = EXTRAS_CATALOG[key];
+    if (def.type === 'percent') { percentSum += def.percent; }
+    else { extrasTotal += def.price * qty; extraDurH += def.type === 'qty' ? 0.2 * qty : 0.3; }
   }
+  const percentAmount = Math.round(baseSubtotal * percentSum);
+  extrasTotal += percentAmount;
   price += extrasTotal;
 
   // Urgency & demand multipliers (FlashClean = same-day emergency)
@@ -335,7 +403,7 @@ function estimatePrice(input) {
   const surge = 1 + (Math.abs(hashInt((input.city || 'city') + new Date().getHours())) % 12) / 100;
   price *= surge;
 
-  const durationH = Math.max(1.5, (rooms * 0.6 + baths * 0.5) * svc.rate + extras.length * 0.3);
+  const durationH = Math.max(1.5, (rooms * 0.6 + baths * 0.5) * svc.rate + extraDurH);
   const total = Math.round(price);
   const commission = Math.round(total * COMMISSION_RATE);
 
@@ -356,6 +424,7 @@ function estimatePrice(input) {
     payout: total - commission,        // what the cleaner receives
     commission,                        // platform keeps this (hidden from cleaner UI)
     durationHours: Math.round(durationH * 10) / 10,
+    extrasCount: extras.length,
     rangeLow: Math.round(total * 0.9),
     rangeHigh: Math.round(total * 1.15),
   };
@@ -616,7 +685,7 @@ route('POST', '/api/cleaner/online', async (req, res) => {
 
 // ---- Catalog & estimate ----
 route('GET', '/api/catalog', async (req, res) => {
-  send(res, 200, { services: SERVICE_CATALOG, extras: EXTRAS_CATALOG, commissionRate: COMMISSION_RATE, currency: CURRENCY });
+  send(res, 200, { services: SERVICE_CATALOG, extras: EXTRAS_CATALOG, extraCategories: EXTRAS_CATEGORIES, commissionRate: COMMISSION_RATE, currency: CURRENCY });
 });
 route('POST', '/api/estimate', async (req, res) => {
   const b = await readBody(req);
