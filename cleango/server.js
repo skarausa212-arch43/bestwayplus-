@@ -1480,6 +1480,11 @@ route('POST', '/api/bookings/:id/messages', async (req, res, params) => {
   const bk = db.bookings[params.id];
   if (!bk) return send(res, 404, { error: 'Not found.' });
   if (!chatParticipant(user, bk)) return send(res, 403, { error: 'Forbidden.' });
+  // The chat closes for participants once the order is finished (admins keep
+  // access for support). History stays readable — only new messages are blocked.
+  if (user.role !== 'admin' && ['completed', 'cancelled'].includes(bk.status)) {
+    return send(res, 409, { error: 'Чат по этому заказу закрыт — заказ завершён.', code: 'CHAT_CLOSED' });
+  }
   const b = await readBody(req);
   const type = ['text', 'image'].includes(b.type) ? b.type : 'text';
   const text = String(b.text || b.body || '').trim().slice(0, 800);

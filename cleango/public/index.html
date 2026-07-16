@@ -278,6 +278,8 @@ textarea.input{resize:vertical;min-height:80px}
 .locbar .eta{margin-left:auto;background:var(--primary);color:#fff;padding:3px 10px;border-radius:20px;font-size:12px}
 .chat-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--surface-2)}
 .chat-head b{font-size:14px}
+.chat-closed{display:flex;align-items:center;gap:8px;padding:14px;border-top:1px solid var(--line);background:var(--surface-2);color:var(--ink-3);font-size:13px;font-weight:600}
+.chat-closed svg{width:16px;height:16px;flex:none}
 .chatbar{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
 .chatbar .attach{display:grid;place-items:center;width:40px;flex:none;background:var(--surface-2);border-radius:12px;cursor:pointer}
 
@@ -2658,18 +2660,22 @@ async function renderChat(b){
   if(!b.cleanerId){z.innerHTML='';if(chatTimer){clearInterval(chatTimer);chatTimer=null;}return;}
   const isCleaner=state.user.role==='cleaner';
   const other=isCleaner?'клиентом':(b.cleaner?b.cleaner.name:'исполнителем');
-  const ended=['completed','cancelled'].includes(b.status);
+  // Chat closes for participants once the order is completed/cancelled (admins keep it).
+  const closed=['completed','cancelled'].includes(b.status) && state.user.role!=='admin';
   z.innerHTML=`<div class="card" style="overflow:hidden"><div class="chat">
-    <div class="chat-head"><b>Чат с ${esc(other)}</b>${ended?'<span class="tiny muted">заказ завершён · связь открыта</span>':'<span class="tiny muted">по заказу</span>'}</div>
+    <div class="chat-head"><b>Чат с ${esc(other)}</b>${closed?'<span class="tiny muted">чат закрыт · заказ завершён</span>':'<span class="tiny muted">по заказу</span>'}</div>
     <div id="locBar"></div>
     <div class="msgs" id="msgs"></div>
-    <div class="chatbar">
+    ${closed
+      ? `<div class="chat-closed">${I.lock} Чат закрыт — заказ завершён. Переписка доступна только во время заказа.</div>`
+      : `<div class="chatbar">
       <div class="attach" id="chatAttach" title="Фото">${I.cam}</div>
       <input class="input" id="chatInput" placeholder="Сообщение…" style="border-radius:12px">
       <button class="btn sm" id="chatSend">${I.send}</button>
-    </div>
+    </div>`}
   </div></div>`;
   await loadMessages(b.id);
+  if(closed){ if(chatTimer){clearInterval(chatTimer);chatTimer=null;} return; }
   const input=$('#chatInput',z), sendBtn=$('#chatSend',z);
   const doSend=async()=>{
     const text=input.value.trim();if(!text)return;input.value='';
@@ -2678,8 +2684,8 @@ async function renderChat(b){
   };
   sendBtn.onclick=doSend;
   input.onkeydown=(e)=>{if(e.key==='Enter')doSend();};
-  // On mobile the chat sits at the bottom of a tall (esp. completed) order card —
-  // keep the input reachable when the on-screen keyboard opens.
+  // On mobile the chat sits at the bottom of a tall order card — keep the input
+  // reachable when the on-screen keyboard opens.
   input.addEventListener('focus',()=>setTimeout(()=>input.scrollIntoView({block:'center',behavior:'smooth'}),250));
   // §8 typing ping — throttled to once per 3s while composing.
   input.oninput=()=>{const t=Date.now();if(t-chatTyping>3000){chatTyping=t;api('/api/bookings/'+b.id+'/typing','POST').catch(()=>{});}};
