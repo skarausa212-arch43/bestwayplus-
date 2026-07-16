@@ -842,7 +842,7 @@ function createProperty(owner, data, createdAt) {
     label: String(data.label || 'Home').slice(0, 60),
     address: String(data.address || '').slice(0, 200),
     city: CITIES.includes(data.city) ? data.city : (owner.city || 'Warsaw'),
-    type: ['apartment', 'house', 'office'].includes(data.type) ? data.type : 'apartment',
+    type: ['apartment', 'house', 'office', 'other'].includes(data.type) ? data.type : 'apartment',
     rooms: Math.max(1, Math.min(12, Number(data.rooms) || 2)),
     baths: Math.max(0, Math.min(8, Number(data.baths) || 1)),
     area: Math.max(0, Math.min(600, Number(data.area) || 0)),
