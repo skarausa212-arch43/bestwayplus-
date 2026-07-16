@@ -615,6 +615,10 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .kyc-up-ic.has{color:#fff;box-shadow:0 0 0 2px var(--primary)}
 .kyc-up-ic.has svg{filter:drop-shadow(0 1px 3px rgba(0,0,0,.5))}
 .kyc-up-ic svg{width:22px;height:22px}
+.chk{display:flex;align-items:center;gap:10px;padding:8px 4px;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer}
+.chk input{width:19px;height:19px;accent-color:var(--primary);flex:none}
+.equip-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px}
+.equip-list .chip{background:var(--primary-050);color:var(--primary-600);cursor:default}
 .kyc-hint{display:flex;gap:7px;align-items:flex-start;font-size:11.5px;line-height:1.4;color:var(--ink-3);margin-top:4px}
 .kyc-hint svg{width:14px;height:14px;flex:none;margin-top:1px}
 /* admin profile modal sections */
@@ -935,7 +939,7 @@ const CAT_COLOR={cleaning:'c-cleaning',windows:'c-windows',handyman:'c-assembly'
 const SVC_ICON = {standard:I.broom, deep:I.spark, moveout:I.sofa, windows:I.window, office:I.office};
 const ROLE_RU={customer:'Клиент',cleaner:'Исполнитель',admin:'Администратор'};
 const SVC_LABEL_RU={'Standard Cleaning':'Обычная уборка','Deep Cleaning':'Генеральная уборка','Move-out Cleaning':'Уборка при переезде','Window Cleaning':'Мытьё окон','Office Cleaning':'Уборка офиса'};
-const SVC_SHORT_RU={standard:'Обычная',deep:'Генеральная',moveout:'Переезд',windows:'Окна',office:'Офис'};
+const SVC_SHORT_RU={standard:'Обычная',deep:'Генеральная',moveout:'После ремонта',office:'Офис'};
 const EXTRA_RU={'Inside fridge':'Внутри холодильника','Inside oven':'Внутри духовки','Interior windows':'Окна изнутри','Laundry & ironing':'Стирка и глажка','Balcony':'Балкон','Pet-friendly deep':'Чистка для животных'};
 const svcLabelRu=(l)=>SVC_LABEL_RU[l]||l;
 const CAT_LABEL_RU={cleaning:'Уборка',handyman:'Мастер',electrical:'Электрик',plumbing:'Сантехник',garden:'Сад',laundry:'Стирка',assembly:'Сборка мебели',windows:'Окна'};
@@ -1037,6 +1041,7 @@ async function openCleanerProfile(id,bookingId){
         </div>
       </div>
       ${p.bio?`<p class="muted" style="font-size:14.5px;line-height:1.5;margin-bottom:14px">${esc(p.bio)}</p>`:''}
+      ${equipmentBlock(p)}
       ${p.reviews.length?`<div class="section-title" style="font-size:16px;margin-bottom:10px">Отзывы</div>${p.reviews.map(r=>`<div class="card pad" style="background:var(--surface-2);margin-bottom:8px"><div class="row" style="justify-content:space-between"><b>${'★'.repeat(Math.round(r.stars))}<span class="muted tiny" style="margin-left:6px">${r.stars}</span></b><span class="tiny muted">${timeAgo(r.at)}</span></div>${r.text?`<p class="tiny" style="margin-top:6px;line-height:1.5">${esc(r.text)}</p>`:''}</div>`).join('')}`:'<p class="tiny muted">Пока нет отзывов.</p>'}
       ${bookingId?`<button class="btn block" id="chooseFromProfile" style="margin-top:14px">Выбрать этого исполнителя ${I.check}</button>`
         :(state.user.role==='customer'?`<button class="btn block" id="inviteCleaner" style="margin-top:14px">${I.crown} Пригласить на уборку</button>
@@ -1098,6 +1103,18 @@ function renderResponders(b){
   list.querySelectorAll('[data-prof]').forEach(x=>x.onclick=()=>openCleanerProfile(x.dataset.prof,b.id));
 }
 
+// Equipment + transport block (shown to customers choosing a cleaner, and to admin).
+function equipmentBlock(p,bare){
+  const labels=state.catalog?.equipment||{};
+  const eq=(p.equipment||[]).filter(k=>labels[k]);
+  if(!eq.length && p.hasCar==null && !bare) return '';
+  const inner=`${eq.length?`<div class="equip-list">${eq.map(k=>`<span class="chip">${I.check}${labels[k]}</span>`).join('')}</div>`:'<p class="tiny muted">Оборудование не указано.</p>'}
+    <div class="row" style="gap:8px;margin-top:8px;font-size:13.5px;font-weight:600">
+      <span style="color:${p.hasCar?'var(--primary-600)':'var(--ink-3)'}">${p.hasCar?I.check:'—'} Свой автомобиль: ${p.hasCar?'есть':'нет'}</span>
+    </div>`;
+  if(bare) return inner;
+  return `<div style="margin-bottom:14px"><div class="section-title" style="font-size:15px;margin-bottom:8px">Оборудование и транспорт</div>${inner}</div>`;
+}
 function regUpInner(kind,img){
   const done=!!img;
   const label=kind==='avatar'?(done?'Фото загружено':'Ваше фото *'):(done?'Документ загружен':'Документ *');
@@ -1106,7 +1123,7 @@ function regUpInner(kind,img){
 }
 function renderAuth(){
   let mode='login', role='customer';
-  const reg={avatar:null,idDocument:null};   // cleaner KYC uploads (data URLs)
+  const reg={avatar:null,idDocument:null,equipment:[],hasCar:null};   // cleaner KYC + questionnaire
   const root=$('#root');
   root.innerHTML='';
   const wrap=el(`<div class="auth-split">
@@ -1163,7 +1180,16 @@ function renderAuth(){
           </div>
           <label class="field"><span>О себе — что умеете и опыт работы *</span><textarea class="input" name="bio" rows="3" minlength="20" required placeholder="Например: 3 года опыта. Генеральная и послеремонтная уборка, мытьё окон, свои эко-средства. Пунктуальна и внимательна к деталям."></textarea></label>
           <label class="field"><span>Опыт работы, лет</span><input class="input" type="number" name="experienceYears" min="0" max="50" value="0"></label>
-          <p class="kyc-hint">${I.lock||''} Фото и документ нужны для проверки. Документ виден только модератору LUMI и не показывается клиентам.</p>
+          <div class="kyc-title" style="margin-top:6px">Оборудование</div>
+          <p class="muted tiny" style="margin:-6px 0 8px">Каким оборудованием вы располагаете?</p>
+          <div id="regEquip">${Object.entries(state.catalog?.equipment||{}).map(([k,v])=>`<label class="chk"><input type="checkbox" data-eq="${k}" ${reg.equipment.includes(k)?'checked':''}><span>${v}</span></label>`).join('')}</div>
+          <div class="kyc-title" style="margin-top:12px">Транспорт</div>
+          <p class="muted tiny" style="margin:-6px 0 8px">Есть ли у вас собственный автомобиль?</p>
+          <div class="seg" id="regCar" style="margin-bottom:4px">
+            <button type="button" data-car="1" class="${reg.hasCar===true?'active':''}">Да</button>
+            <button type="button" data-car="0" class="${reg.hasCar===false?'active':''}">Нет</button>
+          </div>
+          <p class="kyc-hint">${I.lock||''} Фото и документ нужны для проверки. Документ виден только модератору LUMI и не показывается клиентам. Оборудование и авто увидят клиенты при выборе.</p>
         </div>`:''}`:''}
         <label class="field"><span>Email</span><input class="input" type="email" name="email" placeholder="you@example.com" required></label>
         <label class="field"><span>Пароль</span><input class="input" type="password" name="password" placeholder="${mode==='register'?'минимум 12 символов':'ваш пароль'}" minlength="${mode==='register'?12:1}" required>${mode==='register'?'<span class="hint" style="margin-top:6px;display:block">Не меньше 12 символов. Можно фразу — так надёжнее.</span>':''}</label>
@@ -1179,6 +1205,14 @@ function renderAuth(){
       btn.onclick=()=>pickImage((img)=>{reg[field]=img;btn.innerHTML=regUpInner(field==='avatar'?'avatar':'id',img);},max,0.78);};
     wireUp('upAvatar','avatar',420);
     wireUp('upId','idDocument',1400);
+    // equipment checkboxes + car (persist in `reg`, no full redraw)
+    card.querySelectorAll('#regEquip [data-eq]').forEach(cb=>cb.onchange=()=>{
+      const k=cb.dataset.eq; reg.equipment=reg.equipment.filter(x=>x!==k); if(cb.checked)reg.equipment.push(k);
+    });
+    card.querySelectorAll('#regCar [data-car]').forEach(bn=>bn.onclick=()=>{
+      reg.hasCar=bn.dataset.car==='1';
+      card.querySelectorAll('#regCar [data-car]').forEach(x=>x.classList.toggle('active',x===bn));
+    });
     $('#authForm',card).onsubmit=async(e)=>{
       e.preventDefault();
       const f=new FormData(e.target);
@@ -1191,7 +1225,7 @@ function renderAuth(){
       try{
         const payload=Object.fromEntries(f);
         if(mode==='register')payload.role=role;
-        if(mode==='register'&&role==='cleaner'){payload.avatar=reg.avatar;payload.idDocument=reg.idDocument;}
+        if(mode==='register'&&role==='cleaner'){payload.avatar=reg.avatar;payload.idDocument=reg.idDocument;payload.equipment=reg.equipment;payload.hasCar=reg.hasCar===true;}
         const res=await api(mode==='login'?'/api/login':'/api/register','POST',payload);
         state.token=res.token;state.user=res.user;
         localStorage.setItem('cg_token',res.token);
@@ -1485,7 +1519,7 @@ function viewHome(){
       ${active?(flagOn?'<span class="badge green" style="position:absolute;top:12px;right:12px">Новинка</span>':''):'<span class="badge grey" style="position:absolute;top:12px;right:12px">Скоро</span>'}
     </div>`);
     card.style.position='relative';
-    card.onclick=()=>{ active?startBooking(cat.key==='windows'?'windows':'standard'):toast(`${label} — скоро в вашем городе`); };
+    card.onclick=()=>{ active?startBooking('standard'):toast(`${label} — скоро в вашем городе`); };
     cg.appendChild(card);
   });
   mainCol.appendChild(catWrap);
@@ -2046,7 +2080,7 @@ function passportSearch(q,timeline){
   if(!t.trim())return 'Задайте вопрос об истории дома.';
   const totalMatch=/потрат|сколько|стоим|расход/.test(t);
   if(totalMatch){const sum=timeline.reduce((s,e)=>s+e.price,0);return `Всего на обслуживание этого дома потрачено <b>${money(sum)}</b> за ${timeline.length} ${plural(timeline.length,'услугу','услуги','услуг')}.`;}
-  const keymap=[['окн','windows'],['окон','windows'],['окна','windows'],['генеральн','deep'],['глубок','deep'],['обычн','standard'],['стандарт','standard'],['диван','deep'],['матрас','deep'],['переезд','moveout'],['офис','office']];
+  const keymap=[['генеральн','deep'],['глубок','deep'],['обычн','standard'],['стандарт','standard'],['диван','deep'],['матрас','deep'],['после ремонт','moveout'],['ремонт','moveout'],['переезд','moveout'],['офис','office']];
   let svc=null; for(const [k,s] of keymap){ if(t.includes(k)){svc=s;break;} }
   const items=svc?timeline.filter(e=>e.service===svc):timeline;
   if(!items.length)return svc?`По этой услуге пока нет записей в истории.`:`Ничего не найдено. Попробуйте: «когда мыли окна?».`;
@@ -3271,6 +3305,7 @@ async function openAdminUser(id){
         <div class="stat"><b>${money(p.wallet||0)}</b><span class="muted tiny">Баланс</span></div>
       </div>`:''}
       ${p.bio?`<div class="admin-sec"><div class="admin-sec-h">О себе</div><p style="font-size:14px;line-height:1.5">${esc(p.bio)}</p></div>`:''}
+      ${p.role==='cleaner'?`<div class="admin-sec"><div class="admin-sec-h">Оборудование и транспорт</div>${equipmentBlock(p,true)}</div>`:''}
       ${p.role==='cleaner'?`<div class="admin-sec"><div class="admin-sec-h">Документ, удостоверяющий личность</div>
         ${p.idDocument?`<img class="admin-doc" src="${p.idDocument}" alt="Документ">`:'<p class="muted tiny">Документ не загружен.</p>'}
         <p class="kyc-hint" style="margin-top:8px">${I.lock||''} Конфиденциально. Просмотр документа записан в журнал аудита.</p></div>`:''}

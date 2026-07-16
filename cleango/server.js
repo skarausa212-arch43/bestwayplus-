@@ -302,11 +302,10 @@ function publicUser(u) {
 // this for a model call; the shape stays the same so the UI never changes.
 
 const SERVICE_CATALOG = {
-  standard:  { label: 'Standard Cleaning', base: 90,  perRoom: 22, perBath: 28, rate: 1.0 },
-  deep:      { label: 'Deep Cleaning',     base: 140, perRoom: 34, perBath: 42, rate: 1.35 },
-  moveout:   { label: 'Move-out Cleaning', base: 180, perRoom: 40, perBath: 50, rate: 1.5 },
-  windows:   { label: 'Window Cleaning',   base: 70,  perRoom: 12, perBath: 0,  rate: 0.9 },
-  office:    { label: 'Office Cleaning',   base: 120, perRoom: 26, perBath: 30, rate: 1.15 },
+  standard:  { label: 'Обычная',     base: 90,  perRoom: 22, perBath: 28, rate: 1.0 },
+  deep:      { label: 'Генеральная', base: 140, perRoom: 34, perBath: 42, rate: 1.35 },
+  moveout:   { label: 'После ремонта', base: 180, perRoom: 40, perBath: 50, rate: 1.5 },
+  office:    { label: 'Офис',        base: 120, perRoom: 26, perBath: 30, rate: 1.15 },
 };
 // À-la-carte add-ons (à-la «Заказать уборку» flow). Money in whole zł (the
 // estimator works in major units). `type`:
@@ -314,6 +313,16 @@ const SERVICE_CATALOG = {
 //   'qty'     — per-unit with a quantity stepper (price × qty)
 //   'percent' — a surcharge on the base cleaning (e.g. eco cleaning +40%)
 // Server-authoritative: the client only SELECTS keys/quantities, never prices.
+// Provider equipment declared at sign-up — shown to customers choosing a cleaner.
+const EQUIPMENT = {
+  vacuum:    'Профессиональный пылесос',
+  extractor: 'Моющий пылесос / экстрактор',
+  steamer:   'Пароочиститель',
+  ladder:    'Стремянка (для мытья окон)',
+  tools:     'Инвентарь (швабра, вёдра, микрофибра)',
+  prochem:   'Профессиональная химия',
+  eco:       'Экологичные средства',
+};
 const EXTRAS_CATEGORIES = {
   kitchen:   'Кухня',
   bath:      'Санузел',
@@ -333,9 +342,11 @@ const EXTRAS_CATALOG = {
   descale:    { label: 'Удалить налёт и ржавчину в санузле', price: 40, type: 'flat', cat: 'bath', desc: 'Удаление известкового налёта и ржавчины.' },
   bathroom:   { label: 'Дополнительный санузел',  price: 30, type: 'qty', unit: 'шт', max: 5, cat: 'bath', desc: 'Полная уборка дополнительного санузла.' },
   // windows / balcony
-  windows:    { label: 'Мойка окон',             price: 20, type: 'qty', unit: 'шт', max: 15, cat: 'windows', desc: 'Мойка окна с двух сторон, рама и подоконник.' },
-  glazing:    { label: 'Помыть балконное остекление', price: 80, type: 'flat', cat: 'windows', desc: 'Мойка панорамного остекления балкона.' },
-  balcony:    { label: 'Убрать балкон',          price: 45, type: 'flat', cat: 'windows', desc: 'Подметём и вымоем пол, протрём поверхности.' },
+  windows:      { label: 'Мойка окон изнутри',     price: 20, type: 'qty', unit: 'шт', max: 30, cat: 'windows', desc: 'Мойка окна изнутри, рама и подоконник.' },
+  windows_out:  { label: 'Мойка окон снаружи',     price: 30, type: 'qty', unit: 'шт', max: 30, cat: 'windows', desc: 'Мойка окна снаружи (при обычном доступе — с подоконника/поворотных створок).' },
+  windows_climber: { label: 'Высотные работы — промышленный альпинист', price: 250, type: 'flat', cat: 'windows', desc: 'Глухие окна снаружи или высокий этаж без доступа из дома — мойка на верёвках.' },
+  glazing:      { label: 'Помыть балконное остекление', price: 80, type: 'flat', cat: 'windows', desc: 'Мойка панорамного остекления балкона.' },
+  balcony:      { label: 'Убрать балкон',          price: 45, type: 'flat', cat: 'windows', desc: 'Подметём и вымоем пол, протрём поверхности.' },
   // care / linen
   ironing:    { label: 'Глажка (1 час)',         price: 35, type: 'qty', unit: 'ч', max: 4, cat: 'care', desc: 'Глажка вещей, час работы.' },
   laundry:    { label: 'Стирка и глажка',        price: 35, type: 'flat', cat: 'care', desc: 'Загрузка стирки и глажка вещей.' },
@@ -554,6 +565,8 @@ route('POST', '/api/register', async (req, res) => {
     user.idDocument = b.idDocument;           // sensitive PII — admin-only, never in public payloads
     user.bio = bio.slice(0, 600);
     user.experienceYears = Math.max(0, Math.min(50, Number(b.experienceYears) || 0));
+    user.equipment = Array.isArray(b.equipment) ? b.equipment.filter((k) => EQUIPMENT[k]) : [];
+    user.hasCar = !!b.hasCar;
   }
   db.users[id] = user;
   persist.users();
@@ -607,6 +620,8 @@ route('PATCH', '/api/me', async (req, res) => {
   const b = await readBody(req);
   if (typeof b.bio === 'string') user.bio = b.bio.slice(0, 280);
   if (b.experienceYears != null) user.experienceYears = Math.max(0, Math.min(50, Number(b.experienceYears) || 0));
+  if (Array.isArray(b.equipment)) user.equipment = b.equipment.filter((k) => EQUIPMENT[k]);
+  if (typeof b.hasCar === 'boolean') user.hasCar = b.hasCar;
   if (typeof b.name === 'string' && b.name.trim()) user.name = b.name.trim().slice(0, 60);
   persist.users();
   send(res, 200, { user: publicUser(user) });
@@ -721,7 +736,7 @@ route('POST', '/api/cleaner/online', async (req, res) => {
 
 // ---- Catalog & estimate ----
 route('GET', '/api/catalog', async (req, res) => {
-  send(res, 200, { services: SERVICE_CATALOG, extras: EXTRAS_CATALOG, extraCategories: EXTRAS_CATEGORIES, commissionRate: COMMISSION_RATE, currency: CURRENCY });
+  send(res, 200, { services: SERVICE_CATALOG, extras: EXTRAS_CATALOG, extraCategories: EXTRAS_CATEGORIES, equipment: EQUIPMENT, commissionRate: COMMISSION_RATE, currency: CURRENCY });
 });
 route('POST', '/api/estimate', async (req, res) => {
   const b = await readBody(req);
@@ -791,8 +806,8 @@ function conciergeSuggest(text) {
     service = 'office'; extras = [];
     title = 'Уборка офиса'; reason = 'Профессиональная уборка офиса перед выходом команды.';
   } else if (has('window', 'glass', 'okna', 'окн', 'стекл')) {
-    service = 'windows'; extras = [];
-    title = 'Мытьё окон'; reason = 'Кристально чистые окна снаружи и внутри.';
+    service = 'standard'; extras = ['windows', 'windows_out'];
+    title = 'Мытьё окон'; reason = 'Кристально чистые окна снаружи и внутри — добавили мойку окон в услугу.';
   } else if (has('pet', 'dog', 'puppy', 'cat', 'kitten', 'fur', 'shedding', 'allerg', 'zwierz',
                  'пёс', 'пес', 'собак', 'кот', 'котён', 'щенок', 'шерст', 'аллерг', 'животн')) {
     service = 'deep'; extras = ['pets'];
@@ -1180,6 +1195,7 @@ function cleanerPublic(u) {
     id: u.id, name: u.name, avatar: u.avatar || null,
     rating: u.rating || null, jobsDone: u.jobsDone || 0, city: u.city || null,
     bio: u.bio || '', experienceYears: u.experienceYears || null,
+    equipment: Array.isArray(u.equipment) ? u.equipment : [], hasCar: !!u.hasCar,
     online: !!u.online, verified: !!u.verified,
   };
 }
@@ -1935,6 +1951,7 @@ route('GET', '/api/admin/users/:id', async (req, res, params) => {
       subscription: u.subscription || null, wallet: u.wallet || 0,
       rating: u.rating || null, jobsDone: u.jobsDone || 0,
       bio: u.bio || '', experienceYears: u.experienceYears || 0,
+      equipment: Array.isArray(u.equipment) ? u.equipment : [], hasCar: !!u.hasCar,
       avatar: u.avatar || null,
       idDocument: u.idDocument || null,          // admin-only
       createdAt: u.createdAt,
