@@ -2670,11 +2670,9 @@ async function openSupport(){
     <label class="field"><span>Ваш email для ответа</span><input class="input" id="supEmail" type="email" value="${esc(state.user.email||'')}" placeholder="you@example.com"></label>
     <label class="field"><span>Сообщение</span><textarea class="input" id="supMsg" rows="5" maxlength="2000" placeholder="Опишите вопрос или проблему — чем подробнее, тем быстрее поможем."></textarea></label>
     <button class="btn block" id="supSend">Отправить обращение ${I.arrow}</button>
-    <a class="btn ghost block" id="supMail" style="margin-top:10px;text-decoration:none">${I.send} Написать на почту напрямую</a>
   </div>`);
   showModalNode(inner);
   inner.querySelectorAll('#supTopics [data-t]').forEach(b=>b.onclick=()=>{sel.topic=b.dataset.t;inner.querySelectorAll('#supTopics .chip').forEach(x=>x.classList.toggle('sel',x===b));});
-  const mail=$('#supMail',inner); if(mail)mail.href=`mailto:${meta.email}?subject=${encodeURIComponent('LUMI · обращение в поддержку')}`;
   $('#supSend',inner).onclick=async()=>{
     const message=$('#supMsg',inner).value.trim();
     const email=$('#supEmail',inner).value.trim();
