@@ -1892,8 +1892,23 @@ route('GET', '/api/admin/users/:id', async (req, res, params) => {
   const u = db.users[params.id];
   if (!u || u.deletedAt) return send(res, 404, { error: 'User not found.' });
   const bookings = Object.values(db.bookings);
+  // Orders relevant to this user: the jobs a cleaner performed, or a customer's orders.
+  const mine = bookings
+    .filter((x) => (u.role === 'cleaner' ? x.cleanerId === u.id : x.customerId === u.id))
+    .sort((a, b) => b.createdAt - a.createdAt);
   const asCustomer = bookings.filter((x) => x.customerId === u.id).length;
   const asCleaner = bookings.filter((x) => x.cleanerId === u.id).length;
+  const completedCount = mine.filter((x) => x.status === 'completed').length;
+  const orders = mine.slice(0, 60).map((x) => {
+    const counter = u.role === 'cleaner' ? db.users[x.customerId] : (x.cleanerId ? db.users[x.cleanerId] : null);
+    const completedAt = (x.timeline.find((t) => t.status === 'completed') || {}).at || null;
+    return {
+      id: x.id, service: x.service, serviceLabel: x.serviceLabel, status: x.status,
+      city: x.city, createdAt: x.createdAt, completedAt,
+      price: x.price, payout: x.payout,                 // admin sees full money
+      counterpartyName: counter ? counter.name : null,
+    };
+  });
   const recentReviews = u.role === 'cleaner'
     ? Object.values(db.reviews || {}).filter((r) => r.cleanerId === u.id).sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 5)
     : [];
@@ -1910,6 +1925,7 @@ route('GET', '/api/admin/users/:id', async (req, res, params) => {
       idDocument: u.idDocument || null,          // admin-only
       createdAt: u.createdAt,
       bookingsAsCustomer: asCustomer, bookingsAsCleaner: asCleaner,
+      completedCount, orders,
       reviews: recentReviews,
     },
   });
