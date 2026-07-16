@@ -83,6 +83,16 @@ const T = {
     deepLink: 'lumi://booking/{bookingId}',
     ru: { title: 'Проблема решена', body: 'Ваше обращение по «{service}» закрыто. {resolution}' },
   },
+  'support.received': {
+    category: 'account', priority: 'normal', channels: ['in_app', 'email'],
+    deepLink: 'lumi://home',
+    ru: { title: 'Обращение принято', body: 'Мы получили ваше сообщение и ответим на {email} в течение 24 часов.' },
+  },
+  'support.message_admin': {
+    category: 'operational', priority: 'high', channels: ['in_app'],
+    deepLink: 'lumi://admin/support',
+    ru: { title: 'Новое обращение в поддержку', body: '{who}: «{topic}»' },
+  },
   'provider.not_chosen': {
     category: 'operational', priority: 'low', channels: ['in_app'],
     deepLink: 'lumi://home',

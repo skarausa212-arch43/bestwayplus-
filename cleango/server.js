@@ -187,6 +187,7 @@ const db = {
   appliances: loadJSON('appliances.json', {}), // propertyId -> [appliance] (Smart Home registry)
   flagOverrides: loadJSON('flags.json', {}), // key -> { enabled, rollout, roles } (feature flags)
   disputes: loadJSON('disputes.json', {}),   // id -> support ticket / dispute per booking
+  support: loadJSON('support.json', {}),     // id -> general support message ("Поддержка 24/7")
 };
 const persist = {
   users: () => saveJSON('users.json', db.users),
@@ -199,6 +200,7 @@ const persist = {
   appliances: () => saveJSON('appliances.json', db.appliances),
   flagOverrides: () => saveJSON('flags.json', db.flagOverrides),
   disputes: () => saveJSON('disputes.json', db.disputes),
+  support: () => saveJSON('support.json', db.support),
 };
 
 // ─────────── Notifications (15_NOTIFICATION_SYSTEM.md) ───────────
@@ -1496,6 +1498,50 @@ route('POST', '/api/admin/disputes/:id/resolve', async (req, res, params) => {
   const bk = db.bookings[d.bookingId];
   notify(d.openedBy, 'dispute.resolved', { service: bk ? bk.serviceLabel : 'заказ', resolution: d.resolution, bookingId: d.bookingId });
   send(res, 200, { dispute: disputeView(d) });
+});
+
+// ─────────────────────────── Support 24/7 ("Написать нам") ───────────────────────────
+const SUPPORT_EMAIL = process.env.LUMI_SUPPORT_EMAIL || 'support@lumi.bestwayplus.pl';
+const SUPPORT_TOPICS = {
+  general: 'Общий вопрос', order: 'Вопрос по заказу', payment: 'Оплата и чеки',
+  account: 'Аккаунт и доступ', provider: 'Стать исполнителем', other: 'Другое',
+};
+route('POST', '/api/support', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const rl = rateLimit('support:' + user.id, 5, 3600000);   // 5/hour/user
+  if (!rl.ok) return send(res, 429, { error: 'Слишком много обращений. Попробуйте позже.', code: 'RATE_LIMITED' }, { 'Retry-After': rl.retryAfter });
+  const b = await readBody(req);
+  const topic = SUPPORT_TOPICS[b.topic] ? b.topic : 'general';
+  const message = String(b.message || '').trim().slice(0, 2000);
+  const email = String(b.email || user.email || '').trim().slice(0, 120);
+  if (message.length < 5) return send(res, 400, { error: 'Опишите вопрос подробнее.', code: 'VALIDATION_ERROR' });
+  const id = uid('s_');
+  db.support[id] = { id, userId: user.id, name: user.name, email, role: user.role, topic, message, status: 'open', createdAt: now() };
+  persist.support();
+  audit('support.message', user.id, id, { topic });
+  notify(user.id, 'support.received', { email });
+  for (const a of Object.values(db.users)) {
+    if (a.role === 'admin') notify(a.id, 'support.message_admin', { who: user.name, topic: SUPPORT_TOPICS[topic] });
+  }
+  send(res, 200, { ok: true, supportEmail: SUPPORT_EMAIL });
+});
+route('GET', '/api/support/meta', async (req, res) => {
+  send(res, 200, { topics: SUPPORT_TOPICS, email: SUPPORT_EMAIL });
+});
+route('GET', '/api/admin/support', async (req, res) => {
+  const admin = requireCap(req, res, 'disputes.manage'); if (!admin) return;
+  const list = Object.values(db.support).sort((a, b) => (a.status === 'open' ? 0 : 1) - (b.status === 'open' ? 0 : 1) || b.createdAt - a.createdAt);
+  send(res, 200, { support: list, openCount: list.filter((s) => s.status === 'open').length, topics: SUPPORT_TOPICS });
+});
+route('POST', '/api/admin/support/:id/resolve', async (req, res, params) => {
+  const admin = requireCap(req, res, 'disputes.manage'); if (!admin) return;
+  const s = db.support[params.id];
+  if (!s) return send(res, 404, { error: 'Not found.' });
+  s.status = 'resolved'; s.resolvedAt = now(); s.resolvedBy = admin.id;
+  persist.support();
+  audit('support.resolved', admin.id, s.id, {});
+  send(res, 200, { ok: true });
 });
 
 // ─────────────────────────── Receipt / чек after completion ───────────────────────────

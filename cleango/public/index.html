@@ -1244,7 +1244,7 @@ function shell(content){
   </div>`);
   const nav=$('.nav',app), tab=$('.tabbar',app);
   const pp=$('#promoPlus',app); if(pp)pp.onclick=()=>{state.view='premium';render();};
-  const sup=$('.support-card',app); if(sup)sup.onclick=()=>toast('Поддержка: support@lumi.example');
+  const sup=$('.support-card',app); if(sup)sup.onclick=()=>openSupport();
   items.forEach(([v,label,icon])=>{
     const b=el(`<button class="${state.view===v?'active':''}">${icon}<span>${label}</span></button>`);
     b.onclick=()=>{state.view=v;render();};
@@ -2657,6 +2657,33 @@ async function openIssue(bookingId){
     }catch(e){toast(e.message,true);}
   };
 }
+/* ---------- Поддержка 24/7 — форма обращения ---------- */
+async function openSupport(){
+  let meta={topics:{general:'Общий вопрос',order:'Вопрос по заказу',payment:'Оплата и чеки',account:'Аккаунт и доступ',provider:'Стать исполнителем',other:'Другое'},email:'support@lumi.bestwayplus.pl'};
+  try{meta=await api('/api/support/meta');}catch{}
+  const sel={topic:'general'};
+  const inner=el(`<div class="card pad">
+    <div class="row" style="gap:12px;margin-bottom:14px"><span class="issue-ic" style="background:var(--primary-050);color:var(--primary-600)">${I.chat}</span>
+      <div><h3 style="margin-bottom:2px">Поддержка 24/7</h3><p class="muted tiny">Напишите нам — ответим на ${esc(meta.email)} в течение 24 часов.</p></div></div>
+    <label class="field"><span>Тема</span></label>
+    <div class="issue-cats" id="supTopics" style="margin-bottom:14px">${Object.entries(meta.topics).map(([k,v])=>`<button type="button" class="chip ${k==='general'?'sel':''}" data-t="${k}">${v}</button>`).join('')}</div>
+    <label class="field"><span>Ваш email для ответа</span><input class="input" id="supEmail" type="email" value="${esc(state.user.email||'')}" placeholder="you@example.com"></label>
+    <label class="field"><span>Сообщение</span><textarea class="input" id="supMsg" rows="5" maxlength="2000" placeholder="Опишите вопрос или проблему — чем подробнее, тем быстрее поможем."></textarea></label>
+    <button class="btn block" id="supSend">Отправить обращение ${I.arrow}</button>
+    <a class="btn ghost block" id="supMail" style="margin-top:10px;text-decoration:none">${I.send} Написать на почту напрямую</a>
+  </div>`);
+  showModalNode(inner);
+  inner.querySelectorAll('#supTopics [data-t]').forEach(b=>b.onclick=()=>{sel.topic=b.dataset.t;inner.querySelectorAll('#supTopics .chip').forEach(x=>x.classList.toggle('sel',x===b));});
+  const mail=$('#supMail',inner); if(mail)mail.href=`mailto:${meta.email}?subject=${encodeURIComponent('LUMI · обращение в поддержку')}`;
+  $('#supSend',inner).onclick=async()=>{
+    const message=$('#supMsg',inner).value.trim();
+    const email=$('#supEmail',inner).value.trim();
+    if(message.length<5){toast('Опишите вопрос подробнее',true);return;}
+    try{await api('/api/support','POST',{topic:sel.topic,message,email});
+      toast('Обращение отправлено — мы ответим на почту');closeModal();
+    }catch(e){toast(e.message,true);}
+  };
+}
 /* ---------- receipt / чек after completion ---------- */
 async function openReceipt(bookingId){
   showModal(`<div class="card pad"><div class="sk" style="height:320px"></div></div>`);
@@ -3032,6 +3059,10 @@ async function viewAdmin(){
           <h4 style="margin-bottom:14px">Проблемы по заказам <span class="badge amber" id="dispCount"></span></h4>
           <div id="dispBody"></div>
         </div>
+        <div class="card pad" id="supCard" style="overflow-x:auto;display:none">
+          <h4 style="margin-bottom:14px">Обращения в поддержку <span class="badge amber" id="supCount"></span></h4>
+          <div id="supBody"></div>
+        </div>
         <div class="card pad" style="overflow-x:auto">
           <h4 style="margin-bottom:14px">Исполнители ${stats.pendingKyc?`<span class="badge amber" style="margin-left:8px">${stats.pendingKyc} на проверке</span>`:''}</h4>
           <table class="tbl"><thead><tr><th>Имя</th><th>Рейтинг</th><th>Заказов</th><th>Баланс</th><th>Статус</th><th></th></tr></thead><tbody id="clBody"></tbody></table>
@@ -3050,6 +3081,7 @@ async function viewAdmin(){
       </div>`;
     loadAdminUsers('');
     loadAdminDisputes();
+    loadAdminSupport();
     const us=$('#usrSearch',body); let ut=null;
     if(us)us.oninput=()=>{clearTimeout(ut);ut=setTimeout(()=>loadAdminUsers(us.value.trim()),250);};
     const kg=$('.kpi-grid',body);stagger(kg);
@@ -3144,6 +3176,41 @@ function openAdminDispute(d){
     try{await api('/api/admin/disputes/'+d.id+'/resolve','POST',{resolution:$('#dispRes',inner).value.trim()});
       toast('Обращение закрыто');closeModal();viewAdmin();
     }catch(e){toast(e.message,true);}
+  };
+}
+async function loadAdminSupport(){
+  const card=$('#supCard'),body=$('#supBody'),count=$('#supCount'); if(!body)return;
+  try{
+    const {support,openCount,topics}=await api('/api/admin/support');
+    if(!support.length){if(card)card.style.display='none';return;}
+    if(card)card.style.display='';
+    if(count)count.textContent=openCount?`${openCount} новых`:'все закрыты';
+    body.innerHTML='';
+    support.forEach(s=>{
+      const row=el(`<div class="card bk" style="cursor:pointer;margin-bottom:10px;align-items:flex-start">
+        <span class="issue-ic ${s.status==='open'?'amber':''}" style="${s.status!=='open'?'background:var(--primary-050);color:var(--primary-600)':''}">${s.status==='open'?I.chat:I.check}</span>
+        <div class="meta" style="min-width:0"><h4>${esc((topics&&topics[s.topic])||s.topic)}</h4>
+          <div class="tiny muted" style="margin:3px 0">${esc(s.name)} (${ROLE_RU[s.role]||s.role}) · ${esc(s.email)} · ${timeAgo(s.createdAt)}</div>
+          <div class="tiny" style="color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">«${esc(s.message)}»</div></div>
+        ${s.status==='open'?'<span class="badge amber">Новое</span>':'<span class="badge green">Закрыто</span>'}</div>`);
+      row.onclick=()=>openAdminSupport(s,(topics&&topics[s.topic])||s.topic);
+      body.appendChild(row);
+    });
+  }catch(e){ if(card)card.style.display='none'; }
+}
+function openAdminSupport(s,topicLabel){
+  const inner=el(`<div class="card pad">
+    <div class="row" style="gap:10px;margin-bottom:12px"><span class="issue-ic" style="background:var(--primary-050);color:var(--primary-600)">${I.chat}</span>
+      <div style="flex:1"><h3>${esc(topicLabel)}</h3><div class="tiny muted">${esc(s.name)} (${ROLE_RU[s.role]||s.role}) · ${fmtTime(s.createdAt)}</div></div>
+      ${s.status==='open'?'<span class="badge amber">Новое</span>':'<span class="badge green">Закрыто</span>'}</div>
+    <div class="card pad" style="background:var(--surface-2);margin-bottom:12px"><div style="font-size:14px;line-height:1.5">«${esc(s.message)}»</div></div>
+    <a class="btn ghost block" id="supReply" style="margin-bottom:12px;text-decoration:none">${I.send} Ответить на ${esc(s.email)}</a>
+    ${s.status==='open'?`<button class="btn block" id="supDone">Отметить обработанным ${I.check}</button>`:''}
+  </div>`);
+  showModalNode(inner);
+  const rp=$('#supReply',inner); if(rp)rp.href=`mailto:${s.email}?subject=${encodeURIComponent('Re: '+topicLabel+' · LUMI')}`;
+  const db=$('#supDone',inner); if(db)db.onclick=async()=>{
+    try{await api('/api/admin/support/'+s.id+'/resolve','POST',{});toast('Обращение закрыто');closeModal();viewAdmin();}catch(e){toast(e.message,true);}
   };
 }
 
@@ -3273,7 +3340,7 @@ async function viewEarnings(){
 function perfCard(label,val,sub){return `<div class="card pad" style="text-align:center"><b style="font-size:19px">${val}</b><div class="tiny muted" style="margin-top:2px">${label}</div>${sub?`<div class="tiny hint">${sub}</div>`:''}</div>`;}
 
 /* ---------- ADMIN: AUDIT LOG (18 §17) ---------- */
-const AUDIT_RU={'user.created':'Регистрация','user.deleted':'Удаление аккаунта','user.suspended':'Блокировка','user.reactivated':'Разблокировка','provider.verification_approved':'KYC одобрен','provider.verification_revoked':'KYC отозван','booking.redispatched':'Переназначение','booking.admin_cancelled':'Отмена оператором','notification.broadcast':'Рассылка','audit.viewed':'Просмотр аудита','subscription.started':'LUMI+ включён','subscription.cancelled':'LUMI+ отменён','user.profile_viewed':'Просмотр профиля','user.promoted_admin':'Назначен админом','dispute.opened':'Открыта проблема','dispute.resolved':'Проблема решена'};
+const AUDIT_RU={'user.created':'Регистрация','user.deleted':'Удаление аккаунта','user.suspended':'Блокировка','user.reactivated':'Разблокировка','provider.verification_approved':'KYC одобрен','provider.verification_revoked':'KYC отозван','booking.redispatched':'Переназначение','booking.admin_cancelled':'Отмена оператором','notification.broadcast':'Рассылка','audit.viewed':'Просмотр аудита','subscription.started':'LUMI+ включён','subscription.cancelled':'LUMI+ отменён','user.profile_viewed':'Просмотр профиля','user.promoted_admin':'Назначен админом','dispute.opened':'Открыта проблема','dispute.resolved':'Проблема решена','support.message':'Обращение в поддержку','support.resolved':'Поддержка: закрыто'};
 async function viewAudit(){
   const c=el(`<div><div class="section-title">Журнал аудита <span class="badge" style="background:var(--surface-2)">append-only</span></div><div id="auditBody"><div class="card pad"><div class="sk" style="height:200px"></div></div></div></div>`);
   shell(c);
