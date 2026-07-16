@@ -68,6 +68,21 @@ const T = {
     deepLink: 'lumi://booking/{bookingId}',
     ru: { title: 'FlashClean · 60 минут', body: 'Исполнитель должен прибыть в течение часа. Мы следим за временем.' },
   },
+  'dispute.opened': {
+    category: 'operational', priority: 'high', channels: ['in_app', 'email'],
+    deepLink: 'lumi://booking/{bookingId}',
+    ru: { title: 'Обращение принято', body: 'Мы получили вашу проблему по «{service}» и уже разбираемся.' },
+  },
+  'dispute.opened_admin': {
+    category: 'operational', priority: 'high', channels: ['in_app'],
+    deepLink: 'lumi://admin/disputes',
+    ru: { title: 'Новая проблема по заказу', body: '{who}: «{category}» по «{service}».' },
+  },
+  'dispute.resolved': {
+    category: 'operational', priority: 'high', channels: ['in_app', 'push', 'email'],
+    deepLink: 'lumi://booking/{bookingId}',
+    ru: { title: 'Проблема решена', body: 'Ваше обращение по «{service}» закрыто. {resolution}' },
+  },
   'provider.not_chosen': {
     category: 'operational', priority: 'low', channels: ['in_app'],
     deepLink: 'lumi://home',

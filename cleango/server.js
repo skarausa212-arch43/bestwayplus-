@@ -186,6 +186,7 @@ const db = {
   notifications: loadJSON('notifications.json', {}), // userId -> [notification]
   appliances: loadJSON('appliances.json', {}), // propertyId -> [appliance] (Smart Home registry)
   flagOverrides: loadJSON('flags.json', {}), // key -> { enabled, rollout, roles } (feature flags)
+  disputes: loadJSON('disputes.json', {}),   // id -> support ticket / dispute per booking
 };
 const persist = {
   users: () => saveJSON('users.json', db.users),
@@ -197,6 +198,7 @@ const persist = {
   notifications: () => saveJSON('notifications.json', db.notifications),
   appliances: () => saveJSON('appliances.json', db.appliances),
   flagOverrides: () => saveJSON('flags.json', db.flagOverrides),
+  disputes: () => saveJSON('disputes.json', db.disputes),
 };
 
 // ─────────── Notifications (15_NOTIFICATION_SYSTEM.md) ───────────
@@ -1410,6 +1412,91 @@ function settlePayment(bk) {
   db.ledger.push({ id: uid('l_'), bookingId: bk.id, at: now(), gross: bk.price, payout: bk.payout, commission: bk.commission, currency: cur });
   persist.ledger();
 }
+
+// ─────────────────────────── Disputes / support ("Решить проблему") ───────────────────────────
+// A participant can raise a problem about a booking (works even after the chat
+// has closed on completion). Admins triage and resolve them.
+const DISPUTE_CATEGORIES = {
+  quality:    'Плохо убрано / качество',
+  no_show:    'Исполнитель не пришёл',
+  late:       'Опоздание',
+  damage:     'Повреждение имущества',
+  payment:    'Спор по оплате',
+  behavior:   'Поведение / общение',
+  other:      'Другое',
+};
+function disputeView(d) {
+  const bk = db.bookings[d.bookingId];
+  const opener = db.users[d.openedBy];
+  return {
+    id: d.id, bookingId: d.bookingId, category: d.category, categoryLabel: DISPUTE_CATEGORIES[d.category] || d.category,
+    description: d.description, photo: d.photo || null, status: d.status,
+    openedBy: d.openedBy, openedRole: d.openedRole, openerName: opener ? opener.name : '—',
+    createdAt: d.createdAt, resolvedAt: d.resolvedAt || null, resolution: d.resolution || '',
+    service: bk ? bk.serviceLabel : null, city: bk ? bk.city : null,
+  };
+}
+// Open a problem on a booking (customer or cleaner participant).
+route('POST', '/api/bookings/:id/issue', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const bk = db.bookings[params.id];
+  if (!bk) return send(res, 404, { error: 'Booking not found.' });
+  if (!(bk.customerId === user.id || bk.cleanerId === user.id)) return send(res, 403, { error: 'Forbidden.' });
+  const b = await readBody(req);
+  const category = DISPUTE_CATEGORIES[b.category] ? b.category : 'other';
+  const description = String(b.description || '').trim().slice(0, 1000);
+  if (description.length < 5) return send(res, 400, { error: 'Опишите проблему подробнее.', code: 'VALIDATION_ERROR' });
+  const photo = validImage(b.photo, 2000000) ? b.photo : null;
+  // One open ticket per user per booking.
+  const existing = Object.values(db.disputes).find((d) => d.bookingId === bk.id && d.openedBy === user.id && d.status === 'open');
+  if (existing) return send(res, 409, { error: 'По этому заказу уже есть открытое обращение.', code: 'ALREADY_OPEN', dispute: disputeView(existing) });
+  const id = uid('d_');
+  const d = { id, bookingId: bk.id, openedBy: user.id, openedRole: user.role, category, description, photo, status: 'open', createdAt: now() };
+  db.disputes[id] = d;
+  persist.disputes();
+  audit('dispute.opened', user.id, bk.id, { category });
+  notify(user.id, 'dispute.opened', { service: bk.serviceLabel, bookingId: bk.id });
+  // Alert every admin.
+  for (const a of Object.values(db.users)) {
+    if (a.role === 'admin') notify(a.id, 'dispute.opened_admin', { who: user.name, category: DISPUTE_CATEGORIES[category], service: bk.serviceLabel, bookingId: bk.id });
+  }
+  send(res, 200, { dispute: disputeView(d) });
+});
+// Read the current user's (or admin's) issues for a booking + the categories.
+route('GET', '/api/bookings/:id/issue', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const bk = db.bookings[params.id];
+  if (!bk) return send(res, 404, { error: 'Booking not found.' });
+  const isParticipant = bk.customerId === user.id || bk.cleanerId === user.id;
+  if (!isParticipant && user.role !== 'admin') return send(res, 403, { error: 'Forbidden.' });
+  let list = Object.values(db.disputes).filter((d) => d.bookingId === bk.id);
+  if (user.role !== 'admin') list = list.filter((d) => d.openedBy === user.id);
+  send(res, 200, { categories: DISPUTE_CATEGORIES, disputes: list.sort((a, b) => b.createdAt - a.createdAt).map(disputeView) });
+});
+// Admin: list all disputes (open first).
+route('GET', '/api/admin/disputes', async (req, res) => {
+  const admin = requireCap(req, res, 'disputes.manage'); if (!admin) return;
+  const list = Object.values(db.disputes).sort((a, b) => (a.status === 'open' ? 0 : 1) - (b.status === 'open' ? 0 : 1) || b.createdAt - a.createdAt);
+  send(res, 200, { disputes: list.map(disputeView), openCount: list.filter((d) => d.status === 'open').length });
+});
+// Admin: resolve a dispute.
+route('POST', '/api/admin/disputes/:id/resolve', async (req, res, params) => {
+  const admin = requireCap(req, res, 'disputes.manage'); if (!admin) return;
+  const d = db.disputes[params.id];
+  if (!d) return send(res, 404, { error: 'Dispute not found.' });
+  const b = await readBody(req);
+  d.status = 'resolved';
+  d.resolution = String(b.resolution || '').slice(0, 500);
+  d.resolvedAt = now();
+  d.resolvedBy = admin.id;
+  persist.disputes();
+  audit('dispute.resolved', admin.id, d.bookingId, { disputeId: d.id });
+  const bk = db.bookings[d.bookingId];
+  notify(d.openedBy, 'dispute.resolved', { service: bk ? bk.serviceLabel : 'заказ', resolution: d.resolution, bookingId: d.bookingId });
+  send(res, 200, { dispute: disputeView(d) });
+});
 
 // Photos (base64 data URLs of downscaled thumbnails)
 route('POST', '/api/bookings/:id/photos', async (req, res, params) => {

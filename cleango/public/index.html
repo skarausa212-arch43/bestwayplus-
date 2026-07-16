@@ -280,6 +280,14 @@ textarea.input{resize:vertical;min-height:80px}
 .chat-head b{font-size:14px}
 .chat-closed{display:flex;align-items:center;gap:8px;padding:14px;border-top:1px solid var(--line);background:var(--surface-2);color:var(--ink-3);font-size:13px;font-weight:600}
 .chat-closed svg{width:16px;height:16px;flex:none}
+/* «Решить проблему» issue cards + category chips */
+.issue-card{border:1.5px solid var(--warn)}
+.issue-ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;flex:none}
+.issue-ic.amber{background:#FEF3E2;color:#B25E09}
+.issue-ic svg{width:19px;height:19px}
+.issue-cats{display:flex;flex-wrap:wrap;gap:8px}
+.issue-cats .chip{cursor:pointer;border:1.5px solid var(--line);background:var(--surface)}
+.issue-cats .chip.sel{border-color:var(--primary);background:var(--primary-050);color:var(--primary-600)}
 .chatbar{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
 .chatbar .attach{display:grid;place-items:center;width:40px;flex:none;background:var(--surface-2);border-radius:12px;cursor:pointer}
 
@@ -787,6 +795,7 @@ const I = {
   star:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 6 20.6l1.4-6.8L2.3 9.1l6.9-.8L12 2Z"/></svg>`,
   clock:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`,
   lock:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7a4 4 0 018 0v3.5"/></svg>`,
+  shield:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>`,
   pin:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6 7-11a7 7 0 10-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>`,
   cam:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1Z"/><circle cx="12" cy="13" r="3.5"/></svg>`,
   check:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>`,
@@ -2410,12 +2419,14 @@ async function renderBookingDetail(id){
 
       <div id="photoZone"></div>
       <div id="actionZone" style="margin:14px 0"></div>
+      <div id="issueZone"></div>
       <div id="chatZone"></div>
     `;
     renderResponders(b);
     renderTracking(b);
     renderPhotos(b);
     renderActions(b,{isCleaner,isCustomer,assignedToMe,canAccept});
+    renderIssue(b,{isCleaner,isCustomer,assignedToMe});
     renderChat(b);
     const pf=$('[data-prof]'); if(pf)pf.onclick=()=>openCleanerProfile(pf.dataset.prof);
     const fav=$('#favBtn');
@@ -2579,6 +2590,53 @@ function renderActions(b,ctx){
   bind('reviewBtn',()=>openReview(b.id));
   const up=(id,phase)=>{const e=$('#'+id);if(e)e.onclick=()=>uploadPhoto(b.id,phase);};
   up('upBefore','before');up('upAfter','after');
+}
+/* ---------- «Решить проблему» — support / disputes ---------- */
+async function renderIssue(b,ctx){
+  const z=$('#issueZone'); if(!z)return;
+  // Only participants (customer or the assigned cleaner) raise issues.
+  const canRaise=(ctx.isCustomer && b.customerId===state.user.id) || (ctx.isCleaner && b.cleanerId===state.user.id);
+  if(!canRaise){z.innerHTML='';return;}
+  try{
+    const {disputes}=await api('/api/bookings/'+b.id+'/issue');
+    const open=disputes.find(d=>d.status==='open');
+    const resolved=disputes.find(d=>d.status==='resolved');
+    if(open){
+      z.innerHTML=`<div class="card pad issue-card" style="margin:14px 0">
+        <div class="row" style="gap:10px"><span class="issue-ic amber">${I.bell}</span>
+          <div style="flex:1"><b>Обращение на рассмотрении</b><div class="tiny muted" style="margin-top:2px">${esc(open.categoryLabel)} · ${timeAgo(open.createdAt)}</div>
+          <div class="tiny" style="margin-top:6px;color:var(--ink-2)">«${esc(open.description)}»</div></div></div></div>`;
+      return;
+    }
+    z.innerHTML=`<button class="btn ghost block" id="issueBtn" style="margin:14px 0">${I.shield||I.bell} Решить проблему по заказу</button>
+      ${resolved?`<div class="card pad" style="margin-bottom:14px;background:var(--surface-2)"><div class="tiny"><b>${I.check} Прошлое обращение решено</b>${resolved.resolution?` — ${esc(resolved.resolution)}`:''}</div></div>`:''}`;
+    const btn=$('#issueBtn',z); if(btn)btn.onclick=()=>openIssue(b.id);
+  }catch(e){ z.innerHTML=''; }
+}
+async function openIssue(bookingId){
+  let cats={};
+  try{const r=await api('/api/bookings/'+bookingId+'/issue');cats=r.categories||{};}catch{}
+  const state2={cat:'quality',photo:null};
+  const inner=el(`<div class="card pad">
+    <h3 style="margin-bottom:4px">Решить проблему</h3>
+    <p class="muted tiny" style="margin-bottom:16px">Опишите, что пошло не так — модератор LUMI разберётся и свяжется с вами.</p>
+    <label class="field"><span>Что случилось?</span></label>
+    <div class="issue-cats" id="issueCats" style="margin-bottom:14px">${Object.entries(cats).map(([k,v])=>`<button type="button" class="chip ${k==='quality'?'sel':''}" data-cat="${k}">${v}</button>`).join('')}</div>
+    <label class="field"><span>Подробности</span><textarea class="input" id="issueDesc" rows="4" placeholder="Например: не помыли пол на кухне и не вынесли мусор." maxlength="1000"></textarea></label>
+    <button class="btn ghost block" id="issuePhoto" style="margin-bottom:12px">${I.cam} Прикрепить фото (необязательно)</button>
+    <div id="issuePhotoPrev"></div>
+    <button class="btn block" id="issueSubmit">Отправить обращение ${I.arrow}</button>
+  </div>`);
+  showModalNode(inner);
+  inner.querySelectorAll('#issueCats [data-cat]').forEach(b=>b.onclick=()=>{state2.cat=b.dataset.cat;inner.querySelectorAll('#issueCats .chip').forEach(x=>x.classList.toggle('sel',x===b));});
+  $('#issuePhoto',inner).onclick=()=>pickImage((img)=>{state2.photo=img;$('#issuePhotoPrev',inner).innerHTML=`<img src="${img}" style="width:100%;max-height:180px;object-fit:cover;border-radius:12px;margin-bottom:12px">`;},1200,0.72);
+  $('#issueSubmit',inner).onclick=async()=>{
+    const description=$('#issueDesc',inner).value.trim();
+    if(description.length<5){toast('Опишите проблему подробнее',true);return;}
+    try{await api('/api/bookings/'+bookingId+'/issue','POST',{category:state2.cat,description,photo:state2.photo});
+      toast('Обращение отправлено — мы разберёмся');closeModal();renderBookingDetail(bookingId);
+    }catch(e){toast(e.message,true);}
+  };
 }
 async function transition(id,status){
   try{await api('/api/bookings/'+id+'/status','POST',{status});
@@ -2826,6 +2884,10 @@ async function viewAdmin(){
         ${kpi(I.broom,stats.cleaners,'Исполнители','var(--surface-2)','var(--ink)')}
       </div>
       <div class="grid" style="grid-template-columns:1fr;gap:20px">
+        <div class="card pad" id="dispCard" style="overflow-x:auto;display:none">
+          <h4 style="margin-bottom:14px">Проблемы по заказам <span class="badge amber" id="dispCount"></span></h4>
+          <div id="dispBody"></div>
+        </div>
         <div class="card pad" style="overflow-x:auto">
           <h4 style="margin-bottom:14px">Исполнители ${stats.pendingKyc?`<span class="badge amber" style="margin-left:8px">${stats.pendingKyc} на проверке</span>`:''}</h4>
           <table class="tbl"><thead><tr><th>Имя</th><th>Рейтинг</th><th>Заказов</th><th>Баланс</th><th>Статус</th><th></th></tr></thead><tbody id="clBody"></tbody></table>
@@ -2843,6 +2905,7 @@ async function viewAdmin(){
         </div>
       </div>`;
     loadAdminUsers('');
+    loadAdminDisputes();
     const us=$('#usrSearch',body); let ut=null;
     if(us)us.oninput=()=>{clearTimeout(ut);ut=setTimeout(()=>loadAdminUsers(us.value.trim()),250);};
     const kg=$('.kpi-grid',body);stagger(kg);
@@ -2897,6 +2960,47 @@ async function loadAdminUsers(q){
     });
     body.querySelectorAll('[data-prof]').forEach(b=>b.onclick=(e)=>{e.stopPropagation();openAdminUser(b.dataset.prof);});
   }catch(e){body.innerHTML=`<tr><td colspan="5" class="muted">${e.message}</td></tr>`;}
+}
+async function loadAdminDisputes(){
+  const card=$('#dispCard'),body=$('#dispBody'),count=$('#dispCount'); if(!body)return;
+  try{
+    const {disputes,openCount}=await api('/api/admin/disputes');
+    if(!disputes.length){if(card)card.style.display='none';return;}
+    if(card)card.style.display='';
+    if(count)count.textContent=openCount?`${openCount} открыто`:'все решены';
+    body.innerHTML='';
+    disputes.forEach(d=>{
+      const row=el(`<div class="card bk" style="cursor:pointer;margin-bottom:10px;align-items:flex-start">
+        <span class="issue-ic ${d.status==='open'?'amber':''}" style="${d.status!=='open'?'background:var(--primary-050);color:var(--primary-600)':''}">${d.status==='open'?I.bell:I.check}</span>
+        <div class="meta" style="min-width:0"><h4>${esc(d.categoryLabel)} · ${svcLabelRu(d.service||'')}</h4>
+          <div class="tiny muted" style="margin:3px 0">${esc(d.openerName)} (${ROLE_RU[d.openedRole]||d.openedRole}) · ${timeAgo(d.createdAt)}</div>
+          <div class="tiny" style="color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">«${esc(d.description)}»</div></div>
+        ${d.status==='open'?'<span class="badge amber">Открыто</span>':'<span class="badge green">Решено</span>'}</div>`);
+      row.onclick=()=>openAdminDispute(d);
+      body.appendChild(row);
+    });
+  }catch(e){ if(card)card.style.display='none'; }
+}
+function openAdminDispute(d){
+  const inner=el(`<div class="card pad">
+    <div class="row" style="gap:10px;margin-bottom:12px"><span class="issue-ic amber">${I.shield}</span>
+      <div style="flex:1"><h3>${esc(d.categoryLabel)}</h3><div class="tiny muted">${esc(d.openerName)} (${ROLE_RU[d.openedRole]||d.openedRole}) · ${fmtTime(d.createdAt)}</div></div>
+      ${d.status==='open'?'<span class="badge amber">Открыто</span>':'<span class="badge green">Решено</span>'}</div>
+    <div class="card pad" style="background:var(--surface-2);margin-bottom:12px"><div style="font-size:14px;line-height:1.5">«${esc(d.description)}»</div>
+      ${d.service?`<div class="tiny muted" style="margin-top:8px">Заказ: ${svcLabelRu(d.service)} · ${d.city||''}</div>`:''}</div>
+    ${d.photo?`<img src="${d.photo}" style="width:100%;max-height:280px;object-fit:contain;border-radius:12px;border:1px solid var(--line);margin-bottom:12px">`:''}
+    <button class="btn ghost block" id="dispOpenBk" style="margin-bottom:12px">Открыть заказ</button>
+    ${d.status==='open'?`<label class="field"><span>Решение / комментарий</span><textarea class="input" id="dispRes" rows="3" placeholder="Что сделали: вернули оплату, назначили повторную уборку и т.д."></textarea></label>
+      <button class="btn block" id="dispResolve">Отметить решённым ${I.check}</button>`
+    :`<div class="card pad" style="background:var(--primary-050)"><div class="tiny"><b>${I.check} Решено</b>${d.resolution?` — ${esc(d.resolution)}`:''}</div></div>`}
+  </div>`);
+  showModalNode(inner);
+  const ob=$('#dispOpenBk',inner); if(ob)ob.onclick=()=>{closeModal();openBooking(d.bookingId);};
+  const rb=$('#dispResolve',inner); if(rb)rb.onclick=async()=>{
+    try{await api('/api/admin/disputes/'+d.id+'/resolve','POST',{resolution:$('#dispRes',inner).value.trim()});
+      toast('Обращение закрыто');closeModal();viewAdmin();
+    }catch(e){toast(e.message,true);}
+  };
 }
 
 // Admin: full user profile (photo, ID document, «О себе», stats + actions).
@@ -3025,7 +3129,7 @@ async function viewEarnings(){
 function perfCard(label,val,sub){return `<div class="card pad" style="text-align:center"><b style="font-size:19px">${val}</b><div class="tiny muted" style="margin-top:2px">${label}</div>${sub?`<div class="tiny hint">${sub}</div>`:''}</div>`;}
 
 /* ---------- ADMIN: AUDIT LOG (18 §17) ---------- */
-const AUDIT_RU={'user.created':'Регистрация','user.deleted':'Удаление аккаунта','user.suspended':'Блокировка','user.reactivated':'Разблокировка','provider.verification_approved':'KYC одобрен','provider.verification_revoked':'KYC отозван','booking.redispatched':'Переназначение','booking.admin_cancelled':'Отмена оператором','notification.broadcast':'Рассылка','audit.viewed':'Просмотр аудита','subscription.started':'LUMI+ включён','subscription.cancelled':'LUMI+ отменён','user.profile_viewed':'Просмотр профиля','user.promoted_admin':'Назначен админом'};
+const AUDIT_RU={'user.created':'Регистрация','user.deleted':'Удаление аккаунта','user.suspended':'Блокировка','user.reactivated':'Разблокировка','provider.verification_approved':'KYC одобрен','provider.verification_revoked':'KYC отозван','booking.redispatched':'Переназначение','booking.admin_cancelled':'Отмена оператором','notification.broadcast':'Рассылка','audit.viewed':'Просмотр аудита','subscription.started':'LUMI+ включён','subscription.cancelled':'LUMI+ отменён','user.profile_viewed':'Просмотр профиля','user.promoted_admin':'Назначен админом','dispute.opened':'Открыта проблема','dispute.resolved':'Проблема решена'};
 async function viewAudit(){
   const c=el(`<div><div class="section-title">Журнал аудита <span class="badge" style="background:var(--surface-2)">append-only</span></div><div id="auditBody"><div class="card pad"><div class="sk" style="height:200px"></div></div></div></div>`);
   shell(c);
