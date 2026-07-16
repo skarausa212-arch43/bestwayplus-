@@ -39,6 +39,15 @@ const PUBLIC_DIR = path.join(__dirname, 'public');
 const DATA_DIR = process.env.LUMI_DATA_DIR || path.join(__dirname, 'data');   // overridable for tests/ops
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
+// Admin allow-list (ops §): emails in LUMI_ADMIN_EMAIL (comma-separated) are
+// promoted to the admin role automatically on registration and on login — no
+// secret stored in code, no manual DB edit. Kept lowercase for comparison.
+const ADMIN_EMAILS = new Set(
+  String(process.env.LUMI_ADMIN_EMAIL || '')
+    .split(',').map((e) => e.trim().toLowerCase()).filter(Boolean),
+);
+const isAdminEmail = (email) => ADMIN_EMAILS.has(String(email || '').trim().toLowerCase());
+
 const ai = createAIProvider();   // swappable AI layer (10_AI_ARCHITECTURE.md)
 
 // ─────────────────────────── Security (11_AUTHENTICATION_SECURITY.md) ─────────
@@ -423,7 +432,8 @@ route('POST', '/api/register', async (req, res) => {
   const email = String(b.email || '').trim().toLowerCase();
   const name = String(b.name || '').trim();
   const password = String(b.password || '');
-  const role = ['customer', 'cleaner'].includes(b.role) ? b.role : 'customer';
+  // Allow-listed emails become admins regardless of the requested role.
+  const role = isAdminEmail(email) ? 'admin' : (['customer', 'cleaner'].includes(b.role) ? b.role : 'customer');
   // Password policy §6: min 12 chars, no silent truncation, passphrases allowed.
   if (!email || !name) return send(res, 400, { error: 'Name and email are required.' });
   if (password.length < 12) return send(res, 400, { error: 'Password must be at least 12 characters.', code: 'VALIDATION_ERROR' });
@@ -468,6 +478,11 @@ route('POST', '/api/login', async (req, res) => {
   }
   // Admin-suspended accounts cannot obtain a session (18_ADMIN §4).
   if (user.suspended) return send(res, 403, { error: 'Account suspended. Contact support.', code: 'ACCOUNT_SUSPENDED' });
+  // Promote allow-listed emails that registered before being added to the list.
+  if (isAdminEmail(user.email) && user.role !== 'admin') {
+    user.role = 'admin'; user.verified = true; persist.users();
+    audit('user.promoted_admin', user.id, user.id, { via: 'allowlist' });
+  }
   return send(res, 200, { token: signToken(user.id), user: publicUser(user) });
 });
 
@@ -2017,6 +2032,19 @@ function seed() {
 // Demo accounts are convenient for a preview but must not exist on a public
 // server. Set LUMI_SEED=off in production to skip seeding entirely.
 if (process.env.LUMI_SEED !== 'off') seed();
+
+// Promote any existing accounts whose email is on the admin allow-list, so a
+// newly-added LUMI_ADMIN_EMAIL takes effect on the next restart without a login.
+if (ADMIN_EMAILS.size) {
+  let promoted = 0;
+  for (const u of Object.values(db.users)) {
+    if (!u.deletedAt && isAdminEmail(u.email) && u.role !== 'admin') {
+      u.role = 'admin'; u.verified = true; promoted++;
+      audit('user.promoted_admin', u.id, u.id, { via: 'startup' });
+    }
+  }
+  if (promoted) { persist.users(); console.log(`Promoted ${promoted} account(s) to admin via LUMI_ADMIN_EMAIL.`); }
+}
 
 server.listen(PORT, () => {
   console.log(`\n  LUMI running →  http://localhost:${PORT}\n`);

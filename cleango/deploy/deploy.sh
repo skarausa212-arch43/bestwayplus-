@@ -64,6 +64,20 @@ ProtectSystem=full
 [Install]
 WantedBy=multi-user.target
 UNIT
+
+# Per-instance env (admin allow-list etc.) as a systemd drop-in from
+# deploy/instance.env — keeps secrets/PII out of the committed unit template.
+if [ -f "$APP_DIR/deploy/instance.env" ]; then
+  mkdir -p /etc/systemd/system/lumi.service.d
+  {
+    echo "[Service]"
+    while IFS= read -r line || [ -n "$line" ]; do
+      case "$line" in ''|\#*) continue;; esac
+      echo "Environment=$line"
+    done < "$APP_DIR/deploy/instance.env"
+  } > /etc/systemd/system/lumi.service.d/10-instance.conf
+fi
+
 systemctl daemon-reload
 systemctl enable --now lumi
 systemctl restart lumi

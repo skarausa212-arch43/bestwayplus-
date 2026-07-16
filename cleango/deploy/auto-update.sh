@@ -18,6 +18,26 @@ sha="$(curl -fsSL -H 'Accept: application/vnd.github.sha' "$API" 2>/dev/null || 
 case "$sha" in ''|*[!0-9a-f]*) sha="$(curl -fsSL "$API" 2>/dev/null | sed -n 's/.*"sha" *: *"\([0-9a-f]\{7,40\}\)".*/\1/p' | head -1)";; esac
 [ -n "$sha" ] || { echo "update: cannot read remote sha (rate limit?)"; exit 0; }
 
+# Keep the systemd env drop-in in sync with deploy/instance.env every run (even
+# when the code sha is unchanged), so a new LUMI_ADMIN_EMAIL etc. takes effect
+# without re-running the installer. Restarts lumi only when the drop-in changes.
+apply_instance_env() {
+  local src="$APP_DIR/deploy/instance.env" dir=/etc/systemd/system/lumi.service.d
+  local dropin="$dir/10-instance.conf"
+  [ -f "$src" ] || return 0
+  local want; want="$(printf '[Service]\n'; while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in ''|\#*) continue;; esac
+    printf 'Environment=%s\n' "$line"
+  done < "$src")"
+  if [ "$(cat "$dropin" 2>/dev/null || true)" != "$want" ]; then
+    mkdir -p "$dir"; printf '%s\n' "$want" > "$dropin"
+    systemctl daemon-reload
+    systemctl restart lumi || true
+    echo "update: applied instance env drop-in"
+  fi
+}
+apply_instance_env
+
 cur="$(cat "$STATE" 2>/dev/null || echo none)"
 [ "$sha" = "$cur" ] && exit 0
 
