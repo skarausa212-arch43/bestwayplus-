@@ -462,13 +462,23 @@ function readBody(req) {
     });
   });
 }
+// Lift a temporary block once its window has passed (returns true if still blocked).
+function enforceSuspension(u) {
+  if (!u || !u.suspended) return false;
+  if (u.suspendedUntil && u.suspendedUntil <= now()) {
+    u.suspended = false; u.suspendedUntil = null; u.suspendedReason = '';
+    persist.users();
+    return false;
+  }
+  return true;
+}
 function authUser(req) {
   const h = req.headers['authorization'] || '';
   const token = h.startsWith('Bearer ') ? h.slice(7) : '';
   const userId = verifyToken(token);
   const u = userId ? db.users[userId] : null;
   if (u && u.deletedAt) return null;     // revoked: deleted accounts can't act (§42)
-  if (u && u.suspended) return null;     // admin-suspended tokens are dead (18_ADMIN §4)
+  if (enforceSuspension(u)) return null; // admin-suspended tokens are dead (18_ADMIN §4)
   return u;
 }
 
@@ -562,7 +572,10 @@ route('POST', '/api/login', async (req, res) => {
     return send(res, 401, { error: 'Invalid email or password.', code: 'AUTH_INVALID' });
   }
   // Admin-suspended accounts cannot obtain a session (18_ADMIN §4).
-  if (user.suspended) return send(res, 403, { error: 'Account suspended. Contact support.', code: 'ACCOUNT_SUSPENDED' });
+  if (enforceSuspension(user)) {
+    const until = user.suspendedUntil ? ` до ${new Date(user.suspendedUntil).toLocaleDateString('ru-RU')}` : '';
+    return send(res, 403, { error: `Аккаунт заблокирован${until}. Обратитесь в поддержку.`, code: 'ACCOUNT_SUSPENDED' });
+  }
   // Promote allow-listed emails that registered before being added to the list.
   if (isAdminEmail(user.email) && user.role !== 'admin') {
     user.role = 'admin'; user.verified = true; persist.users();
@@ -1058,6 +1071,13 @@ route('POST', '/api/bookings', async (req, res) => {
   const est = estimatePrice(prop ? { ...b, rooms: b.rooms || prop.rooms, baths: b.baths || prop.baths, area: b.area || prop.area, city: prop.city } : b);
   // LUMI+ members get a members' discount; commission/payout scale with it.
   const isPlus = user.subscription === 'plus';
+  // Favorite-cleaner invitation is a LUMI+ perk: the booking is offered to the
+  // chosen provider first/only (§ premium). Ignored silently for non-plus.
+  let invitedCleanerId = null;
+  if (isPlus && b.preferredCleanerId) {
+    const pc = db.users[b.preferredCleanerId];
+    if (pc && pc.role === 'cleaner' && pc.verified && !pc.deletedAt) invitedCleanerId = pc.id;
+  }
   const price = isPlus ? Math.round(est.total * (1 - PREMIUM_DISCOUNT)) : est.total;
   const commission = Math.round(price * COMMISSION_RATE);
   const id = uid('b_');
@@ -1078,6 +1098,9 @@ route('POST', '/api/bookings', async (req, res) => {
     notes: String(b.notes || '').slice(0, 500),
     urgency: b.urgency || 'scheduled',
     scheduledFor: b.scheduledFor || null,
+    invitedCleanerId,                 // LUMI+ favorite-cleaner invitation
+    arriveBy: null,                   // set to accept+60min for FlashClean orders
+    enrouteAt: null, etaMinutes: null, track: null,   // live "on the way" tracking
     price,
     payout: price - commission,
     commission,
@@ -1101,10 +1124,16 @@ route('POST', '/api/bookings', async (req, res) => {
   db.messages[id] = [];
   persist.messages();
   notify(user.id, 'booking.created', { service: booking.serviceLabel, bookingId: id });
-  // Notify online, verified cleaners of the new open job (dispatch offer).
-  for (const c of Object.values(db.users)) {
-    if (c.role === 'cleaner' && c.online && c.verified) {
-      notify(c.id, 'provider.new_offer', { service: booking.serviceLabel, payout: `${booking.payout} zł`, bookingId: id });
+  if (booking.invitedCleanerId) {
+    // Favorite-cleaner invite: offer to that provider personally (they still see
+    // it as an open job; others aren't spammed with this one).
+    notify(booking.invitedCleanerId, 'provider.invited', { service: booking.serviceLabel, bookingId: id });
+  } else {
+    // Notify online, verified cleaners of the new open job (dispatch offer).
+    for (const c of Object.values(db.users)) {
+      if (c.role === 'cleaner' && c.online && c.verified) {
+        notify(c.id, 'provider.new_offer', { service: booking.serviceLabel, payout: `${booking.payout} zł`, bookingId: id });
+      }
     }
   }
   return send(res, 200, { booking });
@@ -1166,7 +1195,8 @@ function enrich(bk, viewer) {
       out.canChoose = !!customerPlus;               // gated by subscription
       if (customerPlus) out.responders = respIds.map((id) => cleanerPublic(db.users[id])).filter(Boolean);
     }
-    if (viewer.role === 'cleaner') out.respondedByMe = respIds.includes(viewer.id);
+    if (viewer.role === 'cleaner') { out.respondedByMe = respIds.includes(viewer.id); out.invitedMe = bk.invitedCleanerId === viewer.id; }
+    if (isOwner && bk.invitedCleanerId) out.invitedCleaner = cleanerPublic(db.users[bk.invitedCleanerId]);
   }
   // Cleaners never see the platform commission — they only see their payout.
   if (viewer && viewer.role === 'cleaner') {
@@ -1189,17 +1219,25 @@ route('POST', '/api/bookings/:id/accept', async (req, res, params) => {
   const bk = db.bookings[params.id];
   if (!bk) return send(res, 404, { error: 'Booking not found.' });
   if (bk.status !== 'searching') return send(res, 409, { error: 'This job is no longer available.' });
+  // Favorite-cleaner invite: reserved for the invited provider.
+  if (bk.invitedCleanerId && bk.invitedCleanerId !== user.id) {
+    return send(res, 403, { error: 'Этот заказ зарезервирован за приглашённым исполнителем.', code: 'RESERVED_INVITE' });
+  }
   bk.responders = bk.responders || [];
   if (!bk.responders.includes(user.id)) bk.responders.push(user.id);
   const customer = db.users[bk.customerId];
-  const customerPlus = customer && customer.subscription === 'plus';
+  // An invited (favorite) cleaner is assigned immediately even for LUMI+ —
+  // the customer already chose them, so there's no responder round.
+  const customerPlus = customer && customer.subscription === 'plus' && !bk.invitedCleanerId;
   if (!customerPlus) {
-    // Free: first responder wins, assigned immediately.
+    // Free (or invited): first responder wins, assigned immediately.
     bk.cleanerId = user.id;
     bk.status = 'accepted';
+    if (bk.urgency === 'flash') bk.arriveBy = now() + 60 * 60000;   // FlashClean SLA: 60 min to arrive
     bk.updatedAt = now();
     bk.timeline.push({ status: 'accepted', at: now(), by: user.id });
     persist.bookings();
+    if (bk.urgency === 'flash') notify(bk.customerId, 'flash.deadline', { bookingId: bk.id });
     sysMessage(bk.id, `${user.name} принял заказ и скоро приедет.`);
     notify(bk.customerId, 'booking.accepted', { provider: user.name, service: bk.serviceLabel, bookingId: bk.id });
     return send(res, 200, { booking: enrich(bk, user), assigned: true });
@@ -1226,6 +1264,7 @@ route('POST', '/api/bookings/:id/choose', async (req, res, params) => {
   }
   bk.cleanerId = chosen.id;
   bk.status = 'accepted';
+  if (bk.urgency === 'flash') bk.arriveBy = now() + 60 * 60000;   // FlashClean SLA: 60 min to arrive
   bk.updatedAt = now();
   bk.timeline.push({ status: 'accepted', at: now(), by: user.id });
   persist.bookings();
@@ -1260,6 +1299,41 @@ route('GET', '/api/cleaners/:id/profile', async (req, res, params) => {
   send(res, 200, { profile: { ...cleanerPublic(c), reviews } });
 });
 
+// Build a deterministic (no real GPS in the MVP) live-tracking route for the
+// "on the way" map: normalized [0..1] map coords + ETA in minutes.
+function buildTrack(bk) {
+  const h = Math.abs(hashInt(bk.id + (bk.address || '')));
+  const to = { x: 0.60 + (h % 14) / 100, y: 0.58 + ((h >> 3) % 16) / 100 };
+  const from = { x: 0.10 + ((h >> 5) % 20) / 100, y: 0.16 + ((h >> 9) % 22) / 100 };
+  const base = 8 + (h % 20);                                   // 8..27 min
+  const eta = bk.urgency === 'flash' ? Math.min(55, base + 6) : base;
+  const distanceKm = Math.max(1, Math.round((6 + (h % 40)) / 4));
+  return { from, to, eta, distanceKm };
+}
+
+// Cleaner marks themselves en route ("выехал"). Opens live tracking for the
+// customer (Uber-style): position is interpolated client-side from enrouteAt+ETA.
+route('POST', '/api/bookings/:id/enroute', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user || user.role !== 'cleaner') return send(res, 403, { error: 'Cleaners only.' });
+  const bk = db.bookings[params.id];
+  if (!bk) return send(res, 404, { error: 'Booking not found.' });
+  if (bk.cleanerId !== user.id) return send(res, 403, { error: 'Not your job.' });
+  if (bk.status !== 'accepted') return send(res, 409, { error: 'Можно выехать только по принятому заказу.' });
+  const t = buildTrack(bk);
+  bk.status = 'on_the_way';
+  bk.enrouteAt = now();
+  bk.etaMinutes = t.eta;
+  bk.arriveAt = now() + t.eta * 60000;
+  bk.track = { from: t.from, to: t.to, distanceKm: t.distanceKm };
+  bk.timeline.push({ status: 'on_the_way', at: now(), by: user.id });
+  bk.updatedAt = now();
+  persist.bookings();
+  sysMessage(bk.id, `${user.name} выехал(а) к вам. В пути ~${t.eta} мин.`);
+  notify(bk.customerId, 'provider.on_the_way', { provider: user.name, eta: t.eta, bookingId: bk.id });
+  send(res, 200, { booking: enrich(bk, user) });
+});
+
 // Lifecycle transitions: start -> photos_before -> complete
 route('POST', '/api/bookings/:id/status', async (req, res, params) => {
   const user = authUser(req);
@@ -1274,7 +1348,8 @@ route('POST', '/api/bookings/:id/status', async (req, res, params) => {
 
   if (target === 'in_progress') {
     if (!isCleaner) return send(res, 403, { error: 'Only the assigned cleaner can start.' });
-    if (bk.status !== 'accepted') return send(res, 409, { error: 'Invalid transition.' });
+    // The cleaner must be on-site: mark en route first, then start.
+    if (bk.status !== 'on_the_way') return send(res, 409, { error: 'Сначала отметьте, что выехали, затем прибытие.', code: 'MUST_ENROUTE' });
     if (!bk.photosBefore.length) return send(res, 400, { error: 'Upload at least one "before" photo first.' });
     bk.status = 'in_progress';
     bk.timeline.push({ status: 'in_progress', at: now() });
@@ -1645,6 +1720,7 @@ route('GET', '/api/admin/users/:id', async (req, res, params) => {
     profile: {
       id: u.id, name: u.name, email: u.email, role: u.role, adminRole: u.adminRole || null,
       city: u.city, verified: !!u.verified, online: !!u.online, suspended: !!u.suspended,
+      suspendedUntil: u.suspendedUntil || null, suspendedReason: u.suspendedReason || '',
       subscription: u.subscription || null, wallet: u.wallet || 0,
       rating: u.rating || null, jobsDone: u.jobsDone || 0,
       bio: u.bio || '', experienceYears: u.experienceYears || 0,
@@ -1663,16 +1739,19 @@ route('POST', '/api/admin/users/:id/suspend', async (req, res, params) => {
   if (!target || target.deletedAt) return send(res, 404, { error: 'User not found.' });
   if (target.role === 'admin') return send(res, 403, { error: 'Cannot suspend an admin.' });
   const b = await readBody(req);
+  const days = Math.max(0, Math.min(365, Number(b.days) || 0));   // 0 = permanent
   target.suspended = true; target.online = false;
+  target.suspendedUntil = days > 0 ? now() + days * DAY : null;
+  target.suspendedReason = String(b.reason || '').slice(0, 200);
   persist.users();
-  audit('user.suspended', admin.id, target.id, { reason: String(b.reason || '') });
-  send(res, 200, { ok: true });
+  audit('user.suspended', admin.id, target.id, { reason: target.suspendedReason, days });
+  send(res, 200, { ok: true, suspendedUntil: target.suspendedUntil });
 });
 route('POST', '/api/admin/users/:id/reactivate', async (req, res, params) => {
   const admin = requireCap(req, res, 'users.suspend'); if (!admin) return;
   const target = db.users[params.id];
   if (!target || target.deletedAt) return send(res, 404, { error: 'User not found.' });
-  target.suspended = false;
+  target.suspended = false; target.suspendedUntil = null; target.suspendedReason = '';
   persist.users();
   audit('user.reactivated', admin.id, target.id, {});
   send(res, 200, { ok: true });

@@ -53,6 +53,21 @@ const T = {
     deepLink: 'lumi://booking/{bookingId}',
     ru: { title: 'Вас выбрали! 🎉', body: 'Клиент выбрал вас для «{service}». Можно приступать.' },
   },
+  'provider.on_the_way': {
+    category: 'operational', priority: 'high', channels: ['in_app', 'push'],
+    deepLink: 'lumi://booking/{bookingId}',
+    ru: { title: 'Исполнитель в пути', body: '{provider} выехал к вам. Прибудет примерно через {eta} мин.' },
+  },
+  'provider.invited': {
+    category: 'operational', priority: 'high', channels: ['in_app', 'push'],
+    deepLink: 'lumi://provider/offer/{bookingId}',
+    ru: { title: 'Вас пригласили лично', body: 'Клиент выбрал вас для «{service}». Примите заказ первым.' },
+  },
+  'flash.deadline': {
+    category: 'operational', priority: 'high', channels: ['in_app', 'push'],
+    deepLink: 'lumi://booking/{bookingId}',
+    ru: { title: 'FlashClean · 60 минут', body: 'Исполнитель должен прибыть в течение часа. Мы следим за временем.' },
+  },
   'provider.not_chosen': {
     category: 'operational', priority: 'low', channels: ['in_app'],
     deepLink: 'lumi://home',

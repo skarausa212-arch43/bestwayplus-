@@ -140,6 +140,12 @@ async function main() {
     });
 
     // ── Completion + payout, money determinism/idempotency ──
+    await ok('cleaner marks en route before starting', async () => {
+      const en = await req('POST', `/api/bookings/${bookingId}/enroute`, { token: cleanerTok });
+      assert.strictEqual(en.status, 200);
+      assert.strictEqual(en.json.booking.status, 'on_the_way');
+      assert.ok(en.json.booking.etaMinutes > 0);
+    });
     await ok('completion requires before/after photos then settles', async () => {
       await req('POST', `/api/bookings/${bookingId}/photos`, { token: cleanerTok, body: { phase: 'before', photo: IMG } });
       const started = await req('POST', `/api/bookings/${bookingId}/status`, { token: cleanerTok, body: { status: 'in_progress' } });
