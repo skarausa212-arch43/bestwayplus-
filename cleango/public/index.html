@@ -2703,9 +2703,13 @@ async function openReceipt(bookingId){
       ${totalBlock}
       ${note?`<div class="rc-note">${I.lock} ${note}</div>`:''}
       <div class="rc-foot">Спасибо, что выбираете LUMI · lumi.bestwayplus.pl</div>
-      <button class="btn ghost block sm" id="rcShare" style="margin-top:14px">${I.share||''} Скопировать чек</button>
+      <div class="row" style="gap:10px;margin-top:14px">
+        <button class="btn block" id="rcPdf">${I.receipt} Скачать PDF</button>
+        <button class="btn ghost sm" id="rcShare" style="flex:none">${I.share||''}</button>
+      </div>
     </div>`);
     showModalNode(inner);
+    const pb=$('#rcPdf',inner); if(pb)pb.onclick=()=>downloadReceiptPdf(r);
     const sb=$('#rcShare',inner); if(sb)sb.onclick=()=>{
       const txt=`LUMI · Чек № ${r.receiptNo}\n${svcLabelRu(r.service)} · ${fmtDate(r.issuedAt)}\n`+
         (r.kind==='provider'?`Ваша выплата: ${money(r.payout)}`:r.kind==='admin'?`Оплачено: ${money(r.total)} · Выплата: ${money(r.payout)} · Комиссия: ${money(r.commission)}`:`Итого оплачено: ${money(r.total)}`);
@@ -2713,6 +2717,71 @@ async function openReceipt(bookingId){
     };
   }catch(e){toast(e.message,true);closeModal();}
 }
+// Build a self-contained printable receipt and open the browser print dialog
+// (users pick "Save as PDF"). Rendered in a same-origin iframe — CSP-safe.
+function downloadReceiptPdf(r){
+  const rows=(r.items||[]).map(i=>{
+    const name=`${escHtml(i.label)}${i.qty>1&&i.type==='qty'?` ×${i.qty}`:''}`;
+    const amt=i.type==='percent'?'+40%':(i.amount!=null?money(i.amount):'—');
+    return `<tr><td>${name}</td><td class="amt">${amt}</td></tr>`;
+  }).join('');
+  let totals='';
+  if(r.kind==='customer') totals=`<tr class="total"><td>Итого оплачено</td><td class="amt">${money(r.total)}</td></tr>`;
+  else if(r.kind==='provider') totals=`<tr class="total"><td>Ваша выплата</td><td class="amt">${money(r.payout)}</td></tr>`;
+  else totals=`<tr class="total"><td>Оплачено клиентом</td><td class="amt">${money(r.total)}</td></tr>
+      <tr><td>Выплата исполнителю</td><td class="amt">${money(r.payout)}</td></tr>
+      <tr><td>Комиссия платформы (${r.commissionRate}%)</td><td class="amt">${money(r.commission)}</td></tr>
+      <tr class="sub"><td>Без НДС</td><td class="amt">${money(r.netExVat)}</td></tr>
+      <tr class="sub"><td>НДС 23%</td><td class="amt">${money(r.vat)}</td></tr>`;
+  const title=r.kind==='admin'?'Чек (администратор)':r.kind==='provider'?'Чек исполнителя':'Чек об оплате';
+  const meta=[svcLabelRu(r.service),`${fmtDate(r.issuedAt)} · ${fmtTime(r.issuedAt)}`,
+    r.address?`${escHtml(r.address)}, ${escHtml(r.city||'')}`:'',
+    `${roomsWord(r.rooms)} · ${bathsWord(r.baths)}${r.area?` · ${r.area} м²`:''}`,
+    r.customerName&&r.kind!=='customer'?`Клиент: ${escHtml(r.customerName)}`:'',
+    r.cleanerName&&r.kind!=='provider'?`Исполнитель: ${escHtml(r.cleanerName)}`:''].filter(Boolean);
+  const html=`<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Чек ${r.receiptNo}</title>
+    <style>
+      *{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+      body{margin:0;color:#0F172A}
+      .wrap{max-width:480px;margin:32px auto;padding:0 24px}
+      .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+      .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:22px}
+      .brand svg{width:34px;height:34px}
+      .no{font-size:12px;color:#64748B;font-weight:700}
+      h1{font-size:22px;margin:0 0 10px}
+      .meta div{color:#475569;font-size:13px;line-height:1.55}
+      .meta div:first-child{color:#0F172A;font-weight:700;font-size:15px}
+      hr{border:none;border-top:1.5px dashed #CBD5E1;margin:14px 0}
+      table{width:100%;border-collapse:collapse}
+      td{padding:5px 0;font-size:14px;color:#475569;vertical-align:top}
+      td.amt{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+      tr.total td{font-size:20px;font-weight:800;color:#059669;padding-top:10px}
+      tr.sub td{color:#94A3B8;font-size:12px}
+      .note{margin-top:16px;font-size:11px;color:#64748B;background:#F3F4F6;padding:10px 12px;border-radius:8px}
+      .foot{text-align:center;color:#94A3B8;font-size:11px;margin-top:16px}
+      @media print{.wrap{margin:0 auto}}
+    </style></head>
+    <body><div class="wrap">
+      <div class="head"><div class="brand">${I.logo}<span>LUMI</span></div><div class="no">Чек № ${r.receiptNo}</div></div>
+      <h1>${title}</h1>
+      <div class="meta">${meta.map(m=>`<div>${m}</div>`).join('')}</div>
+      <hr>
+      ${rows?`<table><tr><td style="font-weight:700;color:#0F172A">Уборка «${svcLabelRu(r.service)}»</td><td></td></tr>${rows}</table><hr>`:''}
+      <table>${totals}</table>
+      ${r.kind==='admin'?'<div class="note">Комиссия платформы указана только в администраторском чеке и скрыта в чеках клиента и исполнителя.</div>':(r.plus?'<div class="note">Учтена скидка LUMI+ 10%.</div>':'')}
+      <div class="foot">Спасибо, что выбираете LUMI · lumi.bestwayplus.pl</div>
+    </div></body></html>`;
+  const ifr=document.createElement('iframe');
+  ifr.setAttribute('aria-hidden','true');
+  ifr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0';
+  document.body.appendChild(ifr);
+  const doc=ifr.contentWindow.document;
+  doc.open();doc.write(html);doc.close();
+  const go=()=>{ try{ ifr.contentWindow.focus(); ifr.contentWindow.print(); }catch(e){ toast('Печать недоступна в этом браузере',true); }
+    setTimeout(()=>ifr.remove(),1500); };
+  if(ifr.contentWindow.document.readyState==='complete') setTimeout(go,300); else ifr.onload=()=>setTimeout(go,300);
+}
+function escHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 async function transition(id,status){
   try{await api('/api/bookings/'+id+'/status','POST',{status});
     if(status==='completed')confetti();
