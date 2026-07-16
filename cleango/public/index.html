@@ -288,6 +288,23 @@ textarea.input{resize:vertical;min-height:80px}
 .issue-cats{display:flex;flex-wrap:wrap;gap:8px}
 .issue-cats .chip{cursor:pointer;border:1.5px solid var(--line);background:var(--surface)}
 .issue-cats .chip.sel{border-color:var(--primary);background:var(--primary-050);color:var(--primary-600)}
+/* receipt / чек */
+.rc{max-width:420px;margin:0 auto}
+.rc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.rc-brand{display:flex;align-items:center;gap:8px;font-weight:850;font-size:18px}
+.rc-brand svg.logo{width:30px;height:30px}
+.rc-no{font-size:12px;font-weight:700;color:var(--ink-3);letter-spacing:.03em}
+.rc-title{font-size:20px;font-weight:850;letter-spacing:-.02em;margin-bottom:8px}
+.rc-meta>div{line-height:1.5}
+.rc-meta>div:first-child{font-weight:700;font-size:15px}
+.rc-sep{height:0;border-top:1.5px dashed var(--line-strong);margin:12px 0}
+.rc-items .rc-line:first-child span{font-weight:700;color:var(--ink)}
+.rc-line{display:flex;justify-content:space-between;gap:12px;padding:4px 0;font-size:14px;color:var(--ink-2)}
+.rc-line span:last-child{font-variant-numeric:tabular-nums;white-space:nowrap}
+.rc-strong{font-size:20px;font-weight:850;color:var(--primary-600)}
+.rc-note{display:flex;gap:7px;align-items:flex-start;margin-top:14px;font-size:11.5px;line-height:1.45;color:var(--ink-3);background:var(--surface-2);padding:10px 12px;border-radius:10px}
+.rc-note svg{width:14px;height:14px;flex:none;margin-top:1px}
+.rc-foot{text-align:center;font-size:11.5px;color:var(--ink-3);margin-top:14px}
 .chatbar{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
 .chatbar .attach{display:grid;place-items:center;width:40px;flex:none;background:var(--surface-2);border-radius:12px;cursor:pointer}
 
@@ -2402,6 +2419,7 @@ async function renderBookingDetail(id){
         </div>
         ${b.address?`<div class="row tiny" style="margin-top:8px;color:var(--ink-2)">${I.pin}<span>${b.address}, ${b.city}</span></div>`:''}
         ${b.notes?`<div class="tiny muted" style="margin-top:8px;font-style:italic">«${b.notes}»</div>`:''}
+        ${b.status==='completed'?`<button class="btn ghost block sm" id="receiptBtn" style="margin-top:12px">${I.receipt} Показать чек</button>`:''}
       </div>
 
       ${b.cleaner?`<div class="card pad" style="margin-bottom:14px"><div class="row">
@@ -2427,6 +2445,7 @@ async function renderBookingDetail(id){
     renderPhotos(b);
     renderActions(b,{isCleaner,isCustomer,assignedToMe,canAccept});
     renderIssue(b,{isCleaner,isCustomer,assignedToMe});
+    const rcb=$('#receiptBtn'); if(rcb)rcb.onclick=()=>openReceipt(b.id);
     renderChat(b);
     const pf=$('[data-prof]'); if(pf)pf.onclick=()=>openCleanerProfile(pf.dataset.prof);
     const fav=$('#favBtn');
@@ -2637,6 +2656,62 @@ async function openIssue(bookingId){
       toast('Обращение отправлено — мы разберёмся');closeModal();renderBookingDetail(bookingId);
     }catch(e){toast(e.message,true);}
   };
+}
+/* ---------- receipt / чек after completion ---------- */
+async function openReceipt(bookingId){
+  showModal(`<div class="card pad"><div class="sk" style="height:320px"></div></div>`);
+  try{
+    const {receipt:r}=await api('/api/bookings/'+bookingId+'/receipt');
+    const line=(label,val,strong)=>`<div class="rc-line"><span>${label}</span><span class="${strong?'rc-strong':''}">${val}</span></div>`;
+    const items=(r.items||[]).map(i=>{
+      const name=`${esc(i.label)}${i.qty>1&&i.type==='qty'?` ×${i.qty}`:''}`;
+      const amt=i.type==='percent'?'+40%':(i.amount!=null?money(i.amount):'');
+      return `<div class="rc-line"><span>${name}</span><span>${amt}</span></div>`;
+    }).join('');
+    let totalBlock='',note='';
+    if(r.kind==='customer'){
+      totalBlock=line('Итого оплачено',money(r.total),true);
+      note=r.plus?'Учтена скидка LUMI+ 10%.':'';
+    }else if(r.kind==='provider'){
+      totalBlock=line('Ваша выплата',money(r.payout),true);
+      note='Комиссия платформы вас не касается — вы получаете указанную сумму.';
+    }else{ // admin
+      totalBlock=`${line('Оплачено клиентом',money(r.total),true)}
+        ${line('Выплата исполнителю',money(r.payout))}
+        ${line('Комиссия платформы ('+r.commissionRate+'%)','<b style="color:var(--primary-600)">'+money(r.commission)+'</b>')}
+        <div class="rc-sep"></div>
+        ${line('Без НДС',money(r.netExVat))}
+        ${line('НДС 23%',money(r.vat))}`;
+      note='Комиссия видна только администратору и скрыта в чеках клиента и исполнителя.';
+    }
+    const inner=el(`<div class="card pad rc" id="rcRoot">
+      <div class="rc-head">
+        <div class="rc-brand">${I.logo}<b>LUMI</b></div>
+        <div class="rc-no">Чек № ${r.receiptNo}</div>
+      </div>
+      <div class="rc-title">${r.kind==='admin'?'Чек (админ)':r.kind==='provider'?'Чек исполнителя':'Чек об оплате'}</div>
+      <div class="rc-meta">
+        <div>${svcLabelRu(r.service)}</div>
+        <div class="muted tiny">${fmtDate(r.issuedAt)} · ${fmtTime(r.issuedAt)}</div>
+        ${r.address?`<div class="muted tiny">${esc(r.address)}, ${esc(r.city||'')}</div>`:''}
+        <div class="muted tiny">${roomsWord(r.rooms)} · ${bathsWord(r.baths)}${r.area?` · ${r.area} м²`:''}</div>
+        ${r.customerName&&r.kind!=='customer'?`<div class="muted tiny">Клиент: ${esc(r.customerName)}</div>`:''}
+        ${r.cleanerName&&r.kind!=='provider'?`<div class="muted tiny">Исполнитель: ${esc(r.cleanerName)}</div>`:''}
+      </div>
+      <div class="rc-sep"></div>
+      ${items?`<div class="rc-items">${line('Уборка «'+svcLabelRu(r.service)+'»','')}${items}</div><div class="rc-sep"></div>`:''}
+      ${totalBlock}
+      ${note?`<div class="rc-note">${I.lock} ${note}</div>`:''}
+      <div class="rc-foot">Спасибо, что выбираете LUMI · lumi.bestwayplus.pl</div>
+      <button class="btn ghost block sm" id="rcShare" style="margin-top:14px">${I.share||''} Скопировать чек</button>
+    </div>`);
+    showModalNode(inner);
+    const sb=$('#rcShare',inner); if(sb)sb.onclick=()=>{
+      const txt=`LUMI · Чек № ${r.receiptNo}\n${svcLabelRu(r.service)} · ${fmtDate(r.issuedAt)}\n`+
+        (r.kind==='provider'?`Ваша выплата: ${money(r.payout)}`:r.kind==='admin'?`Оплачено: ${money(r.total)} · Выплата: ${money(r.payout)} · Комиссия: ${money(r.commission)}`:`Итого оплачено: ${money(r.total)}`);
+      (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast('Чек скопирован')).catch(()=>toast('Не удалось скопировать',true));
+    };
+  }catch(e){toast(e.message,true);closeModal();}
 }
 async function transition(id,status){
   try{await api('/api/bookings/'+id+'/status','POST',{status});

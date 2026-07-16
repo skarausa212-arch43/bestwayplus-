@@ -1498,6 +1498,50 @@ route('POST', '/api/admin/disputes/:id/resolve', async (req, res, params) => {
   send(res, 200, { dispute: disputeView(d) });
 });
 
+// ─────────────────────────── Receipt / чек after completion ───────────────────────────
+// Role-shaped receipt: the customer sees the total they paid, the cleaner sees
+// only their payout, and the admin sees the full split INCLUDING the platform
+// commission — which is never present in customer/provider payloads (security §).
+function buildReceipt(bk, viewer) {
+  const completedAt = (bk.timeline.find((t) => t.status === 'completed') || {}).at || bk.updatedAt;
+  const items = normalizeExtras(bk.extras).map(({ key, qty }) => {
+    const def = EXTRAS_CATALOG[key];
+    return { label: def.label, qty, unit: def.unit || null, type: def.type,
+      amount: def.type === 'percent' ? null : def.price * qty, percent: def.percent || null };
+  });
+  const base = {
+    receiptNo: 'LUMI-' + String(bk.id).replace(/^b_/, '').slice(0, 8).toUpperCase(),
+    bookingId: bk.id, issuedAt: completedAt, paidAt: completedAt,
+    service: bk.serviceLabel, city: bk.city, address: bk.address,
+    rooms: bk.rooms, baths: bk.baths, area: bk.area,
+    currency: bk.currency, plus: !!bk.plusDiscount,
+    customerName: (db.users[bk.customerId] || {}).name || null,
+    cleanerName: bk.cleanerId ? (db.users[bk.cleanerId] || {}).name : null,
+  };
+  if (viewer.role === 'cleaner') {
+    // Provider receipt — services done (no per-line customer prices), payout only.
+    return { ...base, kind: 'provider', items: items.map((i) => ({ label: i.label, qty: i.qty, unit: i.unit, type: i.type })), payout: bk.payout };
+  }
+  if (viewer.role === 'admin') {
+    const netExVat = Math.round(bk.price / 1.23);   // informational VAT split (§42)
+    return { ...base, kind: 'admin', items, total: bk.price, payout: bk.payout,
+      commission: bk.commission, platformRevenue: bk.commission, netExVat, vat: bk.price - netExVat,
+      commissionRate: Math.round(COMMISSION_RATE * 100) };
+  }
+  // Customer receipt — itemized, total paid, NO commission/payout.
+  return { ...base, kind: 'customer', items, total: bk.price };
+}
+route('GET', '/api/bookings/:id/receipt', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const bk = db.bookings[params.id];
+  if (!bk) return send(res, 404, { error: 'Booking not found.' });
+  const isParticipant = bk.customerId === user.id || bk.cleanerId === user.id;
+  if (!isParticipant && user.role !== 'admin') return send(res, 403, { error: 'Forbidden.' });
+  if (bk.status !== 'completed') return send(res, 409, { error: 'Чек доступен после завершения заказа.', code: 'NOT_COMPLETED' });
+  send(res, 200, { receipt: buildReceipt(bk, user) });
+});
+
 // Photos (base64 data URLs of downscaled thumbnails)
 route('POST', '/api/bookings/:id/photos', async (req, res, params) => {
   const user = authUser(req);
