@@ -1100,6 +1100,8 @@ route('POST', '/api/bookings', async (req, res) => {
     area: prop ? prop.area : (Number(b.area) || 0),
     extras: Array.isArray(b.extras) ? b.extras : [],
     notes: String(b.notes || '').slice(0, 500),
+    // Photos the customer attaches to the request so cleaners see the job scope.
+    requestPhotos: (Array.isArray(b.photos) ? b.photos : []).filter((s) => validImage(s, 1500000)).slice(0, 6),
     urgency: b.urgency || 'scheduled',
     scheduledFor: b.scheduledFor || null,
     invitedCleanerId,                 // LUMI+ favorite-cleaner invitation
