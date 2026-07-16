@@ -522,6 +522,9 @@ route('POST', '/api/register', async (req, res) => {
   // Password policy §6: min 12 chars, no silent truncation, passphrases allowed.
   if (!email || !name) return send(res, 400, { error: 'Name and email are required.' });
   if (password.length < 12) return send(res, 400, { error: 'Password must be at least 12 characters.', code: 'VALIDATION_ERROR' });
+  // Phone is required for everyone (identity + contact for support/safety).
+  const phone = String(b.phone || '').trim().slice(0, 32);
+  if (phone.replace(/\D/g, '').length < 9) return send(res, 400, { error: 'Укажите корректный номер телефона.', code: 'PHONE_REQUIRED' });
   if (Object.values(db.users).some((u) => u.email === email)) {
     return send(res, 409, { error: 'An account with this email already exists.' });
   }
@@ -535,7 +538,7 @@ route('POST', '/api/register', async (req, res) => {
   }
   const id = uid('u_');
   const user = {
-    id, email, name, role,
+    id, email, name, role, phone,
     password: hashPassword(password),
     createdAt: now(),
     wallet: 0,
@@ -1667,6 +1670,15 @@ route('POST', '/api/bookings/:id/messages', async (req, res, params) => {
   const b = await readBody(req);
   const type = ['text', 'image'].includes(b.type) ? b.type : 'text';
   const text = String(b.text || b.body || '').trim().slice(0, 800);
+  // Anti-disintermediation: block sharing of contacts between customer & cleaner
+  // so the deal stays on-platform (payments, safety, disputes). Admins exempt.
+  if (user.role !== 'admin' && text) {
+    const mod = chat.detectContact(text);
+    if (mod.blocked) {
+      audit('chat.contact_blocked', user.id, bk.id, { reason: mod.reason });
+      return send(res, 422, { error: 'Обмен контактами запрещён. Общайтесь и оплачивайте только через LUMI — так вы под защитой сервиса.', code: 'CONTACT_BLOCKED', reason: mod.reason });
+    }
+  }
   let attachments = [];
   if (type === 'image') {
     const img = String((b.attachments && b.attachments[0]) || b.image || '');
@@ -1917,7 +1929,7 @@ route('GET', '/api/admin/users/:id', async (req, res, params) => {
   audit('user.profile_viewed', admin.id, u.id, { role: u.role });   // viewing PII is itself audited
   send(res, 200, {
     profile: {
-      id: u.id, name: u.name, email: u.email, role: u.role, adminRole: u.adminRole || null,
+      id: u.id, name: u.name, email: u.email, phone: u.phone || null, role: u.role, adminRole: u.adminRole || null,
       city: u.city, verified: !!u.verified, online: !!u.online, suspended: !!u.suspended,
       suspendedUntil: u.suspendedUntil || null, suspendedReason: u.suspendedReason || '',
       subscription: u.subscription || null, wallet: u.wallet || 0,

@@ -107,7 +107,28 @@ function translate(text, target = 'en') {
   return { original: text, translated, target, language: 'ru' };
 }
 
+// ── Anti-disintermediation moderation ──
+// Detect attempts to move the deal off-platform by sharing contacts (email,
+// phone, or social handles). Keeping it on-platform protects payments, safety
+// guarantees and dispute resolution. Returns { blocked, reason }.
+function detectContact(text) {
+  const raw = String(text || '');
+  const low = raw.toLowerCase();
+  // email
+  if (/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i.test(raw)) return { blocked: true, reason: 'email' };
+  // phone: 9+ digits once separators (spaces, dashes, dots, brackets, +) are removed
+  const digits = low.replace(/[\s\-.()+]/g, '');
+  if (/\d{9,}/.test(digits)) return { blocked: true, reason: 'phone' };
+  // social handles: @nickname
+  if (/(^|[^a-z0-9_])@[a-z0-9._]{3,}/i.test(raw)) return { blocked: true, reason: 'handle' };
+  // messenger / social links + platform names (word-bounded to avoid false hits)
+  if (/(t\.me\/|wa\.me\/|instagram\.com|@?telegram|телеграм|телег(?:а|у|е|ой)|\bтг\b|whats\s?app|ват[cс]ап|во[тц][cс]ап|\bviber\b|вайбер|instagram|инстаграм|\bинста\b|\binsta\b|\bскайп\b|\bskype\b)/i.test(low)) {
+    return { blocked: true, reason: 'social' };
+  }
+  return { blocked: false };
+}
+
 module.exports = {
   MESSAGE_TYPES, DELIVERY_STATES, TYPING_TTL_MS,
-  etaMinutes, normalizeMessage, deliveryStatus, unreadCount, activeTypers, translate,
+  etaMinutes, normalizeMessage, deliveryStatus, unreadCount, activeTypers, translate, detectContact,
 };

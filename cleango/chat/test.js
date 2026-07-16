@@ -81,4 +81,21 @@ ok('provider ETA grows with distance and never hits zero', () => {
   assert.ok(rt.etaMinutes(8) > rt.etaMinutes(2));
 });
 
+ok('detectContact blocks contact-sharing (anti-disintermediation)', () => {
+  // blocked cases
+  assert.ok(rt.detectContact('пишите на anna@mail.ru').blocked);
+  assert.ok(rt.detectContact('мой номер +48 600 700 800').blocked);
+  assert.ok(rt.detectContact('телефон 600700800').blocked);
+  assert.ok(rt.detectContact('мой ник @anna_clean').blocked);
+  assert.ok(rt.detectContact('давай в телеграм').blocked);
+  assert.ok(rt.detectContact('я в инстаграм anna').blocked);
+  assert.ok(rt.detectContact('напиши в whatsapp').blocked);
+  assert.strictEqual(rt.detectContact('звони +48600700800').reason, 'phone');
+  // allowed: normal chat, small numbers, no handles
+  assert.ok(!rt.detectContact('код от двери 1234, приезжайте к 8').blocked);
+  assert.ok(!rt.detectContact('спасибо, всё чисто!').blocked);
+  assert.ok(!rt.detectContact('в квартире 2 санузла и 48 м2').blocked);
+  assert.ok(!rt.detectContact('следуйте инструкции на кухне').blocked);   // «инстр…» is not «инста»
+});
+
 console.log(`\n${n} chat/realtime checks passed.`);
