@@ -1135,6 +1135,19 @@ route('POST', '/api/bookings/:id/choose', async (req, res, params) => {
   send(res, 200, { booking: enrich(bk, user) });
 });
 
+// Recommended cleaners for the home rail — top verified providers.
+route('GET', '/api/cleaners/recommended', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const favs = user.favoriteProviders || [];
+  const list = Object.values(db.users)
+    .filter((u) => u.role === 'cleaner' && u.verified && !u.deletedAt)
+    .map((u) => ({ ...cleanerPublic(u), favorited: favs.includes(u.id) }))
+    .sort((a, b) => (b.rating || 0) * Math.log((b.jobsDone || 0) + 2) - (a.rating || 0) * Math.log((a.jobsDone || 0) + 2))
+    .slice(0, 6);
+  send(res, 200, { cleaners: list });
+});
+
 // Cleaner public profile + recent reviews (for a customer picking one).
 route('GET', '/api/cleaners/:id/profile', async (req, res, params) => {
   const user = authUser(req);
