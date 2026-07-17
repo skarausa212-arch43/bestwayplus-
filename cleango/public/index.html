@@ -2290,21 +2290,29 @@ function viewBook(){
   else if(d.step===1){ // extras — à-la-carte add-ons
     const ex=state.catalog?.extras||{};
     const cats=state.catalog?.extraCategories||{};
+    const isWinHead=d.service==='windows';
     body.innerHTML=`
       <div class="ex-top">
         <div><h2 style="margin-bottom:2px">Дополнительные услуги</h2><p class="muted tiny">Добавьте, что нужно — цена пересчитается сразу.</p></div>
       </div>
       <div class="ex-total" id="exTotal">
-        <div><span class="muted tiny">Итого за уборку</span><div class="ex-total-v" id="exTotalV">—</div></div>
+        <div><span class="muted tiny">${isWinHead?'Итого за мойку окон':'Итого за уборку'}</span><div class="ex-total-v" id="exTotalV">—</div></div>
         <div class="ex-time" id="exTime"></div>
       </div>
       <div id="exList"></div>`;
     const list=$('#exList',body);
-    // group by category, preserving catalog order
-    // (for a windows order the per-window wash is already in the calculator — hide the duplicates)
-    const skip=d.service==='windows'?['windows','windows_out']:[];
+    // group by category, preserving catalog order.
+    // For a windows order show ONLY window-relevant extras (остекление, балкон) —
+    // the cleaning add-ons don't belong here, and the per-window wash is already
+    // covered by the calculator.
+    const isWin=d.service==='windows';
+    const skip=isWin?['windows','windows_out']:[];
     const groups={};
-    Object.entries(ex).forEach(([key,e])=>{if(skip.includes(key))return;(groups[e.cat]=groups[e.cat]||[]).push([key,e]);});
+    Object.entries(ex).forEach(([key,e])=>{
+      if(skip.includes(key))return;
+      if(isWin && e.cat!=='windows')return;   // hide cleaning add-ons for a windows order
+      (groups[e.cat]=groups[e.cat]||[]).push([key,e]);
+    });
     Object.keys(groups).forEach(cat=>{
       const sec=el(`<div class="ex-cat"><div class="ex-cat-h">${cats[cat]||cat}</div></div>`);
       groups[cat].forEach(([key,e])=>{
