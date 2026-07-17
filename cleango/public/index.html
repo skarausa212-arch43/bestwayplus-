@@ -680,12 +680,36 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .lb-spark{transform-box:fill-box;transform-origin:center;opacity:0;animation:lbspark .6s 1.15s cubic-bezier(.2,1.6,.4,1) forwards,twk 2.8s 2s ease-in-out infinite}
 @keyframes lbspark{from{opacity:0;transform:scale(.2) rotate(-45deg)}to{opacity:1;transform:none}}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+.auth-mhero{display:none}
 @media(max-width:860px){
   .auth-split{grid-template-columns:1fr}
   .auth-brand{display:none}
-  .auth-form-side{padding:32px 22px;min-height:100vh}
-  .auth-mobilemark{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:24px;font-size:26px;font-weight:850;letter-spacing:-.03em}
-  .auth-mobilemark .logo-badge svg{width:52px;height:52px}
+  .auth-form-side{padding:0;min-height:100vh;display:block;background:var(--bg)}
+  .auth-mobilemark{display:none}
+  /* premium mobile hero */
+  .auth-mhero{display:block;position:relative;overflow:hidden;color:#fff;
+    padding:68px 26px 104px;
+    background:radial-gradient(125% 92% at 12% -6%,#3AE083 0%,#15B972 38%,#059669 70%,#04724B 100%)}
+  .mh-glow{position:absolute;border-radius:50%;filter:blur(46px);opacity:.55;pointer-events:none}
+  .mh-g1{width:230px;height:230px;top:-70px;right:-40px;background:#8CF7C0}
+  .mh-g2{width:200px;height:200px;bottom:-30px;left:-60px;background:#12B36A;opacity:.7}
+  .mh-g3{width:150px;height:150px;top:60px;left:40%;background:#B9FFDD;opacity:.35}
+  .auth-mhero-in{position:relative;z-index:2}
+  .mh-lock{display:flex;align-items:center;gap:13px}
+  .mh-lock .logo-badge svg{width:56px;height:56px;filter:drop-shadow(0 8px 20px rgba(0,40,20,.35))}
+  .mh-word{font-size:30px;font-weight:850;letter-spacing:-.03em}
+  .auth-mhero-tag{margin:22px 0 0;font-size:29px;line-height:1.1;font-weight:850;letter-spacing:-.025em;text-wrap:balance}
+  .auth-mhero-tag span{color:#D6FFEC}
+  .auth-mhero-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+  .auth-mhero-chips span{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.24);
+    padding:7px 13px;border-radius:999px;font-size:12.5px;font-weight:650;letter-spacing:.01em}
+  .auth-topctl{top:16px;right:16px;z-index:8}
+  .auth-topctl .iconbtn{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.26);color:#fff;backdrop-filter:blur(6px)}
+  .auth-topctl .langbtn b{color:#fff}
+  .auth-form-side .auth-card{width:auto;max-width:none;margin:-72px 14px 0;background:var(--surface);
+    border-radius:28px;padding:26px 20px 24px;position:relative;z-index:4;
+    box-shadow:0 -6px 24px rgba(2,22,13,.10),0 14px 40px rgba(2,22,13,.10)}
+  .auth-legal{margin-top:18px}
 }
 
 /* ═══════════ avatars, custom banner, profile edit ═══════════ */
@@ -988,6 +1012,10 @@ Object.assign(TR.uk,{"Доброй ночи,":"Доброї ночі,","Добр
 Object.assign(TR.pl,{"Забыли пароль?":"Nie pamiętasz hasła?","Сброс пароля":"Reset hasła","Новый пароль":"Nowe hasło","Укажите email — пришлём ссылку для сброса пароля.":"Podaj e-mail — wyślemy link do zresetowania hasła.","Придумайте новый пароль для входа.":"Ustaw nowe hasło do logowania.","Отправить ссылку":"Wyślij link","Сохранить пароль":"Zapisz hasło","← Назад ко входу":"← Powrót do logowania","Если такой email есть, мы отправили ссылку для сброса.":"Jeśli konto istnieje, wysłaliśmy link do resetu.","Пароль обновлён. Добро пожаловать!":"Hasło zmienione. Witaj!","Ссылка недействительна или устарела. Запросите новую.":"Link jest nieprawidłowy lub wygasł. Poproś o nowy."});
 Object.assign(TR.en,{"Забыли пароль?":"Forgot password?","Сброс пароля":"Reset password","Новый пароль":"New password","Укажите email — пришлём ссылку для сброса пароля.":"Enter your email — we’ll send a reset link.","Придумайте новый пароль для входа.":"Set a new password to sign in.","Отправить ссылку":"Send link","Сохранить пароль":"Save password","← Назад ко входу":"← Back to sign in","Если такой email есть, мы отправили ссылку для сброса.":"If that email exists, we’ve sent a reset link.","Пароль обновлён. Добро пожаловать!":"Password updated. Welcome!","Ссылка недействительна или устарела. Запросите новую.":"The link is invalid or expired. Request a new one."});
 Object.assign(TR.uk,{"Забыли пароль?":"Забули пароль?","Сброс пароля":"Скидання пароля","Новый пароль":"Новий пароль","Укажите email — пришлём ссылку для сброса пароля.":"Вкажіть email — надішлемо посилання для скидання пароля.","Придумайте новый пароль для входа.":"Придумайте новий пароль для входу.","Отправить ссылку":"Надіслати посилання","Сохранить пароль":"Зберегти пароль","← Назад ко входу":"← Назад до входу","Если такой email есть, мы отправили ссылку для сброса.":"Якщо такий email існує, ми надіслали посилання для скидання.","Пароль обновлён. Добро пожаловать!":"Пароль оновлено. Ласкаво просимо!","Ссылка недействительна или устарела. Запросите новую.":"Посилання недійсне або застаріле. Запросіть нове."});
+/* mobile hero chips + social sign-in */
+Object.assign(TR.pl,{"Уборка за минуты":"Sprzątanie w minuty","Честная AI-цена":"Uczciwa cena AI","Живой трекинг":"Śledzenie na żywo","или":"lub","Продолжить с Google":"Kontynuuj z Google","Продолжить с Apple":"Kontynuuj z Apple"});
+Object.assign(TR.en,{"Уборка за минуты":"Cleaning in minutes","Честная AI-цена":"Fair AI price","Живой трекинг":"Live tracking","или":"or","Продолжить с Google":"Continue with Google","Продолжить с Apple":"Continue with Apple"});
+Object.assign(TR.uk,{"Уборка за минуты":"Прибирання за хвилини","Честная AI-цена":"Чесна AI-ціна","Живой трекинг":"Живий трекінг","или":"або","Продолжить с Google":"Продовжити з Google","Продолжить с Apple":"Продовжити з Apple"});
 
 function t(ru,params){
   let s=ru;
@@ -1411,6 +1439,14 @@ function renderAuth(){
       <div class="auth-topctl">
         <button class="iconbtn langbtn" id="authLang" title="Язык">${I.globe}<b>${state.lang.toUpperCase()}</b></button>
         <button class="iconbtn auth-theme" id="authTheme" title="Тема"></button>
+      </div>
+      <div class="auth-mhero">
+        <span class="mh-glow mh-g1"></span><span class="mh-glow mh-g2"></span><span class="mh-glow mh-g3"></span>
+        <div class="auth-mhero-in">
+          <div class="mh-lock">${logoBadge('m')}<span class="mh-word">LUMI</span></div>
+          <h1 class="auth-mhero-tag">Ваш дом под контролем —<br><span>в одном приложении</span></h1>
+          <div class="auth-mhero-chips"><span>Уборка за минуты</span><span>Честная AI-цена</span><span>Живой трекинг</span></div>
+        </div>
       </div>
       <div class="auth-card" id="authCard"></div>
     </div>
