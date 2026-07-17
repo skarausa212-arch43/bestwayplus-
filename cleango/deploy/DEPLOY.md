@@ -67,6 +67,47 @@ Force an update now: `sudo systemctl start lumi-update.service`.
 > Security note: with auto-update on, whoever can push to that branch controls
 > the server. Keep the repo/branch protected.
 
+## Move to a new server (keep all the data)
+Migrating to a fresh VPS while carrying over the real accounts, bookings and
+login sessions. You can do this before touching DNS — the app is reachable by
+raw IP over HTTP right after `deploy.sh`, and you point the domain at the new
+box afterwards.
+
+1. **Stand up the new server.** Upload the bundle and run the installer exactly
+   like a first install:
+   ```bash
+   tar xzf lumi-deploy.tar.gz && cd lumi-deploy
+   sudo bash deploy.sh
+   ```
+   When it finishes it prints `Live now: http://<NEW_IP>` — open that to confirm
+   the app runs (it'll be empty until you restore the data in step 3).
+
+2. **Snapshot the data on the OLD server:**
+   ```bash
+   sudo bash deploy/backup-data.sh          # → /root/lumi-data-<stamp>.tgz
+   ```
+   This briefly pauses the service for a clean snapshot of the whole `data/` dir
+   (JSON store + audit log + token secret). Add `--live` to skip the pause.
+
+3. **Copy the snapshot to the NEW server and restore it:**
+   ```bash
+   # from your machine (or scp old→new directly if they can reach each other)
+   scp root@OLD_IP:/root/lumi-data-<stamp>.tgz .
+   scp lumi-data-<stamp>.tgz root@NEW_IP:/root/
+   # then on the NEW server:
+   sudo bash deploy/restore-data.sh /root/lumi-data-<stamp>.tgz
+   ```
+   The restore stops lumi, moves any existing data aside to `data.bak-<stamp>`
+   (never deleted), loads the snapshot, fixes ownership and restarts. Because the
+   token `secret` comes along, users who were logged in stay logged in.
+
+4. **Cut the domain over** once the new box checks out: change the A-record
+   `lumi → NEW_IP`, wait for it to resolve, then `sudo bash tls.sh` for HTTPS.
+   Keep the old server running until DNS has propagated, then shut it down.
+
+> Routine backups use the same tool: `sudo bash deploy/backup-data.sh --live`
+> on a cron/timer, and keep the `.tgz` off-box.
+
 ## Notes
 - **Demo accounts are OFF by default** in production (`LUMI_SEED=off` in the
   service unit), so there are no public `cleango123` logins. Remove that line

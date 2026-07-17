@@ -106,8 +106,9 @@ else
   echo "▶ nginx reverse proxy…"
   cat >/etc/nginx/sites-available/lumi <<NGINX
 server {
-  listen 80;
-  server_name $DOMAIN;
+  listen 80 default_server;
+  listen [::]:80 default_server;
+  server_name $DOMAIN _;
   client_max_body_size 12m;
   location / {
     proxy_pass http://127.0.0.1:$PORT;
