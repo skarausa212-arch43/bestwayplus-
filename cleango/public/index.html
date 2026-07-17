@@ -637,6 +637,9 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .admin-kv>div:last-child{border-bottom:0;padding-bottom:0}
 .admin-kv span{color:var(--ink-3)}
 .admin-kv b{text-align:right;word-break:break-word;font-variant-numeric:tabular-nums}
+.tbadges{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.tbadge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);white-space:nowrap}
+.tbadge.g{background:var(--primary-050);color:var(--primary-600);border-color:transparent}
 .admin-doc{width:100%;max-height:360px;object-fit:contain;border-radius:12px;border:1px solid var(--line);background:var(--surface-2)}
 /* booking date & time picker */
 .sched{margin-bottom:16px}
@@ -1054,6 +1057,10 @@ Object.assign(TR.uk,{
   "Фото, документ, PESEL и реквизиты видны только модератору LUMI и не показываются клиентам. Оборудование и авто увидят клиенты при выборе.":"Фото, документ, PESEL і реквізити бачить лише модератор LUMI — клієнтам не показуються. Обладнання та авто побачать клієнти при виборі.",
   "Данные фирмы и реквизиты видны только модератору LUMI. Оборудование и авто увидят клиенты при выборе.":"Дані фірми та реквізити бачить лише модератор LUMI. Обладнання та авто побачать клієнти при виборі.",
   "Данные фирмы и реквизиты":"Дані фірми та реквізити","Личные данные и реквизиты":"Особисті дані та реквізити","О компании":"Про компанію","Тип":"Тип","Название":"Назва","Банк":"Банк","Счёт (IBAN)":"Рахунок (IBAN)","Конфиденциально — только для модерации.":"Конфіденційно — лише для модерації."});
+/* provider trust badges */
+Object.assign(TR.pl,{"✓ Проверен":"✓ Zweryfikowany","⭐ Топ-рейтинг":"⭐ Najwyższa ocena","🔥 100+ заказов":"🔥 100+ zleceń","💪 Опытный":"💪 Doświadczony","🎓 Большой опыт":"🎓 Duże doświadczenie","🚗 Свой транспорт":"🚗 Własny transport"});
+Object.assign(TR.en,{"✓ Проверен":"✓ Verified","⭐ Топ-рейтинг":"⭐ Top rated","🔥 100+ заказов":"🔥 100+ jobs","💪 Опытный":"💪 Experienced","🎓 Большой опыт":"🎓 Highly experienced","🚗 Свой транспорт":"🚗 Own transport"});
+Object.assign(TR.uk,{"✓ Проверен":"✓ Перевірений","⭐ Топ-рейтинг":"⭐ Топ-рейтинг","🔥 100+ заказов":"🔥 100+ замовлень","💪 Опытный":"💪 Досвідчений","🎓 Большой опыт":"🎓 Великий досвід","🚗 Свой транспорт":"🚗 Власний транспорт"});
 /* admin users panel */
 Object.assign(TR.pl,{"Пользователи":"Użytkownicy","Все":"Wszyscy","Компании":"Firmy","Админы":"Administratorzy","Регистрация":"Rejestracja","Открыть профиль":"Otwórz profil","● Онлайн":"● Online"});
 Object.assign(TR.en,{"Пользователи":"Users","Все":"All","Компании":"Companies","Админы":"Admins","Регистрация":"Registered","Открыть профиль":"Open profile","● Онлайн":"● Online"});
@@ -1407,6 +1414,18 @@ async function chooseCleaner(bookingId,cleanerId){
     else toast(e.message,true);
   }
 }
+// Trust badges for a provider — earned signals that reassure the customer.
+function trustChips(c){
+  const out=[];
+  if(c.verified) out.push(['g','✓ Проверен']);
+  const jd=c.jobsDone||0;
+  if((c.rating||0)>=4.8 && jd>=10) out.push(['g','⭐ Топ-рейтинг']);
+  if(jd>=100) out.push(['','🔥 100+ заказов']); else if(jd>=25) out.push(['','💪 Опытный']);
+  if((c.experienceYears||0)>=3) out.push(['','🎓 Большой опыт']);
+  if(c.hasCar) out.push(['','🚗 Свой транспорт']);
+  if(!out.length) return '';
+  return `<div class="tbadges">${out.map(([v,t])=>`<span class="tbadge ${v}">${t}</span>`).join('')}</div>`;
+}
 function renderResponders(b){
   const z=$('#respZone'); if(!z){return;}
   if(state.user.role!=='customer' || b.customerId!==state.user.id || b.status!=='searching'){z.innerHTML='';return;}
@@ -1427,7 +1446,7 @@ function renderResponders(b){
     const row=el(`<div class="card bk" style="cursor:default">
       ${avatarEl(c,44)}
       <div class="meta" style="min-width:0"><h4 style="display:flex;align-items:center;gap:5px">${esc(c.name)}${c.verified?`<span style="color:var(--accent-600);display:inline-flex">${I.check}</span>`:''}</h4>
-        <div class="muted tiny" style="margin:3px 0">⭐ ${c.rating||'—'} · ${c.jobsDone} ${plural(c.jobsDone,'заказ','заказа','заказов')}${c.experienceYears?` · ${c.experienceYears} ${plural(c.experienceYears,'год','года','лет')}`:''}</div></div>
+        <div class="muted tiny" style="margin:3px 0">⭐ ${c.rating||'—'} · ${c.jobsDone} ${plural(c.jobsDone,'заказ','заказа','заказов')}${c.experienceYears?` · ${c.experienceYears} ${plural(c.experienceYears,'год','года','лет')}`:''}</div>${trustChips(c)}</div>
       <div style="display:flex;flex-direction:column;gap:6px">
         <button class="btn sm" data-choose="${c.id}">Выбрать</button>
         <button class="btn ghost sm" data-prof="${c.id}">Профиль</button></div>
