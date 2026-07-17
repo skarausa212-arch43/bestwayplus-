@@ -402,9 +402,11 @@ function estimatePrice(input) {
   const wCount = Math.max(1, Math.min(60, Number(input.windows) || 1));
   const wSide = WINDOW_PER[input.windowSide] ? input.windowSide : 'inside';
 
-  let price;
+  let price, climberFee = 0;
   if (isWindows) {
     price = svc.base + wCount * WINDOW_PER[wSide];   // mobilization + per-window
+    // Rope-access (industrial climber) surcharge — only for exterior work without normal access.
+    if ((wSide === 'outside' || wSide === 'both') && input.windowAccess === 'climber') { climberFee = 250; price += climberFee; }
   } else {
     price = svc.base + rooms * svc.perRoom + baths * svc.perBath;
     if (area) price += area * 0.6 * svc.rate;
@@ -443,6 +445,7 @@ function estimatePrice(input) {
     currency: CURRENCY,
     windows: isWindows ? wCount : undefined,
     windowSide: isWindows ? wSide : undefined,
+    windowsClimber: isWindows ? climberFee : undefined,
     breakdown: {
       base: isWindows ? svc.base : svc.base,
       rooms: isWindows ? wCount * WINDOW_PER[wSide] : rooms * svc.perRoom,
@@ -1132,6 +1135,8 @@ route('POST', '/api/bookings', async (req, res) => {
     area: prop ? prop.area : (Number(b.area) || 0),
     windows: est.service === 'windows' ? (est.windows || null) : null,
     windowSide: est.service === 'windows' ? (est.windowSide || null) : null,
+    windowAccess: est.service === 'windows' ? (['normal', 'climber'].includes(b.windowAccess) ? b.windowAccess : 'normal') : null,
+    floor: est.service === 'windows' ? Math.max(1, Math.min(60, Number(b.floor) || 1)) : null,
     extras: Array.isArray(b.extras) ? b.extras : [],
     notes: String(b.notes || '').slice(0, 500),
     // Photos the customer attaches to the request so cleaners see the job scope.

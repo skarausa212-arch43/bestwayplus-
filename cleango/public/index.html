@@ -2152,7 +2152,7 @@ function viewPremium(){
 /* ---------- BOOKING WIZARD ---------- */
 function newDraft(service,propertyId){
   const prop=propertyId?state.properties.find(p=>p.id===propertyId):(state.properties[0]||null);
-  return {service:service||'standard',propertyId:prop?prop.id:null,rooms:prop?prop.rooms:2,baths:prop?prop.baths:1,area:prop?prop.area:0,windows:5,windowSide:'inside',extras:[],urgency:'scheduled',date:'',time:'',scheduledFor:null,address:prop?prop.address:'',city:prop?prop.city:(state.user.city||'Warsaw'),notes:'',photos:[],step:0,estimate:null};
+  return {service:service||'standard',propertyId:prop?prop.id:null,rooms:prop?prop.rooms:2,baths:prop?prop.baths:1,area:prop?prop.area:0,windows:5,windowSide:'inside',floor:1,windowAccess:'normal',extras:[],urgency:'scheduled',date:'',time:'',scheduledFor:null,address:prop?prop.address:'',city:prop?prop.city:(state.user.city||'Warsaw'),notes:'',photos:[],step:0,estimate:null};
 }
 function startBooking(service,propertyId,overrides){
   state.draft=Object.assign(newDraft(service,propertyId),overrides||{});
@@ -2238,6 +2238,12 @@ function viewBook(){
         <div style="height:16px"></div>
         <label class="field"><span>Что помыть</span></label>
         <div class="opt-grid" id="winSide">${winSideOpt('inside','Внутри')}${winSideOpt('outside','Снаружи')}${winSideOpt('both','С двух сторон')}</div>
+        ${d.windowSide!=='inside'?`
+        <div style="height:14px"></div>
+        <label class="field"><span>Этаж</span><input class="input" type="number" min="1" max="60" value="${d.floor||1}" id="winFloor"></label>
+        <label class="chk" style="padding:10px 2px"><input type="checkbox" id="winNormal" ${d.windowAccess!=='climber'?'checked':''}><span>Есть нормальный доступ к окнам снаружи (моем из дома / с поворотных створок)</span></label>
+        ${d.windowAccess==='climber'?`<div class="flash-sla" style="background:#FEF3E2;color:#B25E09">${I.shield} Нужен промышленный альпинист · +250 zł</div>`:''}
+        `:''}
         <div class="win-price"><span class="muted tiny">Ориентировочно</span><b id="winPrice">—</b></div>
         <p class="tiny muted" style="margin-top:4px">Балконное остекление и уборку балкона можно добавить на следующем шаге.</p>
       </div>`:`
@@ -2259,8 +2265,10 @@ function viewBook(){
       viewBook();
     };
     if(isWin){
-      body.querySelectorAll('#winSide .opt').forEach(o=>o.onclick=()=>{d.windowSide=o.dataset.side;viewBook();});
+      body.querySelectorAll('#winSide .opt').forEach(o=>o.onclick=()=>{d.windowSide=o.dataset.side;if(d.windowSide==='inside')d.windowAccess='normal';viewBook();});
       body.querySelectorAll('.stepper[data-k="windows"] button').forEach(btn=>btn.onclick=()=>{d.windows=Math.max(1,Math.min(60,d.windows+Number(btn.dataset.d)));viewBook();});
+      const wf=$('#winFloor',body); if(wf)wf.oninput=()=>{d.floor=Math.max(1,Math.min(60,Number(wf.value)||1));};
+      const wn=$('#winNormal',body); if(wn)wn.onchange=()=>{d.windowAccess=wn.checked?'normal':'climber';viewBook();};
       setTimeout(refreshWinPrice,0);   // run after shell() mounts the view into the DOM
     }else{
       const so=$('#svcOpts',body);
@@ -2508,7 +2516,7 @@ async function renderBookingDetail(id){
       <div class="card pad" style="background:var(--surface-2);margin-bottom:14px">
         <div class="row" style="justify-content:space-between"><span class="muted">${isCleaner?'Ваша выплата':'Итоговая цена'}</span><b style="font-size:22px;color:var(--primary-600)">${money(isCleaner?b.payout:b.price)}</b></div>
         <div class="row tiny muted" style="gap:14px;margin-top:8px;flex-wrap:wrap">
-          ${b.service==='windows'?`<span>${b.windows||'?'} ${plural(b.windows||0,'окно','окна','окон')} · ${WIN_SIDE_RU[b.windowSide]||'внутри'}</span>`:`<span>${roomsWord(b.rooms)} · ${bathsWord(b.baths)}</span>${b.area?`<span>${b.area} м²</span>`:''}`}<span>~${b.durationHours} ч</span>
+          ${b.service==='windows'?`<span>${b.windows||'?'} ${plural(b.windows||0,'окно','окна','окон')} · ${WIN_SIDE_RU[b.windowSide]||'внутри'}</span>${b.floor?`<span>${b.floor} этаж</span>`:''}${b.windowAccess==='climber'?`<span style="color:var(--warn);font-weight:700">⛰ альпинист</span>`:''}`:`<span>${roomsWord(b.rooms)} · ${bathsWord(b.baths)}</span>${b.area?`<span>${b.area} м²</span>`:''}`}<span>~${b.durationHours} ч</span>
           ${b.extras.length?`<span>${b.extras.length} ${plural(b.extras.length,'опция','опции','опций')}</span>`:''}
         </div>
         ${b.address?`<div class="row tiny" style="margin-top:8px;color:var(--ink-2)">${I.pin}<span>${b.address}, ${b.city}</span></div>`:''}
