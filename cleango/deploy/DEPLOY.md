@@ -108,6 +108,40 @@ box afterwards.
 > Routine backups use the same tool: `sudo bash deploy/backup-data.sh --live`
 > on a cron/timer, and keep the `.tgz` off-box.
 
+## Email (welcome on sign-up + order updates)
+LUMI sends transactional email by **relaying through an SMTP server** — it does
+**not** run its own mail server. Self-hosting an MTA on a fresh VPS almost always
+lands in spam (port 25 is usually blocked, and IP reputation/SPF/DKIM/DMARC are
+hard to get right). Use your domain mailbox or a provider (Brevo, Mailgun, Amazon
+SES, Postmark — all have free/cheap tiers).
+
+1. **Get SMTP credentials** from your provider or domain host: host, port
+   (587 STARTTLS or 465 TLS), username, password/API key.
+2. **Set them in `deploy/instance.env`** (uncomment the `LUMI_SMTP_*` lines) and
+   use a From address on your own domain, e.g. `no-reply@bestwayplus.pl`:
+   ```
+   LUMI_SMTP_HOST=smtp-relay.brevo.com
+   LUMI_SMTP_PORT=587
+   LUMI_SMTP_USER=...
+   LUMI_SMTP_PASS=...            # secret — server only, never commit
+   LUMI_MAIL_FROM=no-reply@bestwayplus.pl
+   LUMI_MAIL_FROM_NAME=LUMI
+   ```
+   The auto-updater applies these as a systemd drop-in within ~5 min (or run
+   `sudo systemctl start lumi-update.service`). Until they’re set, email is a
+   safe no-op — the app logs `[mail] disabled …` and nothing breaks.
+3. **Add DNS records so mail isn’t marked as spam** (in the DNS panel for
+   `bestwayplus.pl`), following your provider’s exact values:
+   - **SPF** — a `TXT` on the root: `v=spf1 include:<provider-spf> ~all`
+   - **DKIM** — the `CNAME`/`TXT` record(s) the provider gives you
+   - **DMARC** — a `TXT` at `_dmarc`: `v=DMARC1; p=none; rua=mailto:you@bestwayplus.pl`
+4. **Test**: register a new account — the welcome email should arrive. Watch logs
+   with `journalctl -u lumi -f` (look for `[mail] sent to …`).
+
+> The From address domain must match the domain you set SPF/DKIM for, or mail
+> will fail authentication. Verify sending emails uses your domain, not the
+> provider’s.
+
 ## Notes
 - **Demo accounts are OFF by default** in production (`LUMI_SEED=off` in the
   service unit), so there are no public `cleango123` logins. Remove that line

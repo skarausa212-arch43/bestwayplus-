@@ -22,6 +22,7 @@ const suites = [
   ['unit', 'admin/test.js'],
   ['unit', 'analytics/test.js'],
   ['unit', 'flags/test.js'],
+  ['unit', 'mailer/test.js'],
   ['integration', 'test/api.test.js'],
 ];
 

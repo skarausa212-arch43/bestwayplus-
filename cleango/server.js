@@ -33,6 +33,7 @@ const smartHome = require('./smart-home/registry');
 const rbac = require('./admin/rbac');
 const analytics = require('./analytics/metrics');
 const flags = require('./flags/flags');
+const mailer = require('./mailer');
 
 const PORT = process.env.PORT || 4000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -237,6 +238,11 @@ function notify(userId, templateId, params) {
   db.notifications[userId].unshift(notif);
   if (db.notifications[userId].length > 100) db.notifications[userId].length = 100;
   persist.notifications();
+  // Real email delivery for templates that include the email channel (no-op
+  // until SMTP is configured). Never emails anonymized/deleted addresses.
+  if (channels.includes('email') && u.email && !u.email.endsWith('@lumi.invalid')) {
+    mailer.queue({ to: u.email, subject: r.title, text: `${r.body}\n\n${process.env.LUMI_APP_URL || 'https://lumi.bestwayplus.pl'}` });
+  }
   return notif;
 }
 
@@ -287,6 +293,30 @@ function verifyToken(token) {
   } catch {
     return null;
   }
+}
+
+// Password-reset token. Bound to the user's current password hash, so it is
+// single-use by construction: once the password changes the signature no longer
+// verifies. Expires after RESET_TTL. HMAC-signed like the session token.
+const RESET_TTL = 60 * 60 * 1000;   // 1 hour
+function resetSecretFor(u) { return crypto.createHmac('sha256', SECRET).update('reset|' + u.id + '|' + u.password).digest(); }
+function signReset(u) {
+  const payload = Buffer.from(JSON.stringify({ u: u.id, t: now() })).toString('base64url');
+  const sig = crypto.createHmac('sha256', resetSecretFor(u)).update(payload).digest('base64url');
+  return `${payload}.${sig}`;
+}
+function verifyReset(token) {
+  if (!token || !token.includes('.')) return null;
+  const [payload, sig] = token.split('.');
+  let data;
+  try { data = JSON.parse(Buffer.from(payload, 'base64url').toString()); } catch { return null; }
+  const u = data && db.users[data.u];
+  if (!u || u.deletedAt) return null;
+  const expected = crypto.createHmac('sha256', resetSecretFor(u)).update(payload).digest('base64url');
+  if (sig.length !== expected.length) return null;
+  if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
+  if (now() - data.t > RESET_TTL) return null;
+  return u;
 }
 
 function publicUser(u) {
@@ -564,9 +594,10 @@ route('POST', '/api/register', async (req, res) => {
     if (!validImage(b.idDocument, 3000000)) return send(res, 400, { error: 'Загрузите фото документа, удостоверяющего личность.', code: 'ID_REQUIRED' });
     if (bio.length < 20) return send(res, 400, { error: 'Расскажите о себе — что умеете и опыт (минимум 20 символов).', code: 'BIO_REQUIRED' });
   }
+  const locale = ['pl', 'en', 'ru', 'uk'].includes(b.locale) ? b.locale : 'pl';   // UI language for emails/notifications
   const id = uid('u_');
   const user = {
-    id, email, name, role, phone,
+    id, email, name, role, phone, locale,
     password: hashPassword(password),
     createdAt: now(),
     wallet: 0,
@@ -588,6 +619,7 @@ route('POST', '/api/register', async (req, res) => {
   db.users[id] = user;
   persist.users();
   audit('user.created', id, id, { role });
+  mailer.queue(mailer.welcome(user));   // welcome email (no-op until SMTP is configured)
   // Give new customers a starter property so booking works in one tap.
   if (role === 'customer') {
     createProperty(user, { label: 'My home', city: user.city, type: 'apartment', rooms: 2, baths: 1 });
@@ -619,6 +651,37 @@ route('POST', '/api/login', async (req, res) => {
     audit('user.promoted_admin', user.id, user.id, { via: 'allowlist' });
   }
   return send(res, 200, { token: signToken(user.id), user: publicUser(user) });
+});
+
+// Forgot password: email a single-use reset link. Always answers 200 with the
+// same message so the endpoint can't be used to enumerate accounts (§32).
+route('POST', '/api/password/forgot', async (req, res) => {
+  const ipRl = rateLimit('forgot-ip:' + clientIp(req), 8, 3600000);   // 8 / hour / IP
+  if (!ipRl.ok) return send(res, 429, { error: 'Too many attempts. Try again later.', code: 'RATE_LIMITED' }, { 'Retry-After': ipRl.retryAfter });
+  const b = await readBody(req);
+  const email = String(b.email || '').trim().toLowerCase();
+  const emRl = rateLimit('forgot-em:' + email, 4, 3600000);           // 4 / hour / email
+  const user = Object.values(db.users).find((u) => u.email === email);
+  if (emRl.ok && user && !user.deletedAt) {
+    mailer.queue(mailer.passwordReset(user, signReset(user)));
+    audit('password.reset_requested', user.id, user.id, {});
+  }
+  return send(res, 200, { ok: true });   // never reveal whether the email exists
+});
+
+// Complete the reset with the token from the email + a new password.
+route('POST', '/api/password/reset', async (req, res) => {
+  const rl = rateLimit('reset-ip:' + clientIp(req), 20, 3600000);
+  if (!rl.ok) return send(res, 429, { error: 'Too many attempts. Try again later.', code: 'RATE_LIMITED' }, { 'Retry-After': rl.retryAfter });
+  const b = await readBody(req);
+  const password = String(b.password || '');
+  if (password.length < 12) return send(res, 400, { error: 'Password must be at least 12 characters.', code: 'VALIDATION_ERROR' });
+  const user = verifyReset(String(b.token || ''));
+  if (!user) return send(res, 400, { error: 'Ссылка недействительна или устарела. Запросите новую.', code: 'RESET_INVALID' });
+  user.password = hashPassword(password);   // rotating the hash invalidates the used token and any other outstanding reset links
+  persist.users();
+  audit('password.reset', user.id, user.id, {});
+  return send(res, 200, { token: signToken(user.id), user: publicUser(user) });   // sign the user straight in
 });
 
 route('GET', '/api/me', async (req, res) => {

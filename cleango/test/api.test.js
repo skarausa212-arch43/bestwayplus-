@@ -96,6 +96,21 @@ async function main() {
       assert.strictEqual(good.status, 200);
       cleanerTok = good.json.token;
     });
+    await ok('forgot password never enumerates accounts; reset rejects bad tokens', async () => {
+      // Known and unknown emails both return the same 200 — no account enumeration.
+      const known = await req('POST', '/api/password/forgot', { body: { email: 'testcust@x.pl' } });
+      const unknown = await req('POST', '/api/password/forgot', { body: { email: 'nobody-here@x.pl' } });
+      assert.strictEqual(known.status, 200);
+      assert.strictEqual(unknown.status, 200);
+      assert.deepStrictEqual(known.json, unknown.json);
+      // Reset requires a valid token and a strong password.
+      const weak = await req('POST', '/api/password/reset', { body: { token: 'x.y', password: 'short' } });
+      assert.strictEqual(weak.status, 400);
+      assert.strictEqual(weak.json.code, 'VALIDATION_ERROR');
+      const badTok = await req('POST', '/api/password/reset', { body: { token: 'forged.token', password: 'averylongpassword' } });
+      assert.strictEqual(badTok.status, 400);
+      assert.strictEqual(badTok.json.code, 'RESET_INVALID');
+    });
 
     // ── AI estimate + booking (property auto-seeded for new customers) ──
     let bookingId;
