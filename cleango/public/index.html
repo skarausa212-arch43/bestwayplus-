@@ -317,6 +317,12 @@ textarea.input{resize:vertical;min-height:80px}
 .starpick span.on svg{color:var(--star)}
 
 /* admin table */
+.urole-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.urole{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:999px;border:1.5px solid var(--line-strong);background:var(--surface);color:var(--ink-2);font-size:13.5px;font-weight:700;cursor:pointer;transition:.15s}
+.urole:hover{border-color:var(--ink-3)}
+.urole span{display:inline-grid;place-items:center;min-width:22px;height:20px;padding:0 6px;border-radius:999px;background:var(--surface-2);color:var(--ink-3);font-size:12px;font-weight:800}
+.urole.active{background:var(--primary-600);border-color:var(--primary-600);color:#fff}
+.urole.active span{background:rgba(255,255,255,.24);color:#fff}
 .tbl{width:100%;border-collapse:collapse}
 .tbl th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);padding:10px 12px;border-bottom:1px solid var(--line)}
 .tbl td{padding:12px;border-bottom:1px solid var(--line);font-size:14px}
@@ -1027,6 +1033,10 @@ Object.assign(TR.uk,{"Забыли пароль?":"Забули пароль?","
 Object.assign(TR.pl,{"или":"lub","Продолжить с Google":"Kontynuuj z Google","Продолжить с Apple":"Kontynuuj z Apple"});
 Object.assign(TR.en,{"или":"or","Продолжить с Google":"Continue with Google","Продолжить с Apple":"Continue with Apple"});
 Object.assign(TR.uk,{"или":"або","Продолжить с Google":"Продовжити з Google","Продолжить с Apple":"Продовжити з Apple"});
+/* admin users panel */
+Object.assign(TR.pl,{"Пользователи":"Użytkownicy","Все":"Wszyscy","Компании":"Firmy","Админы":"Administratorzy","Регистрация":"Rejestracja","Открыть профиль":"Otwórz profil","● Онлайн":"● Online"});
+Object.assign(TR.en,{"Пользователи":"Users","Все":"All","Компании":"Companies","Админы":"Admins","Регистрация":"Registered","Открыть профиль":"Open profile","● Онлайн":"● Online"});
+Object.assign(TR.uk,{"Пользователи":"Користувачі","Все":"Усі","Компании":"Компанії","Админы":"Адміни","Регистрация":"Реєстрація","Открыть профиль":"Відкрити профіль","● Онлайн":"● Онлайн"});
 Object.assign(TR.pl,{"Не удалось получить подтверждённый email от провайдера.":"Nie udało się uzyskać potwierdzonego e-maila od dostawcy.","Этот аккаунт заблокирован.":"To konto jest zablokowane.","Не удалось выполнить вход через провайдера. Попробуйте ещё раз.":"Logowanie przez dostawcę nie powiodło się. Spróbuj ponownie."});
 Object.assign(TR.en,{"Не удалось получить подтверждённый email от провайдера.":"Couldn’t get a verified email from the provider.","Этот аккаунт заблокирован.":"This account is blocked.","Не удалось выполнить вход через провайдера. Попробуйте ещё раз.":"Provider sign-in failed. Please try again."});
 Object.assign(TR.uk,{"Не удалось получить подтверждённый email от провайдера.":"Не вдалося отримати підтверджений email від провайдера.","Этот аккаунт заблокирован.":"Цей акаунт заблоковано.","Не удалось выполнить вход через провайдера. Попробуйте ещё раз.":"Не вдалося увійти через провайдера. Спробуйте ще раз."});
@@ -1239,7 +1249,7 @@ const HERO_SCENE=`<svg viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid slic
 const CAT_ICON={cleaning:I.broom,handyman:I.wrench,electrical:I.bolt,plumbing:I.drop,garden:I.leaf,laundry:I.shirt,drycleaning:I.shirt,assembly:I.tool,windows:I.window};
 const CAT_COLOR={cleaning:'c-cleaning',windows:'c-windows',handyman:'c-assembly',electrical:'c-electrical',plumbing:'c-plumbing',garden:'c-garden',laundry:'c-laundry',drycleaning:'c-laundry',assembly:'c-assembly',painting:'c-painting',sofa:'c-sofa',ironing:'c-ironing'};
 const SVC_ICON = {standard:I.broom, deep:I.spark, moveout:I.sofa, windows:I.window, office:I.office};
-const ROLE_RU={customer:'Клиент',cleaner:'Исполнитель',admin:'Администратор'};
+const ROLE_RU={customer:'Клиент',cleaner:'Исполнитель',company:'Компания',admin:'Администратор'};
 const SVC_LABEL_RU={'Standard Cleaning':'Обычная уборка','Deep Cleaning':'Генеральная уборка','Move-out Cleaning':'Уборка при переезде','Window Cleaning':'Мытьё окон','Office Cleaning':'Уборка офиса'};
 const SVC_SHORT_RU={standard:'Обычная',deep:'Генеральная',moveout:'После ремонта',office:'Офис'};
 const AI_CONCIERGE=false;   // AI-консьерж временно отключён (поставить true, чтобы вернуть)
@@ -3515,6 +3525,7 @@ async function viewJobs(){
 }
 
 /* ---------- ADMIN ---------- */
+let admUserRole='', admUserQ='';
 async function viewAdmin(){
   const c=el(`<div><div class="section-title">Панель администратора</div><div id="adminBody"></div></div>`);
   shell(c);
@@ -3544,22 +3555,24 @@ async function viewAdmin(){
           <table class="tbl"><thead><tr><th>Имя</th><th>Рейтинг</th><th>Заказов</th><th>Баланс</th><th>Статус</th><th></th></tr></thead><tbody id="clBody"></tbody></table>
         </div>
         <div class="card pad" style="overflow-x:auto">
-          <div class="row" style="justify-content:space-between;margin-bottom:14px;gap:10px;flex-wrap:wrap">
-            <h4>Все пользователи</h4>
+          <div class="row" style="justify-content:space-between;margin-bottom:12px;gap:10px;flex-wrap:wrap">
+            <h4>Пользователи</h4>
             <input class="input" id="usrSearch" placeholder="Поиск по имени или email" style="max-width:280px;height:40px">
           </div>
-          <table class="tbl"><thead><tr><th>Имя</th><th>Роль</th><th>Город</th><th>Статус</th><th></th></tr></thead><tbody id="usrBody"></tbody></table>
+          <div class="urole-tabs" id="uroleTabs"></div>
+          <table class="tbl"><thead><tr><th>Имя</th><th>Роль</th><th>Город</th><th>Регистрация</th><th>Статус</th><th></th></tr></thead><tbody id="usrBody"></tbody></table>
+          <div class="tiny muted" id="usrMore" style="margin-top:10px"></div>
         </div>
         <div class="card pad" style="overflow-x:auto">
           <h4 style="margin-bottom:14px">Недавние заказы</h4>
           <table class="tbl"><thead><tr><th>Услуга</th><th>Город</th><th>Клиент</th><th>Статус</th><th>Итого</th><th>Комиссия</th><th>Действия</th></tr></thead><tbody id="bkBody"></tbody></table>
         </div>
       </div>`;
-    loadAdminUsers('');
+    loadAdminUsers(admUserQ,admUserRole);
     loadAdminDisputes();
     loadAdminSupport();
     const us=$('#usrSearch',body); let ut=null;
-    if(us)us.oninput=()=>{clearTimeout(ut);ut=setTimeout(()=>loadAdminUsers(us.value.trim()),250);};
+    if(us){us.value=admUserQ;us.oninput=()=>{admUserQ=us.value.trim();clearTimeout(ut);ut=setTimeout(()=>loadAdminUsers(admUserQ,admUserRole),250);};}
     const kg=$('.kpi-grid',body);stagger(kg);
     const clBody=$('#clBody',body);
     cleaners.forEach(cl=>{
@@ -3594,24 +3607,38 @@ async function viewAdmin(){
   }catch(err){toast(err.message,true);}
 }
 function kpi(ico,val,lab,bg,fg){return `<div class="card pad kpi"><div class="ico" style="background:${bg};color:${fg}">${ico}</div><b>${val}</b><div class="lab">${lab}</div></div>`;}
-async function loadAdminUsers(q){
+const U_ROLE_TABS=[['','Все'],['customer','Клиенты'],['cleaner','Исполнители'],['company','Компании'],['admin','Админы']];
+async function loadAdminUsers(q,role){
+  admUserRole=role||''; admUserQ=q||'';
   const body=$('#usrBody'); if(!body)return;
-  body.innerHTML='<tr><td colspan="5"><div class="sk" style="height:120px"></div></td></tr>';
+  body.innerHTML='<tr><td colspan="6"><div class="sk" style="height:120px"></div></td></tr>';
   try{
-    const {users}=await api('/api/admin/users'+(q?`?q=${encodeURIComponent(q)}`:''));
-    if(!users.length){body.innerHTML='<tr><td colspan="5" class="muted">Никого не найдено.</td></tr>';return;}
+    const qs=new URLSearchParams(); if(q)qs.set('q',q); if(role)qs.set('role',role);
+    const {users,counts,total}=await api('/api/admin/users'+(qs.toString()?'?'+qs:''));
+    // Role tabs with live per-group counts.
+    const tabs=$('#uroleTabs');
+    if(tabs&&counts){
+      tabs.innerHTML=U_ROLE_TABS.map(([r,label])=>`<button class="urole ${r===admUserRole?'active':''}" data-role="${r}">${label}<span>${counts[r||'all']??0}</span></button>`).join('');
+      tabs.querySelectorAll('.urole').forEach(b=>b.onclick=()=>loadAdminUsers(admUserQ,b.dataset.role));
+    }
+    const more=$('#usrMore'); if(more)more.textContent=(total>users.length)?`Показано ${users.length} из ${total} — уточните поиск, чтобы найти нужного.`:'';
+    if(!users.length){body.innerHTML='<tr><td colspan="6" class="muted">Никого не найдено.</td></tr>';return;}
     body.innerHTML='';
     users.forEach(u=>{
+      const status=u.suspended?'<span class="badge" style="background:#FEECEB;color:#C4342A">Заблокирован</span>'
+        :(u.role==='cleaner'&&!u.verified?'<span class="badge amber">На проверке</span>'
+        :(u.online?'<span class="badge green">● Онлайн</span>':'<span class="badge green">Активен</span>'));
       const tr=el(`<tr style="cursor:pointer">
         <td><div class="row" style="gap:9px">${avatarEl(u,30)}<div><b>${esc(u.name)}</b><div class="tiny muted">${esc(u.email)}</div></div></div></td>
-        <td>${ROLE_RU[u.role]||u.role}</td><td>${u.city||'—'}</td>
-        <td>${u.suspended?'<span class="badge" style="background:#FEECEB;color:#C4342A">Заблокирован</span>':(u.role==='cleaner'&&!u.verified?'<span class="badge amber">На проверке</span>':'<span class="badge green">Активен</span>')}</td>
-        <td style="white-space:nowrap"><button class="btn ghost sm" data-prof="${u.id}">Профиль</button></td></tr>`);
+        <td><span class="badge grey">${ROLE_RU[u.role]||u.role}</span></td><td>${u.city||'—'}</td>
+        <td class="tiny muted">${fmtDate(u.createdAt)}</td>
+        <td>${status}</td>
+        <td style="white-space:nowrap"><button class="btn ghost sm" data-prof="${u.id}">Открыть профиль</button></td></tr>`);
       tr.onclick=()=>openAdminUser(u.id);
       body.appendChild(tr);
     });
     body.querySelectorAll('[data-prof]').forEach(b=>b.onclick=(e)=>{e.stopPropagation();openAdminUser(b.dataset.prof);});
-  }catch(e){body.innerHTML=`<tr><td colspan="5" class="muted">${e.message}</td></tr>`;}
+  }catch(e){body.innerHTML=`<tr><td colspan="6" class="muted">${e.message}</td></tr>`;}
 }
 async function loadAdminDisputes(){
   const card=$('#dispCard'),body=$('#dispBody'),count=$('#dispCount'); if(!body)return;

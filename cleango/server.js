@@ -2069,10 +2069,17 @@ route('GET', '/api/admin/users', async (req, res) => {
   const url = new URL(req.url, 'http://x');
   const role = url.searchParams.get('role');
   const q = (url.searchParams.get('q') || '').toLowerCase();
-  let list = Object.values(db.users).filter((u) => !u.deletedAt);
+  const all = Object.values(db.users).filter((u) => !u.deletedAt);
+  // Per-role tallies (over the whole base, independent of the active filter) so
+  // the panel can show each group separately with live counts.
+  const counts = { all: all.length, customer: 0, cleaner: 0, company: 0, admin: 0 };
+  for (const u of all) if (counts[u.role] != null) counts[u.role]++;
+  let list = all;
   if (role) list = list.filter((u) => u.role === role);
   if (q) list = list.filter((u) => (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q));
+  const total = list.length;
   send(res, 200, {
+    counts, total,
     users: list.sort((a, b) => b.createdAt - a.createdAt).slice(0, 100).map((u) => ({
       id: u.id, name: u.name, email: u.email, role: u.role, city: u.city,
       verified: u.verified, online: u.online, suspended: !!u.suspended,
