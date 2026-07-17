@@ -595,6 +595,8 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 /* form side */
 .auth-form-side{display:flex;align-items:center;justify-content:center;padding:40px 28px;background:var(--bg);position:relative}
 .auth-theme{position:absolute;top:22px;right:22px}
+.auth-topctl{position:absolute;top:22px;right:22px;display:flex;gap:8px;align-items:center;z-index:6}
+.auth-topctl .auth-theme{position:static;top:auto;right:auto}
 .auth-card{width:100%;max-width:396px}
 .auth-mobilemark{display:none}
 .auth-head{margin-bottom:20px}
@@ -789,6 +791,16 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
   .section-title{font-size:16px}
   .card.pad{padding:16px}
 }
+/* language switcher */
+.langbtn{display:inline-flex;align-items:center;gap:5px;width:auto;padding:0 10px}
+.langbtn b{font-size:11px;font-weight:800;letter-spacing:.04em}
+.lang-menu{position:fixed;z-index:120;min-width:190px;background:var(--surface);border:1px solid var(--line);
+  border-radius:16px;box-shadow:0 18px 44px rgba(2,10,20,.22);padding:8px;display:flex;flex-direction:column;gap:2px}
+.lang-opt{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;
+  padding:10px 12px;border-radius:11px;background:none;border:0;color:var(--ink);font-size:14px;font-weight:600;cursor:pointer;text-align:left}
+.lang-opt:hover{background:var(--surface-2)}
+.lang-opt.active{color:var(--primary);background:var(--primary-050)}
+.lang-opt svg{width:17px;height:17px}
 </style>
 </head>
 <body>
@@ -814,6 +826,210 @@ let state = {
   activeProperty: null, // property id for Smart Home
 };
 
+/* =========================================================================
+   i18n — Polish-first, with EN / RU / UK switch that the browser remembers.
+   Templates are authored in Russian (the base language); the rendered DOM is
+   translated into the active language on every mount by i18nApply(). Anything
+   not yet in the dictionary simply stays Russian — nothing breaks.
+   ========================================================================= */
+const LANGS=[['pl','Polski'],['en','English'],['ru','Русский'],['uk','Українська']];
+state.lang = localStorage.getItem('lumi_lang') || 'pl';   // default: Polish
+
+const TR = {
+  pl:{
+    // nav
+    'Главная':'Główna','Дома':'Domy','Заказать':'Zamów','Заказы':'Zamówienia','Чаты':'Czaty','Кошелёк':'Portfel',
+    'Заявки':'Zlecenia','Мои работы':'Moje prace','Доход':'Zarobki','Панель':'Panel','Аналитика':'Analityka','Аудит':'Audyt',
+    'Компания':'Firma','Персонал':'Personel','Финансы':'Finanse',
+    // roles
+    'Клиент':'Klient','Исполнитель':'Wykonawca','Администратор':'Administrator',
+    // shell / chrome
+    'на каждый заказ':'na każde zamówienie','Управлять':'Zarządzaj','Подробнее':'Szczegóły',
+    'Поддержка 24/7':'Wsparcie 24/7','Мы рядом, когда нужно':'Jesteśmy zawsze pod ręką',
+    'Тема':'Motyw','Уведомления':'Powiadomienia','Язык':'Język','Профиль':'Profil',
+    // greetings
+    'Доброй ночи':'Dobrej nocy','Доброе утро':'Dzień dobry','Добрый день':'Dzień dobry','Добрый вечер':'Dobry wieczór',
+    // auth
+    'в одном приложении':'w jednej aplikacji',
+    'Уборка за минуты, честная AI-цена и умный дом, который сам напоминает, что пора обслужить.':'Sprzątanie w kilka minut, uczciwa cena AI i inteligentny dom, który sam przypomni o serwisie.',
+    'Заказ за пару минут':'Zamówienie w kilka minut','Честная AI-цена ещё до заказа':'Uczciwa cena AI jeszcze przed zamówieniem',
+    'Живое отслеживание исполнителя':'Śledzenie wykonawcy na żywo','Умный дом и история обслуживания':'Inteligentny dom i historia serwisu',
+    'С возвращением':'Witaj ponownie','Создайте аккаунт':'Załóż konto','Войдите, чтобы продолжить.':'Zaloguj się, aby kontynuować.',
+    'Пара шагов — и дом под контролем.':'Kilka kroków i dom pod kontrolą.',
+    'Войти':'Zaloguj się','Регистрация':'Rejestracja','Создать аккаунт':'Utwórz konto',
+    'Я хочу':'Chcę','Заказывать':'Zamawiać','Работать':'Pracować',
+    'Имя и фамилия':'Imię i nazwisko','Номер телефона':'Numer telefonu','Город':'Miasto',
+    'Проверка исполнителя':'Weryfikacja wykonawcy','О себе — что умеете и опыт работы *':'O sobie — umiejętności i doświadczenie *',
+    'Опыт работы, лет':'Doświadczenie, lata','Оборудование':'Sprzęt','Каким оборудованием вы располагаете?':'Jakim sprzętem dysponujesz?',
+    'Транспорт':'Transport','Есть ли у вас собственный автомобиль?':'Czy masz własny samochód?','Да':'Tak','Нет':'Nie',
+    'Email':'E-mail','Пароль':'Hasło','минимум 12 символов':'minimum 12 znaków','ваш пароль':'twoje hasło',
+    'Не меньше 12 символов. Можно фразу — так надёжнее.':'Co najmniej 12 znaków. Może być fraza — tak bezpieczniej.',
+    'О LUMI':'O LUMI','Бренд':'Marka','Конфиденциальность':'Prywatność','Условия':'Regulamin',
+    'Загрузите своё фото':'Dodaj swoje zdjęcie','Загрузите фото документа':'Dodaj zdjęcie dokumentu','Подождите…':'Chwileczkę…',
+    'Анна Ковальская':'Anna Kowalska',
+    // property types / services / categories
+    'Квартира':'Mieszkanie','Дом':'Dom','Офис':'Biuro','Другое помещение':'Inny lokal',
+    'Обычная':'Standardowe','Генеральная':'Generalne','После ремонта':'Po remoncie',
+    'Обычная уборка':'Sprzątanie standardowe','Генеральная уборка':'Sprzątanie generalne','Уборка при переезде':'Sprzątanie po przeprowadzce',
+    'Мытьё окон':'Mycie okien','Уборка офиса':'Sprzątanie biura',
+    'Уборка':'Sprzątanie','Мастер':'Złota rączka','Электрик':'Elektryk','Сантехник':'Hydraulik','Сад':'Ogród',
+    'Стирка':'Pranie','Химчистка':'Pralnia chemiczna','Сборка мебели':'Montaż mebli','Окна':'Okna',
+    'Дома, офисы, переезды':'Domy, biura, przeprowadzki','Ремонт и мелкие работы':'Naprawy i drobne prace',
+    'Проводка, розетки, свет':'Instalacje, gniazdka, światło','Течи, краны, засоры':'Przecieki, krany, zatory',
+    'Газон, кусты, уход':'Trawnik, krzewy, pielęgnacja','Стирка, сушка, глажка':'Pranie, suszenie, prasowanie',
+    'Диваны, ковры, шторы':'Kanapy, dywany, zasłony','Мебель и монтаж':'Meble i montaż','Окна снаружи и внутри':'Okna z zewnątrz i wewnątrz',
+    'внутри':'wewnątrz','снаружи':'na zewnątrz','с двух сторон':'z obu stron',
+    // booking extras step
+    'Дополнительные услуги':'Usługi dodatkowe','Добавьте, что нужно — цена пересчитается сразу.':'Dodaj, czego potrzebujesz — cena przeliczy się od razu.',
+    'Итого за уборку':'Razem za sprzątanie','Итого за мойку окон':'Razem za mycie okien',
+    'Помыть балконное остекление':'Umyć oszklenie balkonu','Убрать балкон':'Posprzątać balkon',
+    // common actions
+    'Отмена':'Anuluj','Сохранить':'Zapisz','Готово':'Gotowe','Закрыть':'Zamknij','Назад':'Wstecz','Далее':'Dalej','Продолжить':'Kontynuuj',
+  },
+  en:{
+    'Главная':'Home','Дома':'Homes','Заказать':'Book','Заказы':'Orders','Чаты':'Chats','Кошелёк':'Wallet',
+    'Заявки':'Jobs','Мои работы':'My work','Доход':'Earnings','Панель':'Dashboard','Аналитика':'Analytics','Аудит':'Audit',
+    'Компания':'Company','Персонал':'Staff','Финансы':'Finance',
+    'Клиент':'Customer','Исполнитель':'Provider','Администратор':'Administrator',
+    'на каждый заказ':'on every order','Управлять':'Manage','Подробнее':'Details',
+    'Поддержка 24/7':'Support 24/7','Мы рядом, когда нужно':"We're here when you need us",
+    'Тема':'Theme','Уведомления':'Notifications','Язык':'Language','Профиль':'Profile',
+    'Доброй ночи':'Good night','Доброе утро':'Good morning','Добрый день':'Good afternoon','Добрый вечер':'Good evening',
+    'в одном приложении':'in one app',
+    'Уборка за минуты, честная AI-цена и умный дом, который сам напоминает, что пора обслужить.':'Cleaning in minutes, a fair AI price and a smart home that reminds you when service is due.',
+    'Заказ за пару минут':'Book in a couple of minutes','Честная AI-цена ещё до заказа':'A fair AI price before you book',
+    'Живое отслеживание исполнителя':'Live provider tracking','Умный дом и история обслуживания':'Smart home and service history',
+    'С возвращением':'Welcome back','Создайте аккаунт':'Create an account','Войдите, чтобы продолжить.':'Sign in to continue.',
+    'Пара шагов — и дом под контролем.':'A few steps and your home is under control.',
+    'Войти':'Sign in','Регистрация':'Sign up','Создать аккаунт':'Create account',
+    'Я хочу':'I want to','Заказывать':'Order','Работать':'Work',
+    'Имя и фамилия':'Full name','Номер телефона':'Phone number','Город':'City',
+    'Проверка исполнителя':'Provider verification','О себе — что умеете и опыт работы *':'About you — skills and experience *',
+    'Опыт работы, лет':'Experience, years','Оборудование':'Equipment','Каким оборудованием вы располагаете?':'What equipment do you have?',
+    'Транспорт':'Transport','Есть ли у вас собственный автомобиль?':'Do you have your own car?','Да':'Yes','Нет':'No',
+    'Email':'Email','Пароль':'Password','минимум 12 символов':'at least 12 characters','ваш пароль':'your password',
+    'Не меньше 12 символов. Можно фразу — так надёжнее.':'At least 12 characters. A passphrase is even safer.',
+    'О LUMI':'About LUMI','Бренд':'Brand','Конфиденциальность':'Privacy','Условия':'Terms',
+    'Загрузите своё фото':'Upload your photo','Загрузите фото документа':'Upload a document photo','Подождите…':'Please wait…',
+    'Анна Ковальская':'Anna Kowalska',
+    'Квартира':'Apartment','Дом':'House','Офис':'Office','Другое помещение':'Other space',
+    'Обычная':'Standard','Генеральная':'Deep','После ремонта':'Post-renovation',
+    'Обычная уборка':'Standard cleaning','Генеральная уборка':'Deep cleaning','Уборка при переезде':'Move-out cleaning',
+    'Мытьё окон':'Window cleaning','Уборка офиса':'Office cleaning',
+    'Уборка':'Cleaning','Мастер':'Handyman','Электрик':'Electrician','Сантехник':'Plumber','Сад':'Garden',
+    'Стирка':'Laundry','Химчистка':'Dry cleaning','Сборка мебели':'Furniture assembly','Окна':'Windows',
+    'Дома, офисы, переезды':'Homes, offices, moves','Ремонт и мелкие работы':'Repairs and small jobs',
+    'Проводка, розетки, свет':'Wiring, sockets, lighting','Течи, краны, засоры':'Leaks, taps, clogs',
+    'Газон, кусты, уход':'Lawn, shrubs, care','Стирка, сушка, глажка':'Wash, dry, iron',
+    'Диваны, ковры, шторы':'Sofas, carpets, curtains','Мебель и монтаж':'Furniture and mounting','Окна снаружи и внутри':'Windows inside and out',
+    'внутри':'inside','снаружи':'outside','с двух сторон':'both sides',
+    'Дополнительные услуги':'Add-on services','Добавьте, что нужно — цена пересчитается сразу.':'Add what you need — the price updates instantly.',
+    'Итого за уборку':'Total for cleaning','Итого за мойку окон':'Total for window cleaning',
+    'Помыть балконное остекление':'Clean balcony glazing','Убрать балкон':'Tidy the balcony',
+    'Отмена':'Cancel','Сохранить':'Save','Готово':'Done','Закрыть':'Close','Назад':'Back','Далее':'Next','Продолжить':'Continue',
+  },
+  uk:{
+    'Главная':'Головна','Дома':'Оселі','Заказать':'Замовити','Заказы':'Замовлення','Чаты':'Чати','Кошелёк':'Гаманець',
+    'Заявки':'Заявки','Мои работы':'Мої роботи','Доход':'Дохід','Панель':'Панель','Аналитика':'Аналітика','Аудит':'Аудит',
+    'Компания':'Компанія','Персонал':'Персонал','Финансы':'Фінанси',
+    'Клиент':'Клієнт','Исполнитель':'Виконавець','Администратор':'Адміністратор',
+    'на каждый заказ':'на кожне замовлення','Управлять':'Керувати','Подробнее':'Докладніше',
+    'Поддержка 24/7':'Підтримка 24/7','Мы рядом, когда нужно':'Ми поруч, коли потрібно',
+    'Тема':'Тема','Уведомления':'Сповіщення','Язык':'Мова','Профиль':'Профіль',
+    'Доброй ночи':'Доброї ночі','Доброе утро':'Доброго ранку','Добрый день':'Доброго дня','Добрый вечер':'Доброго вечора',
+    'в одном приложении':'в одному застосунку',
+    'Уборка за минуты, честная AI-цена и умный дом, который сам напоминает, что пора обслужить.':'Прибирання за хвилини, чесна AI-ціна та розумний дім, який сам нагадає про сервіс.',
+    'Заказ за пару минут':'Замовлення за пару хвилин','Честная AI-цена ещё до заказа':'Чесна AI-ціна ще до замовлення',
+    'Живое отслеживание исполнителя':'Живе відстеження виконавця','Умный дом и история обслуживания':'Розумний дім та історія сервісу',
+    'С возвращением':'З поверненням','Создайте аккаунт':'Створіть акаунт','Войдите, чтобы продолжить.':'Увійдіть, щоб продовжити.',
+    'Пара шагов — и дом под контролем.':'Кілька кроків — і дім під контролем.',
+    'Войти':'Увійти','Регистрация':'Реєстрація','Создать аккаунт':'Створити акаунт',
+    'Я хочу':'Я хочу','Заказывать':'Замовляти','Работать':'Працювати',
+    'Имя и фамилия':'Ім’я та прізвище','Номер телефона':'Номер телефону','Город':'Місто',
+    'Проверка исполнителя':'Перевірка виконавця','О себе — что умеете и опыт работы *':'Про себе — навички та досвід *',
+    'Опыт работы, лет':'Досвід, років','Оборудование':'Обладнання','Каким оборудованием вы располагаете?':'Яким обладнанням ви володієте?',
+    'Транспорт':'Транспорт','Есть ли у вас собственный автомобиль?':'Чи маєте власний автомобіль?','Да':'Так','Нет':'Ні',
+    'Email':'Email','Пароль':'Пароль','минимум 12 символов':'мінімум 12 символів','ваш пароль':'ваш пароль',
+    'Не меньше 12 символов. Можно фразу — так надёжнее.':'Не менше 12 символів. Можна фразу — так надійніше.',
+    'О LUMI':'Про LUMI','Бренд':'Бренд','Конфиденциальность':'Конфіденційність','Условия':'Умови',
+    'Загрузите своё фото':'Завантажте своє фото','Загрузите фото документа':'Завантажте фото документа','Подождите…':'Зачекайте…',
+    'Анна Ковальская':'Анна Ковальська',
+    'Квартира':'Квартира','Дом':'Будинок','Офис':'Офіс','Другое помещение':'Інше приміщення',
+    'Обычная':'Звичайне','Генеральная':'Генеральне','После ремонта':'Після ремонту',
+    'Обычная уборка':'Звичайне прибирання','Генеральная уборка':'Генеральне прибирання','Уборка при переезде':'Прибирання при переїзді',
+    'Мытьё окон':'Миття вікон','Уборка офиса':'Прибирання офісу',
+    'Уборка':'Прибирання','Мастер':'Майстер','Электрик':'Електрик','Сантехник':'Сантехнік','Сад':'Сад',
+    'Стирка':'Прання','Химчистка':'Хімчистка','Сборка мебели':'Збірка меблів','Окна':'Вікна',
+    'Дома, офисы, переезды':'Оселі, офіси, переїзди','Ремонт и мелкие работы':'Ремонт і дрібні роботи',
+    'Проводка, розетки, свет':'Проводка, розетки, світло','Течи, краны, засоры':'Протікання, крани, засмічення',
+    'Газон, кусты, уход':'Газон, кущі, догляд','Стирка, сушка, глажка':'Прання, сушіння, прасування',
+    'Диваны, ковры, шторы':'Дивани, килими, штори','Мебель и монтаж':'Меблі та монтаж','Окна снаружи и внутри':'Вікна зовні та всередині',
+    'внутри':'всередині','снаружи':'зовні','с двух сторон':'з двох боків',
+    'Дополнительные услуги':'Додаткові послуги','Добавьте, что нужно — цена пересчитается сразу.':'Додайте, що потрібно — ціна перерахується одразу.',
+    'Итого за уборку':'Разом за прибирання','Итого за мойку окон':'Разом за миття вікон',
+    'Помыть балконное остекление':'Помити балконне скління','Убрать балкон':'Прибрати балкон',
+    'Отмена':'Скасувати','Сохранить':'Зберегти','Готово':'Готово','Закрыть':'Закрити','Назад':'Назад','Далее':'Далі','Продолжить':'Продовжити',
+  },
+};
+
+function t(ru,params){
+  let s=ru;
+  if(state.lang!=='ru'){ const d=TR[state.lang]; if(d && d[ru]!=null) s=d[ru]; }
+  if(params) s=String(s).replace(/\{(\w+)\}/g,(m,k)=>params[k]!=null?params[k]:m);
+  return s;
+}
+// Translate the already-rendered DOM under `root` into the active language.
+// Idempotent: keys are Russian, so a second pass finds nothing to change.
+function i18nApply(root){
+  if(!root||state.lang==='ru')return;
+  const d=TR[state.lang]; if(!d)return;
+  const NF=NodeFilter;
+  const w=document.createTreeWalker(root,NF.SHOW_TEXT,{acceptNode(n){
+    const p=n.parentNode; if(!p)return NF.FILTER_REJECT;
+    const tg=p.nodeName; if(tg==='SCRIPT'||tg==='STYLE'||tg==='TEXTAREA')return NF.FILTER_REJECT;
+    return n.nodeValue && n.nodeValue.trim()?NF.FILTER_ACCEPT:NF.FILTER_REJECT;
+  }});
+  const nodes=[]; let n; while(n=w.nextNode())nodes.push(n);
+  nodes.forEach(nd=>{ const k=nd.nodeValue.trim(); const h=d[k]; if(h!=null&&h!==k) nd.nodeValue=nd.nodeValue.replace(k,h); });
+  if(root.querySelectorAll) root.querySelectorAll('[placeholder],[title],[aria-label]').forEach(e=>{
+    ['placeholder','title','aria-label'].forEach(a=>{ if(!e.hasAttribute(a))return; const v=e.getAttribute(a).trim(); const h=d[v]; if(h!=null&&h!==v)e.setAttribute(a,h); });
+  });
+}
+let _i18nObs=null;
+function i18nStart(){
+  document.documentElement.lang=state.lang;
+  i18nApply(document.body);
+  if(_i18nObs)return;
+  const OPT={childList:true,subtree:true};
+  let scheduled=false;
+  _i18nObs=new MutationObserver(()=>{
+    if(state.lang==='ru'||scheduled)return;
+    scheduled=true;
+    requestAnimationFrame(()=>{ scheduled=false; _i18nObs.disconnect(); try{i18nApply(document.body);}finally{_i18nObs.observe(document.body,OPT);} });
+  });
+  _i18nObs.observe(document.body,OPT);
+}
+function setLang(l){
+  if(l!=='ru' && !TR[l])return;
+  state.lang=l; localStorage.setItem('lumi_lang',l); document.documentElement.lang=l;
+  if(state.user)render(); else renderAuth();
+}
+function openLangMenu(anchor){
+  document.querySelectorAll('.lang-menu').forEach(m=>m.remove());
+  const menu=el(`<div class="lang-menu"></div>`);
+  LANGS.forEach(([code,label])=>{
+    const b=el(`<button class="lang-opt${code===state.lang?' active':''}"><span>${label}</span>${code===state.lang?I.check:''}</button>`);
+    b.onclick=()=>{ menu.remove(); if(code!==state.lang) setLang(code); };
+    menu.appendChild(b);
+  });
+  document.body.appendChild(menu);
+  const r=anchor.getBoundingClientRect();
+  menu.style.top=(r.bottom+8)+'px';
+  menu.style.right=Math.max(8,window.innerWidth-r.right)+'px';
+  const off=(e)=>{ if(!menu.contains(e.target)&&!anchor.contains(e.target)){ menu.remove(); document.removeEventListener('mousedown',off);} };
+  setTimeout(()=>document.addEventListener('mousedown',off),0);
+}
+
 /* ---------- Icons (inline SVG) ---------- */
 const I = {
   logo:`<svg class="logo" viewBox="0 0 100 100" fill="none"><defs><linearGradient id="lgA" x1="84" y1="14" x2="18" y2="72" gradientUnits="userSpaceOnUse"><stop stop-color="#A3E635"/><stop offset=".3" stop-color="#4ADE80"/><stop offset=".62" stop-color="#22C55E"/><stop offset="1" stop-color="#059669"/></linearGradient><linearGradient id="lgAd" x1="40" y1="30" x2="20" y2="60" gradientUnits="userSpaceOnUse"><stop stop-color="#0C9C57"/><stop offset="1" stop-color="#04673F"/></linearGradient></defs><path d="M30 40 C 22 42 18.5 34 25 29.5 L 48.5 12 Q 50 10.7 51.5 12 L 77 30.5 Q 79 32 79 35 L 79 66" stroke="url(#lgA)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M30 40 C 24 41.5 21 37.5 22.2 33.5" stroke="url(#lgAd)" stroke-width="9" stroke-linecap="round" opacity=".55"/><path d="M41 35 L41 55 Q41 58 44 58 L61 58 C 68 58 68 49.5 61 51" stroke="url(#lgA)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M61 58 C 66 58 66.5 53.5 63.5 52" stroke="url(#lgAd)" stroke-width="9" stroke-linecap="round" opacity=".5"/><g style="fill:var(--ink)"><rect x="46" y="35.5" width="6.6" height="6.6" rx="1.5"/><rect x="55" y="35.5" width="6.6" height="6.6" rx="1.5"/><rect x="46" y="44.5" width="6.6" height="6.6" rx="1.5"/><rect x="55" y="44.5" width="6.6" height="6.6" rx="1.5"/></g><path class="spk" d="M84 13 C 85 22 86 23 94.5 24 C 86 25 85 26 84 35 C 83 26 82 25 73.5 24 C 82 23 83 22 84 13 Z" fill="#34D77F"/></svg>`,
@@ -836,6 +1052,7 @@ const I = {
   pin:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6 7-11a7 7 0 10-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>`,
   cam:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1Z"/><circle cx="12" cy="13" r="3.5"/></svg>`,
   check:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>`,
+  globe:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 3.8 5.7 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.7-3.8-9S9.5 5.5 12 3Z"/></svg>`,
   flash:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8Z"/></svg>`,
   send:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7Z"/></svg>`,
   arrow:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`,
@@ -1149,7 +1366,10 @@ function renderAuth(){
       </div>
     </div>
     <div class="auth-form-side">
-      <button class="iconbtn auth-theme" id="authTheme" title="Тема"></button>
+      <div class="auth-topctl">
+        <button class="iconbtn langbtn" id="authLang" title="Язык">${I.globe}<b>${state.lang.toUpperCase()}</b></button>
+        <button class="iconbtn auth-theme" id="authTheme" title="Тема"></button>
+      </div>
       <div class="auth-card" id="authCard"></div>
     </div>
   </div>`);
@@ -1247,6 +1467,7 @@ function renderAuth(){
   const fx=$('#authFX',wrap); if(fx) heroAurora(fx);
   const tb=$('#authTheme',wrap);
   if(tb){ tb.innerHTML=isDark()?I.sun:I.moon; tb.onclick=()=>{toggleTheme();tb.innerHTML=isDark()?I.sun:I.moon;}; }
+  const lb=$('#authLang',wrap); if(lb) lb.onclick=(e)=>openLangMenu(e.currentTarget);
 }
 
 /* =========================================================================
@@ -1284,6 +1505,7 @@ function shell(content){
       <div class="topbar">
         <div class="brand mobile-brand">${I.logo}<span>LUMI</span></div>
         <div class="spacer"></div>
+        <button class="iconbtn langbtn" id="langBtn" title="Язык">${I.globe}<b>${state.lang.toUpperCase()}</b></button>
         <button class="iconbtn" id="themeBtn" title="Тема">${isDark()?I.sun:I.moon}</button>
         <button class="iconbtn" id="bellBtn" title="Уведомления" style="position:relative">${I.bell}<span id="bellBadge" class="notif-badge" style="display:none"></span></button>
         <button class="userchip" id="meBtn" title="${u.name}">
@@ -1306,6 +1528,7 @@ function shell(content){
     tb.onclick=()=>{state.view=v;render();};
     tab.appendChild(tb);
   });
+  $('#langBtn',app).onclick=(e)=>openLangMenu(e.currentTarget);
   $('#themeBtn',app).onclick=toggleTheme;
   $('#bellBtn',app).onclick=openNotifications;
   $('#meBtn',app).onclick=openProfile;
@@ -3728,6 +3951,7 @@ async function boot(){
     }catch{ state.token=null;localStorage.removeItem('cg_token'); }
   }
   render();
+  i18nStart();   // translate the mounted DOM into the active language + keep watching
 }
 boot();
 </script>
