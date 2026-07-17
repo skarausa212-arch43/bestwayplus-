@@ -646,6 +646,9 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .req-gallery img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px;border:1px solid var(--line);cursor:pointer}
 .sched-ok{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--primary-600)}
 .sched-ok svg{width:15px;height:15px}
+/* windows calculator price */
+.win-price{display:flex;flex-direction:column;gap:2px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.win-price b{font-size:26px;font-weight:850;color:var(--primary-600);letter-spacing:-.02em}
 /* live tracking map + FlashClean SLA */
 .trk-map{width:100%;height:180px;border-radius:14px;border:1px solid var(--line);display:block}
 .trk-eta{text-align:right;line-height:1.1}
@@ -934,17 +937,18 @@ const HERO_SCENE=`<svg viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid slic
     <circle cx="360" cy="180" r="3" opacity=".7"/><circle cx="620" cy="120" r="2.5" opacity=".6"/>
   </g>
 </svg>`;
-const CAT_ICON={cleaning:I.broom,handyman:I.wrench,electrical:I.bolt,plumbing:I.drop,garden:I.leaf,laundry:I.shirt,assembly:I.tool,windows:I.window};
-const CAT_COLOR={cleaning:'c-cleaning',windows:'c-windows',handyman:'c-assembly',electrical:'c-electrical',plumbing:'c-plumbing',garden:'c-garden',laundry:'c-laundry',assembly:'c-assembly',painting:'c-painting',sofa:'c-sofa',ironing:'c-ironing'};
+const CAT_ICON={cleaning:I.broom,handyman:I.wrench,electrical:I.bolt,plumbing:I.drop,garden:I.leaf,laundry:I.shirt,drycleaning:I.shirt,assembly:I.tool,windows:I.window};
+const CAT_COLOR={cleaning:'c-cleaning',windows:'c-windows',handyman:'c-assembly',electrical:'c-electrical',plumbing:'c-plumbing',garden:'c-garden',laundry:'c-laundry',drycleaning:'c-laundry',assembly:'c-assembly',painting:'c-painting',sofa:'c-sofa',ironing:'c-ironing'};
 const SVC_ICON = {standard:I.broom, deep:I.spark, moveout:I.sofa, windows:I.window, office:I.office};
 const ROLE_RU={customer:'Клиент',cleaner:'Исполнитель',admin:'Администратор'};
 const SVC_LABEL_RU={'Standard Cleaning':'Обычная уборка','Deep Cleaning':'Генеральная уборка','Move-out Cleaning':'Уборка при переезде','Window Cleaning':'Мытьё окон','Office Cleaning':'Уборка офиса'};
 const SVC_SHORT_RU={standard:'Обычная',deep:'Генеральная',moveout:'После ремонта',office:'Офис'};
 const AI_CONCIERGE=false;   // AI-консьерж временно отключён (поставить true, чтобы вернуть)
+const WIN_SIDE_RU={inside:'внутри',outside:'снаружи',both:'с двух сторон'};
 const EXTRA_RU={'Inside fridge':'Внутри холодильника','Inside oven':'Внутри духовки','Interior windows':'Окна изнутри','Laundry & ironing':'Стирка и глажка','Balcony':'Балкон','Pet-friendly deep':'Чистка для животных'};
 const svcLabelRu=(l)=>SVC_LABEL_RU[l]||l;
-const CAT_LABEL_RU={cleaning:'Уборка',handyman:'Мастер',electrical:'Электрик',plumbing:'Сантехник',garden:'Сад',laundry:'Стирка',assembly:'Сборка мебели',windows:'Окна'};
-const CAT_DESC_RU={cleaning:'Дома, офисы, переезды',handyman:'Ремонт и мелкие работы',electrical:'Проводка, розетки, свет',plumbing:'Течи, краны, засоры',garden:'Газон, кусты, уход',laundry:'Стирка, сушка, глажка',assembly:'Мебель и монтаж',windows:'Окна снаружи и внутри'};
+const CAT_LABEL_RU={cleaning:'Уборка',handyman:'Мастер',electrical:'Электрик',plumbing:'Сантехник',garden:'Сад',laundry:'Стирка',drycleaning:'Химчистка',assembly:'Сборка мебели',windows:'Окна'};
+const CAT_DESC_RU={cleaning:'Дома, офисы, переезды',handyman:'Ремонт и мелкие работы',electrical:'Проводка, розетки, свет',plumbing:'Течи, краны, засоры',garden:'Газон, кусты, уход',laundry:'Стирка, сушка, глажка',drycleaning:'Диваны, ковры, шторы',assembly:'Мебель и монтаж',windows:'Окна снаружи и внутри'};
 
 /* ---------- Animation helpers ---------- */
 function stagger(container){ if(!container)return; container.querySelectorAll(':scope > *').forEach((el,i)=>{el.classList.add('reveal');el.style.setProperty('--i',i);}); }
@@ -1522,7 +1526,7 @@ function viewHome(){
       ${active?(flagOn?'<span class="badge green" style="position:absolute;top:12px;right:12px">Новинка</span>':''):'<span class="badge grey" style="position:absolute;top:12px;right:12px">Скоро</span>'}
     </div>`);
     card.style.position='relative';
-    card.onclick=()=>{ active?startBooking('standard'):toast(`${label} — скоро в вашем городе`); };
+    card.onclick=()=>{ active?startBooking(cat.key==='windows'?'windows':'standard'):toast(`${label} — скоро в вашем городе`); };
     cg.appendChild(card);
   });
   mainCol.appendChild(catWrap);
@@ -2148,7 +2152,7 @@ function viewPremium(){
 /* ---------- BOOKING WIZARD ---------- */
 function newDraft(service,propertyId){
   const prop=propertyId?state.properties.find(p=>p.id===propertyId):(state.properties[0]||null);
-  return {service:service||'standard',propertyId:prop?prop.id:null,rooms:prop?prop.rooms:2,baths:prop?prop.baths:1,area:prop?prop.area:0,extras:[],urgency:'scheduled',date:'',time:'',scheduledFor:null,address:prop?prop.address:'',city:prop?prop.city:(state.user.city||'Warsaw'),notes:'',photos:[],step:0,estimate:null};
+  return {service:service||'standard',propertyId:prop?prop.id:null,rooms:prop?prop.rooms:2,baths:prop?prop.baths:1,area:prop?prop.area:0,windows:5,windowSide:'inside',extras:[],urgency:'scheduled',date:'',time:'',scheduledFor:null,address:prop?prop.address:'',city:prop?prop.city:(state.user.city||'Warsaw'),notes:'',photos:[],step:0,estimate:null};
 }
 function startBooking(service,propertyId,overrides){
   state.draft=Object.assign(newDraft(service,propertyId),overrides||{});
@@ -2201,6 +2205,13 @@ function refreshExTotal(){
     }catch(err){}
   },180);
 }
+function winSideOpt(val,title){const d=state.draft;return `<div class="opt ${d.windowSide===val?'sel':''}" data-side="${val}"><div class="ico">${I.window}</div><h4>${title}</h4></div>`;}
+async function refreshWinPrice(){
+  const node=document.getElementById('winPrice'); if(!node)return;
+  try{const {estimate}=await api('/api/estimate','POST',state.draft);
+    const n=document.getElementById('winPrice'); if(n)n.innerHTML=`${money(estimate.total)} <span class="tiny muted" style="font-weight:500">· ~${Math.ceil(estimate.durationHours)} ч</span>`;
+  }catch(e){}
+}
 function viewBook(){
   if(!state.draft) state.draft=newDraft('standard');
   const d=state.draft;
@@ -2214,11 +2225,22 @@ function viewBook(){
   if(d.step===0){ // property + service + size
     const cat=state.catalog?.services||{};
     const props=state.properties||[];
-    body.innerHTML=`<h2 style="margin-bottom:4px">Что нужно убрать?</h2><p class="muted" style="margin-bottom:20px">Выберите дом, услугу и размер.</p>
+    const isWin=d.service==='windows';
+    body.innerHTML=`<h2 style="margin-bottom:4px">${isWin?'Мойка окон':'Что нужно убрать?'}</h2><p class="muted" style="margin-bottom:20px">${isWin?'Укажите количество окон и что помыть.':'Выберите дом, услугу и размер.'}</p>
       ${props.length?`<label class="field"><span>Дом</span><select class="input" id="propSel">
         ${props.map(p=>`<option value="${p.id}" ${d.propertyId===p.id?'selected':''}>${p.label} · ${p.city}</option>`).join('')}
         <option value="" ${d.propertyId?'':'selected'}>Другой адрес…</option>
       </select></label>`:''}
+      ${isWin?`
+      <div class="card pad">
+        <label class="field"><span>Сколько окон</span></label>
+        <div class="stepper" data-k="windows"><button data-d="-1">−</button><b>${d.windows}</b><button data-d="1">+</button></div>
+        <div style="height:16px"></div>
+        <label class="field"><span>Что помыть</span></label>
+        <div class="opt-grid" id="winSide">${winSideOpt('inside','Внутри')}${winSideOpt('outside','Снаружи')}${winSideOpt('both','С двух сторон')}</div>
+        <div class="win-price"><span class="muted tiny">Ориентировочно</span><b id="winPrice">—</b></div>
+        <p class="tiny muted" style="margin-top:4px">Балконное остекление и уборку балкона можно добавить на следующем шаге.</p>
+      </div>`:`
       <div class="opt-grid" id="svcOpts" style="margin:14px 0 22px"></div>
       <div class="card pad">
         <label class="field"><span>Комнаты</span></label>
@@ -2228,7 +2250,7 @@ function viewBook(){
         <div class="stepper" data-k="baths"><button data-d="-1">−</button><b>${d.baths}</b><button data-d="1">+</button></div>
         <div style="height:14px"></div>
         <label class="field"><span>Примерная площадь (м²) — необязательно</span><input class="input" type="number" min="0" max="600" value="${d.area||''}" id="area" placeholder="напр. 60"></label>
-      </div>`;
+      </div>`}`;
     const propSel=$('#propSel',body);
     if(propSel)propSel.onchange=()=>{
       const p=props.find(x=>x.id===propSel.value);
@@ -2236,19 +2258,26 @@ function viewBook(){
       else{d.propertyId=null;}
       viewBook();
     };
-    const so=$('#svcOpts',body);
-    Object.entries(cat).forEach(([key,s])=>{
-      const o=el(`<div class="opt ${d.service===key?'sel':''}"><div class="ico">${SVC_ICON[key]||I.broom}</div><h4>${SVC_SHORT_RU[key]||s.label}</h4><small>от ${money(s.base)}</small></div>`);
-      o.onclick=()=>{d.service=key;viewBook();};
-      so.appendChild(o);
-    });
-    body.querySelectorAll('.stepper').forEach(st=>{
-      const k=st.dataset.k;
-      st.querySelectorAll('button').forEach(btn=>btn.onclick=()=>{
-        d[k]=Math.max(k==='baths'?0:1,Math.min(12,d[k]+Number(btn.dataset.d)));viewBook();
+    if(isWin){
+      body.querySelectorAll('#winSide .opt').forEach(o=>o.onclick=()=>{d.windowSide=o.dataset.side;viewBook();});
+      body.querySelectorAll('.stepper[data-k="windows"] button').forEach(btn=>btn.onclick=()=>{d.windows=Math.max(1,Math.min(60,d.windows+Number(btn.dataset.d)));viewBook();});
+      setTimeout(refreshWinPrice,0);   // run after shell() mounts the view into the DOM
+    }else{
+      const so=$('#svcOpts',body);
+      Object.entries(cat).forEach(([key,s])=>{
+        if(s.hidden)return;   // windows has its own calculator, not a tile
+        const o=el(`<div class="opt ${d.service===key?'sel':''}"><div class="ico">${SVC_ICON[key]||I.broom}</div><h4>${SVC_SHORT_RU[key]||s.label}</h4><small>от ${money(s.base)}</small></div>`);
+        o.onclick=()=>{d.service=key;viewBook();};
+        so.appendChild(o);
       });
-    });
-    const area=$('#area',body); if(area) area.oninput=()=>{d.area=Number(area.value)||0;};
+      body.querySelectorAll('.stepper').forEach(st=>{
+        const k=st.dataset.k;
+        st.querySelectorAll('button').forEach(btn=>btn.onclick=()=>{
+          d[k]=Math.max(k==='baths'?0:1,Math.min(12,d[k]+Number(btn.dataset.d)));viewBook();
+        });
+      });
+      const area=$('#area',body); if(area) area.oninput=()=>{d.area=Number(area.value)||0;};
+    }
   }
   else if(d.step===1){ // extras — à-la-carte add-ons
     const ex=state.catalog?.extras||{};
@@ -2264,8 +2293,10 @@ function viewBook(){
       <div id="exList"></div>`;
     const list=$('#exList',body);
     // group by category, preserving catalog order
+    // (for a windows order the per-window wash is already in the calculator — hide the duplicates)
+    const skip=d.service==='windows'?['windows','windows_out']:[];
     const groups={};
-    Object.entries(ex).forEach(([key,e])=>{(groups[e.cat]=groups[e.cat]||[]).push([key,e]);});
+    Object.entries(ex).forEach(([key,e])=>{if(skip.includes(key))return;(groups[e.cat]=groups[e.cat]||[]).push([key,e]);});
     Object.keys(groups).forEach(cat=>{
       const sec=el(`<div class="ex-cat"><div class="ex-cat-h">${cats[cat]||cat}</div></div>`);
       groups[cat].forEach(([key,e])=>{
@@ -2389,8 +2420,8 @@ async function computeEstimate(body){
         <div class="aiband" style="margin-top:16px;justify-content:center">${I.ai}<span>AI-оценка · ~${estimate.durationHours} ч · ${b.surge>0?`+${b.surge}% спрос`:'обычный спрос'}</span></div>
       </div>
       <div class="card pad">
-        <div class="brk"><span>Базовая услуга</span><b>${money(b.base)}</b></div>
-        <div class="brk"><span>Комнаты</span><b>${money(b.rooms)}</b></div>
+        <div class="brk"><span>${d.service==='windows'?'Выезд':'Базовая услуга'}</span><b>${money(b.base)}</b></div>
+        <div class="brk"><span>${d.service==='windows'?`Окна (${d.windows} шт · ${WIN_SIDE_RU[d.windowSide]||'внутри'})`:'Комнаты'}</span><b>${money(b.rooms)}</b></div>
         ${b.baths?`<div class="brk"><span>Санузлы</span><b>${money(b.baths)}</b></div>`:''}
         ${b.area?`<div class="brk"><span>Площадь</span><b>${money(b.area)}</b></div>`:''}
         ${b.extras?`<div class="brk"><span>Доп. опции (${d.extras.length})</span><b>${money(b.extras)}</b></div>`:''}
@@ -2401,7 +2432,7 @@ async function computeEstimate(body){
       <div class="row" style="margin-top:14px;gap:10px;flex-wrap:wrap">
         <span class="chip">${I.pin}${d.city}</span>
         <span class="chip">${I.clock}${d.urgency==='flash'?'Срочно, как можно скорее':(schedISO(d)?fmtSchedule(d):(d.urgency==='today'?'Сегодня':'По расписанию'))}</span>
-        <span class="chip">${roomsWord(d.rooms)} · ${bathsWord(d.baths)}</span>
+        <span class="chip">${d.service==='windows'?`${d.windows} ${plural(d.windows,'окно','окна','окон')} · ${WIN_SIDE_RU[d.windowSide]||'внутри'}`:`${roomsWord(d.rooms)} · ${bathsWord(d.baths)}`}</span>
       </div>`;
     countUp($('#'+estNum,body),estimate.total,800);
   }catch(err){ $('#estBox',body).innerHTML=`<div class="card pad muted">Не удалось загрузить оценку: ${err.message}</div>`; }
@@ -2477,7 +2508,7 @@ async function renderBookingDetail(id){
       <div class="card pad" style="background:var(--surface-2);margin-bottom:14px">
         <div class="row" style="justify-content:space-between"><span class="muted">${isCleaner?'Ваша выплата':'Итоговая цена'}</span><b style="font-size:22px;color:var(--primary-600)">${money(isCleaner?b.payout:b.price)}</b></div>
         <div class="row tiny muted" style="gap:14px;margin-top:8px;flex-wrap:wrap">
-          <span>${roomsWord(b.rooms)} · ${bathsWord(b.baths)}</span>${b.area?`<span>${b.area} м²</span>`:''}<span>~${b.durationHours} ч</span>
+          ${b.service==='windows'?`<span>${b.windows||'?'} ${plural(b.windows||0,'окно','окна','окон')} · ${WIN_SIDE_RU[b.windowSide]||'внутри'}</span>`:`<span>${roomsWord(b.rooms)} · ${bathsWord(b.baths)}</span>${b.area?`<span>${b.area} м²</span>`:''}`}<span>~${b.durationHours} ч</span>
           ${b.extras.length?`<span>${b.extras.length} ${plural(b.extras.length,'опция','опции','опций')}</span>`:''}
         </div>
         ${b.address?`<div class="row tiny" style="margin-top:8px;color:var(--ink-2)">${I.pin}<span>${b.address}, ${b.city}</span></div>`:''}

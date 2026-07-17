@@ -95,14 +95,14 @@ const CITIES = ['Warsaw', 'Kraków', 'Wrocław', 'Poznań', 'Gdańsk', 'Łódź'
 // Home-services verticals. Cleaning is live; the rest are the roadmap
 // (Phase 5: Home Services Marketplace) and surface as "coming soon".
 const SERVICE_CATEGORIES = [
-  { key: 'cleaning',  label: 'Cleaning',          active: true,  desc: 'Homes, offices, move-outs' },
-  { key: 'handyman',  label: 'Handyman',          active: false, desc: 'Repairs & odd jobs' },
-  { key: 'electrical',label: 'Electrician',       active: false, desc: 'Wiring, fixtures, sockets' },
-  { key: 'plumbing',  label: 'Plumbing',          active: false, desc: 'Leaks, taps, drains' },
-  { key: 'garden',    label: 'Garden',            active: false, desc: 'Lawn, hedges, care' },
-  { key: 'laundry',   label: 'Laundry',           active: false, desc: 'Wash, dry & iron' },
-  { key: 'assembly',  label: 'Furniture assembly',active: false, desc: 'Flat-pack & mounting' },
-  { key: 'windows',   label: 'Windows',           active: true,  desc: 'Interior & exterior glass' },
+  { key: 'cleaning',   label: 'Cleaning',          active: true,  desc: 'Homes, offices, move-outs' },
+  { key: 'windows',    label: 'Windows',           active: true,  desc: 'Interior & exterior glass' },
+  { key: 'handyman',   label: 'Handyman',          active: false, desc: 'Repairs & odd jobs' },
+  { key: 'electrical', label: 'Electrician',       active: false, desc: 'Wiring, fixtures, sockets' },
+  { key: 'plumbing',   label: 'Plumbing',          active: false, desc: 'Leaks, taps, drains' },
+  { key: 'garden',     label: 'Garden',            active: false, desc: 'Lawn, hedges, care' },
+  { key: 'drycleaning',label: 'Dry cleaning',      active: false, desc: 'Sofas, carpets, curtains' },
+  { key: 'assembly',   label: 'Furniture assembly',active: false, desc: 'Flat-pack & mounting' },
 ];
 
 // Smart Home maintenance model — recurring home tasks and how often they're
@@ -305,6 +305,9 @@ const SERVICE_CATALOG = {
   standard:  { label: 'Обычная',     base: 90,  perRoom: 22, perBath: 28, rate: 1.0 },
   deep:      { label: 'Генеральная', base: 140, perRoom: 34, perBath: 42, rate: 1.35 },
   moveout:   { label: 'После ремонта', base: 180, perRoom: 40, perBath: 50, rate: 1.5 },
+  // Windows has its own per-window calculator (opened from the «Окна» tile),
+  // so it is hidden from the main service picker.
+  windows:   { label: 'Мойка окон',  base: 50,  perRoom: 0,  perBath: 0,  rate: 1.0, hidden: true },
 };
 // À-la-carte add-ons (à-la «Заказать уборку» flow). Money in whole zł (the
 // estimator works in major units). `type`:
@@ -343,7 +346,6 @@ const EXTRAS_CATALOG = {
   // windows / balcony
   windows:      { label: 'Мойка окон изнутри',     price: 20, type: 'qty', unit: 'шт', max: 30, cat: 'windows', desc: 'Мойка окна изнутри, рама и подоконник.' },
   windows_out:  { label: 'Мойка окон снаружи',     price: 30, type: 'qty', unit: 'шт', max: 30, cat: 'windows', desc: 'Мойка окна снаружи (при обычном доступе — с подоконника/поворотных створок).' },
-  windows_climber: { label: 'Высотные работы — промышленный альпинист', price: 250, type: 'flat', cat: 'windows', desc: 'Глухие окна снаружи или высокий этаж без доступа из дома — мойка на верёвках.' },
   glazing:      { label: 'Помыть балконное остекление', price: 80, type: 'flat', cat: 'windows', desc: 'Мойка панорамного остекления балкона.' },
   balcony:      { label: 'Убрать балкон',          price: 45, type: 'flat', cat: 'windows', desc: 'Подметём и вымоем пол, протрём поверхности.' },
   // care / linen
@@ -390,15 +392,24 @@ function normalizeExtras(raw) {
   return out;
 }
 
+const WINDOW_PER = { inside: 18, outside: 25, both: 38 };   // zł per window by side
 function estimatePrice(input) {
   const svc = SERVICE_CATALOG[input.service] || SERVICE_CATALOG.standard;
   const rooms = Math.max(1, Math.min(12, Number(input.rooms) || 1));
   const baths = Math.max(0, Math.min(8, Number(input.baths) || 1));
   const area = Math.max(0, Math.min(600, Number(input.area) || 0));
+  const isWindows = input.service === 'windows';
+  const wCount = Math.max(1, Math.min(60, Number(input.windows) || 1));
+  const wSide = WINDOW_PER[input.windowSide] ? input.windowSide : 'inside';
 
-  let price = svc.base + rooms * svc.perRoom + baths * svc.perBath;
-  if (area) price += area * 0.6 * svc.rate;
-  const baseSubtotal = price;                       // cleaning base — % add-ons apply to this
+  let price;
+  if (isWindows) {
+    price = svc.base + wCount * WINDOW_PER[wSide];   // mobilization + per-window
+  } else {
+    price = svc.base + rooms * svc.perRoom + baths * svc.perBath;
+    if (area) price += area * 0.6 * svc.rate;
+  }
+  const baseSubtotal = price;                       // base — % add-ons apply to this
 
   const extras = normalizeExtras(input.extras);
   let extrasTotal = 0, percentSum = 0, extraDurH = 0;
@@ -419,7 +430,9 @@ function estimatePrice(input) {
   const surge = 1 + (Math.abs(hashInt((input.city || 'city') + new Date().getHours())) % 12) / 100;
   price *= surge;
 
-  const durationH = Math.max(1.5, (rooms * 0.6 + baths * 0.5) * svc.rate + extraDurH);
+  const durationH = isWindows
+    ? Math.max(1, Math.round((0.12 * wCount + extraDurH) * 10) / 10)
+    : Math.max(1.5, (rooms * 0.6 + baths * 0.5) * svc.rate + extraDurH);
   const total = Math.round(price);
   const commission = Math.round(total * COMMISSION_RATE);
 
@@ -428,11 +441,13 @@ function estimatePrice(input) {
     serviceLabel: svc.label,
     total,
     currency: CURRENCY,
+    windows: isWindows ? wCount : undefined,
+    windowSide: isWindows ? wSide : undefined,
     breakdown: {
-      base: svc.base,
-      rooms: rooms * svc.perRoom,
-      baths: baths * svc.perBath,
-      area: Math.round((area * 0.6 * svc.rate) || 0),
+      base: isWindows ? svc.base : svc.base,
+      rooms: isWindows ? wCount * WINDOW_PER[wSide] : rooms * svc.perRoom,
+      baths: isWindows ? 0 : baths * svc.perBath,
+      area: isWindows ? 0 : Math.round((area * 0.6 * svc.rate) || 0),
       extras: extrasTotal,
       urgencyMult,
       surge: Math.round((surge - 1) * 100),
@@ -1115,6 +1130,8 @@ route('POST', '/api/bookings', async (req, res) => {
     rooms: prop ? prop.rooms : (Number(b.rooms) || 1),
     baths: prop ? prop.baths : (Number(b.baths) || 1),
     area: prop ? prop.area : (Number(b.area) || 0),
+    windows: est.service === 'windows' ? (est.windows || null) : null,
+    windowSide: est.service === 'windows' ? (est.windowSide || null) : null,
     extras: Array.isArray(b.extras) ? b.extras : [],
     notes: String(b.notes || '').slice(0, 500),
     // Photos the customer attaches to the request so cleaners see the job scope.
