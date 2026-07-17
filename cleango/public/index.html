@@ -940,6 +940,7 @@ const SVC_ICON = {standard:I.broom, deep:I.spark, moveout:I.sofa, windows:I.wind
 const ROLE_RU={customer:'Клиент',cleaner:'Исполнитель',admin:'Администратор'};
 const SVC_LABEL_RU={'Standard Cleaning':'Обычная уборка','Deep Cleaning':'Генеральная уборка','Move-out Cleaning':'Уборка при переезде','Window Cleaning':'Мытьё окон','Office Cleaning':'Уборка офиса'};
 const SVC_SHORT_RU={standard:'Обычная',deep:'Генеральная',moveout:'После ремонта',office:'Офис'};
+const AI_CONCIERGE=false;   // AI-консьерж временно отключён (поставить true, чтобы вернуть)
 const EXTRA_RU={'Inside fridge':'Внутри холодильника','Inside oven':'Внутри духовки','Interior windows':'Окна изнутри','Laundry & ironing':'Стирка и глажка','Balcony':'Балкон','Pet-friendly deep':'Чистка для животных'};
 const svcLabelRu=(l)=>SVC_LABEL_RU[l]||l;
 const CAT_LABEL_RU={cleaning:'Уборка',handyman:'Мастер',electrical:'Электрик',plumbing:'Сантехник',garden:'Сад',laundry:'Стирка',assembly:'Сборка мебели',windows:'Окна'};
@@ -1482,25 +1483,27 @@ function viewHome(){
   cols.appendChild(mainCol);cols.appendChild(aside);
   c.appendChild(cols);
 
-  // AI-консьерж — естественный язык → заказ в один тап
-  const conc=el(`<div class="card pad" style="border:1.5px solid var(--primary)">
-    <div class="aiband" style="margin-bottom:14px">${I.ai}<span>AI-консьерж — просто расскажите, что случилось</span></div>
-    <div class="row" style="gap:8px">
-      <input class="input" id="concInput" placeholder="например: завтра приезжают гости" style="flex:1">
-      <button class="btn" id="concAsk">Спросить</button>
-    </div>
-    <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:12px" id="concChips"></div>
-    <div id="concOut" style="margin-top:14px"></div>
-  </div>`);
-  const chips=$('#concChips',conc);
-  ['Завтра приезжают гости','Съезжаю с квартиры','У нас появился щенок','Нужна быстрая уборка сейчас'].forEach(s=>{
-    const ch=el(`<span class="chip" style="cursor:pointer">${s}</span>`);
-    ch.onclick=()=>{$('#concInput',conc).value=s;runConcierge(conc);};
-    chips.appendChild(ch);
-  });
-  $('#concAsk',conc).onclick=()=>runConcierge(conc);
-  $('#concInput',conc).onkeydown=(e)=>{if(e.key==='Enter')runConcierge(conc);};
-  mainCol.appendChild(conc);
+  // AI-консьерж — естественный язык → заказ в один тап (временно отключён)
+  if(AI_CONCIERGE){
+    const conc=el(`<div class="card pad" style="border:1.5px solid var(--primary)">
+      <div class="aiband" style="margin-bottom:14px">${I.ai}<span>AI-консьерж — просто расскажите, что случилось</span></div>
+      <div class="row" style="gap:8px">
+        <input class="input" id="concInput" placeholder="например: завтра приезжают гости" style="flex:1">
+        <button class="btn" id="concAsk">Спросить</button>
+      </div>
+      <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:12px" id="concChips"></div>
+      <div id="concOut" style="margin-top:14px"></div>
+    </div>`);
+    const chips=$('#concChips',conc);
+    ['Завтра приезжают гости','Съезжаю с квартиры','У нас появился щенок','Нужна быстрая уборка сейчас'].forEach(s=>{
+      const ch=el(`<span class="chip" style="cursor:pointer">${s}</span>`);
+      ch.onclick=()=>{$('#concInput',conc).value=s;runConcierge(conc);};
+      chips.appendChild(ch);
+    });
+    $('#concAsk',conc).onclick=()=>runConcierge(conc);
+    $('#concInput',conc).onkeydown=(e)=>{if(e.key==='Enter')runConcierge(conc);};
+    mainCol.appendChild(conc);
+  }
 
   // категории услуг (уборка/окна активны, остальные — скоро)
   const catWrap=el(`<div><div class="section-title">Что нужно сделать?</div><div class="svc-grid" id="catGrid"></div></div>`);

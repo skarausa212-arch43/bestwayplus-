@@ -305,7 +305,6 @@ const SERVICE_CATALOG = {
   standard:  { label: 'Обычная',     base: 90,  perRoom: 22, perBath: 28, rate: 1.0 },
   deep:      { label: 'Генеральная', base: 140, perRoom: 34, perBath: 42, rate: 1.35 },
   moveout:   { label: 'После ремонта', base: 180, perRoom: 40, perBath: 50, rate: 1.5 },
-  office:    { label: 'Офис',        base: 120, perRoom: 26, perBath: 30, rate: 1.15 },
 };
 // À-la-carte add-ons (à-la «Заказать уборку» flow). Money in whole zł (the
 // estimator works in major units). `type`:
@@ -803,7 +802,7 @@ function conciergeSuggest(text) {
     service = 'deep'; extras = ['windows', 'laundry']; urgency = 'today';
     title = 'Генеральная уборка к приёму гостей'; reason = 'Завтра гости — генеральная уборка с чистыми окнами и глажкой сделает дом безупречным.';
   } else if (has('office', 'workplace', 'company', 'biuro', 'офис', 'рабоч')) {
-    service = 'office'; extras = [];
+    service = 'deep'; extras = [];
     title = 'Уборка офиса'; reason = 'Профессиональная уборка офиса перед выходом команды.';
   } else if (has('window', 'glass', 'okna', 'окн', 'стекл')) {
     service = 'standard'; extras = ['windows', 'windows_out'];
