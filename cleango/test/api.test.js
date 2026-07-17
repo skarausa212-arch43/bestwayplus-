@@ -112,6 +112,31 @@ async function main() {
       assert.strictEqual(badTok.json.code, 'RESET_INVALID');
     });
 
+    await ok('cleaner registration: individual requires PESEL + bank; company needs no photos', async () => {
+      const base = { phone: '600700800', role: 'cleaner', city: 'Warsaw', bio: 'Professional cleaning, five years of experience and my own equipment.' };
+      // Individual: photos + PESEL + bank all required.
+      const noPesel = await req('POST', '/api/register', { body: { ...base, name: 'Ind One', email: 'ind1@x.pl', password: 'averylongpassword', entityType: 'individual', avatar: IMG, idDocument: IMG, bankName: 'mBank', bankAccount: 'PL27114020040000300201355387' } });
+      assert.strictEqual(noPesel.status, 400);
+      assert.strictEqual(noPesel.json.code, 'PESEL_REQUIRED');
+      const ind = await req('POST', '/api/register', { body: { ...base, name: 'Ind Two', email: 'ind2@x.pl', password: 'averylongpassword', entityType: 'individual', avatar: IMG, idDocument: IMG, pesel: '44051401359', bankName: 'mBank', bankAccount: 'PL27 1140 2004 0000 3002 0135 5387' } });
+      assert.strictEqual(ind.status, 200);
+      // Self payload must not leak PESEL / bank account.
+      const me = await req('GET', '/api/me', { token: ind.json.token });
+      assert.ok(!('pesel' in me.json.user) && !('bankAccount' in me.json.user), 'sensitive fields stripped from public payload');
+      // Company: no photos, but company name + NIP required.
+      const noNip = await req('POST', '/api/register', { body: { ...base, name: 'Contact', email: 'co1@x.pl', password: 'averylongpassword', entityType: 'company', companyName: 'SparkClean Sp. z o.o.', bankName: 'PKO', bankAccount: 'PL27114020040000300201355387' } });
+      assert.strictEqual(noNip.status, 400);
+      assert.strictEqual(noNip.json.code, 'NIP_REQUIRED');
+      const co = await req('POST', '/api/register', { body: { ...base, name: 'Contact', email: 'co2@x.pl', password: 'averylongpassword', entityType: 'company', companyName: 'SparkClean Sp. z o.o.', nip: '5252445281', bankName: 'PKO BP', bankAccount: 'PL27114020040000300201355387' } });
+      assert.strictEqual(co.status, 200, 'company registers without photos');
+      // Admin profile exposes the KYC/payout data for moderation.
+      const adm = await req('POST', '/api/login', { body: { email: 'admin@cleango.app', password: 'cleango123' } });
+      const prof = await req('GET', `/api/admin/users/${co.json.user.id}`, { token: adm.json.token });
+      assert.strictEqual(prof.json.profile.entityType, 'company');
+      assert.strictEqual(prof.json.profile.nip, '5252445281');
+      assert.ok(prof.json.profile.bankAccount && prof.json.profile.bankName, 'admin sees bank details');
+    });
+
     // ── AI estimate + booking (property auto-seeded for new customers) ──
     let bookingId;
     await ok('AI estimate returns a server-authoritative price', async () => {

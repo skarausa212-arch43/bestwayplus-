@@ -632,6 +632,11 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 /* admin profile modal sections */
 .admin-sec{border-top:1px solid var(--line);padding-top:14px;margin-top:14px}
 .admin-sec-h{font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);margin-bottom:8px}
+.admin-kv{display:grid;gap:8px}
+.admin-kv>div{display:flex;justify-content:space-between;gap:14px;font-size:14px;border-bottom:1px dashed var(--line);padding-bottom:8px}
+.admin-kv>div:last-child{border-bottom:0;padding-bottom:0}
+.admin-kv span{color:var(--ink-3)}
+.admin-kv b{text-align:right;word-break:break-word;font-variant-numeric:tabular-nums}
 .admin-doc{width:100%;max-height:360px;object-fit:contain;border-radius:12px;border:1px solid var(--line);background:var(--surface-2)}
 /* booking date & time picker */
 .sched{margin-bottom:16px}
@@ -1033,6 +1038,22 @@ Object.assign(TR.uk,{"Забыли пароль?":"Забули пароль?","
 Object.assign(TR.pl,{"или":"lub","Продолжить с Google":"Kontynuuj z Google","Продолжить с Apple":"Kontynuuj z Apple"});
 Object.assign(TR.en,{"или":"or","Продолжить с Google":"Continue with Google","Продолжить с Apple":"Continue with Apple"});
 Object.assign(TR.uk,{"или":"або","Продолжить с Google":"Продовжити з Google","Продолжить с Apple":"Продовжити з Apple"});
+/* cleaner registration: individual / company, PESEL, bank */
+Object.assign(TR.pl,{"Регистрируетесь как":"Rejestrujesz się jako","Физлицо":"Osoba fizyczna","Фирма":"Firma","Контактное лицо":"Osoba kontaktowa","Название фирмы *":"Nazwa firmy *","NIP (10 цифр) *":"NIP (10 cyfr) *","PESEL (11 цифр) *":"PESEL (11 cyfr) *","О компании — услуги и опыт *":"O firmie — usługi i doświadczenie *","Лет на рынке":"Lat na rynku","Банковские реквизиты для выплат":"Dane bankowe do wypłat","Название банка *":"Nazwa banku *","Номер счёта (IBAN) *":"Numer konta (IBAN) *"});
+Object.assign(TR.en,{"Регистрируетесь как":"You’re registering as","Физлицо":"Individual","Фирма":"Company","Контактное лицо":"Contact person","Название фирмы *":"Company name *","NIP (10 цифр) *":"NIP (10 digits) *","PESEL (11 цифр) *":"PESEL (11 digits) *","О компании — услуги и опыт *":"About the company — services & experience *","Лет на рынке":"Years on the market","Банковские реквизиты для выплат":"Bank details for payouts","Название банка *":"Bank name *","Номер счёта (IBAN) *":"Account number (IBAN) *"});
+Object.assign(TR.uk,{"Регистрируетесь как":"Реєструєтесь як","Физлицо":"Фізособа","Фирма":"Фірма","Контактное лицо":"Контактна особа","Название фирмы *":"Назва фірми *","NIP (10 цифр) *":"NIP (10 цифр) *","PESEL (11 цифр) *":"PESEL (11 цифр) *","О компании — услуги и опыт *":"Про компанію — послуги та досвід *","Лет на рынке":"Років на ринку","Банковские реквизиты для выплат":"Банківські реквізити для виплат","Название банка *":"Назва банку *","Номер счёта (IBAN) *":"Номер рахунку (IBAN) *"});
+Object.assign(TR.pl,{
+  "Фото, документ, PESEL и реквизиты видны только модератору LUMI и не показываются клиентам. Оборудование и авто увидят клиенты при выборе.":"Zdjęcie, dokument, PESEL i dane bankowe widzi tylko moderator LUMI — nie są pokazywane klientom. Sprzęt i auto zobaczą klienci przy wyborze.",
+  "Данные фирмы и реквизиты видны только модератору LUMI. Оборудование и авто увидят клиенты при выборе.":"Dane firmy i bankowe widzi tylko moderator LUMI. Sprzęt i auto zobaczą klienci przy wyborze.",
+  "Данные фирмы и реквизиты":"Dane firmy i płatności","Личные данные и реквизиты":"Dane osobowe i płatności","О компании":"O firmie","Тип":"Typ","Название":"Nazwa","Банк":"Bank","Счёт (IBAN)":"Konto (IBAN)","Конфиденциально — только для модерации.":"Poufne — tylko do moderacji."});
+Object.assign(TR.en,{
+  "Фото, документ, PESEL и реквизиты видны только модератору LUMI и не показываются клиентам. Оборудование и авто увидят клиенты при выборе.":"Your photo, ID, PESEL and bank details are visible only to LUMI’s moderator — never shown to clients. Equipment and car are shown to clients at selection.",
+  "Данные фирмы и реквизиты видны только модератору LUMI. Оборудование и авто увидят клиенты при выборе.":"Company and bank details are visible only to LUMI’s moderator. Equipment and car are shown to clients at selection.",
+  "Данные фирмы и реквизиты":"Company & payout details","Личные данные и реквизиты":"Personal & payout details","О компании":"About the company","Тип":"Type","Название":"Name","Банк":"Bank","Счёт (IBAN)":"Account (IBAN)","Конфиденциально — только для модерации.":"Confidential — moderation only."});
+Object.assign(TR.uk,{
+  "Фото, документ, PESEL и реквизиты видны только модератору LUMI и не показываются клиентам. Оборудование и авто увидят клиенты при выборе.":"Фото, документ, PESEL і реквізити бачить лише модератор LUMI — клієнтам не показуються. Обладнання та авто побачать клієнти при виборі.",
+  "Данные фирмы и реквизиты видны только модератору LUMI. Оборудование и авто увидят клиенты при выборе.":"Дані фірми та реквізити бачить лише модератор LUMI. Обладнання та авто побачать клієнти при виборі.",
+  "Данные фирмы и реквизиты":"Дані фірми та реквізити","Личные данные и реквизиты":"Особисті дані та реквізити","О компании":"Про компанію","Тип":"Тип","Название":"Назва","Банк":"Банк","Счёт (IBAN)":"Рахунок (IBAN)","Конфиденциально — только для модерации.":"Конфіденційно — лише для модерації."});
 /* admin users panel */
 Object.assign(TR.pl,{"Пользователи":"Użytkownicy","Все":"Wszyscy","Компании":"Firmy","Админы":"Administratorzy","Регистрация":"Rejestracja","Открыть профиль":"Otwórz profil","● Онлайн":"● Online"});
 Object.assign(TR.en,{"Пользователи":"Users","Все":"All","Компании":"Companies","Админы":"Admins","Регистрация":"Registered","Открыть профиль":"Open profile","● Онлайн":"● Online"});
@@ -1439,7 +1460,7 @@ function renderAuth(){
   const _resetToken=(new URLSearchParams(location.search)).get('reset');
   const clearReset=()=>{ try{history.replaceState({},'',location.pathname);}catch{} };
   let mode=_resetToken?'reset':'login', role='customer';
-  const reg={avatar:null,idDocument:null,equipment:[],hasCar:null};   // cleaner KYC + questionnaire
+  const reg={avatar:null,idDocument:null,equipment:[],hasCar:null,entityType:'individual',vals:{}};   // cleaner KYC + questionnaire
   const root=$('#root');
   root.innerHTML='';
   const wrap=el(`<div class="auth-split">
@@ -1527,37 +1548,52 @@ function renderAuth(){
         <button data-m="register" class="${mode==='register'?'active':''}">Регистрация</button>
       </div>
       <form id="authForm">
-        ${mode==='register'?`
+        ${mode==='register'?(()=>{const V=reg.vals||{};const av=(s)=>esc(s==null?'':String(s)).replace(/"/g,'&quot;');const isCo=role==='cleaner'&&reg.entityType==='company';return `
         <label class="field"><span>Я хочу</span>
           <div class="seg" style="margin:0">
             <button type="button" data-r="customer" class="${role==='customer'?'active':''}">Заказывать</button>
             <button type="button" data-r="cleaner" class="${role==='cleaner'?'active':''}">Работать</button>
           </div>
         </label>
-        <label class="field"><span>Имя и фамилия</span><input class="input" name="name" placeholder="Анна Ковальская" required></label>
-        <label class="field"><span>Номер телефона</span><input class="input" name="phone" type="tel" inputmode="tel" placeholder="+48 600 700 800" required></label>
-        <label class="field"><span>Город</span><select class="input" name="city">${state.cities.map(c=>`<option>${c}</option>`).join('')||'<option>Warsaw</option>'}</select></label>
+        <label class="field"><span>${isCo?'Контактное лицо':'Имя и фамилия'}</span><input class="input" name="name" placeholder="Анна Ковальская" value="${av(V.name)}" required></label>
+        <label class="field"><span>Номер телефона</span><input class="input" name="phone" type="tel" inputmode="tel" placeholder="+48 600 700 800" value="${av(V.phone)}" required></label>
+        <label class="field"><span>Город</span><select class="input" name="city">${state.cities.map(c=>`<option ${V.city===c?'selected':''}>${c}</option>`).join('')||'<option>Warsaw</option>'}</select></label>
         ${role==='cleaner'?`
         <div class="kyc-block">
+          <label class="field" style="margin-bottom:12px"><span>Регистрируетесь как</span>
+            <div class="seg" style="margin:0">
+              <button type="button" data-ent="individual" class="${reg.entityType==='individual'?'active':''}">Физлицо</button>
+              <button type="button" data-ent="company" class="${reg.entityType==='company'?'active':''}">Фирма</button>
+            </div>
+          </label>
+          ${isCo?`
+          <label class="field"><span>Название фирмы *</span><input class="input" name="companyName" placeholder="SparkClean Sp. z o.o." value="${av(V.companyName)}" required></label>
+          <label class="field"><span>NIP (10 цифр) *</span><input class="input" name="nip" inputmode="numeric" maxlength="13" placeholder="123-456-78-90" value="${av(V.nip)}" required></label>
+          `:`
           <div class="kyc-title">Проверка исполнителя</div>
           <div class="kyc-uploads">
             <button type="button" class="kyc-up" id="upAvatar">${regUpInner('avatar',reg.avatar)}</button>
             <button type="button" class="kyc-up" id="upId">${regUpInner('id',reg.idDocument)}</button>
           </div>
-          <label class="field"><span>О себе — что умеете и опыт работы *</span><textarea class="input" name="bio" rows="3" minlength="20" required placeholder="Например: 3 года опыта. Генеральная и послеремонтная уборка, мытьё окон, свои эко-средства. Пунктуальна и внимательна к деталям."></textarea></label>
-          <label class="field"><span>Опыт работы, лет</span><input class="input" type="number" name="experienceYears" min="0" max="50" value="0"></label>
+          <label class="field"><span>PESEL (11 цифр) *</span><input class="input" name="pesel" inputmode="numeric" maxlength="11" placeholder="00000000000" value="${av(V.pesel)}" required></label>
+          `}
+          <label class="field"><span>${isCo?'О компании — услуги и опыт *':'О себе — что умеете и опыт работы *'}</span><textarea class="input" name="bio" rows="3" minlength="20" required placeholder="${isCo?'Например: клининговая компания, 5 лет на рынке. Генеральная, послеремонтная уборка, мойка окон. Своё оборудование и эко-средства, бригада из 4 человек.':'Например: 3 года опыта. Генеральная и послеремонтная уборка, мытьё окон, свои эко-средства. Пунктуальна и внимательна к деталям.'}">${av(V.bio)}</textarea></label>
+          <label class="field"><span>${isCo?'Лет на рынке':'Опыт работы, лет'}</span><input class="input" type="number" name="experienceYears" min="0" max="50" value="${av(V.experienceYears)||'0'}"></label>
           <div class="kyc-title" style="margin-top:6px">Оборудование</div>
           <p class="muted tiny" style="margin:-6px 0 8px">Каким оборудованием вы располагаете?</p>
           <div id="regEquip">${Object.entries(state.catalog?.equipment||{}).map(([k,v])=>`<label class="chk"><input type="checkbox" data-eq="${k}" ${reg.equipment.includes(k)?'checked':''}><span>${v}</span></label>`).join('')}</div>
           <div class="kyc-title" style="margin-top:12px">Транспорт</div>
-          <p class="muted tiny" style="margin:-6px 0 8px">Есть ли у вас собственный автомобиль?</p>
+          <p class="muted tiny" style="margin:-6px 0 8px">Есть ли ${isCo?'у компании':'у вас'} собственный автомобиль?</p>
           <div class="seg" id="regCar" style="margin-bottom:4px">
             <button type="button" data-car="1" class="${reg.hasCar===true?'active':''}">Да</button>
             <button type="button" data-car="0" class="${reg.hasCar===false?'active':''}">Нет</button>
           </div>
-          <p class="kyc-hint">${I.lock||''} Фото и документ нужны для проверки. Документ виден только модератору LUMI и не показывается клиентам. Оборудование и авто увидят клиенты при выборе.</p>
-        </div>`:''}`:''}
-        <label class="field"><span>Email</span><input class="input" type="email" name="email" placeholder="you@example.com" required></label>
+          <div class="kyc-title" style="margin-top:12px">Банковские реквизиты для выплат</div>
+          <label class="field"><span>Название банка *</span><input class="input" name="bankName" placeholder="mBank · PKO BP · Santander …" value="${av(V.bankName)}" required></label>
+          <label class="field"><span>Номер счёта (IBAN) *</span><input class="input" name="bankAccount" inputmode="text" placeholder="PL00 0000 0000 0000 0000 0000 0000" value="${av(V.bankAccount)}" required></label>
+          <p class="kyc-hint">${I.lock||''} ${isCo?'Данные фирмы и реквизиты видны только модератору LUMI.':'Фото, документ, PESEL и реквизиты видны только модератору LUMI и не показываются клиентам.'} Оборудование и авто увидят клиенты при выборе.</p>
+        </div>`:''}`;})():''}
+        <label class="field"><span>Email</span><input class="input" type="email" name="email" placeholder="you@example.com" ${mode==='register'?`value="${esc(String(reg.vals?.email||'')).replace(/"/g,'&quot;')}"`:''} required></label>
         <label class="field"><span>Пароль</span><input class="input" type="password" name="password" placeholder="${mode==='register'?'минимум 12 символов':'ваш пароль'}" minlength="${mode==='register'?12:1}" required>${mode==='register'?'<span class="hint" style="margin-top:6px;display:block">Не меньше 12 символов. Можно фразу — так надёжнее.</span>':''}</label>
         <button class="btn block" type="submit" style="margin-top:6px">${mode==='login'?'Войти':'Создать аккаунт'} ${I.arrow}</button>
         ${mode==='login'?'<div style="text-align:center;margin-top:12px"><button type="button" class="linklike" data-forgot>Забыли пароль?</button></div>':''}
@@ -1571,8 +1607,11 @@ function renderAuth(){
       <div class="auth-legal">
         <a href="/landing.html">О LUMI</a><a href="/brand.html">Бренд</a><a href="/privacy.html">Конфиденциальность</a><a href="/terms.html">Условия</a>
       </div>`;
-    card.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;draw();});
-    card.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{role=b.dataset.r;draw();});
+    // Preserve typed values across the toggles that force a redraw.
+    const snap=()=>{const fm=$('#authForm',card);if(fm)reg.vals=Object.fromEntries(new FormData(fm));};
+    card.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{snap();mode=b.dataset.m;draw();});
+    card.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{snap();role=b.dataset.r;draw();});
+    card.querySelectorAll('[data-ent]').forEach(b=>b.onclick=()=>{snap();reg.entityType=b.dataset.ent;draw();});
     const fg=card.querySelector('[data-forgot]'); if(fg) fg.onclick=()=>{mode='forgot';draw();};
     // cleaner KYC uploads — update the button preview in place (don't rebuild the form)
     const wireUp=(id,field,max)=>{const btn=$('#'+id,card);if(!btn)return;
@@ -1591,7 +1630,8 @@ function renderAuth(){
       e.preventDefault();
       const f=new FormData(e.target);
       const btn=e.target.querySelector('button[type=submit]');
-      if(mode==='register'&&role==='cleaner'){
+      const asCompany=role==='cleaner'&&reg.entityType==='company';
+      if(mode==='register'&&role==='cleaner'&&!asCompany){
         if(!reg.avatar){toast('Загрузите своё фото',true);return;}
         if(!reg.idDocument){toast('Загрузите фото документа',true);return;}
       }
@@ -1599,7 +1639,10 @@ function renderAuth(){
       try{
         const payload=Object.fromEntries(f);
         if(mode==='register'){payload.role=role;payload.locale=state.lang;}
-        if(mode==='register'&&role==='cleaner'){payload.avatar=reg.avatar;payload.idDocument=reg.idDocument;payload.equipment=reg.equipment;payload.hasCar=reg.hasCar===true;}
+        if(mode==='register'&&role==='cleaner'){
+          payload.entityType=reg.entityType;payload.equipment=reg.equipment;payload.hasCar=reg.hasCar===true;
+          if(!asCompany){payload.avatar=reg.avatar;payload.idDocument=reg.idDocument;}
+        }
         const res=await api(mode==='login'?'/api/login':'/api/register','POST',payload);
         state.token=res.token;state.user=res.user;
         localStorage.setItem('cg_token',res.token);
@@ -1608,7 +1651,7 @@ function renderAuth(){
         if(res.user.role==='customer') await loadProperties();
         render();
         toast(`Добро пожаловать, ${res.user.name.split(' ')[0]}!`);
-      }catch(err){toast(err.message,true);btn.disabled=false;draw();}
+      }catch(err){toast(err.message,true);btn.disabled=false;try{reg.vals=Object.fromEntries(new FormData(e.target));}catch{}draw();}
     };
   }
   draw();
@@ -3730,6 +3773,7 @@ async function openAdminUser(id){
           <p class="muted tiny">${esc(p.email)}${p.phone?` · ${esc(p.phone)}`:''}</p>
           <div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap">
             <span class="badge grey">${roleRu}</span>
+            ${p.role==='cleaner'&&p.entityType?`<span class="badge grey">${p.entityType==='company'?'Фирма':'Физлицо'}</span>`:''}
             ${p.role==='cleaner'?(p.verified?'<span class="badge green">Проверен</span>':'<span class="badge amber">На проверке</span>'):''}
             ${p.suspended?'<span class="badge" style="background:#FEECEB;color:#C4342A">Заблокирован</span>':''}
             ${p.subscription==='plus'?`<span class="badge green">${I.crown}LUMI+</span>`:''}
@@ -3743,9 +3787,19 @@ async function openAdminUser(id){
         <div class="stat"><b>${p.experienceYears||0}</b><span class="muted tiny">Лет опыта</span></div>
         <div class="stat"><b>${money(p.wallet||0)}</b><span class="muted tiny">Баланс</span></div>
       </div>`:''}
-      ${p.bio?`<div class="admin-sec"><div class="admin-sec-h">О себе</div><p style="font-size:14px;line-height:1.5">${esc(p.bio)}</p></div>`:''}
+      ${p.bio?`<div class="admin-sec"><div class="admin-sec-h">${p.entityType==='company'?'О компании':'О себе'}</div><p style="font-size:14px;line-height:1.5">${esc(p.bio)}</p></div>`:''}
+      ${p.role==='cleaner'?`<div class="admin-sec"><div class="admin-sec-h">${p.entityType==='company'?'Данные фирмы и реквизиты':'Личные данные и реквизиты'}</div>
+        <div class="admin-kv">
+          <div><span>Тип</span><b>${p.entityType==='company'?'Фирма':'Физлицо'}</b></div>
+          ${p.entityType==='company'
+            ?`<div><span>Название</span><b>${esc(p.companyName||'—')}</b></div><div><span>NIP</span><b>${esc(p.nip||'—')}</b></div>`
+            :`<div><span>PESEL</span><b>${esc(p.pesel||'—')}</b></div>`}
+          <div><span>Банк</span><b>${esc(p.bankName||'—')}</b></div>
+          <div><span>Счёт (IBAN)</span><b>${esc(p.bankAccount||'—')}</b></div>
+        </div>
+        <p class="kyc-hint" style="margin-top:8px">${I.lock||''} Конфиденциально — только для модерации.</p></div>`:''}
       ${p.role==='cleaner'?`<div class="admin-sec"><div class="admin-sec-h">Оборудование и транспорт</div>${equipmentBlock(p,true)}</div>`:''}
-      ${p.role==='cleaner'?`<div class="admin-sec"><div class="admin-sec-h">Документ, удостоверяющий личность</div>
+      ${p.role==='cleaner'&&p.entityType!=='company'?`<div class="admin-sec"><div class="admin-sec-h">Документ, удостоверяющий личность</div>
         ${p.idDocument?`<img class="admin-doc" src="${p.idDocument}" alt="Документ">`:'<p class="muted tiny">Документ не загружен.</p>'}
         <p class="kyc-hint" style="margin-top:8px">${I.lock||''} Конфиденциально. Просмотр документа записан в журнал аудита.</p></div>`:''}
       <div class="admin-sec"><div class="admin-sec-h">Активность</div>

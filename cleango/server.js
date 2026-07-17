@@ -324,10 +324,11 @@ function verifyReset(token) {
 
 function publicUser(u) {
   if (!u) return null;
-  // Strip credentials and sensitive PII. The identity document is only ever
-  // returned by the dedicated admin profile endpoint (never in self/list payloads).
-  const { password, idDocument, ...rest } = u;
-  return { ...rest, hasIdDocument: !!idDocument };
+  // Strip credentials and sensitive PII (identity doc, PESEL, tax id, bank
+  // payout details). These are only ever returned by the dedicated admin
+  // profile endpoint — never in self/list payloads.
+  const { password, idDocument, pesel, nip, bankAccount, bankName, ...rest } = u;
+  return { ...rest, hasIdDocument: !!idDocument, hasBankDetails: !!bankAccount };
 }
 
 // ─────────────────────────── AI price estimate ───────────────────────────
@@ -589,13 +590,30 @@ route('POST', '/api/register', async (req, res) => {
   if (Object.values(db.users).some((u) => u.email === email)) {
     return send(res, 409, { error: 'An account with this email already exists.' });
   }
-  // Cleaners must complete KYC at sign-up: a face photo, an ID document photo,
-  // and an "About me" describing skills/experience (§ provider onboarding).
+  // Cleaners complete KYC at sign-up. Two entity types:
+  //  • individual — a face photo, an ID document photo, PESEL;
+  //  • company    — company name + NIP, no photos.
+  // Both provide an "About me", plus bank payout details (account + bank name).
   const bio = String(b.bio || '').trim();
+  const digits = (s) => String(s || '').replace(/\D/g, '');
+  const entityType = role === 'cleaner' ? (b.entityType === 'company' ? 'company' : 'individual') : null;
+  const bankAccount = String(b.bankAccount || '').replace(/\s+/g, '').toUpperCase().slice(0, 34);
+  const bankName = String(b.bankName || '').trim().slice(0, 80);
+  const companyName = String(b.companyName || '').trim().slice(0, 120);
+  const nip = digits(b.nip);
+  const pesel = digits(b.pesel);
   if (role === 'cleaner') {
-    if (!validImage(b.avatar, 1200000)) return send(res, 400, { error: 'Загрузите своё фото.', code: 'AVATAR_REQUIRED' });
-    if (!validImage(b.idDocument, 3000000)) return send(res, 400, { error: 'Загрузите фото документа, удостоверяющего личность.', code: 'ID_REQUIRED' });
     if (bio.length < 20) return send(res, 400, { error: 'Расскажите о себе — что умеете и опыт (минимум 20 символов).', code: 'BIO_REQUIRED' });
+    if (!bankName) return send(res, 400, { error: 'Укажите название банка.', code: 'BANK_NAME_REQUIRED' });
+    if (bankAccount.replace(/[^0-9A-Z]/g, '').length < 20) return send(res, 400, { error: 'Укажите корректный номер счёта (IBAN).', code: 'BANK_ACCOUNT_REQUIRED' });
+    if (entityType === 'company') {
+      if (companyName.length < 2) return send(res, 400, { error: 'Укажите название фирмы.', code: 'COMPANY_NAME_REQUIRED' });
+      if (nip.length !== 10) return send(res, 400, { error: 'NIP должен состоять из 10 цифр.', code: 'NIP_REQUIRED' });
+    } else {
+      if (!validImage(b.avatar, 1200000)) return send(res, 400, { error: 'Загрузите своё фото.', code: 'AVATAR_REQUIRED' });
+      if (!validImage(b.idDocument, 3000000)) return send(res, 400, { error: 'Загрузите фото документа, удостоверяющего личность.', code: 'ID_REQUIRED' });
+      if (pesel.length !== 11) return send(res, 400, { error: 'PESEL должен состоять из 11 цифр.', code: 'PESEL_REQUIRED' });
+    }
   }
   const locale = ['pl', 'en', 'ru', 'uk'].includes(b.locale) ? b.locale : 'pl';   // UI language for emails/notifications
   const id = uid('u_');
@@ -612,12 +630,21 @@ route('POST', '/api/register', async (req, res) => {
     subscription: null,              // 'plus' when a LUMI+ member
   };
   if (role === 'cleaner') {
-    user.avatar = b.avatar;
-    user.idDocument = b.idDocument;           // sensitive PII — admin-only, never in public payloads
+    user.entityType = entityType;
     user.bio = bio.slice(0, 600);
     user.experienceYears = Math.max(0, Math.min(50, Number(b.experienceYears) || 0));
     user.equipment = Array.isArray(b.equipment) ? b.equipment.filter((k) => EQUIPMENT[k]) : [];
     user.hasCar = !!b.hasCar;
+    user.bankAccount = bankAccount;           // payout details — admin-only, never in public payloads
+    user.bankName = bankName;
+    if (entityType === 'company') {
+      user.companyName = companyName;
+      user.nip = nip;                         // tax id — admin-only
+    } else {
+      user.avatar = b.avatar;
+      user.idDocument = b.idDocument;         // sensitive PII — admin-only, never in public payloads
+      user.pesel = pesel;                     // national id — admin-only
+    }
   }
   db.users[id] = user;
   persist.users();
@@ -2124,6 +2151,10 @@ route('GET', '/api/admin/users/:id', async (req, res, params) => {
       rating: u.rating || null, jobsDone: u.jobsDone || 0,
       bio: u.bio || '', experienceYears: u.experienceYears || 0,
       equipment: Array.isArray(u.equipment) ? u.equipment : [], hasCar: !!u.hasCar,
+      entityType: u.entityType || null,
+      companyName: u.companyName || null, nip: u.nip || null,   // admin-only
+      pesel: u.pesel || null,                                   // admin-only
+      bankAccount: u.bankAccount || null, bankName: u.bankName || null,  // admin-only
       avatar: u.avatar || null,
       idDocument: u.idDocument || null,          // admin-only
       createdAt: u.createdAt,
