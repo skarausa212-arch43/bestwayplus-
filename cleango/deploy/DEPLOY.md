@@ -142,6 +142,44 @@ SES, Postmark — all have free/cheap tiers).
 > will fail authentication. Verify sending emails uses your domain, not the
 > provider’s.
 
+## Social sign-in (Google + Apple)
+The login screen shows **“Continue with Google”** and **“Continue with Apple”**
+buttons **only when the matching provider is configured** — otherwise they’re
+hidden and email/password still works. All config is via env in
+`deploy/instance.env` (secrets stay on the server, never committed). The buttons
+redirect to the provider and back to `${LUMI_APP_URL}/api/auth/<provider>/callback`,
+so **HTTPS must be live** and `LUMI_APP_URL` set to your real domain.
+
+**Google** ([console.cloud.google.com](https://console.cloud.google.com) →
+APIs & Services → Credentials → *OAuth client ID* → *Web application*):
+- Authorized redirect URI: `https://lumi.bestwayplus.pl/api/auth/google/callback`
+- Copy the client ID + secret into:
+  ```
+  GOOGLE_CLIENT_ID=...apps.googleusercontent.com
+  GOOGLE_CLIENT_SECRET=...            # secret — server only, never commit
+  ```
+
+**Apple** ([developer.apple.com](https://developer.apple.com) → Certificates,
+Identifiers & Profiles — needs a paid Apple Developer account):
+- Create a **Services ID** (this is your `APPLE_CLIENT_ID`, e.g.
+  `pl.bestwayplus.lumi.web`); enable *Sign in with Apple* and add the domain +
+  return URL `https://lumi.bestwayplus.pl/api/auth/apple/callback`.
+- Create a **Sign in with Apple key**, download the `.p8`, note its **Key ID**;
+  your **Team ID** is in the top-right of the portal.
+  ```
+  APPLE_CLIENT_ID=pl.bestwayplus.lumi.web
+  APPLE_TEAM_ID=XXXXXXXXXX
+  APPLE_KEY_ID=YYYYYYYYYY
+  APPLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...contents of the .p8...\n-----END PRIVATE KEY-----"
+  ```
+  (Newlines may be written as `\n`.) LUMI mints Apple’s short-lived client secret
+  itself from this key — nothing else to rotate.
+
+New social accounts are created as customers, verified, with the name/email from
+the provider (a welcome email is sent). If the email already exists, the provider
+is linked to that account. Test: open the site, click a provider button, approve,
+and you should land signed in.
+
 ## Notes
 - **Demo accounts are OFF by default** in production (`LUMI_SEED=off` in the
   service unit), so there are no public `cleango123` logins. Remove that line

@@ -34,6 +34,9 @@ const rbac = require('./admin/rbac');
 const analytics = require('./analytics/metrics');
 const flags = require('./flags/flags');
 const mailer = require('./mailer');
+const oauth = require('./auth/oauth');
+
+const APP_URL = (process.env.LUMI_APP_URL || 'https://lumi.bestwayplus.pl').replace(/\/$/, '');
 
 const PORT = process.env.PORT || 4000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -684,6 +687,84 @@ route('POST', '/api/password/reset', async (req, res) => {
   return send(res, 200, { token: signToken(user.id), user: publicUser(user) });   // sign the user straight in
 });
 
+// ── Social sign-in (Google / Apple), all env-driven (auth/oauth.js) ──
+function signState(payload) {
+  const p = Buffer.from(JSON.stringify({ ...payload, t: now() })).toString('base64url');
+  const sig = crypto.createHmac('sha256', SECRET).update(p).digest('base64url');
+  return `${p}.${sig}`;
+}
+function verifyState(s) {
+  if (!s || !s.includes('.')) return null;
+  const [p, sig] = s.split('.');
+  const expected = crypto.createHmac('sha256', SECRET).update(p).digest('base64url');
+  if (sig.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
+  try { const d = JSON.parse(Buffer.from(p, 'base64url').toString()); return (now() - d.t < 600000) ? d : null; } catch { return null; }
+}
+const redirectUriFor = (provider) => `${APP_URL}/api/auth/${provider}/callback`;
+function readForm(req) {
+  return new Promise((resolve) => { let raw = ''; req.on('data', (c) => { raw += c; if (raw.length > 1e6) req.destroy(); }); req.on('end', () => resolve(new URLSearchParams(raw))); });
+}
+function oauthRedirect(res, location, cookie) {
+  const h = { Location: location, 'Cache-Control': 'no-store', ...SECURITY_HEADERS };
+  if (cookie) h['Set-Cookie'] = cookie;
+  res.writeHead(302, h); res.end();
+}
+const authError = (res, code) => oauthRedirect(res, `${APP_URL}/?autherror=${code}`);
+
+// Map a verified social profile to a LUMI account (find-or-create by email),
+// then hand a session token to the SPA via the URL fragment.
+async function oauthFinish(profile, res, locale) {
+  if (!profile.email || !profile.emailVerified) return authError(res, 'email');
+  let user = Object.values(db.users).find((u) => u.email === profile.email && !u.deletedAt);
+  if (!user) {
+    const id = uid('u_');
+    user = {
+      id, email: profile.email, name: profile.name || profile.email.split('@')[0],
+      role: isAdminEmail(profile.email) ? 'admin' : 'customer', phone: '',
+      locale: ['pl', 'en', 'ru', 'uk'].includes(locale) ? locale : 'pl',
+      password: hashPassword(crypto.randomBytes(24).toString('hex')),   // random — this account signs in via the provider
+      createdAt: now(), wallet: 0, rating: null, jobsDone: 0, verified: true,
+      city: 'Warsaw', online: false, subscription: null, oauth: { [profile.provider]: profile.sub },
+    };
+    db.users[id] = user; persist.users();
+    audit('user.created', id, id, { via: profile.provider });
+    createProperty(user, { label: 'My home', city: user.city, type: 'apartment', rooms: 2, baths: 1 });
+    mailer.queue(mailer.welcome(user));
+  } else {
+    user.oauth = { ...(user.oauth || {}), [profile.provider]: profile.sub };
+    if (isAdminEmail(user.email) && user.role !== 'admin') { user.role = 'admin'; user.verified = true; }
+    persist.users();
+  }
+  if (enforceSuspension(user)) return authError(res, 'suspended');
+  oauthRedirect(res, `${APP_URL}/#token=${signToken(user.id)}`);
+}
+
+route('GET', '/api/auth/:provider/start', async (req, res, params) => {
+  const provider = params.provider;
+  if (!oauth.providers()[provider]) return send(res, 404, { error: 'Provider not enabled.' });
+  const q = new URL(req.url, 'http://x').searchParams;
+  const state = signState({ p: provider, l: q.get('lang') || 'pl', n: crypto.randomBytes(8).toString('hex') });
+  const uri = redirectUriFor(provider);
+  const authUrl = provider === 'google' ? oauth.googleAuthUrl(uri, state) : oauth.appleAuthUrl(uri, state);
+  oauthRedirect(res, authUrl, `lumi_oauth=${state}; Path=/; Max-Age=600; HttpOnly; Secure; SameSite=None`);
+});
+
+route('GET', '/api/auth/google/callback', async (req, res) => {
+  const q = new URL(req.url, 'http://x').searchParams;
+  const st = verifyState(q.get('state'));
+  if (!q.get('code') || !st || st.p !== 'google') return authError(res, 'state');
+  try { await oauthFinish(await oauth.googleExchange(q.get('code'), redirectUriFor('google')), res, st.l); }
+  catch (e) { console.error('[oauth google]', e.message); authError(res, 'exchange'); }
+});
+
+route('POST', '/api/auth/apple/callback', async (req, res) => {
+  const form = await readForm(req);
+  const st = verifyState(form.get('state'));
+  if (!form.get('code') || !st || st.p !== 'apple') return authError(res, 'state');
+  try { await oauthFinish(await oauth.appleExchange(form.get('code'), redirectUriFor('apple'), form.get('user')), res, st.l); }
+  catch (e) { console.error('[oauth apple]', e.message); authError(res, 'exchange'); }
+});
+
 route('GET', '/api/me', async (req, res) => {
   const user = authUser(req);
   if (!user) return send(res, 401, { error: 'Not authenticated.' });
@@ -816,7 +897,7 @@ route('POST', '/api/cleaner/online', async (req, res) => {
 
 // ---- Catalog & estimate ----
 route('GET', '/api/catalog', async (req, res) => {
-  send(res, 200, { services: SERVICE_CATALOG, extras: EXTRAS_CATALOG, extraCategories: EXTRAS_CATEGORIES, equipment: EQUIPMENT, commissionRate: COMMISSION_RATE, currency: CURRENCY });
+  send(res, 200, { services: SERVICE_CATALOG, extras: EXTRAS_CATALOG, extraCategories: EXTRAS_CATEGORIES, equipment: EQUIPMENT, commissionRate: COMMISSION_RATE, currency: CURRENCY, oauth: oauth.providers() });
 });
 route('POST', '/api/estimate', async (req, res) => {
   const b = await readBody(req);
