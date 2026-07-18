@@ -199,6 +199,28 @@ async function main() {
       assert.strictEqual(sch.status, 200);
       assert.strictEqual(sch.json.str.turnovers[0].status, 'scheduled');
     });
+    await ok('STR supplies + checklist: set, reset to default, non-STR rejected', async () => {
+      const cp = await req('POST', '/api/properties', { token: customerTok, body: { label: 'STR Ops', city: 'Warsaw', type: 'short_term_rental', rooms: 2, baths: 1 } });
+      const sid = cp.json.property.id;
+      // Supplies: bad input is filtered, status is validated, ids assigned.
+      const sup = await req('PATCH', `/api/properties/${sid}/str/supplies`, { token: customerTok, body: { supplies: [{ name: 'Toilet paper', status: 'low' }, { name: '', status: 'ok' }, { name: 'Towels', status: 'bogus' }] } });
+      assert.strictEqual(sup.status, 200);
+      assert.strictEqual(sup.json.supplies.length, 2);            // empty name dropped
+      assert.strictEqual(sup.json.supplies[0].status, 'low');
+      assert.strictEqual(sup.json.supplies[1].status, 'ok');      // invalid status → ok
+      assert.ok(sup.json.supplies[0].id);
+      // Checklist: custom template then reset to the default.
+      const chk = await req('PATCH', `/api/properties/${sid}/str/checklist`, { token: customerTok, body: { checklist: [{ area: 'Balcony', items: ['Sweep', 'Wipe table'] }, { area: 'Empty', items: [] }] } });
+      assert.strictEqual(chk.json.isDefault, false);
+      assert.strictEqual(chk.json.checklist.length, 1);           // section with no items dropped
+      const reset = await req('PATCH', `/api/properties/${sid}/str/checklist`, { token: customerTok, body: { checklist: null } });
+      assert.strictEqual(reset.json.isDefault, true);
+      assert.ok(reset.json.checklist.length >= 4);
+      // Non-STR property rejects both endpoints.
+      const reg = await req('POST', '/api/properties', { token: customerTok, body: { label: 'Flat2', city: 'Warsaw', type: 'apartment', rooms: 2, baths: 1 } });
+      const bad = await req('PATCH', `/api/properties/${reg.json.property.id}/str/supplies`, { token: customerTok, body: { supplies: [] } });
+      assert.strictEqual(bad.json.code, 'NOT_STR');
+    });
     await ok('customer creates a booking', async () => {
       const props = await req('GET', '/api/properties', { token: customerTok });
       const pid = props.json.properties[0].id;

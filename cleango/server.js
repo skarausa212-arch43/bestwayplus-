@@ -1315,6 +1315,7 @@ function strView(p) {
     settings: p.strSettings, autopilotMode: str.autopilotMode(p.strSettings),
     reservations: reservations.map(reservationView), turnovers,
     supplies: p.supplies || [], hasChecklist: !!p.turnoverChecklist,
+    checklist: p.turnoverChecklist || TURNOVER_CHECKLIST, checklistIsDefault: !p.turnoverChecklist,
     status: {
       state,
       current: active ? reservationView(active) : null,
@@ -1336,6 +1337,38 @@ route('PATCH', '/api/properties/:id/str/settings', async (req, res, params) => {
   ctx.p.strSettings = str.normalizeSettings({ ...ctx.p.strSettings, ...b }, ctx.p);
   persist.properties();
   send(res, 200, { str: strView(ctx.p) });
+});
+// Supplies inventory the owner keeps stocked; cleaners flag low/out at turnover (§12).
+const SUPPLY_STATUS = ['ok', 'low', 'out'];
+route('PATCH', '/api/properties/:id/str/supplies', async (req, res, params) => {
+  const ctx = requireStr(req, res, params.id); if (!ctx) return;
+  const b = await readBody(req);
+  const raw = Array.isArray(b.supplies) ? b.supplies : [];
+  ctx.p.supplies = raw.slice(0, 40).map((s) => {
+    const name = String(s && s.name || '').trim().slice(0, 60);
+    if (!name) return null;
+    const status = SUPPLY_STATUS.includes(s.status) ? s.status : 'ok';
+    return { id: s.id || uid('sup_'), name, status, updatedAt: now() };
+  }).filter(Boolean);
+  persist.properties();
+  send(res, 200, { supplies: ctx.p.supplies, str: strView(ctx.p) });
+});
+// Owner-editable turnover checklist template (§11); null resets to the default.
+route('PATCH', '/api/properties/:id/str/checklist', async (req, res, params) => {
+  const ctx = requireStr(req, res, params.id); if (!ctx) return;
+  const b = await readBody(req);
+  if (b.checklist == null) { ctx.p.turnoverChecklist = null; }
+  else {
+    const raw = Array.isArray(b.checklist) ? b.checklist : [];
+    const clean = raw.slice(0, 12).map((sec) => {
+      const area = String(sec && sec.area || '').trim().slice(0, 40);
+      const items = (Array.isArray(sec && sec.items) ? sec.items : []).map((i) => String(i || '').trim().slice(0, 80)).filter(Boolean).slice(0, 30);
+      return area && items.length ? { area, items } : null;
+    }).filter(Boolean);
+    ctx.p.turnoverChecklist = clean.length ? clean : null;
+  }
+  persist.properties();
+  send(res, 200, { checklist: ctx.p.turnoverChecklist || TURNOVER_CHECKLIST, isDefault: !ctx.p.turnoverChecklist, str: strView(ctx.p) });
 });
 route('POST', '/api/properties/:id/reservations', async (req, res, params) => {
   const ctx = requireStr(req, res, params.id); if (!ctx) return;
