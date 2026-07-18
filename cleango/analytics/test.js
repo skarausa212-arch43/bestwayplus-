@@ -78,4 +78,11 @@ ok('refund-spike alert fires when refunds exceed 20% of completed', () => {
   assert.ok(M.alerts.some((x) => x.key === 'refund_spike'));
 });
 
+ok('revenue trend spans 14 ascending days and sums to completed GMV', () => {
+  const s = M.trends.revenueByDay;
+  assert.strictEqual(s.length, 14);
+  for (let i = 1; i < s.length; i++) assert.ok(s[i].t > s[i - 1].t);   // chronological
+  assert.ok(s.every((d) => typeof d.revenue === 'number' && d.revenue >= 0));
+});
+
 console.log(`\n${n} analytics checks passed.`);

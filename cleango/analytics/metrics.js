@@ -105,8 +105,25 @@ function computePlatformMetrics({ bookings = [], users = [], reviews = [], lumiS
       { stage: 'Принят', count: accepted.length },
       { stage: 'Завершён', count: completed.length },
     ],
+    trends: { revenueByDay: revenueByDay(completed, now, 14) },
     alerts: buildAlerts({ bookings, completed, cancelled, refunds, now }),
   };
+}
+
+// GMV per calendar day over the last `days` days (oldest → newest), keyed by
+// each booking's completion time. Used by the admin revenue chart.
+function revenueByDay(completed, now, days) {
+  const start = new Date(now); start.setHours(0, 0, 0, 0);
+  const map = {};
+  for (const b of completed) {
+    const ev = (b.timeline || []).find((t) => t.status === 'completed');
+    const at = ev ? ev.at : (b.updatedAt || b.createdAt);
+    const d = new Date(at); d.setHours(0, 0, 0, 0);
+    map[d.getTime()] = (map[d.getTime()] || 0) + (b.price || 0);
+  }
+  const out = [];
+  for (let i = days - 1; i >= 0; i--) { const t = start.getTime() - i * DAY; out.push({ t, revenue: map[t] || 0 }); }
+  return out;
 }
 
 // §"Alerts" — cheap threshold checks over the last 24h vs the prior 24h.
