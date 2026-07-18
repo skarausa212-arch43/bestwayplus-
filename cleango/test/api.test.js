@@ -156,6 +156,27 @@ async function main() {
       assert.ok(hist.every((d) => d.score >= 0 && d.score <= 100), 'history scores in range');
       assert.ok(smart.json.smart.score.dims.every((d) => typeof d.gain === 'number'), 'dims expose point gain');
     });
+    await ok('short-term rental: reservations generate turnovers; other types untouched', async () => {
+      const D = 86400000, base = new Date(); base.setHours(0, 0, 0, 0);
+      const day = (n) => base.getTime() + n * D;
+      const cp = await req('POST', '/api/properties', { token: customerTok, body: { label: 'STR Test', city: 'Warsaw', type: 'short_term_rental', rooms: 2, baths: 1, bedrooms: 1, strSettings: { minimumBufferMinutes: 30, expectedCleaningDuration: 150 } } });
+      assert.strictEqual(cp.status, 200);
+      assert.strictEqual(cp.json.property.type, 'short_term_rental');
+      const sid = cp.json.property.id;
+      await req('POST', `/api/properties/${sid}/reservations`, { token: customerTok, body: { source: 'airbnb', checkinDate: day(10), checkoutDate: day(13), guestName: 'A' } });
+      await req('POST', `/api/properties/${sid}/reservations`, { token: customerTok, body: { source: 'booking', checkinDate: day(13), checkoutDate: day(17) } });
+      const s = await req('GET', `/api/properties/${sid}/str`, { token: customerTok });
+      assert.strictEqual(s.status, 200);
+      assert.strictEqual(s.json.str.reservations.length, 2);
+      assert.strictEqual(s.json.str.turnovers.length, 2);
+      assert.strictEqual(s.json.str.turnovers[0].kind, 'between_guests');   // same-day checkout→checkin
+      assert.strictEqual(s.json.str.turnovers[0].priority, 'high');
+      // A regular apartment must reject the STR endpoint (existing types unaffected).
+      const reg = await req('POST', '/api/properties', { token: customerTok, body: { label: 'Flat', city: 'Warsaw', type: 'apartment', rooms: 2, baths: 1 } });
+      const bad = await req('GET', `/api/properties/${reg.json.property.id}/str`, { token: customerTok });
+      assert.strictEqual(bad.status, 400);
+      assert.strictEqual(bad.json.code, 'NOT_STR');
+    });
     await ok('customer creates a booking', async () => {
       const props = await req('GET', '/api/properties', { token: customerTok });
       const pid = props.json.properties[0].id;

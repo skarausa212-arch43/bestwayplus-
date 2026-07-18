@@ -35,6 +35,7 @@ const analytics = require('./analytics/metrics');
 const flags = require('./flags/flags');
 const mailer = require('./mailer');
 const oauth = require('./auth/oauth');
+const str = require('./str');
 
 const APP_URL = (process.env.LUMI_APP_URL || 'https://lumi.bestwayplus.pl').replace(/\/$/, '');
 
@@ -211,6 +212,7 @@ const db = {
   flagOverrides: loadJSON('flags.json', {}), // key -> { enabled, rollout, roles } (feature flags)
   disputes: loadJSON('disputes.json', {}),   // id -> support ticket / dispute per booking
   support: loadJSON('support.json', {}),     // id -> general support message ("Поддержка 24/7")
+  reservations: loadJSON('reservations.json', {}), // id -> guest reservation (short-term rental)
 };
 const persist = {
   users: () => saveJSON('users.json', db.users),
@@ -224,6 +226,7 @@ const persist = {
   flagOverrides: () => saveJSON('flags.json', db.flagOverrides),
   disputes: () => saveJSON('disputes.json', db.disputes),
   support: () => saveJSON('support.json', db.support),
+  reservations: () => saveJSON('reservations.json', db.reservations),
 };
 
 // ─────────── Notifications (15_NOTIFICATION_SYSTEM.md) ───────────
@@ -1058,20 +1061,35 @@ function memberRole(user, prop) {
   const m = (prop.members || []).find((x) => x.userId === user.id);
   return m ? m.role : null;
 }
+const PROPERTY_TYPES = ['apartment', 'house', 'office', 'other', 'short_term_rental'];
 function createProperty(owner, data, createdAt) {
   const id = uid('p_');
+  const type = PROPERTY_TYPES.includes(data.type) ? data.type : 'apartment';
   const p = {
     id, ownerId: owner.id,
     label: String(data.label || 'Home').slice(0, 60),
     address: String(data.address || '').slice(0, 200),
     city: CITIES.includes(data.city) ? data.city : (owner.city || 'Warsaw'),
-    type: ['apartment', 'house', 'office', 'other'].includes(data.type) ? data.type : 'apartment',
+    type,
     rooms: Math.max(1, Math.min(12, Number(data.rooms) || 2)),
     baths: Math.max(0, Math.min(8, Number(data.baths) || 1)),
     area: Math.max(0, Math.min(600, Number(data.area) || 0)),
     members: [],
     createdAt: createdAt || now(),
   };
+  // Short-term rental gets extra listing fields + turnover settings; other
+  // types are completely unaffected (spec §25).
+  if (type === 'short_term_rental') {
+    p.bedrooms = Math.max(0, Math.min(12, Number(data.bedrooms) || Math.max(1, p.rooms - 1)));
+    p.floor = data.floor != null ? Math.max(0, Math.min(200, Number(data.floor) || 0)) : null;
+    p.hasElevator = !!data.hasElevator;
+    p.accessInstructions = String(data.accessInstructions || '').slice(0, 1000);
+    p.features = String(data.features || '').slice(0, 1000);
+    p.photos = Array.isArray(data.photos) ? data.photos.filter((x) => validImage(x, 1500000)).slice(0, 12) : [];
+    p.strSettings = str.normalizeSettings(data.strSettings, p);
+    p.supplies = [];
+    p.turnoverChecklist = null;   // owner may set a custom template later
+  }
   db.properties[id] = p;
   persist.properties();
   return p;
@@ -1217,6 +1235,116 @@ route('GET', '/api/properties/:id/passport', async (req, res, params) => {
       since: p.createdAt,
     },
   });
+});
+
+// ─────────── Short-term rental: guests & turnovers (spec §2-§20) ───────────
+const DAYMS = 86400000;
+const dayStart = (ts) => { const d = new Date(ts); d.setHours(0, 0, 0, 0); return d.getTime(); };
+function reservationView(r) {
+  return {
+    id: r.id, propertyId: r.propertyId, source: r.source, externalBookingId: r.externalBookingId || null,
+    guestName: r.guestName || null, guestCount: r.guestCount || null,
+    checkinAt: r.checkinAt, checkoutAt: r.checkoutAt, nights: Math.max(1, Math.round((r.checkoutAt - r.checkinAt) / DAYMS)),
+    status: r.status, notes: r.notes || '', createdAt: r.createdAt,
+  };
+}
+function requireStr(req, res, pid) {
+  const user = authUser(req);
+  if (!user) { send(res, 401, { error: 'Not authenticated.' }); return null; }
+  const p = db.properties[pid];
+  if (!p || !canAccessProperty(user, p)) { send(res, 403, { error: 'Forbidden.' }); return null; }
+  if (p.type !== 'short_term_rental') { send(res, 400, { error: 'Not a short-term rental.', code: 'NOT_STR' }); return null; }
+  return { user, p };
+}
+// Build a reservation object from a request body, applying default check-in/out
+// times from the property when only dates are supplied (spec §4).
+function buildReservation(p, b) {
+  const src = str.SOURCES.includes(b.source) ? b.source : 'manual';
+  let checkinAt = Number(b.checkinAt) || null, checkoutAt = Number(b.checkoutAt) || null;
+  if (!checkinAt && b.checkinDate) checkinAt = str.atTime(Number(b.checkinDate), b.checkinTime, str.toMinutes(p.strSettings.defaultCheckinTime));
+  if (!checkoutAt && b.checkoutDate) checkoutAt = str.atTime(Number(b.checkoutDate), b.checkoutTime, str.toMinutes(p.strSettings.defaultCheckoutTime));
+  return {
+    source: src, externalBookingId: b.externalBookingId ? String(b.externalBookingId).slice(0, 80) : null,
+    externalCalendarId: b.externalCalendarId ? String(b.externalCalendarId).slice(0, 80) : null,
+    guestName: b.guestName ? String(b.guestName).slice(0, 80) : null,
+    guestCount: b.guestCount != null ? Math.max(1, Math.min(50, Number(b.guestCount) || 1)) : null,
+    checkinAt, checkoutAt, notes: String(b.notes || '').slice(0, 500),
+    syncStatus: 'local', lastSyncedAt: null,
+  };
+}
+function strView(p) {
+  const reservations = Object.values(db.reservations).filter((r) => r.propertyId === p.id).sort((a, b) => a.checkinAt - b.checkinAt);
+  const turnovers = str.generateTurnovers(reservations, p.strSettings, p);
+  // Link any turnover that already has a cleaning booking scheduled.
+  const bookings = Object.values(db.bookings).filter((b) => b.propertyId === p.id && b.turnover);
+  for (const t of turnovers) {
+    const bk = bookings.find((b) => b.turnoverPrevId === t.previousReservationId);
+    t.bookingId = bk ? bk.id : null;
+    t.bookingStatus = bk ? bk.status : null;
+    t.status = bk ? (bk.status === 'completed' ? 'done' : 'scheduled') : 'unscheduled';
+  }
+  const t = now();
+  const active = reservations.find((r) => r.status !== 'cancelled' && r.checkinAt <= t && r.checkoutAt > t);
+  const upcoming = reservations.filter((r) => r.status !== 'cancelled' && r.checkinAt > t);
+  const nextCheckout = reservations.filter((r) => r.status !== 'cancelled' && r.checkoutAt > t).sort((a, b) => a.checkoutAt - b.checkoutAt)[0] || null;
+  const liveTurnover = turnovers.find((x) => x.availableFrom <= t && (x.nextCheckin == null || t < x.nextCheckin) && x.status !== 'done');
+  let state = active ? 'occupied' : 'vacant';
+  if (!active && liveTurnover) state = liveTurnover.bookingStatus === 'completed' ? 'ready' : (liveTurnover.bookingId ? 'cleaning' : 'vacant');
+  return {
+    settings: p.strSettings, autopilotMode: str.autopilotMode(p.strSettings),
+    reservations: reservations.map(reservationView), turnovers,
+    supplies: p.supplies || [], hasChecklist: !!p.turnoverChecklist,
+    status: {
+      state,
+      current: active ? reservationView(active) : null,
+      nextCheckout: nextCheckout ? reservationView(nextCheckout) : null,
+      nextCheckin: upcoming[0] ? reservationView(upcoming[0]) : null,
+      nextTurnover: turnovers.find((x) => x.suggestedEnd >= t && x.status !== 'done') || null,
+      conflicts: turnovers.filter((x) => x.conflict && x.status !== 'done').length,
+    },
+  };
+}
+
+route('GET', '/api/properties/:id/str', async (req, res, params) => {
+  const ctx = requireStr(req, res, params.id); if (!ctx) return;
+  send(res, 200, { str: strView(ctx.p), property: propertyView(ctx.p) });
+});
+route('PATCH', '/api/properties/:id/str/settings', async (req, res, params) => {
+  const ctx = requireStr(req, res, params.id); if (!ctx) return;
+  const b = await readBody(req);
+  ctx.p.strSettings = str.normalizeSettings({ ...ctx.p.strSettings, ...b }, ctx.p);
+  persist.properties();
+  send(res, 200, { str: strView(ctx.p) });
+});
+route('POST', '/api/properties/:id/reservations', async (req, res, params) => {
+  const ctx = requireStr(req, res, params.id); if (!ctx) return;
+  const b = await readBody(req);
+  const r = buildReservation(ctx.p, b);
+  if (!r.checkinAt || !r.checkoutAt || r.checkoutAt <= r.checkinAt) return send(res, 400, { error: 'Укажите корректные даты заезда и выезда.', code: 'BAD_DATES' });
+  const id = uid('res_');
+  db.reservations[id] = { id, propertyId: ctx.p.id, status: 'confirmed', createdAt: now(), updatedAt: now(), ...r };
+  persist.reservations();
+  send(res, 200, { reservation: reservationView(db.reservations[id]), str: strView(ctx.p) });
+});
+route('PATCH', '/api/properties/:id/reservations/:rid', async (req, res, params) => {
+  const ctx = requireStr(req, res, params.id); if (!ctx) return;
+  const r = db.reservations[params.rid];
+  if (!r || r.propertyId !== ctx.p.id) return send(res, 404, { error: 'Reservation not found.' });
+  const b = await readBody(req);
+  const upd = buildReservation(ctx.p, { ...reservationView(r), ...b });
+  if (!upd.checkinAt || !upd.checkoutAt || upd.checkoutAt <= upd.checkinAt) return send(res, 400, { error: 'Некорректные даты.', code: 'BAD_DATES' });
+  Object.assign(r, upd, { updatedAt: now() });
+  if (['confirmed', 'cancelled', 'tentative'].includes(b.status)) r.status = b.status;
+  persist.reservations();
+  send(res, 200, { reservation: reservationView(r), str: strView(ctx.p) });
+});
+route('DELETE', '/api/properties/:id/reservations/:rid', async (req, res, params) => {
+  const ctx = requireStr(req, res, params.id); if (!ctx) return;
+  const r = db.reservations[params.rid];
+  if (!r || r.propertyId !== ctx.p.id) return send(res, 404, { error: 'Reservation not found.' });
+  delete db.reservations[params.rid];
+  persist.reservations();
+  send(res, 200, { ok: true, str: strView(ctx.p) });
 });
 
 // Appliance Registry (17_SMART_HOME.md §8) — per-property inventory.
