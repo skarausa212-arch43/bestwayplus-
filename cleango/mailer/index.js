@@ -18,7 +18,7 @@
 'use strict';
 const { sendMail } = require('./smtp');
 
-const APP_URL = process.env.LUMI_APP_URL || 'https://lumi.bestwayplus.pl';
+const APP_URL = process.env.LUMI_APP_URL || 'https://lumi24.pl';
 
 function config() {
   const host = (process.env.LUMI_SMTP_HOST || '').trim();

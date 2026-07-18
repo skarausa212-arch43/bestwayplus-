@@ -74,7 +74,7 @@ function fakeServer() {
     const pl = mailer.welcome({ email: 'x@y.pl', name: 'Anna Kowalska', role: 'customer', locale: 'pl' });
     assert.ok(/Witaj/.test(pl.subject));
     assert.strictEqual(pl.to, 'x@y.pl');
-    assert.ok(pl.html.includes('LUMI') && pl.text.includes('lumi.bestwayplus.pl'));
+    assert.ok(pl.html.includes('LUMI') && pl.text.includes('lumi24.pl'));
     const en = mailer.welcome({ email: 'x@y.pl', name: 'Marek', role: 'cleaner', locale: 'en' });
     assert.ok(/Welcome/.test(en.subject) && /verified/i.test(en.text));
   });
