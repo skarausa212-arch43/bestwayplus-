@@ -136,8 +136,10 @@ function propertyTasks(p) {
   const completed = Object.values(db.bookings).filter((b) => b.propertyId === p.id && b.status === 'completed');
   return MAINTENANCE.map((m) => {
     const last = completed.filter((b) => b.service === m.book).sort((a, b) => b.updatedAt - a.updatedAt)[0];
-    // Simulate a plausible history for tasks never booked, seeded off property age.
-    const lastAt = last ? last.updatedAt : (p.createdAt - Math.floor((hashInt(p.id + m.key) & 0x3f)) * DAY);
+    // A brand-new home starts fresh: with no booking history the baseline is the
+    // property's creation date, so its LUMI Score is 100 at registration and
+    // only decays as the interval elapses.
+    const lastAt = last ? last.updatedAt : p.createdAt;
     const dueAt = lastAt + m.interval * DAY;
     const daysLeft = Math.round((dueAt - now()) / DAY);
     const status = daysLeft < 0 ? 'overdue' : daysLeft <= 7 ? 'soon' : 'ok';
@@ -155,7 +157,9 @@ function computeLumiScore(tasks) {
   const overall = Math.round((dims.reduce((s, d) => s + d.pct, 0) / dims.length) * 100);
   const grade = overall >= 85 ? 'Excellent' : overall >= 70 ? 'Great' : overall >= 50 ? 'Fair' : 'Needs care';
   const worst = [...dims].sort((a, b) => a.pct - b.pct)[0];
-  return { overall, grade, dims, focus: worst && worst.book ? worst : null };
+  // Only nudge an upsell once something has actually slipped; a fresh/healthy
+  // home shows "in great shape" instead.
+  return { overall, grade, dims, focus: worst && worst.book && worst.pct < 0.75 ? worst : null };
 }
 
 // ─────────────────────────── Persistence ───────────────────────────

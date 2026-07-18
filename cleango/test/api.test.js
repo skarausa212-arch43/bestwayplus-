@@ -144,6 +144,14 @@ async function main() {
       assert.strictEqual(est.status, 200);
       assert.ok(est.json.estimate.total > 0);
     });
+    await ok('a brand-new home starts at LUMI Score 100 (in great shape)', async () => {
+      const props = await req('GET', '/api/properties', { token: customerTok });
+      const pid = props.json.properties[0].id;
+      const smart = await req('GET', `/api/properties/${pid}/smart`, { token: customerTok });
+      assert.strictEqual(smart.status, 200);
+      assert.strictEqual(smart.json.smart.score.overall, 100, 'fresh home scores 100');
+      assert.strictEqual(smart.json.smart.score.focus, null, 'no upsell nudge on a fresh home');
+    });
     await ok('customer creates a booking', async () => {
       const props = await req('GET', '/api/properties', { token: customerTok });
       const pid = props.json.properties[0].id;
