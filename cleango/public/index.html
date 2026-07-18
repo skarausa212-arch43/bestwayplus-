@@ -816,10 +816,13 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
   .auth-mhero{display:block;position:relative;overflow:hidden;color:#fff;
     padding:40px 24px 66px;
     background:radial-gradient(125% 92% at 12% -6%,#3AE083 0%,#15B972 38%,#059669 70%,#04724B 100%)}
-  .mh-glow{position:absolute;border-radius:50%;filter:blur(46px);opacity:.55;pointer-events:none}
-  .mh-g1{width:230px;height:230px;top:-70px;right:-40px;background:#8CF7C0}
-  .mh-g2{width:200px;height:200px;bottom:-30px;left:-60px;background:#12B36A;opacity:.7}
-  .mh-g3{width:150px;height:150px;top:60px;left:40%;background:#B9FFDD;opacity:.35}
+  .mh-glow{position:absolute;border-radius:50%;filter:blur(46px);opacity:.55;pointer-events:none;will-change:transform}
+  .mh-g1{width:230px;height:230px;top:-70px;right:-40px;background:#8CF7C0;animation:mhFloat1 13s ease-in-out infinite alternate}
+  .mh-g2{width:200px;height:200px;bottom:-30px;left:-60px;background:#12B36A;opacity:.7;animation:mhFloat2 17s ease-in-out infinite alternate}
+  .mh-g3{width:150px;height:150px;top:60px;left:40%;background:#B9FFDD;opacity:.35;animation:mhFloat3 11s ease-in-out infinite alternate}
+  @keyframes mhFloat1{to{transform:translate(-26px,20px) scale(1.2)}}
+  @keyframes mhFloat2{to{transform:translate(30px,-18px) scale(1.16)}}
+  @keyframes mhFloat3{to{transform:translate(-18px,-14px) scale(1.25);opacity:.55}}
   .auth-mhero-in{position:relative;z-index:2}
   .mh-lock{display:flex;align-items:center;gap:12px}
   .mh-lock .logo-badge svg{width:46px;height:46px;filter:drop-shadow(0 8px 20px rgba(0,40,20,.35))}
