@@ -4,6 +4,11 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#0A0E14" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="apple-touch-icon" href="/icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="LUMI" />
 <title>LUMI — операционная система для вашего дома</title>
 <style>
 /* Manrope (brand typeface) — embedded woff2, self-contained (no external fetch) */
@@ -654,6 +659,12 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .tbadges{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
 .tbadge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);white-space:nowrap}
 .tbadge.g{background:var(--primary-050);color:var(--primary-600);border-color:transparent}
+.install-banner{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:200;display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:12px 14px;box-shadow:0 18px 44px rgba(6,42,26,.22);width:420px;max-width:calc(100vw - 28px);animation:ibUp .4s cubic-bezier(.2,1,.3,1)}
+@media(max-width:860px){.install-banner{bottom:calc(76px + env(safe-area-inset-bottom))}}
+.install-banner .ib-ic .logo-badge svg{width:42px;height:42px;display:block}
+.ib-tx{flex:1;min-width:0}.ib-tx b{font-size:14.5px;display:block;letter-spacing:-.01em}.ib-tx span{font-size:12.5px;color:var(--ink-3)}
+.ib-x{background:none;border:0;color:var(--ink-3);font-size:15px;cursor:pointer;padding:4px;line-height:1}
+@keyframes ibUp{from{opacity:0;transform:translate(-50%,16px)}to{opacity:1;transform:translate(-50%,0)}}
 .admin-doc{width:100%;max-height:360px;object-fit:contain;border-radius:12px;border:1px solid var(--line);background:var(--surface-2)}
 /* booking date & time picker */
 .sched{margin-bottom:16px}
@@ -1075,6 +1086,10 @@ Object.assign(TR.uk,{
 Object.assign(TR.pl,{"✓ Проверен":"✓ Zweryfikowany","⭐ Топ-рейтинг":"⭐ Najwyższa ocena","🔥 100+ заказов":"🔥 100+ zleceń","💪 Опытный":"💪 Doświadczony","🎓 Большой опыт":"🎓 Duże doświadczenie","🚗 Свой транспорт":"🚗 Własny transport"});
 Object.assign(TR.en,{"✓ Проверен":"✓ Verified","⭐ Топ-рейтинг":"⭐ Top rated","🔥 100+ заказов":"🔥 100+ jobs","💪 Опытный":"💪 Experienced","🎓 Большой опыт":"🎓 Highly experienced","🚗 Свой транспорт":"🚗 Own transport"});
 Object.assign(TR.uk,{"✓ Проверен":"✓ Перевірений","⭐ Топ-рейтинг":"⭐ Топ-рейтинг","🔥 100+ заказов":"🔥 100+ замовлень","💪 Опытный":"💪 Досвідчений","🎓 Большой опыт":"🎓 Великий досвід","🚗 Свой транспорт":"🚗 Власний транспорт"});
+/* PWA install banner */
+Object.assign(TR.pl,{"Установить LUMI":"Zainstaluj LUMI","Быстрый доступ с домашнего экрана":"Szybki dostęp z ekranu głównego","Установить":"Zainstaluj"});
+Object.assign(TR.en,{"Установить LUMI":"Install LUMI","Быстрый доступ с домашнего экрана":"Quick access from your home screen","Установить":"Install"});
+Object.assign(TR.uk,{"Установить LUMI":"Встановити LUMI","Быстрый доступ с домашнего экрана":"Швидкий доступ з головного екрана","Установить":"Встановити"});
 /* admin users panel */
 Object.assign(TR.pl,{"Пользователи":"Użytkownicy","Все":"Wszyscy","Компании":"Firmy","Админы":"Administratorzy","Регистрация":"Rejestracja","Открыть профиль":"Otwórz profil","● Онлайн":"● Online"});
 Object.assign(TR.en,{"Пользователи":"Users","Все":"All","Компании":"Companies","Админы":"Admins","Регистрация":"Registered","Открыть профиль":"Open profile","● Онлайн":"● Online"});
@@ -4224,6 +4239,24 @@ async function boot(){
   if(_authErr){ toast(t(_authErr==='email'?'Не удалось получить подтверждённый email от провайдера.':_authErr==='suspended'?'Этот аккаунт заблокирован.':'Не удалось выполнить вход через провайдера. Попробуйте ещё раз.'),true); }
 }
 boot();
+
+/* ---------- PWA: service worker + install prompt ---------- */
+if('serviceWorker' in navigator){ addEventListener('load',()=>{ navigator.serviceWorker.register('/sw.js').catch(()=>{}); }); }
+let _installPrompt=null;
+addEventListener('beforeinstallprompt',(e)=>{ e.preventDefault(); _installPrompt=e; showInstallBanner(); });
+addEventListener('appinstalled',()=>{ const b=$('#installBanner'); if(b)b.remove(); localStorage.setItem('lumi_install_dismissed','1'); });
+function showInstallBanner(){
+  if(localStorage.getItem('lumi_install_dismissed')||$('#installBanner'))return;
+  const bn=el(`<div id="installBanner" class="install-banner">
+    <div class="ib-ic">${logoBadge('pwa')}</div>
+    <div class="ib-tx"><b>Установить LUMI</b><span>Быстрый доступ с домашнего экрана</span></div>
+    <button class="btn sm" id="ibInstall">Установить</button>
+    <button class="ib-x" id="ibClose" aria-label="Закрыть">✕</button>
+  </div>`);
+  document.body.appendChild(bn); if(window.i18nApply)i18nApply(bn);
+  $('#ibInstall',bn).onclick=async()=>{ bn.remove(); if(_installPrompt){ _installPrompt.prompt(); try{await _installPrompt.userChoice;}catch{} _installPrompt=null; } };
+  $('#ibClose',bn).onclick=()=>{ bn.remove(); localStorage.setItem('lumi_install_dismissed','1'); };
+}
 </script>
 </body>
 </html>
