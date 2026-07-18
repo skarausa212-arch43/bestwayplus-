@@ -24,6 +24,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { createAIProvider, envelope: aiEnvelope } = require('./ai/ai-provider');
+const vision = require('./ai/vision');   // optional OCR for calendar screenshots (§5/§22)
 const dispatch = require('./dispatch/ranking');
 const pricing = require('./pricing/pricing-engine');
 const { createLedger } = require('./pricing/ledger');
@@ -1444,7 +1445,16 @@ function createTurnoverBooking(p, turnover, assign) {
 route('POST', '/api/properties/:id/calendar-import', async (req, res, params) => {
   const ctx = requireStr(req, res, params.id); if (!ctx) return;
   const b = await readBody(req);
-  const parsed = str.parseCalendarText(b.text || '', { year: new Date().getFullYear() });
+  const year = new Date().getFullYear();
+  const imgs = Array.isArray(b.images) ? b.images : [];
+  // Real OCR when a vision provider is configured; otherwise the deterministic
+  // text parser. Vision never throws — a null result falls back to text.
+  let parsed = null, source = 'text';
+  if (imgs.length && vision.isEnabled()) {
+    const v = await vision.extractCalendar(imgs, { year });
+    if (v && v.reservations.length) { parsed = v; source = 'vision'; }
+  }
+  if (!parsed) parsed = str.parseCalendarText(b.text || '', { year });
   const s = ctx.p.strSettings;
   const existing = Object.values(db.reservations).filter((r) => r.propertyId === ctx.p.id).map(reservationView);
   const items = parsed.reservations.map((r) => {
@@ -1453,7 +1463,7 @@ route('POST', '/api/properties/:id/calendar-import', async (req, res, params) =>
     const dup = str.findDuplicate(existing, { checkinAt, checkoutAt, externalBookingId: r.externalBookingId || null });
     return { ...r, checkinAt, checkoutAt, duplicateOf: dup ? dup.id : null };
   });
-  send(res, 200, { parsed: { reservations: items, confidence: parsed.confidence, imagesReceived: Array.isArray(b.images) ? b.images.length : 0 } });
+  send(res, 200, { parsed: { reservations: items, confidence: parsed.confidence, source, imagesReceived: imgs.length } });
 });
 
 // Confirm the reviewed import (spec §5/§21). Dedups, creates reservations, and

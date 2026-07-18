@@ -51,4 +51,27 @@ const pa = ai.analyzeImages(['data:image/png;base64,AAAA']);
 hasEnvelope(pa, 'photo_analysis');
 assert.strictEqual(pa.meta.fallback, true, 'photo heuristic flags fallback');
 
-console.log('✓ AI provider: envelopes, confidence/fallback, recommendations, and no-fabrication history all pass');
+// ── Vision calendar extractor (parse only; the network call is not exercised) ──
+const vision = require('./vision');
+{
+  // Fenced JSON with prose around it → clean reservation shape.
+  const raw = 'Here you go:\n```json\n[{"checkin":"2026-08-12","checkout":"2026-08-15","source":"Airbnb","guest":"Anna","confidence":0.94},'
+    + '{"checkin":"2026-08-15","checkout":"2026-08-19","source":"Booking.com"}]\n```';
+  const r = vision.parseVisionJSON(raw, { year: 2026 });
+  assert.strictEqual(r.reservations.length, 2, 'parses two reservations');
+  assert.strictEqual(r.reservations[0].source, 'airbnb', 'normalizes source');
+  assert.strictEqual(r.reservations[0].nights, 3, 'computes nights');
+  assert.strictEqual(r.reservations[0].guestName, 'Anna');
+  assert.strictEqual(r.reservations[0].sourceDetected, true);
+  assert.strictEqual(r.reservations[1].source, 'booking');
+  assert.ok(r.confidence > 0 && r.confidence <= 1, 'aggregate confidence in range');
+  // Garbage / no array → empty, never throws.
+  assert.strictEqual(vision.parseVisionJSON('sorry, no calendar found', {}).reservations.length, 0);
+  assert.strictEqual(vision.parseVisionJSON('', {}).reservations.length, 0);
+  // Invalid ranges are dropped.
+  assert.strictEqual(vision.parseVisionJSON('[{"checkin":"2026-08-15","checkout":"2026-08-12"}]', {}).reservations.length, 0);
+  // Disabled by default (no API key) — safe no-op.
+  assert.strictEqual(vision.isEnabled(), false, 'vision off without an API key');
+}
+
+console.log('✓ AI provider: envelopes, confidence/fallback, recommendations, vision parsing, and no-fabrication history all pass');
