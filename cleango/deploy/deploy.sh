@@ -6,11 +6,16 @@
 # at this server first). Idempotent — safe to re-run.
 set -euo pipefail
 
-DOMAIN="${LUMI_DOMAIN:-lumi.bestwayplus.pl}"
+SRC="$(cd "$(dirname "$0")" && pwd)"
+# Domain(s): env wins, else deploy/instance.env, else the project default.
+# Comma-separated, no spaces (e.g. lumi24.pl,lumi.bestwayplus.pl).
+_env_domain="$(sed -n 's/^[[:space:]]*LUMI_DOMAIN=//p' "$SRC/instance.env" 2>/dev/null | tail -1)"
+DOMAIN="${LUMI_DOMAIN:-${_env_domain:-lumi24.pl}}"
+CADDY_DOMAINS="${DOMAIN//,/, }"      # Caddy site address list: "a, b"
+NGINX_DOMAINS="${DOMAIN//,/ }"       # nginx server_name list: "a b"
 PORT="${LUMI_PORT:-4000}"
 APP_DIR=/opt/lumi
 APP_USER=lumi
-SRC="$(cd "$(dirname "$0")" && pwd)"
 # App source: bundle layout ($SRC/app) or repo layout (deploy/ inside cleango/, app is ..)
 if [ -f "$SRC/app/server.js" ]; then APP_SRC="$SRC/app";
 elif [ -f "$SRC/../server.js" ]; then APP_SRC="$(cd "$SRC/.." && pwd)";
@@ -92,7 +97,7 @@ if command -v caddy >/dev/null 2>&1; then
   mkdir -p /etc/caddy
   cat >/etc/caddy/Caddyfile <<CADDY
 # LUMI — managed by deploy.sh
-$DOMAIN {
+$CADDY_DOMAINS {
 	reverse_proxy 127.0.0.1:$PORT
 }
 ${SRV_IP:+http://$SRV_IP} {
@@ -108,7 +113,7 @@ else
 server {
   listen 80 default_server;
   listen [::]:80 default_server;
-  server_name $DOMAIN _;
+  server_name $NGINX_DOMAINS _;
   client_max_body_size 12m;
   location / {
     proxy_pass http://127.0.0.1:$PORT;

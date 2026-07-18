@@ -38,6 +38,42 @@ apply_instance_env() {
 }
 apply_instance_env
 
+# Keep the reverse-proxy domains in sync with deploy/instance.env (LUMI_DOMAIN,
+# comma-separated) every run — so pointing a new domain at this box is just an
+# instance.env edit + push, no re-running the installer. Caddy then issues a
+# Let's Encrypt cert per domain automatically once its DNS resolves here.
+reconcile_caddy() {
+  command -v caddy >/dev/null 2>&1 || return 0
+  local src="$APP_DIR/deploy/instance.env" cf=/etc/caddy/Caddyfile
+  local domains port ip list tmpf
+  domains="$(sed -n 's/^[[:space:]]*LUMI_DOMAIN=//p' "$src" 2>/dev/null | tail -1)"
+  [ -n "$domains" ] || return 0
+  port="$(sed -n 's/^[[:space:]]*LUMI_PORT=//p' "$src" 2>/dev/null | tail -1)"; port="${port:-4000}"
+  ip="$(curl -fsS --max-time 6 https://api.ipify.org 2>/dev/null || true)"
+  list="${domains//,/, }"                       # Caddy wants "a, b" between hostnames
+  tmpf="$(mktemp)"
+  {
+    echo "# LUMI — managed by auto-update.sh (source: deploy/instance.env LUMI_DOMAIN)"
+    echo "$list {"
+    echo "	reverse_proxy 127.0.0.1:$port"
+    echo "}"
+    if [ -n "$ip" ]; then
+      echo "http://$ip {"
+      echo "	reverse_proxy 127.0.0.1:$port"
+      echo "}"
+    fi
+  } > "$tmpf"
+  if ! cmp -s "$tmpf" "$cf" 2>/dev/null; then
+    mkdir -p /etc/caddy
+    mv "$tmpf" "$cf"
+    systemctl reload caddy 2>/dev/null || systemctl restart caddy || true
+    echo "update: reconciled Caddy domains -> $list"
+  else
+    rm -f "$tmpf"
+  fi
+}
+reconcile_caddy
+
 cur="$(cat "$STATE" 2>/dev/null || echo none)"
 [ "$sha" = "$cur" ] && exit 0
 

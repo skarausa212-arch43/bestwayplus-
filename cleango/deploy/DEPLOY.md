@@ -1,7 +1,7 @@
-# Deploying LUMI to your VPS (lumi.bestwayplus.pl)
+# Deploying LUMI to your VPS (lumi24.pl)
 
-Target: Ubuntu 22.04/24.04 VPS, served behind nginx with Let's Encrypt HTTPS.
-The app is zero-dependency Node.js, so the install is tiny and fast.
+Target: Ubuntu 22.04/24.04 VPS, served behind Caddy (automatic HTTPS) or nginx +
+Let's Encrypt. The app is zero-dependency Node.js, so the install is tiny and fast.
 
 ## 0. Security first
 Your root password was shared in a screenshot — **change it after deploying**
@@ -63,6 +63,39 @@ systemctl list-timers lumi-update.timer
 
 Turn it off any time: `sudo systemctl disable --now lumi-update.timer`.
 Force an update now: `sudo systemctl start lumi-update.service`.
+
+## Change the domain (or add one)
+The served domain(s) live in **`deploy/instance.env`** as `LUMI_DOMAIN`
+(comma-separated, no spaces). On a Caddy install this is fully hands-off:
+
+1. Point the new domain's **A-record** at the server IP (same IP as the current
+   domain is fine — the app serves several domains at once).
+2. Edit `LUMI_DOMAIN` in `deploy/instance.env` (keep the old domain in the list
+   during the switch so nothing breaks), and set `LUMI_APP_URL` to the primary,
+   then push.
+
+```
+LUMI_DOMAIN=lumi24.pl,lumi.bestwayplus.pl
+LUMI_APP_URL=https://lumi24.pl
+```
+
+`auto-update.sh` reconciles the Caddyfile to exactly `LUMI_DOMAIN` on every tick
+and reloads Caddy; Caddy then issues a Let's Encrypt certificate for each domain
+automatically once its DNS resolves here. It lands within ~10 min (two ticks), or
+force it immediately on the server:
+
+```bash
+sudo systemctl start lumi-update.service    # pulls the new config + script
+sudo bash /opt/lumi/deploy/auto-update.sh   # runs it now → Caddy reload + cert
+journalctl -u caddy -f                       # watch the cert get issued
+```
+
+On an **nginx** install instead, after editing `LUMI_DOMAIN` run
+`sudo bash /opt/lumi/deploy/tls.sh` once to obtain the cert for the new domain(s).
+
+> If Google/Apple social sign-in is enabled, add the new domain's callback URLs
+> in their consoles too (see *Social sign-in* below) — OAuth redirects use
+> `LUMI_APP_URL`.
 
 > Security note: with auto-update on, whoever can push to that branch controls
 > the server. Keep the repo/branch protected.
