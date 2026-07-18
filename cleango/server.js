@@ -1104,7 +1104,25 @@ function propertyView(p) {
   });
   const owner = db.users[p.ownerId];
   const score = computeLumiScore(propertyTasks(p));
-  return { ...p, members, ownerName: owner ? owner.name : '', lumiScore: score.overall, lumiGrade: score.grade };
+  const base = { ...p, members, ownerName: owner ? owner.name : '', lumiScore: score.overall, lumiGrade: score.grade };
+  if (p.type === 'short_term_rental') base.strSummary = strSummary(p);
+  return base;
+}
+// Compact STR status for the properties list (spec §17) — cheap, no bookings join.
+function strSummary(p) {
+  const reservations = Object.values(db.reservations).filter((r) => r.propertyId === p.id && r.status !== 'cancelled');
+  const turnovers = str.generateTurnovers(reservations, p.strSettings, p);
+  const t = now();
+  const active = reservations.find((r) => r.checkinAt <= t && r.checkoutAt > t);
+  const nextCheckout = reservations.filter((r) => r.checkoutAt > t).sort((a, b) => a.checkoutAt - b.checkoutAt)[0] || null;
+  const nextCheckin = reservations.filter((r) => r.checkinAt > t).sort((a, b) => a.checkinAt - b.checkinAt)[0] || null;
+  return {
+    state: active ? 'occupied' : 'vacant',
+    reservations: reservations.length,
+    conflicts: turnovers.filter((x) => x.conflict).length,
+    nextCheckoutAt: nextCheckout ? nextCheckout.checkoutAt : null,
+    nextCheckinAt: nextCheckin ? nextCheckin.checkinAt : null,
+  };
 }
 route('GET', '/api/properties', async (req, res) => {
   const user = authUser(req);
