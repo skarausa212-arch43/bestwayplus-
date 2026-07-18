@@ -1343,8 +1343,10 @@ const money = (n)=>`${Math.round(n)} zł`;
 function toast(msg,err){const t=$('#toast');t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.className='toast',2600);}
 function plural(n,one,few,many){const m=n%10,h=n%100;return h>=11&&h<=14?many:m===1?one:m>=2&&m<=4?few:many;}
 function timeAgo(ts){const s=(Date.now()-ts)/1000;if(s<60)return'только что';if(s<3600){const m=Math.floor(s/60);return m+' '+plural(m,'мин','мин','мин')+' назад';}if(s<86400){const h=Math.floor(s/3600);return h+' '+plural(h,'час','часа','часов')+' назад';}const d=Math.floor(s/86400);return d+' '+plural(d,'день','дня','дней')+' назад';}
-function fmtTime(ts){return new Date(ts).toLocaleString('ru-RU',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'});}
-function fmtDate(ts){return new Date(ts).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});}
+// Format dates/times in the active UI language (falls back to Polish).
+function curLocale(){return ({pl:'pl-PL',en:'en-GB',ru:'ru-RU',uk:'uk-UA'})[state.lang]||'pl-PL';}
+function fmtTime(ts){return new Date(ts).toLocaleString(curLocale(),{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'});}
+function fmtDate(ts){return new Date(ts).toLocaleDateString(curLocale(),{day:'numeric',month:'long',year:'numeric'});}
 function roomsWord(n){return n+' '+plural(n,'комната','комнаты','комнат');}
 function bathsWord(n){return n+' '+plural(n,'санузел','санузла','санузлов');}
 
@@ -1818,7 +1820,7 @@ async function openNotifications(){
     if(!list.length){box.innerHTML=`<div class="row" style="justify-content:space-between;margin-bottom:8px"><h3>Уведомления</h3></div>${emptyState('Пока пусто','Здесь появятся события по вашим заказам.').outerHTML}`;return;}
     // group by day
     const groups={};
-    list.forEach(n=>{const d=new Date(n.createdAt);const key=d.toLocaleDateString('ru-RU',{day:'numeric',month:'long'});(groups[key]=groups[key]||[]).push(n);});
+    list.forEach(n=>{const d=new Date(n.createdAt);const key=d.toLocaleDateString(curLocale(),{day:'numeric',month:'long'});(groups[key]=groups[key]||[]).push(n);});
     box.innerHTML=`<div class="row" style="justify-content:space-between;margin-bottom:14px"><h3>Уведомления</h3><button class="btn ghost sm" id="readAll">Прочитать все</button></div>
       ${Object.entries(groups).map(([day,ns])=>`<div class="tiny muted" style="font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin:10px 0 8px">${day}</div>
         ${ns.map(n=>`<div class="notif ${n.read?'':'unread'}" data-link="${n.deepLink}" data-id="${n.id}">
@@ -2162,7 +2164,7 @@ function heroAurora(cv){
 }
 function startHeroClock(){
   const set=()=>{const e=document.getElementById('heroClock');if(!e)return false;
-    e.textContent=new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});return true;};
+    e.textContent=new Date().toLocaleTimeString(curLocale(),{hour:'2-digit',minute:'2-digit'});return true;};
   if(!set())return;
   clearInterval(window.__heroClk);
   window.__heroClk=setInterval(()=>{ if(!set())clearInterval(window.__heroClk); },30000);
@@ -2888,7 +2890,7 @@ function renderSchedule(d){
   </div>`;
 }
 function fmtSchedule(d){ const iso=schedISO(d); if(!iso)return ''; const dt=new Date(iso);
-  return dt.toLocaleDateString('ru-RU',{day:'numeric',month:'long'})+', '+d.time; }
+  return dt.toLocaleDateString(curLocale(),{day:'numeric',month:'long'})+', '+d.time; }
 function wireSchedule(scope,d){
   const sd=$('#schedDate',scope); if(sd)sd.onchange=()=>{ d.date=sd.value; d.scheduledFor=schedISO(d);
     const z=$('#schedZone',scope); if(z){ z.innerHTML=renderSchedule(d); wireSchedule(scope,d); } };
