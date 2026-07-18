@@ -1090,7 +1090,7 @@ route('GET', '/api/properties', async (req, res) => {
   if (!user) return send(res, 401, { error: 'Not authenticated.' });
   const list = Object.values(db.properties).filter((p) => canAccessProperty(user, p));
   list.sort((a, b) => a.createdAt - b.createdAt);
-  send(res, 200, { properties: list.map((p) => ({ ...propertyView(p), myRole: memberRole(user, p) })) });
+  send(res, 200, { properties: list.map((p) => ({ ...propertyView(p), myRole: memberRole(user, p), lumiScore: computeLumiScore(propertyTasks(p)).overall })) });
 });
 route('POST', '/api/properties', async (req, res) => {
   const user = authUser(req);
