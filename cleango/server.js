@@ -2639,18 +2639,67 @@ function seed() {
   };
   mk('admin', 'LUMI Admin', 'admin@cleango.app');
   const annaId = mk('customer', 'Anna Nowak', 'anna@example.com', { subscription: 'plus', premiumSince: now() });
-  mk('customer', 'Marek Wiśniewski', 'marek@example.com', { city: 'Kraków' });
+  const marekId = mk('customer', 'Marek Wiśniewski', 'marek@example.com', { city: 'Kraków' });
   const piotrId = mk('cleaner', 'Piotr Kowalski', 'piotr@example.com', { jobsDone: 128, rating: 4.9, experienceYears: 5, bio: 'Аккуратная уборка квартир и офисов. Свои эко-средства, пунктуальность.' });
   const zofiaId = mk('cleaner', 'Zofia Lewandowska', 'zofia@example.com', { jobsDone: 64, rating: 4.8, experienceYears: 3, bio: 'Люблю, когда дом сияет. Генеральная уборка и окна — моя специализация.' });
-  mk('cleaner', 'Marta Nowak', 'marta@example.com', { jobsDone: 210, rating: 4.9, experienceYears: 7, bio: 'Более 200 заказов. Уборка после ремонта и переезда, работа с деликатными поверхностями.' });
-  mk('cleaner', 'Kamil Zieliński', 'kamil@example.com', { jobsDone: 39, rating: 4.7, experienceYears: 2, bio: 'Быстро и честно. Регулярная уборка и мытьё окон.' });
+  const martaId = mk('cleaner', 'Marta Nowak', 'marta@example.com', { jobsDone: 210, rating: 4.9, experienceYears: 7, bio: 'Более 200 заказов. Уборка после ремонта и переезда, работа с деликатными поверхностями.' });
+  const kamilId = mk('cleaner', 'Kamil Zieliński', 'kamil@example.com', { jobsDone: 39, rating: 4.7, experienceYears: 2, bio: 'Быстро и честно. Регулярная уборка и мытьё окон.' });
   // A demo cleaning company employing two of the cleaners (21_COMPANY_DASHBOARD).
   const coId = mk('company', 'SparkClean Sp. z o.o.', 'company@cleango.app', { staff: [piotrId, zofiaId] });
   db.users[piotrId].companyId = coId; db.users[zofiaId].companyId = coId;
   // A couple of demo properties (aged so the Smart Home dashboard has due tasks).
-  createProperty(db.users[annaId], { label: 'Apartment · Mokotów', address: 'ul. Puławska 12', city: 'Warsaw', type: 'apartment', rooms: 3, baths: 2, area: 74 }, now() - 40 * DAY);
+  const annaHome = createProperty(db.users[annaId], { label: 'Apartment · Mokotów', address: 'ul. Puławska 12', city: 'Warsaw', type: 'apartment', rooms: 3, baths: 2, area: 74 }, now() - 40 * DAY);
   createProperty(db.users[annaId], { label: 'Airbnb · Old Town', address: 'ul. Freta 8', city: 'Warsaw', type: 'apartment', rooms: 2, baths: 1, area: 48 }, now() - 100 * DAY);
+  seedBookings({ anna: annaId, marek: marekId, cleaners: [piotrId, zofiaId, martaId, kamilId], prop: annaHome });
   persist.users();
+}
+// Demo booking history so the admin dashboard, analytics charts and funnel are
+// alive on first run (a spread of completed jobs over 14 days + a live pipeline).
+function seedBookings({ anna, marek, cleaners, prop }) {
+  const svcs = [['standard', 'Обычная'], ['deep', 'Генеральная'], ['moveout', 'После ремонта']];
+  const cities = ['Warsaw', 'Kraków', 'Wrocław', 'Gdańsk'];
+  const mkBooking = (over) => {
+    const svc = over.svc, rooms = over.rooms, baths = over.baths, city = over.city;
+    const est = estimatePrice({ service: svc[0], rooms, baths, city });
+    const price = est.total, commission = Math.round(price * COMMISSION_RATE);
+    const id = uid('b_');
+    db.bookings[id] = {
+      id, customerId: over.cust, propertyId: over.cust === anna ? prop.id : null, cleanerId: over.cleaner || null,
+      status: over.status, service: svc[0], serviceLabel: svc[1],
+      address: over.cust === anna ? prop.address : 'ul. Demo 1', city, rooms, baths, area: 0,
+      windows: null, windowSide: null, windowAccess: null, floor: null,
+      extras: [], notes: '', price, payout: price - commission, commission, urgency: 'normal',
+      createdAt: over.created, updatedAt: over.updated || over.created,
+      photosBefore: [], photosAfter: [], paid: over.status === 'completed', reviewed: over.status === 'completed',
+      timeline: over.timeline,
+    };
+    if (over.cleaner && over.status === 'completed') { const c = db.users[over.cleaner]; if (c) c.wallet = (c.wallet || 0) + (price - commission); }
+  };
+  // 18 completed jobs spread across the last 14 days (day, hour)
+  const plan = [[13, 10], [13, 15], [12, 11], [11, 9], [11, 16], [10, 12], [9, 14], [8, 10], [8, 18], [7, 13], [6, 11], [5, 15], [4, 9], [3, 12], [2, 16], [1, 10], [1, 14], [0, 11]];
+  plan.forEach((p, i) => {
+    const created = now() - p[0] * DAY - (24 - p[1]) * 3600000;
+    const completed = created + 2 * 3600000;
+    mkBooking({
+      cust: i % 3 === 0 ? marek : anna, cleaner: cleaners[i % cleaners.length], svc: svcs[i % 3],
+      rooms: 2 + (i % 3), baths: 1 + (i % 2), city: cities[i % cities.length],
+      status: 'completed', created, updated: completed,
+      timeline: [
+        { status: 'searching', at: created },
+        { status: 'accepted', at: created + 8 * 60000, by: cleaners[i % cleaners.length] },
+        { status: 'on_the_way', at: created + 20 * 60000 },
+        { status: 'in_progress', at: created + 45 * 60000 },
+        { status: 'completed', at: completed },
+      ],
+    });
+  });
+  // Live pipeline: drop-off so the funnel isn't flat (1 accepted, 2 searching, 3 cancelled)
+  const nowT = now();
+  mkBooking({ cust: anna, cleaner: cleaners[0], svc: svcs[1], rooms: 3, baths: 2, city: 'Warsaw', status: 'accepted', created: nowT - 40 * 60000, updated: nowT - 30 * 60000,
+    timeline: [{ status: 'searching', at: nowT - 40 * 60000 }, { status: 'accepted', at: nowT - 30 * 60000, by: cleaners[0] }] });
+  for (let i = 0; i < 2; i++) mkBooking({ cust: i ? marek : anna, svc: svcs[i % 3], rooms: 2, baths: 1, city: cities[i], status: 'searching', created: nowT - (5 + i) * 60000, timeline: [{ status: 'searching', at: nowT - (5 + i) * 60000 }] });
+  for (let i = 0; i < 3; i++) { const c = nowT - (2 + i) * DAY; mkBooking({ cust: i % 2 ? marek : anna, svc: svcs[i % 3], rooms: 2, baths: 1, city: cities[i % 4], status: 'cancelled', created: c, updated: c + 3600000, timeline: [{ status: 'searching', at: c }, { status: 'cancelled', at: c + 3600000 }] }); }
+  persist.bookings();
   console.log('Seeded demo accounts (password: cleango123):');
   console.log('  admin@cleango.app  •  anna@example.com (LUMI+)  •  marek@example.com  •  piotr@example.com  •  company@cleango.app');
 }
