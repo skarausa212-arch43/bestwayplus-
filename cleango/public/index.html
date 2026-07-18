@@ -2009,7 +2009,7 @@ async function loadProperties(){
 
 function render(){
   if(!state.user){ renderAuth(); return; }
-  const map={home:viewHome,properties:viewProperties,smart:viewSmart,passport:viewPassport,premium:viewPremium,book:viewBook,bookings:viewBookings,wallet:viewWallet,jobs:viewJobs,admin:viewAdmin,messages:viewMessages,earnings:viewEarnings,audit:viewAudit,analytics:viewAnalytics,company:viewCompany,board:viewBoard,staff:viewStaff,finance:viewFinance};
+  const map={home:viewHome,properties:viewProperties,smart:viewSmart,shortstay:viewShortstay,passport:viewPassport,premium:viewPremium,book:viewBook,bookings:viewBookings,wallet:viewWallet,jobs:viewJobs,admin:viewAdmin,messages:viewMessages,earnings:viewEarnings,audit:viewAudit,analytics:viewAnalytics,company:viewCompany,board:viewBoard,staff:viewStaff,finance:viewFinance};
   const fn=map[state.view]||viewHome;
   fn();
 }
@@ -2180,7 +2180,7 @@ async function loadHomeHealth(pid){
           <div class="hh-track"><div class="hh-fill" style="width:0" data-w="${Math.round(d.pct*100)}" data-c="${barColor(d.pct)}"></div></div>
         </div>`).join('')}
         <button class="btn ghost block sm" id="hhOpen" style="margin-top:12px">${I.smart} Открыть умный дом</button>`;
-      const openBtn=$('#hhOpen',hb); if(openBtn)openBtn.onclick=()=>{state.activeProperty=pid;state.view='smart';render();};
+      const openBtn=$('#hhOpen',hb); if(openBtn)openBtn.onclick=()=>openPropView(pid);
       requestAnimationFrame(()=>hb.querySelectorAll('.hh-fill').forEach(f=>{f.style.background=f.dataset.c;f.style.width=f.dataset.w+'%';}));
     }
     // Напоминания — задачи, которым скоро пора (или просрочены)
@@ -2263,6 +2263,12 @@ function startHeroClock(){
   clearInterval(window.__heroClk);
   window.__heroClk=setInterval(()=>{ if(!set())clearInterval(window.__heroClk); },30000);
 }
+// Open a property in the right view: short-term rentals get the guests/cleaning
+// dashboard, everything else keeps the smart-home view.
+function openPropView(pid){
+  const p=(state.properties||[]).find(x=>x.id===pid);
+  state.activeProperty=pid; state.view=(p&&p.type==='short_term_rental')?'shortstay':'smart'; render();
+}
 function propertyCard(p){
   const row=el(`<div class="card bk" style="cursor:pointer">
     <div class="thumb">${p.type==='office'?I.office:I.building}</div>
@@ -2272,7 +2278,7 @@ function propertyCard(p){
     </div>
     ${I.arrow}
   </div>`);
-  row.onclick=()=>{state.activeProperty=p.id;state.view='smart';render();};
+  row.onclick=()=>openPropView(p.id);
   return row;
 }
 async function runConcierge(conc){
@@ -2344,7 +2350,7 @@ async function viewProperties(){
     list.appendChild(card);
   });
   stagger(list);
-  list.querySelectorAll('[data-smart]').forEach(b=>b.onclick=()=>{state.activeProperty=b.dataset.smart;state.view='smart';render();});
+  list.querySelectorAll('[data-smart]').forEach(b=>b.onclick=()=>openPropView(b.dataset.smart));
   list.querySelectorAll('[data-book]').forEach(b=>b.onclick=()=>startBooking('standard',b.dataset.book));
   list.querySelectorAll('[data-invite]').forEach(b=>b.onclick=()=>openInvite(b.dataset.invite));
   list.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
@@ -2748,6 +2754,216 @@ function printHomeReport(P){
   </div>`;
   if(window.i18nApply)i18nApply(box);
   setTimeout(()=>window.print(),60);
+}
+
+/* ---------- SHORT-TERM RENTAL: guests & turnovers ---------- */
+const SS_STATE={occupied:['🟢','Сейчас проживает гость','green'],vacant:['⚪','Свободно','grey'],cleaning:['🟡','Идёт уборка','amber'],ready:['🟢','Готово к заселению','green']};
+const SRC_LABEL={airbnb:'Airbnb',booking:'Booking.com',vrbo:'Vrbo',direct:'Прямое бронирование',manual:'Вручную',other:'Другое'};
+const SRC_EMOJI={airbnb:'🅰️',booking:'🅱️',vrbo:'🌴',direct:'🤝',manual:'✍️',other:'🗓'};
+function fmtHM(ts){return new Date(ts).toLocaleTimeString(curLocale(),{hour:'2-digit',minute:'2-digit'});}
+function isoDate(ts){const d=new Date(ts);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function hoursTxt(mins){const h=mins/60;return (Math.round(h*10)/10)+' ч';}
+
+async function viewShortstay(){
+  const pid=state.activeProperty;
+  const c=el(`<div style="max-width:820px;margin:0 auto"></div>`);
+  const back=el(`<button class="btn ghost sm" style="margin-bottom:16px">← Объекты</button>`);
+  back.onclick=()=>{state.view='properties';render();};
+  c.appendChild(back);
+  c.appendChild(el(`<div id="ssBody"><div class="card pad"><div class="sk" style="height:220px"></div></div></div>`));
+  shell(c);
+  await ssLoad(pid);
+}
+async function ssLoad(pid){
+  const body=$('#ssBody'); if(!body)return;
+  try{
+    const {str:S,property:p}=await api('/api/properties/'+pid+'/str');
+    const st=S.status; const [emo,label]=SS_STATE[st.state]||SS_STATE.vacant;
+    const ev=(lbl,r,time)=>`<div class="stat"><b style="color:#fff;font-size:15px">${r?fmtDate(time)+' · '+fmtHM(time):'—'}</b><span style="opacity:.8;font-size:12px">${lbl}</span></div>`;
+    body.innerHTML=`
+      <div class="hero" style="padding:24px;margin-bottom:16px;background:linear-gradient(140deg,#12302E,#0E3A44);box-shadow:0 20px 50px rgba(11,18,32,.3)">
+        <div class="badge" style="background:rgba(255,255,255,.16);color:#fff;margin-bottom:10px">🛎 ${esc(p.label)}</div>
+        <h1 style="font-size:22px">${emo} ${label}</h1>
+        <div class="row" style="gap:22px;margin-top:14px;flex-wrap:wrap">
+          ${ev('Следующий выезд',st.nextCheckout,st.nextCheckout&&st.nextCheckout.checkoutAt)}
+          ${ev('Следующая уборка',st.nextTurnover,st.nextTurnover&&st.nextTurnover.suggestedStart)}
+          ${ev('Следующий заезд',st.nextCheckin,st.nextCheckin&&st.nextCheckin.checkinAt)}
+        </div>
+      </div>
+      <div class="seg" style="margin-bottom:16px"><button data-sstab="guests" class="active">Гости и уборки</button><button data-sstab="smart">Умный дом</button></div>
+      <div class="row" style="gap:10px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="btn" id="ssImport" style="flex:1;min-width:220px">📸 Загрузить календарь с помощью AI</button>
+        <button class="btn ghost" id="ssAdd">+ Бронирование</button>
+        <button class="iconbtn" id="ssSettings" title="Настройки">⚙️</button>
+      </div>
+      ${st.conflicts?`<div class="card pad" style="margin-bottom:16px;border:1.5px solid var(--danger)"><div class="row" style="gap:10px"><span style="font-size:22px">⚠️</span><div><b>Конфликты по времени: ${st.conflicts}</b><div class="tiny muted">Недостаточно времени для стандартной уборки до приезда следующего гостя.</div></div></div></div>`:''}
+      <div class="section-title">Ближайшие уборки</div>
+      <div id="ssTurnovers"></div>
+      <div class="section-title" style="margin-top:20px">Бронирования <span class="badge grey">${S.reservations.length}</span></div>
+      <div id="ssRes"></div>`;
+    const tz=$('#ssTurnovers',body);
+    const now2=Date.now(); const futureT=S.turnovers.filter(t=>t.suggestedEnd>=now2-86400000);
+    if(!futureT.length) tz.appendChild(emptyState('Уборок пока нет','Добавьте бронирования — LUMI создаст уборки между гостями.'));
+    else futureT.forEach(t=>tz.appendChild(ssTurnoverCard(pid,t)));
+    const rz=$('#ssRes',body);
+    const upRes=S.reservations.filter(r=>r.checkoutAt>=now2-86400000);
+    if(!upRes.length) rz.appendChild(emptyState('Нет бронирований','Загрузите календарь Airbnb/Booking или добавьте вручную.'));
+    else upRes.forEach(r=>rz.appendChild(ssResCard(pid,r)));
+    $('#ssImport',body).onclick=()=>openCalendarImport(pid);
+    $('#ssAdd',body).onclick=()=>openReservationForm(pid,null);
+    $('#ssSettings',body).onclick=()=>openStrSettings(pid,S);
+    body.querySelectorAll('[data-sstab]').forEach(b=>b.onclick=()=>{ if(b.dataset.sstab==='smart'){state.view='smart';render();} });
+    if(window.i18nApply)i18nApply(body);
+  }catch(e){toast(e.message,true);}
+}
+function ssTurnoverCard(pid,t){
+  const kind=t.kind==='between_guests'?'Уборка между гостями':'Уборка после выезда';
+  const card=el(`<div class="card pad" style="margin-bottom:10px;${t.conflict?'border:1.5px solid var(--danger)':''}">
+    <div class="row" style="justify-content:space-between;gap:10px;align-items:flex-start">
+      <div style="min-width:0">
+        <div class="row" style="gap:6px;align-items:center;flex-wrap:wrap"><b>${kind}</b>${t.priority==='high'?'<span class="badge amber">🔥 HIGH · срочно</span>':''}</div>
+        <div class="tiny muted" style="margin:3px 0">${fmtDate(t.suggestedStart)} · окно ${fmtHM(t.availableFrom)}–${t.nextCheckin?fmtHM(t.nextCheckin):'…'}</div>
+        <div class="tiny">Рекомендуемое время: <b>${fmtHM(t.suggestedStart)}–${fmtHM(t.suggestedEnd)}</b> · ~${hoursTxt(t.estimatedDuration)}</div>
+        ${t.conflict?`<div class="tiny" style="color:var(--danger);margin-top:5px">⚠️ Недостаточно времени. Нужен FlashClean или второй исполнитель.</div>`:''}
+      </div>
+      <div style="text-align:right;flex:none">${t.status==='scheduled'?'<span class="badge green">Запланирована</span>':t.status==='done'?'<span class="badge grey">Выполнена</span>':'<button class="btn sm" data-sch="1">Запланировать</button>'}</div>
+    </div>
+  </div>`);
+  const sb=card.querySelector('[data-sch]');
+  if(sb)sb.onclick=async()=>{ sb.disabled=true; try{await api('/api/properties/'+pid+'/turnovers/schedule','POST',{previousReservationId:t.previousReservationId});toast('Уборка запланирована');ssLoad(pid);}catch(e){toast(e.message,true);sb.disabled=false;} };
+  return card;
+}
+function ssResCard(pid,r){
+  const card=el(`<div class="card bk" style="margin-bottom:8px;cursor:pointer">
+    <div class="thumb" style="width:44px;height:44px;border-radius:12px;background:var(--primary-050);display:grid;place-items:center;flex:none;font-size:20px">${SRC_EMOJI[r.source]||'🗓'}</div>
+    <div class="meta" style="min-width:0"><h4>${SRC_LABEL[r.source]||r.source}${r.guestName?' · '+esc(r.guestName):''}</h4>
+      <div class="tiny muted" style="margin:2px 0">${fmtDate(r.checkinAt)} ${fmtHM(r.checkinAt)} → ${fmtDate(r.checkoutAt)} ${fmtHM(r.checkoutAt)} · ${r.nights} ноч.</div></div>
+    ${I.arrow}</div>`);
+  card.onclick=()=>openReservationForm(pid,r);
+  return card;
+}
+
+// Add / edit a reservation (spec §4).
+function openReservationForm(pid,existing){
+  const e=existing||{};
+  const ci=e.checkinAt?isoDate(e.checkinAt):isoDate(Date.now()+86400000), co=e.checkoutAt?isoDate(e.checkoutAt):isoDate(Date.now()+3*86400000);
+  const cit=e.checkinAt?fmtHM(e.checkinAt):'', cot=e.checkoutAt?fmtHM(e.checkoutAt):'';
+  const inner=el(`<div class="card pad" style="max-height:86vh;overflow-y:auto">
+    <h3 style="margin-bottom:14px">${existing?'Бронирование':'Новое бронирование'}</h3>
+    <label class="field"><span>Источник</span><select class="input" id="rsrc">${Object.entries(SRC_LABEL).map(([k,v])=>`<option value="${k}" ${e.source===k?'selected':''}>${v}</option>`).join('')}</select></label>
+    <div class="row" style="gap:12px"><label class="field" style="flex:1"><span>Заезд</span><input class="input" id="rci" type="date" value="${ci}"></label><label class="field" style="width:110px"><span>Время</span><input class="input" id="rcit" type="time" value="${cit}"></label></div>
+    <div class="row" style="gap:12px"><label class="field" style="flex:1"><span>Выезд</span><input class="input" id="rco" type="date" value="${co}"></label><label class="field" style="width:110px"><span>Время</span><input class="input" id="rcot" type="time" value="${cot}"></label></div>
+    <div class="row" style="gap:12px"><label class="field" style="flex:1"><span>Имя гостя</span><input class="input" id="rgn" value="${e.guestName?esc(e.guestName):''}" placeholder="необязательно"></label><label class="field" style="width:110px"><span>Гостей</span><input class="input" id="rgc" type="number" min="1" max="50" value="${e.guestCount||''}" placeholder="—"></label></div>
+    <label class="field"><span>Комментарий</span><textarea class="input" id="rnt" rows="2" placeholder="необязательно">${e.notes?esc(e.notes):''}</textarea></label>
+    <button class="btn block" id="rsave">Сохранить</button>
+    ${existing?`<button class="btn ghost block" id="rdel" style="margin-top:8px;color:var(--danger)">Удалить бронирование</button>`:''}
+  </div>`);
+  showModalNode(inner);
+  const val=()=>{
+    const cid=$('#rci',inner).value, cod=$('#rco',inner).value;
+    if(!cid||!cod)return null;
+    const cin=new Date(cid+'T'+($('#rcit',inner).value||'15:00')).getTime();
+    const cout=new Date(cod+'T'+($('#rcot',inner).value||'11:00')).getTime();
+    return {source:$('#rsrc',inner).value,checkinAt:cin,checkoutAt:cout,guestName:$('#rgn',inner).value.trim(),guestCount:+$('#rgc',inner).value||null,notes:$('#rnt',inner).value.trim()};
+  };
+  $('#rsave',inner).onclick=async()=>{
+    const b=val(); if(!b||b.checkoutAt<=b.checkinAt){toast('Проверьте даты заезда и выезда',true);return;}
+    try{ await api('/api/properties/'+pid+'/reservations'+(existing?'/'+existing.id:''),existing?'PATCH':'POST',b); closeModal();toast('Сохранено');ssLoad(pid); }catch(e){toast(e.message,true);}
+  };
+  const del=$('#rdel',inner); if(del)del.onclick=async()=>{ if(!confirm('Удалить бронирование?'))return; try{await api('/api/properties/'+pid+'/reservations/'+existing.id,'DELETE');closeModal();toast('Удалено');ssLoad(pid);}catch(e){toast(e.message,true);} };
+}
+
+// AI calendar import: paste/upload → review → confirm (spec §5/§21/§22).
+function openCalendarImport(pid){
+  const inner=el(`<div class="card pad" style="max-height:88vh;overflow-y:auto">
+    <div class="row" style="gap:12px;margin-bottom:6px"><div style="width:44px;height:44px;border-radius:12px;background:var(--primary-050);display:grid;place-items:center;font-size:22px">📸</div>
+      <div><h3>Загрузить календарь с помощью AI</h3><p class="muted tiny">Скриншот Airbnb / Booking или вставьте текст — LUMI распознает брони.</p></div></div>
+    <label class="field"><span>Скриншоты календаря</span><input class="input" id="ciImg" type="file" accept="image/*" multiple></label>
+    <div id="ciThumbs" class="row" style="gap:8px;flex-wrap:wrap"></div>
+    <label class="field" style="margin-top:10px"><span>Или вставьте даты текстом</span><textarea class="input" id="ciText" rows="4" placeholder="12–15 августа Airbnb&#10;18–21 August Booking.com&#10;2026-09-01 to 2026-09-04"></textarea></label>
+    <button class="btn block" id="ciParse">Распознать календарь ✨</button>
+    <div id="ciResult" style="margin-top:14px"></div>
+  </div>`);
+  showModalNode(inner);
+  const imgs=[];
+  $('#ciImg',inner).onchange=(ev)=>{ [...ev.target.files].slice(0,6).forEach(f=>{const rd=new FileReader();rd.onload=()=>{imgs.push(rd.result);const t=$('#ciThumbs',inner);t.appendChild(el(`<img src="${rd.result}" style="width:54px;height:54px;object-fit:cover;border-radius:10px;border:1px solid var(--line)">`));};rd.readAsDataURL(f);}); };
+  $('#ciParse',inner).onclick=async()=>{
+    const text=$('#ciText',inner).value;
+    if(!text.trim() && !imgs.length){toast('Добавьте скриншот или вставьте текст',true);return;}
+    const btn=$('#ciParse',inner); btn.disabled=true; btn.textContent='Распознаём…';
+    try{
+      const {parsed}=await api('/api/properties/'+pid+'/calendar-import','POST',{text,images:imgs});
+      renderImportReview(pid,inner,parsed);
+    }catch(e){toast(e.message,true);}
+    btn.disabled=false; btn.textContent='Распознать календарь ✨';
+  };
+}
+function renderImportReview(pid,inner,parsed){
+  const box=$('#ciResult',inner);
+  if(!parsed.reservations.length){ box.innerHTML=`<div class="card pad muted tiny">${parsed.imagesReceived?'Не удалось распознать даты на изображении. Вставьте даты текстом или добавьте вручную.':'Брони не найдены. Проверьте формат.'}</div>`; return; }
+  const rows=parsed.reservations.map((r,i)=>{
+    const low=r.confidence<0.8;
+    return `<div class="card pad" style="margin-bottom:8px;background:var(--surface-2)" data-row="${i}">
+      <div class="row" style="justify-content:space-between;gap:8px">
+        <label class="chk" style="gap:8px"><input type="checkbox" data-inc ${r.duplicateOf?'':'checked'}><span><b>${SRC_LABEL[r.source]||r.source}</b> · ${r.nights} ноч.</span></label>
+        <span class="badge ${low?'amber':'green'}">${Math.round(r.confidence*100)}%</span>
+      </div>
+      <div class="row" style="gap:8px;margin-top:8px">
+        <input class="input" type="date" data-ci value="${isoDate(r.checkinAt)}" style="flex:1">
+        <input class="input" type="date" data-co value="${isoDate(r.checkoutAt)}" style="flex:1">
+      </div>
+      ${r.duplicateOf?`<div class="tiny" style="color:var(--warn);margin-top:6px">Похоже, это бронирование уже существует.
+        <select class="input" data-dup style="margin-top:4px;height:34px;font-size:12px"><option value="skip">Пропустить</option><option value="update">Обновить</option><option value="new">Создать как новое</option></select></div>`:low?`<div class="tiny" style="color:var(--warn);margin-top:6px">⚠️ Низкая уверенность — проверьте даты.</div>`:''}
+    </div>`;
+  }).join('');
+  box.innerHTML=`<div class="section-title" style="margin-top:0">AI распознал календарь <span class="badge grey">${Math.round(parsed.confidence*100)}%</span></div>${rows}
+    <button class="btn block" id="ciConfirm" style="margin-top:10px">Подтвердить и создать календарь</button>`;
+  $('#ciConfirm',box).onclick=async()=>{
+    const out=parsed.reservations.map((r,i)=>{
+      const row=box.querySelector(`[data-row="${i}"]`);
+      const inc=row.querySelector('[data-inc]').checked;
+      const ci=row.querySelector('[data-ci]').value, co=row.querySelector('[data-co]').value;
+      const dupSel=row.querySelector('[data-dup]');
+      return {...r,skip:!inc,checkinAt:new Date(ci+'T'+fmtHM(r.checkinAt)).getTime(),checkoutAt:new Date(co+'T'+fmtHM(r.checkoutAt)).getTime(),onDuplicate:dupSel?dupSel.value:'skip'};
+    });
+    try{ const res=await api('/api/properties/'+pid+'/calendar-import/confirm','POST',{reservations:out});
+      closeModal(); toast(`Создано броней: ${res.created.length}${res.scheduled?` · уборок: ${res.scheduled}`:''}`); ssLoad(pid);
+    }catch(e){toast(e.message,true);}
+  };
+}
+
+// STR settings (spec §2/§9/§10).
+function openStrSettings(pid,S){
+  const s=S.settings; const cleaners=(state.catalog?.cleaners)||[];
+  const mode=S.autopilotMode;
+  const inner=el(`<div class="card pad" style="max-height:86vh;overflow-y:auto">
+    <h3 style="margin-bottom:14px">Настройки гостей и уборок</h3>
+    <div class="row" style="gap:12px"><label class="field" style="flex:1"><span>Выезд гостей</span><input class="input" id="scо" type="time" value="${s.defaultCheckoutTime}"></label><label class="field" style="flex:1"><span>Заезд гостей</span><input class="input" id="sci" type="time" value="${s.defaultCheckinTime}"></label></div>
+    <label class="field"><span>Запас до следующего гостя (мин)</span><input class="input" id="sbuf" type="number" min="0" max="480" value="${s.minimumBufferMinutes}"></label>
+    <label class="field"><span>Продолжительность уборки (мин, пусто = авто)</span><input class="input" id="sdur" type="number" min="30" max="360" value="${s.expectedCleaningDuration||''}" placeholder="авто"></label>
+    <div class="kyc-title" style="margin-top:6px">Автоматическое планирование</div>
+    <div class="seg" id="sap" style="margin-bottom:8px">
+      <button type="button" data-ap="propose" class="${mode==='propose'?'active':''}">Предлагать</button>
+      <button type="button" data-ap="auto_create" class="${mode==='auto_create'?'active':''}">Создавать заказ</button>
+      <button type="button" data-ap="autopilot" class="${mode==='autopilot'?'active':''}">Autopilot</button>
+    </div>
+    <p class="kyc-hint" id="sapHint"></p>
+    <label class="field"><span>Основной исполнитель</span><select class="input" id="spref"><option value="">— не выбран —</option>${cleaners.map(c=>`<option value="${c.id}" ${s.preferredCleanerId===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label>
+    <label class="field"><span>Резервный исполнитель</span><select class="input" id="sback"><option value="">— не выбран —</option>${cleaners.map(c=>`<option value="${c.id}" ${s.backupCleanerId===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label>
+    <button class="btn block" id="ssave" style="margin-top:6px">Сохранить</button>
+  </div>`);
+  showModalNode(inner);
+  let ap=mode;
+  const hints={propose:'LUMI предложит уборку после выезда — вы подтверждаете вручную.',auto_create:'Заказ создаётся автоматически, отправка исполнителю — по вашему подтверждению.',autopilot:'LUMI полностью автоматически создаёт и назначает уборки.'};
+  const setHint=()=>{$('#sapHint',inner).textContent=hints[ap];};
+  setHint();
+  inner.querySelectorAll('#sap [data-ap]').forEach(b=>b.onclick=()=>{ap=b.dataset.ap;inner.querySelectorAll('#sap [data-ap]').forEach(x=>x.classList.toggle('active',x===b));setHint();});
+  $('#ssave',inner).onclick=async()=>{
+    const body={defaultCheckoutTime:$('#scо',inner).value,defaultCheckinTime:$('#sci',inner).value,minimumBufferMinutes:+$('#sbuf',inner).value,expectedCleaningDuration:$('#sdur',inner).value?+$('#sdur',inner).value:null,
+      preferredCleanerId:$('#spref',inner).value||null,backupCleanerId:$('#sback',inner).value||null,
+      autoCreateCleaning:ap!=='propose'?true:false,autoSendOrder:ap==='auto_create'||ap==='autopilot',autopilotEnabled:ap==='autopilot'};
+    try{await api('/api/properties/'+pid+'/str/settings','PATCH',body);closeModal();toast('Настройки сохранены');ssLoad(pid);}catch(e){toast(e.message,true);}
+  };
 }
 
 /* ---------- PREMIUM (LUMI+) ---------- */
