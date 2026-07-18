@@ -37,7 +37,7 @@ const mailer = require('./mailer');
 const oauth = require('./auth/oauth');
 const str = require('./str');
 
-const APP_URL = (process.env.LUMI_APP_URL || 'https://lumi.bestwayplus.pl').replace(/\/$/, '');
+const APP_URL = (process.env.LUMI_APP_URL || 'https://lumi24.pl').replace(/\/$/, '');
 
 const PORT = process.env.PORT || 4000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -266,7 +266,7 @@ function notify(userId, templateId, params) {
   // Real email delivery for templates that include the email channel (no-op
   // until SMTP is configured). Never emails anonymized/deleted addresses.
   if (channels.includes('email') && u.email && !u.email.endsWith('@lumi.invalid')) {
-    mailer.queue({ to: u.email, subject: r.title, text: `${r.body}\n\n${process.env.LUMI_APP_URL || 'https://lumi.bestwayplus.pl'}` });
+    mailer.queue({ to: u.email, subject: r.title, text: `${r.body}\n\n${APP_URL}` });
   }
   return notif;
 }
@@ -1077,6 +1077,7 @@ function createProperty(owner, data, createdAt) {
     rooms: Math.max(1, Math.min(12, Number(data.rooms) || 2)),
     baths: Math.max(0, Math.min(8, Number(data.baths) || 1)),
     area: Math.max(0, Math.min(600, Number(data.area) || 0)),
+    floor: data.floor == null || data.floor === '' ? null : Math.max(-5, Math.min(200, Number(data.floor) || 0)),
     members: [],
     createdAt: createdAt || now(),
   };
@@ -1084,7 +1085,6 @@ function createProperty(owner, data, createdAt) {
   // types are completely unaffected (spec §25).
   if (type === 'short_term_rental') {
     p.bedrooms = Math.max(0, Math.min(12, Number(data.bedrooms) || Math.max(1, p.rooms - 1)));
-    p.floor = data.floor != null ? Math.max(0, Math.min(200, Number(data.floor) || 0)) : null;
     p.hasElevator = !!data.hasElevator;
     p.accessInstructions = String(data.accessInstructions || '').slice(0, 1000);
     p.features = String(data.features || '').slice(0, 1000);
@@ -1881,6 +1881,14 @@ route('POST', '/api/bookings/:id/status', async (req, res, params) => {
     if (!isCleaner) return send(res, 403, { error: 'Only the assigned cleaner can complete.' });
     if (bk.status !== 'in_progress') return send(res, 409, { error: 'Invalid transition.' });
     if (!bk.photosAfter.length) return send(res, 400, { error: 'Upload at least one "after" photo first.' });
+    // Turnover cleanings require a graded photo report (spec §13): a QC gate the
+    // owner sees. Too few photos blocks completion; problems/low-confidence flag it.
+    if (bk.turnover) {
+      const aiSig = ai.analyzeImages((bk.photosAfter || []).map((x) => x.url));
+      const qc = str.turnoverQC({ photos: bk.photosAfter.length, requiredPhotos: 3, aiConfidence: aiSig.data ? aiSig.meta.confidence : null, problemsReported: (bk.problems || []).length > 0 });
+      if (qc.status === 'incomplete') return send(res, 400, { error: 'Загрузите минимум 3 фото отчёта уборки.', code: 'QC_PHOTOS', qc });
+      bk.qc = { ...qc, at: now() };
+    }
     bk.status = 'completed';
     bk.timeline.push({ status: 'completed', at: now() });
     settlePayment(bk);
@@ -2019,7 +2027,7 @@ route('POST', '/api/admin/disputes/:id/resolve', async (req, res, params) => {
 });
 
 // ─────────────────────────── Support 24/7 ("Написать нам") ───────────────────────────
-const SUPPORT_EMAIL = process.env.LUMI_SUPPORT_EMAIL || 'support@lumi.bestwayplus.pl';
+const SUPPORT_EMAIL = process.env.LUMI_SUPPORT_EMAIL || 'support@lumi24.pl';
 const SUPPORT_TOPICS = {
   general: 'Общий вопрос', order: 'Вопрос по заказу', payment: 'Оплата и чеки',
   account: 'Аккаунт и доступ', provider: 'Стать исполнителем', other: 'Другое',
