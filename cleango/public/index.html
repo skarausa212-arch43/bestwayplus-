@@ -663,6 +663,16 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .scoregain:hover{background:var(--primary);color:#fff}
 .season-tip{background:linear-gradient(135deg,var(--primary-050),var(--surface));border:1px solid var(--line)}
 .season-emoji{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:24px;background:var(--surface);box-shadow:0 6px 16px rgba(6,42,26,.1);flex:none}
+.ptype-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:9px;margin-bottom:14px}
+.ptype{border:1.5px solid var(--line-strong);border-radius:15px;padding:13px 8px;text-align:center;cursor:pointer;background:var(--surface);transition:.15s}
+.ptype:hover{border-color:var(--ink-3)}
+.ptype .pe{font-size:24px;line-height:1;margin-bottom:6px}
+.ptype .pn{font-size:12.5px;font-weight:700;color:var(--ink-2);line-height:1.2}
+.ptype.on{border-color:var(--primary);background:var(--primary-050);box-shadow:0 8px 20px rgba(5,150,105,.15)}
+.ptype.on .pn{color:var(--primary-600)}
+.buf-chips{display:flex;gap:8px;flex-wrap:wrap}
+.buf-chips button{padding:9px 14px;border-radius:12px;border:1.5px solid var(--line-strong);background:var(--surface);color:var(--ink-2);font-weight:700;font-size:13.5px;cursor:pointer}
+.buf-chips button.on{background:var(--primary);border-color:var(--primary);color:#fff}
 /* printable home report (Save as PDF) — always light, ink on white */
 #printReport{display:none}
 .pr-wrap{color:#0B1220;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}
@@ -1125,6 +1135,10 @@ Object.assign(TR.uk,{"Профессиональный пылесос":"Проф
 Object.assign(TR.pl,{"Добро пожаловать, {name}!":"Witaj, {name}!","Загрузите своё фото":"Dodaj swoje zdjęcie","Загрузите фото документа":"Dodaj zdjęcie dokumentu","Отчёт скопирован":"Raport skopiowany","Чек скопирован":"Paragon skopiowany","Готово":"Gotowe"});
 Object.assign(TR.en,{"Добро пожаловать, {name}!":"Welcome, {name}!","Загрузите своё фото":"Upload your photo","Загрузите фото документа":"Upload the document photo","Отчёт скопирован":"Report copied","Чек скопирован":"Receipt copied","Готово":"Done"});
 Object.assign(TR.uk,{"Добро пожаловать, {name}!":"Ласкаво просимо, {name}!","Загрузите своё фото":"Завантажте своє фото","Загрузите фото документа":"Завантажте фото документа","Отчёт скопирован":"Звіт скопійовано","Чек скопирован":"Чек скопійовано","Готово":"Готово"});
+/* short-term rental: add-property form */
+Object.assign(TR.pl,{"Добавить объект":"Dodaj obiekt","Выберите тип объекта":"Wybierz typ obiektu","Посуточная аренда":"Wynajem dobowy","Другое":"Inne","Спальни":"Sypialnie","Инструкции по доступу":"Instrukcje dostępu","Особенности объекта":"Cechy obiektu","🛎 Настройки гостей и уборок":"🛎 Ustawienia gości i sprzątań","Выезд гостей":"Wymeldowanie","Заезд гостей":"Zameldowanie","Запас до следующего гостя":"Zapas do następnego gościa","Своё":"Własne","Продолжительность уборки":"Czas sprzątania","Авто (LUMI)":"Auto (LUMI)","Вручную":"Ręcznie","LUMI сама рассчитает продолжительность и создаст уборки между гостями.":"LUMI sama obliczy czas i utworzy sprzątania między gośćmi.","Объект добавлен":"Obiekt dodany","30 мин":"30 min","60 мин":"60 min","90 мин":"90 min"});
+Object.assign(TR.en,{"Добавить объект":"Add a property","Выберите тип объекта":"Choose the property type","Посуточная аренда":"Short-term rental","Другое":"Other","Спальни":"Bedrooms","Инструкции по доступу":"Access instructions","Особенности объекта":"Property features","🛎 Настройки гостей и уборок":"🛎 Guests & cleaning settings","Выезд гостей":"Check-out","Заезд гостей":"Check-in","Запас до следующего гостя":"Buffer before next guest","Своё":"Custom","Продолжительность уборки":"Cleaning duration","Авто (LUMI)":"Auto (LUMI)","Вручную":"Manual","LUMI сама рассчитает продолжительность и создаст уборки между гостями.":"LUMI estimates the duration and creates turnovers between guests.","Объект добавлен":"Property added","30 мин":"30 min","60 мин":"60 min","90 мин":"90 min"});
+Object.assign(TR.uk,{"Добавить объект":"Додати об’єкт","Выберите тип объекта":"Оберіть тип об’єкта","Посуточная аренда":"Подобова оренда","Другое":"Інше","Спальни":"Спальні","Инструкции по доступу":"Інструкції доступу","Особенности объекта":"Особливості об’єкта","🛎 Настройки гостей и уборок":"🛎 Налаштування гостей і прибирань","Выезд гостей":"Виїзд","Заезд гостей":"Заїзд","Запас до следующего гостя":"Запас до наступного гостя","Своё":"Своє","Продолжительность уборки":"Тривалість прибирання","Авто (LUMI)":"Авто (LUMI)","Вручную":"Вручну","LUMI сама рассчитает продолжительность и создаст уборки между гостями.":"LUMI сама розрахує час і створить прибирання між гостями.","Объект добавлен":"Об’єкт додано","30 мин":"30 хв","60 мин":"60 хв","90 мин":"90 хв"});
 /* home report (PDF) */
 Object.assign(TR.pl,{"услуг всего":"usług łącznie","Годовая аналитика":"Analityka roczna","Количество":"Ilość","Исполнитель":"Wykonawca","Цена":"Cena","история обслуживания с":"historia serwisu od","Каждая запись подтверждена фото «до/после» на платформе LUMI · lumi.bestwayplus.pl":"Każdy wpis potwierdzony zdjęciami «przed/po» na platformie LUMI · lumi.bestwayplus.pl"});
 Object.assign(TR.en,{"услуг всего":"services total","Годовая аналитика":"Annual analytics","Количество":"Count","Исполнитель":"Provider","Цена":"Price","история обслуживания с":"service history since","Каждая запись подтверждена фото «до/после» на платформе LUMI · lumi.bestwayplus.pl":"Every entry is verified with before/after photos on the LUMI platform · lumi.bestwayplus.pl"});
@@ -2338,12 +2352,15 @@ async function viewProperties(){
     try{await api('/api/properties/'+b.dataset.del,'DELETE');toast('Дом удалён');viewProperties();}catch(e){toast(e.message,true);}
   });
 }
+const PTYPES=[['apartment','🏢','Квартира'],['house','🏠','Дом'],['office','🏬','Офис'],['other','✨','Другое'],['short_term_rental','🛎','Посуточная аренда']];
 function openPropertyForm(){
   const cities=state.cities.length?state.cities:['Warsaw'];
-  const inner=el(`<div class="card pad">
-    <h3 style="margin-bottom:16px">Добавить дом</h3>
+  let ptype='apartment', buf=60, durMode='auto';
+  const inner=el(`<div class="card pad" style="max-height:86vh;overflow-y:auto">
+    <h3 style="margin-bottom:6px">Добавить объект</h3>
+    <p class="muted tiny" style="margin-bottom:14px">Выберите тип объекта</p>
+    <div class="ptype-grid" id="ptypes">${PTYPES.map(([v,e,n])=>`<div class="ptype ${v==='apartment'?'on':''}" data-pt="${v}"><div class="pe">${e}</div><div class="pn">${n}</div></div>`).join('')}</div>
     <label class="field"><span>Название</span><input class="input" id="pl" placeholder="Квартира · Мокотув"></label>
-    <label class="field"><span>Тип</span><select class="input" id="pt"><option value="apartment">Квартира</option><option value="house">Дом</option><option value="office">Офис</option><option value="other">Другое помещение</option></select></label>
     <label class="field"><span>Адрес</span><input class="input" id="pa" placeholder="Улица, дом, квартира"></label>
     <label class="field"><span>Город</span><select class="input" id="pc">${cities.map(c=>`<option>${c}</option>`).join('')}</select></label>
     <div class="row" style="gap:12px">
@@ -2351,12 +2368,56 @@ function openPropertyForm(){
       <label class="field" style="flex:1"><span>Санузлы</span><input class="input" id="pb" type="number" min="0" max="8" value="1"></label>
       <label class="field" style="flex:1"><span>Площадь м²</span><input class="input" id="par" type="number" min="0" max="600" placeholder="60"></label>
     </div>
-    <button class="btn block" id="savep">Сохранить</button>
+    <div id="strBlock" style="display:none">
+      <div class="row" style="gap:12px">
+        <label class="field" style="flex:1"><span>Спальни</span><input class="input" id="pbed" type="number" min="0" max="12" value="1"></label>
+        <label class="field" style="flex:1"><span>Этаж</span><input class="input" id="pfl" type="number" min="0" max="200" placeholder="3"></label>
+        <label class="field" style="flex:1"><span>Лифт</span><select class="input" id="pel"><option value="0">Нет</option><option value="1">Есть</option></select></label>
+      </div>
+      <label class="field"><span>Инструкции по доступу</span><textarea class="input" id="pacc" rows="2" placeholder="Код от подъезда, где ключи, парковка…"></textarea></label>
+      <label class="field"><span>Особенности объекта</span><textarea class="input" id="pfeat" rows="2" placeholder="Что важно знать об объекте"></textarea></label>
+      <div class="kyc-block">
+        <div class="kyc-title">🛎 Настройки гостей и уборок</div>
+        <div class="row" style="gap:12px">
+          <label class="field" style="flex:1"><span>Выезд гостей</span><input class="input" id="pco" type="time" value="11:00"></label>
+          <label class="field" style="flex:1"><span>Заезд гостей</span><input class="input" id="pci" type="time" value="15:00"></label>
+        </div>
+        <div class="kyc-title" style="margin-top:4px">Запас до следующего гостя</div>
+        <div class="buf-chips" id="pbuf">${[30,60,90].map(v=>`<button type="button" data-buf="${v}" class="${v===60?'on':''}">${v} мин</button>`).join('')}<button type="button" data-buf="custom">Своё</button></div>
+        <input class="input" id="pbufc" type="number" min="0" max="480" placeholder="минут" style="display:none;margin-top:8px">
+        <div class="kyc-title" style="margin-top:12px">Продолжительность уборки</div>
+        <div class="seg" id="pdur" style="margin-bottom:4px"><button type="button" data-dur="auto" class="active">Авто (LUMI)</button><button type="button" data-dur="manual">Вручную</button></div>
+        <input class="input" id="pdurm" type="number" min="30" max="360" placeholder="минут, напр. 150" style="display:none;margin-top:8px">
+        <p class="kyc-hint">${I.spark||''} LUMI сама рассчитает продолжительность и создаст уборки между гостями.</p>
+      </div>
+    </div>
+    <button class="btn block" id="savep" style="margin-top:6px">Сохранить</button>
   </div>`);
   showModalNode(inner);
+  const strBlock=$('#strBlock',inner);
+  inner.querySelectorAll('[data-pt]').forEach(card=>card.onclick=()=>{
+    ptype=card.dataset.pt;
+    inner.querySelectorAll('.ptype').forEach(x=>x.classList.toggle('on',x===card));
+    strBlock.style.display=ptype==='short_term_rental'?'block':'none';
+  });
+  inner.querySelectorAll('#pbuf [data-buf]').forEach(bn=>bn.onclick=()=>{
+    inner.querySelectorAll('#pbuf [data-buf]').forEach(x=>x.classList.toggle('on',x===bn));
+    const cust=$('#pbufc',inner); if(bn.dataset.buf==='custom'){cust.style.display='block';cust.focus();buf=null;}
+    else{cust.style.display='none';buf=+bn.dataset.buf;}
+  });
+  inner.querySelectorAll('#pdur [data-dur]').forEach(bn=>bn.onclick=()=>{
+    durMode=bn.dataset.dur; inner.querySelectorAll('#pdur [data-dur]').forEach(x=>x.classList.toggle('active',x===bn));
+    $('#pdurm',inner).style.display=durMode==='manual'?'block':'none';
+  });
   $('#savep',inner).onclick=async()=>{
-    const body={label:$('#pl',inner).value||'Дом',type:$('#pt',inner).value,address:$('#pa',inner).value,city:$('#pc',inner).value,rooms:+$('#pr',inner).value,baths:+$('#pb',inner).value,area:+$('#par',inner).value};
-    try{await api('/api/properties','POST',body);await loadProperties();closeModal();toast('Дом добавлен');render();}
+    const body={label:$('#pl',inner).value||'Объект',type:ptype,address:$('#pa',inner).value,city:$('#pc',inner).value,rooms:+$('#pr',inner).value,baths:+$('#pb',inner).value,area:+$('#par',inner).value};
+    if(ptype==='short_term_rental'){
+      body.bedrooms=+$('#pbed',inner).value; body.floor=$('#pfl',inner).value?+$('#pfl',inner).value:null; body.hasElevator=$('#pel',inner).value==='1';
+      body.accessInstructions=$('#pacc',inner).value; body.features=$('#pfeat',inner).value;
+      const bufv=buf==null?(+$('#pbufc',inner).value||60):buf;
+      body.strSettings={defaultCheckoutTime:$('#pco',inner).value||'11:00',defaultCheckinTime:$('#pci',inner).value||'15:00',minimumBufferMinutes:bufv,expectedCleaningDuration:durMode==='manual'?(+$('#pdurm',inner).value||null):null};
+    }
+    try{await api('/api/properties','POST',body);await loadProperties();closeModal();toast('Объект добавлен');render();}
     catch(e){toast(e.message,true);}
   };
 }
