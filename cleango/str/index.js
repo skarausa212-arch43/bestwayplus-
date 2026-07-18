@@ -155,6 +155,28 @@ function findDuplicate(existing, cand, toleranceDays) {
   return null;
 }
 
+// Turnover photo-report quality check (spec §13). A mandatory photo report is
+// graded into a QC status the owner sees: 'incomplete' (too few photos, blocks
+// completion), 'review' (owner should look) or 'passed'. Deterministic — the
+// aiConfidence input is where a real vision model plugs in later.
+function turnoverQC(input) {
+  input = input || {};
+  const photos = Math.max(0, Math.trunc(Number(input.photos) || 0));
+  const required = Math.max(1, Math.trunc(Number(input.requiredPhotos) || 3));
+  const conf = input.aiConfidence == null ? null : Math.max(0, Math.min(1, Number(input.aiConfidence)));
+  const flags = [];
+  if (photos < required) flags.push('insufficient_photos');
+  if (input.problemsReported) flags.push('problems_reported');
+  // Coverage (photos vs. required) is 60% of the score; the vision signal 40%.
+  let score = Math.min(60, Math.round((photos / required) * 60)) + (conf != null ? Math.round(conf * 40) : 20);
+  score = Math.max(0, Math.min(100, score));
+  let status;
+  if (photos < required) status = 'incomplete';
+  else if (input.problemsReported || score < 75) status = 'review';
+  else status = 'passed';
+  return { status, score, photos, requiredPhotos: required, flags };
+}
+
 // ── Heuristic calendar parser (AI-import placeholder) ──
 const MONTHS = {
   ru: ['январ', 'феврал', 'март', 'апрел', 'мая|май', 'июн', 'июл', 'август', 'сентябр', 'октябр', 'ноябр', 'декабр'],
@@ -225,5 +247,5 @@ module.exports = {
   DEFAULTS, SOURCES, MIN, DAY,
   toMinutes, estimateCleaningDuration, normalizeSettings, autopilotMode,
   atTime, applyDefaultTimes, computeTurnover, generateTurnovers, findDuplicate,
-  parseCalendarText,
+  parseCalendarText, turnoverQC,
 };

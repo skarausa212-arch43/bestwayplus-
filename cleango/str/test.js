@@ -88,4 +88,18 @@ ok('parseCalendarText lowers confidence + flags source when undetectable', () =>
   assert.ok(r.reservations[0].confidence < 0.8);
 });
 
+ok('turnoverQC grades the photo report and blocks incomplete ones', () => {
+  const few = str.turnoverQC({ photos: 1, requiredPhotos: 3, aiConfidence: 0.9 });
+  assert.strictEqual(few.status, 'incomplete');            // too few photos → blocks completion
+  assert.ok(few.flags.includes('insufficient_photos'));
+  const good = str.turnoverQC({ photos: 4, requiredPhotos: 3, aiConfidence: 0.9 });
+  assert.strictEqual(good.status, 'passed');
+  assert.ok(good.score >= 75);
+  const flagged = str.turnoverQC({ photos: 4, requiredPhotos: 3, aiConfidence: 0.9, problemsReported: true });
+  assert.strictEqual(flagged.status, 'review');            // reported problems force an owner review
+  assert.ok(flagged.flags.includes('problems_reported'));
+  const weak = str.turnoverQC({ photos: 3, requiredPhotos: 3, aiConfidence: 0.1 });
+  assert.strictEqual(weak.status, 'review');               // low vision confidence → review
+});
+
 console.log(`\n${n} STR checks passed.`);
