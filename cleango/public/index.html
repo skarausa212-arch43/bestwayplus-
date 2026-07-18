@@ -673,6 +673,24 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .buf-chips{display:flex;gap:8px;flex-wrap:wrap}
 .buf-chips button{padding:9px 14px;border-radius:12px;border:1.5px solid var(--line-strong);background:var(--surface);color:var(--ink-2);font-weight:700;font-size:13.5px;cursor:pointer}
 .buf-chips button.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.sscal{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:16px}
+.sscal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.sscal-head b{font-size:15px;text-transform:capitalize}
+.sscal-nav{display:flex;gap:6px}
+.sscal-nav button{width:32px;height:32px;border-radius:9px;border:1px solid var(--line-strong);background:var(--surface);cursor:pointer;color:var(--ink-2);font-size:15px;line-height:1}
+.sscal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.sscal-wd{font-size:10px;font-weight:700;color:var(--ink-3);text-align:center;text-transform:uppercase;padding-bottom:3px}
+.sscal-cell{aspect-ratio:1;border-radius:9px;display:flex;flex-direction:column;align-items:center;padding:5px 2px 3px;font-size:12.5px;font-weight:600;cursor:pointer;background:var(--surface-2);color:var(--ink-2);transition:.12s}
+.sscal-cell:hover{outline:1.5px solid var(--line-strong)}
+.sscal-cell.out{opacity:.32}
+.sscal-cell.today{outline:2px solid var(--primary)}
+.sscal-cell.occ{background:var(--primary-050);color:var(--primary-600)}
+.sscal-dots{display:flex;gap:2px;margin-top:auto;height:6px}
+.sscal-dot,.lg-occ{width:6px;height:6px;border-radius:50%}
+.sscal-dot.clean{background:#F5B301}.sscal-dot.conflict{background:var(--danger)}.sscal-dot.ci{background:var(--primary)}.sscal-dot.co{background:#3B9BE3}
+.lg-occ{background:var(--primary-050);border:1px solid var(--primary)}
+.sscal-legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;font-size:11px;color:var(--ink-3)}
+.sscal-legend span{display:inline-flex;align-items:center;gap:4px}
 /* printable home report (Save as PDF) — always light, ink on white */
 #printReport{display:none}
 .pr-wrap{color:#0B1220;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}
@@ -1139,6 +1157,10 @@ Object.assign(TR.uk,{"Добро пожаловать, {name}!":"Ласкаво 
 Object.assign(TR.pl,{"Добавить объект":"Dodaj obiekt","Выберите тип объекта":"Wybierz typ obiektu","Посуточная аренда":"Wynajem dobowy","Другое":"Inne","Спальни":"Sypialnie","Инструкции по доступу":"Instrukcje dostępu","Особенности объекта":"Cechy obiektu","🛎 Настройки гостей и уборок":"🛎 Ustawienia gości i sprzątań","Выезд гостей":"Wymeldowanie","Заезд гостей":"Zameldowanie","Запас до следующего гостя":"Zapas do następnego gościa","Своё":"Własne","Продолжительность уборки":"Czas sprzątania","Авто (LUMI)":"Auto (LUMI)","Вручную":"Ręcznie","LUMI сама рассчитает продолжительность и создаст уборки между гостями.":"LUMI sama obliczy czas i utworzy sprzątania między gośćmi.","Объект добавлен":"Obiekt dodany","30 мин":"30 min","60 мин":"60 min","90 мин":"90 min"});
 Object.assign(TR.en,{"Добавить объект":"Add a property","Выберите тип объекта":"Choose the property type","Посуточная аренда":"Short-term rental","Другое":"Other","Спальни":"Bedrooms","Инструкции по доступу":"Access instructions","Особенности объекта":"Property features","🛎 Настройки гостей и уборок":"🛎 Guests & cleaning settings","Выезд гостей":"Check-out","Заезд гостей":"Check-in","Запас до следующего гостя":"Buffer before next guest","Своё":"Custom","Продолжительность уборки":"Cleaning duration","Авто (LUMI)":"Auto (LUMI)","Вручную":"Manual","LUMI сама рассчитает продолжительность и создаст уборки между гостями.":"LUMI estimates the duration and creates turnovers between guests.","Объект добавлен":"Property added","30 мин":"30 min","60 мин":"60 min","90 мин":"90 min"});
 Object.assign(TR.uk,{"Добавить объект":"Додати об’єкт","Выберите тип объекта":"Оберіть тип об’єкта","Посуточная аренда":"Подобова оренда","Другое":"Інше","Спальни":"Спальні","Инструкции по доступу":"Інструкції доступу","Особенности объекта":"Особливості об’єкта","🛎 Настройки гостей и уборок":"🛎 Налаштування гостей і прибирань","Выезд гостей":"Виїзд","Заезд гостей":"Заїзд","Запас до следующего гостя":"Запас до наступного гостя","Своё":"Своє","Продолжительность уборки":"Тривалість прибирання","Авто (LUMI)":"Авто (LUMI)","Вручную":"Вручну","LUMI сама рассчитает продолжительность и создаст уборки между гостями.":"LUMI сама розрахує час і створить прибирання між гостями.","Объект добавлен":"Об’єкт додано","30 мин":"30 хв","60 мин":"60 хв","90 мин":"90 хв"});
+/* short-term rental: calendar */
+Object.assign(TR.pl,{"Уборка":"Sprzątanie","Конфликт":"Konflikt","Гость":"Gość","Свободный день":"Wolny dzień"});
+Object.assign(TR.en,{"Уборка":"Cleaning","Конфликт":"Conflict","Гость":"Guest","Свободный день":"Free day"});
+Object.assign(TR.uk,{"Уборка":"Прибирання","Конфликт":"Конфлікт","Гость":"Гість","Свободный день":"Вільний день"});
 /* short-term rental: guests & cleaning tab */
 Object.assign(TR.pl,{"Сейчас проживает гость":"Gość jest w środku","Свободно":"Wolne","Идёт уборка":"Trwa sprzątanie","Готово к заселению":"Gotowe do zameldowania","Следующий выезд":"Następne wymeldowanie","Следующая уборка":"Następne sprzątanie","Следующий заезд":"Następne zameldowanie","Гости и уборки":"Goście i sprzątania","📸 Загрузить календарь с помощью AI":"📸 Wczytaj kalendarz z AI","+ Бронирование":"+ Rezerwacja","Конфликты по времени: {n}":"Konflikty czasowe: {n}","Недостаточно времени для стандартной уборки до приезда следующего гостя.":"Za mało czasu na standardowe sprzątanie przed przyjazdem następnego gościa.","Ближайшие уборки":"Najbliższe sprzątania","Бронирования":"Rezerwacje","Уборок пока нет":"Brak sprzątań","Добавьте бронирования — LUMI создаст уборки между гостями.":"Dodaj rezerwacje — LUMI utworzy sprzątania między gośćmi.","Нет бронирований":"Brak rezerwacji","Загрузите календарь Airbnb/Booking или добавьте вручную.":"Wczytaj kalendarz Airbnb/Booking lub dodaj ręcznie.","Уборка между гостями":"Sprzątanie między gośćmi","Уборка после выезда":"Sprzątanie po wymeldowaniu","🔥 HIGH · срочно":"🔥 HIGH · pilne","окно":"okno","Рекомендуемое время:":"Zalecany czas:","ч":"godz.","⚠️ Недостаточно времени. Нужен FlashClean или второй исполнитель.":"⚠️ Za mało czasu. Potrzebny FlashClean lub drugi wykonawca.","Запланирована":"Zaplanowane","Выполнена":"Wykonane","Запланировать":"Zaplanuj","Уборка запланирована":"Sprzątanie zaplanowane","ноч.":"nocy","Прямое бронирование":"Rezerwacja bezpośrednia","Новое бронирование":"Nowa rezerwacja","Бронирование":"Rezerwacja","Источник":"Źródło","Заезд":"Zameldowanie","Выезд":"Wymeldowanie","Время":"Godzina","Имя гостя":"Imię gościa","необязательно":"opcjonalnie","Гостей":"Goście","Комментарий":"Komentarz","Удалить бронирование":"Usuń rezerwację","Проверьте даты заезда и выезда":"Sprawdź daty zameldowania i wymeldowania","Сохранено":"Zapisano","Удалено":"Usunięto","Скриншот Airbnb / Booking или вставьте текст — LUMI распознает брони.":"Zrzut Airbnb / Booking lub wklej tekst — LUMI rozpozna rezerwacje.","Скриншоты календаря":"Zrzuty kalendarza","Или вставьте даты текстом":"Lub wklej daty tekstem","Распознать календарь ✨":"Rozpoznaj kalendarz ✨","Распознаём…":"Rozpoznaję…","Добавьте скриншот или вставьте текст":"Dodaj zrzut lub wklej tekst","AI распознал календарь":"AI rozpoznał kalendarz","Похоже, это бронирование уже существует.":"Wygląda na to, że ta rezerwacja już istnieje.","Пропустить":"Pomiń","Обновить":"Zaktualizuj","Создать как новое":"Utwórz jako nową","⚠️ Низкая уверенность — проверьте даты.":"⚠️ Niska pewność — sprawdź daty.","Подтвердить и создать календарь":"Potwierdź i utwórz kalendarz","Не удалось распознать даты на изображении. Вставьте даты текстом или добавьте вручную.":"Nie udało się rozpoznać dat na obrazie. Wklej daty tekstem lub dodaj ręcznie.","Брони не найдены. Проверьте формат.":"Nie znaleziono rezerwacji. Sprawdź format.","Создано броней: {n}":"Utworzono rezerwacji: {n}","уборок: {n}":"sprzątań: {n}","Настройки гостей и уборок":"Ustawienia gości i sprzątań","Запас до следующего гостя (мин)":"Zapas do następnego gościa (min)","Продолжительность уборки (мин, пусто = авто)":"Czas sprzątania (min, puste = auto)","авто":"auto","Автоматическое планирование":"Automatyczne planowanie","Предлагать":"Proponuj","Создавать заказ":"Twórz zlecenie","Основной исполнитель":"Główny wykonawca","Резервный исполнитель":"Zapasowy wykonawca","— не выбран —":"— nie wybrano —","Настройки сохранены":"Ustawienia zapisane","LUMI предложит уборку после выезда — вы подтверждаете вручную.":"LUMI zaproponuje sprzątanie po wymeldowaniu — potwierdzasz ręcznie.","Заказ создаётся автоматически, отправка исполнителю — по вашему подтверждению.":"Zlecenie tworzone automatycznie, wysyłka — po Twoim potwierdzeniu.","LUMI полностью автоматически создаёт и назначает уборки.":"LUMI w pełni automatycznie tworzy i przydziela sprzątania.","Объекты":"Obiekty"});
 Object.assign(TR.en,{"Сейчас проживает гость":"Guest is in","Свободно":"Vacant","Идёт уборка":"Cleaning in progress","Готово к заселению":"Ready for guest","Следующий выезд":"Next check-out","Следующая уборка":"Next cleaning","Следующий заезд":"Next check-in","Гости и уборки":"Guests & cleaning","📸 Загрузить календарь с помощью AI":"📸 Import calendar with AI","+ Бронирование":"+ Reservation","Конфликты по времени: {n}":"Time conflicts: {n}","Недостаточно времени для стандартной уборки до приезда следующего гостя.":"Not enough time for a standard clean before the next guest arrives.","Ближайшие уборки":"Upcoming cleanings","Бронирования":"Reservations","Уборок пока нет":"No cleanings yet","Добавьте бронирования — LUMI создаст уборки между гостями.":"Add reservations — LUMI will create turnovers between guests.","Нет бронирований":"No reservations","Загрузите календарь Airbnb/Booking или добавьте вручную.":"Import an Airbnb/Booking calendar or add manually.","Уборка между гостями":"Turnover cleaning","Уборка после выезда":"After-checkout cleaning","🔥 HIGH · срочно":"🔥 HIGH · urgent","окно":"window","Рекомендуемое время:":"Suggested time:","ч":"h","⚠️ Недостаточно времени. Нужен FlashClean или второй исполнитель.":"⚠️ Not enough time. Needs FlashClean or a second cleaner.","Запланирована":"Scheduled","Выполнена":"Done","Запланировать":"Schedule","Уборка запланирована":"Cleaning scheduled","ноч.":"n.","Прямое бронирование":"Direct booking","Новое бронирование":"New reservation","Бронирование":"Reservation","Источник":"Source","Заезд":"Check-in","Выезд":"Check-out","Время":"Time","Имя гостя":"Guest name","необязательно":"optional","Гостей":"Guests","Комментарий":"Note","Удалить бронирование":"Delete reservation","Проверьте даты заезда и выезда":"Check the check-in/out dates","Сохранено":"Saved","Удалено":"Deleted","Скриншот Airbnb / Booking или вставьте текст — LUMI распознает брони.":"An Airbnb / Booking screenshot or paste text — LUMI recognizes reservations.","Скриншоты календаря":"Calendar screenshots","Или вставьте даты текстом":"Or paste dates as text","Распознать календарь ✨":"Recognize calendar ✨","Распознаём…":"Recognizing…","Добавьте скриншот или вставьте текст":"Add a screenshot or paste text","AI распознал календарь":"AI recognized the calendar","Похоже, это бронирование уже существует.":"This reservation seems to already exist.","Пропустить":"Skip","Обновить":"Update","Создать как новое":"Create as new","⚠️ Низкая уверенность — проверьте даты.":"⚠️ Low confidence — check the dates.","Подтвердить и создать календарь":"Confirm and build calendar","Не удалось распознать даты на изображении. Вставьте даты текстом или добавьте вручную.":"Couldn't read dates from the image. Paste dates as text or add manually.","Брони не найдены. Проверьте формат.":"No reservations found. Check the format.","Создано броней: {n}":"Reservations created: {n}","уборок: {n}":"cleanings: {n}","Настройки гостей и уборок":"Guests & cleaning settings","Запас до следующего гостя (мин)":"Buffer before next guest (min)","Продолжительность уборки (мин, пусто = авто)":"Cleaning duration (min, empty = auto)","авто":"auto","Автоматическое планирование":"Automatic scheduling","Предлагать":"Propose","Создавать заказ":"Create order","Основной исполнитель":"Primary cleaner","Резервный исполнитель":"Backup cleaner","— не выбран —":"— none —","Настройки сохранены":"Settings saved","LUMI предложит уборку после выезда — вы подтверждаете вручную.":"LUMI suggests a cleaning after checkout — you confirm manually.","Заказ создаётся автоматически, отправка исполнителю — по вашему подтверждению.":"The order is created automatically; dispatch needs your confirmation.","LUMI полностью автоматически создаёт и назначает уборки.":"LUMI fully automatically creates and assigns cleanings.","Объекты":"Properties"});
@@ -2761,6 +2783,7 @@ function printHomeReport(P){
 }
 
 /* ---------- SHORT-TERM RENTAL: guests & turnovers ---------- */
+let ssMonthOff=0, ssData=null, ssPid=null;
 const SS_STATE={occupied:['🟢','Сейчас проживает гость','green'],vacant:['⚪','Свободно','grey'],cleaning:['🟡','Идёт уборка','amber'],ready:['🟢','Готово к заселению','green']};
 const SRC_LABEL={airbnb:'Airbnb',booking:'Booking.com',vrbo:'Vrbo',direct:'Прямое бронирование',manual:'Вручную',other:'Другое'};
 const SRC_EMOJI={airbnb:'🅰️',booking:'🅱️',vrbo:'🌴',direct:'🤝',manual:'✍️',other:'🗓'};
@@ -2771,7 +2794,7 @@ function hoursTxt(mins){const h=mins/60;return (Math.round(h*10)/10)+' '+t('ч')
 async function viewShortstay(){
   const pid=state.activeProperty;
   const c=el(`<div style="max-width:820px;margin:0 auto"></div>`);
-  const back=el(`<button class="btn ghost sm" style="margin-bottom:16px">← Объекты</button>`);
+  const back=el(`<button class="btn ghost sm" style="margin-bottom:16px">← ${t('Объекты')}</button>`);
   back.onclick=()=>{state.view='properties';render();};
   c.appendChild(back);
   c.appendChild(el(`<div id="ssBody"><div class="card pad"><div class="sk" style="height:220px"></div></div></div>`));
@@ -2782,6 +2805,7 @@ async function ssLoad(pid){
   const body=$('#ssBody'); if(!body)return;
   try{
     const {str:S,property:p}=await api('/api/properties/'+pid+'/str');
+    ssData=S; ssPid=pid;
     const st=S.status; const [emo,label]=SS_STATE[st.state]||SS_STATE.vacant;
     const ev=(lbl,r,time)=>`<div class="stat"><b style="color:#fff;font-size:15px">${r?fmtDate(time)+' · '+fmtHM(time):'—'}</b><span style="opacity:.8;font-size:12px">${lbl}</span></div>`;
     body.innerHTML=`
@@ -2801,6 +2825,7 @@ async function ssLoad(pid){
         <button class="iconbtn" id="ssSettings" title="Настройки">⚙️</button>
       </div>
       ${st.conflicts?`<div class="card pad" style="margin-bottom:16px;border:1.5px solid var(--danger)"><div class="row" style="gap:10px"><span style="font-size:22px">⚠️</span><div><b>${t('Конфликты по времени: {n}',{n:st.conflicts})}</b><div class="tiny muted">Недостаточно времени для стандартной уборки до приезда следующего гостя.</div></div></div></div>`:''}
+      <div id="ssCal"></div>
       <div class="section-title">Ближайшие уборки</div>
       <div id="ssTurnovers"></div>
       <div class="section-title" style="margin-top:20px">Бронирования <span class="badge grey">${S.reservations.length}</span></div>
@@ -2813,6 +2838,7 @@ async function ssLoad(pid){
     const upRes=S.reservations.filter(r=>r.checkoutAt>=now2-86400000);
     if(!upRes.length) rz.appendChild(emptyState('Нет бронирований','Загрузите календарь Airbnb/Booking или добавьте вручную.'));
     else upRes.forEach(r=>rz.appendChild(ssResCard(pid,r)));
+    ssRenderCal();
     $('#ssImport',body).onclick=()=>openCalendarImport(pid);
     $('#ssAdd',body).onclick=()=>openReservationForm(pid,null);
     $('#ssSettings',body).onclick=()=>openStrSettings(pid,S);
@@ -2820,21 +2846,21 @@ async function ssLoad(pid){
     if(window.i18nApply)i18nApply(body);
   }catch(e){toast(e.message,true);}
 }
-function ssTurnoverCard(pid,t){
-  const kind=t.kind==='between_guests'?'Уборка между гостями':'Уборка после выезда';
-  const card=el(`<div class="card pad" style="margin-bottom:10px;${t.conflict?'border:1.5px solid var(--danger)':''}">
+function ssTurnoverCard(pid,tt){
+  const kind=tt.kind==='between_guests'?'Уборка между гостями':'Уборка после выезда';
+  const card=el(`<div class="card pad" style="margin-bottom:10px;${tt.conflict?'border:1.5px solid var(--danger)':''}">
     <div class="row" style="justify-content:space-between;gap:10px;align-items:flex-start">
       <div style="min-width:0">
-        <div class="row" style="gap:6px;align-items:center;flex-wrap:wrap"><b>${kind}</b>${t.priority==='high'?'<span class="badge amber">🔥 HIGH · срочно</span>':''}</div>
-        <div class="tiny muted" style="margin:3px 0">${fmtDate(t.suggestedStart)} · ${t('окно')} ${fmtHM(t.availableFrom)}–${t.nextCheckin?fmtHM(t.nextCheckin):'…'}</div>
-        <div class="tiny">${t('Рекомендуемое время:')} <b>${fmtHM(t.suggestedStart)}–${fmtHM(t.suggestedEnd)}</b> · ~${hoursTxt(t.estimatedDuration)}</div>
-        ${t.conflict?`<div class="tiny" style="color:var(--danger);margin-top:5px">⚠️ Недостаточно времени. Нужен FlashClean или второй исполнитель.</div>`:''}
+        <div class="row" style="gap:6px;align-items:center;flex-wrap:wrap"><b>${kind}</b>${tt.priority==='high'?'<span class="badge amber">🔥 HIGH · срочно</span>':''}</div>
+        <div class="tiny muted" style="margin:3px 0">${fmtDate(tt.suggestedStart)} · ${t('окно')} ${fmtHM(tt.availableFrom)}–${tt.nextCheckin?fmtHM(tt.nextCheckin):'…'}</div>
+        <div class="tiny">${t('Рекомендуемое время:')} <b>${fmtHM(tt.suggestedStart)}–${fmtHM(tt.suggestedEnd)}</b> · ~${hoursTxt(tt.estimatedDuration)}</div>
+        ${tt.conflict?`<div class="tiny" style="color:var(--danger);margin-top:5px">⚠️ Недостаточно времени. Нужен FlashClean или второй исполнитель.</div>`:''}
       </div>
-      <div style="text-align:right;flex:none">${t.status==='scheduled'?'<span class="badge green">Запланирована</span>':t.status==='done'?'<span class="badge grey">Выполнена</span>':'<button class="btn sm" data-sch="1">Запланировать</button>'}</div>
+      <div style="text-align:right;flex:none">${tt.status==='scheduled'?'<span class="badge green">Запланирована</span>':tt.status==='done'?'<span class="badge grey">Выполнена</span>':'<button class="btn sm" data-sch="1">Запланировать</button>'}</div>
     </div>
   </div>`);
   const sb=card.querySelector('[data-sch]');
-  if(sb)sb.onclick=async()=>{ sb.disabled=true; try{await api('/api/properties/'+pid+'/turnovers/schedule','POST',{previousReservationId:t.previousReservationId});toast('Уборка запланирована');ssLoad(pid);}catch(e){toast(e.message,true);sb.disabled=false;} };
+  if(sb)sb.onclick=async()=>{ sb.disabled=true; try{await api('/api/properties/'+pid+'/turnovers/schedule','POST',{previousReservationId:tt.previousReservationId});toast('Уборка запланирована');ssLoad(pid);}catch(e){toast(e.message,true);sb.disabled=false;} };
   return card;
 }
 function ssResCard(pid,r){
@@ -2845,6 +2871,53 @@ function ssResCard(pid,r){
     ${I.arrow}</div>`);
   card.onclick=()=>openReservationForm(pid,r);
   return card;
+}
+
+// Month calendar (spec §3) — reservations, turnovers, free days, conflicts.
+function ssDayFacts(ds){
+  const de=ds+86400000; let occ=false,ci=false,co=false,clean=false,conflict=false;
+  for(const r of (ssData.reservations||[])){ if(r.status==='cancelled')continue; if(r.checkinAt<de&&r.checkoutAt>ds)occ=true; if(r.checkinAt>=ds&&r.checkinAt<de)ci=true; if(r.checkoutAt>ds&&r.checkoutAt<=de)co=true; }
+  for(const tt of (ssData.turnovers||[])){ if(tt.suggestedStart>=ds&&tt.suggestedStart<de){clean=true; if(tt.conflict)conflict=true;} }
+  return {occ,ci,co,clean,conflict};
+}
+function ssRenderCal(){
+  const box=$('#ssCal'); if(!box||!ssData)return;
+  const now=new Date(), base=new Date(now.getFullYear(),now.getMonth()+ssMonthOff,1);
+  const m=base.getMonth(), monthName=base.toLocaleDateString(curLocale(),{month:'long',year:'numeric'});
+  const first=new Date(base.getFullYear(),m,1); const wd=(first.getDay()+6)%7;
+  const start=new Date(base.getFullYear(),m,1-wd);
+  const todayS=new Date(); todayS.setHours(0,0,0,0);
+  const wdNames=[]; for(let i=0;i<7;i++){const d=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i);wdNames.push(d.toLocaleDateString(curLocale(),{weekday:'short'}));}
+  let cells='';
+  for(let i=0;i<42;i++){ const d=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i); const ds=d.getTime();
+    const f=ssDayFacts(ds), out=d.getMonth()!==m, today=ds===todayS.getTime();
+    const dots=`${f.ci?'<span class="sscal-dot ci"></span>':''}${f.co?'<span class="sscal-dot co"></span>':''}${f.clean?`<span class="sscal-dot ${f.conflict?'conflict':'clean'}"></span>`:''}`;
+    cells+=`<div class="sscal-cell ${out?'out':''} ${today?'today':''} ${f.occ?'occ':''}" data-day="${ds}">${d.getDate()}<div class="sscal-dots">${dots}</div></div>`;
+  }
+  box.innerHTML=`<div class="sscal">
+    <div class="sscal-head"><b>${monthName}</b><div class="sscal-nav"><button data-mo="-1">‹</button><button data-mo="now">•</button><button data-mo="1">›</button></div></div>
+    <div class="sscal-grid">${wdNames.map(w=>`<div class="sscal-wd">${w}</div>`).join('')}${cells}</div>
+    <div class="sscal-legend"><span><span class="sscal-dot ci"></span>Заезд</span><span><span class="sscal-dot co"></span>Выезд</span><span><span class="sscal-dot clean"></span>Уборка</span><span><span class="sscal-dot conflict"></span>Конфликт</span><span><span class="lg-occ"></span>Гость</span></div>
+  </div>`;
+  box.querySelectorAll('[data-mo]').forEach(b=>b.onclick=()=>{ ssMonthOff=b.dataset.mo==='now'?0:ssMonthOff+(+b.dataset.mo); ssRenderCal(); });
+  box.querySelectorAll('[data-day]').forEach(c=>c.onclick=()=>ssDayDetail(+c.dataset.day));
+  if(window.i18nApply)i18nApply(box);
+}
+// Day detail — the day's timeline of guest + cleaning events (spec §15).
+function ssDayDetail(ds){
+  const de=ds+86400000;
+  const evs=[];
+  for(const r of (ssData.reservations||[])){ if(r.status==='cancelled')continue;
+    if(r.checkoutAt>ds&&r.checkoutAt<=de)evs.push([r.checkoutAt,'🚪 '+t('Выезд')+' · '+(SRC_LABEL[r.source]?t(SRC_LABEL[r.source]):r.source)+(r.guestName?' · '+r.guestName:'')]);
+    if(r.checkinAt>=ds&&r.checkinAt<de)evs.push([r.checkinAt,'🔑 '+t('Заезд')+' · '+(SRC_LABEL[r.source]?t(SRC_LABEL[r.source]):r.source)+(r.guestName?' · '+r.guestName:'')]);
+  }
+  for(const tt of (ssData.turnovers||[])){ if(tt.suggestedStart>=ds&&tt.suggestedStart<de)evs.push([tt.suggestedStart,'🧹 '+t(tt.kind==='between_guests'?'Уборка между гостями':'Уборка после выезда')+(tt.conflict?' ⚠️':'')]); }
+  evs.sort((a,b)=>a[0]-b[0]);
+  const inner=el(`<div class="card pad">
+    <h3 style="margin-bottom:12px">${new Date(ds).toLocaleDateString(curLocale(),{weekday:'long',day:'numeric',month:'long'})}</h3>
+    ${evs.length?`<div class="timeline" style="margin-top:4px">${evs.map(([ts,txt])=>`<div class="ev"><b style="font-size:13px">${fmtHM(ts)}</b> <span style="font-size:14px">${esc(txt)}</span></div>`).join('')}</div>`:`<p class="muted tiny">${t('Свободный день')}</p>`}
+  </div>`);
+  showModalNode(inner);
 }
 
 // Add / edit a reservation (spec §4).
