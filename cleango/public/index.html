@@ -659,6 +659,8 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .tbadges{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
 .tbadge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);white-space:nowrap}
 .tbadge.g{background:var(--primary-050);color:var(--primary-600);border-color:transparent}
+.scoregain{border:0;cursor:pointer;background:var(--primary-050);color:var(--primary-600);font-weight:800;font-size:11.5px;padding:3px 9px;border-radius:999px;transition:.15s;white-space:nowrap}
+.scoregain:hover{background:var(--primary);color:#fff}
 .chart-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:20px;margin-bottom:20px}
 @media(max-width:760px){.chart-grid{grid-template-columns:1fr}}
 .install-banner{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:200;display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:12px 14px;box-shadow:0 18px 44px rgba(6,42,26,.22);width:420px;max-width:calc(100vw - 28px);animation:ibUp .4s cubic-bezier(.2,1,.3,1)}
@@ -1096,6 +1098,10 @@ Object.assign(TR.uk,{"Профессиональный пылесос":"Проф
 Object.assign(TR.pl,{"Добро пожаловать, {name}!":"Witaj, {name}!","Загрузите своё фото":"Dodaj swoje zdjęcie","Загрузите фото документа":"Dodaj zdjęcie dokumentu","Отчёт скопирован":"Raport skopiowany","Чек скопирован":"Paragon skopiowany","Готово":"Gotowe"});
 Object.assign(TR.en,{"Добро пожаловать, {name}!":"Welcome, {name}!","Загрузите своё фото":"Upload your photo","Загрузите фото документа":"Upload the document photo","Отчёт скопирован":"Report copied","Чек скопирован":"Receipt copied","Готово":"Done"});
 Object.assign(TR.uk,{"Добро пожаловать, {name}!":"Ласкаво просимо, {name}!","Загрузите своё фото":"Завантажте своє фото","Загрузите фото документа":"Завантажте фото документа","Отчёт скопирован":"Звіт скопійовано","Чек скопирован":"Чек скопійовано","Готово":"Готово"});
+/* smart home: score trend */
+Object.assign(TR.pl,{"Динамика · 14 дней":"Dynamika · 14 dni"});
+Object.assign(TR.en,{"Динамика · 14 дней":"Trend · 14 days"});
+Object.assign(TR.uk,{"Динамика · 14 дней":"Динаміка · 14 днів"});
 /* smart home: recommendations, schedule, score */
 Object.assign(TR.pl,{
   "«{s}» просрочено на {n} дн — закажите, чтобы дом оставался свежим.":"«{s}» zaległe o {n} dni — zamów, aby dom pozostał świeży.",
@@ -2340,7 +2346,23 @@ function recTextRu(r,TASK_RU){
 }
 const GRADE_RU={Excellent:'Отлично',Great:'Хорошо',Fair:'Нормально','Needs care':'Требует ухода'};
 const DIM_RU={Cleanliness:'Чистота','Air & freshness':'Воздух и свежесть',Windows:'Окна',Mattresses:'Матрасы',Upholstery:'Мебель',Garden:'Сад'};
-function lumiScoreCard(score,pid){
+function scoreSpark(hist){
+  if(!hist||hist.length<2)return '';
+  const w=260,h=46,max=100,min=Math.min(60,...hist.map(d=>d.score)),rng=Math.max(1,max-min);
+  const pts=hist.map((d,i)=>[(i/(hist.length-1))*w, h-4-((d.score-min)/rng)*(h-8)]);
+  const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const last=pts[pts.length-1], delta=hist[hist.length-1].score-hist[0].score;
+  const dtxt=delta>0?`+${delta}`:`${delta}`, dcol=delta>0?'var(--primary-600)':delta<0?'var(--danger)':'var(--ink-3)';
+  return `<div style="margin-top:14px">
+    <div class="row" style="justify-content:space-between;margin-bottom:4px"><span class="tiny muted" style="font-weight:700">${t('Динамика · 14 дней')}</span><span class="tiny" style="font-weight:800;color:${dcol}">${dtxt}</span></div>
+    <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:46px;display:block;overflow:visible">
+      <defs><linearGradient id="ssg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--primary)" stop-opacity=".26"/><stop offset="1" stop-color="var(--primary)" stop-opacity="0"/></linearGradient></defs>
+      <path d="${line} L ${w} ${h} L 0 ${h} Z" fill="url(#ssg)"/>
+      <path d="${line}" fill="none" stroke="var(--primary)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="3.4" fill="var(--primary)" stroke="var(--surface)" stroke-width="1.5"/>
+    </svg></div>`;
+}
+function lumiScoreCard(score,pid,hist){
   if(!score)return '';
   const col=scoreColor(score.overall);
   return `<div class="card pad reveal" style="margin-bottom:20px">
@@ -2356,9 +2378,13 @@ function lumiScoreCard(score,pid){
         ${score.focus?`<button class="btn sm" data-rec="${score.focus.book}">${I.spark} ${t('Поднять рейтинг — заказать «{d}»',{d:t(DIM_RU[score.focus.label]||score.focus.label).toLowerCase()})}</button>`:`<span class="badge green">${I.check}Ваш дом в отличной форме</span>`}
       </div>
     </div>
+    ${scoreSpark(hist)}
     <div class="divider"></div>
     <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">
-      ${score.dims.map(d=>`<div class="row" style="justify-content:space-between"><span class="tiny" style="font-weight:600">${DIM_RU[d.label]||d.label}</span>${starRow(d.stars)}</div>`).join('')}
+      ${score.dims.map(d=>`<div class="row" style="justify-content:space-between;align-items:center;gap:8px">
+        <span class="tiny" style="font-weight:600">${DIM_RU[d.label]||d.label}</span>
+        <span class="row" style="gap:8px;align-items:center">${starRow(d.stars)}${(d.gain>=2&&d.book)?`<button class="scoregain" data-rec="${d.book}" title="Заказать">+${d.gain}</button>`:''}</span>
+      </div>`).join('')}
     </div>
   </div>`;
 }
@@ -2391,7 +2417,7 @@ async function viewSmart(){
         </div>
         <button class="btn sm" id="passportBtn" style="margin-top:18px;background:rgba(255,255,255,.16);color:#fff">${I.receipt} Паспорт дома ${I.arrow}</button>
       </div>
-      ${lumiScoreCard(smart.score,pid)}
+      ${lumiScoreCard(smart.score,pid,smart.scoreHistory)}
       ${smart.recommendations.length?`<div class="card pad reveal" style="margin-bottom:20px;border:1.5px solid var(--primary)">
         <div class="aiband" style="margin-bottom:14px">${I.ai}<span>AI-рекомендации для этого дома</span></div>
         ${smart.recommendations.map(r=>`<div class="row" style="justify-content:space-between;padding:8px 0;gap:12px">

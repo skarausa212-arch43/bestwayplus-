@@ -132,8 +132,9 @@ const SCORE_DIMS = [
   { key: 'sofa',        label: 'Upholstery', task: 'sofa' },
   { key: 'garden',      label: 'Garden', task: 'garden' },
 ];
-function propertyTasks(p) {
-  const completed = Object.values(db.bookings).filter((b) => b.propertyId === p.id && b.status === 'completed');
+function propertyTasks(p, at) {
+  at = at || now();
+  const completed = Object.values(db.bookings).filter((b) => b.propertyId === p.id && b.status === 'completed' && b.updatedAt <= at);
   return MAINTENANCE.map((m) => {
     const last = completed.filter((b) => b.service === m.book).sort((a, b) => b.updatedAt - a.updatedAt)[0];
     // A brand-new home starts fresh: with no booking history the baseline is the
@@ -141,18 +142,32 @@ function propertyTasks(p) {
     // only decays as the interval elapses.
     const lastAt = last ? last.updatedAt : p.createdAt;
     const dueAt = lastAt + m.interval * DAY;
-    const daysLeft = Math.round((dueAt - now()) / DAY);
+    const daysLeft = Math.round((dueAt - at) / DAY);
     const status = daysLeft < 0 ? 'overdue' : daysLeft <= 7 ? 'soon' : 'ok';
     return { key: m.key, label: m.label, book: m.book, interval: m.interval, lastAt, dueAt, daysLeft, status };
   });
 }
+// LUMI Score over the last `days` days (deterministic recompute at each day).
+function scoreHistory(p, days) {
+  const start = new Date(now()); start.setHours(0, 0, 0, 0);
+  const out = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const at = start.getTime() - i * DAY;
+    if (at + DAY < p.createdAt) continue;          // before the home existed
+    out.push({ t: at, score: computeLumiScore(propertyTasks(p, at)).overall });
+  }
+  return out;
+}
 function computeLumiScore(tasks) {
   const byKey = Object.fromEntries(tasks.map((t) => [t.key, t]));
+  const n = SCORE_DIMS.length;
   const dims = SCORE_DIMS.map((d) => {
     const t = byKey[d.task];
     const ratio = t ? t.daysLeft / t.interval : 1;      // 1 = just done, <0 = overdue
     const pct = Math.max(0, Math.min(1, 0.5 + ratio * 0.5));
-    return { key: d.key, label: d.label, task: d.task, book: t ? t.book : null, pct, stars: Math.max(1, Math.round(pct * 5)) };
+    // Points this dimension would add to the overall score if refreshed now.
+    const gain = Math.round(((1 - pct) / n) * 100);
+    return { key: d.key, label: d.label, task: d.task, book: t ? t.book : null, pct, gain, stars: Math.max(1, Math.round(pct * 5)) };
   });
   const overall = Math.round((dims.reduce((s, d) => s + d.pct, 0) / dims.length) * 100);
   const grade = overall >= 85 ? 'Excellent' : overall >= 70 ? 'Great' : overall >= 50 ? 'Fair' : 'Needs care';
@@ -1140,6 +1155,7 @@ route('GET', '/api/properties/:id/smart', async (req, res, params) => {
       lastCleaning: lastCleaning ? { at: lastCleaning.updatedAt, service: lastCleaning.serviceLabel } : null,
       tasks, recommendations: recs,
       score: computeLumiScore(tasks),
+      scoreHistory: scoreHistory(p, 14),
       // NOTE: LUMI Vault (post-MVP) — a home's digital archive lives off the
       // same booking history (before/after photos, invoices, service log). The
       // data is already captured per booking, so Vault can be layered on later

@@ -151,6 +151,10 @@ async function main() {
       assert.strictEqual(smart.status, 200);
       assert.strictEqual(smart.json.smart.score.overall, 100, 'fresh home scores 100');
       assert.strictEqual(smart.json.smart.score.focus, null, 'no upsell nudge on a fresh home');
+      const hist = smart.json.smart.scoreHistory;
+      assert.ok(Array.isArray(hist) && hist.length >= 1 && hist.length <= 14, 'score history present');
+      assert.ok(hist.every((d) => d.score >= 0 && d.score <= 100), 'history scores in range');
+      assert.ok(smart.json.smart.score.dims.every((d) => typeof d.gain === 'number'), 'dims expose point gain');
     });
     await ok('customer creates a booking', async () => {
       const props = await req('GET', '/api/properties', { token: customerTok });
