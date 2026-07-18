@@ -343,7 +343,21 @@ textarea.input{resize:vertical;min-height:80px}
 .modal{width:100%;max-width:460px;transform:translateY(20px) scale(.98);transition:.2s}
 .modal-bg.show .modal{transform:none}
 
-.empty{text-align:center;padding:48px 20px;color:var(--ink-3)}
+.empty{text-align:center;padding:52px 20px;color:var(--ink-3)}
+.empty-ill{width:98px;height:98px;margin:0 auto 20px;border-radius:30px;display:grid;place-items:center;color:var(--primary-600);background:radial-gradient(120% 120% at 30% 20%,var(--primary-050),color-mix(in srgb,var(--primary) 10%,transparent));box-shadow:0 14px 34px rgba(5,150,105,.14);position:relative}
+.empty-ill::after{content:"";position:absolute;inset:0;border-radius:30px;border:1px solid color-mix(in srgb,var(--primary) 20%,transparent)}
+.empty-ill svg{width:46px;height:46px}
+.empty h3{margin:0 0 6px;font-size:18px;color:var(--ink-2)}
+.empty p{margin:0 auto;max-width:330px}
+/* animated success burst */
+.succ-pop{position:fixed;inset:0;display:grid;place-items:center;z-index:320;pointer-events:none;animation:succFade .35s 1.15s forwards}
+.succ-pop .disc{width:118px;height:118px;border-radius:50%;background:var(--surface);box-shadow:0 20px 50px rgba(6,42,26,.22);display:grid;place-items:center}
+.succ-pop svg{width:74px;height:74px}
+.succ-pop .sc{fill:none;stroke:var(--primary);stroke-width:3;stroke-dasharray:151;stroke-dashoffset:151;animation:scDraw .5s cubic-bezier(.6,0,.3,1) forwards}
+.succ-pop .sk{fill:none;stroke:var(--primary);stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:44;stroke-dashoffset:44;animation:scDraw .38s .42s cubic-bezier(.6,0,.3,1) forwards}
+@keyframes scDraw{to{stroke-dashoffset:0}}
+@keyframes succFade{to{opacity:0;transform:scale(.9)}}
+@media(prefers-reduced-motion:reduce){.succ-pop .sc,.succ-pop .sk{animation:none;stroke-dashoffset:0}}
 .empty svg{width:60px;height:60px;margin-bottom:14px;opacity:.5}
 .sk{background:linear-gradient(90deg,var(--surface-2),var(--line),var(--surface-2));background-size:200% 100%;animation:sk 1.3s infinite;border-radius:12px}
 @keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
@@ -2892,7 +2906,7 @@ async function confirmBooking(){
   try{
     const {booking}=await api('/api/bookings','POST',d);
     state.draft=null;
-    confetti();
+    successBurst();
     toast('Заказ создан — ищем исполнителя…');
     state.activeBooking=booking.id;state.view='bookings';
     render();openBooking(booking.id);
@@ -4162,7 +4176,12 @@ async function viewFinance(){
 }
 
 /* ---------- Shared UI ---------- */
-function emptyState(title,sub){return el(`<div class="empty">${I.jobs}<h3 style="color:var(--ink-2)">${title}</h3><p class="tiny">${sub}</p></div>`);}
+function emptyState(title,sub,icon){return el(`<div class="empty"><div class="empty-ill">${icon||I.jobs}</div><h3>${title}</h3><p class="tiny">${sub}</p></div>`);}
+// Celebratory animated checkmark + confetti for key success moments.
+function successBurst(){
+  const w=el(`<div class="succ-pop"><div class="disc"><svg viewBox="0 0 52 52"><circle class="sc" cx="26" cy="26" r="24"/><path class="sk" d="M15 27 l7.5 7.5 L38 19"/></svg></div></div>`);
+  document.body.appendChild(w); confetti(); setTimeout(()=>w.remove(),1600);
+}
 let modalEl=null;
 function showModal(html,wide){const n=el(`<div class="modal ${wide?'':''}" style="${wide?'max-width:560px':''}">${html}</div>`);showModalNode(n);}
 function showModalNode(node){
