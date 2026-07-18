@@ -364,6 +364,9 @@ const SERVICE_CATALOG = {
   // Windows has its own per-window calculator (opened from the «Окна» tile),
   // so it is hidden from the main service picker.
   windows:   { label: 'Мойка окон',  base: 50,  perRoom: 0,  perBath: 0,  rate: 1.0, hidden: true },
+  // Turnover cleaning between short-term-rental guests (linen change, restock,
+  // photo report). Hidden from the normal customer picker — created via STR.
+  turnover:  { label: 'Уборка между гостями', base: 120, perRoom: 24, perBath: 30, rate: 1.15, hidden: true },
 };
 // À-la-carte add-ons (à-la «Заказать уборку» flow). Money in whole zł (the
 // estimator works in major units). `type`:
@@ -1345,6 +1348,108 @@ route('DELETE', '/api/properties/:id/reservations/:rid', async (req, res, params
   delete db.reservations[params.rid];
   persist.reservations();
   send(res, 200, { ok: true, str: strView(ctx.p) });
+});
+
+// Default turnover checklist (spec §11) — owner can override per property.
+const TURNOVER_CHECKLIST = [
+  { area: 'Спальня', items: ['Сменить постельное бельё', 'Застелить кровать', 'Проверить пятна', 'Убрать поверхности'] },
+  { area: 'Ванная', items: ['Сантехника', 'Зеркало', 'Душ', 'Полотенца', 'Туалетная бумага', 'Расходники'] },
+  { area: 'Кухня', items: ['Посуда', 'Мойка', 'Столешница', 'Плита', 'Холодильник', 'Мусор'] },
+  { area: 'Общее', items: ['Пропылесосить', 'Вымыть пол', 'Проверить запах', 'Проверить повреждения', 'Проверить забытые вещи', 'Сделать фотографии'] },
+];
+// Create a turnover cleaning booking from a computed turnover window. Reuses the
+// normal booking pipeline; assigns the preferred cleaner when asked & possible.
+function createTurnoverBooking(p, turnover, assign) {
+  const est = estimatePrice({ service: 'turnover', rooms: p.rooms, baths: p.baths, city: p.city });
+  const price = est.total, commission = Math.round(price * COMMISSION_RATE);
+  const pref = assign && p.strSettings.preferredCleanerId ? db.users[p.strSettings.preferredCleanerId] : null;
+  const canAssign = pref && pref.role === 'cleaner' && pref.verified && !pref.deletedAt && !enforceSuspension(pref);
+  const id = uid('b_'); const t = now();
+  const bk = {
+    id, customerId: p.ownerId, propertyId: p.id, cleanerId: canAssign ? pref.id : null,
+    status: canAssign ? 'accepted' : 'searching',
+    service: 'turnover', serviceLabel: SERVICE_CATALOG.turnover.label,
+    address: p.address, city: p.city, rooms: p.rooms, baths: p.baths, area: p.area || 0,
+    windows: null, windowSide: null, windowAccess: null, floor: null,
+    extras: [], notes: 'Уборка между гостями', price, payout: price - commission, commission,
+    urgency: turnover.priority === 'high' ? 'today' : 'normal',
+    turnover: true, turnoverPrevId: turnover.previousReservationId, turnoverNextId: turnover.nextReservationId,
+    scheduledAt: turnover.suggestedStart, mustFinishBefore: turnover.mustFinishBefore || null, turnoverPriority: turnover.priority,
+    checklist: p.turnoverChecklist || TURNOVER_CHECKLIST, supplies: (p.supplies || []).map((s) => ({ name: s.name, status: 'ok' })),
+    createdAt: t, updatedAt: t, photosBefore: [], photosAfter: [], paid: false, reviewed: false,
+    timeline: [{ status: 'searching', at: t }].concat(canAssign ? [{ status: 'accepted', at: t, by: pref.id }] : []),
+  };
+  db.bookings[id] = bk; persist.bookings(); db.messages[id] = []; persist.messages();
+  return bk;
+}
+
+// AI calendar import — parse only (spec §5/§22). Never saves; returns the
+// recognized reservations with a confidence score and duplicate flags.
+route('POST', '/api/properties/:id/calendar-import', async (req, res, params) => {
+  const ctx = requireStr(req, res, params.id); if (!ctx) return;
+  const b = await readBody(req);
+  const parsed = str.parseCalendarText(b.text || '', { year: new Date().getFullYear() });
+  const s = ctx.p.strSettings;
+  const existing = Object.values(db.reservations).filter((r) => r.propertyId === ctx.p.id).map(reservationView);
+  const items = parsed.reservations.map((r) => {
+    const checkinAt = str.atTime(r.checkin, s.defaultCheckinTime, str.toMinutes(s.defaultCheckinTime));
+    const checkoutAt = str.atTime(r.checkout, s.defaultCheckoutTime, str.toMinutes(s.defaultCheckoutTime));
+    const dup = str.findDuplicate(existing, { checkinAt, checkoutAt, externalBookingId: r.externalBookingId || null });
+    return { ...r, checkinAt, checkoutAt, duplicateOf: dup ? dup.id : null };
+  });
+  send(res, 200, { parsed: { reservations: items, confidence: parsed.confidence, imagesReceived: Array.isArray(b.images) ? b.images.length : 0 } });
+});
+
+// Confirm the reviewed import (spec §5/§21). Dedups, creates reservations, and
+// auto-schedules turnovers when Autopilot is on.
+route('POST', '/api/properties/:id/calendar-import/confirm', async (req, res, params) => {
+  const ctx = requireStr(req, res, params.id); if (!ctx) return;
+  const b = await readBody(req);
+  const rows = Array.isArray(b.reservations) ? b.reservations : [];
+  const existing = Object.values(db.reservations).filter((r) => r.propertyId === ctx.p.id);
+  const created = [], skipped = [];
+  for (const row of rows) {
+    if (row.skip) continue;
+    const cand = buildReservation(ctx.p, row);
+    if (!cand.checkinAt || !cand.checkoutAt || cand.checkoutAt <= cand.checkinAt) continue;
+    const dup = str.findDuplicate(existing, cand);
+    if (dup && row.onDuplicate !== 'new') {
+      if (row.onDuplicate === 'update') { Object.assign(dup, cand, { updatedAt: now() }); skipped.push({ id: dup.id, action: 'updated' }); }
+      else skipped.push({ id: dup.id, action: 'skipped' });
+      continue;
+    }
+    const id = uid('res_');
+    const r = { id, propertyId: ctx.p.id, status: 'confirmed', createdAt: now(), updatedAt: now(), ...cand };
+    db.reservations[id] = r; existing.push(r); created.push(reservationView(r));
+  }
+  persist.reservations();
+  let scheduled = 0;
+  if (str.autopilotMode(ctx.p.strSettings) === 'autopilot' && created.length) {
+    const all = Object.values(db.reservations).filter((r) => r.propertyId === ctx.p.id);
+    const turnovers = str.generateTurnovers(all, ctx.p.strSettings, ctx.p);
+    const existingBk = Object.values(db.bookings).filter((x) => x.propertyId === ctx.p.id && x.turnover);
+    for (const t of turnovers) {
+      if (t.availableFrom < now()) continue;
+      if (existingBk.find((x) => x.turnoverPrevId === t.previousReservationId)) continue;
+      createTurnoverBooking(ctx.p, t, true); scheduled++;
+    }
+  }
+  send(res, 200, { created, skipped, scheduled, str: strView(ctx.p) });
+});
+
+// Manually schedule a turnover cleaning (spec §6/§9 propose mode).
+route('POST', '/api/properties/:id/turnovers/schedule', async (req, res, params) => {
+  const ctx = requireStr(req, res, params.id); if (!ctx) return;
+  const b = await readBody(req);
+  const all = Object.values(db.reservations).filter((r) => r.propertyId === ctx.p.id);
+  const turnovers = str.generateTurnovers(all, ctx.p.strSettings, ctx.p);
+  const t = turnovers.find((x) => x.previousReservationId === b.previousReservationId);
+  if (!t) return send(res, 404, { error: 'Turnover not found.' });
+  if (Object.values(db.bookings).some((x) => x.propertyId === ctx.p.id && x.turnover && x.turnoverPrevId === b.previousReservationId)) {
+    return send(res, 409, { error: 'Уборка уже создана для этого выезда.', code: 'ALREADY' });
+  }
+  const bk = createTurnoverBooking(ctx.p, t, true);
+  send(res, 200, { booking: { id: bk.id, status: bk.status, cleanerId: bk.cleanerId, scheduledAt: bk.scheduledAt }, str: strView(ctx.p) });
 });
 
 // Appliance Registry (17_SMART_HOME.md §8) — per-property inventory.

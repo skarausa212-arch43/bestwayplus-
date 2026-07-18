@@ -177,6 +177,28 @@ async function main() {
       assert.strictEqual(bad.status, 400);
       assert.strictEqual(bad.json.code, 'NOT_STR');
     });
+    await ok('STR calendar import: parse → confirm → dedup → schedule turnover', async () => {
+      const yr = new Date().getFullYear();
+      const cp = await req('POST', '/api/properties', { token: customerTok, body: { label: 'STR Import', city: 'Warsaw', type: 'short_term_rental', rooms: 2, baths: 1, strSettings: { minimumBufferMinutes: 30, expectedCleaningDuration: 120 } } });
+      const sid = cp.json.property.id;
+      const text = `${yr}-12-10 to ${yr}-12-13 Airbnb\n${yr}-12-13 to ${yr}-12-17 Booking.com`;
+      const imp = await req('POST', `/api/properties/${sid}/calendar-import`, { token: customerTok, body: { text } });
+      assert.strictEqual(imp.json.parsed.reservations.length, 2);
+      assert.ok(imp.json.parsed.reservations.every((r) => r.duplicateOf == null));
+      const conf = await req('POST', `/api/properties/${sid}/calendar-import/confirm`, { token: customerTok, body: { reservations: imp.json.parsed.reservations } });
+      assert.strictEqual(conf.json.created.length, 2);
+      // Re-import the same calendar → duplicates flagged, none created on skip.
+      const imp2 = await req('POST', `/api/properties/${sid}/calendar-import`, { token: customerTok, body: { text } });
+      assert.strictEqual(imp2.json.parsed.reservations.filter((r) => r.duplicateOf).length, 2);
+      const conf2 = await req('POST', `/api/properties/${sid}/calendar-import/confirm`, { token: customerTok, body: { reservations: imp2.json.parsed.reservations.map((r) => ({ ...r, onDuplicate: 'skip' })) } });
+      assert.strictEqual(conf2.json.created.length, 0);
+      assert.strictEqual(conf2.json.skipped.length, 2);
+      // Schedule the between-guests turnover → a turnover booking is created.
+      const prev = conf.json.str.turnovers[0].previousReservationId;
+      const sch = await req('POST', `/api/properties/${sid}/turnovers/schedule`, { token: customerTok, body: { previousReservationId: prev } });
+      assert.strictEqual(sch.status, 200);
+      assert.strictEqual(sch.json.str.turnovers[0].status, 'scheduled');
+    });
     await ok('customer creates a booking', async () => {
       const props = await req('GET', '/api/properties', { token: customerTok });
       const pid = props.json.properties[0].id;
