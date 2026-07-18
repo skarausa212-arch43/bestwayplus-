@@ -199,6 +199,39 @@ async function main() {
       assert.strictEqual(sch.status, 200);
       assert.strictEqual(sch.json.str.turnovers[0].status, 'scheduled');
     });
+    await ok('STR problem after a guest (§14): cleaner reports, owner sees + resolves', async () => {
+      const D = 86400000, base = new Date(); base.setHours(0, 0, 0, 0);
+      const day = (n) => base.getTime() + n * D;
+      const cp = await req('POST', '/api/properties', { token: customerTok, body: { label: 'STR Prob', city: 'Warsaw', type: 'short_term_rental', rooms: 2, baths: 1 } });
+      const sid = cp.json.property.id;
+      await req('POST', `/api/properties/${sid}/reservations`, { token: customerTok, body: { source: 'airbnb', checkinDate: day(1), checkoutDate: day(4), guestName: 'G1' } });
+      await req('POST', `/api/properties/${sid}/reservations`, { token: customerTok, body: { source: 'booking', checkinDate: day(4), checkoutDate: day(8) } });
+      const s0 = await req('GET', `/api/properties/${sid}/str`, { token: customerTok });
+      const prev = s0.json.str.turnovers[0].previousReservationId;
+      const sch = await req('POST', `/api/properties/${sid}/turnovers/schedule`, { token: customerTok, body: { previousReservationId: prev } });
+      const bid = sch.json.booking.id;
+      // Cleaner takes the turnover, then flags a problem.
+      await req('POST', `/api/bookings/${bid}/accept`, { token: cleanerTok });
+      const bad = await req('POST', `/api/bookings/${bid}/turnover-problem`, { token: cleanerTok, body: { kind: 'damage' } });
+      assert.strictEqual(bad.json.code, 'NOTE_REQUIRED');           // note required
+      const rep = await req('POST', `/api/bookings/${bid}/turnover-problem`, { token: cleanerTok, body: { kind: 'damage', note: 'Broken cup in the kitchen' } });
+      assert.strictEqual(rep.status, 200);
+      assert.strictEqual(rep.json.problem.kind, 'damage');
+      // Customer (not the cleaner) cannot report.
+      const denied = await req('POST', `/api/bookings/${bid}/turnover-problem`, { token: customerTok, body: { kind: 'mess', note: 'x' } });
+      assert.strictEqual(denied.status, 403);
+      // Owner sees it in the STR view.
+      const s1 = await req('GET', `/api/properties/${sid}/str`, { token: customerTok });
+      assert.strictEqual(s1.json.str.status.openProblems, 1);
+      const tvProblem = s1.json.str.turnovers.find((x) => x.previousReservationId === prev);
+      assert.strictEqual(tvProblem.problems.length, 1);
+      assert.strictEqual(tvProblem.problems[0].resolved, false);
+      // Owner resolves it.
+      const pid = rep.json.problem.id;
+      const res = await req('POST', `/api/bookings/${bid}/turnover-problem`, { token: customerTok, body: { resolve: pid } });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.json.str.status.openProblems, 0);
+    });
     await ok('STR supplies + checklist: set, reset to default, non-STR rejected', async () => {
       const cp = await req('POST', '/api/properties', { token: customerTok, body: { label: 'STR Ops', city: 'Warsaw', type: 'short_term_rental', rooms: 2, baths: 1 } });
       const sid = cp.json.property.id;

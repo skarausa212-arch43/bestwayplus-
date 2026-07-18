@@ -1303,7 +1303,10 @@ function strView(p) {
     t.bookingId = bk ? bk.id : null;
     t.bookingStatus = bk ? bk.status : null;
     t.status = bk ? (bk.status === 'completed' ? 'done' : 'scheduled') : 'unscheduled';
+    t.qc = bk && bk.qc ? bk.qc : null;                        // §13 photo-report quality check
+    t.problems = bk && bk.problems ? bk.problems : [];        // §14 issues flagged after a guest
   }
+  const openProblems = turnovers.reduce((n, x) => n + x.problems.filter((pr) => !pr.resolved).length, 0);
   const t = now();
   const active = reservations.find((r) => r.status !== 'cancelled' && r.checkinAt <= t && r.checkoutAt > t);
   const upcoming = reservations.filter((r) => r.status !== 'cancelled' && r.checkinAt > t);
@@ -1323,6 +1326,7 @@ function strView(p) {
       nextCheckin: upcoming[0] ? reservationView(upcoming[0]) : null,
       nextTurnover: turnovers.find((x) => x.suggestedEnd >= t && x.status !== 'done') || null,
       conflicts: turnovers.filter((x) => x.conflict && x.status !== 'done').length,
+      openProblems,
     },
   };
 }
@@ -1428,6 +1432,7 @@ function createTurnoverBooking(p, turnover, assign) {
     scheduledAt: turnover.suggestedStart, mustFinishBefore: turnover.mustFinishBefore || null, turnoverPriority: turnover.priority,
     checklist: p.turnoverChecklist || TURNOVER_CHECKLIST, supplies: (p.supplies || []).map((s) => ({ name: s.name, status: 'ok' })),
     createdAt: t, updatedAt: t, photosBefore: [], photosAfter: [], paid: false, reviewed: false,
+    problems: [],   // spec §14 — issues the cleaner flags for the owner after a guest
     timeline: [{ status: 'searching', at: t }].concat(canAssign ? [{ status: 'accepted', at: t, by: pref.id }] : []),
   };
   db.bookings[id] = bk; persist.bookings(); db.messages[id] = []; persist.messages();
@@ -1501,6 +1506,42 @@ route('POST', '/api/properties/:id/turnovers/schedule', async (req, res, params)
   }
   const bk = createTurnoverBooking(ctx.p, t, true);
   send(res, 200, { booking: { id: bk.id, status: bk.status, cleanerId: bk.cleanerId, scheduledAt: bk.scheduledAt }, str: strView(ctx.p) });
+});
+
+// Problems after a guest (spec §14) — the assigned cleaner flags damage / missing
+// items / extra mess found at turnover; the owner is alerted (urgent when the
+// next guest checks in soon). Owner can mark a problem resolved.
+const PROBLEM_KINDS = ['damage', 'missing', 'mess', 'maintenance', 'other'];
+route('POST', '/api/bookings/:id/turnover-problem', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const bk = db.bookings[params.id];
+  if (!bk || !bk.turnover) return send(res, 404, { error: 'Turnover cleaning not found.', code: 'NOT_TURNOVER' });
+  const p = db.properties[bk.propertyId];
+  const isCleaner = user.role === 'cleaner' && bk.cleanerId === user.id;
+  const isOwner = p && p.ownerId === user.id;
+  const b = await readBody(req);
+  // Owner action: resolve an existing problem.
+  if (b.resolve) {
+    if (!isOwner) return send(res, 403, { error: 'Only the owner can resolve.' });
+    const pr = (bk.problems || []).find((x) => x.id === b.resolve);
+    if (pr) { pr.resolved = true; pr.resolvedAt = now(); }
+    bk.problems = bk.problems || []; persist.bookings();
+    return send(res, 200, { problems: bk.problems, str: p ? strView(p) : null });
+  }
+  // Cleaner action: report a new problem.
+  if (!isCleaner) return send(res, 403, { error: 'Only the assigned cleaner can report a problem.' });
+  const kind = PROBLEM_KINDS.includes(b.kind) ? b.kind : 'other';
+  const note = String(b.note || '').trim().slice(0, 500);
+  if (!note) return send(res, 400, { error: 'Опишите проблему.', code: 'NOTE_REQUIRED' });
+  const photos = Array.isArray(b.photos) ? b.photos.filter((x) => validImage(x, 1500000)).slice(0, 4) : [];
+  // Urgent when the next guest checks in within 24h (owner must act fast).
+  const nextRes = bk.turnoverNextId ? db.reservations[bk.turnoverNextId] : null;
+  const urgent = !!(nextRes && nextRes.checkinAt - now() < 24 * 3600000);
+  const problem = { id: uid('prb_'), kind, note, photos, urgent, resolved: false, by: user.id, at: now() };
+  bk.problems = bk.problems || []; bk.problems.push(problem); bk.updatedAt = now(); persist.bookings();
+  if (p) notify(p.ownerId, urgent ? 'str.problem.urgent' : 'str.problem', { service: bk.serviceLabel, bookingId: bk.id });
+  send(res, 200, { problem, str: p ? strView(p) : null });
 });
 
 // Appliance Registry (17_SMART_HOME.md §8) — per-property inventory.

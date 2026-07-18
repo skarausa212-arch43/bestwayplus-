@@ -38,6 +38,16 @@ const T = {
     deepLink: 'lumi://booking/{bookingId}',
     ru: { title: 'Заказ отменён', body: '«{service}» отменён.' },
   },
+  'str.problem': {
+    category: 'operational', priority: 'high', channels: ['in_app', 'push'],
+    deepLink: 'lumi://booking/{bookingId}',
+    ru: { title: 'Проблема после гостя', body: 'Исполнитель сообщил о проблеме при уборке «{service}».' },
+  },
+  'str.problem.urgent': {
+    category: 'operational', priority: 'urgent', channels: ['in_app', 'push', 'email'],
+    deepLink: 'lumi://booking/{bookingId}',
+    ru: { title: '⚠️ Срочно: проблема до заезда', body: 'Исполнитель сообщил о проблеме, а гость скоро заедет. Проверьте «{service}».' },
+  },
   'payment.captured': {
     category: 'operational', priority: 'normal', channels: ['in_app', 'email'],
     deepLink: 'lumi://wallet',
