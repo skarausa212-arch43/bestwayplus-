@@ -156,32 +156,40 @@ lands in spam (port 25 is usually blocked, and IP reputation/SPF/DKIM/DMARC are
 hard to get right). Use your domain mailbox or a provider (Brevo, Mailgun, Amazon
 SES, Postmark — all have free/cheap tiers).
 
+> **Secrets go in `deploy/instance.local.env`, not `instance.env`.** The tracked
+> `instance.env` is overwritten by every code update, which would wipe an SMTP
+> password. `instance.local.env` is git-ignored and never touched by updates, and
+> its values override `instance.env`. Both `deploy.sh` and `auto-update.sh` merge
+> the two into the systemd env. Run the commands below as **root** (no `sudo`).
+
 1. **Get SMTP credentials** from your provider or domain host: host, port
    (587 STARTTLS or 465 TLS), username, password/API key.
-2. **Set them in `deploy/instance.env`** (uncomment the `LUMI_SMTP_*` lines) and
-   use a From address on your own domain, e.g. `no-reply@bestwayplus.pl`:
-   ```
-   LUMI_SMTP_HOST=smtp-relay.brevo.com
+2. **Create `deploy/instance.local.env` on the server** with the SMTP block and a
+   From address on your own domain. For the GoDaddy **Microsoft 365** mailbox
+   `support@lumi24.pl`:
+   ```bash
+   cat > /opt/lumi/deploy/instance.local.env <<'ENV'
+   LUMI_SMTP_HOST=smtp.office365.com
    LUMI_SMTP_PORT=587
-   LUMI_SMTP_USER=...
-   LUMI_SMTP_PASS=...            # secret — server only, never commit
-   LUMI_MAIL_FROM=no-reply@bestwayplus.pl
+   LUMI_SMTP_USER=support@lumi24.pl
+   LUMI_SMTP_PASS=THE_MAILBOX_PASSWORD
+   LUMI_MAIL_FROM=support@lumi24.pl
    LUMI_MAIL_FROM_NAME=LUMI
+   ENV
+   chmod 600 /opt/lumi/deploy/instance.local.env
+   bash /opt/lumi/deploy/auto-update.sh     # applies it as a systemd drop-in now
    ```
-   The auto-updater applies these as a systemd drop-in within ~5 min (or run
-   `sudo systemctl start lumi-update.service`). Until they’re set, email is a
-   safe no-op — the app logs `[mail] disabled …` and nothing breaks.
-3. **Add DNS records so mail isn’t marked as spam** (in the DNS panel for
-   `bestwayplus.pl`), following your provider’s exact values:
-   - **SPF** — a `TXT` on the root: `v=spf1 include:<provider-spf> ~all`
-   - **DKIM** — the `CNAME`/`TXT` record(s) the provider gives you
-   - **DMARC** — a `TXT` at `_dmarc`: `v=DMARC1; p=none; rua=mailto:you@bestwayplus.pl`
+   (Brevo/Mailgun/SES/Postmark work the same way — just swap host/user/pass.)
+   Until it’s set, email is a safe no-op — the app logs `[mail] disabled …`.
+3. **Microsoft 365 only:** enable **Authenticated SMTP** for the mailbox
+   (Microsoft 365 admin center → Users → `support@lumi24.pl` → Mail → *Manage email
+   apps* → tick **Authenticated SMTP**). New tenants ship with it OFF, and sending
+   fails with `535 5.7.139 … SmtpClientAuthentication is disabled` until you enable it.
+   With M365 the `From` must equal `LUMI_SMTP_USER`, and SPF/DKIM are already set for
+   the domain — no extra DNS needed. For a third-party relay instead, add its SPF
+   `include:` + DKIM records in GoDaddy DNS.
 4. **Test**: register a new account — the welcome email should arrive. Watch logs
-   with `journalctl -u lumi -f` (look for `[mail] sent to …`).
-
-> The From address domain must match the domain you set SPF/DKIM for, or mail
-> will fail authentication. Verify sending emails uses your domain, not the
-> provider’s.
+   with `journalctl -u lumi -f` (look for `[mail] sent to …` vs an auth error).
 
 ## Social sign-in (Google + Apple)
 The login screen shows **“Continue with Google”** and **“Continue with Apple”**

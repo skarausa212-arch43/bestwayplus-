@@ -18,17 +18,26 @@ sha="$(curl -fsSL -H 'Accept: application/vnd.github.sha' "$API" 2>/dev/null || 
 case "$sha" in ''|*[!0-9a-f]*) sha="$(curl -fsSL "$API" 2>/dev/null | sed -n 's/.*"sha" *: *"\([0-9a-f]\{7,40\}\)".*/\1/p' | head -1)";; esac
 [ -n "$sha" ] || { echo "update: cannot read remote sha (rate limit?)"; exit 0; }
 
-# Keep the systemd env drop-in in sync with deploy/instance.env every run (even
-# when the code sha is unchanged), so a new LUMI_ADMIN_EMAIL etc. takes effect
+# Keep the systemd env drop-in in sync with the instance env every run (even when
+# the code sha is unchanged), so a new LUMI_ADMIN_EMAIL / SMTP secret takes effect
 # without re-running the installer. Restarts lumi only when the drop-in changes.
+#
+# Two sources, applied in order (later wins):
+#   deploy/instance.env         — non-secret config, tracked in git (gets overwritten
+#                                 by every code update, so never put secrets here)
+#   deploy/instance.local.env   — server-only secrets (SMTP password, API keys);
+#                                 NOT in git and NOT touched by updates, so it survives
 apply_instance_env() {
-  local src="$APP_DIR/deploy/instance.env" dir=/etc/systemd/system/lumi.service.d
-  local dropin="$dir/10-instance.conf"
-  [ -f "$src" ] || return 0
-  local want; want="$(printf '[Service]\n'; while IFS= read -r line || [ -n "$line" ]; do
-    case "$line" in ''|\#*) continue;; esac
-    printf 'Environment=%s\n' "$line"
-  done < "$src")"
+  local dir=/etc/systemd/system/lumi.service.d dropin
+  dropin="$dir/10-instance.conf"
+  local want; want="$(printf '[Service]\n'
+    for src in "$APP_DIR/deploy/instance.env" "$APP_DIR/deploy/instance.local.env"; do
+      [ -f "$src" ] || continue
+      while IFS= read -r line || [ -n "$line" ]; do
+        case "$line" in ''|\#*) continue;; esac
+        printf 'Environment=%s\n' "$line"
+      done < "$src"
+    done)"
   if [ "$(cat "$dropin" 2>/dev/null || true)" != "$want" ]; then
     mkdir -p "$dir"; printf '%s\n' "$want" > "$dropin"
     systemctl daemon-reload
