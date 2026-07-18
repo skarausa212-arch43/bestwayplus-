@@ -1092,6 +1092,10 @@ Object.assign(TR.uk,{"✓ Проверен":"✓ Перевірений","⭐ Т
 Object.assign(TR.pl,{"Профессиональный пылесос":"Profesjonalny odkurzacz","Моющий пылесос / экстрактор":"Odkurzacz piorący / ekstraktor","Пароочиститель":"Parowar (myjka parowa)","Стремянка (для мытья окон)":"Drabina (do mycia okien)","Инвентарь (швабра, вёдра, микрофибра)":"Sprzęt (mop, wiadra, mikrofibra)","Профессиональная химия":"Profesjonalna chemia","Экологичные средства":"Środki ekologiczne","Кухня":"Kuchnia","Санузел":"Łazienka","Окна и балкон":"Okna i balkon","Уход и бельё":"Pielęgnacja i pranie","Питомцы":"Zwierzęta","Логистика":"Logistyka","Химчистка":"Pralnia chemiczna","Оборудование не указано.":"Nie podano sprzętu.","Свой автомобиль: есть":"Własny samochód: tak","Свой автомобиль: нет":"Własny samochód: nie"});
 Object.assign(TR.en,{"Профессиональный пылесос":"Professional vacuum","Моющий пылесос / экстрактор":"Wet vacuum / extractor","Пароочиститель":"Steam cleaner","Стремянка (для мытья окон)":"Ladder (for windows)","Инвентарь (швабра, вёдра, микрофибра)":"Supplies (mop, buckets, microfiber)","Профессиональная химия":"Professional chemicals","Экологичные средства":"Eco-friendly products","Кухня":"Kitchen","Санузел":"Bathroom","Окна и балкон":"Windows & balcony","Уход и бельё":"Care & laundry","Питомцы":"Pets","Логистика":"Logistics","Химчистка":"Dry cleaning","Оборудование не указано.":"No equipment listed.","Свой автомобиль: есть":"Own car: yes","Свой автомобиль: нет":"Own car: no"});
 Object.assign(TR.uk,{"Профессиональный пылесос":"Професійний пилосос","Моющий пылесос / экстрактор":"Мийний пилосос / екстрактор","Пароочиститель":"Пароочисник","Стремянка (для мытья окон)":"Драбина (для миття вікон)","Инвентарь (швабра, вёдра, микрофибра)":"Інвентар (швабра, відра, мікрофібра)","Профессиональная химия":"Професійна хімія","Экологичные средства":"Екологічні засоби","Кухня":"Кухня","Санузел":"Санвузол","Окна и балкон":"Вікна та балкон","Уход и бельё":"Догляд і білизна","Питомцы":"Улюбленці","Логистика":"Логістика","Химчистка":"Хімчистка","Оборудование не указано.":"Обладнання не вказано.","Свой автомобиль: есть":"Власний автомобіль: так","Свой автомобиль: нет":"Власний автомобіль: ні"});
+/* toasts (translated at runtime by toast()) */
+Object.assign(TR.pl,{"Добро пожаловать, {name}!":"Witaj, {name}!","Загрузите своё фото":"Dodaj swoje zdjęcie","Загрузите фото документа":"Dodaj zdjęcie dokumentu","Отчёт скопирован":"Raport skopiowany","Чек скопирован":"Paragon skopiowany","Готово":"Gotowe"});
+Object.assign(TR.en,{"Добро пожаловать, {name}!":"Welcome, {name}!","Загрузите своё фото":"Upload your photo","Загрузите фото документа":"Upload the document photo","Отчёт скопирован":"Report copied","Чек скопирован":"Receipt copied","Готово":"Done"});
+Object.assign(TR.uk,{"Добро пожаловать, {name}!":"Ласкаво просимо, {name}!","Загрузите своё фото":"Завантажте своє фото","Загрузите фото документа":"Завантажте фото документа","Отчёт скопирован":"Звіт скопійовано","Чек скопирован":"Чек скопійовано","Готово":"Готово"});
 /* smart home: recommendations, schedule, score */
 Object.assign(TR.pl,{
   "«{s}» просрочено на {n} дн — закажите, чтобы дом оставался свежим.":"«{s}» zaległe o {n} dni — zamów, aby dom pozostał świeży.",
@@ -1362,7 +1366,12 @@ function animateRing(node,to,col){ if(!node)return; const start=performance.now(
 const $ = (s,el=document)=>el.querySelector(s);
 const el = (html)=>{const t=document.createElement('template');t.innerHTML=html.trim();return t.content.firstChild};
 const money = (n)=>`${Math.round(n)} zł`;
-function toast(msg,err){const t=$('#toast');t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.className='toast',2600);}
+function toast(msg,err){const n=$('#toast');
+  // Toasts are set imperatively (the DOM i18n pass never sees them), so translate
+  // here: exact dictionary match first, then the word-level unit pass.
+  let m=String(msg);
+  if(state.lang!=='ru'){ const d=TR[state.lang]; if(d&&d[m]!=null)m=d[m]; else if(/[А-Яа-яЁё]/.test(m))m=unitPass(m); }
+  n.textContent=m;n.className='toast show'+(err?' err':'');setTimeout(()=>n.className='toast',2600);}
 function plural(n,one,few,many){const m=n%10,h=n%100;return h>=11&&h<=14?many:m===1?one:m>=2&&m<=4?few:many;}
 function timeAgo(ts){const s=(Date.now()-ts)/1000;if(s<60)return'только что';if(s<3600){const m=Math.floor(s/60);return m+' '+plural(m,'мин','мин','мин')+' назад';}if(s<86400){const h=Math.floor(s/3600);return h+' '+plural(h,'час','часа','часов')+' назад';}const d=Math.floor(s/86400);return d+' '+plural(d,'день','дня','дней')+' назад';}
 // Format dates/times in the active UI language (falls back to Polish).
@@ -1734,7 +1743,7 @@ function renderAuth(){
         await loadCatalog();
         if(res.user.role==='customer') await loadProperties();
         render();
-        toast(`Добро пожаловать, ${res.user.name.split(' ')[0]}!`);
+        toast(t('Добро пожаловать, {name}!',{name:res.user.name.split(' ')[0]}));
       }catch(err){toast(err.message,true);btn.disabled=false;try{reg.vals=Object.fromEntries(new FormData(e.target));}catch{}draw();}
     };
   }
