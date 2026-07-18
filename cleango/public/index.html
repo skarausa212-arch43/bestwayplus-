@@ -663,6 +663,31 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .scoregain:hover{background:var(--primary);color:#fff}
 .season-tip{background:linear-gradient(135deg,var(--primary-050),var(--surface));border:1px solid var(--line)}
 .season-emoji{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:24px;background:var(--surface);box-shadow:0 6px 16px rgba(6,42,26,.1);flex:none}
+/* printable home report (Save as PDF) — always light, ink on white */
+#printReport{display:none}
+.pr-wrap{color:#0B1220;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}
+.pr-head{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #059669;padding-bottom:12px;margin-bottom:18px}
+.pr-brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:22px}
+.pr-brand .logo-badge svg{width:34px;height:34px}
+.pr-date{font-size:12px;color:#68758b}
+.pr-title{font-size:26px;margin:0 0 4px}
+.pr-sub{color:#68758b;margin:0 0 18px;font-size:13.5px}
+.pr-stats{display:flex;gap:30px;margin:0 0 6px;padding:16px 20px;background:#F4F8F6;border-radius:12px}
+.pr-stats b{display:block;font-size:24px;letter-spacing:-.02em}
+.pr-stats span{font-size:12px;color:#68758b}
+.pr-wrap h2{font-size:16px;margin:24px 0 10px;color:#059669}
+.pr-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.pr-tbl th{text-align:left;color:#68758b;font-size:11px;text-transform:uppercase;letter-spacing:.03em;border-bottom:1.5px solid #E7ECEA;padding:7px 8px}
+.pr-tbl td{padding:8px;border-bottom:1px solid #EEF2F1}
+.pr-tbl .r{text-align:right}
+.pr-foot{margin-top:22px;font-size:11px;color:#94A3B8;border-top:1px solid #E7ECEA;padding-top:12px}
+@media print{
+  #root{display:none!important}
+  #toast,.tabbar,.modal-back{display:none!important}
+  #printReport{display:block!important}
+  body{background:#fff}
+  @page{margin:16mm}
+}
 .chart-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:20px;margin-bottom:20px}
 @media(max-width:760px){.chart-grid{grid-template-columns:1fr}}
 .install-banner{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:200;display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:12px 14px;box-shadow:0 18px 44px rgba(6,42,26,.22);width:420px;max-width:calc(100vw - 28px);animation:ibUp .4s cubic-bezier(.2,1,.3,1)}
@@ -1100,6 +1125,10 @@ Object.assign(TR.uk,{"Профессиональный пылесос":"Проф
 Object.assign(TR.pl,{"Добро пожаловать, {name}!":"Witaj, {name}!","Загрузите своё фото":"Dodaj swoje zdjęcie","Загрузите фото документа":"Dodaj zdjęcie dokumentu","Отчёт скопирован":"Raport skopiowany","Чек скопирован":"Paragon skopiowany","Готово":"Gotowe"});
 Object.assign(TR.en,{"Добро пожаловать, {name}!":"Welcome, {name}!","Загрузите своё фото":"Upload your photo","Загрузите фото документа":"Upload the document photo","Отчёт скопирован":"Report copied","Чек скопирован":"Receipt copied","Готово":"Done"});
 Object.assign(TR.uk,{"Добро пожаловать, {name}!":"Ласкаво просимо, {name}!","Загрузите своё фото":"Завантажте своє фото","Загрузите фото документа":"Завантажте фото документа","Отчёт скопирован":"Звіт скопійовано","Чек скопирован":"Чек скопійовано","Готово":"Готово"});
+/* home report (PDF) */
+Object.assign(TR.pl,{"услуг всего":"usług łącznie","Годовая аналитика":"Analityka roczna","Количество":"Ilość","Исполнитель":"Wykonawca","Цена":"Cena","история обслуживания с":"historia serwisu od","Каждая запись подтверждена фото «до/после» на платформе LUMI · lumi.bestwayplus.pl":"Każdy wpis potwierdzony zdjęciami «przed/po» na platformie LUMI · lumi.bestwayplus.pl"});
+Object.assign(TR.en,{"услуг всего":"services total","Годовая аналитика":"Annual analytics","Количество":"Count","Исполнитель":"Provider","Цена":"Price","история обслуживания с":"service history since","Каждая запись подтверждена фото «до/после» на платформе LUMI · lumi.bestwayplus.pl":"Every entry is verified with before/after photos on the LUMI platform · lumi.bestwayplus.pl"});
+Object.assign(TR.uk,{"услуг всего":"послуг усього","Годовая аналитика":"Річна аналітика","Количество":"Кількість","Исполнитель":"Виконавець","Цена":"Ціна","история обслуживания с":"історія обслуговування з","Каждая запись подтверждена фото «до/после» на платформе LUMI · lumi.bestwayplus.pl":"Кожен запис підтверджено фото «до/після» на платформі LUMI · lumi.bestwayplus.pl"});
 /* smart home: score trend + seasonal tips */
 Object.assign(TR.pl,{"Динамика · 14 дней":"Dynamika · 14 dni",
   "Весенняя свежесть":"Wiosenna świeżość","После зимы — помойте окна и балкон, впустите свет.":"Po zimie — umyj okna i balkon, wpuść światło.",
@@ -2527,6 +2556,7 @@ async function viewPassport(){
           <div class="stat"><b style="color:#fff;font-size:20px"><span id="annNum">0</span> zł</b><span style="opacity:.8;font-size:12px">за год</span></div>
           <div class="stat"><b style="color:${col};font-size:20px">${P.score.overall}</b><span style="opacity:.8;font-size:12px">LUMI Score</span></div>
         </div>
+        <button class="btn sm" id="pdfBtn" style="margin-top:18px;background:rgba(255,255,255,.16);color:#fff">${I.doc||I.receipt} Скачать PDF</button>
       </div>
 
       <div class="card pad reveal" style="margin-bottom:20px;border:1.5px solid var(--primary)">
@@ -2596,6 +2626,7 @@ async function viewPassport(){
     $('#passAsk',c).onclick=()=>doSearch($('#passSearch',c).value);
     $('#passSearch',c).onkeydown=(e)=>{if(e.key==='Enter')doSearch(e.target.value);};
     const sale=$('#saleBtn',c); if(sale)sale.onclick=()=>openSaleReport(P);
+    const pdf=$('#pdfBtn',c); if(pdf)pdf.onclick=()=>printHomeReport(P);
   }catch(e){toast(e.message,true);}
 }
 function passportSearch(q,timeline){
@@ -2630,6 +2661,32 @@ function openSaleReport(P){
     const txt=`Паспорт дома LUMI — ${p.label}, ${p.city}\nLUMI Score: ${P.score.overall}/100\nУслуг: ${P.totalServices} · за год: ${money(P.annualCost)}\n\n${lines}`;
     (navigator.clipboard?.writeText(txt)||Promise.resolve()).then(()=>toast('Отчёт скопирован')).catch(()=>toast('Отчёт готов'));
   };
+}
+
+// Printable home report → the browser's "Save as PDF". Built in Russian source
+// then translated in place so it matches the active language.
+function printHomeReport(P){
+  const p=P.property, col=scoreColor(P.score.overall);
+  const rows=P.timeline.map(e=>`<tr><td>${fmtDate(e.at)}</td><td>${esc(svcLabelRu(e.serviceLabel))}</td><td>${esc(e.provider||'—')}</td><td class="r">${money(e.price)}</td></tr>`).join('');
+  const cats=Object.entries(P.byService).sort((a,b)=>b[1].total-a[1].total)
+    .map(([k,v])=>`<tr><td>${esc(SVC_LABEL_RU[v.label]||v.label)}</td><td>${v.count}</td><td class="r">${money(v.total)}</td></tr>`).join('');
+  let box=$('#printReport'); if(!box){ box=el('<div id="printReport"></div>'); document.body.appendChild(box); }
+  box.innerHTML=`<div class="pr-wrap">
+    <div class="pr-head"><div class="pr-brand">${logoBadge('pr')}<span>LUMI</span></div><div class="pr-date"><span>Паспорт дома</span> · ${fmtDate(Date.now())}</div></div>
+    <h1 class="pr-title">${esc(p.label)}</h1>
+    <p class="pr-sub">${p.address?esc(p.address)+', ':''}${esc(p.city)} · <span>история обслуживания с</span> ${fmtDate(P.since)}</p>
+    <div class="pr-stats">
+      <div><b style="color:${col}">${P.score.overall}/100</b><span>LUMI Score</span></div>
+      <div><b>${P.totalServices}</b><span>услуг всего</span></div>
+      <div><b>${money(P.annualCost)}</b><span>за год</span></div>
+    </div>
+    ${cats?`<h2>Годовая аналитика</h2><table class="pr-tbl"><thead><tr><th>Услуга</th><th>Количество</th><th class="r">Сумма</th></tr></thead><tbody>${cats}</tbody></table>`:''}
+    <h2>Хронология обслуживания</h2>
+    <table class="pr-tbl"><thead><tr><th>Дата</th><th>Услуга</th><th>Исполнитель</th><th class="r">Цена</th></tr></thead><tbody>${rows||'<tr><td colspan="4">—</td></tr>'}</tbody></table>
+    <p class="pr-foot">Каждая запись подтверждена фото «до/после» на платформе LUMI · lumi.bestwayplus.pl</p>
+  </div>`;
+  if(window.i18nApply)i18nApply(box);
+  setTimeout(()=>window.print(),60);
 }
 
 /* ---------- PREMIUM (LUMI+) ---------- */
