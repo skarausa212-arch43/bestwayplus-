@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Enable HTTPS for LUMI via Let's Encrypt (run AFTER deploy.sh, and only once
-# the domain's A-record points at this server).
-#   sudo bash tls.sh
+# the domain's A-record points at this server). Run as root (no sudo needed):
+#   bash tls.sh
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -11,7 +11,7 @@ DOMAINS="${LUMI_DOMAIN:-${_env_domain:-lumi24.pl}}"
 DOMAIN="${DOMAINS%%,*}"                          # first entry = primary
 EMAIL="${LUMI_EMAIL:-skarausa212@gmail.com}"   # Let's Encrypt expiry notices
 
-[ "$(id -u)" = "0" ] || { echo "run as root: sudo bash tls.sh"; exit 1; }
+[ "$(id -u)" = "0" ] || { echo "run as root: bash tls.sh"; exit 1; }
 
 # Caddy handles HTTPS automatically — nothing to do here.
 if command -v caddy >/dev/null 2>&1 && systemctl is-active --quiet caddy; then
@@ -32,6 +32,19 @@ fi
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get install -y -qq certbot python3-certbot-nginx
+
+# Ensure the served hostnames are present in the nginx vhost, otherwise
+# `certbot --nginx -d <domain>` can't find a server block to attach the cert to.
+NGINX_DOMAINS="$(echo "$DOMAINS" | tr ',' ' ')"
+site="$(grep -rl 'proxy_pass' /etc/nginx/sites-available/ /etc/nginx/sites-enabled/ /etc/nginx/conf.d/ 2>/dev/null | head -1 || true)"
+if [ -n "$site" ]; then
+  echo "▶ Ensuring server_name in $site → $NGINX_DOMAINS"
+  sed -i -E "s/^([[:space:]]*)server_name[[:space:]].*/\1server_name ${NGINX_DOMAINS} _;/" "$site"
+  nginx -t && systemctl reload nginx
+else
+  echo "  (no nginx vhost with proxy_pass found — certbot will try the default server)"
+fi
+
 # One cert covering every configured domain (skip any that don't resolve here yet).
 cert_args=""
 IFS=',' read -ra _doms <<< "$DOMAINS"

@@ -79,19 +79,27 @@ LUMI_DOMAIN=lumi24.pl,lumi.bestwayplus.pl
 LUMI_APP_URL=https://lumi24.pl
 ```
 
-`auto-update.sh` reconciles the Caddyfile to exactly `LUMI_DOMAIN` on every tick
-and reloads Caddy; Caddy then issues a Let's Encrypt certificate for each domain
-automatically once its DNS resolves here. It lands within ~10 min (two ticks), or
-force it immediately on the server:
+> Run the server commands below as **root** (this image has no `sudo`).
+
+**Caddy install:** `auto-update.sh` reconciles the Caddyfile to exactly
+`LUMI_DOMAIN` on every tick and reloads Caddy; Caddy then issues a Let's Encrypt
+certificate for each domain automatically once its DNS resolves here. It lands
+within ~10 min (two ticks), or force it immediately:
 
 ```bash
-sudo systemctl start lumi-update.service    # pulls the new config + script
-sudo bash /opt/lumi/deploy/auto-update.sh   # runs it now → Caddy reload + cert
-journalctl -u caddy -f                       # watch the cert get issued
+bash /opt/lumi/deploy/auto-update.sh   # pull the new config + scripts
+journalctl -u caddy -f                 # watch the cert get issued
 ```
 
-On an **nginx** install instead, after editing `LUMI_DOMAIN` run
-`sudo bash /opt/lumi/deploy/tls.sh` once to obtain the cert for the new domain(s).
+**nginx install** (no Caddy on the box): after editing `LUMI_DOMAIN`, run once:
+
+```bash
+bash /opt/lumi/deploy/auto-update.sh   # pull the new config + scripts
+bash /opt/lumi/deploy/tls.sh           # add the domain(s) to nginx + issue the cert
+```
+
+`tls.sh` adds every `LUMI_DOMAIN` host to the nginx vhost's `server_name`,
+reloads nginx, and runs certbot for each domain that resolves to this server.
 
 > If Google/Apple social sign-in is enabled, add the new domain's callback URLs
 > in their consoles too (see *Social sign-in* below) — OAuth redirects use
