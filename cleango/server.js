@@ -1544,6 +1544,26 @@ route('POST', '/api/bookings/:id/turnover-problem', async (req, res, params) => 
   send(res, 200, { problem, str: p ? strView(p) : null });
 });
 
+// Multi-property overview (spec §18) — every short-term-rental the owner has,
+// with reservations + turnovers, for the portfolio PMS calendar.
+route('GET', '/api/str/overview', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const props = Object.values(db.properties)
+    .filter((p) => p.type === 'short_term_rental' && canAccessProperty(user, p))
+    .sort((a, b) => a.createdAt - b.createdAt);
+  const items = props.map((p) => {
+    const reservations = Object.values(db.reservations).filter((r) => r.propertyId === p.id && r.status !== 'cancelled').sort((a, b) => a.checkinAt - b.checkinAt);
+    const turnovers = str.generateTurnovers(reservations, p.strSettings, p);
+    return {
+      id: p.id, label: p.label, city: p.city,
+      reservations: reservations.map(reservationView), turnovers,
+      status: strSummary(p),
+    };
+  });
+  send(res, 200, { properties: items });
+});
+
 // Appliance Registry (17_SMART_HOME.md §8) — per-property inventory.
 route('GET', '/api/properties/:id/appliances', async (req, res, params) => {
   const user = authUser(req);

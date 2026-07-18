@@ -232,6 +232,21 @@ async function main() {
       assert.strictEqual(res.status, 200);
       assert.strictEqual(res.json.str.status.openProblems, 0);
     });
+    await ok('STR overview (§18): lists only the owner\'s rentals with reservations', async () => {
+      const D = 86400000, base = new Date(); base.setHours(0, 0, 0, 0);
+      const day = (n) => base.getTime() + n * D;
+      const cp = await req('POST', '/api/properties', { token: customerTok, body: { label: 'STR Ovw', city: 'Warsaw', type: 'short_term_rental', rooms: 2, baths: 1 } });
+      await req('POST', `/api/properties/${cp.json.property.id}/reservations`, { token: customerTok, body: { source: 'airbnb', checkinDate: day(2), checkoutDate: day(5), guestName: 'Z' } });
+      const ov = await req('GET', '/api/str/overview', { token: customerTok });
+      assert.strictEqual(ov.status, 200);
+      assert.ok(ov.json.properties.length >= 1);
+      assert.ok(ov.json.properties.every((p) => Array.isArray(p.reservations) && Array.isArray(p.turnovers)));
+      const mine = ov.json.properties.find((p) => p.id === cp.json.property.id);
+      assert.ok(mine && mine.reservations.length >= 1);
+      // Anonymous request is rejected.
+      const anon = await req('GET', '/api/str/overview', {});
+      assert.strictEqual(anon.status, 401);
+    });
     await ok('STR supplies + checklist: set, reset to default, non-STR rejected', async () => {
       const cp = await req('POST', '/api/properties', { token: customerTok, body: { label: 'STR Ops', city: 'Warsaw', type: 'short_term_rental', rooms: 2, baths: 1 } });
       const sid = cp.json.property.id;
