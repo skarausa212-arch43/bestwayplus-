@@ -459,6 +459,15 @@ async function main() {
       assert.ok(!det.json.booking.cleaner || !('location' in det.json.booking.cleaner), 'customer never sees cleaner GPS');
     });
 
+    // ── Disputes only on assigned/active bookings (no cleaner ⇒ nothing to dispute) ──
+    await ok('issue: cannot open a dispute on a still-searching booking (409 NOT_DISPUTABLE)', async () => {
+      const bk = await req('POST', '/api/bookings', { token: customerTok, body: { service: 'standard', rooms: 1, baths: 1, address: 'ul. Spor 1', city: 'Warsaw' } });
+      assert.strictEqual(bk.json.booking.status, 'searching');
+      const issue = await req('POST', `/api/bookings/${bk.json.booking.id}/issue`, { token: customerTok, body: { category: 'quality', description: 'nothing happened yet' } });
+      assert.strictEqual(issue.status, 409);
+      assert.strictEqual(issue.json.code, 'NOT_DISPUTABLE');
+    });
+
     // ── Admin user deletion (users.delete capability) ──
     // Reuses accounts created above (the register rate-limit is 10/h/IP — the
     // suite must not register an 11th account).

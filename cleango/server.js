@@ -2200,6 +2200,11 @@ route('POST', '/api/bookings/:id/issue', async (req, res, params) => {
   const bk = db.bookings[params.id];
   if (!bk) return send(res, 404, { error: 'Booking not found.' });
   if (!(bk.customerId === user.id || bk.cleanerId === user.id)) return send(res, 403, { error: 'Forbidden.' });
+  // A dispute needs a job to be about: a cleaner must be assigned and the
+  // booking live or completed — not while still searching or after cancel.
+  if (!['accepted', 'on_the_way', 'in_progress', 'completed'].includes(bk.status)) {
+    return send(res, 409, { error: 'По этому заказу пока нельзя открыть обращение.', code: 'NOT_DISPUTABLE' });
+  }
   const b = await readBody(req);
   const category = DISPUTE_CATEGORIES[b.category] ? b.category : 'other';
   const description = String(b.description || '').trim().slice(0, 1000);

@@ -4254,8 +4254,11 @@ function renderActions(b,ctx){
 /* ---------- «Решить проблему» — support / disputes ---------- */
 async function renderIssue(b,ctx){
   const z=$('#issueZone'); if(!z)return;
+  // A "problem with the order" only makes sense once a cleaner is assigned and
+  // the job is live or done — never while still searching or after cancel.
+  const disputable=['accepted','on_the_way','in_progress','completed'].includes(b.status);
   // Only participants (customer or the assigned cleaner) raise issues.
-  const canRaise=(ctx.isCustomer && b.customerId===state.user.id) || (ctx.isCleaner && b.cleanerId===state.user.id);
+  const canRaise=disputable && ((ctx.isCustomer && b.customerId===state.user.id) || (ctx.isCleaner && b.cleanerId===state.user.id));
   if(!canRaise){z.innerHTML='';return;}
   try{
     const {disputes}=await api('/api/bookings/'+b.id+'/issue');
