@@ -113,6 +113,7 @@
       </div>
       <div class="status-line"><span class="dot" style="background:${col}"></span><b>${a.statusLabel()}</b>${a.currentAction ? ` · <span class="soft">${esc(a.currentAction)}</span>` : ''}</div>
       ${task ? `<div class="cur-task"><div class="ct-title">${esc(task.title)}</div><div class="progress"><div class="bar" id="agProg" style="width:${task.progress || 0}%"></div></div><div class="soft small">${task.progress || 0}% · ${task.status}</div></div>` : `<div class="soft small nb">No active task</div>`}
+      ${a.live === 'gps' ? this.renderFleet(a.gps) : ''}
       <div class="kv"><span>Location</span><b>${loc}</b></div>
       <div class="chips-row"><div class="chips-label">Skills</div>${a.skills.map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div>
       <div class="chips-row"><div class="chips-label">Tools</div>${a.tools.map(s => `<span class="chip alt">${esc(s)}</span>`).join('')}</div>
@@ -129,6 +130,17 @@
     $('#pBack').addEventListener('click', () => { if (this.isMobile()) { this.closePanel(); this.engine.clearSelection(); } else this.showFeed(); });
     const ap = $('#agApprove'); if (ap) ap.addEventListener('click', () => this.openApproval(a.id));
     $('#rightPanel').querySelectorAll('.a-actions button').forEach(b => b.addEventListener('click', () => this.agentAction(a, b.dataset.act)));
+  };
+  UI.renderFleet = function (g) {
+    if (!g) return `<div class="cur-task"><div class="ct-title">🛰 Fleet — GPS</div><div class="soft small">Connecting…</div></div>`;
+    if (g.offline) return `<div class="cur-task"><div class="ct-title">🛰 Fleet — GPS</div><div class="soft small">Live GPS not connected on this deploy.</div></div>`;
+    if (g.error) return `<div class="cur-task"><div class="ct-title">🛰 Fleet — GPS</div><div class="soft small">Error: ${esc(g.error)}</div></div>`;
+    const rows = (g.cars || []).map(c => `<div class="feed-row" style="padding:6px 2px">
+      <span class="feed-dot" style="background:${c.moving ? '#22c55e' : '#8a90a6'}"></span>
+      <div class="feed-body"><div class="feed-text">${esc(c.name)}</div>
+      <div class="feed-time">${esc(c.statusText || '')}${c.speed ? ' · ' + c.speed + ' km/h' : ''}</div></div></div>`).join('');
+    return `<div class="cur-task"><div class="ct-title">🛰 Fleet — ${g.total} cars · ${g.moving} moving</div>${rows}
+      <div class="soft small" style="margin-top:6px">Updated ${g.updatedAt ? new Date(g.updatedAt).toLocaleTimeString() : '—'}</div></div>`;
   };
   UI.updateProgress = function (t) { const b = $('#agProg'); if (b) b.style.width = (t.progress || 0) + '%'; const s = $('#rightPanel .cur-task .small'); if (s) s.textContent = `${t.progress || 0}% · ${t.status}`; };
 

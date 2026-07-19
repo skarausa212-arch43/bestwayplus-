@@ -14,6 +14,7 @@
     { id: 'lucas', name: 'Lucas', role: 'Sales', desk: 'd4', pal: { hair: '#4a3220', skin: '#dfa079', shirt: '#c25b3a' }, skills: ['Outreach', 'CRM'], tools: ['HubSpot'] },
     { id: 'emma', name: 'Emma', role: 'Finance', desk: 'd5', pal: { hair: '#d3452f', skin: '#f0c0a2', shirt: '#e88bb0' }, skills: ['Budgeting', 'Reports'], tools: ['Excel'] },
     { id: 'noah', name: 'Noah', role: 'Support', desk: 'd6', pal: { hair: '#241d16', skin: '#dda57e', shirt: '#3b6fb0' }, skills: ['Tickets', 'Docs'], tools: ['Zendesk'] },
+    { id: 'gena', name: 'Gena', role: 'GPS Dispatch', desk: 'd9', pal: { hair: '#2b2b30', skin: '#e0a985', shirt: '#2f9a8f' }, skills: ['Fleet tracking', 'Routing', 'Dispatch'], tools: ['PanGPS', 'Maps'], live: 'gps' },
   ];
 
   class Director {
@@ -33,6 +34,7 @@
           deskId: cfg.desk, skills: cfg.skills, tools: cfg.tools,
           x: (ent.x + 0.5) * T, y: (ent.y - 0.5) * T,
         });
+        a.live = cfg.live || null;
         this.agents.push(a); this.store.addAgent(a);
         setTimeout(() => this._enter(a), 400 + i * 650);
       });
@@ -149,6 +151,7 @@
     // ---- Idle behaviour ----
     _idleTick(dt) {
       for (const a of this.agents) {
+        if (a.live) continue; // GPS/live agents stay at their post
         if (a.status !== 'IDLE' || a.moving) { this.idleTimers.set(a.id, 0); continue; }
         let t = (this.idleTimers.get(a.id) || 0) + dt;
         if (t > 6 + Math.random() * 8) {

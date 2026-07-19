@@ -10,7 +10,7 @@
       this.world = world; this.worldCanvas = OfficeRender.prerenderWorld(world);
       this.agents = [];
       this.cam = { x: world.worldW / 2, y: world.worldH / 2, zoom: 1, tx: null, ty: null, tzoom: null };
-      this.minZoom = 0.4; this.maxZoom = 2.4;
+      this.minZoom = 0.14; this.maxZoom = 2.6;
       this.selectedId = null; this.hoverId = null;
       this.onSelect = null; this.onHover = null; this.meetings = [];
       this._initInput(); this.resize(); this.fit();
@@ -24,7 +24,8 @@
       this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0); this.ctx.imageSmoothingEnabled = false;
     }
     fit() {
-      const z = Math.min(this.vw / this.world.worldW, this.vh / this.world.worldH) * 0.98;
+      const pad = this.vw < 700 ? 0.98 : 0.94; // phones: use more of the screen
+      const z = Math.min(this.vw / this.world.worldW, this.vh / this.world.worldH) * pad;
       this.cam.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, z));
       this.cam.x = this.world.worldW / 2; this.cam.y = this.world.worldH / 2;
       this.cam.tx = this.cam.ty = this.cam.tzoom = null;

@@ -16,8 +16,12 @@
 
     director.spawnTeam();
     director.seedDemoStates();
+    if (global.OfficeGPS) OfficeGPS.start(OfficeStore);
 
-    window.addEventListener('resize', () => engine.resize());
+    window.addEventListener('resize', () => { engine.resize(); if (OfficeUI.isMobile()) engine.fit(); });
+    window.addEventListener('orientationchange', () => setTimeout(() => { engine.resize(); engine.fit(); }, 250));
+    // re-fit shortly after boot in case initial canvas size was not settled (mobile)
+    setTimeout(() => { engine.resize(); engine.fit(); }, 300);
 
     let last = performance.now();
     function frame(now) {

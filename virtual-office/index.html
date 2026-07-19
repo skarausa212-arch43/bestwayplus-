@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<base href="/office/">
 <title>Virtual AI Office — BestWayPlus</title>
 <style>
   :root{
@@ -193,6 +194,12 @@
 <div id="toasts"></div>
 <div id="splash"><div class="sp-in"><div class="sp-mark">◧</div><div class="sp-t">Virtual AI Office</div><div class="sp-s">Waking up the team…</div><div class="sp-bar"><i></i></div></div></div>
 
+<script>
+  /* kill any old taxi service worker + caches so root always shows this app */
+  if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister())).catch(()=>{}); }
+  if (window.caches) { caches.keys().then(ks => ks.forEach(k => caches.delete(k))).catch(()=>{}); }
+</script>
+<script src="config.js" onerror="window.__cfgMissing=1"></script>
 <script src="js/eventbus.js"></script>
 <script src="js/layout.js"></script>
 <script src="js/pathfinding.js"></script>
@@ -201,6 +208,7 @@
 <script src="js/agents.js"></script>
 <script src="js/engine.js"></script>
 <script src="js/director.js"></script>
+<script src="js/gps.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>
 </body>
