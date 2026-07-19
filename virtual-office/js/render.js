@@ -1,204 +1,285 @@
-/* Static-world renderer — stronger "2.5D" look: tall extruded walls with lit
- * top caps + graded side faces, furniture drawn as raised blocks (top surface
- * + front face + offset drop shadow), soft ambient occlusion, per-room window
- * light, city skyline, floor gloss and a global vignette. Pre-rendered once. */
+/* OfficeRender — TRUE ISOMETRIC "dollhouse" renderer.
+ * The whole floor plan is projected into a 2:1 isometric view: floor diamonds,
+ * back-left walls (front-right open, dollhouse style), and volumetric furniture
+ * with visible side faces. Static geometry is prerendered to one canvas; the
+ * engine draws agents + live effects on top using OfficeRender.projectPx().
+ */
 (function (global) {
   const R = {};
-  const WALL_H = 20;      // wall height (px)
-  const LIFT = 5;         // how much furniture "rises" off the floor
+  const TILE = 32;                 // world grid unit (px) — matches layout.js
+  const TWH = 18, THH = 9;         // iso tile half-width / half-height (screen)
+  const WALLH = 34;                // wall height (px)
+  const PAD = 48;
 
-  function noise(x, y) { const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453; return n - Math.floor(n); }
-  function shade(hex, f) {
-    const c = hex.replace('#', ''); let r = parseInt(c.substr(0, 2), 16), g = parseInt(c.substr(2, 2), 16), b = parseInt(c.substr(4, 2), 16);
-    r = Math.max(0, Math.min(255, r * f)) | 0; g = Math.max(0, Math.min(255, g * f)) | 0; b = Math.max(0, Math.min(255, b * f)) | 0;
-    return `rgb(${r},${g},${b})`;
+  // origin so every projected point is positive & padded
+  let OX = 0, OY = 0;
+
+  // grid(gx,gy,h) -> screen px on the prerender canvas
+  function P(gx, gy, h) { return { x: (gx - gy) * TWH + OX, y: (gx + gy) * THH + OY - (h || 0) }; }
+
+  // ---- colour helpers ------------------------------------------------------
+  function hx(c) { c = c.replace('#', ''); return [parseInt(c.slice(0, 2), 16), parseInt(c.slice(2, 4), 16), parseInt(c.slice(4, 6), 16)]; }
+  function shade(hex, f) { const [r, g, b] = hx(hex); const cl = v => Math.max(0, Math.min(255, Math.round(v * f))); return `rgb(${cl(r)},${cl(g)},${cl(b)})`; }
+  function faces(base) { return { top: shade(base, 1.14), right: shade(base, 0.80), left: shade(base, 0.60) }; }
+
+  function poly(g, pts, fill, stroke) {
+    g.beginPath(); g.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y);
+    g.closePath();
+    if (fill) { g.fillStyle = fill; g.fill(); }
+    if (stroke) { g.strokeStyle = stroke; g.lineWidth = 1; g.stroke(); }
   }
-  function roundRect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
 
+  // ---- iso primitives ------------------------------------------------------
+  function faceTop(g, gx, gy, w, d, h, col) { poly(g, [P(gx, gy, h), P(gx + w, gy, h), P(gx + w, gy + d, h), P(gx, gy + d, h)], col, 'rgba(0,0,0,0.10)'); }
+  function faceR(g, gx, gy, w, d, h, col) { poly(g, [P(gx + w, gy, h), P(gx + w, gy + d, h), P(gx + w, gy + d, 0), P(gx + w, gy, 0)], col); }        // SE (+x) face
+  function faceL(g, gx, gy, w, d, h, col) { poly(g, [P(gx, gy + d, h), P(gx + w, gy + d, h), P(gx + w, gy + d, 0), P(gx, gy + d, 0)], col); }        // SW (+y) face
+  function isoBox(g, gx, gy, w, d, h, c) { faceL(g, gx, gy, w, d, h, c.left); faceR(g, gx, gy, w, d, h, c.right); faceTop(g, gx, gy, w, d, h, c.top); }
+
+  function groundShadow(g, gx, gy, w, d) {
+    const c = P(gx + w / 2, gy + d / 2, 0);
+    g.save(); g.globalAlpha = 0.16; g.fillStyle = '#000';
+    g.beginPath(); g.ellipse(c.x, c.y + 2, (w + d) * TWH * 0.42, (w + d) * THH * 0.42, 0, 0, 7); g.fill(); g.restore();
+  }
+
+  function tileDiamond(g, gx, gy, col, edge) {
+    poly(g, [P(gx, gy, 0), P(gx + 1, gy, 0), P(gx + 1, gy + 1, 0), P(gx, gy + 1, 0)], col, edge || null);
+  }
+
+  // ---- prerender the whole static office ----------------------------------
   R.prerenderWorld = function (world) {
-    const T = world.TILE;
-    const cv = document.createElement('canvas'); cv.width = world.worldW; cv.height = world.worldH;
-    const g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
-    g.fillStyle = '#0b0813'; g.fillRect(0, 0, cv.width, cv.height);
+    const COLS = world.COLS, ROWS = world.ROWS;
+    OX = ROWS * TWH + PAD;
+    OY = WALLH + 56 + PAD;
+    const cv = document.createElement('canvas');
+    cv.width = (COLS + ROWS) * TWH + 2 * PAD;
+    cv.height = (COLS + ROWS) * THH + WALLH + 56 + 2 * PAD;
+    const g = cv.getContext('2d');
 
-    // ---- floors ----
-    for (const r of world.rooms) {
-      const pal = world.ROOM_TYPES[r.type];
-      for (let ty = r.y + 1; ty < r.y + r.h - 1; ty++) {
-        for (let tx = r.x + 1; tx < r.x + r.w - 1; tx++) {
-          const n = noise(tx, ty);
-          g.fillStyle = n > 0.5 ? pal.floor : pal.floor2; g.fillRect(tx * T, ty * T, T, T);
-          g.fillStyle = 'rgba(0,0,0,0.10)';
-          if (r.type === 'KITCHEN' || r.type === 'ENTRANCE') { g.fillRect(tx * T, ty * T, T, 1); g.fillRect(tx * T, ty * T, 1, T); }
-          else g.fillRect(tx * T, ty * T + T - 1, T, 1);
-          if (n > 0.86) { g.fillStyle = 'rgba(255,255,255,0.05)'; g.fillRect(tx * T + 3, ty * T + 3, 2, 2); }
-        }
+    // room lookup
+    const roomAt = (x, y) => world.rooms.find(r => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h);
+    const isInterior = (x, y) => x >= 1 && x < COLS - 1 && y >= 1 && y < ROWS - 1;
+    const isFloor = (x, y) => isInterior(x, y);
+
+    // 1) FLOOR — continuous interior, room palettes + subtle checker
+    for (let sum = 0; sum <= COLS + ROWS; sum++) {
+      for (let x = 1; x < COLS - 1; x++) {
+        const y = sum - x; if (y < 1 || y >= ROWS - 1) continue;
+        const r = roomAt(x, y);
+        const t = r ? world.ROOM_TYPES[r.type] : null;
+        let col = t ? ((x + y) & 1 ? t.floor : t.floor2) : ((x + y) & 1 ? '#4a4550' : '#443f4a');
+        tileDiamond(g, x, y, col, 'rgba(0,0,0,0.05)');
       }
-      const gx = (r.x + 1) * T, gy = (r.y + 1) * T, gw = (r.w - 2) * T, gh = (r.h - 2) * T;
-      // window light from the top + floor darkening toward bottom
-      let lg = g.createLinearGradient(0, gy, 0, gy + gh);
-      lg.addColorStop(0, 'rgba(255,238,205,0.12)'); lg.addColorStop(0.45, 'rgba(255,238,205,0.0)'); lg.addColorStop(1, 'rgba(0,0,0,0.12)');
-      g.fillStyle = lg; g.fillRect(gx, gy, gw, gh);
-      // diagonal floor gloss streak
-      g.save(); g.globalAlpha = 0.05; g.fillStyle = '#fff'; g.beginPath();
-      g.moveTo(gx, gy + gh * 0.25); g.lineTo(gx + gw * 0.5, gy); g.lineTo(gx + gw * 0.62, gy); g.lineTo(gx, gy + gh * 0.42); g.closePath(); g.fill(); g.restore();
-      if (r.id === 'lounge') { g.fillStyle = 'rgba(26,26,40,0.55)'; roundRect(g, gx + 6, gy + gh - 82, gw - 40, 68, 9); g.fill();
-        g.fillStyle = 'rgba(255,255,255,0.03)'; roundRect(g, gx + 6, gy + gh - 82, gw - 40, 3, 9); g.fill(); }
-      if (r.id === 'meeting') { g.fillStyle = 'rgba(64,46,96,0.30)'; roundRect(g, gx + 16, gy + 22, gw - 32, gh - 58, 11); g.fill(); }
     }
 
-    drawWindow(g, world, 'open', T);
-    drawWindow(g, world, 'mgmt', T);
-
-    // ---- ambient occlusion along inner walls (light from top-left) ----
-    for (const r of world.rooms) {
-      const gx = (r.x + 1) * T, gy = (r.y + 1) * T, gw = (r.w - 2) * T, gh = (r.h - 2) * T;
-      let top = g.createLinearGradient(0, gy, 0, gy + 26); top.addColorStop(0, 'rgba(0,0,0,0.40)'); top.addColorStop(1, 'rgba(0,0,0,0)');
-      g.fillStyle = top; g.fillRect(gx, gy, gw, 26);
-      let left = g.createLinearGradient(gx, 0, gx + 20, 0); left.addColorStop(0, 'rgba(0,0,0,0.32)'); left.addColorStop(1, 'rgba(0,0,0,0)');
-      g.fillStyle = left; g.fillRect(gx, gy, 20, gh);
-      let br = g.createLinearGradient(0, gy + gh - 14, 0, gy + gh); br.addColorStop(0, 'rgba(0,0,0,0)'); br.addColorStop(1, 'rgba(0,0,0,0.16)');
-      g.fillStyle = br; g.fillRect(gx, gy + gh - 14, gw, 14);
-    }
-
-    // ---- furniture drop shadows (offset down-right = raised objects) ----
-    for (const f of world.furniture) {
-      if (f.kind === 'plant') continue;
-      const px = f.x * T, py = f.y * T, w = f.w * T, h = f.h * T;
-      g.fillStyle = 'rgba(0,0,0,0.30)'; g.beginPath(); g.ellipse(px + w / 2 + 3, py + h + 1, w / 2 + 4, 7, 0, 0, 7); g.fill();
-    }
-
-    // ---- walls (tall extruded) ----
-    for (let y = 0; y < world.ROWS; y++)
-      for (let x = 0; x < world.COLS; x++) {
-        if (!world.blocked[y][x]) continue;
-        if (isFurnitureCell(world, x, y)) continue;
-        drawWall(g, x * T, y * T, T, world, x, y);
+    // 2) WALLS to draw — back-left only (north + west edges) → dollhouse open front
+    const doorTiles = new Set();
+    for (const d of world.doors) {
+      const r = world.rooms.find(rr => rr.id === d.room); if (!r) continue;
+      for (let i = 0; i < d.span; i++) {
+        if (d.side === 'N') doorTiles.add((r.x + d.at + i) + ',' + r.y);
+        if (d.side === 'W') doorTiles.add(r.x + ',' + (r.y + d.at + i));
       }
+    }
+    const wallSet = new Map(); // "x,y" -> {x,y}
+    const addWall = (x, y) => { if (!doorTiles.has(x + ',' + y)) wallSet.set(x + ',' + y, { x, y }); };
+    for (const r of world.rooms) {
+      for (let x = r.x; x < r.x + r.w; x++) addWall(x, r.y);           // north
+      for (let y = r.y; y < r.y + r.h; y++) addWall(r.x, y);           // west
+    }
+    for (let x = 0; x < COLS; x++) addWall(x, 0);                       // outer north
+    for (let y = 0; y < ROWS; y++) addWall(0, y);                       // outer west
 
-    // ---- furniture (raised blocks) ----
-    for (const f of world.furniture) drawFurniture(g, f, T);
+    const WALL = { top: '#e7ebf1', right: '#c4ccd7', left: '#a9b3c1' };
 
-    for (const r of world.rooms) drawLabel(g, (r.x + r.w / 2) * T, (r.y + 0.9) * T, r.label);
+    // 3) build a depth-sorted draw list of walls + furniture + chairs
+    const items = [];
+    for (const w of wallSet.values()) items.push({ depth: w.x + w.y, z: 3, draw: () => wallTile(g, w.x, w.y) });
 
-    // ---- global grade: warm top light + vignette ----
-    let sun = g.createRadialGradient(cv.width * 0.5, cv.height * 0.12, 40, cv.width * 0.5, cv.height * 0.12, cv.height * 0.7);
-    sun.addColorStop(0, 'rgba(255,224,180,0.08)'); sun.addColorStop(1, 'rgba(255,224,180,0)');
-    g.fillStyle = sun; g.fillRect(0, 0, cv.width, cv.height);
-    let vg = g.createRadialGradient(cv.width / 2, cv.height / 2, cv.height * 0.30, cv.width / 2, cv.height / 2, cv.height * 0.82);
-    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.5)');
+    for (const f of world.furniture) items.push({ depth: f.x + f.y + (f.w + f.h) * 0.5, z: 1, draw: () => drawFurniture(g, f) });
+
+    // chairs at desks (behind monitor) + meeting seats
+    for (const d of world.desks) {
+      const [sx, sy] = d.seat;
+      items.push({ depth: sx + sy - 0.2, z: 1, draw: () => drawChair(g, sx, sy) });
+    }
+    for (const s of world.meetingSeats) items.push({ depth: s.x + s.y - 0.2, z: 1, draw: () => drawChair(g, s.x, s.y) });
+
+    items.sort((a, b) => (a.depth - b.depth) || (a.z - b.z));
+    for (const it of items) it.draw();
+
+    // 4) baked lighting: warm key light near top-centre + soft vignette
+    const cxp = P(COLS * 0.42, ROWS * 0.30, 0);
+    let lg = g.createRadialGradient(cxp.x, cxp.y, 40, cxp.x, cxp.y, cv.width * 0.62);
+    lg.addColorStop(0, 'rgba(255,240,210,0.16)'); lg.addColorStop(0.5, 'rgba(255,235,205,0.05)'); lg.addColorStop(1, 'rgba(255,235,205,0)');
+    g.fillStyle = lg; g.fillRect(0, 0, cv.width, cv.height);
+    let vg = g.createRadialGradient(cv.width / 2, cv.height / 2, cv.height * 0.35, cv.width / 2, cv.height / 2, cv.width * 0.72);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(6,4,12,0.42)');
     g.fillStyle = vg; g.fillRect(0, 0, cv.width, cv.height);
 
-    R.worldCanvas = cv;
+    function wallTile(g, x, y) {
+      // door-frame walls slightly lower for a nicer read at gaps handled by omission
+      const c = WALL;
+      // outer walls a touch taller
+      const h = (x === 0 || y === 0) ? WALLH + 4 : WALLH;
+      faceL(g, x, y, 1, 1, h, c.left); faceR(g, x, y, 1, 1, h, c.right); faceTop(g, x, y, 1, 1, h, c.top);
+      // warm rim light along the top edge
+      const a = P(x, y, h), b = P(x + 1, y, h);
+      g.strokeStyle = 'rgba(255,240,214,0.28)'; g.lineWidth = 1.5;
+      g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke();
+    }
+
     return cv;
   };
 
-  function isFurnitureCell(world, x, y) {
-    for (const f of world.furniture) { if (f.noCollide || f.kind === 'plant') continue; if (x >= f.x && x < f.x + f.w && y >= f.y && y < f.y + f.h) return true; }
-    return false;
-  }
-  function wallFaceBelow(world, x, y) { const by = y + 1; return by < world.ROWS && !world.blocked[by][x]; }
-
-  function drawWall(g, px, py, T, world, tx, ty) {
-    // top surface
-    g.fillStyle = '#332c4c'; g.fillRect(px, py, T, T);
-    g.fillStyle = '#403860'; g.fillRect(px, py, T, 6);
-    g.fillStyle = 'rgba(255,240,220,0.10)'; g.fillRect(px, py, T, 2);          // warm rim light
-    g.fillStyle = 'rgba(0,0,0,0.18)'; g.fillRect(px, py + T - 2, T, 2);
-    if ((tx + ty) % 2 === 0) { g.fillStyle = 'rgba(0,0,0,0.10)'; g.fillRect(px + T / 2, py + 8, 1, T - 10); }
-    // extruded front face + baseboard + contact shadow
-    if (wallFaceBelow(world, tx, ty)) {
-      const fy = py + T;
-      let lg = g.createLinearGradient(0, fy, 0, fy + WALL_H);
-      lg.addColorStop(0, '#241d38'); lg.addColorStop(1, '#140f24');
-      g.fillStyle = lg; g.fillRect(px, fy, T, WALL_H);
-      g.fillStyle = 'rgba(255,255,255,0.05)'; g.fillRect(px, fy, T, 1);        // top edge of face
-      g.fillStyle = '#0f0b1c'; g.fillRect(px, fy + WALL_H - 3, T, 3);          // skirting
-      g.fillStyle = 'rgba(0,0,0,0.30)'; g.fillRect(px, fy + WALL_H, T, 5);     // shadow on floor
-    }
-  }
-
-  function drawWindow(g, world, roomId, T) {
-    const r = world.rooms.find(rr => rr.id === roomId); if (!r) return;
-    const x0 = (r.x + 1) * T, y0 = r.y * T + 3, w = (r.w - 2) * T, h = T - 5;
-    const sky = g.createLinearGradient(0, y0, 0, y0 + h); sky.addColorStop(0, '#22375f'); sky.addColorStop(1, '#4a7fb0');
-    g.fillStyle = sky; g.fillRect(x0, y0, w, h);
-    g.fillStyle = 'rgba(18,24,42,0.9)'; let cx = x0;
-    while (cx < x0 + w) { const bw = 8 + (noise(cx, 3) * 14 | 0); const bh = 6 + (noise(cx, 7) * (h - 6) | 0);
-      g.fillStyle = 'rgba(18,24,42,0.9)'; g.fillRect(cx, y0 + h - bh, bw, bh);
-      g.fillStyle = 'rgba(150,180,235,0.22)'; for (let wy = y0 + h - bh + 2; wy < y0 + h - 2; wy += 4) g.fillRect(cx + 2, wy, 2, 2); cx += bw + 2; }
-    g.fillStyle = 'rgba(255,255,255,0.08)'; g.fillRect(x0, y0, w, 3);
-    g.fillStyle = 'rgba(38,28,58,0.95)'; for (let mx = x0; mx <= x0 + w; mx += T * 2) g.fillRect(mx, y0, 2, h);
-    g.fillRect(x0, y0, w, 2); g.fillRect(x0, y0 + h - 1, w, 2);
-  }
-
-  function drawLabel(g, cx, y, text) {
-    g.save(); g.font = 'bold 11px monospace'; g.textAlign = 'center';
-    const w = g.measureText(text).width + 18;
-    g.fillStyle = 'rgba(12,8,22,0.92)'; roundRect(g, cx - w / 2, y - 9, w, 16, 6); g.fill();
-    g.strokeStyle = 'rgba(150,134,250,0.5)'; g.lineWidth = 1; roundRect(g, cx - w / 2, y - 9, w, 16, 6); g.stroke();
-    g.fillStyle = '#d8ccff'; g.fillText(text, cx, y + 3); g.restore();
-  }
-
-  // raised block helper: top surface (topCol) + front face of height fh (darker)
-  function block(g, x, y, w, h, topCol, fh, frontCol) {
-    g.fillStyle = topCol; g.fillRect(x, y, w, h - fh);
-    g.fillStyle = shade(topCol, 1.14); g.fillRect(x, y, w, 3);
-    let lg = g.createLinearGradient(0, y + h - fh, 0, y + h);
-    lg.addColorStop(0, frontCol || shade(topCol, 0.7)); lg.addColorStop(1, shade(topCol, 0.45));
-    g.fillStyle = lg; g.fillRect(x, y + h - fh, w, fh);
-    g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(x, y + h - 1, w, 1);
-  }
-
-  function drawFurniture(g, f, T) {
-    const px = f.x * T, py = f.y * T - LIFT, w = f.w * T, h = f.h * T;
-    const P = (a, b, c, d, col) => { g.fillStyle = col; g.fillRect(px + a, py + b, c, d); };
+  // ---- furniture -----------------------------------------------------------
+  function drawFurniture(g, f) {
+    const x = f.x, y = f.y, w = f.w, h = f.h;
     switch (f.kind) {
       case 'desk': {
-        block(g, px, py + 4, w, h - 2, '#9a6636', 9, '#6e441f');
-        // raised monitor with bezel + stand
-        P(w / 2 - 13, -16, 26, 18, '#15171f'); P(w / 2 - 11, -14, 22, 14, '#0d1220');
-        P(w / 2 - 3, 0, 6, 5, '#15171f'); P(w / 2 - 7, 4, 14, 3, '#20242e');
-        P(w / 2 - 12, h - 12, 24, 5, '#22262f'); P(w / 2 + 13, h - 11, 5, 4, '#22262f'); // keyboard+mouse
-        P(4, 1, 6, 6, '#3a7d3a'); P(5, 5, 4, 3, '#7a5230');
+        groundShadow(g, x, y, w, h);
+        isoBox(g, x, y + 0.1, w, h - 0.2, 12, faces('#6f4c2d'));
+        // drawer block
+        isoBox(g, x + w - 0.55, y + 0.15, 0.5, h - 0.3, 11, faces('#5a3d24'));
+        // monitor on top
+        monitor(g, x + w / 2 - 0.55, y + 0.12, '#8fd6ff');
+        // keyboard + mug hint (flat)
+        flatRect(g, x + 0.25, y + h - 0.42, 0.7, 0.28, 12, '#20222e');
         break;
       }
       case 'exec-desk': {
-        block(g, px, py + 6, w, h - 2, '#7a4c27', 11, '#573619');
-        P(w / 2 - 15, -14, 30, 18, '#15171f'); P(w / 2 - 13, -12, 26, 14, '#0d1220');
-        P(6, 2, 12, 9, '#20242e'); P(7, 3, 10, 6, '#33465e');
-        P(w - 18, 1, 10, 9, '#c9a24b'); P(w - 16, -2, 6, 4, '#dcb85e'); break;
+        groundShadow(g, x, y, w, h);
+        isoBox(g, x, y + 0.1, w, h - 0.2, 14, faces('#59401f'));
+        monitor(g, x + 0.55, y + 0.15, '#9be0ff');
+        monitor(g, x + w - 1.5, y + 0.15, '#9be0ff');
+        break;
       }
-      case 'table': { block(g, px, py + 4, w, h - 2, '#875a33', 8, '#5f3f22');
-        g.fillStyle = 'rgba(0,0,0,0.12)'; g.fillRect(px + 6, py + 12, w - 12, h - 20);
-        P(w / 2 - 4, h / 2 - 6, 8, 8, '#3a7d3a'); break; }
-      case 'whiteboard': { P(0, 0, w, h, '#eef1f5'); g.strokeStyle = '#8892a6'; g.strokeRect(px, py, w, h);
-        g.fillStyle = '#7c5ce8'; g.fillRect(px + 6, py + 6, w - 40, 3); g.fillRect(px + 6, py + 14, w - 60, 3);
-        g.fillStyle = '#3aa0ff'; g.fillRect(px + 6, py + 22, w - 30, 3); break; }
-      case 'bookshelf': { block(g, px, py, w, h, '#6a4526', 4, '#4a2f18');
-        const cols = ['#c0453a', '#3a6dc0', '#3a9d5a', '#c9a24b', '#8a4fc0'];
-        for (let i = 0; i < 8; i++) { g.fillStyle = cols[i % 5]; g.fillRect(px + 2 + i * 7, py + 3, 5, h - 8); } break; }
-      case 'couch': case 'sofa': { block(g, px, py + h * 0.3, w, h * 0.7, '#c9743a', h * 0.4, '#8a4d24');
-        P(0, 0, w, h * 0.44, '#d5814a'); P(-2, h * 0.14, 6, h * 0.86, '#a35a2a'); P(w - 4, h * 0.14, 6, h * 0.86, '#a35a2a');
-        g.fillStyle = 'rgba(255,255,255,0.10)'; g.fillRect(px, py, w, 3); break; }
-      case 'rack': { block(g, px, py - LIFT, w, h + LIFT, '#242a36', 5, '#141822');
-        for (let i = 0; i < 6; i++) { g.fillStyle = i % 2 ? '#2e3646' : '#262d3b'; g.fillRect(px + 2, py + 2 + i * (h - 4) / 6, w - 4, (h - 4) / 6 - 1); } break; }
-      case 'counter': { block(g, px, py, w, h + 6, '#cfd4dc', 8, '#9aa0aa'); break; }
-      case 'bar': { block(g, px, py, w, h + 6, '#c2c7d0', 8, '#8f949e'); break; }
-      case 'coffee': { block(g, px + 2, py - 6, w - 4, h + 12, '#252a34', 8, '#161a22'); P(4, -3, w - 8, 5, '#caa050'); P(w / 2 - 1, 3, 2, 3, '#6b4'); break; }
-      case 'fridge': { block(g, px + 1, py - 10, w - 2, h + 16, '#e2e6ec', 10, '#aeb4bf'); g.fillStyle = '#9aa0aa'; g.fillRect(px + 3, py - 3, 2, 8); break; }
-      case 'coffee-table': { block(g, px, py + 2, w, h, '#875a33', 5, '#5f3f22'); break; }
-      case 'aquarium': { block(g, px, py - 4, w, h + 8, '#123454', 6, '#0b2036'); P(2, -2, w - 4, h - 2, '#2f7fb5');
-        g.fillStyle = '#5ad0ff'; g.fillRect(px + 4, py, 3, 2); g.fillStyle = '#3a9d5a'; g.fillRect(px + w - 8, py, 3, 6); break; }
-      case 'plant': { g.fillStyle = 'rgba(0,0,0,0.25)'; g.beginPath(); g.ellipse(px + w / 2 + 2, py + h + LIFT, 8, 4, 0, 0, 7); g.fill();
-        g.fillStyle = '#6a4526'; g.fillRect(px + w / 2 - 5, py + h - 8 + LIFT, 10, 9); g.fillStyle = '#5a391f'; g.fillRect(px + w / 2 - 5, py + h - 8 + LIFT, 10, 2);
-        g.fillStyle = '#2f7d3f'; g.beginPath(); g.arc(px + w / 2, py + h - 12 + LIFT, 9, 0, 7); g.fill();
-        g.fillStyle = '#3a9d4f'; g.beginPath(); g.arc(px + w / 2 - 3, py + h - 16 + LIFT, 6, 0, 7); g.fill();
-        g.fillStyle = '#4bb85f'; g.beginPath(); g.arc(px + w / 2 + 4, py + h - 14 + LIFT, 5, 0, 7); g.fill(); break; }
-      default: { block(g, px, py, w, h, '#666', 5, '#333'); }
+      case 'table': {
+        groundShadow(g, x, y, w, h);
+        isoBox(g, x + 0.15, y + 0.15, w - 0.3, h - 0.3, 12, faces('#7c5836'));
+        flatRect(g, x + w / 2 - 0.3, y + h / 2 - 0.3, 0.6, 0.6, 12.5, '#2e6b46'); // plant on table
+        break;
+      }
+      case 'whiteboard':
+        isoBox(g, x, y + 0.05, w, 0.3, 26, { top: '#f4f6fa', right: '#dfe4ec', left: '#cdd4df' });
+        flatRect(g, x + 0.3, y + 0.06, w - 0.6, 0.18, 26.2, '#eef1f6');
+        // scribbles
+        g.save(); g.strokeStyle = '#5a86e0'; g.lineWidth = 1;
+        for (let i = 0; i < 3; i++) { const p1 = P(x + 0.5 + i, y + 0.1, 20 - i * 3), p2 = P(x + 1.3 + i, y + 0.1, 20 - i * 3); g.beginPath(); g.moveTo(p1.x, p1.y); g.lineTo(p2.x, p2.y); g.stroke(); }
+        g.restore();
+        break;
+      case 'bookshelf':
+        colorShelf(g, x, y, w, h, 30);
+        break;
+      case 'couch': case 'sofa': {
+        groundShadow(g, x, y, w, h);
+        const base = f.kind === 'couch' ? '#3f5d8a' : '#6d4f8a';
+        isoBox(g, x, y + 0.2, w, h - 0.2, 8, faces(base));            // seat
+        isoBox(g, x, y + h - 0.35, w, 0.35, 16, faces(shade(base, 0.9))); // backrest
+        isoBox(g, x, y + 0.2, 0.3, h - 0.2, 13, faces(base));         // left arm
+        isoBox(g, x + w - 0.3, y + 0.2, 0.3, h - 0.2, 13, faces(base)); // right arm
+        break;
+      }
+      case 'rack': {
+        groundShadow(g, x, y, w, h);
+        isoBox(g, x + 0.1, y + 0.1, w - 0.2, h - 0.2, 32, faces('#23262e'));
+        // baked status LEDs on SE face
+        for (let r = 0; r < 5; r++) {
+          const cols = ['#5be682', '#f26e6e', '#f2c84f'];
+          const p = P(x + w - 0.1, y + 0.25, 27 - r * 5);
+          g.fillStyle = cols[r % 3]; g.fillRect(p.x - 2, p.y - 2, 3, 3);
+        }
+        break;
+      }
+      case 'counter': case 'bar': {
+        groundShadow(g, x, y, w, h);
+        isoBox(g, x, y + 0.1, w, h - 0.1, f.kind === 'bar' ? 14 : 15, faces('#b7bec8'));
+        break;
+      }
+      case 'coffee': {
+        groundShadow(g, x, y, w, h);
+        isoBox(g, x + 0.2, y + 0.2, 0.6, 0.6, 11, faces('#2b2f38'));
+        flatRect(g, x + 0.28, y + 0.28, 0.44, 0.44, 11.2, '#c04a2a');
+        break;
+      }
+      case 'fridge':
+        groundShadow(g, x, y, w, h);
+        isoBox(g, x + 0.1, y + 0.1, w - 0.2, h - 0.2, 24, faces('#d6dce3'));
+        break;
+      case 'coffee-table':
+        groundShadow(g, x, y, w, h);
+        isoBox(g, x + 0.15, y + 0.15, w - 0.3, h - 0.3, 7, faces('#4b3728'));
+        break;
+      case 'aquarium':
+        groundShadow(g, x, y, w, h);
+        isoBox(g, x + 0.1, y + 0.1, w - 0.2, h - 0.2, 10, { top: 'rgba(120,200,235,0.75)', right: 'rgba(40,110,160,0.85)', left: 'rgba(30,90,140,0.9)' });
+        break;
+      case 'plant':
+        plant(g, x + 0.5, y + 0.5);
+        break;
+      default:
+        groundShadow(g, x, y, w, h);
+        isoBox(g, x, y, w, h, 10, faces('#6a6a78'));
     }
   }
 
-  R.drawFurnitureSprite = drawFurniture;
+  // colourful office bookshelf (files/books) — the hero prop from the refs
+  function colorShelf(g, x, y, w, h, H) {
+    groundShadow(g, x, y, w, h);
+    isoBox(g, x, y + 0.05, w, Math.max(0.3, h - 0.1), H, faces('#6d4a2a'));
+    const books = ['#c94f34', '#e0872f', '#d8b23a', '#4f7d4a', '#3f6fae', '#8a4fa0', '#c9553f'];
+    // rows of coloured spines on the SE (right) face
+    for (let row = 0; row < 4; row++) {
+      const hz = H - 4 - row * (H / 4.5);
+      for (let i = 0; i < Math.round(w * 3); i++) {
+        const gx = x + 0.15 + i * 0.32;
+        if (gx > x + w - 0.15) break;
+        const p = P(gx, y + 0.06, hz);
+        g.fillStyle = books[(row * 3 + i) % books.length];
+        g.fillRect(p.x - 1.6, p.y - 5.5, 3.2, 5.5);
+      }
+    }
+  }
+
+  function drawChair(g, x, y) {
+    groundShadow(g, x + 0.15, y + 0.15, 0.7, 0.7);
+    isoBox(g, x + 0.2, y + 0.2, 0.6, 0.6, 9, faces('#2c2f3b'));   // seat
+    isoBox(g, x + 0.2, y + 0.72, 0.6, 0.12, 20, faces('#33374a')); // backrest
+  }
+
+  function monitor(g, x, y, screen) {
+    isoBox(g, x + 0.42, y + 0.02, 0.16, 0.24, 3, faces('#15161d'));   // stand base
+    isoBox(g, x, y, 1.0, 0.14, 10, faces('#15161d'));                  // body
+    // glowing screen on the SE face
+    const a = P(x + 1.0, y, 10.5), b = P(x + 1.0, y + 0.14, 10.5), c = P(x + 1.0, y + 0.14, 2.5), e = P(x + 1.0, y, 2.5);
+    poly(g, [a, b, c, e], screen);
+    g.save(); g.globalAlpha = 0.5; const gg = g.createRadialGradient(a.x, (a.y + c.y) / 2, 1, a.x, (a.y + c.y) / 2, 14);
+    gg.addColorStop(0, screen); gg.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gg; g.fillRect(a.x - 14, a.y - 6, 28, 20); g.restore();
+  }
+
+  function plant(g, cx, cy) {
+    groundShadow(g, cx - 0.25, cy - 0.25, 0.5, 0.5);
+    isoBox(g, cx - 0.22, cy - 0.22, 0.44, 0.44, 7, faces('#9a6a44')); // pot
+    const greens = ['#3c8a4e', '#4fa85f', '#2f6f42'];
+    for (let i = 0; i < 7; i++) {
+      const a = i / 7 * 6.28; const r = 0.18 + (i % 2) * 0.05;
+      const p = P(cx + Math.cos(a) * r, cy + Math.sin(a) * r, 12 + (i % 3) * 4);
+      g.fillStyle = greens[i % 3];
+      g.beginPath(); g.ellipse(p.x, p.y, 4.5, 6.5, 0, 0, 7); g.fill();
+    }
+    const top = P(cx, cy, 22); g.fillStyle = '#5fbf6f';
+    g.beginPath(); g.ellipse(top.x, top.y, 5, 7, 0, 0, 7); g.fill();
+  }
+
+  // small flat detail sitting on a surface at height H
+  function flatRect(g, x, y, w, d, H, col) { poly(g, [P(x, y, H), P(x + w, y, H), P(x + w, y + d, H), P(x, y + d, H)], col); }
+
+  // ---- projection API for the engine (agents + live effects) --------------
+  R.ISO = { TWH, THH, WALLH, TILE, get OX() { return OX; }, get OY() { return OY; } };
+  R.projectPx = function (wx, wy, h) {
+    const gx = wx / TILE, gy = wy / TILE;
+    return { x: (gx - gy) * TWH + OX, y: (gx + gy) * THH + OY - (h || 0) };
+  };
+
   global.OfficeRender = R;
 })(window);

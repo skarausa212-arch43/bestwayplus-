@@ -8,9 +8,11 @@
     constructor(canvas, world) {
       this.canvas = canvas; this.ctx = canvas.getContext('2d');
       this.world = world; this.worldCanvas = OfficeRender.prerenderWorld(world);
+      // camera works in ISO-canvas pixel space (the prerender's own dimensions)
+      this.viewW = this.worldCanvas.width; this.viewH = this.worldCanvas.height;
       this.agents = [];
-      this.cam = { x: world.worldW / 2, y: world.worldH / 2, zoom: 1, tx: null, ty: null, tzoom: null };
-      this.minZoom = 0.14; this.maxZoom = 2.6;
+      this.cam = { x: this.viewW / 2, y: this.viewH / 2, zoom: 1, tx: null, ty: null, tzoom: null };
+      this.minZoom = 0.08; this.maxZoom = 2.6;
       this.selectedId = null; this.hoverId = null; this.time = 0;
       this.locked = true; // office view is pinned: no pan/zoom, only tap-to-select
       this.onSelect = null; this.onHover = null; this.meetings = [];
@@ -26,10 +28,10 @@
       this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0); this.ctx.imageSmoothingEnabled = false;
     }
     fit() {
-      const pad = this.vw < 700 ? 0.98 : 0.94; // phones: use more of the screen
-      const z = Math.min(this.vw / this.world.worldW, this.vh / this.world.worldH) * pad;
+      const pad = this.vw < 700 ? 1.06 : 0.95; // phones: fill width (tiny corner clip ok)
+      const z = Math.min(this.vw / this.viewW, this.vh / this.viewH) * pad;
       this.cam.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, z));
-      this.cam.x = this.world.worldW / 2; this.cam.y = this.world.worldH / 2;
+      this.cam.x = this.viewW / 2; this.cam.y = this.viewH / 2;
       this.cam.tx = this.cam.ty = this.cam.tzoom = null;
     }
     focusOn(wx, wy, zoom) { if (this.locked) return; this.cam.tx = wx; this.cam.ty = wy; this.cam.tzoom = zoom || Math.min(this.maxZoom, 1.6); }
@@ -40,8 +42,8 @@
 
     _clampCam() {
       const m = 120; // allow some margin past edges
-      this.cam.x = Math.max(-m, Math.min(this.world.worldW + m, this.cam.x));
-      this.cam.y = Math.max(-m, Math.min(this.world.worldH + m, this.cam.y));
+      this.cam.x = Math.max(-m, Math.min(this.viewW + m, this.cam.x));
+      this.cam.y = Math.max(-m, Math.min(this.viewH + m, this.cam.y));
       this.cam.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.cam.zoom));
     }
 
@@ -68,10 +70,15 @@
       c.addEventListener('touchend', () => { if (down && moved < 8) { const hit = this._hitAgent(lx, ly); this.select(hit ? hit.id : null); } down = false; });
     }
 
+    // pick the nearest agent to the tap, comparing in SCREEN space (iso-safe)
     _hitAgent(sx, sy) {
-      const w = this.screenToWorld(sx, sy);
       let best = null, bd = 26 * 26;
-      for (const a of this.agents) { const dx = w.x - a.x, dy = w.y - (a.y - 12); const d = dx * dx + dy * dy; if (d < bd) { bd = d; best = a; } }
+      for (const a of this.agents) {
+        const ip = OfficeRender.projectPx(a.x, a.y, 20); // ~body centre
+        const s = this.worldToScreen(ip.x, ip.y);
+        const dx = sx - s.x, dy = sy - s.y; const d = dx * dx + dy * dy;
+        if (d < bd) { bd = d; best = a; }
+      }
       return best;
     }
     select(id) { this.selectedId = id; if (this.onSelect) this.onSelect(id ? this.world._store.getAgent(id) : null); }
@@ -96,59 +103,53 @@
       this._ambientBack(ctx);
       // meeting labels above table
       for (const m of this.meetings) if (m.status === 'active') this._meetingLabel(ctx, m);
-      // agents y-sorted
-      const sorted = this.agents.slice().sort((a, b) => a.y - b.y);
+      // agents depth-sorted (iso: farther = smaller x+y, drawn first)
+      const sorted = this.agents.slice().sort((a, b) => (a.x + a.y) - (b.x + b.y));
       for (const a of sorted) this._drawAgent(ctx, a);
       this._ambientFront(ctx);
       ctx.restore();
     }
 
-    // glows behind agents: monitor screens + server LEDs
+    // glows behind agents: monitor screens + server LEDs (iso-projected)
     _ambientBack(ctx) {
       const T = 32, t = this.time; ctx.save();
-      // monitor glow (brighter if an agent is seated at that desk)
       const occ = {}; for (const a of this.agents) if (a.homeDesk && a.seated) occ[a.homeDesk.id] = a.status;
       for (const d of this.world.desks) {
-        const mx = d.dx * T + T, my = d.dy * T - 7;
-        const st = occ[d.id]; const on = st && st !== 'MOVING';
-        const base = on ? 0.5 : 0.22; const pulse = base + 0.12 * Math.sin(t * 2 + d.dx);
+        const st = occ[d.id]; const on = st && st !== 'MOVING'; if (!on) continue;
+        const p = OfficeRender.projectPx((d.dx + 0.5) * T, (d.dy + 0.1) * T, 12); // monitor face
+        const pulse = 0.5 + 0.16 * Math.sin(t * 2 + d.dx);
         const col = st === 'CODING' ? '90,220,150' : st === 'DESIGNING' ? '244,140,200' : st === 'RESEARCHING' ? '250,200,90' : '90,180,255';
-        // screen fill
-        ctx.fillStyle = `rgba(${col},${on ? 0.55 : 0.3})`; ctx.fillRect(mx - 11, my - 6, 22, 13);
-        if (on) { // code/design line flicker
-          ctx.fillStyle = 'rgba(255,255,255,0.45)';
-          for (let i = 0; i < 3; i++) { const w = 6 + ((Math.sin(t * 3 + i + d.dx) * 0.5 + 0.5) * 12 | 0); ctx.fillRect(mx - 8, my - 4 + i * 4, w, 1.5); }
-        }
-        const gg = ctx.createRadialGradient(mx, my, 2, mx, my, 20);
+        const gg = ctx.createRadialGradient(p.x, p.y, 2, p.x, p.y, 22);
         gg.addColorStop(0, `rgba(${col},${pulse})`); gg.addColorStop(1, `rgba(${col},0)`);
-        ctx.fillStyle = gg; ctx.fillRect(mx - 20, my - 20, 40, 40);
+        ctx.fillStyle = gg; ctx.fillRect(p.x - 22, p.y - 22, 44, 44);
       }
       // server LEDs
       for (const f of this.world.furniture) if (f.kind === 'rack') {
-        const bx = f.x * T, by = f.y * T;
         for (let i = 0; i < 3; i++) {
-          const blink = (Math.sin(t * (3 + i) + f.x * 2 + i) > 0.2) ? 1 : 0.15;
+          const blink = (Math.sin(t * (3 + i) + f.x * 2 + i) > 0.2) ? 1 : 0.2;
+          const p = OfficeRender.projectPx((f.x + f.w - 0.1) * T, (f.y + 0.25) * T, 24 - i * 6);
           ctx.fillStyle = `rgba(${['80,230,130', '250,110,110', '250,200,80'][i]},${blink})`;
-          ctx.fillRect(bx + f.w * T - 6, by + 6 + i * 8, 3, 3);
+          ctx.fillRect(p.x - 2, p.y - 2, 3, 3);
         }
       }
       ctx.restore();
     }
 
-    // steam + floating dust motes above everything
+    // steam + floating dust motes above everything (iso-projected)
     _ambientFront(ctx) {
       const T = 32, t = this.time; ctx.save();
       for (const f of this.world.furniture) if (f.kind === 'coffee') {
-        const cx = f.x * T + T / 2, cy = f.y * T - 6;
+        const base = OfficeRender.projectPx((f.x + 0.5) * T, (f.y + 0.5) * T, 12);
         for (let i = 0; i < 3; i++) {
           const ph = t * 1.4 + i * 1.3; const rise = (ph % 3);
-          const sx = cx + Math.sin(ph * 2) * 3; const sy = cy - rise * 9;
+          const sx = base.x + Math.sin(ph * 2) * 3; const sy = base.y - rise * 9;
           ctx.fillStyle = `rgba(230,230,240,${0.22 * (1 - rise / 3)})`;
           ctx.beginPath(); ctx.arc(sx, sy, 2.2 - rise * 0.5, 0, 7); ctx.fill();
         }
       }
       for (const m of this._motes) {
-        const y = m.y + Math.sin(t * 0.3 + m.p) * 12; const x = m.x + Math.cos(t * 0.2 + m.p) * 10;
+        const p = OfficeRender.projectPx(m.x, m.y, 18 + Math.sin(t * 0.5 + m.p) * 8);
+        const x = p.x + Math.cos(t * 0.2 + m.p) * 8, y = p.y + Math.sin(t * 0.3 + m.p) * 6;
         ctx.fillStyle = `rgba(255,240,210,${0.05 + 0.05 * (Math.sin(t + m.p) * 0.5 + 0.5)})`;
         ctx.beginPath(); ctx.arc(x, y, m.s * 1.6, 0, 7); ctx.fill();
       }
@@ -157,20 +158,24 @@
 
     _drawAgent(ctx, a) {
       const fr = a.currentFrame(); const w = AgentSprites.FW, h = AgentSprites.FH;
-      const dx = a.x - w / 2, dy = a.y - h + 6 + (a.bob || 0);
+      const g = OfficeRender.projectPx(a.x, a.y, 0); // iso ground point
+      const cx = g.x, gy = g.y;                       // sprite ground centre
+      const dx = cx - w / 2, dy = gy - h + 8 + (a.bob || 0);
+      // ground shadow (iso ellipse)
+      ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.beginPath(); ctx.ellipse(cx, gy, 9, 4.5, 0, 0, 7); ctx.fill();
       // selection / hover outline
-      if (a.id === this.selectedId) { ctx.strokeStyle = '#8b7cf0'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(a.x, a.y - 1, 14, 6, 0, 0, 7); ctx.stroke();
-        ctx.fillStyle = 'rgba(139,124,240,0.18)'; ctx.beginPath(); ctx.ellipse(a.x, a.y - 1, 14, 6, 0, 0, 7); ctx.fill(); }
-      else if (a.id === this.hoverId) { ctx.fillStyle = 'rgba(255,255,255,0.10)'; ctx.beginPath(); ctx.ellipse(a.x, a.y - 1, 13, 5, 0, 0, 7); ctx.fill(); }
+      if (a.id === this.selectedId) { ctx.strokeStyle = '#8b7cf0'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(cx, gy, 13, 6, 0, 0, 7); ctx.stroke();
+        ctx.fillStyle = 'rgba(139,124,240,0.20)'; ctx.beginPath(); ctx.ellipse(cx, gy, 13, 6, 0, 0, 7); ctx.fill(); }
+      else if (a.id === this.hoverId) { ctx.fillStyle = 'rgba(255,255,255,0.10)'; ctx.beginPath(); ctx.ellipse(cx, gy, 12, 5, 0, 0, 7); ctx.fill(); }
       ctx.drawImage(fr, dx, dy);
       // status bubble
       const icon = a.bubbleIcon();
       const show = icon && (a.id === this.selectedId || a.id === this.hoverId || a.bubbleT > 0 || a.status === 'WAITING_FOR_USER' || a.status === 'ERROR');
-      if (show) this._bubble(ctx, a.x, dy - 4, icon, a.status);
+      if (show) this._bubble(ctx, cx, dy - 4, icon, a.status);
       // name tag when selected/hover
-      if (a.id === this.selectedId || a.id === this.hoverId) this._nameTag(ctx, a.x, dy - 22, a.name);
+      if (a.id === this.selectedId || a.id === this.hoverId) this._nameTag(ctx, cx, dy - 22, a.name);
       // effects
-      if (a.effect === 'success') { ctx.fillStyle = '#4ade80'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center'; ctx.fillText('✓', a.x, dy - 8); }
+      if (a.effect === 'success') { ctx.fillStyle = '#4ade80'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center'; ctx.fillText('✓', cx, dy - 8); }
     }
     _bubble(ctx, x, y, icon, status) {
       const col = status === 'WAITING_FOR_USER' ? '#f5a623' : status === 'ERROR' ? '#ef4444' : 'rgba(24,20,40,0.92)';
@@ -186,10 +191,10 @@
       ctx.fillStyle = '#e9e4ff'; ctx.fillText(name, x, y);
     }
     _meetingLabel(ctx, m) {
-      const wx = 9.5 * T, wy = 4.4 * T; ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center';
+      const p = OfficeRender.projectPx(9.5 * 32, 7 * 32, 40); ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center';
       const txt = '💬 ' + m.title; const w = ctx.measureText(txt).width + 12;
-      ctx.fillStyle = 'rgba(124,92,232,0.92)'; roundRect(ctx, wx - w / 2, wy - 8, w, 14, 4); ctx.fill();
-      ctx.fillStyle = '#fff'; ctx.fillText(txt, wx, wy + 2);
+      ctx.fillStyle = 'rgba(124,92,232,0.92)'; roundRect(ctx, p.x - w / 2, p.y - 8, w, 14, 4); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.fillText(txt, p.x, p.y + 2);
     }
   }
   function roundRect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
