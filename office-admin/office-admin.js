@@ -11,11 +11,14 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { execFile } = require('child_process');
 
 const PORT = 8790;
 const HOST = '127.0.0.1';
 const DATA_DIR = path.join(__dirname, 'data');
 const STATE_FILE = path.join(DATA_DIR, 'office-admin.json');
+const ALI_CONFIG = path.join(DATA_DIR, 'ali-config.json');       // AliExpress credentials
+const ALI_SCRIPT = path.join(__dirname, 'ali', 'ae_search.py');  // keyword search (iop SDK)
 const OLLAMA = { host: '127.0.0.1', port: 11434, path: '/api/chat', model: 'qwen2.5:0.5b' };
 
 // canonical team (ids must match the frontend director.js)
@@ -99,6 +102,17 @@ function pump() {
 // ---- http helpers --------------------------------------------------------
 function sendJson(res, code, obj) { const s = JSON.stringify(obj); res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(s); }
 function readBody(req) { return new Promise(resolve => { let b = ''; req.on('data', c => { b += c; if (b.length > 1e5) req.destroy(); }); req.on('end', () => { try { resolve(JSON.parse(b || '{}')); } catch (e) { resolve({}); } }); }); }
+function aliStatus() {
+  let cfg = { api: {}, locale: {} };
+  try { cfg = JSON.parse(fs.readFileSync(ALI_CONFIG, 'utf8')); } catch (e) {}
+  const a = cfg.api || {}, l = cfg.locale || {};
+  return {
+    ok: true,
+    configured: !!(a.app_key && a.app_secret && a.access_token),
+    has: { app_key: !!a.app_key, app_secret: !!a.app_secret, access_token: !!a.access_token },
+    locale: { ship_to_country: l.ship_to_country || 'US', target_currency: l.target_currency || 'USD', target_language: l.target_language || 'EN' },
+  };
+}
 function publicTasks() { return state.tasks.slice(-40).map(t => ({ id: t.id, agentId: t.agentId, agentName: t.agentName, status: t.status, createdAt: t.createdAt })); }
 function fullTasks() { return state.tasks.slice(-40).map(t => ({ id: t.id, agentId: t.agentId, agentName: t.agentName, prompt: t.prompt, result: t.result || '', status: t.status, createdAt: t.createdAt })); }
 
@@ -150,6 +164,42 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 200, { ok: true, taskId: task.id });
       }
     }
+
+    // ---- AliExpress (Майя) — credentials + real keyword search ----
+    if (req.method === 'POST' && ['/ali/config', '/ali/status', '/ali/search'].includes(url)) {
+      const b = await readBody(req);
+      if (!checkPass(b.password)) return sendJson(res, 401, { error: 'Неверный пароль' });
+
+      if (url === '/ali/config') {
+        let cfg = { api: {}, search: {}, locale: {} };
+        try { cfg = JSON.parse(fs.readFileSync(ALI_CONFIG, 'utf8')); } catch (e) {}
+        cfg.api = cfg.api || {}; cfg.locale = cfg.locale || {}; cfg.search = cfg.search || {};
+        const setIf = (o, k, v) => { if (v != null && String(v).trim() !== '') o[k] = String(v).trim(); };
+        setIf(cfg.api, 'app_key', b.app_key); setIf(cfg.api, 'app_secret', b.app_secret);
+        setIf(cfg.api, 'access_token', b.access_token); setIf(cfg.api, 'refresh_token', b.refresh_token);
+        cfg.locale.ship_to_country = (b.ship_to_country || cfg.locale.ship_to_country || 'US');
+        cfg.locale.target_currency = (b.target_currency || cfg.locale.target_currency || 'USD');
+        cfg.locale.target_language = (b.target_language || cfg.locale.target_language || 'EN');
+        cfg.locale.remove_personal_benefit = 'false';
+        try { fs.mkdirSync(DATA_DIR, { recursive: true }); fs.writeFileSync(ALI_CONFIG, JSON.stringify(cfg, null, 2)); }
+        catch (e) { return sendJson(res, 500, { error: 'Не удалось сохранить' }); }
+        return sendJson(res, 200, aliStatus());
+      }
+      if (url === '/ali/status') return sendJson(res, 200, aliStatus());
+
+      if (url === '/ali/search') {
+        const keywords = String(b.keywords || 'electronics').slice(0, 120).trim() || 'electronics';
+        let maxPrice = parseFloat(b.maxPrice); if (!(maxPrice > 0)) maxPrice = 50;
+        return execFile('python3', [ALI_SCRIPT, keywords, String(maxPrice)],
+          { timeout: 45000, env: Object.assign({}, process.env, { AE_CONFIG: ALI_CONFIG }), maxBuffer: 4 * 1024 * 1024 },
+          (err, stdout, stderr) => {
+            if (err && !stdout) return sendJson(res, 200, { error: 'run_error', message: String((stderr || err.message || '')).slice(0, 300) });
+            let j; try { j = JSON.parse(String(stdout).trim().split('\n').pop()); } catch (e) { return sendJson(res, 200, { error: 'parse_error', message: String(stdout).slice(0, 300) }); }
+            return sendJson(res, 200, j);
+          });
+      }
+    }
+
     sendJson(res, 404, { error: 'not found' });
   } catch (e) { sendJson(res, 500, { error: 'server error' }); }
 });

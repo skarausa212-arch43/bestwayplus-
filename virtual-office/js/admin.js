@@ -119,6 +119,20 @@
         <div class="modal-actions"><button class="primary" id="admTaskSend">Отправить агенту →</button></div>
         <div class="soft small">Отвечает локальная модель на сервере. Ответ появится в карточке сотрудника и в ленте.</div>
 
+        <div class="adm-sec">🛒 Майя — поиск на AliExpress <button class="ghost sm" id="aliCfgToggle">ключи</button></div>
+        <div id="aliCfg" hidden>
+          <div class="soft small">Ключи AliExpress Open Platform (Dropshipping). Хранятся на сервере, в логи не попадают.</div>
+          <label>app_key</label><input id="aliKey" placeholder="app_key">
+          <label>app_secret</label><input id="aliSecret" type="password" placeholder="app_secret">
+          <label>access_token</label><input id="aliToken" type="password" placeholder="OAuth access_token">
+          <div class="row2"><div><label>Страна</label><input id="aliCountry" value="US"></div><div><label>Валюта</label><input id="aliCur" value="USD"></div></div>
+          <div class="modal-actions"><button class="primary" id="aliSave">Сохранить ключи</button></div>
+        </div>
+        <div class="soft small" id="aliState">Проверка настроек…</div>
+        <label>Что искать</label><input id="aliQuery" value="electronics" placeholder="напр. wireless earbuds">
+        <div class="row2"><div><label>Макс. цена ($)</label><input id="aliMax" type="number" value="50"></div><div style="align-self:end"><button class="primary" id="aliSearch" style="width:100%">Найти →</button></div></div>
+        <div class="adm-tasks" id="aliResults"></div>
+
         <div class="adm-sec">✏️ Сотрудники (имя / роль)</div>
         <div class="adm-list">${agRows}</div>
         <div class="modal-actions"><button class="ghost" id="admReset">Сбросить имена</button></div>
@@ -145,8 +159,55 @@
       if (!prompt) return this.err('Введите задание');
       $('#admTaskPrompt').value = ''; this.runTask(agentId, prompt);
     });
+    // AliExpress / Майя
+    $('#aliCfgToggle').addEventListener('click', () => { const c = $('#aliCfg'); c.hidden = !c.hidden; });
+    $('#aliSave').addEventListener('click', () => this.aliSave());
+    $('#aliSearch').addEventListener('click', () => this.aliSearch());
+    this.aliStatus();
     this.refreshTasks();
   };
+
+  A.aliStatus = async function () {
+    const r = await api('/ali/status', { password: this.pw });
+    const el = $('#aliState'); if (!el || !r.ok) return;
+    const s = r.j;
+    if (s.configured) { el.innerHTML = '<span class="adm-ok">✓ подключено</span> · доставка ' + (s.locale.ship_to_country) + ', ' + s.locale.target_currency; if ($('#aliCountry')) $('#aliCountry').value = s.locale.ship_to_country; if ($('#aliCur')) $('#aliCur').value = s.locale.target_currency; }
+    else el.innerHTML = '<span class="adm-err">не настроено</span> — добавьте ключи (кнопка «ключи»)';
+  };
+  A.aliSave = async function () {
+    const body = { password: this.pw, app_key: $('#aliKey').value, app_secret: $('#aliSecret').value, access_token: $('#aliToken').value, ship_to_country: $('#aliCountry').value, target_currency: $('#aliCur').value, target_language: 'EN' };
+    const r = await api('/ali/config', body);
+    if (r.ok) { $('#aliSecret').value = ''; $('#aliToken').value = ''; $('#aliKey').value = ''; $('#aliCfg').hidden = true; this.aliStatus(); this.err('Ключи AliExpress сохранены'); }
+    else this.err(r.j.error || 'Ошибка');
+  };
+  A.aliSearch = async function () {
+    const keywords = ($('#aliQuery').value || 'electronics').trim();
+    const maxPrice = parseFloat($('#aliMax').value) || 50;
+    const box = $('#aliResults'); box.innerHTML = '<div class="soft small">🔎 Майя ищет на AliExpress…</div>';
+    const o = this.office(); const maya = o && o.store.getAgent('maya');
+    if (maya && o) { try { o.director.workAtDesk(maya, 'RESEARCHING', 'ищет товары на AliExpress'); } catch (e) {} maya.bubbleT = 3; o.store.log('Майя: поиск на AliExpress — «' + keywords + '»', { agentId: 'maya', kind: 'task' }); }
+    const r = await api('/ali/search', { password: this.pw, keywords, maxPrice });
+    const j = r.j || {};
+    if (j.error) { box.innerHTML = '<div class="adm-err" style="font-size:12px">' + esc(aliErr(j)) + '</div>'; this.aliDone(maya, true); return; }
+    const list = j.products || [];
+    if (!list.length) { box.innerHTML = '<div class="soft small">Ничего не найдено до $' + maxPrice + '.' + (j.note ? ' ' + esc(j.note) : '') + '</div>'; this.aliDone(maya, false); return; }
+    box.innerHTML = list.map(p => `<a class="ali-card" href="${esc(p.url)}" target="_blank" rel="noopener">
+        ${p.image ? `<img class="ali-img" src="${esc(p.image)}" alt="" loading="lazy">` : '<div class="ali-img"></div>'}
+        <div class="ali-info"><div class="ali-title">${esc(p.title)}</div><div class="ali-price">$${esc(p.price)} ${esc(p.currency || '')}</div></div>
+      </a>`).join('');
+    if (o) o.store.log('Майя нашла ' + list.length + ' товаров (до $' + maxPrice + ')', { agentId: 'maya', kind: 'done' });
+    this.aliDone(maya, false);
+  };
+  A.aliDone = function (maya, err) {
+    const o = this.office(); if (!maya || !o) return;
+    o.store.setStatus('maya', err ? 'ERROR' : 'COMPLETED', err ? 'ошибка поиска' : 'готово');
+    if (!err && maya.flash) maya.flash('success');
+    setTimeout(() => { const m = o.store.getAgent('maya'); if (m && (m.status === 'COMPLETED' || m.status === 'ERROR')) { try { o.director.workAtDesk(m, 'IDLE', ''); } catch (e) {} } }, 2600);
+  };
+  function aliErr(j) {
+    const m = { no_config: 'AliExpress не настроен — добавьте ключи (кнопка «ключи»).', no_keys: 'Заполните app_key, app_secret и access_token.', no_sdk: 'SDK на сервере не установлен: ' + (j.message || ''), api_error: 'Ошибка API AliExpress: ' + (j.message || ''), run_error: 'Сбой запуска: ' + (j.message || ''), parse_error: 'Не разобрать ответ: ' + (j.message || '') };
+    return m[j.error] || (j.message || 'Ошибка');
+  }
 
   A.refreshTasks = async function () {
     if (!this.authed) return;
