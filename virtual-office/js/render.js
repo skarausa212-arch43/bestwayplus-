@@ -120,7 +120,7 @@
     if (openR) { const cx = openR.x + openR.w / 2; items.push({ depth: openR.y + 0.1, z: 2, draw: () => wallPicture(g, cx - 1.6, cx + 1.6, openR.y, WALLH * 0.4, WALLH * 0.82) }); }
     const entR = world.rooms.find(r => r.id === 'entrance');
     if (entR) { const rx = entR.x + entR.w - 1.5, ry = entR.y + 1.4; items.push({ depth: rx + ry, z: 1, draw: () => coatRack(g, rx, ry) }); }
-    for (const [px, py] of [[19.5, 19.4], [36.4, 19.4], [22.5, 27.5]]) items.push({ depth: px + py, z: 1, draw: () => plant(g, px, py) });
+    for (const [px, py] of [[16, 12.5], [34, 13.5], [20, 22]]) items.push({ depth: px + py, z: 1, draw: () => plant(g, px, py) });
 
     items.sort((a, b) => (a.depth - b.depth) || (a.z - b.z));
     for (const it of items) it.draw();
