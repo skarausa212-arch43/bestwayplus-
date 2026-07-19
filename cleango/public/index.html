@@ -1050,6 +1050,15 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
   /* Kill continuous box-shadow/transform "pulse" animations on phones — they
      repaint every frame and add scroll jank for a purely decorative effect. */
   .hai-dot,.live-dot,.pulse,.gpill.hot::after,.hero-ai.typing .hai-txt{animation:none!important}
+  /* heroShift animates background-position on the full-width hero sitting at the
+     top of the page — it repaints a large layer continuously right where the
+     scroll starts. Hold every remaining decorative loop still on phones. */
+  .hero,.hero .sparkle,.logo .spk,.pulse,.pulse2,.orb-ring,.orb-core,
+  .typing .dot,.hero-ai .hai-dot{animation:none!important}
+  /* Static backdrop-filter blurs inside the hero re-rasterize as the hero
+     scrolls; drop the blur (keep the translucent fill) so scrolling stays cheap.
+     .gpill are the visible hero chips; the orb chips are display:none on phones. */
+  .badge.flash,.hero .badge,.gpill{backdrop-filter:none;-webkit-backdrop-filter:none}
 }
 /* language switcher */
 .langbtn{display:inline-flex;align-items:center;gap:5px;width:auto;padding:0 10px}
