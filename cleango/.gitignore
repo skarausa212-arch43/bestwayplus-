@@ -2,3 +2,5 @@ data/
 node_modules/
 *.log
 deploy/instance.local.env
+deploy/fcm-service-account.json
+deploy/*service-account*.json

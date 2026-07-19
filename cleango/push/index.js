@@ -19,8 +19,29 @@
 
 const https = require('https');
 const crypto = require('crypto');
+const fs = require('fs');
 
+// Config comes from EITHER a service-account JSON file (recommended — the key
+// has spaces/newlines that don't survive a systemd env var) via LUMI_FCM_KEY_FILE,
+// OR the three individual env vars. The file is parsed once and cached.
+let _fileCache = null;
 function config() {
+  const file = (process.env.LUMI_FCM_KEY_FILE || '').trim();
+  if (file) {
+    if (!_fileCache || _fileCache.file !== file) {
+      let cfg = { projectId: '', clientEmail: '', privateKey: '' };
+      try {
+        const j = JSON.parse(fs.readFileSync(file, 'utf8'));
+        cfg = {
+          projectId: String(j.project_id || '').trim(),
+          clientEmail: String(j.client_email || '').trim(),
+          privateKey: String(j.private_key || '').replace(/\\n/g, '\n').trim(),
+        };
+      } catch { /* unreadable/invalid → stays disabled */ }
+      _fileCache = { file, cfg };
+    }
+    return _fileCache.cfg;
+  }
   return {
     projectId: (process.env.LUMI_FCM_PROJECT_ID || '').trim(),
     clientEmail: (process.env.LUMI_FCM_CLIENT_EMAIL || '').trim(),
