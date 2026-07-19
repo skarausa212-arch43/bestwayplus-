@@ -57,6 +57,19 @@ npm run build              # sync-web.sh → www/, then `cap sync`
 app calls the live API and registers for push. Re-run `npm run build` after any
 web change.
 
+### App icon + splash
+
+The brand assets are ready in `assets/` (LUMI house icon + splash, light & dark).
+After `add:android` / `add:ios`, generate every platform size:
+
+```bash
+npm run assets      # @capacitor/assets → all icon/splash sizes into ios/ + android/
+```
+
+To restyle, replace `assets/icon.png` (1024²), `assets/icon-foreground.png` +
+`assets/icon-background.png` (adaptive), `assets/splash.png` / `assets/splash-dark.png`
+(2732²) and re-run `npm run assets`.
+
 ## 3. Wire push per platform
 
 Drop your Firebase config file(s) into **`mobile/`** — every `npm run build` (and

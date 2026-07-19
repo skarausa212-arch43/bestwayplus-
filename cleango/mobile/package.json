@@ -6,6 +6,7 @@
   "scripts": {
     "sync-web": "bash scripts/sync-web.sh",
     "place-firebase": "node scripts/place-firebase.js",
+    "assets": "npx @capacitor/assets generate --splashBackgroundColor '#F4F8F5' --splashBackgroundColorDark '#0C100E'",
     "build": "npm run sync-web && npm run place-firebase && npx cap sync",
     "open:ios": "npx cap open ios",
     "open:android": "npx cap open android",
@@ -21,6 +22,7 @@
     "@capacitor/splash-screen": "^6.0.2"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6.1.0"
+    "@capacitor/cli": "^6.1.0",
+    "@capacitor/assets": "^3.0.5"
   }
 }
