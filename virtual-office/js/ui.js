@@ -18,8 +18,8 @@
     this.engine = engine; this.director = director; this.store = store; this.bus = bus;
     this.rightMode = 'feed';
 
-    engine.onSelect = (a) => { if (a) this.showAgent(a); else this.showFeed(); };
-    engine.onHover = (a, p) => this.tooltip(a, p);
+    engine.onSelect = (a) => { if (a) { this.showAgent(a); this.openPanel(); } else { this.showFeed(); if (this.isMobile()) this.closePanel(); } };
+    engine.onHover = (a, p) => { if (!this.isMobile()) this.tooltip(a, p); };
 
     bus.on('activity', () => { if (this.rightMode === 'feed') this.renderFeed(); });
     bus.on('agent.status_changed', ({ agent }) => { if (this.rightMode === 'agent' && this._agentId === agent.id) this.showAgent(agent); this.refreshSidebarCounts(); });
@@ -27,7 +27,23 @@
     bus.on('notification', (n) => this.onNotification(n));
 
     this.buildTopbar(); this.buildSidebar(); this.renderFeed(); this.refreshSidebarCounts();
-    this.wireButtons();
+    this.wireButtons(); this.wireMobile();
+  };
+
+  UI.isMobile = function () { return window.matchMedia('(max-width:760px)').matches; };
+  UI.openPanel = function () { if (!this.isMobile()) return; $('#rightPanel').classList.add('open'); $('#sheetBackdrop').classList.add('open'); };
+  UI.closePanel = function () { $('#rightPanel').classList.remove('open'); $('#sheetBackdrop').classList.remove('open'); };
+  UI.wireMobile = function () {
+    $('#sheetBackdrop').addEventListener('click', () => { this.closePanel(); this.engine.clearSelection(); });
+    document.querySelectorAll('#mobileNav button').forEach(b => b.addEventListener('click', () => {
+      const k = b.dataset.mnav;
+      document.querySelectorAll('#mobileNav button').forEach(x => x.classList.toggle('active', x === b && k !== 'create'));
+      if (k === 'office') { this.closePanel(); this.engine.clearSelection(); this.engine.fit(); }
+      else if (k === 'create') { this.openTaskModal(); }
+      else if (k === 'agents') { this.rightMode = 'list'; this.renderAgentList(); this.openPanel(); }
+      else if (k === 'tasks') { this.rightMode = 'tasks'; this.renderTaskList(); this.openPanel(); }
+      else if (k === 'feed') { this.showFeed(); this.openPanel(); }
+    }));
   };
 
   // ---------- Top bar ----------
@@ -43,7 +59,7 @@
       <div class="tb-mid"><input id="globalSearch" class="search" placeholder="Search agents, tasks…"></div>
       <div class="tb-right">
         <button class="tb-btn" id="btnFit" title="Fit office">⛶</button>
-        <button class="tb-btn primary" id="btnCreateTask">＋ Create Task</button>
+        <button class="tb-btn primary" id="btnCreateTask">＋<span class="lbl-full"> Create Task</span></button>
         <button class="tb-btn" id="btnAddAgent">＋ Agent</button>
         <button class="tb-btn bell" id="btnBell">🔔<span class="badge" id="notifBadge" hidden>0</span></button>
         <div class="me">IS</div>
@@ -70,7 +86,7 @@
   // ---------- Right panel ----------
   UI.panel = function (html) { $('#rightPanel').innerHTML = html; };
 
-  UI.showFeed = function () { this.rightMode = 'feed'; this.renderFeed(); this.engine.select(null); };
+  UI.showFeed = function () { this.rightMode = 'feed'; this.renderFeed(); this.engine.clearSelection(); };
   UI.renderFeed = function () {
     const items = this.store.activity.slice(0, 60).map(e => {
       const dot = e.kind === 'approval' ? '#f59e0b' : e.kind === 'done' ? '#22c55e' : e.kind === 'meeting' ? '#a78bfa' : e.kind === 'spawn' ? '#38bdf8' : '#8a90a6';
@@ -110,7 +126,7 @@
         <button data-act="${a.status === 'PAUSED' ? 'resume' : 'pause'}">${a.status === 'PAUSED' ? 'Resume' : 'Pause'}</button>
         <button data-act="meet">Call Meeting</button>
       </div>`);
-    $('#pBack').addEventListener('click', () => this.showFeed());
+    $('#pBack').addEventListener('click', () => { if (this.isMobile()) { this.closePanel(); this.engine.clearSelection(); } else this.showFeed(); });
     const ap = $('#agApprove'); if (ap) ap.addEventListener('click', () => this.openApproval(a.id));
     $('#rightPanel').querySelectorAll('.a-actions button').forEach(b => b.addEventListener('click', () => this.agentAction(a, b.dataset.act)));
   };

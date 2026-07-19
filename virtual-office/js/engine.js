@@ -74,6 +74,7 @@
       return best;
     }
     select(id) { this.selectedId = id; if (this.onSelect) this.onSelect(id ? this.world._store.getAgent(id) : null); }
+    clearSelection() { this.selectedId = null; } // set selection without firing onSelect (avoids feedback loops)
 
     step(dt) {
       // camera easing toward target

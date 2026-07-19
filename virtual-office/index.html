@@ -128,11 +128,45 @@
   .sp-bar i{display:block;height:100%;width:40%;background:var(--violet2);border-radius:4px;animation:load 1.1s infinite}
   @keyframes load{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}
 
-  @media(max-width:900px){
-    #app{grid-template-columns:56px 1fr;grid-template-areas:"top top" "side center";grid-template-rows:52px 1fr}
-    #rightPanel{position:fixed;right:0;top:52px;bottom:0;width:min(340px,88vw);z-index:30;transform:translateX(100%);transition:.25s}
-    #rightPanel.open{transform:none}
-    .selects{display:none}
+  /* ===== Tablet ===== */
+  @media(max-width:1000px){ .selects{display:none} .tb-mid{max-width:260px} }
+
+  /* ===== Phone ===== */
+  #mobileNav{display:none}
+  #sheetBackdrop{display:none}
+  @media(max-width:760px){
+    #app{grid-template-columns:1fr;grid-template-rows:52px 1fr;grid-template-areas:"top" "center"}
+    #sidebar{display:none}
+    #topbar{padding:0 10px;gap:8px}
+    .brand{font-size:14px}.tb-mid{display:none}
+    .tb-btn{padding:8px 10px;font-size:12px}
+    .tb-btn.primary .lbl-full{display:none}
+    #btnAddAgent,#btnFit{display:none}
+    .me{width:30px;height:30px}
+    .cam-hint{display:none}
+
+    /* right panel becomes a bottom sheet */
+    #rightPanel{position:fixed;left:0;right:0;bottom:58px;top:auto;height:68vh;z-index:40;
+      border-left:none;border-top:1px solid var(--line2);border-radius:18px 18px 0 0;
+      transform:translateY(105%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+      box-shadow:0 -14px 50px rgba(0,0,0,.5);padding-top:22px}
+    #rightPanel.open{transform:translateY(0)}
+    #rightPanel::before{content:"";position:absolute;top:8px;left:50%;transform:translateX(-50%);
+      width:40px;height:4px;border-radius:3px;background:var(--line2)}
+    #sheetBackdrop{position:fixed;inset:0;z-index:39;background:rgba(4,3,10,.45);opacity:0;pointer-events:none;transition:.28s}
+    #sheetBackdrop.open{opacity:1;pointer-events:auto}
+
+    /* bottom navigation */
+    #mobileNav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:46;height:58px;
+      background:#100d1b;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+    #mobileNav button{flex:1;background:none;border:none;color:var(--soft);display:flex;flex-direction:column;
+      align-items:center;justify-content:center;gap:3px;font-size:10px;font-weight:600}
+    #mobileNav button .ic{font-size:18px}
+    #mobileNav button.active{color:var(--violet2)}
+    #center{padding-bottom:58px}
+    #toasts{bottom:70px;right:10px;left:10px}
+    .toast{max-width:none}
+    .a-actions{grid-template-columns:1fr 1fr}
   }
 </style>
 </head>
@@ -147,6 +181,14 @@
   </main>
   <aside id="rightPanel"></aside>
 </div>
+<div id="sheetBackdrop"></div>
+<nav id="mobileNav">
+  <button data-mnav="office" class="active"><span class="ic">🏢</span>Office</button>
+  <button data-mnav="agents"><span class="ic">👥</span>Agents</button>
+  <button data-mnav="create"><span class="ic">➕</span>Task</button>
+  <button data-mnav="tasks"><span class="ic">✅</span>Tasks</button>
+  <button data-mnav="feed"><span class="ic">📡</span>Feed</button>
+</nav>
 <div id="modalWrap" hidden></div>
 <div id="toasts"></div>
 <div id="splash"><div class="sp-in"><div class="sp-mark">◧</div><div class="sp-t">Virtual AI Office</div><div class="sp-s">Waking up the team…</div><div class="sp-bar"><i></i></div></div></div>
