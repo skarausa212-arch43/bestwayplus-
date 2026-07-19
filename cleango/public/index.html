@@ -427,6 +427,28 @@ textarea.input{resize:vertical;min-height:80px}
 .dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
 @keyframes dotb{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
 
+/* Uber-style "searching around" radar over the job map */
+.radar-wrap{position:relative;height:230px;border-radius:16px;overflow:hidden;background:var(--surface-2)}
+.radar-map{position:absolute;inset:0;z-index:1}
+.radar-fx{position:absolute;inset:0;z-index:2;display:grid;place-items:center;pointer-events:none}
+.radar-fx .ring{position:absolute;width:44px;height:44px;border-radius:50%;border:2px solid var(--primary);opacity:0;animation:radarPulse 2.6s cubic-bezier(.2,.6,.3,1) infinite}
+.radar-fx .ring:nth-child(2){animation-delay:.65s}
+.radar-fx .ring:nth-child(3){animation-delay:1.3s}
+.radar-fx .ring:nth-child(4){animation-delay:1.95s}
+.radar-fx .sweep{position:absolute;width:180px;height:180px;border-radius:50%;
+  background:conic-gradient(from 0deg,rgba(var(--glow),.28),rgba(var(--glow),0) 62%);
+  animation:radarSweep 2.4s linear infinite;mix-blend-mode:multiply}
+.radar-fx .core{position:relative;z-index:3;width:20px;height:20px;border-radius:50%;background:var(--primary);
+  box-shadow:0 0 0 5px rgba(var(--glow),.28),0 4px 12px rgba(0,0,0,.3);animation:radarBob 2.6s ease-in-out infinite}
+.radar-cap{position:absolute;left:0;right:0;bottom:0;z-index:4;padding:10px 14px;
+  background:linear-gradient(0deg,rgba(0,0,0,.42),transparent);color:#fff;font-size:13px;font-weight:600;
+  display:flex;align-items:center;gap:8px;text-shadow:0 1px 3px rgba(0,0,0,.4)}
+@keyframes radarPulse{0%{opacity:.7;transform:scale(.4)}80%{opacity:0}100%{opacity:0;transform:scale(6)}}
+@keyframes radarSweep{to{transform:rotate(360deg)}}
+@keyframes radarBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@media (prefers-reduced-motion:reduce){.radar-fx .ring,.radar-fx .sweep,.radar-fx .core{animation:none}.radar-fx .ring{opacity:.35;transform:scale(2.5)}}
+:root[data-theme="dark"] .radar-fx .sweep,.radar-fx .sweep{mix-blend-mode:screen}
+
 /* confetti */
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:300;overflow:hidden}
 .confetti i{position:absolute;top:-12px;width:9px;height:14px;border-radius:2px;animation:fall linear forwards}
@@ -1666,6 +1688,10 @@ function toast(msg,err){const n=$('#toast');
 function plural(n,one,few,many){const m=n%10,h=n%100;return h>=11&&h<=14?many:m===1?one:m>=2&&m<=4?few:many;}
 
 /* ---------- Maps (Leaflet, vendored; OSM tiles — no API keys) ---------- */
+// City centroids (mirror the server) — fallback pin for bookings without GPS.
+const CITY_COORDS={Warsaw:{lat:52.2297,lng:21.0122},'Kraków':{lat:50.0647,lng:19.9450},'Wrocław':{lat:51.1079,lng:17.0385},'Poznań':{lat:52.4064,lng:16.9252},'Gdańsk':{lat:54.3520,lng:18.6466},'Łódź':{lat:51.7592,lng:19.4560}};
+const bookingCoords=(b)=>b&&b.location?{lat:b.location.lat,lng:b.location.lng}:(CITY_COORDS[b&&b.city]||CITY_COORDS.Warsaw);
+
 // Lazy-loaded so the first paint stays light: js+css injected on first map.
 let _leafletP=null;
 function loadLeaflet(){
@@ -1852,7 +1878,20 @@ function renderResponders(b){
   const z=$('#respZone'); if(!z){return;}
   if(state.user.role!=='customer' || b.customerId!==state.user.id || b.status!=='searching'){z.innerHTML='';return;}
   const n=b.responderCount||0;
-  if(!n){z.innerHTML=`<div class="card pad" style="margin-bottom:14px;text-align:center"><div class="dots" style="justify-content:center;color:var(--primary)"><i></i><i></i><i></i></div><div class="muted tiny" style="margin-top:8px">Ищем исполнителей рядом…</div></div>`;return;}
+  if(!n){
+    // Uber-style search: the job on a map with expanding radar rings + sweep.
+    z.innerHTML=`<div class="card pad" style="margin-bottom:14px;padding:10px">
+      <div class="radar-wrap">
+        <div class="radar-map" id="radarMap"></div>
+        <div class="radar-fx"><span class="sweep"></span><span class="ring"></span><span class="ring"></span><span class="ring"></span><span class="ring"></span><span class="core"></span></div>
+        <div class="radar-cap"><span class="dots" style="color:#fff"><i></i><i></i><i></i></span><span>${t('Ищем исполнителей рядом…')}</span></div>
+      </div></div>`;
+    const mapBox=$('#radarMap',z);
+    const c=bookingCoords(b);
+    // Non-interactive map: it's a live search backdrop, not something to pan.
+    lumiMap(mapBox,{lat:c.lat,lng:c.lng,zoom:14}).then(h=>{ if(h&&h.map){ h.map.dragging.disable();h.map.doubleClickZoom.disable();h.map.scrollWheelZoom.disable();if(h.map.zoomControl)h.map.zoomControl.remove();if(h.marker)h.map.removeLayer(h.marker); } });
+    return;
+  }
   if(!b.canChoose){
     z.innerHTML=`<div class="card pad" style="margin-bottom:14px;border:1.5px solid var(--primary)">
       <div class="row" style="gap:10px"><span style="font-size:22px">👑</span><div style="flex:1"><b>${n} ${plural(n,'исполнитель откликнулся','исполнителя откликнулись','исполнителей откликнулись')}</b><div class="tiny muted" style="margin-top:2px">Выбор конкретного исполнителя доступен в LUMI+.</div></div></div>
@@ -3990,7 +4029,7 @@ async function renderBookingDetail(id){
           ${b.extras.length?`<span>${b.extras.length} ${plural(b.extras.length,'опция','опции','опций')}</span>`:''}
         </div>
         ${b.address?`<div class="row tiny" style="margin-top:8px;color:var(--ink-2)">${I.pin}<span>${b.address}, ${b.city}</span></div>`:''}
-        ${b.location?`<div id="bkMap" style="height:190px;border-radius:12px;overflow:hidden;margin-top:10px"></div>${b.locationPrecise?'':`<p class="muted tiny" style="margin-top:6px">Примерное расположение (центр города).</p>`}`:''}
+        ${(b.location&&b.status!=='searching')?`<div id="bkMap" style="height:190px;border-radius:12px;overflow:hidden;margin-top:10px"></div>${b.locationPrecise?'':`<p class="muted tiny" style="margin-top:6px">Примерное расположение (центр города).</p>`}`:''}
         ${b.notes?`<div class="tiny muted" style="margin-top:8px;font-style:italic">«${b.notes}»</div>`:''}
         ${b.status==='completed'?`<button class="btn ghost block sm" id="receiptBtn" style="margin-top:12px">${I.receipt} Показать чек</button>`:''}
       </div>
