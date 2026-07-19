@@ -478,6 +478,23 @@ async function main() {
       const r = await req('POST', '/api/payments/p24/status', { body: { sessionId: 'nope_' + Date.now(), amount: 1000, sign: 'x' } });
       assert.strictEqual(r.status, 200);
     });
+    await ok('cards (Stripe): safe no-op until configured; webhook rejects a bad signature', async () => {
+      // Card setup + saved-card list are clean no-ops without keys.
+      const setup = await req('POST', '/api/cards/setup', { token: customerTok });
+      assert.strictEqual(setup.status, 503);
+      assert.strictEqual(setup.json.code, 'CARDS_OFF');
+      const cards = await req('GET', '/api/cards', { token: customerTok });
+      assert.strictEqual(cards.status, 200);
+      assert.strictEqual(cards.json.enabled, false);
+      assert.strictEqual(cards.json.card, null);
+      // Stripe webhook with no/invalid signature is rejected (never trusted).
+      const wh = await req('POST', '/api/payments/stripe/webhook', { body: { type: 'payment_intent.succeeded' } });
+      assert.strictEqual(wh.status, 400);
+      // /api/me never leaks the Stripe customer id or the card's payment-method id.
+      const me = await req('GET', '/api/me', { token: customerTok });
+      assert.ok(!('stripeCustomerId' in me.json.user), 'stripe customer id stripped');
+      if (me.json.user.card) assert.ok(!('pmId' in me.json.user.card), 'payment-method id stripped');
+    });
 
     // ── Recommendations are scoped to the customer's city ──
     await ok('recommended cleaners: only from the customer’s city', async () => {

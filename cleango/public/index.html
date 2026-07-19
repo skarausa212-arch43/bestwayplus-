@@ -1435,6 +1435,10 @@ Object.assign(TR.uk,{"Помыть духовку внутри":"Помити д
 Object.assign(TR.pl,{"Оплатить":"Zapłać","Оплачено":"Opłacone","Переходим к оплате…":"Przechodzimy do płatności…","Не удалось начать оплату":"Nie udało się rozpocząć płatności","Оплата прошла — спасибо!":"Płatność przyjęta — dziękujemy!","Платёж обрабатывается — обновите заказ через минуту":"Płatność jest przetwarzana — odśwież zamówienie za chwilę","Онлайн-оплата пока не подключена.":"Płatności online nie są jeszcze aktywne.","Не удалось создать платёж. Попробуйте ещё раз.":"Nie udało się utworzyć płatności. Spróbuj ponownie.","Заказ уже оплачен.":"Zamówienie jest już opłacone."});
 Object.assign(TR.en,{"Оплатить":"Pay","Оплачено":"Paid","Переходим к оплате…":"Going to payment…","Не удалось начать оплату":"Couldn't start the payment","Оплата прошла — спасибо!":"Payment received — thank you!","Платёж обрабатывается — обновите заказ через минуту":"Payment is processing — refresh the order in a minute","Онлайн-оплата пока не подключена.":"Online payments aren't enabled yet.","Не удалось создать платёж. Попробуйте ещё раз.":"Couldn't create the payment. Please try again.","Заказ уже оплачен.":"This order is already paid."});
 Object.assign(TR.uk,{"Оплатить":"Сплатити","Оплачено":"Оплачено","Переходим к оплате…":"Переходимо до оплати…","Не удалось начать оплату":"Не вдалося почати оплату","Оплата прошла — спасибо!":"Оплату отримано — дякуємо!","Платёж обрабатывается — обновите заказ через минуту":"Платіж обробляється — оновіть замовлення за хвилину","Онлайн-оплата пока не подключена.":"Онлайн-оплата ще не підключена.","Не удалось создать платёж. Попробуйте ещё раз.":"Не вдалося створити платіж. Спробуйте ще раз.","Заказ уже оплачен.":"Замовлення вже оплачене."});
+/* payments: card on file (Stripe) */
+Object.assign(TR.pl,{"Подтвердить оплату":"Potwierdź płatność","Привязать карту и оплатить":"Dodaj kartę i zapłać","Оплата спишется с карты автоматически":"Płatność pobierzemy z karty automatycznie","Способ оплаты":"Metoda płatności","Заменить карту":"Zmień kartę","Добавить карту":"Dodaj kartę","Привяжите карту — оплата спишется автоматически, как только найдётся исполнитель.":"Dodaj kartę — płatność pobierzemy automatycznie, gdy znajdzie się wykonawca.","Не удалось открыть форму карты":"Nie udało się otworzyć formularza karty","Удалить сохранённую карту?":"Usunąć zapisaną kartę?","Карта удалена":"Karta usunięta","Карта сохранена":"Karta zapisana","Карта обрабатывается — обновите через минуту":"Karta jest przetwarzana — odśwież za chwilę"});
+Object.assign(TR.en,{"Подтвердить оплату":"Confirm payment","Привязать карту и оплатить":"Add a card & pay","Оплата спишется с карты автоматически":"We'll charge your card automatically","Способ оплаты":"Payment method","Заменить карту":"Replace card","Добавить карту":"Add a card","Привяжите карту — оплата спишется автоматически, как только найдётся исполнитель.":"Add a card — we'll charge it automatically as soon as a provider is found.","Не удалось открыть форму карты":"Couldn't open the card form","Удалить сохранённую карту?":"Remove the saved card?","Карта удалена":"Card removed","Карта сохранена":"Card saved","Карта обрабатывается — обновите через минуту":"The card is processing — refresh in a minute"});
+Object.assign(TR.uk,{"Подтвердить оплату":"Підтвердити оплату","Привязать карту и оплатить":"Додати картку й сплатити","Оплата спишется с карты автоматически":"Оплату спишемо з картки автоматично","Способ оплаты":"Спосіб оплати","Заменить карту":"Змінити картку","Добавить карту":"Додати картку","Привяжите карту — оплата спишется автоматически, как только найдётся исполнитель.":"Додайте картку — оплату спишемо автоматично, щойно знайдеться виконавець.","Не удалось открыть форму карты":"Не вдалося відкрити форму картки","Удалить сохранённую карту?":"Видалити збережену картку?","Карта удалена":"Картку видалено","Карта сохранена":"Картку збережено","Карта обрабатывается — обновите через минуту":"Картка обробляється — оновіть за хвилину"});
 /* pricing: service info, frequency plans, headline prices */
 Object.assign(TR.pl,{
   "Что входит":"Co obejmuje","Понятно":"Rozumiem","без скидки":"bez rabatu",
@@ -4486,13 +4490,23 @@ function renderActions(b,ctx){
   } else if(isCustomer && b.status==='completed' && b.reviewed){
     html=`<div class="aiband" style="justify-content:center">${I.check}<span>Спасибо за отзыв!</span></div>`;
   }
-  // Real online payment (Przelewy24) — shown to the customer for an unpaid,
-  // non-cancelled booking when the gateway is configured. Paid → a green badge.
+  // Payments. Card-on-file (Stripe) auto-charges when a cleaner is assigned; we
+  // only show a manual button when there's no saved card or a charge needs the
+  // customer to confirm — so we never risk a double charge.
   if(isCustomer && b.status!=='cancelled'){
+    const cat=state.catalog||{};
+    const hasCard=!!(state.user&&state.user.card);
+    const payIco=I.wallet||'';
     if(b.paid){
       html=`<div class="aiband" style="justify-content:center;background:var(--primary-050);color:var(--primary-600);margin-bottom:12px">${I.check}<span>${t('Оплачено')} · ${money(b.price)}</span></div>`+html;
-    }else if(state.catalog && state.catalog.paymentsEnabled){
-      html=`<button class="btn block" id="payBtn" style="margin-bottom:12px">${I.card||I.wallet||''} ${t('Оплатить')} ${money(b.price)}</button>`+html;
+    }else if(['action_required','failed'].includes(b.paymentStatus)){
+      html=`<button class="btn block" id="payCardBtn" style="margin-bottom:12px">${payIco} ${t('Подтвердить оплату')} ${money(b.price)}</button>`+html;
+    }else if(cat.cardsEnabled && !hasCard){
+      html=`<button class="btn block" id="payCardBtn" style="margin-bottom:12px">${payIco} ${t('Привязать карту и оплатить')} ${money(b.price)}</button>`+html;
+    }else if(cat.cardsEnabled && hasCard){
+      html=`<div class="aiband" style="justify-content:center;margin-bottom:12px">${payIco}<span>${t('Оплата спишется с карты автоматически')} · ${money(b.price)}</span></div>`+html;
+    }else if(cat.paymentsEnabled){
+      html=`<button class="btn block" id="payBtn" style="margin-bottom:12px">${payIco} ${t('Оплатить')} ${money(b.price)}</button>`+html;
     }
   }
   if(isCustomer && ['searching','accepted','on_the_way'].includes(b.status)){
@@ -4514,6 +4528,7 @@ function renderActions(b,ctx){
   bind('completeBtn',()=>transition(b.id,'completed'));
   bind('cancelBtn',()=>transition(b.id,'cancelled'));
   bind('payBtn',()=>startPayment(b.id));
+  bind('payCardBtn',()=>startCardPayment(b.id));
   bind('reviewBtn',()=>openReview(b.id));
   const up=(id,phase)=>{const e=$('#'+id);if(e)e.onclick=()=>uploadPhoto(b.id,phase);};
   up('upBefore','before');up('upAfter','after');
@@ -4729,6 +4744,29 @@ async function startPayment(id){
   }catch(e){ toast(e.message,true); }
   if(btn){btn.disabled=false;btn.innerHTML=`${I.card||I.wallet||''} ${t('Оплатить')}`;}
 }
+// Stripe Checkout for a single booking (no saved card yet, or a charge needs
+// the customer to confirm). Also saves the card for next-time auto-charge.
+async function startCardPayment(id){
+  const btn=$('#payCardBtn'); if(btn){btn.disabled=true;btn.textContent=t('Переходим к оплате…');}
+  try{
+    const {redirectUrl}=await api('/api/bookings/'+id+'/pay-card','POST');
+    if(redirectUrl){ location.href=redirectUrl; return; }
+  }catch(e){ toast(e.message,true); }
+  if(btn){btn.disabled=false;}
+}
+// Add / replace the saved card via Stripe Checkout (setup mode).
+async function addCard(){
+  try{
+    const {url}=await api('/api/cards/setup','POST');
+    if(url){ location.href=url; return; }
+    toast(t('Не удалось открыть форму карты'),true);
+  }catch(e){ toast(e.message,true); }
+}
+async function removeCard(){
+  if(!confirm(t('Удалить сохранённую карту?')))return;
+  try{ await api('/api/cards','DELETE'); if(state.user)delete state.user.card; toast(t('Карта удалена')); render(); }
+  catch(e){ toast(e.message,true); }
+}
 // After returning from the gateway (?paid=<bookingId>): poll the booking a few
 // times (the P24 webhook lands async) and confirm payment to the customer.
 async function handlePaymentReturn(){
@@ -4910,12 +4948,32 @@ async function viewWallet(){
         ${u.role==='cleaner'?`<button class="btn" id="withdraw" style="background:#fff;color:var(--primary-600)">Вывести</button>`:`<button class="btn" id="topup" style="background:#fff;color:var(--primary-600)">Пополнить</button>`}
       </div>
     </div>`));
+  // Payment method (Stripe card-on-file) — customers only, when cards are enabled.
+  if(u.role==='customer' && state.catalog && state.catalog.cardsEnabled){
+    const card=u.card;
+    const cardCard=el(`<div class="card pad" style="margin-bottom:20px">
+      <div class="row" style="justify-content:space-between;margin-bottom:${card?'12':'8'}px"><b style="font-size:16px">${t('Способ оплаты')}</b>${I.wallet||''}</div>
+      ${card
+        ? `<div class="row" style="gap:12px;align-items:center">
+             <div class="thumb" style="width:44px;height:44px;border-radius:11px;background:var(--surface-2);display:grid;place-items:center">${I.wallet||''}</div>
+             <div style="flex:1"><b style="text-transform:capitalize">${esc(card.brand||'Card')} ···· ${esc(card.last4||'')}</b><div class="muted tiny">${t('до')} ${esc(card.exp||'')}</div></div>
+             <button class="iconbtn" id="cardDel" title="${t('Удалить')}" style="color:var(--danger)">${I.trash||'×'}</button>
+           </div>
+           <button class="btn ghost block sm" id="cardReplace" style="margin-top:12px">${t('Заменить карту')}</button>`
+        : `<p class="muted tiny" style="margin-bottom:12px">${t('Привяжите карту — оплата спишется автоматически, как только найдётся исполнитель.')}</p>
+           <button class="btn block" id="cardAdd">${I.wallet||''} ${t('Добавить карту')}</button>`}
+    </div>`);
+    c.appendChild(cardCard);
+    const add=$('#cardAdd',cardCard); if(add)add.onclick=addCard;
+    const rep=$('#cardReplace',cardCard); if(rep)rep.onclick=addCard;
+    const del=$('#cardDel',cardCard); if(del)del.onclick=removeCard;
+  }
   const hist=el(`<div><div class="section-title">История</div><div class="grid" id="hist"></div></div>`);
   c.appendChild(hist);
   shell(c);
   countUp($('#balNum',c),Math.round(u.wallet||0),900);
   const w=$('#withdraw',c);if(w)w.onclick=()=>toast('Заявка на вывод создана — деньги придут за 1–2 дня');
-  const t=$('#topup',c);if(t)t.onclick=()=>toast('Пополнение скоро будет доступно');
+  const tpBtn=$('#topup',c);if(tpBtn)tpBtn.onclick=()=>toast('Пополнение скоро будет доступно');
   try{
     const {bookings}=await api('/api/bookings');
     const done=bookings.filter(b=>b.status==='completed');
@@ -5641,7 +5699,23 @@ async function boot(){
   render();
   i18nStart();   // translate the mounted DOM into the active language + keep watching
   if(_authErr){ toast(t(_authErr==='email'?'Не удалось получить подтверждённый email от провайдера.':_authErr==='suspended'?'Этот аккаунт заблокирован.':'Не удалось выполнить вход через провайдера. Попробуйте ещё раз.'),true); }
-  handlePaymentReturn();   // returned from the Przelewy24 gateway (?paid=<id>)
+  handlePaymentReturn();   // returned from a payment gateway (?paid=<id>)
+  handleCardReturn();      // returned from the Stripe card-setup Checkout (?card=saved)
+}
+// Refresh the saved-card summary after returning from Stripe's setup Checkout.
+async function handleCardReturn(){
+  let v=null; try{ v=new URLSearchParams(location.search).get('card'); }catch(e){}
+  if(!v)return;
+  try{ history.replaceState(null,'',location.pathname); }catch(e){}
+  if(v==='saved' && state.user){
+    // The card webhook lands async — poll /api/cards a few times, then reflect it.
+    for(let i=0;i<5;i++){
+      try{ const r=await api('/api/cards'); if(r.card){ state.user.card=r.card; break; } }catch(e){}
+      await new Promise(r=>setTimeout(r,1500));
+    }
+    toast(state.user.card?t('Карта сохранена'):t('Карта обрабатывается — обновите через минуту'));
+    render();
+  }
 }
 boot();
 

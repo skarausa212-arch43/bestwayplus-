@@ -34,6 +34,7 @@ const dispatch = require('./dispatch/ranking');
 const pricing = require('./pricing/pricing-engine');
 const cityPrices = require('./pricing/city-prices');
 const pay = require('./pay');
+const stripe = require('./pay/stripe');
 const { createLedger } = require('./pricing/ledger');
 const { renderTemplate } = require('./notifications/templates');
 const chat = require('./chat/realtime');
@@ -400,8 +401,12 @@ function publicUser(u) {
   // profile endpoint — never in self/list payloads.
   // `location` (live GPS of a cleaner) is also stripped: it powers dispatch
   // ranking server-side and must never reach other users' payloads.
-  const { password, idDocument, pesel, nip, bankAccount, bankName, location, ...rest } = u;
-  return { ...rest, hasIdDocument: !!idDocument, hasBankDetails: !!bankAccount };
+  // Payment internals (Stripe customer id, the card's payment-method id) never
+  // leave the server — the client only needs the brand/last4 summary.
+  const { password, idDocument, pesel, nip, bankAccount, bankName, location, stripeCustomerId, card, ...rest } = u;
+  const out = { ...rest, hasIdDocument: !!idDocument, hasBankDetails: !!bankAccount };
+  if (card) out.card = { brand: card.brand, last4: card.last4, exp: card.exp };   // safe summary only
+  return out;
 }
 
 // ─────────────────────────── AI price estimate ───────────────────────────
@@ -620,6 +625,15 @@ function readBody(req) {
       try { resolve(raw ? JSON.parse(raw) : {}); }
       catch { resolve({}); }
     });
+  });
+}
+// Raw request body as a string — needed to verify webhook signatures (Stripe)
+// that are computed over the exact bytes received, before any JSON parsing.
+function readRawBody(req) {
+  return new Promise((resolve) => {
+    let raw = '';
+    req.on('data', (c) => { raw += c; if (raw.length > 5e6) req.destroy(); });
+    req.on('end', () => resolve(raw));
   });
 }
 // Lift a temporary block once its window has passed (returns true if still blocked).
@@ -1100,7 +1114,8 @@ route('GET', '/api/catalog', async (req, res) => {
     commissionRate: COMMISSION_RATE, currency: CURRENCY, oauth: oauth.providers(),
     serviceFrom: serviceFromTable(),
     frequencyDiscounts: cityPrices.FREQUENCY_DISCOUNTS,
-    paymentsEnabled: pay.isEnabled(),
+    paymentsEnabled: pay.isEnabled() || stripe.isEnabled(),
+    cardsEnabled: stripe.isEnabled(),
   });
 });
 route('POST', '/api/estimate', async (req, res) => {
@@ -2032,8 +2047,137 @@ route('GET', '/api/bookings/:id/payment', async (req, res, params) => {
   const bk = db.bookings[params.id];
   if (!bk) return send(res, 404, { error: 'Booking not found.' });
   if (bk.customerId !== user.id) return send(res, 403, { error: 'Forbidden.' });
-  send(res, 200, { paid: !!bk.paid, enabled: pay.isEnabled() });
+  send(res, 200, { paid: !!bk.paid, enabled: pay.isEnabled() || stripe.isEnabled(), status: bk.paymentStatus || (bk.paid ? 'paid' : 'unpaid') });
 });
+
+// ── Card on file (Stripe) — the "Uber" flow: save a card once, auto-charge on match ──
+// Add / replace a card via Stripe's hosted Checkout (setup mode). No card data
+// ever touches our server. Returns { url } to redirect the customer to.
+route('POST', '/api/cards/setup', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  if (!stripe.isEnabled()) return send(res, 503, { error: 'Сохранение карты пока не подключено.', code: 'CARDS_OFF' });
+  const cid = await stripe.ensureCustomer(user, user.stripeCustomerId);
+  if (!cid) return send(res, 502, { error: 'Не удалось создать профиль оплаты.', code: 'CUSTOMER_FAILED' });
+  if (user.stripeCustomerId !== cid) { user.stripeCustomerId = cid; persist.users(); }
+  const r = await stripe.createSetupCheckout({
+    customerId: cid,
+    successUrl: `${APP_URL}/?card=saved`,
+    cancelUrl: `${APP_URL}/?card=cancel`,
+  });
+  if (!r.ok) return send(res, 502, { error: 'Не удалось открыть форму карты.', code: 'SETUP_FAILED' });
+  send(res, 200, { url: r.url });
+});
+// The customer's saved card summary (brand + last4) or null.
+route('GET', '/api/cards', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  send(res, 200, { enabled: stripe.isEnabled(), card: user.card ? { brand: user.card.brand, last4: user.card.last4, exp: user.card.exp } : null });
+});
+// Remove the saved card.
+route('DELETE', '/api/cards', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  if (user.card && user.card.pmId) await stripe.detachCard(user.card.pmId);
+  delete user.card; persist.users();
+  audit('card.removed', user.id, user.id, {});
+  send(res, 200, { ok: true });
+});
+// Fallback one-off card payment for a booking (no saved card, or SCA needed).
+route('POST', '/api/bookings/:id/pay-card', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const bk = db.bookings[params.id];
+  if (!bk) return send(res, 404, { error: 'Booking not found.' });
+  if (bk.customerId !== user.id) return send(res, 403, { error: 'Forbidden.' });
+  if (bk.paid) return send(res, 409, { error: 'Заказ уже оплачен.', code: 'ALREADY_PAID' });
+  if (!stripe.isEnabled()) return send(res, 503, { error: 'Оплата картой пока не подключена.', code: 'CARDS_OFF' });
+  const cid = await stripe.ensureCustomer(user, user.stripeCustomerId);
+  if (cid && user.stripeCustomerId !== cid) { user.stripeCustomerId = cid; persist.users(); }
+  const r = await stripe.createPaymentCheckout({
+    customerId: cid, amount: Math.round((bk.price || 0) * 100),
+    description: `LUMI · ${bk.serviceLabel || 'uborka'}`, bookingId: bk.id,
+    successUrl: `${APP_URL}/?paid=${encodeURIComponent(bk.id)}`, cancelUrl: `${APP_URL}/?paid=${encodeURIComponent(bk.id)}`,
+  });
+  if (!r.ok) return send(res, 502, { error: 'Не удалось создать платёж.', code: 'CHECKOUT_FAILED' });
+  send(res, 200, { redirectUrl: r.url });
+});
+
+// Auto-charge a booking's saved card the moment a cleaner is assigned (off-session).
+// Never throws — resolves after attempting; the app flow continues regardless.
+async function autoChargeBooking(bk) {
+  try {
+    if (!bk || bk.paid || !stripe.isEnabled()) return;
+    const customer = db.users[bk.customerId];
+    if (!customer || !customer.stripeCustomerId || !customer.card || !customer.card.pmId) {
+      bk.paymentStatus = 'awaiting_card'; persist.bookings();
+      notify(bk.customerId, 'payment.action_required', { service: bk.serviceLabel, bookingId: bk.id });
+      return;
+    }
+    const amount = Math.round((bk.price || 0) * 100);
+    const r = await stripe.chargeOffSession({
+      customerId: customer.stripeCustomerId, pmId: customer.card.pmId, amount,
+      description: `LUMI · ${bk.serviceLabel || 'uborka'} · ${bk.id}`,
+      idempotencyKey: 'charge_' + bk.id,               // one charge per booking, even on retries
+      metadata: { bookingId: bk.id, userId: bk.customerId },
+    });
+    if (r.ok) {
+      if (!bk.paid) {
+        bk.paid = true; bk.paidAt = now(); bk.paymentStatus = 'paid'; bk.paymentMethod = 'card'; bk.stripePaymentIntentId = r.id;
+        persist.bookings();
+        audit('payment.captured', bk.customerId, bk.id, { method: 'card_on_match', amount, paymentIntent: r.id });
+        notify(bk.customerId, 'payment.captured', { amount: `${bk.price} zł`, service: bk.serviceLabel });
+      }
+    } else if (r.requiresAction) {
+      bk.paymentStatus = 'action_required'; persist.bookings();
+      notify(bk.customerId, 'payment.action_required', { service: bk.serviceLabel, bookingId: bk.id });   // customer confirms via pay-card
+    } else {
+      bk.paymentStatus = 'failed'; persist.bookings();
+      notify(bk.customerId, 'payment.failed', { service: bk.serviceLabel, bookingId: bk.id });
+    }
+  } catch { /* payment must never break the booking flow */ }
+}
+
+// Stripe webhook — verify the signature over the RAW body, then act on events.
+route('POST', '/api/payments/stripe/webhook', async (req, res) => {
+  const raw = await readRawBody(req);
+  const ev = stripe.verifyWebhook(raw, req.headers['stripe-signature']);
+  if (!ev) return send(res, 400, { error: 'bad signature' });
+  try {
+    if (ev.type === 'checkout.session.completed') {
+      const s = ev.data.object;
+      const customer = Object.values(db.users).find((u) => u.stripeCustomerId === s.customer);
+      if (customer) {
+        // Card just saved (setup or first payment) → store the default card summary.
+        const pmId = s.setup_intent ? await stripe.getSetupPaymentMethod(s.id) : null;
+        if (pmId) await stripe.setDefaultCard(s.customer, pmId);
+        const card = await stripe.getDefaultCard(s.customer);
+        if (card) { customer.card = card; persist.users(); audit('card.saved', customer.id, customer.id, { brand: card.brand, last4: card.last4 }); }
+      }
+      // A one-off booking payment via Checkout also carries the bookingId.
+      const bid = s.metadata && s.metadata.bookingId;
+      if (bid && s.payment_status === 'paid') markBookingPaid(bid, { method: 'card_checkout', ref: s.payment_intent });
+    } else if (ev.type === 'payment_intent.succeeded') {
+      const pi = ev.data.object;
+      const bid = pi.metadata && pi.metadata.bookingId;
+      if (bid) markBookingPaid(bid, { method: 'card', ref: pi.id });
+    } else if (ev.type === 'payment_intent.payment_failed') {
+      const pi = ev.data.object;
+      const bid = pi.metadata && pi.metadata.bookingId;
+      const bk = bid && db.bookings[bid];
+      if (bk && !bk.paid) { bk.paymentStatus = 'failed'; persist.bookings(); }
+    }
+  } catch { /* ack anyway so Stripe doesn't hammer retries on our bug */ }
+  send(res, 200, { received: true });
+});
+function markBookingPaid(bookingId, { method, ref } = {}) {
+  const bk = db.bookings[bookingId];
+  if (!bk || bk.paid) return;
+  bk.paid = true; bk.paidAt = now(); bk.paymentStatus = 'paid'; bk.paymentMethod = method || 'card'; if (ref) bk.stripePaymentIntentId = ref;
+  persist.bookings();
+  audit('payment.captured', bk.customerId, bk.id, { method, ref });
+  notify(bk.customerId, 'payment.captured', { amount: `${bk.price} zł`, service: bk.serviceLabel });
+}
 
 // Public profile of a cleaner (safe to show to customers picking one).
 function cleanerPublic(u) {
@@ -2125,6 +2269,7 @@ route('POST', '/api/bookings/:id/accept', async (req, res, params) => {
     bk.updatedAt = now();
     bk.timeline.push({ status: 'accepted', at: now(), by: user.id });
     persist.bookings();
+    autoChargeBooking(bk);   // "Uber" flow: charge the saved card now (background, off-session)
     if (bk.urgency === 'flash') notify(bk.customerId, 'flash.deadline', { bookingId: bk.id });
     sysMessage(bk.id, `${user.name} принял заказ и скоро приедет.`);
     notify(bk.customerId, 'booking.accepted', { provider: user.name, service: bk.serviceLabel, bookingId: bk.id });
@@ -2156,6 +2301,7 @@ route('POST', '/api/bookings/:id/choose', async (req, res, params) => {
   bk.updatedAt = now();
   bk.timeline.push({ status: 'accepted', at: now(), by: user.id });
   persist.bookings();
+  autoChargeBooking(bk);   // charge the saved card the moment the cleaner is chosen
   sysMessage(bk.id, `${user.name} выбрал(а) исполнителя: ${chosen.name}.`);
   notify(chosen.id, 'provider.chosen', { service: bk.serviceLabel, bookingId: bk.id });
   (bk.responders || []).filter((id) => id !== chosen.id).forEach((id) => notify(id, 'provider.not_chosen', { service: bk.serviceLabel, bookingId: bk.id }));
@@ -3019,6 +3165,7 @@ route('POST', '/api/company/bookings/:id/assign', async (req, res, params) => {
     const prev = bk.cleanerId;
     bk.cleanerId = cleaner.id; bk.status = 'accepted'; bk.updatedAt = now();
     bk.timeline.push({ status: 'accepted', at: now(), by: user.id });
+    autoChargeBooking(bk);   // charge the customer's saved card on assignment
     audit('company.booking_assigned', user.id, bk.id, { cleaner: cleaner.id, previous: prev || null });
     sysMessage(bk.id, `${cleaner.name} назначен(а) на заказ компанией ${user.name}.`);
     notify(bk.customerId, 'booking.accepted', { provider: cleaner.name, service: bk.serviceLabel, bookingId: bk.id });
