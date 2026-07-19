@@ -33,6 +33,7 @@ const APP_ORIGINS = String(process.env.LUMI_APP_ORIGINS || '').split(',').map((s
 const dispatch = require('./dispatch/ranking');
 const pricing = require('./pricing/pricing-engine');
 const cityPrices = require('./pricing/city-prices');
+const pay = require('./pay');
 const { createLedger } = require('./pricing/ledger');
 const { renderTemplate } = require('./notifications/templates');
 const chat = require('./chat/realtime');
@@ -243,6 +244,7 @@ const db = {
   support: loadJSON('support.json', {}),     // id -> general support message ("Поддержка 24/7")
   reservations: loadJSON('reservations.json', {}), // id -> guest reservation (short-term rental)
   devices: loadJSON('devices.json', {}),     // userId -> [{ token, platform, at }] for native push
+  payments: loadJSON('payments.json', {}),   // sessionId -> { bookingId, userId, amount(grosz), status, orderId, at } (Przelewy24)
 };
 const persist = {
   users: () => saveJSON('users.json', db.users),
@@ -258,6 +260,7 @@ const persist = {
   support: () => saveJSON('support.json', db.support),
   reservations: () => saveJSON('reservations.json', db.reservations),
   devices: () => saveJSON('devices.json', db.devices),
+  payments: () => saveJSON('payments.json', db.payments),
 };
 
 // ─────────── Notifications (15_NOTIFICATION_SYSTEM.md) ───────────
@@ -1097,6 +1100,7 @@ route('GET', '/api/catalog', async (req, res) => {
     commissionRate: COMMISSION_RATE, currency: CURRENCY, oauth: oauth.providers(),
     serviceFrom: serviceFromTable(),
     frequencyDiscounts: cityPrices.FREQUENCY_DISCOUNTS,
+    paymentsEnabled: pay.isEnabled(),
   });
 });
 route('POST', '/api/estimate', async (req, res) => {
@@ -1951,6 +1955,84 @@ route('GET', '/api/bookings/:id', async (req, res, params) => {
   if (user.role === 'customer' && bk.customerId !== user.id) return send(res, 403, { error: 'Forbidden.' });
   if (user.role === 'cleaner' && bk.cleanerId && bk.cleanerId !== user.id) return send(res, 403, { error: 'Forbidden.' });
   send(res, 200, { booking: enrich(bk, user) });
+});
+
+// ─────────────────────────── Payments (Przelewy24) ───────────────────────────
+// The customer starts a real card/BLIK/transfer payment for their booking. We
+// register a P24 transaction and hand back the gateway URL to redirect to. A
+// safe no-op (503) until P24 keys are configured — the app keeps working with
+// the simulated wallet meanwhile.
+route('POST', '/api/bookings/:id/pay', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const bk = db.bookings[params.id];
+  if (!bk) return send(res, 404, { error: 'Booking not found.' });
+  if (bk.customerId !== user.id) return send(res, 403, { error: 'Forbidden.' });
+  if (bk.paid) return send(res, 409, { error: 'Заказ уже оплачен.', code: 'ALREADY_PAID' });
+  if (bk.status === 'cancelled') return send(res, 409, { error: 'Заказ отменён.', code: 'CANCELLED' });
+  if (!pay.isEnabled()) return send(res, 503, { error: 'Онлайн-оплата пока не подключена.', code: 'PAYMENTS_OFF' });
+  const amountGrosz = Math.round((bk.price || 0) * 100);
+  if (amountGrosz < 100) return send(res, 400, { error: 'Некорректная сумма заказа.', code: 'BAD_AMOUNT' });
+  // One session per attempt; ties the P24 notification back to this booking + amount.
+  const sessionId = `lumi_${bk.id}_${Date.now().toString(36)}`;
+  db.payments[sessionId] = { sessionId, bookingId: bk.id, userId: user.id, amount: amountGrosz, status: 'pending', orderId: null, at: now() };
+  persist.payments();
+  const r = await pay.register({
+    sessionId, amount: amountGrosz, currency: 'PLN',
+    description: `LUMI · ${bk.serviceLabel || 'uborka'} · ${bk.id}`,
+    email: user.email, language: user.locale || 'pl',
+    urlReturn: `${APP_URL}/?paid=${encodeURIComponent(bk.id)}`,
+    urlStatus: `${APP_URL}/api/payments/p24/status`,
+  });
+  if (!r.ok) {
+    db.payments[sessionId].status = 'failed'; persist.payments();
+    return send(res, 502, { error: 'Не удалось создать платёж. Попробуйте ещё раз.', code: 'REGISTER_FAILED' });
+  }
+  audit('payment.started', user.id, bk.id, { sessionId, amount: amountGrosz });
+  send(res, 200, { redirectUrl: r.gatewayUrl, sessionId });
+});
+
+// P24 server-to-server notification (urlStatus). Public endpoint — trust nothing
+// until the signature verifies AND P24's own verify endpoint confirms the amount.
+route('POST', '/api/payments/p24/status', async (req, res) => {
+  const b = await readBody(req);
+  const rec = db.payments[String(b.sessionId || '')];
+  if (!rec) return send(res, 200, { ok: true });                 // unknown session — ack, do nothing
+  // 1) the notification must be signed with our CRC over the exact field set
+  const expected = pay.notificationSign(b, pay.config().crc);
+  if (!pay.signMatches(String(b.sign || ''), expected)) {
+    audit('payment.bad_signature', null, rec.bookingId, { sessionId: rec.sessionId });
+    return send(res, 400, { error: 'bad signature' });
+  }
+  // 2) the amount must match what we registered (no under-payment)
+  if (Math.round(Number(b.amount) || 0) !== rec.amount) {
+    audit('payment.amount_mismatch', null, rec.bookingId, { sessionId: rec.sessionId, got: b.amount, want: rec.amount });
+    return send(res, 400, { error: 'amount mismatch' });
+  }
+  // 3) confirm with P24 (server-to-server) before crediting anything
+  const v = await pay.verify({ sessionId: rec.sessionId, amount: rec.amount, orderId: b.orderId });
+  if (!v.ok) return send(res, 400, { error: 'verify failed' });
+  if (rec.status !== 'paid') {                                   // idempotent — never double-mark
+    rec.status = 'paid'; rec.orderId = Number(b.orderId) || null; rec.paidAt = now();
+    persist.payments();
+    const bk = db.bookings[rec.bookingId];
+    if (bk && !bk.paid) {
+      bk.paid = true; bk.paidAt = now(); bk.paymentSessionId = rec.sessionId; persist.bookings();
+      audit('payment.captured', rec.userId, bk.id, { sessionId: rec.sessionId, orderId: rec.orderId, amount: rec.amount });
+      notify(bk.customerId, 'payment.captured', { amount: `${bk.price} zł`, service: bk.serviceLabel });
+    }
+  }
+  send(res, 200, { ok: true });
+});
+
+// Poll payment/paid state for a booking (used after returning from the gateway).
+route('GET', '/api/bookings/:id/payment', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const bk = db.bookings[params.id];
+  if (!bk) return send(res, 404, { error: 'Booking not found.' });
+  if (bk.customerId !== user.id) return send(res, 403, { error: 'Forbidden.' });
+  send(res, 200, { paid: !!bk.paid, enabled: pay.isEnabled() });
 });
 
 // Public profile of a cleaner (safe to show to customers picking one).

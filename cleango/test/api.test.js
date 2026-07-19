@@ -459,6 +459,26 @@ async function main() {
       assert.ok(!det.json.booking.cleaner || !('location' in det.json.booking.cleaner), 'customer never sees cleaner GPS');
     });
 
+    // ── Payments (Przelewy24) — safe no-op until configured ──
+    await ok('payments: pay endpoint is a clean 503 until P24 is configured', async () => {
+      const bk = await req('POST', '/api/bookings', { token: customerTok, body: { service: 'standard', rooms: 1, baths: 1, address: 'ul. Pay 1', city: 'Warsaw' } });
+      const id = bk.json.booking.id;
+      const pay = await req('POST', `/api/bookings/${id}/pay`, { token: customerTok });
+      assert.strictEqual(pay.status, 503);
+      assert.strictEqual(pay.json.code, 'PAYMENTS_OFF');
+      const st = await req('GET', `/api/bookings/${id}/payment`, { token: customerTok });
+      assert.strictEqual(st.status, 200);
+      assert.strictEqual(st.json.paid, false);
+      assert.strictEqual(st.json.enabled, false);
+      // paying someone else's booking is forbidden (a non-owner token)
+      const forb = await req('POST', `/api/bookings/${id}/pay`, { token: cleanerTok });
+      assert.strictEqual(forb.status, 403);
+    });
+    await ok('payments: P24 webhook ignores an unknown session (200, no-op)', async () => {
+      const r = await req('POST', '/api/payments/p24/status', { body: { sessionId: 'nope_' + Date.now(), amount: 1000, sign: 'x' } });
+      assert.strictEqual(r.status, 200);
+    });
+
     // ── Recommendations are scoped to the customer's city ──
     await ok('recommended cleaners: only from the customer’s city', async () => {
       const adm = await req('POST', '/api/login', { body: { email: 'admin@cleango.app', password: 'cleango123' } });

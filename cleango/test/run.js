@@ -27,6 +27,7 @@ const suites = [
   ['unit', 'auth/test.js'],
   ['unit', 'str/test.js'],
   ['unit', 'push/test.js'],
+  ['unit', 'pay/test.js'],
   ['integration', 'test/api.test.js'],
 ];
 

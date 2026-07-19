@@ -1431,6 +1431,10 @@ Object.assign(TR.uk,{"Помыть духовку внутри":"Помити д
   "Химчистка ковра":"Хімчистка килима","Химчистка ковра, от 12 zł/м².":"Хімчистка килима, від 12 zł/м².",
   "Химчистка штор и тюля":"Хімчистка штор і тюлю","Снятие, химчистка и возврат штор.":"Зняття, хімчистка та повернення штор.",
   "· за шт":"· за шт","· за ч":"· за год"});
+/* payments (Przelewy24) */
+Object.assign(TR.pl,{"Оплатить":"Zapłać","Оплачено":"Opłacone","Переходим к оплате…":"Przechodzimy do płatności…","Не удалось начать оплату":"Nie udało się rozpocząć płatności","Оплата прошла — спасибо!":"Płatność przyjęta — dziękujemy!","Платёж обрабатывается — обновите заказ через минуту":"Płatność jest przetwarzana — odśwież zamówienie za chwilę","Онлайн-оплата пока не подключена.":"Płatności online nie są jeszcze aktywne.","Не удалось создать платёж. Попробуйте ещё раз.":"Nie udało się utworzyć płatności. Spróbuj ponownie.","Заказ уже оплачен.":"Zamówienie jest już opłacone."});
+Object.assign(TR.en,{"Оплатить":"Pay","Оплачено":"Paid","Переходим к оплате…":"Going to payment…","Не удалось начать оплату":"Couldn't start the payment","Оплата прошла — спасибо!":"Payment received — thank you!","Платёж обрабатывается — обновите заказ через минуту":"Payment is processing — refresh the order in a minute","Онлайн-оплата пока не подключена.":"Online payments aren't enabled yet.","Не удалось создать платёж. Попробуйте ещё раз.":"Couldn't create the payment. Please try again.","Заказ уже оплачен.":"This order is already paid."});
+Object.assign(TR.uk,{"Оплатить":"Сплатити","Оплачено":"Оплачено","Переходим к оплате…":"Переходимо до оплати…","Не удалось начать оплату":"Не вдалося почати оплату","Оплата прошла — спасибо!":"Оплату отримано — дякуємо!","Платёж обрабатывается — обновите заказ через минуту":"Платіж обробляється — оновіть замовлення за хвилину","Онлайн-оплата пока не подключена.":"Онлайн-оплата ще не підключена.","Не удалось создать платёж. Попробуйте ещё раз.":"Не вдалося створити платіж. Спробуйте ще раз.","Заказ уже оплачен.":"Замовлення вже оплачене."});
 /* pricing: service info, frequency plans, headline prices */
 Object.assign(TR.pl,{
   "Что входит":"Co obejmuje","Понятно":"Rozumiem","без скидки":"bez rabatu",
@@ -4482,6 +4486,15 @@ function renderActions(b,ctx){
   } else if(isCustomer && b.status==='completed' && b.reviewed){
     html=`<div class="aiband" style="justify-content:center">${I.check}<span>Спасибо за отзыв!</span></div>`;
   }
+  // Real online payment (Przelewy24) — shown to the customer for an unpaid,
+  // non-cancelled booking when the gateway is configured. Paid → a green badge.
+  if(isCustomer && b.status!=='cancelled'){
+    if(b.paid){
+      html=`<div class="aiband" style="justify-content:center;background:var(--primary-050);color:var(--primary-600);margin-bottom:12px">${I.check}<span>${t('Оплачено')} · ${money(b.price)}</span></div>`+html;
+    }else if(state.catalog && state.catalog.paymentsEnabled){
+      html=`<button class="btn block" id="payBtn" style="margin-bottom:12px">${I.card||I.wallet||''} ${t('Оплатить')} ${money(b.price)}</button>`+html;
+    }
+  }
   if(isCustomer && ['searching','accepted','on_the_way'].includes(b.status)){
     html+=`<button class="btn ghost block" id="cancelBtn" style="margin-top:12px">Отменить заказ</button>`;
   }
@@ -4500,6 +4513,7 @@ function renderActions(b,ctx){
   bind('startBtn',()=>transition(b.id,'in_progress'));
   bind('completeBtn',()=>transition(b.id,'completed'));
   bind('cancelBtn',()=>transition(b.id,'cancelled'));
+  bind('payBtn',()=>startPayment(b.id));
   bind('reviewBtn',()=>openReview(b.id));
   const up=(id,phase)=>{const e=$('#'+id);if(e)e.onclick=()=>uploadPhoto(b.id,phase);};
   up('upBefore','before');up('upAfter','after');
@@ -4704,6 +4718,32 @@ function downloadReceiptPdf(r){
   if(ifr.contentWindow.document.readyState==='complete') setTimeout(go,300); else ifr.onload=()=>setTimeout(go,300);
 }
 function escHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+// Start a real Przelewy24 payment: register on the server, then send the buyer
+// to the P24 gateway. On return the app lands on ?paid=<id> (handlePaymentReturn).
+async function startPayment(id){
+  const btn=$('#payBtn'); if(btn){btn.disabled=true;btn.textContent=t('Переходим к оплате…');}
+  try{
+    const {redirectUrl}=await api('/api/bookings/'+id+'/pay','POST');
+    if(redirectUrl){ location.href=redirectUrl; return; }
+    toast(t('Не удалось начать оплату'),true);
+  }catch(e){ toast(e.message,true); }
+  if(btn){btn.disabled=false;btn.innerHTML=`${I.card||I.wallet||''} ${t('Оплатить')}`;}
+}
+// After returning from the gateway (?paid=<bookingId>): poll the booking a few
+// times (the P24 webhook lands async) and confirm payment to the customer.
+async function handlePaymentReturn(){
+  let id=null; try{ id=new URLSearchParams(location.search).get('paid'); }catch(e){}
+  if(!id)return;
+  try{ history.replaceState(null,'',location.pathname); }catch(e){}
+  let paid=false;
+  for(let i=0;i<6 && !paid;i++){
+    try{ const r=await api('/api/bookings/'+encodeURIComponent(id)+'/payment'); paid=!!r.paid; }catch(e){}
+    if(!paid) await new Promise(r=>setTimeout(r,2000));
+  }
+  if(paid){ successBurst&&successBurst(); toast(t('Оплата прошла — спасибо!')); }
+  else toast(t('Платёж обрабатывается — обновите заказ через минуту'));
+  if(state.user){ state.view='bookings'; render(); openBooking(id); }
+}
 async function transition(id,status){
   try{await api('/api/bookings/'+id+'/status','POST',{status});
     if(status==='completed')confetti();
@@ -5601,6 +5641,7 @@ async function boot(){
   render();
   i18nStart();   // translate the mounted DOM into the active language + keep watching
   if(_authErr){ toast(t(_authErr==='email'?'Не удалось получить подтверждённый email от провайдера.':_authErr==='suspended'?'Этот аккаунт заблокирован.':'Не удалось выполнить вход через провайдера. Попробуйте ещё раз.'),true); }
+  handlePaymentReturn();   // returned from the Przelewy24 gateway (?paid=<id>)
 }
 boot();
 
