@@ -61,16 +61,25 @@
     const isInterior = (x, y) => x >= 1 && x < COLS - 1 && y >= 1 && y < ROWS - 1;
     const isFloor = (x, y) => isInterior(x, y);
 
-    // 1) FLOOR — continuous interior, room palettes + subtle checker
+    // 1) FLOOR — dark glossy porcelain tiles (single cohesive palette)
     for (let sum = 0; sum <= COLS + ROWS; sum++) {
       for (let x = 1; x < COLS - 1; x++) {
         const y = sum - x; if (y < 1 || y >= ROWS - 1) continue;
         const r = roomAt(x, y);
-        const t = r ? world.ROOM_TYPES[r.type] : null;
-        let col = t ? ((x + y) & 1 ? t.floor : t.floor2) : ((x + y) & 1 ? '#4a4550' : '#443f4a');
-        tileDiamond(g, x, y, col, 'rgba(0,0,0,0.05)');
+        const warm = r && (r.type === 'LOUNGE' || r.type === 'KITCHEN' || r.type === 'MANAGEMENT');
+        let base = (x + y) & 1 ? '#30333b' : '#2a2d34';
+        if (warm) base = shade(base, 1.08);
+        tileDiamond(g, x, y, base, 'rgba(0,0,0,0.28)'); // dark grout
       }
     }
+    // 1.5) floor sheen — broad soft specular so the tile reads as glossy
+    (function () {
+      g.save(); g.globalCompositeOperation = 'lighter';
+      const gc = P(COLS * 0.46, ROWS * 0.42, 0);
+      const gr = g.createRadialGradient(gc.x, gc.y - 30, 20, gc.x, gc.y, (COLS + ROWS) * TWH * 0.42);
+      gr.addColorStop(0, 'rgba(150,160,185,0.11)'); gr.addColorStop(0.6, 'rgba(120,130,160,0.04)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = gr; g.fillRect(0, 0, cv.width, cv.height); g.restore();
+    })();
 
     // 2) WALLS to draw — back-left only (north + west edges) → dollhouse open front
     const doorTiles = new Set();
@@ -90,7 +99,8 @@
     for (let x = 0; x < COLS; x++) addWall(x, 0);                       // outer north
     for (let y = 0; y < ROWS; y++) addWall(0, y);                       // outer west
 
-    const WALL = { top: '#e7ebf1', right: '#c4ccd7', left: '#a9b3c1' };
+    const WALL = { top: '#ece6d9', right: '#d3ccbb', left: '#b8b0a0' };
+    const ACCENT = { top: '#6d6a72', right: '#5e5b64', left: '#4f4c55' }; // taupe feature wall
 
     // 3) build a depth-sorted draw list of walls + furniture + chairs
     const items = [];
@@ -105,6 +115,13 @@
     }
     for (const s of world.meetingSeats) items.push({ depth: s.x + s.y - 0.2, z: 1, draw: () => drawChair(g, s.x, s.y) });
 
+    // décor — framed picture on the open-room back wall, coat rack + plants
+    const openR = world.rooms.find(r => r.id === 'open');
+    if (openR) { const cx = openR.x + openR.w / 2; items.push({ depth: openR.y + 0.1, z: 2, draw: () => wallPicture(g, cx - 1.6, cx + 1.6, openR.y, WALLH * 0.4, WALLH * 0.82) }); }
+    const entR = world.rooms.find(r => r.id === 'entrance');
+    if (entR) { const rx = entR.x + entR.w - 1.5, ry = entR.y + 1.4; items.push({ depth: rx + ry, z: 1, draw: () => coatRack(g, rx, ry) }); }
+    for (const [px, py] of [[19.5, 19.4], [36.4, 19.4], [22.5, 27.5]]) items.push({ depth: px + py, z: 1, draw: () => plant(g, px, py) });
+
     items.sort((a, b) => (a.depth - b.depth) || (a.z - b.z));
     for (const it of items) it.draw();
 
@@ -118,10 +135,10 @@
     g.fillStyle = vg; g.fillRect(0, 0, cv.width, cv.height);
 
     function wallTile(g, x, y) {
-      // door-frame walls slightly lower for a nicer read at gaps handled by omission
-      const c = WALL;
-      // outer walls a touch taller
-      const h = (x === 0 || y === 0) ? WALLH + 4 : WALLH;
+      // outer back/left walls: taupe accent + a touch taller; interior walls: cream
+      const outer = (x === 0 || y === 0);
+      const c = outer ? ACCENT : WALL;
+      const h = outer ? WALLH + 4 : WALLH;
       faceL(g, x, y, 1, 1, h, c.left); faceR(g, x, y, 1, 1, h, c.right); faceTop(g, x, y, 1, 1, h, c.top);
       // warm rim light along the top edge
       const a = P(x, y, h), b = P(x + 1, y, h);
@@ -138,26 +155,29 @@
     switch (f.kind) {
       case 'desk': {
         groundShadow(g, x, y, w, h);
-        isoBox(g, x, y + 0.1, w, h - 0.2, 12, faces('#6f4c2d'));
+        isoBox(g, x, y + 0.1, w, h - 0.2, 12, faces('#e0d5c1'));       // cream worktop
         // drawer block
-        isoBox(g, x + w - 0.55, y + 0.15, 0.5, h - 0.3, 11, faces('#5a3d24'));
+        isoBox(g, x + w - 0.55, y + 0.15, 0.5, h - 0.3, 11, faces('#cabda6'));
+        // an orange desk folder (accent from the ref)
+        flatRect(g, x + 0.18, y + 0.2, 0.5, 0.34, 12.1, '#cf6a2c');
         // monitor on top
         monitor(g, x + w / 2 - 0.55, y + 0.12, '#8fd6ff');
-        // keyboard + mug hint (flat)
-        flatRect(g, x + 0.25, y + h - 0.42, 0.7, 0.28, 12, '#20222e');
+        // keyboard hint (flat)
+        flatRect(g, x + 0.28, y + h - 0.42, 0.7, 0.26, 12.1, '#1c1d24');
         break;
       }
       case 'exec-desk': {
         groundShadow(g, x, y, w, h);
-        isoBox(g, x, y + 0.1, w, h - 0.2, 14, faces('#59401f'));
+        isoBox(g, x, y + 0.1, w, h - 0.2, 14, faces('#d8ccb3'));       // cream exec worktop
+        flatRect(g, x + w - 1.0, y + 0.2, 0.5, 0.34, 14.1, '#cf6a2c');
         monitor(g, x + 0.55, y + 0.15, '#9be0ff');
         monitor(g, x + w - 1.5, y + 0.15, '#9be0ff');
         break;
       }
       case 'table': {
         groundShadow(g, x, y, w, h);
-        isoBox(g, x + 0.15, y + 0.15, w - 0.3, h - 0.3, 12, faces('#7c5836'));
-        flatRect(g, x + w / 2 - 0.3, y + h / 2 - 0.3, 0.6, 0.6, 12.5, '#2e6b46'); // plant on table
+        isoBox(g, x + 0.15, y + 0.15, w - 0.3, h - 0.3, 12, faces('#e6dbc5'));  // cream table
+        plant(g, x + w / 2, y + h / 2, 12.5);                                    // plant on table
         break;
       }
       case 'whiteboard':
@@ -173,11 +193,13 @@
         break;
       case 'couch': case 'sofa': {
         groundShadow(g, x, y, w, h);
-        const base = f.kind === 'couch' ? '#3f5d8a' : '#6d4f8a';
+        const base = f.kind === 'couch' ? '#232427' : '#2b2c31';     // black leather
         isoBox(g, x, y + 0.2, w, h - 0.2, 8, faces(base));            // seat
-        isoBox(g, x, y + h - 0.35, w, 0.35, 16, faces(shade(base, 0.9))); // backrest
-        isoBox(g, x, y + 0.2, 0.3, h - 0.2, 13, faces(base));         // left arm
-        isoBox(g, x + w - 0.3, y + 0.2, 0.3, h - 0.2, 13, faces(base)); // right arm
+        isoBox(g, x, y + h - 0.35, w, 0.35, 16, faces(shade(base, 1.15))); // backrest
+        isoBox(g, x, y + 0.2, 0.3, h - 0.2, 13, faces(shade(base, 1.1)));  // left arm
+        isoBox(g, x + w - 0.3, y + 0.2, 0.3, h - 0.2, 13, faces(shade(base, 1.1))); // right arm
+        // leather sheen on the seat top
+        const p = P(x + 0.3, y + 0.5, 8.2); g.fillStyle = 'rgba(255,255,255,0.06)'; g.fillRect(p.x, p.y - 2, 16, 3);
         break;
       }
       case 'rack': {
@@ -193,7 +215,7 @@
       }
       case 'counter': case 'bar': {
         groundShadow(g, x, y, w, h);
-        isoBox(g, x, y + 0.1, w, h - 0.1, f.kind === 'bar' ? 14 : 15, faces('#b7bec8'));
+        isoBox(g, x, y + 0.1, w, h - 0.1, f.kind === 'bar' ? 14 : 15, faces('#d7d1c4'));
         break;
       }
       case 'coffee': {
@@ -223,28 +245,34 @@
     }
   }
 
-  // colourful office bookshelf (files/books) — the hero prop from the refs
+  // white office shelving with orange/tan folders + a plant on top (hero prop)
   function colorShelf(g, x, y, w, h, H) {
     groundShadow(g, x, y, w, h);
-    isoBox(g, x, y + 0.05, w, Math.max(0.3, h - 0.1), H, faces('#6d4a2a'));
-    const books = ['#c94f34', '#e0872f', '#d8b23a', '#4f7d4a', '#3f6fae', '#8a4fa0', '#c9553f'];
-    // rows of coloured spines on the SE (right) face
+    isoBox(g, x, y + 0.05, w, Math.max(0.3, h - 0.1), H, faces('#eceef1'));  // white body
+    const files = ['#d2712a', '#c85a2a', '#e0a24a', '#cdb48a', '#5a7d4a', '#dcd6c8', '#c96a2c'];
     for (let row = 0; row < 4; row++) {
       const hz = H - 4 - row * (H / 4.5);
       for (let i = 0; i < Math.round(w * 3); i++) {
         const gx = x + 0.15 + i * 0.32;
         if (gx > x + w - 0.15) break;
         const p = P(gx, y + 0.06, hz);
-        g.fillStyle = books[(row * 3 + i) % books.length];
+        g.fillStyle = files[(row * 2 + i) % files.length];
         g.fillRect(p.x - 1.6, p.y - 5.5, 3.2, 5.5);
       }
     }
+    plant(g, x + w - 0.5, y + 0.5, H); // greenery on top
   }
 
+  // tan leather executive chair: 5-star base, cushioned seat, armrests, high back
   function drawChair(g, x, y) {
-    groundShadow(g, x + 0.15, y + 0.15, 0.7, 0.7);
-    isoBox(g, x + 0.2, y + 0.2, 0.6, 0.6, 9, faces('#2c2f3b'));   // seat
-    isoBox(g, x + 0.2, y + 0.72, 0.6, 0.12, 20, faces('#33374a')); // backrest
+    const leather = '#c7b189';
+    groundShadow(g, x + 0.12, y + 0.12, 0.76, 0.76);
+    isoBox(g, x + 0.42, y + 0.42, 0.16, 0.16, 4, faces('#2a2b30'));       // gas-lift base
+    isoBox(g, x + 0.16, y + 0.18, 0.62, 0.58, 9, faces(leather));         // seat cushion
+    isoBox(g, x + 0.1, y + 0.2, 0.1, 0.56, 13, faces(shade(leather, 0.88))); // left arm
+    isoBox(g, x + 0.76, y + 0.2, 0.1, 0.56, 13, faces(shade(leather, 0.88))); // right arm
+    isoBox(g, x + 0.18, y + 0.72, 0.58, 0.13, 22, faces(shade(leather, 1.04))); // high back
+    const p = P(x + 0.22, y + 0.74, 22); g.fillStyle = 'rgba(255,246,226,0.25)'; g.fillRect(p.x, p.y - 1, 11, 2); // back highlight
   }
 
   function monitor(g, x, y, screen) {
@@ -257,22 +285,45 @@
     gg.addColorStop(0, screen); gg.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gg; g.fillRect(a.x - 14, a.y - 6, 28, 20); g.restore();
   }
 
-  function plant(g, cx, cy) {
-    groundShadow(g, cx - 0.25, cy - 0.25, 0.5, 0.5);
-    isoBox(g, cx - 0.22, cy - 0.22, 0.44, 0.44, 7, faces('#9a6a44')); // pot
-    const greens = ['#3c8a4e', '#4fa85f', '#2f6f42'];
-    for (let i = 0; i < 7; i++) {
-      const a = i / 7 * 6.28; const r = 0.18 + (i % 2) * 0.05;
-      const p = P(cx + Math.cos(a) * r, cy + Math.sin(a) * r, 12 + (i % 3) * 4);
-      g.fillStyle = greens[i % 3];
-      g.beginPath(); g.ellipse(p.x, p.y, 4.5, 6.5, 0, 0, 7); g.fill();
+  // lush potted plant. baseH>0 sits it on top of a surface (shelf/table).
+  function plant(g, cx, cy, baseH) {
+    const b = baseH || 0;
+    if (b) { flatRect(g, cx - 0.18, cy - 0.18, 0.36, 0.36, b, '#e8e2d6'); }   // small white pot on surface
+    else { groundShadow(g, cx - 0.28, cy - 0.28, 0.56, 0.56); isoBox(g, cx - 0.22, cy - 0.22, 0.44, 0.44, 7, faces('#e6e0d3')); } // floor pot (white)
+    const greens = ['#3c8a4e', '#57b568', '#2f6f42', '#69c47a'];
+    for (let i = 0; i < 10; i++) {
+      const a = i / 10 * 6.28; const r = 0.16 + (i % 3) * 0.06;
+      const p = P(cx + Math.cos(a) * r, cy + Math.sin(a) * r, b + 11 + (i % 4) * 4);
+      g.fillStyle = greens[i % greens.length];
+      g.beginPath(); g.ellipse(p.x, p.y, 4.6, 6.8, 0, 0, 7); g.fill();
     }
-    const top = P(cx, cy, 22); g.fillStyle = '#5fbf6f';
-    g.beginPath(); g.ellipse(top.x, top.y, 5, 7, 0, 0, 7); g.fill();
+    const top = P(cx, cy, b + 24); g.fillStyle = '#72cf83';
+    g.beginPath(); g.ellipse(top.x, top.y, 5.4, 8, 0, 0, 7); g.fill();
   }
 
   // small flat detail sitting on a surface at height H
   function flatRect(g, x, y, w, d, H, col) { poly(g, [P(x, y, H), P(x + w, y, H), P(x + w, y + d, H), P(x, y + d, H)], col); }
+
+  // framed picture hung on a north wall's interior (SW) face, at plane y=wy+1
+  function wallPicture(g, x0, x1, wy, hLo, hHi) {
+    const yp = wy + 1;
+    poly(g, [P(x0, yp, hHi), P(x1, yp, hHi), P(x1, yp, hLo), P(x0, yp, hLo)], '#efe9dc'); // frame
+    const ix0 = x0 + 0.14, ix1 = x1 - 0.14, il = hLo + 2.5, ih = hHi - 2.5;
+    poly(g, [P(ix0, yp, ih), P(ix1, yp, ih), P(ix1, yp, il), P(ix0, yp, il)], '#b8a06a'); // canvas base
+    // a couple of sepia landscape strokes
+    g.save();
+    poly(g, [P(ix0, yp, il + 4), P(ix1, yp, il + 2), P(ix1, yp, il), P(ix0, yp, il)], '#8f7a4a');
+    poly(g, [P(ix0 + 0.2, yp, ih), P(ix0 + 0.6, yp, ih - 3), P(ix0 + 0.9, yp, ih)], '#d8c690');
+    g.restore();
+  }
+
+  // standing coat rack (thin pole + pegs)
+  function coatRack(g, cx, cy) {
+    groundShadow(g, cx - 0.16, cy - 0.16, 0.32, 0.32);
+    isoBox(g, cx - 0.06, cy - 0.06, 0.12, 0.12, 27, faces('#dcd7ce')); // pole
+    for (const a of [0.4, 2.5, 4.6]) { const p = P(cx + Math.cos(a) * 0.22, cy + Math.sin(a) * 0.22, 25); g.fillStyle = '#cfcabf'; g.fillRect(p.x - 2, p.y - 3, 4, 4); }
+    const top = P(cx, cy, 28); g.fillStyle = '#e7e2d8'; g.beginPath(); g.arc(top.x, top.y, 3, 0, 7); g.fill();
+  }
 
   // ---- projection API for the engine (agents + live effects) --------------
   R.ISO = { TWH, THH, WALLH, TILE, get OX() { return OX; }, get OY() { return OY; } };
