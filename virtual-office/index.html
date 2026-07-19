@@ -113,6 +113,25 @@
   .modal-actions .ghost{background:transparent}
   .ap-agent{display:flex;gap:12px;align-items:center;margin-bottom:12px}
   .ap-q{font-weight:700;font-size:15px;margin:6px 0 10px}
+  /* ---- admin panel ---- */
+  .adm{padding:4px 14px 22px}
+  .adm label{display:block;font-size:12px;color:var(--soft);margin:12px 0 5px}
+  .adm input,.adm textarea,.adm select{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:9px 11px;font-size:13px;outline:none;font-family:inherit}
+  .adm input:focus,.adm textarea:focus,.adm select:focus{border-color:var(--violet)}
+  .adm-sec{font-weight:800;font-size:13px;margin:20px 0 6px;padding-top:14px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+  .adm-sec:first-child{border-top:none;padding-top:0;margin-top:6px}
+  .adm-list{display:flex;flex-direction:column;gap:7px}
+  .adm-ag{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center}
+  .adm-ag .adm-name,.adm-ag .adm-role{padding:7px 9px;font-size:12px}
+  .adm-save{background:var(--panel2);border:1px solid var(--line);color:#8b6ff0;border-radius:9px;padding:7px 10px;font-weight:800;cursor:pointer}
+  .adm-tasks{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+  .adm-task{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  .adm-task-h{font-size:12px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+  .adm-task-q{font-size:12px;color:var(--soft);margin:4px 0}
+  .adm-task-a{font-size:12.5px;white-space:pre-wrap;background:var(--panel);border-radius:8px;padding:8px;margin-top:4px;max-height:180px;overflow:auto}
+  .adm-run{color:#fbbf24}.adm-ok{color:#22c55e}.adm-err{color:#ef4444}
+  .adm-answer{white-space:pre-wrap;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px;max-height:46vh;overflow:auto;font-size:13.5px;line-height:1.5}
+  .ghost.sm{font-size:11px;padding:2px 8px;border-radius:7px;font-weight:700;background:transparent;border:1px solid var(--line);color:var(--soft);cursor:pointer}
 
   #toasts{position:fixed;right:16px;bottom:16px;z-index:60;display:flex;flex-direction:column;gap:10px}
   .toast{background:var(--panel);border:1px solid var(--line2);border-left:3px solid #f59e0b;border-radius:12px;
@@ -211,6 +230,7 @@
 <script src="js/director.js"></script>
 <script src="js/gps.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/admin.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

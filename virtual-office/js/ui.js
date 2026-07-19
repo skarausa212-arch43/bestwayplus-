@@ -59,6 +59,7 @@
       <div class="tb-mid"><input id="globalSearch" class="search" placeholder="Поиск сотрудников, задач…"></div>
       <div class="tb-right">
         <button class="tb-btn" id="btnFit" title="Показать весь офис">⛶</button>
+        <button class="tb-btn" id="btnAdmin" title="Админ-панель">🛠</button>
         <button class="tb-btn primary" id="btnCreateTask">＋<span class="lbl-full"> Задача</span></button>
         <button class="tb-btn" id="btnAddAgent">＋ Сотрудник</button>
         <button class="tb-btn bell" id="btnBell">🔔<span class="badge" id="notifBadge" hidden>0</span></button>
@@ -79,6 +80,7 @@
   UI.navTo = function (k) {
     if (k === 'agents') { this.rightMode = 'list'; this.renderAgentList(); }
     else if (k === 'tasks') { this.rightMode = 'tasks'; this.renderTaskList(); }
+    else if (k === 'settings') { if (global.OfficeAdmin) global.OfficeAdmin.open(); }
     else { this.showFeed(); }
   };
   UI.refreshSidebarCounts = function () {};
@@ -184,11 +186,22 @@
       <label class="ck"><input type="checkbox" id="tDeleg" checked> Разрешить делегирование</label>
       <div class="modal-actions"><button class="ghost" data-close>Отмена</button><button class="primary" id="tCreate">Создать</button></div>`);
     $('#tCreate').addEventListener('click', () => {
-      const title = $('#tTitle').value.trim() || 'Без названия';
-      const t = { id: 'tsk' + Math.random().toString(36).slice(2), title, description: $('#tDesc').value.trim(),
-        assignedAgentId: $('#tAgent').value, priority: $('#tPrio').value, status: 'BACKLOG', createdBy: 'you', createdAt: new Date(), progress: 0, subtasks: [], activity: [] };
-      this.store.addTask(t); this.director.assignTask(t); this.closeModal();
-      const a = this.store.getAgent(t.assignedAgentId); if (a) { this.engine.select(a.id); }
+      const title = $('#tTitle').value.trim() || 'Задание';
+      const desc = $('#tDesc').value.trim();
+      const agentId = $('#tAgent').value;
+      this.closeModal();
+      // If the admin is logged in, run it for real through the AI.
+      if (global.OfficeAdmin && global.OfficeAdmin.authed) {
+        global.OfficeAdmin.runTask(agentId, desc || title);
+        const a = this.store.getAgent(agentId); if (a) this.engine.select(a.id);
+        return;
+      }
+      // Otherwise keep the animated demo task and nudge toward the admin panel.
+      const t = { id: 'tsk' + Math.random().toString(36).slice(2), title, description: desc,
+        assignedAgentId: agentId, priority: $('#tPrio').value, status: 'BACKLOG', createdBy: 'you', createdAt: new Date(), progress: 0, subtasks: [], activity: [] };
+      this.store.addTask(t); this.director.assignTask(t);
+      const a = this.store.getAgent(agentId); if (a) { this.engine.select(a.id); }
+      this.toast({ title: 'Демо-режим', text: 'Откройте Админ-панель (🛠) и войдите — тогда агент реально ответит через ИИ.' });
     });
   };
 
@@ -229,6 +242,7 @@
     $('#btnCreateTask').addEventListener('click', () => this.openTaskModal());
     $('#btnAddAgent').addEventListener('click', () => this.toast({ title: 'Новый сотрудник', text: 'Онбординг сотрудников — в следующей итерации.' }));
     $('#btnFit').addEventListener('click', () => this.engine.fit());
+    const ba = $('#btnAdmin'); if (ba) ba.addEventListener('click', () => { if (global.OfficeAdmin) { global.OfficeAdmin.open(); this.openPanel(); } });
     $('#btnBell').addEventListener('click', () => { const pend = this.store.notifications.find(n => !n.read && n.type === 'approval'); if (pend) this.openApproval(pend.agentId); else this.showFeed(); });
     const s = $('#globalSearch'); s.addEventListener('keydown', e => { if (e.key === 'Enter') { const q = s.value.toLowerCase().trim(); const a = this.store.listAgents().find(x => x.name.toLowerCase().includes(q) || x.role.toLowerCase().includes(q)); if (a) { this.engine.select(a.id); } } });
   };

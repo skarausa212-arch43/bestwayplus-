@@ -46,6 +46,7 @@
     // loading splash off
     const sp = document.getElementById('splash'); if (sp) { sp.classList.add('hide'); setTimeout(() => sp.remove(), 600); }
     global.__office = { world, engine, director, store: OfficeStore, bus: OfficeBus };
+    if (global.OfficeAdmin) OfficeAdmin.init();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
