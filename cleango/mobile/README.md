@@ -59,13 +59,21 @@ web change.
 
 ## 3. Wire push per platform
 
-- **Android:** in Firebase add an Android app with id `pl.lumi24.app`, download
-  `google-services.json`, drop it in `android/app/`. Push works after `cap sync`.
-- **iOS:** in the Apple Developer portal create an **APNs Auth Key (.p8)** and
-  upload it to Firebase → Cloud Messaging → Apple app config. In Xcode enable the
-  **Push Notifications** and **Background Modes → Remote notifications**
-  capabilities. Add the Firebase iOS app (id `pl.lumi24.app`), download
-  `GoogleService-Info.plist` into `ios/App/App/`.
+Drop your Firebase config file(s) into **`mobile/`** — every `npm run build` (and
+`add:*`) copies them into the native projects automatically (`scripts/place-firebase.js`):
+
+- **Android:** save the downloaded `google-services.json` as
+  `mobile/google-services.json`. Capacitor's Android template applies the
+  google-services Gradle plugin automatically when that file is present. (If a
+  build ever complains it can't find the plugin, add
+  `classpath 'com.google.gms:google-services:4.4.2'` to `android/build.gradle`
+  buildscript dependencies.)
+- **iOS:** create an **APNs Auth Key (.p8)** in the Apple Developer portal and
+  upload it to Firebase → Cloud Messaging → Apple app config. Save
+  `GoogleService-Info.plist` as `mobile/GoogleService-Info.plist`. In Xcode enable
+  **Push Notifications** and **Background Modes → Remote notifications**.
+
+These two files are git-ignored — they stay on your machine.
 
 ## 4. Run / publish
 

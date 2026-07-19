@@ -4,3 +4,6 @@ ios/
 android/
 *.log
 .DS_Store
+# Your Firebase client configs — keep local (build copies them into the projects)
+google-services.json
+GoogleService-Info.plist
