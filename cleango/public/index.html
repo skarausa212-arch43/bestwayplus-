@@ -357,9 +357,11 @@ textarea.input{resize:vertical;min-height:80px}
 .toast.show{transform:translateX(-50%) translateY(0)}
 .toast.err{background:var(--danger);color:#fff}
 .modal-bg{position:fixed;inset:0;z-index:150;background:rgba(11,18,32,.5);backdrop-filter:blur(4px);
-  display:grid;place-items:center;padding:20px;opacity:0;pointer-events:none;transition:.2s}
+  display:flex;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px;opacity:0;pointer-events:none;transition:.2s}
 .modal-bg.show{opacity:1;pointer-events:auto}
-.modal{width:100%;max-width:460px;transform:translateY(20px) scale(.98);transition:.2s}
+/* margin:auto centres the modal AND lets a taller-than-screen modal scroll
+   inside the overlay without the top/bottom being clipped (iOS-safe — no vh). */
+.modal{width:100%;max-width:460px;margin:auto;transform:translateY(20px) scale(.98);transition:.2s}
 .modal-bg.show .modal{transform:none}
 
 .empty{text-align:center;padding:52px 20px;color:var(--ink-3)}
@@ -2410,7 +2412,7 @@ function notifDeepLink(link){
   else {state.view='home';render();}
 }
 async function openNotifications(){
-  showModal(`<div class="card pad" style="max-height:80vh;overflow-y:auto"><div class="sk" style="height:120px"></div></div>`);
+  showModal(`<div class="card pad"><div class="sk" style="height:120px"></div></div>`);
   try{
     const {notifications:list}=await api('/api/notifications');
     const box=$('.modal .card');
@@ -2434,7 +2436,7 @@ async function openNotifications(){
 }
 function openNotifPrefs(){
   const labels={marketingPush:'Акции — push',marketingEmail:'Акции — email',operationalEmail:'Письма о заказах',smartHomeReminders:'Напоминания умного дома',weeklySummary:'Еженедельная сводка',sound:'Звук',vibration:'Вибрация'};
-  const inner=el(`<div class="card pad" style="max-height:80vh;overflow-y:auto"><h3 style="margin-bottom:4px">Настройки уведомлений</h3><p class="muted tiny" style="margin-bottom:16px">Критичные уведомления о безопасности и заказах отключить нельзя.</p><div id="prefRows"><div class="sk" style="height:120px"></div></div></div>`);
+  const inner=el(`<div class="card pad"><h3 style="margin-bottom:4px">Настройки уведомлений</h3><p class="muted tiny" style="margin-bottom:16px">Критичные уведомления о безопасности и заказах отключить нельзя.</p><div id="prefRows"><div class="sk" style="height:120px"></div></div></div>`);
   showModalNode(inner);
   api('/api/notification-preferences').then(({preferences})=>{
     $('#prefRows',inner).innerHTML=Object.keys(labels).map(k=>`<label class="row" style="justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line);cursor:pointer">
@@ -2710,7 +2712,7 @@ async function loadHomeHealth(pid){
   }catch(e){ if(hb)hb.remove(); if(rb)rb.remove(); }
 }
 function openAllProviders(){
-  showModal(`<div class="card pad" style="max-height:82vh;overflow-y:auto"><h3 style="margin-bottom:14px">Все исполнители</h3><div id="allProvList"><div class="sk" style="height:200px"></div></div></div>`);
+  showModal(`<div class="card pad"><h3 style="margin-bottom:14px">Все исполнители</h3><div id="allProvList"><div class="sk" style="height:200px"></div></div></div>`);
   api('/api/cleaners/recommended').then(({cleaners})=>{
     const box=$('#allProvList');if(!box)return;
     box.innerHTML='';
@@ -2921,7 +2923,7 @@ const PTYPES=[['apartment','🏢','Квартира'],['house','🏠','Дом'],
 function openPropertyForm(){
   const cities=state.cities.length?state.cities:['Warsaw'];
   let ptype='apartment', buf=60, durMode='auto';
-  const inner=el(`<div class="card pad pform" style="max-height:86vh;overflow-y:auto">
+  const inner=el(`<div class="card pad pform">
     <h3 style="margin-bottom:6px">Добавить объект</h3>
     <p class="muted tiny" style="margin-bottom:10px">Выберите тип объекта</p>
     <div class="ptype-grid" id="ptypes">${PTYPES.map(([v,e,n])=>`<div class="ptype ${v==='apartment'?'on':''}" data-pt="${v}"><div class="pe">${e}</div><div class="pn">${n}</div></div>`).join('')}</div>
@@ -3520,7 +3522,7 @@ function ssRenderChecklist(chk,isDefault){
 }
 function openSuppliesEditor(pid,sup){
   let items=sup.map(s=>({...s}));
-  const inner=el(`<div class="card pad" style="max-height:86vh;overflow-y:auto">
+  const inner=el(`<div class="card pad">
     <h3 style="margin-bottom:6px">${t('Расходники')}</h3>
     <p class="muted tiny" style="margin-bottom:14px">${t('Что должно быть в квартире для гостей. Исполнитель отметит нехватку.')}</p>
     <div id="supList"></div>
@@ -3542,7 +3544,7 @@ function openSuppliesEditor(pid,sup){
 }
 function openChecklistEditor(pid,chk,isDefault){
   let secs=JSON.parse(JSON.stringify(chk));
-  const inner=el(`<div class="card pad" style="max-height:86vh;overflow-y:auto">
+  const inner=el(`<div class="card pad">
     <h3 style="margin-bottom:6px">${t('Чек-лист уборки')}</h3>
     <p class="muted tiny" style="margin-bottom:14px">${t('Что исполнитель проверяет при уборке между гостями.')}</p>
     <div id="chkList"></div>
@@ -3573,7 +3575,7 @@ const PRB_KIND=[['damage','🔨','Повреждение'],['missing','📦','П
 const PRB_LABEL=Object.fromEntries(PRB_KIND.map(([k,e,l])=>[k,l]));
 function openTurnoverProblem(bookingId){
   let kind='damage';
-  const inner=el(`<div class="card pad" style="max-height:86vh;overflow-y:auto">
+  const inner=el(`<div class="card pad">
     <h3 style="margin-bottom:6px">${t('Проблема после гостя')}</h3>
     <p class="muted tiny" style="margin-bottom:14px">${t('Опишите, что не так — владелец сразу получит уведомление.')}</p>
     <div class="ptype-grid" id="prbKinds" style="grid-template-columns:repeat(2,1fr)">${PRB_KIND.map(([k,e,l])=>`<div class="ptype ${k==='damage'?'on':''}" data-pk="${k}"><div class="pe">${e}</div><div class="pn">${t(l)}</div></div>`).join('')}</div>
@@ -3641,7 +3643,7 @@ function openReservationForm(pid,existing){
   const e=existing||{};
   const ci=e.checkinAt?isoDate(e.checkinAt):isoDate(Date.now()+86400000), co=e.checkoutAt?isoDate(e.checkoutAt):isoDate(Date.now()+3*86400000);
   const cit=e.checkinAt?fmtHM(e.checkinAt):'', cot=e.checkoutAt?fmtHM(e.checkoutAt):'';
-  const inner=el(`<div class="card pad" style="max-height:86vh;overflow-y:auto">
+  const inner=el(`<div class="card pad">
     <h3 style="margin-bottom:14px">${existing?'Бронирование':'Новое бронирование'}</h3>
     <label class="field"><span>Источник</span><select class="input" id="rsrc">${Object.entries(SRC_LABEL).map(([k,v])=>`<option value="${k}" ${e.source===k?'selected':''}>${t(v)}</option>`).join('')}</select></label>
     <div class="row" style="gap:12px"><label class="field" style="flex:1"><span>Заезд</span><input class="input" id="rci" type="date" value="${ci}"></label><label class="field" style="width:110px"><span>Время</span><input class="input" id="rcit" type="time" value="${cit}"></label></div>
@@ -3668,7 +3670,7 @@ function openReservationForm(pid,existing){
 
 // AI calendar import: paste/upload → review → confirm (spec §5/§21/§22).
 function openCalendarImport(pid){
-  const inner=el(`<div class="card pad" style="max-height:88vh;overflow-y:auto">
+  const inner=el(`<div class="card pad">
     <div class="row" style="gap:12px;margin-bottom:6px"><div style="width:44px;height:44px;border-radius:12px;background:var(--primary-050);display:grid;place-items:center;font-size:22px">📸</div>
       <div><h3>Загрузить календарь с помощью AI</h3><p class="muted tiny">Скриншот Airbnb / Booking или вставьте текст — LUMI распознает брони.</p></div></div>
     <label class="field"><span>Скриншоты календаря</span><input class="input" id="ciImg" type="file" accept="image/*" multiple></label>
@@ -3729,7 +3731,7 @@ function renderImportReview(pid,inner,parsed){
 function openStrSettings(pid,S){
   const s=S.settings; const cleaners=(state.catalog?.cleaners)||[];
   const mode=S.autopilotMode;
-  const inner=el(`<div class="card pad" style="max-height:86vh;overflow-y:auto">
+  const inner=el(`<div class="card pad">
     <h3 style="margin-bottom:14px">Настройки гостей и уборок</h3>
     <div class="row" style="gap:12px"><label class="field" style="flex:1"><span>Выезд гостей</span><input class="input" id="scо" type="time" value="${s.defaultCheckoutTime}"></label><label class="field" style="flex:1"><span>Заезд гостей</span><input class="input" id="sci" type="time" value="${s.defaultCheckinTime}"></label></div>
     <label class="field"><span>Запас до следующего гостя (мин)</span><input class="input" id="sbuf" type="number" min="0" max="480" value="${s.minimumBufferMinutes}"></label>
@@ -4218,7 +4220,7 @@ function bookingRow(b){
 /* ---------- BOOKING DETAIL (modal-like full view) ---------- */
 async function openBooking(id){
   state.activeBooking=id;
-  showModal(`<div class="card pad" style="max-height:88vh;overflow-y:auto"><div class="sk" style="height:200px"></div></div>`,'wide');
+  showModal(`<div class="card pad"><div class="sk" style="height:200px"></div></div>`,'wide');
   await renderBookingDetail(id);
 }
 async function renderBookingDetail(id){
@@ -5099,7 +5101,7 @@ async function openAdminUser(id){
   try{
     const {profile:p}=await api('/api/admin/users/'+id);
     const roleRu=ROLE_RU[p.role]||p.role;
-    const inner=el(`<div class="card pad" style="max-height:86vh;overflow-y:auto">
+    const inner=el(`<div class="card pad">
       <div class="row" style="gap:14px;margin-bottom:16px">
         ${avatarEl(p,64)}
         <div style="flex:1;min-width:0"><h3 style="display:flex;align-items:center;gap:6px">${esc(p.name)}${p.verified?`<span style="color:var(--accent-600);display:inline-flex">${I.check}</span>`:''}</h3>
