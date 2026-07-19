@@ -3922,12 +3922,7 @@ function viewBook(){
         <div class="stepper" data-k="baths"><button data-d="-1">−</button><b>${d.baths}</b><button data-d="1">+</button></div>
         <div style="height:14px"></div>
         <label class="field"><span>Примерная площадь (м²) — необязательно</span><input class="input" type="number" min="0" max="600" value="${d.area||''}" id="area" placeholder="напр. 60"></label>
-      </div>
-      ${(d.service==='standard'||d.service==='deep')?`<div class="card pad" style="margin-top:16px">
-        <label class="field" style="margin-bottom:10px"><span>Как часто убирать?</span></label>
-        <div class="freq-grid" id="freqGrid">${['weekly','biweekly','monthly','once'].map(k=>{const off=(state.catalog&&state.catalog.frequencyDiscounts||{weekly:.2,biweekly:.15,monthly:.1,once:0})[k]||0;return `<div class="freq-chip ${d.frequency===k?'sel':''}" data-freq="${k}"><b>${t(FREQ_LABELS[k])}</b><small class="${off?'off':'muted'}">${off?'−'+Math.round(off*100)+'%':t('без скидки')}</small></div>`;}).join('')}</div>
-        <p class="muted tiny" style="margin-top:8px">${t('Скидка применяется к базовой уборке. Отменить можно в любой момент.')}</p>
-      </div>`:''}`}`;
+      </div>`}`;
     const propSel=$('#propSel',body);
     if(propSel)propSel.onchange=()=>{
       const p=props.find(x=>x.id===propSel.value);
@@ -3961,7 +3956,6 @@ function viewBook(){
         });
       });
       const area=$('#area',body); if(area) area.oninput=()=>{d.area=Number(area.value)||0;};
-      body.querySelectorAll('#freqGrid .freq-chip').forEach(ch=>ch.onclick=()=>{d.frequency=ch.dataset.freq;viewBook();});
     }
   }
   else if(d.step===1){ // extras — à-la-carte add-ons
