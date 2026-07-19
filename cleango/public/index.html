@@ -656,7 +656,8 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .hero-ai .hai-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none;
   box-shadow:0 0 0 0 rgba(var(--glow),.6);animation:pulse 1.9s infinite}
 .hero-ai .hai-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:2px;
-  border-right:2px solid transparent}
+  border-right:2px solid transparent;transition:opacity .35s ease}
+.hero-ai.faded .hai-txt{opacity:0}
 .hero-ai.typing .hai-txt{border-right-color:var(--accent);animation:caret 1s step-end infinite}
 @keyframes caret{50%{border-right-color:transparent}}
 /* ── FlashClean chip: periodic light sweep ── */
@@ -2819,11 +2820,22 @@ function startHeroAI(){
   if(homes)raw.push('Воздух дома свежий · 92%');
   raw.push('Окна не мыли 40 дней — освежить?','FlashClean приедет за 60 минут');
   const sugg=raw.map(s=>t(s));
-  const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const mq=(q)=>window.matchMedia&&window.matchMedia(q).matches;
+  const reduce=mq('(prefers-reduced-motion: reduce)');
   wrap.onclick=()=>{const f=document.getElementById('ctaFlash');if(f)f.click();};
   wrap.onkeydown=(e)=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();wrap.click();}};
   if(reduce){el.textContent=sugg[0];return;}
   let idx=0;
+  // On phones the per-character typewriter resizes this pill (and repaints the
+  // whole layered hero) every 40ms, which reads as a stutter each time the line
+  // updates. Swap in a cheap cross-fade: change the full text while it's faded to
+  // opacity 0 (so the width change is invisible), then fade it back in.
+  if(mq('(max-width:760px)')){
+    const show=()=>{ wrap.classList.remove('faded'); el.textContent=sugg[idx++%sugg.length];
+      window.__heroAiT=setTimeout(()=>{ wrap.classList.add('faded');
+        window.__heroAiT=setTimeout(show,420); },4200); };
+    show(); return;
+  }
   const type=(s,done)=>{ wrap.classList.add('typing'); el.textContent=''; let i=0;
     const tick=()=>{ el.textContent=s.slice(0,i++);
       if(i<=s.length){window.__heroAiT=setTimeout(tick,40);}
