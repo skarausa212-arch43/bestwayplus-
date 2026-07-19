@@ -11,26 +11,26 @@
 
   // room type -> palette
   const ROOM_TYPES = {
-    OPEN_SPACE:  { floor: '#7b5836', floor2: '#6f4f30', name: 'Open Workspace' },
-    MEETING:     { floor: '#6d4d2f', floor2: '#634629', name: 'Meeting Room' },
-    MANAGEMENT:  { floor: '#7a5535', floor2: '#6d4b2e', name: 'Management' },
-    SERVER:      { floor: '#3a3f4a', floor2: '#333844', name: 'Server Room' },
-    DEV:         { floor: '#71502f', floor2: '#664829', name: 'Design / Dev' },
-    LOUNGE:      { floor: '#5f4a34', floor2: '#57432f', name: 'Lounge' },
-    KITCHEN:     { floor: '#8a8f98', floor2: '#7f848d', name: 'Kitchen / Coffee' },
-    ENTRANCE:    { floor: '#5b5b5b', floor2: '#545454', name: 'Entrance' },
+    OPEN_SPACE:  { floor: '#7b5836', floor2: '#6f4f30', name: 'Рабочая зона' },
+    MEETING:     { floor: '#6d4d2f', floor2: '#634629', name: 'Переговорная' },
+    MANAGEMENT:  { floor: '#7a5535', floor2: '#6d4b2e', name: 'Руководство' },
+    SERVER:      { floor: '#3a3f4a', floor2: '#333844', name: 'Серверная' },
+    DEV:         { floor: '#71502f', floor2: '#664829', name: 'Дизайн / Разработка' },
+    LOUNGE:      { floor: '#5f4a34', floor2: '#57432f', name: 'Зона отдыха' },
+    KITCHEN:     { floor: '#8a8f98', floor2: '#7f848d', name: 'Кухня' },
+    ENTRANCE:    { floor: '#5b5b5b', floor2: '#545454', name: 'Вход' },
   };
 
   // rooms in TILE coordinates {x,y,w,h}. Doors are gaps carved later.
   const rooms = [
-    { id: 'meeting',   type: 'MEETING',    x: 2,  y: 2,  w: 15, h: 10, label: 'MEETING ROOM' },
-    { id: 'open',      type: 'OPEN_SPACE', x: 19, y: 2,  w: 18, h: 18, label: 'OPEN WORKSPACE' },
-    { id: 'mgmt',      type: 'MANAGEMENT', x: 39, y: 2,  w: 11, h: 9,  label: 'MANAGEMENT' },
-    { id: 'server',    type: 'SERVER',     x: 39, y: 13, w: 11, h: 8,  label: 'SERVER ROOM' },
-    { id: 'dev',       type: 'DEV',        x: 2,  y: 14, w: 15, h: 11, label: 'DESIGN / DEV AREA' },
-    { id: 'lounge',    type: 'LOUNGE',     x: 2,  y: 27, w: 15, h: 9,  label: 'LOUNGE / RELAX' },
-    { id: 'entrance',  type: 'ENTRANCE',   x: 21, y: 28, w: 12, h: 8,  label: 'ENTRANCE' },
-    { id: 'kitchen',   type: 'KITCHEN',    x: 35, y: 23, w: 15, h: 13, label: 'KITCHEN / COFFEE' },
+    { id: 'meeting',   type: 'MEETING',    x: 2,  y: 2,  w: 15, h: 10, label: 'ПЕРЕГОВОРНАЯ' },
+    { id: 'open',      type: 'OPEN_SPACE', x: 19, y: 2,  w: 18, h: 18, label: 'РАБОЧАЯ ЗОНА' },
+    { id: 'mgmt',      type: 'MANAGEMENT', x: 39, y: 2,  w: 11, h: 9,  label: 'РУКОВОДСТВО' },
+    { id: 'server',    type: 'SERVER',     x: 39, y: 13, w: 11, h: 8,  label: 'СЕРВЕРНАЯ' },
+    { id: 'dev',       type: 'DEV',        x: 2,  y: 14, w: 15, h: 11, label: 'ДИЗАЙН / РАЗРАБОТКА' },
+    { id: 'lounge',    type: 'LOUNGE',     x: 2,  y: 27, w: 15, h: 9,  label: 'ЗОНА ОТДЫХА' },
+    { id: 'entrance',  type: 'ENTRANCE',   x: 21, y: 28, w: 12, h: 8,  label: 'ВХОД' },
+    { id: 'kitchen',   type: 'KITCHEN',    x: 35, y: 23, w: 15, h: 13, label: 'КУХНЯ / КОФЕ' },
   ];
 
   // door openings: {room, side:'N'|'S'|'E'|'W', at: tile offset along that side, span}

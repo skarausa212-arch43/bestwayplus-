@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <base href="/office/">
-<title>Virtual AI Office — BestWayPlus</title>
+<title>Виртуальный офис — BestWayPlus</title>
 <style>
   :root{
     --bg:#0d0a16; --panel:#151221; --panel2:#1b1830; --line:#2a2440;
@@ -178,21 +178,21 @@
   <main id="center">
     <canvas id="scene"></canvas>
     <div id="tooltip" hidden></div>
-    <div class="cam-hint">Drag to pan · scroll to zoom · click an agent · double-click to focus</div>
+    <div class="cam-hint">Тяните — двигать · колесо/щипок — зум · тап по сотруднику</div>
   </main>
   <aside id="rightPanel"></aside>
 </div>
 <div id="sheetBackdrop"></div>
 <nav id="mobileNav">
-  <button data-mnav="office" class="active"><span class="ic">🏢</span>Office</button>
-  <button data-mnav="agents"><span class="ic">👥</span>Agents</button>
-  <button data-mnav="create"><span class="ic">➕</span>Task</button>
-  <button data-mnav="tasks"><span class="ic">✅</span>Tasks</button>
-  <button data-mnav="feed"><span class="ic">📡</span>Feed</button>
+  <button data-mnav="office" class="active"><span class="ic">🏢</span>Офис</button>
+  <button data-mnav="agents"><span class="ic">👥</span>Люди</button>
+  <button data-mnav="create"><span class="ic">➕</span>Задача</button>
+  <button data-mnav="tasks"><span class="ic">✅</span>Задачи</button>
+  <button data-mnav="feed"><span class="ic">📡</span>Лента</button>
 </nav>
 <div id="modalWrap" hidden></div>
 <div id="toasts"></div>
-<div id="splash"><div class="sp-in"><div class="sp-mark">◧</div><div class="sp-t">Virtual AI Office</div><div class="sp-s">Waking up the team…</div><div class="sp-bar"><i></i></div></div></div>
+<div id="splash"><div class="sp-in"><div class="sp-mark">◧</div><div class="sp-t">Виртуальный офис</div><div class="sp-s">Собираем команду…</div><div class="sp-bar"><i></i></div></div></div>
 
 <script>
   /* kill any old taxi service worker + caches so root always shows this app */

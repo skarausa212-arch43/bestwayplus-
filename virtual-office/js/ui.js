@@ -50,17 +50,17 @@
   UI.buildTopbar = function () {
     $('#topbar').innerHTML = `
       <div class="tb-left">
-        <div class="brand"><span class="brand-mark">◧</span> Virtual Office</div>
+        <div class="brand"><span class="brand-mark">◧</span> Виртуальный офис</div>
         <div class="selects">
           <button class="sel">BestWayPlus ▾</button>
-          <button class="sel">All projects ▾</button>
+          <button class="sel">Все проекты ▾</button>
         </div>
       </div>
-      <div class="tb-mid"><input id="globalSearch" class="search" placeholder="Search agents, tasks…"></div>
+      <div class="tb-mid"><input id="globalSearch" class="search" placeholder="Поиск сотрудников, задач…"></div>
       <div class="tb-right">
-        <button class="tb-btn" id="btnFit" title="Fit office">⛶</button>
-        <button class="tb-btn primary" id="btnCreateTask">＋<span class="lbl-full"> Create Task</span></button>
-        <button class="tb-btn" id="btnAddAgent">＋ Agent</button>
+        <button class="tb-btn" id="btnFit" title="Показать весь офис">⛶</button>
+        <button class="tb-btn primary" id="btnCreateTask">＋<span class="lbl-full"> Задача</span></button>
+        <button class="tb-btn" id="btnAddAgent">＋ Сотрудник</button>
         <button class="tb-btn bell" id="btnBell">🔔<span class="badge" id="notifBadge" hidden>0</span></button>
         <div class="me">IS</div>
       </div>`;
@@ -68,7 +68,7 @@
 
   // ---------- Left sidebar ----------
   UI.buildSidebar = function () {
-    const items = [['office', '🏢', 'Office'], ['agents', '👥', 'Agents'], ['tasks', '✅', 'Tasks'], ['projects', '📁', 'Projects'], ['calendar', '📅', 'Calendar'], ['files', '🗂', 'Files'], ['analytics', '📊', 'Analytics'], ['settings', '⚙', 'Settings']];
+    const items = [['office', '🏢', 'Офис'], ['agents', '👥', 'Сотрудники'], ['tasks', '✅', 'Задачи'], ['projects', '📁', 'Проекты'], ['calendar', '📅', 'Календарь'], ['files', '🗂', 'Файлы'], ['analytics', '📊', 'Аналитика'], ['settings', '⚙', 'Настройки']];
     $('#sidebar').innerHTML = `<div class="sb-logo">◧</div>` + items.map(([k, i, l], idx) =>
       `<button class="sb-item ${idx === 0 ? 'active' : ''}" data-nav="${k}"><span class="ic">${i}</span><span class="lb">${l}</span></button>`).join('');
     $('#sidebar').querySelectorAll('.sb-item').forEach(b => b.addEventListener('click', () => {
@@ -93,10 +93,10 @@
       return `<div class="feed-row" ${e.agentId ? `data-agent="${e.agentId}"` : ''}>
         <span class="feed-dot" style="background:${dot}"></span>
         <div class="feed-body"><div class="feed-text">${esc(e.text)}</div><div class="feed-time">${timeStr(e.time)}</div></div></div>`;
-    }).join('') || `<div class="empty">No activity yet.</div>`;
-    this.panel(`<div class="panel-head"><h3>Live Activity</h3><span class="pill">${this.store.activity.length}</span></div><div class="feed">${items}</div>`);
+    }).join('') || `<div class="empty">Пока нет событий.</div>`;
+    this.panel(`<div class="panel-head"><h3>Живая лента</h3><span class="pill">${this.store.activity.length}</span></div><div class="feed">${items}</div>`);
     $('#rightPanel').querySelectorAll('.feed-row[data-agent]').forEach(r => r.addEventListener('click', () => {
-      const a = this.store.getAgent(r.dataset.agent); if (a) { this.engine.select(a.id); this.engine.focusAgent(a); }
+      const a = this.store.getAgent(r.dataset.agent); if (a) { this.engine.select(a.id); }
     }));
   };
 
@@ -106,41 +106,41 @@
     const task = a.currentTaskId ? this.store.getTask(a.currentTaskId) : null;
     const loc = this.roomOf(a);
     this.panel(`
-      <div class="panel-head"><button class="back" id="pBack">←</button><h3>Agent</h3></div>
+      <div class="panel-head"><button class="back" id="pBack">←</button><h3>Сотрудник</h3></div>
       <div class="agent-card">
         <div class="ava" style="background:${a.palette.shirt}">${a.name[0]}</div>
         <div><div class="a-name">${esc(a.name)}</div><div class="a-role">${esc(a.role)}</div></div>
       </div>
       <div class="status-line"><span class="dot" style="background:${col}"></span><b>${a.statusLabel()}</b>${a.currentAction ? ` · <span class="soft">${esc(a.currentAction)}</span>` : ''}</div>
-      ${task ? `<div class="cur-task"><div class="ct-title">${esc(task.title)}</div><div class="progress"><div class="bar" id="agProg" style="width:${task.progress || 0}%"></div></div><div class="soft small">${task.progress || 0}% · ${task.status}</div></div>` : `<div class="soft small nb">No active task</div>`}
+      ${task ? `<div class="cur-task"><div class="ct-title">${esc(task.title)}</div><div class="progress"><div class="bar" id="agProg" style="width:${task.progress || 0}%"></div></div><div class="soft small">${task.progress || 0}% · ${task.status}</div></div>` : `<div class="soft small nb">Нет активной задачи</div>`}
       ${a.live === 'gps' ? this.renderFleet(a.gps) : ''}
-      <div class="kv"><span>Location</span><b>${loc}</b></div>
-      <div class="chips-row"><div class="chips-label">Skills</div>${a.skills.map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div>
-      <div class="chips-row"><div class="chips-label">Tools</div>${a.tools.map(s => `<span class="chip alt">${esc(s)}</span>`).join('')}</div>
-      <div class="kv"><span>Task queue</span><b>${a.taskQueue.length}</b></div>
-      <div class="kv"><span>Tokens</span><b>${a.tokens.toLocaleString()}</b></div>
-      <div class="kv"><span>Est. cost</span><b>$${a.cost.toFixed(2)}</b></div>
-      ${a.status === 'WAITING_FOR_USER' ? `<button class="w-approve" id="agApprove">Review approval →</button>` : ''}
+      <div class="kv"><span>Локация</span><b>${loc}</b></div>
+      <div class="chips-row"><div class="chips-label">Навыки</div>${a.skills.map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div>
+      <div class="chips-row"><div class="chips-label">Инструменты</div>${a.tools.map(s => `<span class="chip alt">${esc(s)}</span>`).join('')}</div>
+      <div class="kv"><span>Очередь задач</span><b>${a.taskQueue.length}</b></div>
+      <div class="kv"><span>Токены</span><b>${a.tokens.toLocaleString()}</b></div>
+      <div class="kv"><span>Прибл. стоимость</span><b>$${a.cost.toFixed(2)}</b></div>
+      ${a.status === 'WAITING_FOR_USER' ? `<button class="w-approve" id="agApprove">Рассмотреть запрос →</button>` : ''}
       <div class="a-actions">
-        <button data-act="assign">Assign Task</button>
-        <button data-act="focus">Center</button>
-        <button data-act="${a.status === 'PAUSED' ? 'resume' : 'pause'}">${a.status === 'PAUSED' ? 'Resume' : 'Pause'}</button>
-        <button data-act="meet">Call Meeting</button>
+        <button data-act="assign">Дать задачу</button>
+        <button data-act="focus">По центру</button>
+        <button data-act="${a.status === 'PAUSED' ? 'resume' : 'pause'}">${a.status === 'PAUSED' ? 'Продолжить' : 'Пауза'}</button>
+        <button data-act="meet">Собрать встречу</button>
       </div>`);
     $('#pBack').addEventListener('click', () => { if (this.isMobile()) { this.closePanel(); this.engine.clearSelection(); } else this.showFeed(); });
     const ap = $('#agApprove'); if (ap) ap.addEventListener('click', () => this.openApproval(a.id));
     $('#rightPanel').querySelectorAll('.a-actions button').forEach(b => b.addEventListener('click', () => this.agentAction(a, b.dataset.act)));
   };
   UI.renderFleet = function (g) {
-    if (!g) return `<div class="cur-task"><div class="ct-title">🛰 Fleet — GPS</div><div class="soft small">Connecting…</div></div>`;
-    if (g.offline) return `<div class="cur-task"><div class="ct-title">🛰 Fleet — GPS</div><div class="soft small">Live GPS not connected on this deploy.</div></div>`;
-    if (g.error) return `<div class="cur-task"><div class="ct-title">🛰 Fleet — GPS</div><div class="soft small">Error: ${esc(g.error)}</div></div>`;
+    if (!g) return `<div class="cur-task"><div class="ct-title">🛰 Автопарк — GPS</div><div class="soft small">Подключение…</div></div>`;
+    if (g.offline) return `<div class="cur-task"><div class="ct-title">🛰 Fleet — GPS</div><div class="soft small">GPS не подключён на этом развёртывании.</div></div>`;
+    if (g.error) return `<div class="cur-task"><div class="ct-title">🛰 Автопарк — GPS</div><div class="soft small">Ошибка: ${esc(g.error)}</div></div>`;
     const rows = (g.cars || []).map(c => `<div class="feed-row" style="padding:6px 2px">
       <span class="feed-dot" style="background:${c.moving ? '#22c55e' : '#8a90a6'}"></span>
       <div class="feed-body"><div class="feed-text">${esc(c.name)}</div>
       <div class="feed-time">${esc(c.statusText || '')}${c.speed ? ' · ' + c.speed + ' km/h' : ''}</div></div></div>`).join('');
-    return `<div class="cur-task"><div class="ct-title">🛰 Fleet — ${g.total} cars · ${g.moving} moving</div>${rows}
-      <div class="soft small" style="margin-top:6px">Updated ${g.updatedAt ? new Date(g.updatedAt).toLocaleTimeString() : '—'}</div></div>`;
+    return `<div class="cur-task"><div class="ct-title">🛰 Автопарк — ${g.total} авто · ${g.moving} в движении</div>${rows}
+      <div class="soft small" style="margin-top:6px">Обновлено ${g.updatedAt ? new Date(g.updatedAt).toLocaleTimeString() : '—'}</div></div>`;
   };
   UI.updateProgress = function (t) { const b = $('#agProg'); if (b) b.style.width = (t.progress || 0) + '%'; const s = $('#rightPanel .cur-task .small'); if (s) s.textContent = `${t.progress || 0}% · ${t.status}`; };
 
@@ -155,7 +155,7 @@
   UI.roomOf = function (a) {
     const t = a.tile;
     for (const r of this.engine.world.rooms) if (t.x >= r.x && t.x < r.x + r.w && t.y >= r.y && t.y < r.y + r.h) return this.engine.world.ROOM_TYPES[r.type].name;
-    return 'Corridor';
+    return 'Коридор';
   };
 
   UI.renderAgentList = function () {
@@ -163,43 +163,43 @@
       <div class="ava sm" style="background:${a.palette.shirt}">${a.name[0]}</div>
       <div class="feed-body"><div class="feed-text"><b>${esc(a.name)}</b> <span class="soft">· ${esc(a.role)}</span></div>
       <div class="feed-time"><span class="dot" style="background:${col}"></span>${a.statusLabel()}</div></div></div>`; }).join('');
-    this.panel(`<div class="panel-head"><h3>Agents</h3><span class="pill">${this.store.agents.size}</span></div><div class="feed">${rows}</div>`);
-    $('#rightPanel').querySelectorAll('.feed-row').forEach(r => r.addEventListener('click', () => { const a = this.store.getAgent(r.dataset.agent); this.engine.select(a.id); this.engine.focusAgent(a); }));
+    this.panel(`<div class="panel-head"><h3>Сотрудники</h3><span class="pill">${this.store.agents.size}</span></div><div class="feed">${rows}</div>`);
+    $('#rightPanel').querySelectorAll('.feed-row').forEach(r => r.addEventListener('click', () => { const a = this.store.getAgent(r.dataset.agent); this.engine.select(a.id); }));
   };
   UI.renderTaskList = function () {
     const ts = this.store.listTasks();
     const rows = ts.length ? ts.map(t => `<div class="feed-row"><span class="feed-dot" style="background:#38bdf8"></span>
-      <div class="feed-body"><div class="feed-text">${esc(t.title)}</div><div class="feed-time">${t.status} · ${t.progress || 0}%</div></div></div>`).join('') : `<div class="empty">No tasks yet. Create one!</div>`;
-    this.panel(`<div class="panel-head"><h3>Tasks</h3><span class="pill">${ts.length}</span></div><div class="feed">${rows}</div>`);
+      <div class="feed-body"><div class="feed-text">${esc(t.title)}</div><div class="feed-time">${t.status} · ${t.progress || 0}%</div></div></div>`).join('') : `<div class="empty">Задач пока нет. Создайте первую!</div>`;
+    this.panel(`<div class="panel-head"><h3>Задачи</h3><span class="pill">${ts.length}</span></div><div class="feed">${rows}</div>`);
   };
 
   // ---------- Modals ----------
   UI.openTaskModal = function (presetAgent) {
     const agents = this.store.listAgents();
     const opts = agents.map(a => `<option value="${a.id}" ${a.id === presetAgent ? 'selected' : ''}>${esc(a.name)} — ${esc(a.role)}</option>`).join('');
-    this.modal(`<h3>Create Task</h3>
-      <label>Title</label><input id="tTitle" placeholder="e.g. Build landing page">
-      <label>Description</label><textarea id="tDesc" rows="3" placeholder="What should the agent do?"></textarea>
-      <div class="row2"><div><label>Assign agent</label><select id="tAgent">${opts}</select></div>
-      <div><label>Priority</label><select id="tPrio"><option>Low</option><option selected>Medium</option><option>High</option></select></div></div>
-      <label class="ck"><input type="checkbox" id="tDeleg" checked> Allow agent delegation</label>
-      <div class="modal-actions"><button class="ghost" data-close>Cancel</button><button class="primary" id="tCreate">Create Task</button></div>`);
+    this.modal(`<h3>Новая задача</h3>
+      <label>Название</label><input id="tTitle" placeholder="напр. Сделать лендинг">
+      <label>Описание</label><textarea id="tDesc" rows="3" placeholder="Что должен сделать сотрудник?"></textarea>
+      <div class="row2"><div><label>Кому поручить</label><select id="tAgent">${opts}</select></div>
+      <div><label>Приоритет</label><select id="tPrio"><option>Низкий</option><option selected>Средний</option><option>Высокий</option></select></div></div>
+      <label class="ck"><input type="checkbox" id="tDeleg" checked> Разрешить делегирование</label>
+      <div class="modal-actions"><button class="ghost" data-close>Отмена</button><button class="primary" id="tCreate">Создать</button></div>`);
     $('#tCreate').addEventListener('click', () => {
-      const title = $('#tTitle').value.trim() || 'Untitled task';
+      const title = $('#tTitle').value.trim() || 'Без названия';
       const t = { id: 'tsk' + Math.random().toString(36).slice(2), title, description: $('#tDesc').value.trim(),
         assignedAgentId: $('#tAgent').value, priority: $('#tPrio').value, status: 'BACKLOG', createdBy: 'you', createdAt: new Date(), progress: 0, subtasks: [], activity: [] };
       this.store.addTask(t); this.director.assignTask(t); this.closeModal();
-      const a = this.store.getAgent(t.assignedAgentId); if (a) { this.engine.select(a.id); this.engine.focusAgent(a); }
+      const a = this.store.getAgent(t.assignedAgentId); if (a) { this.engine.select(a.id); }
     });
   };
 
   UI.openApproval = function (agentId) {
     const a = this.store.getAgent(agentId); if (!a) return; const t = a._pendingTask;
-    this.modal(`<h3>Approval needed</h3>
+    this.modal(`<h3>Нужно ваше решение</h3>
       <div class="ap-agent"><div class="ava" style="background:${a.palette.shirt}">${a.name[0]}</div><div><b>${esc(a.name)}</b><div class="soft">${esc(a.role)}</div></div></div>
-      <div class="ap-q">${t ? esc('Approve “' + t.title + '”?') : 'Approve to publish the website?'}</div>
-      <p class="soft small">The agent is paused waiting for your decision. Approving lets it finish; rejecting sends it back to revise.</p>
-      <div class="modal-actions"><button class="danger" id="apReject">Reject</button><button class="ghost" id="apInstr">Give instructions</button><button class="primary" id="apApprove">Approve</button></div>`);
+      <div class="ap-q">${t ? esc('Одобрить «' + t.title + '»?') : 'Одобрить публикацию сайта?'}</div>
+      <p class="soft small">Сотрудник ждёт вашего решения. «Одобрить» — продолжит и завершит; «Отклонить» — отправит на доработку.</p>
+      <div class="modal-actions"><button class="danger" id="apReject">Отклонить</button><button class="ghost" id="apInstr">Указания</button><button class="primary" id="apApprove">Одобрить</button></div>`);
     $('#apApprove').addEventListener('click', () => { this.director.resolveApproval(agentId, true); this.closeModal(); this.clearNotif('approval', agentId); if (this._agentId === agentId) this.showAgent(a); });
     $('#apReject').addEventListener('click', () => { this.director.resolveApproval(agentId, false); this.closeModal(); this.clearNotif('approval', agentId); if (this._agentId === agentId) this.showAgent(a); });
     $('#apInstr').addEventListener('click', () => { this.director.resolveApproval(agentId, false); this.closeModal(); this.clearNotif('approval', agentId); });
@@ -221,17 +221,17 @@
   UI.toast = function (n) {
     const t = el('div', 'toast', `<b>${esc(n.title)}</b><div class="soft small">${esc(n.text || '')}</div>`);
     $('#toasts').appendChild(t);
-    t.addEventListener('click', () => { if (n.agentId) { const a = this.store.getAgent(n.agentId); this.engine.select(a.id); this.engine.focusAgent(a); if (n.type === 'approval') this.openApproval(n.agentId); } t.remove(); });
+    t.addEventListener('click', () => { if (n.agentId) { const a = this.store.getAgent(n.agentId); this.engine.select(a.id); if (n.type === 'approval') this.openApproval(n.agentId); } t.remove(); });
     setTimeout(() => { t.classList.add('show'); }, 10);
     setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 5200);
   };
 
   UI.wireButtons = function () {
     $('#btnCreateTask').addEventListener('click', () => this.openTaskModal());
-    $('#btnAddAgent').addEventListener('click', () => this.toast({ title: 'Add Agent', text: 'Agent onboarding — coming in next iteration.' }));
+    $('#btnAddAgent').addEventListener('click', () => this.toast({ title: 'Новый сотрудник', text: 'Онбординг сотрудников — в следующей итерации.' }));
     $('#btnFit').addEventListener('click', () => this.engine.fit());
     $('#btnBell').addEventListener('click', () => { const pend = this.store.notifications.find(n => !n.read && n.type === 'approval'); if (pend) this.openApproval(pend.agentId); else this.showFeed(); });
-    const s = $('#globalSearch'); s.addEventListener('keydown', e => { if (e.key === 'Enter') { const q = s.value.toLowerCase().trim(); const a = this.store.listAgents().find(x => x.name.toLowerCase().includes(q) || x.role.toLowerCase().includes(q)); if (a) { this.engine.select(a.id); this.engine.focusAgent(a); } } });
+    const s = $('#globalSearch'); s.addEventListener('keydown', e => { if (e.key === 'Enter') { const q = s.value.toLowerCase().trim(); const a = this.store.listAgents().find(x => x.name.toLowerCase().includes(q) || x.role.toLowerCase().includes(q)); if (a) { this.engine.select(a.id); } } });
   };
   UI.tooltip = function (a, p) { const tp = $('#tooltip'); if (!a) { tp.hidden = true; return; } tp.hidden = false; tp.style.left = p.x + 14 + 'px'; tp.style.top = p.y + 'px'; tp.innerHTML = `<b>${esc(a.name)}</b> · ${esc(a.role)}<br><span class="soft small">${a.statusLabel()}</span>`; };
 

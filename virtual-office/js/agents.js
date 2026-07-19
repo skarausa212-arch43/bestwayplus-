@@ -13,11 +13,11 @@
     REVIEWING: '🔍', PAUSED: '⏸', ERROR: '❗', COMPLETED: '✓',
   };
   const STATUS_LABEL = {
-    IDLE: 'Idle', MOVING: 'Walking', THINKING: 'Thinking', WORKING: 'Working',
-    CODING: 'Coding', DESIGNING: 'Designing', RESEARCHING: 'Researching',
-    READING: 'Reading', WRITING: 'Writing', TALKING: 'Talking', MEETING: 'Meeting',
-    WAITING_FOR_AGENT: 'Waiting for agent', WAITING_FOR_USER: 'Needs approval',
-    REVIEWING: 'Reviewing', PAUSED: 'Paused', ERROR: 'Error', COMPLETED: 'Completed',
+    IDLE: 'Свободен', MOVING: 'Идёт', THINKING: 'Думает', WORKING: 'Работает',
+    CODING: 'Пишет код', DESIGNING: 'Дизайнит', RESEARCHING: 'Исследует',
+    READING: 'Читает', WRITING: 'Пишет', TALKING: 'Разговор', MEETING: 'На встрече',
+    WAITING_FOR_AGENT: 'Ждёт коллегу', WAITING_FOR_USER: 'Нужно решение',
+    REVIEWING: 'Проверяет', PAUSED: 'Пауза', ERROR: 'Ошибка', COMPLETED: 'Готово',
   };
   // which statuses render as "seated & working" vs "sitting" vs standing/idle
   const SEATED_TYPE = new Set(['WORKING', 'CODING', 'DESIGNING', 'WRITING', 'REVIEWING']);

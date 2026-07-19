@@ -19,7 +19,7 @@
   GPS.tick = async function () {
     const a = this.store.getAgent(this.agentId); if (!a) return;
     const tok = this.token();
-    if (!tok) { a.gps = { offline: true }; if (a.status === 'IDLE') this.store.setStatus(a.id, 'WORKING', 'GPS dispatch (offline)'); return; }
+    if (!tok) { a.gps = { offline: true }; if (a.status === 'IDLE') this.store.setStatus(a.id, 'WORKING', 'GPS-диспетчер (офлайн)'); return; }
     try {
       const r = await fetch('/cars', { headers: { 'Authorization': tok } });
       if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -32,10 +32,10 @@
       };
       a._gpsDriven = true;
       if (['IDLE', 'WORKING'].includes(a.status) || a._gpsDriven && a.status !== 'MOVING' && a.status !== 'MEETING')
-        this.store.setStatus(a.id, 'WORKING', `tracking ${cars.length} cars · ${moving} moving`);
+        this.store.setStatus(a.id, 'WORKING', `отслеживает ${cars.length} авто · ${moving} в движении`);
     } catch (e) {
       a.gps = { error: String(e.message || e) };
-      if (a.status === 'IDLE') this.store.setStatus(a.id, 'WORKING', 'GPS dispatch');
+      if (a.status === 'IDLE') this.store.setStatus(a.id, 'WORKING', 'GPS-диспетчер');
     }
   };
 

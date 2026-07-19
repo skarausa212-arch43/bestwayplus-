@@ -18,10 +18,14 @@
     director.seedDemoStates();
     if (global.OfficeGPS) OfficeGPS.start(OfficeStore);
 
-    window.addEventListener('resize', () => { engine.resize(); if (OfficeUI.isMobile()) engine.fit(); });
-    window.addEventListener('orientationchange', () => setTimeout(() => { engine.resize(); engine.fit(); }, 250));
-    // re-fit shortly after boot in case initial canvas size was not settled (mobile)
-    setTimeout(() => { engine.resize(); engine.fit(); }, 300);
+    // Only adjust the canvas backing store on resize — never move/zoom the
+    // camera automatically (keeps the view static; no self-scrolling on iOS).
+    window.addEventListener('resize', () => engine.resize());
+    // One initial fit once the canvas has its real size, then never auto-move.
+    let fitted = false;
+    const initFit = () => { if (fitted) return; fitted = true; engine.resize(); engine.fit(); };
+    requestAnimationFrame(() => requestAnimationFrame(initFit));
+    setTimeout(initFit, 250);
 
     let last = performance.now();
     function frame(now) {
