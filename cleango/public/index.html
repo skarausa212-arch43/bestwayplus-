@@ -1539,14 +1539,17 @@ Object.assign(TR.uk,{"Удаление аккаунта":"Видалення а�
 Object.assign(TR.pl,{"Моё местоположение":"Moja lokalizacja","Определяем…":"Ustalanie…",
   "Точка на карте поможет найти ближайшего исполнителя — перетащите маркер, если нужно.":"Punkt na mapie pomoże znaleźć najbliższego wykonawcę — przeciągnij znacznik, jeśli trzeba.",
   "Не удалось получить GPS — проверьте разрешение на геолокацию":"Nie udało się pobrać GPS — sprawdź uprawnienia lokalizacji",
+  "Точку определили, но адрес не нашёлся — впишите вручную":"Ustalono punkt, ale adres nie został znaleziony — wpisz ręcznie",
   "Примерное расположение (центр города).":"Przybliżona lokalizacja (centrum miasta)."});
 Object.assign(TR.en,{"Моё местоположение":"My location","Определяем…":"Locating…",
   "Точка на карте поможет найти ближайшего исполнителя — перетащите маркер, если нужно.":"The map pin helps find the nearest provider — drag the marker if needed.",
   "Не удалось получить GPS — проверьте разрешение на геолокацию":"Couldn't get GPS — check the location permission",
+  "Точку определили, но адрес не нашёлся — впишите вручную":"Got the pin, but no address found — type it manually",
   "Примерное расположение (центр города).":"Approximate location (city centre)."});
 Object.assign(TR.uk,{"Моё местоположение":"Моє місцезнаходження","Определяем…":"Визначаємо…",
   "Точка на карте поможет найти ближайшего исполнителя — перетащите маркер, если нужно.":"Точка на мапі допоможе знайти найближчого виконавця — перетягніть маркер, якщо потрібно.",
   "Не удалось получить GPS — проверьте разрешение на геолокацию":"Не вдалося отримати GPS — перевірте дозвіл на геолокацію",
+  "Точку определили, но адрес не нашёлся — впишите вручную":"Точку визначено, але адресу не знайдено — впишіть вручну",
   "Примерное расположение (центр города).":"Приблизне розташування (центр міста)."});
 /* smart home: score trend + seasonal tips */
 Object.assign(TR.pl,{"Динамика · 14 дней":"Dynamika · 14 dni",
@@ -4120,30 +4123,42 @@ function wireBookingMap(body,d){
   const box=$('#bookMap',body),hint=$('#mapHint',body),gps=$('#gpsBtn',body),addr=$('#addr',body),city=$('#city',body);
   if(!box)return;
   _bookMapH=null;
+  // Reverse-geocode a pin and WRITE the street + house number into the address
+  // field (always — the whole point of «My location»). City is only overwritten
+  // when it maps to one of our supported cities, so pricing/dispatch stay valid.
+  const CITY_ALIAS={warszawa:'Warsaw',warsaw:'Warsaw','kraków':'Kraków',krakow:'Kraków',cracow:'Kraków','wrocław':'Wrocław',wroclaw:'Wrocław','poznań':'Poznań',poznan:'Poznań','gdańsk':'Gdańsk',gdansk:'Gdańsk','łódź':'Łódź',lodz:'Łódź'};
+  async function reverseFill(loc){
+    try{
+      const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&addressdetails=1&accept-language=pl&lat=${loc.lat}&lon=${loc.lng}`,{headers:{Accept:'application/json'}}).then(x=>x.json());
+      const a=(r&&r.address)||{};
+      const street=a.road||a.pedestrian||a.footway||a.residential||a.neighbourhood||'';
+      const line=[street,a.house_number].filter(Boolean).join(' ').trim();
+      if(line){d.address=line;if(addr)addr.value=line;}
+      const mapped=CITY_ALIAS[String(a.city||a.town||a.village||a.municipality||'').toLowerCase()];
+      if(mapped){d.city=mapped;if(city)city.value=mapped;}
+      return !!line;
+    }catch(e){return false;}
+  }
+  let dragT=null;
   async function showPin(loc,pan){
     d.location=loc;
     box.style.display='block';hint.style.display='block';
     if(_bookMapH&&_bookMapH.marker){_bookMapH.marker.setLatLng([loc.lat,loc.lng]);if(pan)_bookMapH.map.panTo([loc.lat,loc.lng]);return;}
-    _bookMapH=await lumiMap(box,{lat:loc.lat,lng:loc.lng,zoom:16,draggable:true,onMove:(p)=>{d.location=p;}});
+    _bookMapH=await lumiMap(box,{lat:loc.lat,lng:loc.lng,zoom:16,draggable:true,onMove:(p)=>{
+      d.location=p;                                   // dragging the pin updates the address too (debounced)
+      clearTimeout(dragT);dragT=setTimeout(()=>reverseFill(p),650);
+    }});
     if(!_bookMapH){box.style.display='none';hint.style.display='none';}
   }
   if(d.location)showPin(d.location);
   gps.onclick=async()=>{
-    gps.disabled=true;gps.textContent='Определяем…';
+    gps.disabled=true;gps.textContent=t('Определяем…');
     const loc=await deviceGPS();
     gps.disabled=false;gps.innerHTML=`${I.pin} ${t('Моё местоположение')}`;
     if(!loc){toast('Не удалось получить GPS — проверьте разрешение на геолокацию',true);return;}
     await showPin(loc,true);
-    // Helpfully fill the address from the pin when the field is still empty.
-    if(!d.address.trim()){
-      try{
-        const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${loc.lat}&lon=${loc.lng}`,{headers:{Accept:'application/json'}}).then(x=>x.json());
-        const a=r&&r.address||{};
-        const line=[a.road,a.house_number].filter(Boolean).join(' ');
-        if(line){d.address=line;addr.value=line;}
-        if(a.city&&!d.city){d.city=a.city;city.value=a.city;}
-      }catch(e){}
-    }
+    const filled=await reverseFill(loc);            // always write street+house from the map
+    if(!filled)toast(t('Точку определили, но адрес не нашёлся — впишите вручную'));
   };
   // Typed address → geocode (debounced; fires after the user stops typing).
   let tId=null;
