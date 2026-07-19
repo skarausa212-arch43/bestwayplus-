@@ -13,7 +13,8 @@
  */
 'use strict';
 
-const PRICING_VERSION = '2026.07.1';
+const cityPrices = require('./city-prices');
+const PRICING_VERSION = '2026.07.2';
 const CURRENCY = 'PLN';
 const COMMISSION_RATE = 0.20;        // internal platform cut on net revenue
 const VAT_RATE = 0.23;               // PL VAT (informational split; legal review pending §42)
@@ -70,12 +71,24 @@ function quote(input, context = {}) {
   const urgency = input.urgency || (mode === 'flashclean' ? 'flash' : mode === 'instant' ? 'today' : 'scheduled');
 
   const breakdown = [];
-  // 1. base (§6 hybrid) + area
-  let base = svc.base + rooms * svc.room + baths * svc.bath + round(area * svc.m2 * svc.rate);
+  // 1. base — per-city price book for standard/deep/moveout; the legacy hybrid
+  //    formula still covers windows/office (not in the city card).
+  let base;
+  if (input.service === 'windows' || input.service === 'office') {
+    base = svc.base + rooms * svc.room + baths * svc.bath + round(area * svc.m2 * svc.rate);
+  } else {
+    base = cityPrices.basePackageMinor(input.city, input.service, { rooms, baths, area, propertyType: input.propertyType });
+  }
   breakdown.push({ code: 'BASE', label: 'Базовая услуга', amount: base });
   let subtotal = base;
-  // 2. add-ons (§10)
-  for (const e of extras) { breakdown.push({ code: 'ADDON_' + e.toUpperCase(), label: ADDONS[e].label, amount: ADDONS[e].amount }); subtotal += ADDONS[e].amount; }
+  // 1b. frequency plan discount — base package only, never add-ons (spec).
+  const freqRate = cityPrices.frequencyDiscountRate(input.frequency);
+  if (freqRate) {
+    const fd = pct(base, freqRate); subtotal -= fd;
+    breakdown.push({ code: 'FREQUENCY', label: `Регулярность (−${Math.round(freqRate * 100)}%)`, amount: -fd });
+  }
+  // 2. add-ons (§10) — per-city price when the book covers the key.
+  for (const e of extras) { const cm = cityPrices.addonMinor(input.city, e); const amt = cm != null ? cm : ADDONS[e].amount; breakdown.push({ code: 'ADDON_' + e.toUpperCase(), label: ADDONS[e].label, amount: amt }); subtotal += amt; }
 
   // multipliers applied in fixed order (§23/§46) — each recorded as a delta line
   const applyMult = (m, code, label) => {
@@ -84,8 +97,9 @@ function quote(input, context = {}) {
   };
   // 3. difficulty (AI, with fallback)
   applyMult(difficultyMultiplier(context.aiSignals), 'DIFFICULTY', 'Сложность');
-  // 4. city
-  applyMult(CITY_MULT[input.city] || 1.0, 'CITY', `Город: ${input.city || '—'}`);
+  // 4. city — the per-city base already encodes local pricing; the legacy CITY
+  //    multiplier only still applies to windows/office (not in the city card).
+  if (input.service === 'windows' || input.service === 'office') applyMult(CITY_MULT[input.city] || 1.0, 'CITY', `Город: ${input.city || '—'}`);
   // 5. urgency / FlashClean
   let urg = URGENCY_MULT[urgency] || 1.0;
   if (mode === 'flashclean') urg = Math.min(FLASH_MAX, FLASH_MIN + 0.05 * Math.max(0, (context.flashRound || 1) - 1));

@@ -32,6 +32,7 @@ const NATIVE_ORIGINS = new Set(['capacitor://localhost', 'ionic://localhost', 'h
 const APP_ORIGINS = String(process.env.LUMI_APP_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
 const dispatch = require('./dispatch/ranking');
 const pricing = require('./pricing/pricing-engine');
+const cityPrices = require('./pricing/city-prices');
 const { createLedger } = require('./pricing/ledger');
 const { renderTemplate } = require('./notifications/templates');
 const chat = require('./chat/realtime');
@@ -508,14 +509,22 @@ function estimatePrice(input) {
   const wCount = Math.max(1, Math.min(60, Number(input.windows) || 1));
   const wSide = WINDOW_PER[input.windowSide] ? input.windowSide : 'inside';
 
-  let price, climberFee = 0;
+  let price, climberFee = 0, freqDiscount = 0;
   if (isWindows) {
     price = svc.base + wCount * WINDOW_PER[wSide];   // mobilization + per-window
     // Rope-access (industrial climber) surcharge — only for exterior work without normal access.
     if ((wSide === 'outside' || wSide === 'both') && input.windowAccess === 'climber') { climberFee = 250; price += climberFee; }
-  } else {
+  } else if (input.service === 'office') {
+    // Office is priced by request (wycena) — keep the legacy hybrid formula as a ballpark.
     price = svc.base + rooms * svc.perRoom + baths * svc.perBath;
     if (area) price += area * 0.6 * svc.rate;
+  } else {
+    // Standard / Deep / Move-out use the per-city price book (whole-zł here; the
+    // exact «od X,XX zł» comes from the book directly for display).
+    price = Math.round(cityPrices.basePackageMinor(input.city, input.service, { rooms, baths, area, propertyType: input.propertyType }) / 100);
+    // Frequency plan discount — base package only, never add-ons (spec).
+    const freqRate = cityPrices.frequencyDiscountRate(input.frequency);
+    if (freqRate) { freqDiscount = Math.round(price * freqRate); price -= freqDiscount; }
   }
   const baseSubtotal = price;                       // base — % add-ons apply to this
 
@@ -524,7 +533,12 @@ function estimatePrice(input) {
   for (const { key, qty } of extras) {
     const def = EXTRAS_CATALOG[key];
     if (def.type === 'percent') { percentSum += def.percent; }
-    else { extrasTotal += def.price * qty; extraDurH += def.type === 'qty' ? 0.2 * qty : 0.3; }
+    else {
+      // Prefer the per-city add-on price when the book covers this key.
+      const cityMinor = cityPrices.addonMinor(input.city, key);
+      const unit = cityMinor != null ? Math.round(cityMinor / 100) : def.price;
+      extrasTotal += unit * qty; extraDurH += def.type === 'qty' ? 0.2 * qty : 0.3;
+    }
   }
   const percentAmount = Math.round(baseSubtotal * percentSum);
   extrasTotal += percentAmount;
@@ -549,15 +563,20 @@ function estimatePrice(input) {
     serviceLabel: svc.label,
     total,
     currency: CURRENCY,
+    // Exact «od X,XX zł» starting price for this service+city (2 decimals, from the book).
+    fromPrice: (!isWindows && input.service !== 'office') ? cityPrices.toMajor(cityPrices.serviceFromMinor(input.city, input.service)) : undefined,
+    frequency: input.frequency && cityPrices.frequencyDiscountRate(input.frequency) ? input.frequency : undefined,
+    frequencyDiscount: freqDiscount || undefined,
     windows: isWindows ? wCount : undefined,
     windowSide: isWindows ? wSide : undefined,
     windowsClimber: isWindows ? climberFee : undefined,
     breakdown: {
-      base: isWindows ? svc.base : svc.base,
-      rooms: isWindows ? wCount * WINDOW_PER[wSide] : rooms * svc.perRoom,
-      baths: isWindows ? 0 : baths * svc.perBath,
-      area: isWindows ? 0 : Math.round((area * 0.6 * svc.rate) || 0),
+      base: baseSubtotal,
+      rooms: isWindows ? wCount * WINDOW_PER[wSide] : 0,
+      baths: 0,
+      area: 0,
       extras: extrasTotal,
+      frequencyDiscount: freqDiscount || 0,
       urgencyMult,
       surge: Math.round((surge - 1) * 100),
     },
@@ -1048,8 +1067,37 @@ route('POST', '/api/cleaner/location', async (req, res) => {
 });
 
 // ---- Catalog & estimate ----
+// Per-city «od X,XX zł» starting prices (major units) for the tiles, so the
+// client shows the exact city price without shipping the whole book.
+function serviceFromTable() {
+  const out = {};
+  for (const cityKey of cityPrices.CITY_KEYS) {
+    const display = Object.keys(cityPrices.CITY_KEY).find((k) => cityPrices.CITY_KEY[k] === cityKey) || cityKey;
+    out[display] = {
+      standard: cityPrices.toMajor(cityPrices.serviceFromMinor(display, 'standard')),
+      deep: cityPrices.toMajor(cityPrices.serviceFromMinor(display, 'deep')),
+      moveout: cityPrices.toMajor(cityPrices.serviceFromMinor(display, 'moveout')),
+    };
+  }
+  return out;
+}
 route('GET', '/api/catalog', async (req, res) => {
-  send(res, 200, { services: SERVICE_CATALOG, extras: EXTRAS_CATALOG, extraCategories: EXTRAS_CATEGORIES, equipment: EQUIPMENT, commissionRate: COMMISSION_RATE, currency: CURRENCY, oauth: oauth.providers() });
+  const city = new URL(req.url, 'http://x').searchParams.get('city');
+  // City-aware add-on prices (whole zł) for the à-la-carte UI when a city is given.
+  let extras = EXTRAS_CATALOG;
+  if (city) {
+    extras = {};
+    for (const [key, def] of Object.entries(EXTRAS_CATALOG)) {
+      const cm = cityPrices.addonMinor(city, key);
+      extras[key] = cm != null ? { ...def, price: Math.round(cm / 100) } : def;
+    }
+  }
+  send(res, 200, {
+    services: SERVICE_CATALOG, extras, extraCategories: EXTRAS_CATEGORIES, equipment: EQUIPMENT,
+    commissionRate: COMMISSION_RATE, currency: CURRENCY, oauth: oauth.providers(),
+    serviceFrom: serviceFromTable(),
+    frequencyDiscounts: cityPrices.FREQUENCY_DISCOUNTS,
+  });
 });
 route('POST', '/api/estimate', async (req, res) => {
   const b = await readBody(req);
@@ -1754,7 +1802,13 @@ route('POST', '/api/bookings', async (req, res) => {
   if (b.propertyId && (!prop || !canAccessProperty(user, prop))) {
     return send(res, 403, { error: 'Property not found.' });
   }
-  const est = estimatePrice(prop ? { ...b, rooms: b.rooms || prop.rooms, baths: b.baths || prop.baths, area: b.area || prop.area, city: prop.city } : b);
+  // propertyType (house +15%, STR = apartment) and frequency come from the saved
+  // property / the request so the authoritative price matches the wizard estimate.
+  const propertyType = prop ? prop.type : (b.propertyType || 'apartment');
+  const frequency = ['weekly', 'biweekly', 'monthly', 'once'].includes(b.frequency) ? b.frequency : 'once';
+  const est = estimatePrice(prop
+    ? { ...b, rooms: b.rooms || prop.rooms, baths: b.baths || prop.baths, area: b.area || prop.area, city: prop.city, propertyType, frequency }
+    : { ...b, propertyType, frequency });
   // LUMI+ members get a members' discount; commission/payout scale with it.
   const isPlus = user.subscription === 'plus';
   // Favorite-cleaner invitation is a LUMI+ perk: the booking is offered to the
@@ -1789,6 +1843,7 @@ route('POST', '/api/bookings', async (req, res) => {
     // Photos the customer attaches to the request so cleaners see the job scope.
     requestPhotos: (Array.isArray(b.photos) ? b.photos : []).filter((s) => validImage(s, 1500000)).slice(0, 6),
     urgency: b.urgency || 'scheduled',
+    frequency,                        // recurring plan (weekly/biweekly/monthly/once) — discounts the base
     scheduledFor: b.scheduledFor || null,
     // GPS point of the job: client GPS/geocoded pin when provided, else the
     // saved property's pin, else the city centroid. Powers nearest-first
@@ -1813,7 +1868,7 @@ route('POST', '/api/bookings', async (req, res) => {
     timeline: [{ status: 'searching', at: now() }],
   };
   // Versioned quote snapshot for history / price-lock (13 §29/§31). Customer-safe.
-  const q = pricing.quote({ ...b, service: booking.service, rooms: booking.rooms, baths: booking.baths, area: booking.area, extras: booking.extras, city: booking.city },
+  const q = pricing.quote({ ...b, service: booking.service, rooms: booking.rooms, baths: booking.baths, area: booking.area, extras: booking.extras, city: booking.city, propertyType, frequency },
     { ...demandContext(), subscription: isPlus ? 'plus' : null });
   booking.quote = { quoteId: q.quoteId, pricingVersion: q.pricingVersion, currency: q.currency, breakdown: q.breakdown, expiresAt: q.expiresAt, createdAt: q.createdAt };
   db.bookings[id] = booking;

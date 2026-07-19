@@ -17,6 +17,7 @@ const suites = [
   ['unit', 'ai/test.js'],
   ['unit', 'dispatch/test.js'],
   ['unit', 'pricing/test.js'],
+  ['unit', 'pricing/city-prices.test.js'],
   ['unit', 'chat/test.js'],
   ['unit', 'smart-home/test.js'],
   ['unit', 'admin/test.js'],

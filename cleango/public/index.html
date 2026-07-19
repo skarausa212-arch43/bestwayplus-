@@ -186,8 +186,22 @@ textarea.input{resize:vertical;min-height:80px}
 .steps .s{flex:1;height:5px;border-radius:5px;background:var(--line)}
 .steps .s.done{background:var(--primary)}
 .opt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px}
-.opt{padding:16px;border:1.5px solid var(--line);border-radius:15px;cursor:pointer;transition:.15s;text-align:center}
+.opt{position:relative;padding:16px;border:1.5px solid var(--line);border-radius:15px;cursor:pointer;transition:.15s;text-align:center}
 .opt:hover{border-color:var(--primary)}
+.opt-info{position:absolute;top:7px;right:7px;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line-strong);
+  background:var(--surface);color:var(--ink-3);font:700 13px/1 Georgia,serif;font-style:italic;cursor:pointer;display:grid;place-items:center;z-index:2}
+.opt-info:hover{border-color:var(--primary);color:var(--primary-600)}
+/* frequency plan chips */
+.freq-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.freq-chip{display:flex;flex-direction:column;gap:2px;align-items:flex-start;padding:11px 12px;border:1.5px solid var(--line-strong);
+  border-radius:13px;background:var(--surface);cursor:pointer;transition:.15s;text-align:left}
+.freq-chip b{font-size:13.5px;font-weight:700;color:var(--ink)}
+.freq-chip small{font-size:11.5px;font-weight:700}
+.freq-chip .off{color:var(--primary-600)}
+.freq-chip.sel{border-color:var(--primary);background:var(--primary-050)}
+/* «what's included» info list */
+.svc-info li{display:flex;gap:9px;align-items:flex-start;padding:7px 0;font-size:14px;line-height:1.4}
+.svc-info li svg,.svc-info li .tick{flex:none;color:var(--primary-600);margin-top:1px}
 .opt.sel{border-color:var(--primary);background:var(--primary-050)}
 .opt .ico{width:40px;height:40px;margin:0 auto 8px;color:var(--primary-600)}
 .opt h4{font-size:14.5px}
@@ -1380,6 +1394,103 @@ Object.assign(TR.uk,{"Помыть духовку внутри":"Помити д
   "Химчистка ковра":"Хімчистка килима","Химчистка ковра, от 12 zł/м².":"Хімчистка килима, від 12 zł/м².",
   "Химчистка штор и тюля":"Хімчистка штор і тюлю","Снятие, химчистка и возврат штор.":"Зняття, хімчистка та повернення штор.",
   "· за шт":"· за шт","· за ч":"· за год"});
+/* pricing: service info, frequency plans, headline prices */
+Object.assign(TR.pl,{
+  "Что входит":"Co obejmuje","Понятно":"Rozumiem","без скидки":"bez rabatu",
+  "Как часто убирать?":"Jak często sprzątać?",
+  "Скидка применяется к базовой уборке. Отменить можно в любой момент.":"Rabat dotyczy pakietu podstawowego. Możesz zrezygnować w każdej chwili.",
+  "Раз в неделю":"Raz w tygodniu","2 раза в месяц":"Dwa razy w miesiącu","Раз в месяц":"Raz w miesiącu","Разово":"Jednorazowo",
+  "Обычная уборка":"Sprzątanie standardowe","Поддерживающая уборка для чистого дома":"Sprzątanie utrzymujące czystość w domu",
+  "Комнаты, кухня, коридор и 1 санузел":"Pokoje, kuchnia, przedpokój i 1 łazienka",
+  "Пыль, полы, зеркала и поверхности":"Kurz, podłogi, lustra i powierzchnie",
+  "Мытьё кухни и санузла, сантехника":"Mycie kuchni i łazienki, armatura",
+  "Вынос мусора, свежий вид":"Wynoszenie śmieci, świeży wygląd",
+  "Базовый пакет: 1 комн. ≈ 3 ч, 2 комн. ≈ 4 ч, 3 комн. ≈ 5 ч":"Pakiet bazowy: 1 pok. ≈ 3 h, 2 pok. ≈ 4 h, 3 pok. ≈ 5 h",
+  "Каждая доп. комната и санузел добавляются к цене и времени.":"Każdy dodatkowy pokój i łazienka zwiększają cenę i czas.",
+  "Генеральная уборка":"Sprzątanie generalne","Глубокая уборка сверху донизу":"Gruntowne sprzątanie od góry do dołu",
+  "Всё из обычной уборки — но тщательнее":"Wszystko ze sprzątania standardowego — ale dokładniej",
+  "За и под мебелью, плинтусы, двери, батареи":"Za i pod meblami, listwy, drzwi, grzejniki",
+  "Известковый налёт, плитка и швы в санузле":"Kamień, glazura i fugi w łazience",
+  "Бытовая техника снаружи, кухонные фасады":"AGD z zewnątrz, fronty kuchenne",
+  "Идеально после зимы, перед праздниками или раз в сезон":"Idealne po zimie, przed świętami lub raz na sezon",
+  "Рекомендуем, если генеральной уборки не было несколько месяцев.":"Polecane, jeśli generalnego sprzątania nie było od kilku miesięcy.",
+  "Уборка после ремонта / переезда":"Sprzątanie po remoncie / wyprowadzce","Убираем строительную пыль и следы ремонта":"Usuwamy pył budowlany i ślady remontu",
+  "Удаление строительной пыли со всех поверхностей":"Usuwanie pyłu budowlanego ze wszystkich powierzchni",
+  "Следы краски, клея, штукатурки, наклейки":"Ślady farby, kleju, gipsu, naklejki",
+  "Мытьё окон, подоконников, дверей и плитки":"Mycie okien, parapetów, drzwi i glazury",
+  "Полная мойка кухни и санузлов":"Pełne mycie kuchni i łazienek",
+  "Квартира готова к заселению":"Mieszkanie gotowe do zamieszkania",
+  "Цена рассчитывается по площади (zł/м²), поэтому укажите метраж.":"Cena liczona jest od metrażu (zł/m²), więc podaj powierzchnię.",
+  "Уборка офиса":"Sprzątanie biura","Для рабочих пространств":"Dla przestrzeni biurowych",
+  "Рабочие места, переговорные, кухня и санузлы":"Stanowiska, sale spotkań, kuchnia i toalety",
+  "Пыль, полы, вынос мусора, дезинфекция контактных зон":"Kurz, podłogi, śmieci, dezynfekcja stref dotykowych",
+  "Гибкий график — до или после рабочего дня":"Elastyczny grafik — przed lub po godzinach pracy",
+  "Регулярная уборка — от 1,60 zł/м²":"Sprzątanie regularne — od 1,60 zł/m²",
+  "Цена по запросу — оставьте заявку, рассчитаем под ваш офис.":"Cena na zapytanie — zostaw zgłoszenie, wycenimy pod Twoje biuro."});
+Object.assign(TR.en,{
+  "Что входит":"What's included","Понятно":"Got it","без скидки":"no discount",
+  "Как часто убирать?":"How often to clean?",
+  "Скидка применяется к базовой уборке. Отменить можно в любой момент.":"The discount applies to the base package. Cancel anytime.",
+  "Раз в неделю":"Weekly","2 раза в месяц":"Twice a month","Раз в месяц":"Monthly","Разово":"One-time",
+  "Обычная уборка":"Standard cleaning","Поддерживающая уборка для чистого дома":"Maintenance cleaning to keep your home fresh",
+  "Комнаты, кухня, коридор и 1 санузел":"Rooms, kitchen, hallway and 1 bathroom",
+  "Пыль, полы, зеркала и поверхности":"Dust, floors, mirrors and surfaces",
+  "Мытьё кухни и санузла, сантехника":"Kitchen and bathroom washed, fixtures",
+  "Вынос мусора, свежий вид":"Rubbish out, a fresh look",
+  "Базовый пакет: 1 комн. ≈ 3 ч, 2 комн. ≈ 4 ч, 3 комн. ≈ 5 ч":"Base: 1 room ≈ 3 h, 2 rooms ≈ 4 h, 3 rooms ≈ 5 h",
+  "Каждая доп. комната и санузел добавляются к цене и времени.":"Each extra room and bathroom adds to price and time.",
+  "Генеральная уборка":"Deep cleaning","Глубокая уборка сверху донизу":"A thorough top-to-bottom clean",
+  "Всё из обычной уборки — но тщательнее":"Everything in standard — but more thorough",
+  "За и под мебелью, плинтусы, двери, батареи":"Behind/under furniture, skirting, doors, radiators",
+  "Известковый налёт, плитка и швы в санузле":"Limescale, tiles and grout in the bathroom",
+  "Бытовая техника снаружи, кухонные фасады":"Appliances outside, kitchen fronts",
+  "Идеально после зимы, перед праздниками или раз в сезон":"Great after winter, before guests, or once a season",
+  "Рекомендуем, если генеральной уборки не было несколько месяцев.":"Recommended if there's been no deep clean for months.",
+  "Уборка после ремонта / переезда":"Post-renovation / move-out cleaning","Убираем строительную пыль и следы ремонта":"We remove construction dust and renovation traces",
+  "Удаление строительной пыли со всех поверхностей":"Construction dust removed from every surface",
+  "Следы краски, клея, штукатурки, наклейки":"Paint, glue, plaster marks, stickers",
+  "Мытьё окон, подоконников, дверей и плитки":"Windows, sills, doors and tiles washed",
+  "Полная мойка кухни и санузлов":"Full wash of kitchen and bathrooms",
+  "Квартира готова к заселению":"The flat is move-in ready",
+  "Цена рассчитывается по площади (zł/м²), поэтому укажите метраж.":"Priced per area (zł/m²), so please enter the size.",
+  "Уборка офиса":"Office cleaning","Для рабочих пространств":"For workspaces",
+  "Рабочие места, переговорные, кухня и санузлы":"Desks, meeting rooms, kitchen and toilets",
+  "Пыль, полы, вынос мусора, дезинфекция контактных зон":"Dust, floors, rubbish, high-touch disinfection",
+  "Гибкий график — до или после рабочего дня":"Flexible schedule — before or after work hours",
+  "Регулярная уборка — от 1,60 zł/м²":"Regular cleaning — from 1.60 zł/m²",
+  "Цена по запросу — оставьте заявку, рассчитаем под ваш офис.":"Price on request — leave an enquiry and we'll quote your office."});
+Object.assign(TR.uk,{
+  "Что входит":"Що входить","Понятно":"Зрозуміло","без скидки":"без знижки",
+  "Как часто убирать?":"Як часто прибирати?",
+  "Скидка применяется к базовой уборке. Отменить можно в любой момент.":"Знижка діє на базовий пакет. Скасувати можна будь-коли.",
+  "Раз в неделю":"Раз на тиждень","2 раза в месяц":"Двічі на місяць","Раз в месяц":"Раз на місяць","Разово":"Разово",
+  "Обычная уборка":"Звичайне прибирання","Поддерживающая уборка для чистого дома":"Підтримувальне прибирання для чистого дому",
+  "Комнаты, кухня, коридор и 1 санузел":"Кімнати, кухня, коридор і 1 санвузол",
+  "Пыль, полы, зеркала и поверхности":"Пил, підлога, дзеркала та поверхні",
+  "Мытьё кухни и санузла, сантехника":"Миття кухні та санвузла, сантехніка",
+  "Вынос мусора, свежий вид":"Винесення сміття, свіжий вигляд",
+  "Базовый пакет: 1 комн. ≈ 3 ч, 2 комн. ≈ 4 ч, 3 комн. ≈ 5 ч":"Базовий пакет: 1 кімн. ≈ 3 год, 2 кімн. ≈ 4 год, 3 кімн. ≈ 5 год",
+  "Каждая доп. комната и санузел добавляются к цене и времени.":"Кожна додаткова кімната й санвузол додаються до ціни та часу.",
+  "Генеральная уборка":"Генеральне прибирання","Глубокая уборка сверху донизу":"Глибоке прибирання згори донизу",
+  "Всё из обычной уборки — но тщательнее":"Усе зі звичайного прибирання — але ретельніше",
+  "За и под мебелью, плинтусы, двери, батареи":"За і під меблями, плінтуси, двері, батареї",
+  "Известковый налёт, плитка и швы в санузле":"Вапняний наліт, плитка та шви в санвузлі",
+  "Бытовая техника снаружи, кухонные фасады":"Побутова техніка зовні, кухонні фасади",
+  "Идеально после зимы, перед праздниками или раз в сезон":"Ідеально після зими, перед святами або раз на сезон",
+  "Рекомендуем, если генеральной уборки не было несколько месяцев.":"Рекомендуємо, якщо генерального прибирання не було кілька місяців.",
+  "Уборка после ремонта / переезда":"Прибирання після ремонту / переїзду","Убираем строительную пыль и следы ремонта":"Прибираємо будівельний пил і сліди ремонту",
+  "Удаление строительной пыли со всех поверхностей":"Видалення будівельного пилу з усіх поверхонь",
+  "Следы краски, клея, штукатурки, наклейки":"Сліди фарби, клею, штукатурки, наклейки",
+  "Мытьё окон, подоконников, дверей и плитки":"Миття вікон, підвіконь, дверей і плитки",
+  "Полная мойка кухни и санузлов":"Повне миття кухні та санвузлів",
+  "Квартира готова к заселению":"Квартира готова до заселення",
+  "Цена рассчитывается по площади (zł/м²), поэтому укажите метраж.":"Ціна рахується від площі (zł/m²), тож вкажіть метраж.",
+  "Уборка офиса":"Прибирання офісу","Для рабочих пространств":"Для робочих просторів",
+  "Рабочие места, переговорные, кухня и санузлы":"Робочі місця, переговорні, кухня та санвузли",
+  "Пыль, полы, вынос мусора, дезинфекция контактных зон":"Пил, підлога, сміття, дезінфекція контактних зон",
+  "Гибкий график — до или после рабочего дня":"Гнучкий графік — до або після робочого дня",
+  "Регулярная уборка — от 1,60 zł/м²":"Регулярне прибирання — від 1,60 zł/m²",
+  "Цена по запросу — оставьте заявку, рассчитаем под ваш офис.":"Ціна за запитом — залиште заявку, і ми розрахуємо під ваш офіс."});
 /* recommendations empty state */
 Object.assign(TR.pl,{"Пока нет исполнителей.":"Na razie brak wykonawców.","Пока нет исполнителей в городе {city}.":"Na razie brak wykonawców w mieście {city}."});
 Object.assign(TR.en,{"Пока нет исполнителей.":"No providers yet.","Пока нет исполнителей в городе {city}.":"No providers in {city} yet."});
@@ -1677,6 +1788,27 @@ const SVC_ICON = {standard:I.broom, deep:I.spark, moveout:I.sofa, windows:I.wind
 const ROLE_RU={customer:'Клиент',cleaner:'Исполнитель',company:'Компания',admin:'Администратор'};
 const SVC_LABEL_RU={'Standard Cleaning':'Обычная уборка','Deep Cleaning':'Генеральная уборка','Move-out Cleaning':'Уборка при переезде','Window Cleaning':'Мытьё окон','Office Cleaning':'Уборка офиса'};
 const SVC_SHORT_RU={standard:'Обычная',deep:'Генеральная',moveout:'После ремонта',office:'Офис'};
+// «Что входит» — explainer for each cleaning type (opened from the ⓘ on a tile).
+const SERVICE_INFO={
+  standard:{title:'Обычная уборка',sub:'Поддерживающая уборка для чистого дома',
+    items:['Комнаты, кухня, коридор и 1 санузел','Пыль, полы, зеркала и поверхности','Мытьё кухни и санузла, сантехника','Вынос мусора, свежий вид','Базовый пакет: 1 комн. ≈ 3 ч, 2 комн. ≈ 4 ч, 3 комн. ≈ 5 ч'],
+    note:'Каждая доп. комната и санузел добавляются к цене и времени.'},
+  deep:{title:'Генеральная уборка',sub:'Глубокая уборка сверху донизу',
+    items:['Всё из обычной уборки — но тщательнее','За и под мебелью, плинтусы, двери, батареи','Известковый налёт, плитка и швы в санузле','Бытовая техника снаружи, кухонные фасады','Идеально после зимы, перед праздниками или раз в сезон'],
+    note:'Рекомендуем, если генеральной уборки не было несколько месяцев.'},
+  moveout:{title:'Уборка после ремонта / переезда',
+    sub:'Убираем строительную пыль и следы ремонта',
+    items:['Удаление строительной пыли со всех поверхностей','Следы краски, клея, штукатурки, наклейки','Мытьё окон, подоконников, дверей и плитки','Полная мойка кухни и санузлов','Квартира готова к заселению'],
+    note:'Цена рассчитывается по площади (zł/м²), поэтому укажите метраж.'},
+  office:{title:'Уборка офиса',sub:'Для рабочих пространств',
+    items:['Рабочие места, переговорные, кухня и санузлы','Пыль, полы, вынос мусора, дезинфекция контактных зон','Гибкий график — до или после рабочего дня','Регулярная уборка — от 1,60 zł/м²'],
+    note:'Цена по запросу — оставьте заявку, рассчитаем под ваш офис.'},
+};
+const FREQ_LABELS={weekly:'Раз в неделю',biweekly:'2 раза в месяц',monthly:'Раз в месяц',once:'Разово'};
+// 2-decimal złoty for headline prices («od 143,90 zł»); comma separator for PL.
+function zl2(v){const s=Number(v||0).toFixed(2);return (state.lang==='pl'?s.replace('.',','):s)+' zł';}
+// City-aware «od» price for a service tile (major units); null if unavailable.
+function svcFromZl(service,city){const t=state.catalog&&state.catalog.serviceFrom&&state.catalog.serviceFrom[city];return t&&t[service]!=null?t[service]:null;}
 const AI_CONCIERGE=false;   // AI-консьерж временно отключён (поставить true, чтобы вернуть)
 const WIN_SIDE_RU={inside:'внутри',outside:'снаружи',both:'с двух сторон'};
 const EXTRA_RU={'Inside fridge':'Внутри холодильника','Inside oven':'Внутри духовки','Interior windows':'Окна изнутри','Laundry & ironing':'Стирка и глажка','Balcony':'Балкон','Pet-friendly deep':'Чистка для животных'};
@@ -2343,7 +2475,7 @@ function openProfile(){
    ========================================================================= */
 async function loadCatalog(){
   try{
-    if(!state.catalog) state.catalog=await api('/api/catalog');
+    if(!state.catalog) state.catalog=await api('/api/catalog?city='+encodeURIComponent(state.user&&state.user.city||'Warsaw'));
     if(!state.categories){const r=await api('/api/categories');state.categories=r.categories;}
     if(!state.cities.length){const r=await api('/api/cities');state.cities=r.cities;}
     try{const r=await api('/api/flags');state.flags=r.flags||{};}catch{}
@@ -3638,7 +3770,7 @@ function viewPremium(){
 /* ---------- BOOKING WIZARD ---------- */
 function newDraft(service,propertyId){
   const prop=propertyId?state.properties.find(p=>p.id===propertyId):(state.properties[0]||null);
-  return {service:service||'standard',propertyId:prop?prop.id:null,rooms:prop?prop.rooms:2,baths:prop?prop.baths:1,area:prop?prop.area:0,windows:5,windowSide:'inside',floor:1,windowAccess:'normal',extras:[],urgency:'scheduled',date:'',time:'',scheduledFor:null,address:prop?prop.address:'',city:prop?prop.city:(state.user.city||'Warsaw'),notes:'',photos:[],step:0,estimate:null};
+  return {service:service||'standard',propertyId:prop?prop.id:null,propertyType:prop?prop.type:'apartment',rooms:prop?prop.rooms:2,baths:prop?prop.baths:1,area:prop?prop.area:0,windows:5,windowSide:'inside',floor:1,windowAccess:'normal',extras:[],urgency:'scheduled',frequency:'once',date:'',time:'',scheduledFor:null,address:prop?prop.address:'',city:prop?prop.city:(state.user.city||'Warsaw'),notes:'',photos:[],step:0,estimate:null};
 }
 function startBooking(service,propertyId,overrides){
   state.draft=Object.assign(newDraft(service,propertyId),overrides||{});
@@ -3742,11 +3874,16 @@ function viewBook(){
         <div class="stepper" data-k="baths"><button data-d="-1">−</button><b>${d.baths}</b><button data-d="1">+</button></div>
         <div style="height:14px"></div>
         <label class="field"><span>Примерная площадь (м²) — необязательно</span><input class="input" type="number" min="0" max="600" value="${d.area||''}" id="area" placeholder="напр. 60"></label>
-      </div>`}`;
+      </div>
+      ${(d.service==='standard'||d.service==='deep')?`<div class="card pad" style="margin-top:16px">
+        <label class="field" style="margin-bottom:10px"><span>Как часто убирать?</span></label>
+        <div class="freq-grid" id="freqGrid">${['weekly','biweekly','monthly','once'].map(k=>{const off=(state.catalog&&state.catalog.frequencyDiscounts||{weekly:.2,biweekly:.15,monthly:.1,once:0})[k]||0;return `<div class="freq-chip ${d.frequency===k?'sel':''}" data-freq="${k}"><b>${t(FREQ_LABELS[k])}</b><small class="${off?'off':'muted'}">${off?'−'+Math.round(off*100)+'%':t('без скидки')}</small></div>`;}).join('')}</div>
+        <p class="muted tiny" style="margin-top:8px">${t('Скидка применяется к базовой уборке. Отменить можно в любой момент.')}</p>
+      </div>`:''}`}`;
     const propSel=$('#propSel',body);
     if(propSel)propSel.onchange=()=>{
       const p=props.find(x=>x.id===propSel.value);
-      if(p){d.propertyId=p.id;d.rooms=p.rooms;d.baths=p.baths;d.area=p.area;d.address=p.address;d.city=p.city;}
+      if(p){d.propertyId=p.id;d.propertyType=p.type;d.rooms=p.rooms;d.baths=p.baths;d.area=p.area;d.address=p.address;d.city=p.city;}
       else{d.propertyId=null;}
       viewBook();
     };
@@ -3760,8 +3897,13 @@ function viewBook(){
       const so=$('#svcOpts',body);
       Object.entries(cat).forEach(([key,s])=>{
         if(s.hidden)return;   // windows has its own calculator, not a tile
-        const o=el(`<div class="opt ${d.service===key?'sel':''}"><div class="ico">${SVC_ICON[key]||I.broom}</div><h4>${SVC_SHORT_RU[key]||s.label}</h4><small>от ${money(s.base)}</small></div>`);
+        const from=svcFromZl(key,d.city);
+        const priceTxt = from!=null ? `от ${zl2(from)}` : `от ${money(s.base)}`;
+        const o=el(`<div class="opt ${d.service===key?'sel':''}">
+          ${SERVICE_INFO[key]?`<button class="opt-info" data-info="${key}" type="button" title="${t('Что входит')}" aria-label="${t('Что входит')}">i</button>`:''}
+          <div class="ico">${SVC_ICON[key]||I.broom}</div><h4>${SVC_SHORT_RU[key]||s.label}</h4><small>${priceTxt}</small></div>`);
         o.onclick=()=>{d.service=key;viewBook();};
+        const ib=$('.opt-info',o); if(ib)ib.onclick=(ev)=>{ev.stopPropagation();openServiceInfo(key);};
         so.appendChild(o);
       });
       body.querySelectorAll('.stepper').forEach(st=>{
@@ -3771,6 +3913,7 @@ function viewBook(){
         });
       });
       const area=$('#area',body); if(area) area.oninput=()=>{d.area=Number(area.value)||0;};
+      body.querySelectorAll('#freqGrid .freq-chip').forEach(ch=>ch.onclick=()=>{d.frequency=ch.dataset.freq;viewBook();});
     }
   }
   else if(d.step===1){ // extras — à-la-carte add-ons
@@ -3985,6 +4128,23 @@ function wireBookingMap(body,d){
   addr.addEventListener('input',onAddr);city.addEventListener('input',onAddr);
 }
 
+// «Что входит» modal for a cleaning type — opened from the ⓘ on a service tile.
+function openServiceInfo(key){
+  const info=SERVICE_INFO[key]; if(!info)return;
+  const from=svcFromZl(key,(state.draft&&state.draft.city)||(state.user&&state.user.city)||'Warsaw');
+  const inner=el(`<div class="card pad svc-info">
+    <div class="row" style="gap:12px;margin-bottom:6px">
+      <span class="thumb" style="width:46px;height:46px;border-radius:13px;background:var(--primary-050);color:var(--primary-600);display:grid;place-items:center;flex:none">${SVC_ICON[key]||I.broom}</span>
+      <div style="flex:1"><h3 style="margin-bottom:2px">${t(info.title)}</h3><p class="muted tiny">${t(info.sub)}</p></div>
+      ${from!=null?`<div style="text-align:right"><div class="muted tiny">${t('от')}</div><b style="color:var(--primary-600);font-size:17px">${zl2(from)}</b></div>`:''}
+    </div>
+    <ul style="list-style:none;padding:0;margin:12px 0 0">${info.items.map(x=>`<li><span class="tick">${I.check}</span><span>${t(x)}</span></li>`).join('')}</ul>
+    ${info.note?`<p class="muted tiny" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">${t(info.note)}</p>`:''}
+    <button class="btn block" id="svcInfoOk" style="margin-top:16px">${t('Понятно')}</button>
+  </div>`);
+  showModalNode(inner);
+  const ok=$('#svcInfoOk',inner); if(ok)ok.onclick=()=>closeModal();
+}
 async function confirmBooking(){
   const d=state.draft;
   try{

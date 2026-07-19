@@ -5,17 +5,25 @@ const assert = require('assert');
 const P = require('./pricing-engine');
 const { createLedger } = require('./ledger');
 
-// 1 — Base + area + add-ons; money is integer minor units.
+// 1 — Base from the per-city price book + add-ons; money is integer minor units.
+const CP = require('./city-prices');
 const q = P.quote({ service: 'standard', rooms: 3, baths: 2, area: 60, extras: ['oven'], city: 'Wrocław', urgency: 'scheduled' });
 assert.ok(Number.isInteger(q.customerTotalMinor), 'total is integer grosz');
 const baseLine = q.breakdown.find((b) => b.code === 'BASE');
-assert.strictEqual(baseLine.amount, 9000 + 3 * 2200 + 2 * 2800 + Math.round(60 * 60 * 1.0), 'hybrid base formula');
-assert.ok(q.breakdown.some((b) => b.code === 'ADDON_OVEN' && b.amount === 3000), 'oven add-on line');
+assert.strictEqual(baseLine.amount, CP.basePackageMinor('Wrocław', 'standard', { rooms: 3, baths: 2 }), 'city-book base');
+assert.ok(q.breakdown.some((b) => b.code === 'ADDON_OVEN' && b.amount === CP.addonMinor('Wrocław', 'oven')), 'per-city oven add-on line');
 
-// 2 — City premium: Warsaw > Wrocław for same inputs.
+// 2 — Per-city base: Warsaw is the cheapest base in the card (< Wrocław, Kraków).
 const wroc = P.quote({ service: 'standard', rooms: 2, baths: 1, city: 'Wrocław', urgency: 'scheduled' });
 const wawa = P.quote({ service: 'standard', rooms: 2, baths: 1, city: 'Warsaw', urgency: 'scheduled' });
-assert.ok(wawa.customerTotalMinor > wroc.customerTotalMinor, 'Warsaw central premium applied (§11)');
+assert.ok(wawa.customerTotalMinor < wroc.customerTotalMinor, 'Warsaw base is cheapest in the city card');
+
+// 2b — Frequency discount applies to the base only and lowers the total.
+const once = P.quote({ service: 'standard', rooms: 2, baths: 1, city: 'Warsaw', extras: ['oven'] });
+const weekly = P.quote({ service: 'standard', rooms: 2, baths: 1, city: 'Warsaw', extras: ['oven'], frequency: 'weekly' });
+assert.ok(weekly.customerTotalMinor < once.customerTotalMinor, 'weekly plan cheaper');
+const wfd = weekly.breakdown.find((b) => b.code === 'FREQUENCY');
+assert.ok(wfd && wfd.amount === -Math.round(CP.basePackageMinor('Warsaw', 'standard', { rooms: 2, baths: 1 }) * 0.20), 'frequency discount = 20% of base only');
 
 // 3 — Surge is capped at 1.5 even under extreme demand (§16).
 const surged = P.quote({ service: 'deep', rooms: 3, baths: 2, city: 'Warsaw', urgency: 'today' }, { openBookings: 100, onlineProviders: 1 });
