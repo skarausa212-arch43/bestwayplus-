@@ -1345,6 +1345,19 @@ Object.assign(TR.uk,{"Помыть духовку внутри":"Помити д
   "Химчистка ковра":"Хімчистка килима","Химчистка ковра, от 12 zł/м².":"Хімчистка килима, від 12 zł/м².",
   "Химчистка штор и тюля":"Хімчистка штор і тюлю","Снятие, химчистка и возврат штор.":"Зняття, хімчистка та повернення штор.",
   "· за шт":"· за шт","· за ч":"· за год"});
+/* admin: delete user */
+Object.assign(TR.pl,{"Удаление аккаунта":"Usunięcie konta","Удалить пользователя":"Usuń użytkownika",
+  "Необратимо: профиль анонимизируется (GDPR), доступ закрывается навсегда. История заказов сохраняется для финансовой отчётности.":"Nieodwracalne: profil zostaje zanonimizowany (RODO), dostęp zamknięty na zawsze. Historia zamówień pozostaje do celów księgowych.",
+  "Причина удаления (обязательно):":"Powód usunięcia (wymagany):","Удалить пользователя безвозвратно?":"Usunąć użytkownika bezpowrotnie?",
+  "Укажите причину удаления":"Podaj powód usunięcia","Пользователь удалён":"Użytkownik usunięty"});
+Object.assign(TR.en,{"Удаление аккаунта":"Delete account","Удалить пользователя":"Delete user",
+  "Необратимо: профиль анонимизируется (GDPR), доступ закрывается навсегда. История заказов сохраняется для финансовой отчётности.":"Irreversible: the profile is anonymized (GDPR) and access is closed forever. Order history is kept for financial records.",
+  "Причина удаления (обязательно):":"Deletion reason (required):","Удалить пользователя безвозвратно?":"Delete this user permanently?",
+  "Укажите причину удаления":"A deletion reason is required","Пользователь удалён":"User deleted"});
+Object.assign(TR.uk,{"Удаление аккаунта":"Видалення акаунта","Удалить пользователя":"Видалити користувача",
+  "Необратимо: профиль анонимизируется (GDPR), доступ закрывается навсегда. История заказов сохраняется для финансовой отчётности.":"Незворотно: профіль анонімізується (GDPR), доступ закривається назавжди. Історія замовлень зберігається для фінансової звітності.",
+  "Причина удаления (обязательно):":"Причина видалення (обов'язково):","Удалить пользователя безвозвратно?":"Видалити користувача безповоротно?",
+  "Укажите причину удаления":"Вкажіть причину видалення","Пользователь удалён":"Користувача видалено"});
 /* maps + GPS dispatch */
 Object.assign(TR.pl,{"Моё местоположение":"Moja lokalizacja","Определяем…":"Ustalanie…",
   "Точка на карте поможет найти ближайшего исполнителя — перетащите маркер, если нужно.":"Punkt na mapie pomoże znaleźć najbliższego wykonawcę — przeciągnij znacznik, jeśli trzeba.",
@@ -4884,6 +4897,9 @@ async function openAdminUser(id){
             <button data-days="30">30<small>дней</small></button>
             <button data-days="0" style="border-color:var(--danger);color:var(--danger)">∞<small>насовсем</small></button>
           </div>`}</div>`:''}
+      ${p.role!=='admin'?`<div class="admin-sec"><div class="admin-sec-h" style="color:var(--danger)">Удаление аккаунта</div>
+        <p class="muted tiny" style="margin-bottom:8px">Необратимо: профиль анонимизируется (GDPR), доступ закрывается навсегда. История заказов сохраняется для финансовой отчётности.</p>
+        <button class="btn block" id="admDelete" style="background:var(--danger)">Удалить пользователя</button></div>`:''}
     </div>`);
     showModalNode(inner);
     // Orders list — clickable to open the full order (detail + receipt).
@@ -4914,6 +4930,14 @@ async function openAdminUser(id){
       if(!confirm(`Заблокировать ${p.name} ${label}?`))return;
       try{await api('/api/admin/users/'+p.id+'/suspend','POST',{days,reason:'admin'});toast(`Профиль заблокирован ${label}`);closeModal();viewAdmin();}catch(e){toast(e.message,true);}
     });
+    const delBtn=$('#admDelete',inner); if(delBtn)delBtn.onclick=async()=>{
+      const reason=prompt(t('Причина удаления (обязательно):'));
+      if(reason===null)return;                       // cancelled
+      if(!reason.trim()){toast('Укажите причину удаления',true);return;}
+      if(!confirm(t('Удалить пользователя безвозвратно?')+` (${p.name})`))return;
+      try{await api('/api/admin/users/'+p.id,'DELETE',{reason:reason.trim()});toast('Пользователь удалён');closeModal();viewAdmin();}
+      catch(e){toast(e.message,true);}
+    };
   }catch(e){toast(e.message,true);closeModal();}
 }
 

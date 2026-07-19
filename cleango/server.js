@@ -908,21 +908,35 @@ route('POST', '/api/me/banner', async (req, res) => {
   send(res, 200, { user: publicUser(user) });
 });
 
-// GDPR account deletion request (§42): re-auth via valid session, anonymize PII,
-// keep the id for financial records, revoke the session by flagging deletedAt.
-route('POST', '/api/me/delete-request', async (req, res) => {
-  const user = authUser(req);
-  if (!user) return send(res, 401, { error: 'Not authenticated.' });
-  const active = Object.values(db.bookings).some((bk) =>
-    (bk.customerId === user.id || bk.cleanerId === user.id) &&
+// GDPR-style deletion (§42): anonymize PII, keep the id for financial records,
+// revoke sessions by flagging deletedAt. Shared by self-delete and the admin
+// delete route — one implementation, never duplicated.
+function hasActiveBookings(userId) {
+  return Object.values(db.bookings).some((bk) =>
+    (bk.customerId === userId || bk.cleanerId === userId) &&
     ['searching', 'accepted', 'in_progress'].includes(bk.status));
-  if (active) return send(res, 409, { error: 'Finish or cancel active bookings first.', code: 'HAS_ACTIVE_BOOKINGS' });
+}
+function anonymizeUser(user) {
   user.deletedAt = now();
   user.name = 'Удалённый пользователь';
   user.email = `deleted+${user.id}@lumi.invalid`;
   user.password = hashPassword(crypto.randomBytes(24).toString('hex'));
   user.city = null;
+  user.online = false;
+  // Scrub KYC/PII + tokens beyond what financial records need.
+  delete user.avatar; delete user.banner; delete user.bio;
+  delete user.idDocument; delete user.pesel; delete user.nip;
+  delete user.bankAccount; delete user.bankName; delete user.phone;
+  delete user.location;
+  delete db.devices[user.id];           // push tokens die with the account
+  persist.devices();
   persist.users();
+}
+route('POST', '/api/me/delete-request', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  if (hasActiveBookings(user.id)) return send(res, 409, { error: 'Finish or cancel active bookings first.', code: 'HAS_ACTIVE_BOOKINGS' });
+  anonymizeUser(user);
   audit('user.deleted', user.id, user.id, {});   // append-only audit (§30)
   return send(res, 200, { ok: true });
 });
@@ -2706,6 +2720,21 @@ route('POST', '/api/admin/users/:id/suspend', async (req, res, params) => {
   persist.users();
   audit('user.suspended', admin.id, target.id, { reason: target.suspendedReason, days });
   send(res, 200, { ok: true, suspendedUntil: target.suspendedUntil });
+});
+// Admin deletes (anonymizes) a user account. High-risk: capability-gated,
+// reason required, admins untouchable, active bookings must be closed first.
+route('DELETE', '/api/admin/users/:id', async (req, res, params) => {
+  const admin = requireCap(req, res, 'users.delete'); if (!admin) return;
+  const target = db.users[params.id];
+  if (!target || target.deletedAt) return send(res, 404, { error: 'User not found.' });
+  if (target.role === 'admin') return send(res, 403, { error: 'Cannot delete an admin account.', code: 'ADMIN_PROTECTED' });
+  const b = await readBody(req);
+  const reason = String(b.reason || '').trim();
+  if (!reason) return send(res, 400, { error: 'Укажите причину удаления.', code: 'REASON_REQUIRED' });
+  if (hasActiveBookings(target.id)) return send(res, 409, { error: 'У пользователя есть активные заказы — сначала завершите или отмените их.', code: 'HAS_ACTIVE_BOOKINGS' });
+  anonymizeUser(target);
+  audit('user.deleted_by_admin', admin.id, target.id, { reason });   // §30 audit trail
+  send(res, 200, { ok: true });
 });
 route('POST', '/api/admin/users/:id/reactivate', async (req, res, params) => {
   const admin = requireCap(req, res, 'users.suspend'); if (!admin) return;

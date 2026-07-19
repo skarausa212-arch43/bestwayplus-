@@ -11,7 +11,7 @@
 
 // Every capability the panel gates on.
 const CAPS = [
-  'dashboard.view', 'users.view', 'users.suspend', 'users.impersonate',
+  'dashboard.view', 'users.view', 'users.suspend', 'users.delete', 'users.impersonate',
   'kyc.review', 'bookings.view', 'bookings.manage', 'payments.view',
   'payouts.manage', 'pricing.manage', 'disputes.manage', 'notifications.broadcast',
   'analytics.view', 'fraud.view', 'ai.monitor', 'audit.view',
@@ -24,7 +24,7 @@ const ROLE_CAPS = {
   finance: ['dashboard.view', 'payments.view', 'payouts.manage', 'analytics.view'],
   kyc: ['dashboard.view', 'users.view', 'kyc.review'],
   marketing: ['dashboard.view', 'notifications.broadcast', 'analytics.view'],
-  admin: ['dashboard.view', 'users.view', 'users.suspend', 'kyc.review', 'bookings.view',
+  admin: ['dashboard.view', 'users.view', 'users.suspend', 'users.delete', 'kyc.review', 'bookings.view',
     'bookings.manage', 'payments.view', 'payouts.manage', 'disputes.manage',
     'notifications.broadcast', 'analytics.view', 'fraud.view', 'ai.monitor', 'audit.view'],
   super: CAPS.slice(),   // everything, incl. impersonation

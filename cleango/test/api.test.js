@@ -459,6 +459,42 @@ async function main() {
       assert.ok(!det.json.booking.cleaner || !('location' in det.json.booking.cleaner), 'customer never sees cleaner GPS');
     });
 
+    // ── Admin user deletion (users.delete capability) ──
+    // Reuses accounts created above (the register rate-limit is 10/h/IP — the
+    // suite must not register an 11th account).
+    await ok('SECURITY: admin delete — capability-gated, reason required, admins protected', async () => {
+      const adm = await req('POST', '/api/login', { body: { email: 'admin@cleango.app', password: 'cleango123' } });
+      const nearMe = await req('GET', '/api/me', { token: nearTok });
+      const nearId = nearMe.json.user.id;
+      // non-admin cannot delete
+      const notAdm = await req('DELETE', `/api/admin/users/${nearId}`, { token: customerTok, body: { reason: 'x' } });
+      assert.strictEqual(notAdm.status, 403);
+      // reason required
+      const noReason = await req('DELETE', `/api/admin/users/${nearId}`, { token: adm.json.token, body: {} });
+      assert.strictEqual(noReason.status, 400);
+      assert.strictEqual(noReason.json.code, 'REASON_REQUIRED');
+      // admins untouchable
+      const admins = await req('GET', '/api/admin/users?role=admin', { token: adm.json.token });
+      const delAdm = await req('DELETE', `/api/admin/users/${admins.json.users[0].id}`, { token: adm.json.token, body: { reason: 'nope' } });
+      assert.strictEqual(delAdm.status, 403);
+      // near@x.pl holds the accepted GPS booking → active bookings block deletion
+      const blocked = await req('DELETE', `/api/admin/users/${nearId}`, { token: adm.json.token, body: { reason: 'cleanup' } });
+      assert.strictEqual(blocked.status, 409);
+      assert.strictEqual(blocked.json.code, 'HAS_ACTIVE_BOOKINGS');
+      // far@x.pl has no bookings → delete succeeds, account is gone for good
+      const farMe = await req('GET', '/api/me', { token: farTok });
+      const farId = farMe.json.user.id;
+      const del = await req('DELETE', `/api/admin/users/${farId}`, { token: adm.json.token, body: { reason: 'test cleanup' } });
+      assert.strictEqual(del.status, 200);
+      const meAfter = await req('GET', '/api/me', { token: farTok });
+      assert.strictEqual(meAfter.status, 401, 'deleted user session is dead');
+      const relogin = await req('POST', '/api/login', { body: { email: 'far@x.pl', password: 'averylongpassword' } });
+      assert.strictEqual(relogin.status, 401, 'deleted user cannot log back in');
+      // repeat delete → 404 (already anonymized)
+      const again = await req('DELETE', `/api/admin/users/${farId}`, { token: adm.json.token, body: { reason: 'x' } });
+      assert.strictEqual(again.status, 404);
+    });
+
     console.log(`\n${passed} API/integration checks passed.`);
   } finally {
     child.kill('SIGKILL');
