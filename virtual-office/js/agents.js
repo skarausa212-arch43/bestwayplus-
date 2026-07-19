@@ -31,7 +31,7 @@
         skills: cfg.skills || [], tools: cfg.tools || [], projectIds: cfg.projectIds || [],
         taskQueue: [], memory: cfg.memory || [], tokens: 0, cost: 0,
         x: cfg.x, y: cfg.y, dir: 'down', path: null, pathIdx: 0,
-        moving: false, onArrive: null, seated: false, animTime: 0, frame: 0,
+        moving: false, onArrive: null, seated: false, animTime: 0, frame: 0, bob: 0,
         bubbleT: 0, effect: null, effectT: 0,
       });
       this.sprites = AgentSprites.makeSet(cfg.palette, cfg.opts || {});
@@ -76,8 +76,12 @@
         }
         // walk frame
         this.frame = Math.floor(this.animTime * 8) % 4;
+        this.bob = 0;
       } else {
         this.frame = Math.floor(this.animTime * 2) % 2;
+        // gentle life: fast small bob while typing, slow bob while idle/standing
+        const typing = this.seated && SEATED_TYPE.has(this.status);
+        this.bob = Math.sin(this.animTime * (typing ? 6 : 2)) * (this.seated ? 0.7 : 1.1);
       }
     }
 

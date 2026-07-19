@@ -11,8 +11,9 @@
       this.agents = [];
       this.cam = { x: world.worldW / 2, y: world.worldH / 2, zoom: 1, tx: null, ty: null, tzoom: null };
       this.minZoom = 0.14; this.maxZoom = 2.6;
-      this.selectedId = null; this.hoverId = null;
+      this.selectedId = null; this.hoverId = null; this.time = 0;
       this.onSelect = null; this.onHover = null; this.meetings = [];
+      this._motes = Array.from({ length: 26 }, () => ({ x: Math.random() * world.worldW, y: Math.random() * world.worldH, s: 0.3 + Math.random() * 0.7, p: Math.random() * 6.28 }));
       this._initInput(); this.resize(); this.fit();
     }
 
@@ -78,6 +79,7 @@
     clearSelection() { this.selectedId = null; } // set selection without firing onSelect (avoids feedback loops)
 
     step(dt) {
+      this.time += dt;
       // camera easing toward target
       if (this.cam.tx != null) { this.cam.x += (this.cam.tx - this.cam.x) * Math.min(1, dt * 6); if (Math.abs(this.cam.tx - this.cam.x) < 0.5) this.cam.tx = null; }
       if (this.cam.ty != null) { this.cam.y += (this.cam.ty - this.cam.y) * Math.min(1, dt * 6); if (Math.abs(this.cam.ty - this.cam.y) < 0.5) this.cam.ty = null; }
@@ -92,17 +94,71 @@
       // world
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(this.worldCanvas, 0, 0);
+      this._ambientBack(ctx);
       // meeting labels above table
       for (const m of this.meetings) if (m.status === 'active') this._meetingLabel(ctx, m);
       // agents y-sorted
       const sorted = this.agents.slice().sort((a, b) => a.y - b.y);
       for (const a of sorted) this._drawAgent(ctx, a);
+      this._ambientFront(ctx);
+      ctx.restore();
+    }
+
+    // glows behind agents: monitor screens + server LEDs
+    _ambientBack(ctx) {
+      const T = 32, t = this.time; ctx.save();
+      // monitor glow (brighter if an agent is seated at that desk)
+      const occ = {}; for (const a of this.agents) if (a.homeDesk && a.seated) occ[a.homeDesk.id] = a.status;
+      for (const d of this.world.desks) {
+        const mx = d.dx * T + T, my = d.dy * T - 7;
+        const st = occ[d.id]; const on = st && st !== 'MOVING';
+        const base = on ? 0.5 : 0.22; const pulse = base + 0.12 * Math.sin(t * 2 + d.dx);
+        const col = st === 'CODING' ? '90,220,150' : st === 'DESIGNING' ? '244,140,200' : st === 'RESEARCHING' ? '250,200,90' : '90,180,255';
+        // screen fill
+        ctx.fillStyle = `rgba(${col},${on ? 0.55 : 0.3})`; ctx.fillRect(mx - 11, my - 6, 22, 13);
+        if (on) { // code/design line flicker
+          ctx.fillStyle = 'rgba(255,255,255,0.45)';
+          for (let i = 0; i < 3; i++) { const w = 6 + ((Math.sin(t * 3 + i + d.dx) * 0.5 + 0.5) * 12 | 0); ctx.fillRect(mx - 8, my - 4 + i * 4, w, 1.5); }
+        }
+        const gg = ctx.createRadialGradient(mx, my, 2, mx, my, 20);
+        gg.addColorStop(0, `rgba(${col},${pulse})`); gg.addColorStop(1, `rgba(${col},0)`);
+        ctx.fillStyle = gg; ctx.fillRect(mx - 20, my - 20, 40, 40);
+      }
+      // server LEDs
+      for (const f of this.world.furniture) if (f.kind === 'rack') {
+        const bx = f.x * T, by = f.y * T;
+        for (let i = 0; i < 3; i++) {
+          const blink = (Math.sin(t * (3 + i) + f.x * 2 + i) > 0.2) ? 1 : 0.15;
+          ctx.fillStyle = `rgba(${['80,230,130', '250,110,110', '250,200,80'][i]},${blink})`;
+          ctx.fillRect(bx + f.w * T - 6, by + 6 + i * 8, 3, 3);
+        }
+      }
+      ctx.restore();
+    }
+
+    // steam + floating dust motes above everything
+    _ambientFront(ctx) {
+      const T = 32, t = this.time; ctx.save();
+      for (const f of this.world.furniture) if (f.kind === 'coffee') {
+        const cx = f.x * T + T / 2, cy = f.y * T - 6;
+        for (let i = 0; i < 3; i++) {
+          const ph = t * 1.4 + i * 1.3; const rise = (ph % 3);
+          const sx = cx + Math.sin(ph * 2) * 3; const sy = cy - rise * 9;
+          ctx.fillStyle = `rgba(230,230,240,${0.22 * (1 - rise / 3)})`;
+          ctx.beginPath(); ctx.arc(sx, sy, 2.2 - rise * 0.5, 0, 7); ctx.fill();
+        }
+      }
+      for (const m of this._motes) {
+        const y = m.y + Math.sin(t * 0.3 + m.p) * 12; const x = m.x + Math.cos(t * 0.2 + m.p) * 10;
+        ctx.fillStyle = `rgba(255,240,210,${0.05 + 0.05 * (Math.sin(t + m.p) * 0.5 + 0.5)})`;
+        ctx.beginPath(); ctx.arc(x, y, m.s * 1.6, 0, 7); ctx.fill();
+      }
       ctx.restore();
     }
 
     _drawAgent(ctx, a) {
       const fr = a.currentFrame(); const w = AgentSprites.FW, h = AgentSprites.FH;
-      const dx = a.x - w / 2, dy = a.y - h + 6;
+      const dx = a.x - w / 2, dy = a.y - h + 6 + (a.bob || 0);
       // selection / hover outline
       if (a.id === this.selectedId) { ctx.strokeStyle = '#8b7cf0'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(a.x, a.y - 1, 14, 6, 0, 0, 7); ctx.stroke();
         ctx.fillStyle = 'rgba(139,124,240,0.18)'; ctx.beginPath(); ctx.ellipse(a.x, a.y - 1, 14, 6, 0, 0, 7); ctx.fill(); }
