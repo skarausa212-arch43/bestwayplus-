@@ -12,7 +12,8 @@
     "open:android": "npx cap open android",
     "add:ios": "npx cap add ios && npm run place-firebase",
     "fix-gradle": "node scripts/patch-gradle.js",
-    "add:android": "npx cap add android && npm run place-firebase && node scripts/patch-gradle.js"
+    "fix-manifest": "node scripts/patch-manifest.js",
+    "add:android": "npx cap add android && npm run place-firebase && node scripts/patch-gradle.js && node scripts/patch-manifest.js"
   },
   "dependencies": {
     "@capacitor/core": "^6.1.0",

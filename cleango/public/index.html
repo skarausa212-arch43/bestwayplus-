@@ -1345,6 +1345,19 @@ Object.assign(TR.uk,{"Помыть духовку внутри":"Помити д
   "Химчистка ковра":"Хімчистка килима","Химчистка ковра, от 12 zł/м².":"Хімчистка килима, від 12 zł/м².",
   "Химчистка штор и тюля":"Хімчистка штор і тюлю","Снятие, химчистка и возврат штор.":"Зняття, хімчистка та повернення штор.",
   "· за шт":"· за шт","· за ч":"· за год"});
+/* maps + GPS dispatch */
+Object.assign(TR.pl,{"Моё местоположение":"Moja lokalizacja","Определяем…":"Ustalanie…",
+  "Точка на карте поможет найти ближайшего исполнителя — перетащите маркер, если нужно.":"Punkt na mapie pomoże znaleźć najbliższego wykonawcę — przeciągnij znacznik, jeśli trzeba.",
+  "Не удалось получить GPS — проверьте разрешение на геолокацию":"Nie udało się pobrać GPS — sprawdź uprawnienia lokalizacji",
+  "Примерное расположение (центр города).":"Przybliżona lokalizacja (centrum miasta)."});
+Object.assign(TR.en,{"Моё местоположение":"My location","Определяем…":"Locating…",
+  "Точка на карте поможет найти ближайшего исполнителя — перетащите маркер, если нужно.":"The map pin helps find the nearest provider — drag the marker if needed.",
+  "Не удалось получить GPS — проверьте разрешение на геолокацию":"Couldn't get GPS — check the location permission",
+  "Примерное расположение (центр города).":"Approximate location (city centre)."});
+Object.assign(TR.uk,{"Моё местоположение":"Моє місцезнаходження","Определяем…":"Визначаємо…",
+  "Точка на карте поможет найти ближайшего исполнителя — перетащите маркер, если нужно.":"Точка на мапі допоможе знайти найближчого виконавця — перетягніть маркер, якщо потрібно.",
+  "Не удалось получить GPS — проверьте разрешение на геолокацию":"Не вдалося отримати GPS — перевірте дозвіл на геолокацію",
+  "Примерное расположение (центр города).":"Приблизне розташування (центр міста)."});
 /* smart home: score trend + seasonal tips */
 Object.assign(TR.pl,{"Динамика · 14 дней":"Dynamika · 14 dni",
   "Весенняя свежесть":"Wiosenna świeżość","После зимы — помойте окна и балкон, впустите свет.":"Po zimie — umyj okna i balkon, wpuść światło.",
@@ -1414,8 +1427,8 @@ function t(ru,params){
 // keep it from touching substrings like «сегодня»). Runs only when a node is
 // still Russian after the dictionary lookup.
 const UNIT_MAP={
-  pl:{'Доп. опции':'Opcje dodatkowe','комнаты':'pokoje','комната':'pokój','комнат':'pokoi','санузлов':'łazienek','санузла':'łazienki','санузел':'łazienka','опыта':'doświadczenia','лет':'lat','года':'lata','год':'rok','дней':'dni','дня':'dni','дн':'dni','часов':'godz.','часа':'godz.','час':'godz.','просрочено':'zaległe','нужно через':'za','владелец':'właściciel','член семьи':'członek rodziny','гость':'gość','от':'od','опций':'opcji','опции':'opcje','услуг':'usług','услуги':'usługi','заказов':'zamówień','заказа':'zamówienia','м²':'m²'},
-  en:{'Доп. опции':'Add-ons','комнаты':'rooms','комната':'room','комнат':'rooms','санузлов':'bathrooms','санузла':'bathrooms','санузел':'bathroom','опыта':'experience','лет':'yrs','года':'yrs','год':'yr','дней':'days','дня':'days','дн':'d','часов':'h','часа':'h','час':'h','просрочено':'overdue','нужно через':'due in','владелец':'owner','член семьи':'family member','гость':'guest','от':'from','опций':'options','опции':'options','услуг':'services','услуги':'services','заказов':'orders','заказа':'order','м²':'m²'},
+  pl:{'Доп. опции':'Opcje dodatkowe','комнаты':'pokoje','комната':'pokój','комнат':'pokoi','санузлов':'łazienek','санузла':'łazienki','санузел':'łazienka','опыта':'doświadczenia','лет':'lat','года':'lata','год':'rok','дней':'dni','дня':'dni','дн':'dni','часов':'godz.','часа':'godz.','час':'godz.','просрочено':'zaległe','нужно через':'za','владелец':'właściciel','член семьи':'członek rodziny','гость':'gość','от':'od','опций':'opcji','км':'km','опции':'opcje','услуг':'usług','услуги':'usługi','заказов':'zamówień','заказа':'zamówienia','м²':'m²'},
+  en:{'Доп. опции':'Add-ons','комнаты':'rooms','комната':'room','комнат':'rooms','санузлов':'bathrooms','санузла':'bathrooms','санузел':'bathroom','опыта':'experience','лет':'yrs','года':'yrs','год':'yr','дней':'days','дня':'days','дн':'d','часов':'h','часа':'h','час':'h','просрочено':'overdue','нужно через':'due in','владелец':'owner','член семьи':'family member','гость':'guest','от':'from','опций':'options','км':'km','опции':'options','услуг':'services','услуги':'services','заказов':'orders','заказа':'order','м²':'m²'},
   uk:{'Доп. опции':'Дод. опції','комнаты':'кімнати','комната':'кімната','комнат':'кімнат','санузлов':'санвузлів','санузла':'санвузли','санузел':'санвузол','опыта':'досвіду','лет':'р.','года':'р.','год':'рік','дней':'днів','дня':'дні','дн':'дн','часов':'год','часа':'год','час':'год','просрочено':'прострочено','нужно через':'потрібно через','владелец':'власник','член семьи':'член сім’ї','гость':'гість','от':'від','опций':'опцій','опции':'опції','услуг':'послуг','услуги':'послуги','заказов':'замовлень','заказа':'замовлення'},
 };
 let _unitCache={};
@@ -1638,6 +1651,63 @@ function toast(msg,err){const n=$('#toast');
   if(state.lang!=='ru'){ const d=TR[state.lang]; if(d&&d[m]!=null)m=d[m]; else if(/[А-Яа-яЁё]/.test(m))m=unitPass(m); }
   n.textContent=m;n.className='toast show'+(err?' err':'');setTimeout(()=>n.className='toast',2600);}
 function plural(n,one,few,many){const m=n%10,h=n%100;return h>=11&&h<=14?many:m===1?one:m>=2&&m<=4?few:many;}
+
+/* ---------- Maps (Leaflet, vendored; OSM tiles — no API keys) ---------- */
+// Lazy-loaded so the first paint stays light: js+css injected on first map.
+let _leafletP=null;
+function loadLeaflet(){
+  if(window.L)return Promise.resolve(window.L);
+  if(_leafletP)return _leafletP;
+  _leafletP=new Promise((resolve,reject)=>{
+    const css=document.createElement('link');css.rel='stylesheet';css.href='/vendor/leaflet/leaflet.css';document.head.appendChild(css);
+    const s=document.createElement('script');s.src='/vendor/leaflet/leaflet.js';
+    s.onload=()=>resolve(window.L);s.onerror=()=>{_leafletP=null;reject(new Error('map failed to load'));};
+    document.head.appendChild(s);
+  });
+  return _leafletP;
+}
+// Mount an interactive map with one marker. opts: {lat,lng,zoom,draggable,onMove}
+// Returns a promise of {map,marker}; fails soft (resolves null) with no network.
+async function lumiMap(container,opts){
+  try{
+    const L=await loadLeaflet();
+    const {lat,lng}=opts;
+    const map=L.map(container,{zoomControl:true,attributionControl:true,scrollWheelZoom:false}).setView([lat,lng],opts.zoom||15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+    const marker=L.marker([lat,lng],{draggable:!!opts.draggable}).addTo(map);
+    if(opts.draggable&&opts.onMove)marker.on('dragend',()=>{const p=marker.getLatLng();opts.onMove({lat:p.lat,lng:p.lng});});
+    setTimeout(()=>map.invalidateSize(),120);   // container is often freshly shown
+    return {map,marker};
+  }catch(e){return null;}
+}
+// Forward-geocode an address via Nominatim (key-free). Resolves {lat,lng}|null.
+let _geoT=null;
+function geocode(addr,city){
+  const q=[addr,city,'Poland'].filter(Boolean).join(', ');
+  return fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=pl&q='+encodeURIComponent(q),
+    {headers:{'Accept':'application/json'}})
+    .then(r=>r.json()).then(a=>a&&a[0]?{lat:+a[0].lat,lng:+a[0].lon}:null).catch(()=>null);
+}
+// Browser/native GPS as a promise; null on deny/timeout — callers fall back.
+function deviceGPS(){
+  return new Promise((resolve)=>{
+    if(!navigator.geolocation)return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      p=>resolve({lat:p.coords.latitude,lng:p.coords.longitude}),
+      ()=>resolve(null),{enableHighAccuracy:true,timeout:8000,maximumAge:60000});
+  });
+}
+// Cleaners: send a fresh GPS point so dispatch ranks by real distance.
+// Throttled to once per 5 minutes; silent — never bothers the user.
+let _lastLocSent=0;
+async function shareCleanerLocation(){
+  if(!state.user||state.user.role!=='cleaner')return;
+  if(Date.now()-_lastLocSent<300000)return;
+  const loc=await deviceGPS();
+  if(!loc)return;
+  _lastLocSent=Date.now();
+  api('/api/cleaner/location','POST',loc).catch(()=>{});
+}
 function timeAgo(ts){const s=(Date.now()-ts)/1000;if(s<60)return'только что';if(s<3600){const m=Math.floor(s/60);return m+' '+plural(m,'мин','мин','мин')+' назад';}if(s<86400){const h=Math.floor(s/3600);return h+' '+plural(h,'час','часа','часов')+' назад';}const d=Math.floor(s/86400);return d+' '+plural(d,'день','дня','дней')+' назад';}
 // Format dates/times in the active UI language (falls back to Polish).
 function curLocale(){return ({pl:'pl-PL',en:'en-GB',ru:'ru-RU',uk:'uk-UA'})[state.lang]||'pl-PL';}
@@ -3675,6 +3745,9 @@ function viewBook(){
         <div id="schedZone">${d.urgency==='flash'?'':renderSchedule(d)}</div>
         <label class="field"><span>Адрес</span><input class="input" id="addr" value="${d.address}" placeholder="Улица, дом, квартира"></label>
         <label class="field"><span>Город</span><input class="input" id="city" value="${d.city}"></label>
+        <button class="btn ghost sm" id="gpsBtn" type="button" style="margin:2px 0 10px">${I.pin} Моё местоположение</button>
+        <div id="bookMap" style="height:220px;border-radius:14px;overflow:hidden;display:none;margin-bottom:12px"></div>
+        <p class="muted tiny" id="mapHint" style="display:none;margin:-6px 0 10px">Точка на карте поможет найти ближайшего исполнителя — перетащите маркер, если нужно.</p>
         <label class="field"><span>Комментарий исполнителю — необязательно</span><textarea class="input" id="notes" placeholder="Код от двери, животные, на что обратить внимание…">${d.notes}</textarea></label>
         <label class="field" style="margin-bottom:6px"><span>Фото объекта — чтобы исполнитель видел объём (до 6)</span></label>
         <div class="req-photos" id="reqPhotos"></div>
@@ -3689,6 +3762,7 @@ function viewBook(){
     wireSchedule(body,d);
     const bind=(id,k)=>{const e=$('#'+id,body);e.oninput=()=>d[k]=e.value;};
     bind('addr','address');bind('city','city');bind('notes','notes');
+    wireBookingMap(body,d);
   }
   else if(d.step===3){ // AI estimate + confirm
     body.innerHTML=`<h2 style="margin-bottom:4px">AI-оценка стоимости</h2><p class="muted" style="margin-bottom:20px">Честная цена, рассчитана мгновенно.</p>
@@ -3786,6 +3860,48 @@ async function computeEstimate(body){
     countUp($('#'+estNum,body),estimate.total,800);
   }catch(err){ $('#estBox',body).innerHTML=`<div class="card pad muted">Не удалось загрузить оценку: ${err.message}</div>`; }
 }
+/* Booking step 2 map: GPS button + geocoded pin + draggable marker.
+   The pin lands in draft.location and drives nearest-first dispatch. */
+let _bookMapH=null;
+function wireBookingMap(body,d){
+  const box=$('#bookMap',body),hint=$('#mapHint',body),gps=$('#gpsBtn',body),addr=$('#addr',body),city=$('#city',body);
+  if(!box)return;
+  _bookMapH=null;
+  async function showPin(loc,pan){
+    d.location=loc;
+    box.style.display='block';hint.style.display='block';
+    if(_bookMapH&&_bookMapH.marker){_bookMapH.marker.setLatLng([loc.lat,loc.lng]);if(pan)_bookMapH.map.panTo([loc.lat,loc.lng]);return;}
+    _bookMapH=await lumiMap(box,{lat:loc.lat,lng:loc.lng,zoom:16,draggable:true,onMove:(p)=>{d.location=p;}});
+    if(!_bookMapH){box.style.display='none';hint.style.display='none';}
+  }
+  if(d.location)showPin(d.location);
+  gps.onclick=async()=>{
+    gps.disabled=true;gps.textContent='Определяем…';
+    const loc=await deviceGPS();
+    gps.disabled=false;gps.innerHTML=`${I.pin} ${t('Моё местоположение')}`;
+    if(!loc){toast('Не удалось получить GPS — проверьте разрешение на геолокацию',true);return;}
+    await showPin(loc,true);
+    // Helpfully fill the address from the pin when the field is still empty.
+    if(!d.address.trim()){
+      try{
+        const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${loc.lat}&lon=${loc.lng}`,{headers:{Accept:'application/json'}}).then(x=>x.json());
+        const a=r&&r.address||{};
+        const line=[a.road,a.house_number].filter(Boolean).join(' ');
+        if(line){d.address=line;addr.value=line;}
+        if(a.city&&!d.city){d.city=a.city;city.value=a.city;}
+      }catch(e){}
+    }
+  };
+  // Typed address → geocode (debounced; fires after the user stops typing).
+  let tId=null;
+  const onAddr=()=>{clearTimeout(tId);tId=setTimeout(async()=>{
+    if(!addr.value.trim()||addr.value.trim().length<5)return;
+    const loc=await geocode(addr.value.trim(),city.value.trim());
+    if(loc)showPin(loc,true);
+  },900);};
+  addr.addEventListener('input',onAddr);city.addEventListener('input',onAddr);
+}
+
 async function confirmBooking(){
   const d=state.draft;
   try{
@@ -3861,6 +3977,7 @@ async function renderBookingDetail(id){
           ${b.extras.length?`<span>${b.extras.length} ${plural(b.extras.length,'опция','опции','опций')}</span>`:''}
         </div>
         ${b.address?`<div class="row tiny" style="margin-top:8px;color:var(--ink-2)">${I.pin}<span>${b.address}, ${b.city}</span></div>`:''}
+        ${b.location?`<div id="bkMap" style="height:190px;border-radius:12px;overflow:hidden;margin-top:10px"></div>${b.locationPrecise?'':`<p class="muted tiny" style="margin-top:6px">Примерное расположение (центр города).</p>`}`:''}
         ${b.notes?`<div class="tiny muted" style="margin-top:8px;font-style:italic">«${b.notes}»</div>`:''}
         ${b.status==='completed'?`<button class="btn ghost block sm" id="receiptBtn" style="margin-top:12px">${I.receipt} Показать чек</button>`:''}
       </div>
@@ -3888,6 +4005,8 @@ async function renderBookingDetail(id){
       <div id="issueZone"></div>
       <div id="chatZone"></div>
     `;
+    const mapBox=$('#bkMap',box);
+    if(mapBox&&b.location)lumiMap(mapBox,{lat:b.location.lat,lng:b.location.lng,zoom:b.locationPrecise?16:12});
     renderResponders(b);
     renderTracking(b);
     renderPhotos(b);
@@ -4483,19 +4602,23 @@ async function viewJobs(){
   c.appendChild(list);
   shell(c);
   $('#presence',c).querySelectorAll('[data-pres]').forEach(btn=>btn.onclick=async()=>{
-    try{const {user}=await api('/api/cleaner/online','POST',{status:btn.dataset.pres});state.user=user;viewJobs();}
+    try{const {user}=await api('/api/cleaner/online','POST',{status:btn.dataset.pres});state.user=user;
+      if(user.online)shareCleanerLocation();   // going online → share a fresh GPS point
+      viewJobs();}
     catch(e){toast(e.message,true);}
   });
+  shareCleanerLocation();   // fresh GPS → dispatch ranks this cleaner correctly
   try{
     const {bookings}=await api('/api/bookings');
-    const open=bookings.filter(b=>b.status==='searching');
+    const open=bookings.filter(b=>b.status==='searching')
+      .sort((a,b)=>(a.distanceKm==null?1e9:a.distanceKm)-(b.distanceKm==null?1e9:b.distanceKm));   // nearest first
     if(!open.length){list.appendChild(emptyState('Сейчас нет открытых заказов','Новые заказы появятся здесь в реальном времени.'));return;}
     open.forEach(b=>{
       const row=el(`<div class="card bk">
         <div class="thumb">${SVC_ICON[b.service]||I.broom}</div>
         <div class="meta"><h4>${svcLabelRu(b.serviceLabel)}</h4>
           <div class="muted tiny" style="margin:3px 0 6px">${b.city} · ${roomsWord(b.rooms)} · ~${b.durationHours} ч · ${timeAgo(b.createdAt)}</div>
-          <div class="row" style="gap:6px;flex-wrap:wrap">${b.urgency==='flash'?'<span class="badge amber">⚡ FlashClean</span>':''}${(b.requestPhotos&&b.requestPhotos.length)?`<span class="badge grey">${I.cam} ${b.requestPhotos.length} фото</span>`:''}</div>
+          <div class="row" style="gap:6px;flex-wrap:wrap">${b.distanceKm!=null?`<span class="badge green">${I.pin} ${b.distanceKm<1?'&lt;1':Math.round(b.distanceKm)} км</span>`:''}${b.urgency==='flash'?'<span class="badge amber">⚡ FlashClean</span>':''}${(b.requestPhotos&&b.requestPhotos.length)?`<span class="badge grey">${I.cam} ${b.requestPhotos.length} фото</span>`:''}</div>
         </div>
         <div class="price" style="color:var(--primary-600)">${money(b.payout)}<div class="muted tiny" style="font-weight:500">ваша выплата</div></div>
       </div>`);

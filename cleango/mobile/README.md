@@ -112,5 +112,10 @@ Connect**. First review typically takes a few days.
 
 - `appId` is `pl.lumi24.app` — change it in `capacitor.config.json` before first
   build if you want a different bundle id (must match Firebase + the stores).
+- **Location permissions** (GPS pin for bookings, nearest-first dispatch for
+  cleaners) are added to `AndroidManifest.xml` automatically by
+  `scripts/patch-manifest.js` (runs in `add:android`; re-run any time with
+  `npm run fix-manifest`). iOS: add `NSLocationWhenInUseUsageDescription` to
+  `ios/App/App/Info.plist` when you build the iOS shell.
 - `www/`, `ios/`, `android/`, `node_modules/` are git-ignored — they are
   generated. Commit only the config, bootstrap and scripts.

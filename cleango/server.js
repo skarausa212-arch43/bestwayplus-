@@ -65,7 +65,10 @@ const ai = createAIProvider();   // swappable AI layer (10_AI_ARCHITECTURE.md)
 // Security headers on every response (§47). CSP is self-only + data: images
 // (the SPA inlines its styles/scripts and stores photo thumbnails as data URLs).
 const SECURITY_HEADERS = {
-  'Content-Security-Policy': "default-src 'self'; img-src 'self' data:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
+  // img-src allows OpenStreetMap tiles (map display); connect-src allows the
+  // Nominatim geocoder (address → coordinates for GPS dispatch). Both are
+  // key-free public OSM services; everything else stays same-origin.
+  'Content-Security-Policy': "default-src 'self'; img-src 'self' data: https://*.tile.openstreetmap.org; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://nominatim.openstreetmap.org; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy': 'geolocation=(self), camera=(self), microphone=()',
@@ -102,6 +105,25 @@ const PREMIUM_DISCOUNT = 0.10;     // LUMI+ members save 10% on every booking
 
 // Launch market — Poland first (Product Vision, phase 1)
 const CITIES = ['Warsaw', 'Kraków', 'Wrocław', 'Poznań', 'Gdańsk', 'Łódź'];
+// City centroids — the geo fallback when a booking/provider has no GPS point,
+// so distance ranking still works (same city ⇒ 0 km, other city ⇒ far away).
+const CITY_COORDS = {
+  Warsaw:  { lat: 52.2297, lng: 21.0122 },
+  'Kraków': { lat: 50.0647, lng: 19.9450 },
+  'Wrocław': { lat: 51.1079, lng: 17.0385 },
+  'Poznań': { lat: 52.4064, lng: 16.9252 },
+  'Gdańsk': { lat: 54.3520, lng: 18.6466 },
+  'Łódź':  { lat: 51.7592, lng: 19.4560 },
+};
+const cityCoords = (city) => CITY_COORDS[city] || CITY_COORDS.Warsaw;
+// Validate a client-supplied {lat,lng}; null when absent/garbage.
+function validLoc(loc) {
+  if (!loc || typeof loc !== 'object') return null;
+  const lat = Number(loc.lat), lng = Number(loc.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  return { lat: Math.round(lat * 1e6) / 1e6, lng: Math.round(lng * 1e6) / 1e6 };
+}
 
 // Home-services verticals. Cleaning is live; the rest are the roadmap
 // (Phase 5: Home Services Marketplace) and surface as "coming soon".
@@ -372,7 +394,9 @@ function publicUser(u) {
   // Strip credentials and sensitive PII (identity doc, PESEL, tax id, bank
   // payout details). These are only ever returned by the dedicated admin
   // profile endpoint — never in self/list payloads.
-  const { password, idDocument, pesel, nip, bankAccount, bankName, ...rest } = u;
+  // `location` (live GPS of a cleaner) is also stripped: it powers dispatch
+  // ranking server-side and must never reach other users' payloads.
+  const { password, idDocument, pesel, nip, bankAccount, bankName, location, ...rest } = u;
   return { ...rest, hasIdDocument: !!idDocument, hasBankDetails: !!bankAccount };
 }
 
@@ -996,6 +1020,19 @@ route('POST', '/api/cleaner/online', async (req, res) => {
   return send(res, 200, { user: publicUser(user) });
 });
 
+// Cleaner shares their GPS position so dispatch can rank by real distance.
+// Stored with a timestamp; stale points (>2h) fall back to the city centroid.
+route('POST', '/api/cleaner/location', async (req, res) => {
+  const user = authUser(req);
+  if (!user || user.role !== 'cleaner') return send(res, 403, { error: 'Cleaners only.' });
+  const b = await readBody(req);
+  const loc = validLoc(b);
+  if (!loc) return send(res, 400, { error: 'lat and lng are required.', code: 'BAD_LOCATION' });
+  user.location = { ...loc, at: now() };
+  persist.users();
+  send(res, 200, { ok: true });
+});
+
 // ---- Catalog & estimate ----
 route('GET', '/api/catalog', async (req, res) => {
   send(res, 200, { services: SERVICE_CATALOG, extras: EXTRAS_CATALOG, extraCategories: EXTRAS_CATEGORIES, equipment: EQUIPMENT, commissionRate: COMMISSION_RATE, currency: CURRENCY, oauth: oauth.providers() });
@@ -1126,6 +1163,7 @@ function createProperty(owner, data, createdAt) {
     baths: Math.max(0, Math.min(8, Number(data.baths) || 1)),
     area: Math.max(0, Math.min(600, Number(data.area) || 0)),
     floor: data.floor == null || data.floor === '' ? null : Math.max(-5, Math.min(200, Number(data.floor) || 0)),
+    location: validLoc(data.location),   // optional GPS pin of the saved address
     members: [],
     createdAt: createdAt || now(),
   };
@@ -1738,6 +1776,11 @@ route('POST', '/api/bookings', async (req, res) => {
     requestPhotos: (Array.isArray(b.photos) ? b.photos : []).filter((s) => validImage(s, 1500000)).slice(0, 6),
     urgency: b.urgency || 'scheduled',
     scheduledFor: b.scheduledFor || null,
+    // GPS point of the job: client GPS/geocoded pin when provided, else the
+    // saved property's pin, else the city centroid. Powers nearest-first
+    // dispatch and the in-app map.
+    location: validLoc(b.location) || (prop && validLoc(prop.location)) || cityCoords(prop ? prop.city : (CITIES.includes(b.city) ? b.city : user.city || 'Warsaw')),
+    locationPrecise: !!(validLoc(b.location) || (prop && validLoc(prop.location))),
     invitedCleanerId,                 // LUMI+ favorite-cleaner invitation
     arriveBy: null,                   // set to accept+60min for FlashClean orders
     enrouteAt: null, etaMinutes: null, track: null,   // live "on the way" tracking
@@ -1769,15 +1812,52 @@ route('POST', '/api/bookings', async (req, res) => {
     // it as an open job; others aren't spammed with this one).
     notify(booking.invitedCleanerId, 'provider.invited', { service: booking.serviceLabel, bookingId: id });
   } else {
-    // Notify online, verified cleaners of the new open job (dispatch offer).
-    for (const c of Object.values(db.users)) {
-      if (c.role === 'cleaner' && c.online && c.verified) {
-        notify(c.id, 'provider.new_offer', { service: booking.serviceLabel, payout: `${booking.payout} zł`, bookingId: id });
-      }
-    }
+    dispatchNearestFirst(booking);
   }
   return send(res, 200, { booking });
 });
+
+// GPS dispatch: rank eligible providers by real distance (live GPS point when
+// fresh, else their city centroid) and offer the job in expanding waves —
+// nearest few first, the next ring after a grace period, then the rest. Wave
+// timers are in-process (lost on restart — acceptable for the MVP store);
+// each later wave re-checks the booking is still searching before notifying.
+const DISPATCH_WAVES = [3, 5];            // wave sizes: top-3, next-5, then everyone left
+const WAVE_DELAY_MS = 90000;              // 90s between waves
+function cleanerGeo(c) {
+  const fresh = c.location && (now() - (c.location.at || 0)) < 2 * 3600000;   // GPS older than 2h is stale
+  return fresh ? { lat: c.location.lat, lng: c.location.lng } : cityCoords(c.city);
+}
+function dispatchNearestFirst(booking) {
+  const instant = booking.urgency === 'flash';
+  const candidates = Object.values(db.users)
+    .filter((c) => c.role === 'cleaner' && !c.deletedAt && c.verified)
+    .map((c) => ({
+      id: c.id, verified: c.verified, online: c.online, status: 'active',
+      location: cleanerGeo(c), serviceRadiusKm: 30,
+      rating: c.rating, ratingCount: c.jobsDone || 0, categoryCompleted: c.jobsDone || 0,
+      equipment: c.equipment || [],
+    }));
+  const ranked = dispatch.rankCandidates(
+    { id: booking.id, mode: instant ? 'flashclean' : 'scheduled', customerId: booking.customerId, location: booking.location, city: booking.city },
+    candidates);
+  const offer = (ids) => { for (const pid of ids) notify(pid, 'provider.new_offer', { service: booking.serviceLabel, payout: `${booking.payout} zł`, bookingId: booking.id }); };
+  if (!ranked.length) {
+    // Safety net (no one in radius / no GPS data at all): legacy behavior.
+    for (const c of Object.values(db.users)) if (c.role === 'cleaner' && c.online && c.verified) notify(c.id, 'provider.new_offer', { service: booking.serviceLabel, payout: `${booking.payout} zł`, bookingId: booking.id });
+    return;
+  }
+  const ids = ranked.map((r) => r.providerId);
+  let cut = DISPATCH_WAVES[0];
+  offer(ids.slice(0, cut));                                     // wave 1 — the nearest, right now
+  const later = (slice, delay) => {
+    if (!slice.length) return;
+    const t = setTimeout(() => { const bk = db.bookings[booking.id]; if (bk && bk.status === 'searching') offer(slice); }, delay);
+    if (t.unref) t.unref();                                     // never keeps the process alive
+  };
+  later(ids.slice(cut, cut + DISPATCH_WAVES[1]), WAVE_DELAY_MS);      // wave 2
+  later(ids.slice(cut + DISPATCH_WAVES[1]), WAVE_DELAY_MS * 2);       // wave 3 — everyone else
+}
 
 route('GET', '/api/bookings', async (req, res) => {
   const user = authUser(req);
@@ -1843,6 +1923,16 @@ function enrich(bk, viewer) {
   if (viewer && viewer.role === 'cleaner') {
     delete out.commission;
     delete out.price;
+    // Real distance from the cleaner to the job (their fresh GPS point or
+    // city centroid) — shown on the job card so «ближайший» is transparent.
+    if (bk.location) out.distanceKm = Math.round(dispatch.distanceKm(cleanerGeo(viewer), bk.location) * 10) / 10;
+    // §21: the exact address (and precise pin) stays hidden until the job is
+    // theirs — open offers show city + distance only.
+    if (bk.cleanerId !== viewer.id) {
+      delete out.address;
+      delete out.location;
+      delete out.locationPrecise;
+    }
   }
   // Companies see revenue and staff payout, but never the platform commission (21 §"Hide platform commission").
   if (viewer && viewer.role === 'company') {

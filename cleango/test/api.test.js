@@ -398,6 +398,67 @@ async function main() {
       assert.strictEqual(assign.json.booking.commission, undefined);   // hidden from company
     });
 
+    // ── GPS dispatch: nearest-first offers, address hidden until accepted ──
+    let nearTok, farTok, gpsBookingId;
+    await ok('GPS: cleaner shares location; garbage and non-cleaners rejected', async () => {
+      const adm = await req('POST', '/api/login', { body: { email: 'admin@cleango.app', password: 'cleango123' } });
+      const base = { phone: '600700800', role: 'cleaner', city: 'Warsaw', bio: 'Professional cleaning, five years of experience and my own equipment.', entityType: 'company', companyName: 'GeoClean Sp. z o.o.', nip: '5252445281', bankName: 'PKO', bankAccount: 'PL27114020040000300201355387' };
+      const near = await req('POST', '/api/register', { body: { ...base, name: 'Near Cleaner', email: 'near@x.pl', password: 'averylongpassword' } });
+      const far = await req('POST', '/api/register', { body: { ...base, name: 'Far Cleaner', email: 'far@x.pl', password: 'averylongpassword', city: 'Gdańsk' } });
+      nearTok = near.json.token; farTok = far.json.token;
+      for (const u of [near, far]) await req('POST', '/api/admin/verify-cleaner', { token: adm.json.token, body: { cleanerId: u.json.user.id, verified: true, reason: 'gps test' } });
+      for (const tk of [nearTok, farTok]) await req('POST', '/api/cleaner/online', { token: tk, body: { online: true } });
+      // near stands exactly at the job point; far is in Gdańsk (~300 km away)
+      const okLoc = await req('POST', '/api/cleaner/location', { token: nearTok, body: { lat: 52.30, lng: 21.10 } });
+      assert.strictEqual(okLoc.status, 200);
+      await req('POST', '/api/cleaner/location', { token: farTok, body: { lat: 54.352, lng: 18.6466 } });
+      const bad = await req('POST', '/api/cleaner/location', { token: nearTok, body: { lat: 'x', lng: 999 } });
+      assert.strictEqual(bad.status, 400);
+      const notCleaner = await req('POST', '/api/cleaner/location', { token: customerTok, body: { lat: 52, lng: 21 } });
+      assert.strictEqual(notCleaner.status, 403);
+    });
+    await ok('GPS: booking stores the client pin; nearest cleaner offered, out-of-radius not', async () => {
+      const before = await req('GET', '/api/notifications', { token: nearTok });
+      const bk = await req('POST', '/api/bookings', { token: customerTok, body: { service: 'standard', rooms: 2, baths: 1, address: 'ul. Testowa 1', city: 'Warsaw', location: { lat: 52.30, lng: 21.10 } } });
+      assert.strictEqual(bk.status, 200);
+      gpsBookingId = bk.json.booking.id;
+      assert.ok(bk.json.booking.location && Math.abs(bk.json.booking.location.lat - 52.30) < 1e-6, 'booking keeps the GPS pin');
+      assert.strictEqual(bk.json.booking.locationPrecise, true);
+      const after = await req('GET', '/api/notifications', { token: nearTok });
+      const mine = after.json.notifications.filter((n) => n.templateId === 'provider.new_offer').length
+        - before.json.notifications.filter((n) => n.templateId === 'provider.new_offer').length;
+      assert.ok(mine >= 1, 'nearest cleaner got the offer in wave 1');
+      const farN = await req('GET', '/api/notifications', { token: farTok });
+      assert.ok(!farN.json.notifications.some((n) => n.templateId === 'provider.new_offer'), 'cleaner 300 km away is never offered this job');
+    });
+    await ok('SECURITY: open offer hides address+pin from cleaners; visible after accept', async () => {
+      const list = await req('GET', '/api/bookings', { token: nearTok });
+      const open = list.json.bookings.find((b) => b.id === gpsBookingId);
+      assert.ok(open, 'cleaner sees the open job');
+      assert.strictEqual(open.address, undefined, 'address hidden while searching');
+      assert.strictEqual(open.location, undefined, 'precise pin hidden while searching');
+      assert.ok(typeof open.distanceKm === 'number', 'distance shown instead');
+      assert.ok(open.distanceKm < 2, 'near cleaner is ~0 km away');
+      const acc = await req('POST', `/api/bookings/${gpsBookingId}/accept`, { token: nearTok });
+      assert.strictEqual(acc.status, 200);
+      const det = await req('GET', `/api/bookings/${gpsBookingId}`, { token: nearTok });
+      assert.strictEqual(det.json.booking.address, 'ul. Testowa 1', 'address revealed to the assigned cleaner');
+      assert.ok(det.json.booking.location, 'pin revealed to the assigned cleaner');
+    });
+    await ok('GPS: booking without a pin falls back to the city centroid', async () => {
+      const bk = await req('POST', '/api/bookings', { token: customerTok, body: { service: 'standard', rooms: 1, baths: 1, address: 'ul. Bez GPS 2', city: 'Warsaw' } });
+      assert.strictEqual(bk.json.booking.locationPrecise, false);
+      assert.ok(Math.abs(bk.json.booking.location.lat - 52.2297) < 0.01, 'centroid fallback');
+      // customer always sees their own address + pin
+      assert.strictEqual(bk.json.booking.address, 'ul. Bez GPS 2');
+    });
+    await ok('SECURITY: cleaner live GPS never leaks into any user payload', async () => {
+      const me = await req('GET', '/api/me', { token: nearTok });
+      assert.ok(!('location' in me.json.user), 'location stripped from self payload');
+      const det = await req('GET', `/api/bookings/${gpsBookingId}`, { token: customerTok });
+      assert.ok(!det.json.booking.cleaner || !('location' in det.json.booking.cleaner), 'customer never sees cleaner GPS');
+    });
+
     console.log(`\n${passed} API/integration checks passed.`);
   } finally {
     child.kill('SIGKILL');
