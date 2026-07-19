@@ -1011,8 +1011,33 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
   .home-aside{flex-direction:column;gap:14px}
   .home-aside>*{min-width:0}
   #recoList .reco-card:nth-of-type(n+4){display:none}   /* show top 3 on phones */
-  .section-title{font-size:16px}
-  .card.pad{padding:16px}
+  /* ── Global compact pass: tighter cards/modals/headings across every section ── */
+  .section-title{font-size:16px;margin:2px 0 12px}
+  .pad{padding:14px}
+  .card.pad{padding:14px}
+  h2{font-size:19px}
+  h3{font-size:16.5px}
+  .modal h2{font-size:18px}
+  label.field{margin-bottom:11px}
+  label.field span{margin-bottom:5px;font-size:12.5px}
+  .input{padding:11px 13px}
+  .stepper{padding:6px}
+  .stepper b{font-size:16px}
+  .opt{padding:12px}
+  .opt .ico{width:34px;height:34px;margin-bottom:6px}
+  .opt h4{font-size:14px}
+  .opt small{font-size:12px}
+  .ex-row{padding:11px 0}
+  .ex-total{padding:12px 14px}
+  .timeline .ev{padding-bottom:14px}
+  .kpi-grid{gap:10px}
+  .kpi{padding:13px}
+  .card.bk{padding:12px}
+  .buf-chips button{padding:8px 12px}
+  .reco-card{padding:11px 12px}
+  /* trim the roomy inline card gaps that stack up on small screens */
+  .grid{gap:14px}
+  .modal .card>.row:first-child{margin-bottom:10px}
 }
 /* language switcher */
 .langbtn{display:inline-flex;align-items:center;gap:5px;width:auto;padding:0 10px}
