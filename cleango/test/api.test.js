@@ -20,7 +20,7 @@ const PORT = 4099;
 const BASE = `http://127.0.0.1:${PORT}`;
 const DATA = fs.mkdtempSync(path.join(os.tmpdir(), 'lumi-test-'));
 
-function req(method, p, { token, body } = {}) {
+function req(method, p, { token, body, headers } = {}) {
   return new Promise((resolve, reject) => {
     const data = body ? JSON.stringify(body) : null;
     const r = http.request(BASE + p, {
@@ -29,6 +29,7 @@ function req(method, p, { token, body } = {}) {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: 'Bearer ' + token } : {}),
         ...(data ? { 'Content-Length': Buffer.byteLength(data) } : {}),
+        ...(headers || {}),
       },
     }, (res) => {
       let s = '';
@@ -268,6 +269,28 @@ async function main() {
       const reg = await req('POST', '/api/properties', { token: customerTok, body: { label: 'Flat2', city: 'Warsaw', type: 'apartment', rooms: 2, baths: 1 } });
       const bad = await req('PATCH', `/api/properties/${reg.json.property.id}/str/supplies`, { token: customerTok, body: { supplies: [] } });
       assert.strictEqual(bad.json.code, 'NOT_STR');
+    });
+    await ok('devices: register/unregister a push token; auth required', async () => {
+      const anon = await req('POST', '/api/devices/register', { body: { token: 'x'.repeat(40), platform: 'ios' } });
+      assert.strictEqual(anon.status, 401);
+      const bad = await req('POST', '/api/devices/register', { token: customerTok, body: { token: 'short' } });
+      assert.strictEqual(bad.json.code, 'BAD_TOKEN');
+      const tk = 'fcm_' + 'a'.repeat(60);
+      const reg = await req('POST', '/api/devices/register', { token: customerTok, body: { token: tk, platform: 'ios' } });
+      assert.strictEqual(reg.status, 200);
+      // A token is unique to one account: re-registering under another user moves it.
+      const reg2 = await req('POST', '/api/devices/register', { token: cleanerTok, body: { token: tk, platform: 'android' } });
+      assert.strictEqual(reg2.status, 200);
+      const un = await req('POST', '/api/devices/unregister', { token: cleanerTok, body: { token: tk } });
+      assert.strictEqual(un.status, 200);
+    });
+    await ok('CORS: native app origin is reflected; OPTIONS preflight returns 204', async () => {
+      const pre = await req('OPTIONS', '/api/properties', { headers: { origin: 'capacitor://localhost' } });
+      assert.strictEqual(pre.status, 204);
+      assert.strictEqual(pre.headers['access-control-allow-origin'], 'capacitor://localhost');
+      // A random web origin is NOT reflected.
+      const other = await req('GET', '/api/cities', { headers: { origin: 'https://evil.example' } });
+      assert.strictEqual(other.headers['access-control-allow-origin'], undefined);
     });
     await ok('customer creates a booking', async () => {
       const props = await req('GET', '/api/properties', { token: customerTok });

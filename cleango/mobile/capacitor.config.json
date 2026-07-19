@@ -1,0 +1,12 @@
+{
+  "appId": "pl.lumi24.app",
+  "appName": "LUMI",
+  "webDir": "www",
+  "backgroundColor": "#0C100E",
+  "ios": { "contentInset": "always", "backgroundColor": "#0C100E" },
+  "android": { "backgroundColor": "#0C100E" },
+  "plugins": {
+    "PushNotifications": { "presentationOptions": ["badge", "sound", "alert"] },
+    "SplashScreen": { "launchShowDuration": 600, "backgroundColor": "#0C100E", "showSpinner": false }
+  }
+}

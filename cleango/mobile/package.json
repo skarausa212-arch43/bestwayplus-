@@ -1,0 +1,25 @@
+{
+  "name": "lumi-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "LUMI native shell (Capacitor) — bundles the web app for instant load, pulls data + auth from lumi24.pl, adds native push.",
+  "scripts": {
+    "sync-web": "bash scripts/sync-web.sh",
+    "build": "npm run sync-web && npx cap sync",
+    "open:ios": "npx cap open ios",
+    "open:android": "npx cap open android",
+    "add:ios": "npx cap add ios",
+    "add:android": "npx cap add android"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.1.0",
+    "@capacitor/android": "^6.1.0",
+    "@capacitor/ios": "^6.1.0",
+    "@capacitor/app": "^6.0.0",
+    "@capacitor/push-notifications": "^6.0.2",
+    "@capacitor/splash-screen": "^6.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.0"
+  }
+}

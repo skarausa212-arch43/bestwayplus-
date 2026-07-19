@@ -25,6 +25,11 @@ const path = require('path');
 const crypto = require('crypto');
 const { createAIProvider, envelope: aiEnvelope } = require('./ai/ai-provider');
 const vision = require('./ai/vision');   // optional OCR for calendar screenshots (§5/§22)
+const push = require('./push');          // optional native push (FCM) — no-op without a key
+// Origins allowed to call the API cross-origin: the native app shells + any
+// extra origins configured for the instance (comma-separated).
+const NATIVE_ORIGINS = new Set(['capacitor://localhost', 'ionic://localhost', 'http://localhost', 'https://localhost']);
+const APP_ORIGINS = String(process.env.LUMI_APP_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
 const dispatch = require('./dispatch/ranking');
 const pricing = require('./pricing/pricing-engine');
 const { createLedger } = require('./pricing/ledger');
@@ -214,6 +219,7 @@ const db = {
   disputes: loadJSON('disputes.json', {}),   // id -> support ticket / dispute per booking
   support: loadJSON('support.json', {}),     // id -> general support message ("Поддержка 24/7")
   reservations: loadJSON('reservations.json', {}), // id -> guest reservation (short-term rental)
+  devices: loadJSON('devices.json', {}),     // userId -> [{ token, platform, at }] for native push
 };
 const persist = {
   users: () => saveJSON('users.json', db.users),
@@ -228,6 +234,7 @@ const persist = {
   disputes: () => saveJSON('disputes.json', db.disputes),
   support: () => saveJSON('support.json', db.support),
   reservations: () => saveJSON('reservations.json', db.reservations),
+  devices: () => saveJSON('devices.json', db.devices),
 };
 
 // ─────────── Notifications (15_NOTIFICATION_SYSTEM.md) ───────────
@@ -268,6 +275,21 @@ function notify(userId, templateId, params) {
   // until SMTP is configured). Never emails anonymized/deleted addresses.
   if (channels.includes('email') && u.email && !u.email.endsWith('@lumi.invalid')) {
     mailer.queue({ to: u.email, subject: r.title, text: `${r.body}\n\n${APP_URL}` });
+  }
+  // Real native push for templates that include the push channel (no-op until
+  // FCM is configured). Fire-and-forget; prunes dead device tokens afterwards.
+  if (channels.includes('push') && push.isEnabled()) {
+    const devs = db.devices[userId] || [];
+    const tokens = devs.map((d) => d.token).filter(Boolean);
+    if (tokens.length) {
+      Promise.resolve(push.send(tokens, { title: r.title, body: r.body, deepLink: r.deepLink, bookingId: (params && params.bookingId) || null, priority: r.priority }))
+        .then((res) => {
+          if (res && res.dead && res.dead.length) {
+            db.devices[userId] = (db.devices[userId] || []).filter((d) => !res.dead.includes(d.token));
+            persist.devices();
+          }
+        }).catch(() => {});
+    }
   }
   return notif;
 }
@@ -906,6 +928,31 @@ route('GET', '/api/notification-preferences', async (req, res) => {
   const user = authUser(req);
   if (!user) return send(res, 401, { error: 'Not authenticated.' });
   send(res, 200, { preferences: { ...DEFAULT_NOTIF_PREFS, ...(user.notifPrefs || {}) } });
+});
+// Native app registers its FCM device token so push can reach this user.
+route('POST', '/api/devices/register', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const b = await readBody(req);
+  const token = String(b.token || '').trim();
+  if (token.length < 20 || token.length > 4096) return send(res, 400, { error: 'Invalid device token.', code: 'BAD_TOKEN' });
+  const platform = ['ios', 'android', 'web'].includes(b.platform) ? b.platform : 'android';
+  // A token belongs to exactly one user — drop it from any other account first.
+  for (const uid2 of Object.keys(db.devices)) db.devices[uid2] = (db.devices[uid2] || []).filter((d) => d.token !== token);
+  const list = (db.devices[user.id] || []).filter((d) => d.token !== token);
+  list.unshift({ token, platform, at: now() });
+  db.devices[user.id] = list.slice(0, 10);   // cap devices per user
+  persist.devices();
+  send(res, 200, { ok: true, pushEnabled: push.isEnabled() });
+});
+route('POST', '/api/devices/unregister', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const b = await readBody(req);
+  const token = String(b.token || '').trim();
+  db.devices[user.id] = (db.devices[user.id] || []).filter((d) => d.token !== token);
+  persist.devices();
+  send(res, 200, { ok: true });
 });
 route('PATCH', '/api/notification-preferences', async (req, res) => {
   const user = authUser(req);
@@ -2976,6 +3023,19 @@ const server = http.createServer(async (req, res) => {
   res.setHeader('X-Request-Id', requestId);
   const origWriteHead = res.writeHead.bind(res);
   res.writeHead = (status, ...rest) => { res._status = status; return origWriteHead(status, ...rest); };
+  // CORS for the native app shells (Capacitor/Ionic) which call the API from
+  // their own origin. The web app is same-origin and needs none. Auth is a
+  // Bearer token (no cookies), so credentials mode isn't required — we reflect
+  // only known app origins, never a wildcard-with-credentials.
+  const origin = req.headers.origin;
+  if (origin && (NATIVE_ORIGINS.has(origin) || APP_ORIGINS.includes(origin))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization,Content-Type,X-Request-Id');
+    res.setHeader('Access-Control-Max-Age', '86400');
+  }
+  if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
   res.on('finish', () => {
     const status = res._status || res.statusCode || 0;
     recordMetric(status, Date.now() - startedAt);

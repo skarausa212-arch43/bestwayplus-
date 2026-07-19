@@ -998,7 +998,19 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 /* =========================================================================
    CleanGo SPA — vanilla JS, no build step, no dependencies.
    ========================================================================= */
-const API = '';
+// API base. On the web the app is same-origin (''), so calls hit the server it
+// was served from. Inside the native shell (Capacitor) the design/logic is
+// bundled locally and loaded from capacitor://localhost — there is no server
+// there, so the API must point at the live backend. Override via
+// window.LUMI_API_BASE (set by the native app) or detect a non-http(s) origin.
+const API = (function () {
+  if (typeof window !== 'undefined' && window.LUMI_API_BASE) return String(window.LUMI_API_BASE).replace(/\/$/, '');
+  const p = (typeof location !== 'undefined' && location.protocol) || 'https:';
+  if (p === 'capacitor:' || p === 'ionic:' || p === 'file:') return 'https://lumi24.pl';
+  // Capacitor Android serves from http(s)://localhost — treat bare localhost app shell as native too.
+  if ((p === 'http:' || p === 'https:') && typeof window !== 'undefined' && window.Capacitor) return 'https://lumi24.pl';
+  return '';
+})();
 let state = {
   token: localStorage.getItem('cg_token') || null,
   user: null,
