@@ -1773,7 +1773,7 @@ function renderAuth(){
       <div class="auth-legal">
         <a href="/landing.html">О LUMI</a><a href="/brand.html">Бренд</a><a href="/privacy.html">Конфиденциальность</a><a href="/terms.html">Условия</a>
       </div>
-      <div class="auth-company" data-noi18n><b>BESTWAY PLUS Sp. z o.o.</b> · KRS 0001125792 · NIP 8952277581 · REGON 529604122<br>ul. Zajączkowska 44, 51-180 Wrocław, Polska · kapitał zakładowy 5 000 zł</div>`;
+      <div class="auth-company" data-noi18n><b>BESTWAY PLUS Sp. z o.o.</b> · KRS 0001125792 · NIP 8952277581 · REGON 529604122<br>ul. Zajączkowska 44, 51-180 Wrocław, Polska</div>`;
     card.querySelector('[data-back]').onclick=()=>{ clearReset(); mode='login'; draw(); };
     $('#recoverForm',card).onsubmit=async(e)=>{
       e.preventDefault();
@@ -1866,7 +1866,7 @@ function renderAuth(){
       <div class="auth-legal">
         <a href="/landing.html">О LUMI</a><a href="/brand.html">Бренд</a><a href="/privacy.html">Конфиденциальность</a><a href="/terms.html">Условия</a>
       </div>
-      <div class="auth-company" data-noi18n><b>BESTWAY PLUS Sp. z o.o.</b> · KRS 0001125792 · NIP 8952277581 · REGON 529604122<br>ul. Zajączkowska 44, 51-180 Wrocław, Polska · kapitał zakładowy 5 000 zł</div>`;
+      <div class="auth-company" data-noi18n><b>BESTWAY PLUS Sp. z o.o.</b> · KRS 0001125792 · NIP 8952277581 · REGON 529604122<br>ul. Zajączkowska 44, 51-180 Wrocław, Polska</div>`;
     // Preserve typed values across the toggles that force a redraw.
     const snap=()=>{const fm=$('#authForm',card);if(fm)reg.vals=Object.fromEntries(new FormData(fm));};
     card.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{snap();mode=b.dataset.m;draw();});
