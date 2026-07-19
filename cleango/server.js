@@ -1134,7 +1134,8 @@ route('GET', '/api/properties', async (req, res) => {
 });
 route('POST', '/api/properties', async (req, res) => {
   const user = authUser(req);
-  if (!user || user.role !== 'customer') return send(res, 403, { error: 'Customers only.' });
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  if (user.role !== 'customer') return send(res, 403, { error: 'Customers only.' });
   const b = await readBody(req);
   const p = createProperty(user, b);
   send(res, 200, { property: { ...propertyView(p), myRole: 'owner' } });
@@ -1799,6 +1800,12 @@ function enrich(bk, viewer) {
   // Companies see revenue and staff payout, but never the platform commission (21 §"Hide platform commission").
   if (viewer && viewer.role === 'company') {
     delete out.commission;
+  }
+  // Customers pay `price`; the platform commission and the cleaner payout split
+  // is internal and must never reach them (CLAUDE.md §Security — hide commission).
+  if (viewer && viewer.role === 'customer') {
+    delete out.commission;
+    delete out.payout;
   }
   return out;
 }

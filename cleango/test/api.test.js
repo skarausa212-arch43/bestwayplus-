@@ -290,6 +290,14 @@ async function main() {
       assert.strictEqual(bk.json.booking.price, undefined);
       assert.ok(bk.json.booking.payout > 0);   // but they see their payout
     });
+    await ok('SECURITY: customer payload never exposes commission or payout', async () => {
+      const one = await req('GET', `/api/bookings/${bookingId}`, { token: customerTok });
+      assert.strictEqual(one.json.booking.commission, undefined, 'commission must be hidden from the customer');
+      assert.strictEqual(one.json.booking.payout, undefined, 'cleaner payout must be hidden from the customer');
+      assert.ok(one.json.booking.price > 0);   // the customer only sees what they pay
+      const list = await req('GET', '/api/bookings', { token: customerTok });
+      assert.ok(list.json.bookings.every((b) => b.commission === undefined && b.payout === undefined), 'commission/payout hidden in the customer list too');
+    });
 
     // ── Chat permission (RLS-equivalent) ──
     await ok('SECURITY: non-participant cannot read the booking chat', async () => {
