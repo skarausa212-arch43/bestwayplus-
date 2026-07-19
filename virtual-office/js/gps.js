@@ -18,10 +18,9 @@
 
   GPS.tick = async function () {
     const a = this.store.getAgent(this.agentId); if (!a) return;
-    const tok = this.token();
-    if (!tok) { a.gps = { offline: true }; if (a.status === 'IDLE') this.store.setStatus(a.id, 'WORKING', 'GPS-диспетчер (офлайн)'); return; }
+    const tok = this.token(); // usually null — Caddy injects the Bearer token for /cars
     try {
-      const r = await fetch('/cars', { headers: { 'Authorization': tok } });
+      const r = await fetch('/cars', { headers: tok ? { 'Authorization': tok } : {} });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       const d = await r.json();
       const cars = Array.isArray(d.cars) ? d.cars : [];
