@@ -659,6 +659,8 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .auth-legal{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
 .auth-legal a{color:var(--ink-3);font-size:12.5px;font-weight:600}
 .auth-legal a:hover{color:var(--primary-600)}
+.auth-company{margin-top:10px;text-align:center;color:var(--ink-3);font-size:10.5px;line-height:1.55;opacity:.75}
+.auth-company b{font-weight:700}
 /* cleaner KYC block on the signup form */
 .kyc-block{border:1.5px solid var(--line);border-radius:16px;padding:14px;margin-bottom:14px;background:var(--surface-2)}
 .kyc-title{font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);margin-bottom:12px}
@@ -1770,7 +1772,8 @@ function renderAuth(){
       <div style="text-align:center;margin-top:14px"><button type="button" class="linklike" data-back>← Назад ко входу</button></div>
       <div class="auth-legal">
         <a href="/landing.html">О LUMI</a><a href="/brand.html">Бренд</a><a href="/privacy.html">Конфиденциальность</a><a href="/terms.html">Условия</a>
-      </div>`;
+      </div>
+      <div class="auth-company" data-noi18n><b>BESTWAY PLUS Sp. z o.o.</b> · KRS 0001125792 · NIP 8952277581 · REGON 529604122<br>ul. Zajączkowska 44, 51-180 Wrocław, Polska · kapitał zakładowy 5 000 zł</div>`;
     card.querySelector('[data-back]').onclick=()=>{ clearReset(); mode='login'; draw(); };
     $('#recoverForm',card).onsubmit=async(e)=>{
       e.preventDefault();
@@ -1862,7 +1865,8 @@ function renderAuth(){
       </div>`;})()}
       <div class="auth-legal">
         <a href="/landing.html">О LUMI</a><a href="/brand.html">Бренд</a><a href="/privacy.html">Конфиденциальность</a><a href="/terms.html">Условия</a>
-      </div>`;
+      </div>
+      <div class="auth-company" data-noi18n><b>BESTWAY PLUS Sp. z o.o.</b> · KRS 0001125792 · NIP 8952277581 · REGON 529604122<br>ul. Zajączkowska 44, 51-180 Wrocław, Polska · kapitał zakładowy 5 000 zł</div>`;
     // Preserve typed values across the toggles that force a redraw.
     const snap=()=>{const fm=$('#authForm',card);if(fm)reg.vals=Object.fromEntries(new FormData(fm));};
     card.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{snap();mode=b.dataset.m;draw();});
