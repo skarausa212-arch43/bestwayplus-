@@ -12,6 +12,7 @@
       this.cam = { x: world.worldW / 2, y: world.worldH / 2, zoom: 1, tx: null, ty: null, tzoom: null };
       this.minZoom = 0.14; this.maxZoom = 2.6;
       this.selectedId = null; this.hoverId = null; this.time = 0;
+      this.locked = true; // office view is pinned: no pan/zoom, only tap-to-select
       this.onSelect = null; this.onHover = null; this.meetings = [];
       this._motes = Array.from({ length: 26 }, () => ({ x: Math.random() * world.worldW, y: Math.random() * world.worldH, s: 0.3 + Math.random() * 0.7, p: Math.random() * 6.28 }));
       this._initInput(); this.resize(); this.fit();
@@ -31,7 +32,7 @@
       this.cam.x = this.world.worldW / 2; this.cam.y = this.world.worldH / 2;
       this.cam.tx = this.cam.ty = this.cam.tzoom = null;
     }
-    focusOn(wx, wy, zoom) { this.cam.tx = wx; this.cam.ty = wy; this.cam.tzoom = zoom || Math.min(this.maxZoom, 1.6); }
+    focusOn(wx, wy, zoom) { if (this.locked) return; this.cam.tx = wx; this.cam.ty = wy; this.cam.tzoom = zoom || Math.min(this.maxZoom, 1.6); }
     focusAgent(a) { if (a) this.focusOn(a.x, a.y, 1.7); }
 
     worldToScreen(wx, wy) { return { x: (wx - this.cam.x) * this.cam.zoom + this.vw / 2, y: (wy - this.cam.y) * this.cam.zoom + this.vh / 2 }; }
@@ -44,29 +45,27 @@
       this.cam.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.cam.zoom));
     }
 
+    // Input: tap/click selects an agent. Camera is PINNED (this.locked) —
+    // no drag-pan, wheel-zoom or pinch, so the office never moves under the user.
     _initInput() {
-      const c = this.canvas; let dragging = false, moved = 0, lx = 0, ly = 0, downT = 0;
+      const c = this.canvas; let down = false, moved = 0, lx = 0, ly = 0;
       const getXY = e => { const r = c.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e; return { x: t.clientX - r.left, y: t.clientY - r.top }; };
-      c.addEventListener('mousedown', e => { dragging = true; moved = 0; const p = getXY(e); lx = p.x; ly = p.y; downT = performance.now(); });
+      c.addEventListener('mousedown', e => { down = true; moved = 0; const p = getXY(e); lx = p.x; ly = p.y; });
       window.addEventListener('mousemove', e => {
         const p = getXY(e);
-        if (dragging) { const dx = p.x - lx, dy = p.y - ly; moved += Math.abs(dx) + Math.abs(dy);
-          this.cam.x -= dx / this.cam.zoom; this.cam.y -= dy / this.cam.zoom; this.cam.tx = null; lx = p.x; ly = p.y; this._clampCam(); }
-        else { const hit = this._hitAgent(p.x, p.y); const id = hit ? hit.id : null; if (id !== this.hoverId) { this.hoverId = id; c.style.cursor = id ? 'pointer' : 'grab'; if (this.onHover) this.onHover(hit, p); } }
+        if (down) { const dx = p.x - lx, dy = p.y - ly; moved += Math.abs(dx) + Math.abs(dy);
+          if (!this.locked) { this.cam.x -= dx / this.cam.zoom; this.cam.y -= dy / this.cam.zoom; this.cam.tx = null; lx = p.x; ly = p.y; this._clampCam(); } }
+        else { const hit = this._hitAgent(p.x, p.y); const id = hit ? hit.id : null; if (id !== this.hoverId) { this.hoverId = id; c.style.cursor = id ? 'pointer' : 'default'; if (this.onHover) this.onHover(hit, p); } }
       });
-      window.addEventListener('mouseup', e => { if (!dragging) return; dragging = false;
+      window.addEventListener('mouseup', e => { if (!down) return; down = false;
         if (moved < 6) { const p = getXY(e); const hit = this._hitAgent(p.x, p.y); this.select(hit ? hit.id : null); } });
-      c.addEventListener('dblclick', e => { const p = getXY(e); const hit = this._hitAgent(p.x, p.y); if (hit) this.focusAgent(hit); });
-      c.addEventListener('wheel', e => { e.preventDefault(); const p = getXY(e); const before = this.screenToWorld(p.x, p.y);
+      c.addEventListener('wheel', e => { e.preventDefault(); if (this.locked) return;
+        const p = getXY(e); const before = this.screenToWorld(p.x, p.y);
         const f = e.deltaY < 0 ? 1.12 : 1 / 1.12; this.cam.zoom *= f; this.cam.tzoom = null; this._clampCam();
         const after = this.screenToWorld(p.x, p.y); this.cam.x += before.x - after.x; this.cam.y += before.y - after.y; }, { passive: false });
-      // touch pan + pinch
-      let pinchD = 0;
-      c.addEventListener('touchstart', e => { if (e.touches.length === 1) { dragging = true; moved = 0; const p = getXY(e); lx = p.x; ly = p.y; } else if (e.touches.length === 2) pinchD = touchDist(e); }, { passive: true });
-      c.addEventListener('touchmove', e => { if (e.touches.length === 2) { const d = touchDist(e); if (pinchD) { this.cam.zoom *= d / pinchD; this._clampCam(); } pinchD = d; }
-        else if (dragging && e.touches.length === 1) { const p = getXY(e); this.cam.x -= (p.x - lx) / this.cam.zoom; this.cam.y -= (p.y - ly) / this.cam.zoom; lx = p.x; ly = p.y; moved += 5; this._clampCam(); } }, { passive: true });
-      c.addEventListener('touchend', e => { if (dragging && moved < 6) { const hit = this._hitAgent(lx, ly); this.select(hit ? hit.id : null); } dragging = false; pinchD = 0; });
-      function touchDist(e) { const a = e.touches[0], b = e.touches[1]; return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); }
+      c.addEventListener('touchstart', e => { if (e.touches.length === 1) { down = true; moved = 0; const p = getXY(e); lx = p.x; ly = p.y; } }, { passive: true });
+      c.addEventListener('touchmove', e => { if (down && e.touches.length === 1) { const p = getXY(e); moved += Math.abs(p.x - lx) + Math.abs(p.y - ly); lx = p.x; ly = p.y; } }, { passive: true });
+      c.addEventListener('touchend', () => { if (down && moved < 8) { const hit = this._hitAgent(lx, ly); this.select(hit ? hit.id : null); } down = false; });
     }
 
     _hitAgent(sx, sy) {

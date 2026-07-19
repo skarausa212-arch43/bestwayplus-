@@ -123,7 +123,6 @@
       ${a.status === 'WAITING_FOR_USER' ? `<button class="w-approve" id="agApprove">Рассмотреть запрос →</button>` : ''}
       <div class="a-actions">
         <button data-act="assign">Дать задачу</button>
-        <button data-act="focus">По центру</button>
         <button data-act="${a.status === 'PAUSED' ? 'resume' : 'pause'}">${a.status === 'PAUSED' ? 'Продолжить' : 'Пауза'}</button>
         <button data-act="meet">Собрать встречу</button>
       </div>`);

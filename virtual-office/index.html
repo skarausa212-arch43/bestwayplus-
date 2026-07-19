@@ -12,7 +12,9 @@
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
-    font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;overflow:hidden}
+    font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    overflow:hidden;overscroll-behavior:none;position:fixed;width:100%;
+    touch-action:manipulation;-webkit-user-select:none;user-select:none}
   button{font-family:inherit;cursor:pointer}
   .soft{color:var(--soft)} .small{font-size:11px} .nb{margin:8px 0}
 
@@ -51,8 +53,7 @@
   .me{width:34px;height:34px;border-radius:50%;background:#3b6fb0;color:#fff;display:grid;place-items:center;font-weight:700;font-size:12px}
 
   #center{grid-area:center;position:relative;overflow:hidden;background:#0d0a16}
-  #scene{width:100%;height:100%;display:block;cursor:grab}
-  #scene:active{cursor:grabbing}
+  #scene{width:100%;height:100%;display:block;cursor:default;touch-action:none}
   #tooltip{position:absolute;z-index:20;pointer-events:none;background:rgba(16,12,26,.95);border:1px solid var(--line2);
     border-radius:8px;padding:6px 10px;font-size:12px;transform:translateY(-50%);white-space:nowrap}
   .cam-hint{position:absolute;left:14px;bottom:12px;color:var(--soft);font-size:11px;background:rgba(16,12,26,.7);
@@ -178,7 +179,7 @@
   <main id="center">
     <canvas id="scene"></canvas>
     <div id="tooltip" hidden></div>
-    <div class="cam-hint">Тяните — двигать · колесо/щипок — зум · тап по сотруднику</div>
+    <div class="cam-hint">Тап по сотруднику — открыть карточку</div>
   </main>
   <aside id="rightPanel"></aside>
 </div>
