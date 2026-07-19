@@ -4,9 +4,9 @@
   "private": true,
   "description": "LUMI native shell (Capacitor) — bundles the web app for instant load, pulls data + auth from lumi24.pl, adds native push.",
   "scripts": {
-    "sync-web": "bash scripts/sync-web.sh",
+    "sync-web": "node scripts/sync-web.js",
     "place-firebase": "node scripts/place-firebase.js",
-    "assets": "npx @capacitor/assets generate --splashBackgroundColor '#F4F8F5' --splashBackgroundColorDark '#0C100E'",
+    "assets": "node scripts/gen-assets.js",
     "build": "npm run sync-web && npm run place-firebase && npx cap sync",
     "open:ios": "npx cap open ios",
     "open:android": "npx cap open android",

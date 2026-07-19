@@ -10,7 +10,7 @@ public/            ← the web app (unchanged; already native-ready via window.L
 mobile/            ← this Capacitor project
   capacitor.config.json
   native-bootstrap.js  ← injected into the bundled app: push register + deep links
-  scripts/sync-web.sh  ← copies public/ → www/ and wires the backend URL
+  scripts/sync-web.js  ← copies public/ → www/ and wires the backend URL (cross-platform Node)
 ```
 
 ## What you need (external — like the email/OCR keys)
@@ -52,7 +52,7 @@ npm run add:ios            # creates ios/  (Mac only)
 npm run build              # sync-web.sh → www/, then `cap sync`
 ```
 
-`sync-web.sh` copies `public/` into `www/` and injects
+`sync-web.js` copies `public/` into `www/` and injects
 `window.LUMI_API_BASE="https://lumi24.pl"` + `native-bootstrap.js`, so the bundled
 app calls the live API and registers for push. Re-run `npm run build` after any
 web change.
