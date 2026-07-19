@@ -647,6 +647,12 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
   .hero.console{flex-direction:column;align-items:flex-start;padding:26px 22px;min-height:0}
   .hero-h1{font-size:30px}
   .hero-orb{display:none}
+  /* Animating a blurred layer re-rasterizes every frame and janks scrolling on
+     phones — keep the aurora glow but hold it still, and lighten the blur. */
+  .hero.console .hero-aurora{animation:none;filter:blur(26px)}
+}
+@media(prefers-reduced-motion:reduce){
+  .hero.console .hero-aurora,.gpill.hot::after,.hero-ai .hai-dot{animation:none}
 }
 
 /* ═══════════════ AUTH · premium split screen ═══════════════ */
@@ -1374,6 +1380,10 @@ Object.assign(TR.uk,{"Помыть духовку внутри":"Помити д
   "Химчистка ковра":"Хімчистка килима","Химчистка ковра, от 12 zł/м².":"Хімчистка килима, від 12 zł/м².",
   "Химчистка штор и тюля":"Хімчистка штор і тюлю","Снятие, химчистка и возврат штор.":"Зняття, хімчистка та повернення штор.",
   "· за шт":"· за шт","· за ч":"· за год"});
+/* recommendations empty state */
+Object.assign(TR.pl,{"Пока нет исполнителей.":"Na razie brak wykonawców.","Пока нет исполнителей в городе {city}.":"Na razie brak wykonawców w mieście {city}."});
+Object.assign(TR.en,{"Пока нет исполнителей.":"No providers yet.","Пока нет исполнителей в городе {city}.":"No providers in {city} yet."});
+Object.assign(TR.uk,{"Пока нет исполнителей.":"Поки що немає виконавців.","Пока нет исполнителей в городе {city}.":"Поки що немає виконавців у місті {city}."});
 /* admin: delete user */
 Object.assign(TR.pl,{"Удаление аккаунта":"Usunięcie konta","Удалить пользователя":"Usuń użytkownika",
   "Необратимо: профиль анонимизируется (GDPR), доступ закрывается навсегда. История заказов сохраняется для финансовой отчётности.":"Nieodwracalne: profil zostaje zanonimizowany (RODO), dostęp zamknięty na zawsze. Historia zamówień pozostaje do celów księgowych.",
@@ -2479,8 +2489,8 @@ function viewHome(){
 async function loadReco(){
   const box=document.getElementById('recoList'); if(!box)return;
   try{
-    const {cleaners}=await api('/api/cleaners/recommended');
-    if(!cleaners.length){box.innerHTML='<p class="tiny muted">Пока нет исполнителей.</p>';return;}
+    const {cleaners,city}=await api('/api/cleaners/recommended');
+    if(!cleaners.length){box.innerHTML=`<p class="tiny muted">${city?t('Пока нет исполнителей в городе {city}.',{city:esc(city)}):t('Пока нет исполнителей.')}</p>`;return;}
     box.innerHTML='';
     cleaners.forEach(c=>{
       const row=el(`<div class="reco-card">
@@ -2583,18 +2593,32 @@ function heroAurora(cv){
     }
     ctx.globalCompositeOperation='source-over';
   }
-  function step(){
-    if(!cv.isConnected)return;
-    for(const b of blobs){
-      b.x+=b.vx;b.y+=b.vy;
-      if(b.x<-b.r*0.5||b.x>W+b.r*0.5)b.vx*=-1;
-      if(b.y<-b.r*0.5||b.y>H+b.r*0.5)b.vy*=-1;
+  // Only paint while the hero is actually on-screen and the tab is visible —
+  // otherwise the canvas kept repainting behind a scrolled feed, stealing frames
+  // from scrolling (the "stutter"). Throttled to ~30fps; ambient drift needs no more.
+  let running=false, visible=true, hidden=(typeof document!=='undefined'&&document.hidden), lastT=0;
+  const FRAME=1000/30;
+  function step(t){
+    if(!cv.isConnected||!visible||hidden){running=false;return;}
+    if(t-lastT>=FRAME){
+      lastT=t;
+      for(const b of blobs){
+        b.x+=b.vx;b.y+=b.vy;
+        if(b.x<-b.r*0.5||b.x>W+b.r*0.5)b.vx*=-1;
+        if(b.y<-b.r*0.5||b.y>H+b.r*0.5)b.vy*=-1;
+      }
+      draw();
     }
-    draw();requestAnimationFrame(step);
+    requestAnimationFrame(step);
   }
+  function run(){ if(running||reduce)return; running=true; lastT=0; requestAnimationFrame(step); }
   window.addEventListener('resize',resize,{passive:true});
+  document.addEventListener('visibilitychange',()=>{ hidden=document.hidden; if(!hidden)run(); });
+  if('IntersectionObserver' in window){
+    new IntersectionObserver((es)=>{ visible=es[0].isIntersecting; if(visible)run(); else running=false; },{threshold:0.01}).observe(cv);
+  }
   draw();
-  if(!reduce)requestAnimationFrame(step);
+  run();
 }
 // AI Pulse — the home hero shows a live, typing LUMI-AI suggestion that rotates.
 function startHeroAI(){

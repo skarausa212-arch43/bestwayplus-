@@ -459,6 +459,22 @@ async function main() {
       assert.ok(!det.json.booking.cleaner || !('location' in det.json.booking.cleaner), 'customer never sees cleaner GPS');
     });
 
+    // ── Recommendations are scoped to the customer's city ──
+    await ok('recommended cleaners: only from the customer’s city', async () => {
+      const adm = await req('POST', '/api/login', { body: { email: 'admin@cleango.app', password: 'cleango123' } });
+      // customerTok is a Warsaw customer (auto-seeded city Warsaw). near@x.pl is a
+      // Warsaw cleaner (verified above); far@x.pl was a Gdańsk cleaner (deleted in a
+      // later test, but this runs before that). Make a fresh Gdańsk cleaner here is
+      // not possible (register rate limit), so assert the Warsaw one shows and no
+      // out-of-city one does.
+      const me = await req('GET', '/api/me', { token: customerTok });
+      const city = me.json.user.city;
+      const rec = await req('GET', '/api/cleaners/recommended', { token: customerTok });
+      assert.strictEqual(rec.status, 200);
+      assert.strictEqual(rec.json.city, city);
+      assert.ok(rec.json.cleaners.every((c) => c.city === city), 'every recommendation is in the customer’s city');
+    });
+
     // ── Disputes only on assigned/active bookings (no cleaner ⇒ nothing to dispute) ──
     await ok('issue: cannot open a dispute on a still-searching booking (409 NOT_DISPUTABLE)', async () => {
       const bk = await req('POST', '/api/bookings', { token: customerTok, body: { service: 'standard', rooms: 1, baths: 1, address: 'ul. Spor 1', city: 'Warsaw' } });

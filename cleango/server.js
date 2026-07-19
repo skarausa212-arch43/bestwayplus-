@@ -2030,12 +2030,14 @@ route('GET', '/api/cleaners/recommended', async (req, res) => {
   const user = authUser(req);
   if (!user) return send(res, 401, { error: 'Not authenticated.' });
   const favs = user.favoriteProviders || [];
+  // Only recommend providers who serve the customer's city — a cleaner in
+  // another city can't take the job, so surfacing them is noise.
   const list = Object.values(db.users)
-    .filter((u) => u.role === 'cleaner' && u.verified && !u.deletedAt)
+    .filter((u) => u.role === 'cleaner' && u.verified && !u.deletedAt && (!user.city || u.city === user.city))
     .map((u) => ({ ...cleanerPublic(u), favorited: favs.includes(u.id) }))
     .sort((a, b) => (b.rating || 0) * Math.log((b.jobsDone || 0) + 2) - (a.rating || 0) * Math.log((a.jobsDone || 0) + 2))
     .slice(0, 6);
-  send(res, 200, { cleaners: list });
+  send(res, 200, { cleaners: list, city: user.city || null });
 });
 
 // Cleaner public profile + recent reviews (for a customer picking one).
