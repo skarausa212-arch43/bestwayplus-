@@ -5696,15 +5696,35 @@ async function openAdminUser(id){
       if(!confirm(`Заблокировать ${p.name} ${label}?`))return;
       try{await api('/api/admin/users/'+p.id+'/suspend','POST',{days,reason:'admin'});toast(`Профиль заблокирован ${label}`);closeModal();viewAdmin();}catch(e){toast(e.message,true);}
     });
-    const delBtn=$('#admDelete',inner); if(delBtn)delBtn.onclick=async()=>{
-      const reason=prompt(t('Причина удаления (обязательно):'));
-      if(reason===null)return;                       // cancelled
-      if(!reason.trim()){toast('Укажите причину удаления',true);return;}
-      if(!confirm(t('Удалить пользователя безвозвратно?')+` (${p.name})`))return;
-      try{await api('/api/admin/users/'+p.id,'DELETE',{reason:reason.trim()});toast('Пользователь удалён');closeModal();viewAdmin();}
-      catch(e){toast(e.message,true);}
-    };
+    const delBtn=$('#admDelete',inner); if(delBtn)delBtn.onclick=()=>openDeleteUser(p);
   }catch(e){toast(e.message,true);closeModal();}
+}
+// In-app delete-user dialog (a real modal, NOT window.prompt/confirm — those are
+// blocked in the Capacitor native webview, which silently cancelled the delete).
+function openDeleteUser(p){
+  const m=el(`<div class="modal-bg"><div class="modal" style="max-width:420px">
+    <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px"><h2 style="margin:0;color:var(--danger)">${t('Удалить пользователя')}</h2><button class="iconbtn" id="duX" aria-label="${t('Закрыть')}">✕</button></div>
+    <p class="muted tiny" style="margin-bottom:12px"><b>${esc(p.name)}</b> · ${t('Необратимо: профиль анонимизируется (GDPR), доступ закрывается навсегда.')}</p>
+    <label class="field"><span>${t('Причина удаления')} *</span><textarea class="input" id="duReason" rows="2" placeholder="${t('Напр.: спам / просьба пользователя')}"></textarea></label>
+    <div id="duErr" class="muted tiny" style="color:var(--danger);min-height:14px;margin-bottom:8px"></div>
+    <button class="btn block" id="duGo" style="background:var(--danger)">${t('Удалить безвозвратно')}</button>
+  </div></div>`);
+  document.body.appendChild(m); if(window.i18nApply)i18nApply(m);
+  const close=()=>m.remove();
+  $('#duX',m).onclick=close; m.addEventListener('click',e=>{if(e.target===m)close();});
+  const go=$('#duGo',m), err=$('#duErr',m);
+  go.onclick=async()=>{
+    const reason=$('#duReason',m).value.trim();
+    if(!reason){ err.textContent=t('Укажите причину удаления'); return; }
+    go.disabled=true; go.textContent=t('Удаляем…'); err.textContent='';
+    try{
+      await api('/api/admin/users/'+p.id,'DELETE',{reason});
+      close(); closeModal(); toast(t('Пользователь удалён')); viewAdmin();
+    }catch(e){
+      err.textContent=e.code==='HAS_ACTIVE_BOOKINGS'?t('У пользователя есть активные заказы — сначала завершите или отмените их.'):e.message;
+      go.disabled=false; go.textContent=t('Удалить безвозвратно');
+    }
+  };
 }
 
 /* ---------- CUSTOMER: MESSAGES TAB (20 §2) ---------- */
