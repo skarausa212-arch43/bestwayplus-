@@ -2483,6 +2483,9 @@ route('POST', '/api/bookings/:id/enroute', async (req, res, params) => {
   if (!bk) return send(res, 404, { error: 'Booking not found.' });
   if (bk.cleanerId !== user.id) return send(res, 403, { error: 'Not your job.' });
   if (bk.status !== 'accepted') return send(res, 409, { error: 'Можно выехать только по принятому заказу.' });
+  // Payment gate (Uber flow): the card is captured on match; if that hasn't
+  // succeeded, no cleaning happens — don't let the cleaner drive out unpaid.
+  if (stripe.isEnabled() && !bk.paid) return send(res, 409, { error: 'Оплата клиента ещё не прошла — не выезжайте. Ждём подтверждения оплаты картой.', code: 'PAYMENT_REQUIRED' });
   const t = buildTrack(bk);
   bk.status = 'on_the_way';
   bk.enrouteAt = now();
@@ -2514,6 +2517,8 @@ route('POST', '/api/bookings/:id/status', async (req, res, params) => {
     // The cleaner must be on-site: mark en route first, then start.
     if (bk.status !== 'on_the_way') return send(res, 409, { error: 'Сначала отметьте, что выехали, затем прибытие.', code: 'MUST_ENROUTE' });
     if (!bk.photosBefore.length) return send(res, 400, { error: 'Upload at least one "before" photo first.' });
+    // Payment gate: no capture, no cleaning (only enforced when Stripe is live).
+    if (stripe.isEnabled() && !bk.paid) return send(res, 409, { error: 'Оплата клиента ещё не прошла — заказ нельзя начать.', code: 'PAYMENT_REQUIRED' });
     bk.status = 'in_progress';
     bk.timeline.push({ status: 'in_progress', at: now() });
     sysMessage(bk.id, 'Cleaning started.');
@@ -2539,13 +2544,42 @@ route('POST', '/api/bookings/:id/status', async (req, res, params) => {
   } else if (target === 'cancelled') {
     if (!isCustomer && !isCleaner) return send(res, 403, { error: 'Forbidden.' });
     if (['completed', 'cancelled'].includes(bk.status)) return send(res, 409, { error: 'Cannot cancel now.' });
-    // Customer cancellation fee by provider state + LUMI+ softening (13 §34).
+    // Customer cancellation: full refund before the cleaner departs (searching /
+    // accepted); after departure the cancellation fee is withheld and the rest
+    // refunded. Any captured card charge is refunded, and any LUMI balance that
+    // was redeemed for this booking is restored first.
     if (isCustomer) {
       const providerState = bk.status;
-      const feeMinor = pricing.cancellationFee(Math.round(bk.price * 100), { hoursBefore: 48, providerState, subscription: bk.plusDiscount ? 'plus' : null });
+      const beforeDeparture = ['searching', 'accepted'].includes(providerState);
+      const feeMinor = beforeDeparture ? 0
+        : pricing.cancellationFee(Math.round(bk.price * 100), { hoursBefore: 48, providerState, subscription: bk.plusDiscount ? 'plus' : null });
       if (feeMinor > 0) {
         ledger.record({ type: 'cancellation_fee', bookingId: bk.id, amountMinor: feeMinor, currency: bk.currency, actor: user.id, reason: 'customer_cancellation' }, `cancelfee:${bk.id}`);
         bk.cancellationFee = pricing.toMajor(feeMinor);
+      }
+      // Refund whatever was actually captured for this booking, minus the fee.
+      if (bk.paid && !bk.refunded) {
+        const customer = db.users[bk.customerId];
+        const paidMinor = Math.round((bk.price || 0) * 100);
+        const balMinor = Math.round((bk.balanceApplied || 0) * 100);     // covered by LUMI balance
+        const refundMinor = Math.max(0, paidMinor - feeMinor);
+        // Restore the LUMI-balance portion first (cheap, instant)…
+        const restoreBal = Math.min(balMinor, refundMinor);
+        if (restoreBal > 0 && customer) {
+          customer.wallet = (customer.wallet || 0) + restoreBal / 100; persist.users();
+          walletTxAdd(customer.id, { kind: 'refund', amountMinor: restoreBal, currency: bk.currency, note: 'Возврат на баланс', bookingId: bk.id });
+        }
+        // …then refund the remaining amount to the card via Stripe.
+        const cardRefund = Math.max(0, refundMinor - restoreBal);
+        if (cardRefund > 0 && bk.stripePaymentIntentId && stripe.isEnabled()) {
+          const rf = await stripe.refund({ paymentIntentId: bk.stripePaymentIntentId, amount: cardRefund, idempotencyKey: `refund:${bk.id}` });
+          if (rf.ok && customer) {
+            walletTxAdd(customer.id, { kind: 'refund', amountMinor: cardRefund, currency: bk.currency, note: 'Возврат на карту', bookingId: bk.id, ref: rf.id });
+          }
+        }
+        bk.refunded = refundMinor / 100;
+        ledger.record({ type: 'refund', bookingId: bk.id, amountMinor: -refundMinor, currency: bk.currency, actor: user.id, reason: 'customer_cancellation' }, `refund:${bk.id}`);
+        notify(bk.customerId, 'payment.refunded', { amount: `${(refundMinor / 100).toFixed(2)} zł`, service: bk.serviceLabel });
       }
     }
     bk.status = 'cancelled';

@@ -192,6 +192,18 @@ function apiReqWithHeaders(method, path, form, extra) {
   });
 }
 
+// Refund a captured PaymentIntent — full, or a partial `amount` (grosz). Returns
+// { ok:true, id, status } on success; never throws into the request path.
+async function refund({ paymentIntentId, amount, idempotencyKey } = {}) {
+  if (!isEnabled() || !paymentIntentId) return { ok: false, skipped: true };
+  const form = { payment_intent: paymentIntentId };
+  if (amount != null) { const a = Math.round(Number(amount) || 0); if (a <= 0) return { ok: false, error: 'bad_amount' }; form.amount = a; }
+  const r = await apiReqWithHeaders('POST', '/v1/refunds', form, idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : null);
+  const j = r.json || {};
+  if (j.id && (j.status === 'succeeded' || j.status === 'pending')) return { ok: true, id: j.id, status: j.status };
+  return { ok: false, status: r.status, error: (j.error && (j.error.message || j.error.code)) || 'refund_failed' };
+}
+
 // Verify a Stripe webhook signature (scheme: "t=<ts>,v1=<hexHMAC>"). Returns the
 // parsed event on success, or null. Tolerance guards against replay (5 min).
 function verifyWebhook(rawBody, sigHeader, toleranceSec = 300) {
@@ -213,5 +225,5 @@ function verifyWebhook(rawBody, sigHeader, toleranceSec = 300) {
 module.exports = {
   isEnabled, publishableKey, inlineEnabled, config, ensureCustomer,
   createSetupCheckout, createPaymentCheckout, createSetupIntent, getDefaultCard,
-  setDefaultCard, detachCard, getSetupPaymentMethod, chargeOffSession, verifyWebhook,
+  setDefaultCard, detachCard, getSetupPaymentMethod, chargeOffSession, refund, verifyWebhook,
 };

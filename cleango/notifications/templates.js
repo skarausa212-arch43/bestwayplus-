@@ -58,6 +58,11 @@ const T = {
     deepLink: 'lumi://booking/{bookingId}',
     ru: { title: 'Подтвердите оплату', body: 'Исполнитель найден для «{service}» — подтвердите оплату картой, чтобы начать.' },
   },
+  'payment.refunded': {
+    category: 'operational', priority: 'normal', channels: ['in_app', 'push', 'email'],
+    deepLink: 'lumi://wallet',
+    ru: { title: 'Возврат оформлен', body: 'Вернули {amount} за «{service}».' },
+  },
   'payment.failed': {
     category: 'operational', priority: 'high', channels: ['in_app', 'push'],
     deepLink: 'lumi://booking/{bookingId}',
