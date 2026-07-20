@@ -1642,9 +1642,9 @@ Object.assign(TR.uk,{"5% кэшбек на каждый заказ":"5% кешб
 Object.assign(TR.pl,{"Приоритетная подача":"Priorytetowa wysyłka","Любимый исполнитель":"Ulubiony wykonawca","Заказывайте того же исполнителя по расписанию.":"Zamawiaj tego samego wykonawcę według harmonogramu.","AI сам заказывает регулярное обслуживание.":"AI samo zamawia regularną obsługę.","Подписка, которая берёт дом на себя.":"Subskrypcja, która bierze dom na siebie.","Вы участник LUMI+":"Jesteś członkiem LUMI+","На главную":"Na stronę główną"});
 Object.assign(TR.en,{"Приоритетная подача":"Priority dispatch","Любимый исполнитель":"Favorite cleaner","Заказывайте того же исполнителя по расписанию.":"Book the same cleaner on a schedule.","AI сам заказывает регулярное обслуживание.":"AI books regular upkeep for you.","Подписка, которая берёт дом на себя.":"A subscription that takes the home off your hands.","Вы участник LUMI+":"You’re a LUMI+ member","На главную":"Home"});
 Object.assign(TR.uk,{"Приоритетная подача":"Пріоритетна подача","Любимый исполнитель":"Улюблений виконавець","Заказывайте того же исполнителя по расписанию.":"Замовляйте того самого виконавця за розкладом.","AI сам заказывает регулярное обслуживание.":"AI сам замовляє регулярне обслуговування.","Подписка, которая берёт дом на себя.":"Підписка, яка бере дім на себе.","Вы участник LUMI+":"Ви учасник LUMI+","На главную":"На головну"});
-Object.assign(TR.pl,{"Зачтётся при оплате следующего заказа.":"Zostanie zaliczone przy następnym zamówieniu.","Оплата с баланса":"Płatność z salda","LUMI+ активен — 5% кэшбека на каждый заказ":"LUMI+ aktywny — 5% cashbacku za każde zamówienie"});
-Object.assign(TR.en,{"Зачтётся при оплате следующего заказа.":"Applied to your next order.","Оплата с баланса":"Paid from balance","LUMI+ активен — 5% кэшбека на каждый заказ":"LUMI+ active — 5% cashback on every order"});
-Object.assign(TR.uk,{"Зачтётся при оплате следующего заказа.":"Зарахується при оплаті наступного замовлення.","Оплата с баланса":"Оплата з балансу","LUMI+ активен — 5% кэшбека на каждый заказ":"LUMI+ активний — 5% кешбеку за кожне замовлення"});
+Object.assign(TR.pl,{"Зачтётся при оплате следующего заказа.":"Zostanie zaliczone przy następnym zamówieniu.","Оплата с баланса":"Płatność z salda","LUMI+ активен — 5% кэшбека на каждый заказ":"LUMI+ aktywny — 5% cashbacku za każde zamówienie","Отменить заказ? Исполнитель ещё не найден — отмена бесплатна.":"Anulować zamówienie? Wykonawca jeszcze nie znaleziony — anulowanie jest bezpłatne.","Отменить заказ? Возможна плата за отмену.":"Anulować zamówienie? Może zostać naliczona opłata za anulowanie.","Заказ отменён":"Zamówienie anulowane"});
+Object.assign(TR.en,{"Зачтётся при оплате следующего заказа.":"Applied to your next order.","Оплата с баланса":"Paid from balance","LUMI+ активен — 5% кэшбека на каждый заказ":"LUMI+ active — 5% cashback on every order","Отменить заказ? Исполнитель ещё не найден — отмена бесплатна.":"Cancel the order? No cleaner has been found yet — cancellation is free.","Отменить заказ? Возможна плата за отмену.":"Cancel the order? A cancellation fee may apply.","Заказ отменён":"Order cancelled"});
+Object.assign(TR.uk,{"Зачтётся при оплате следующего заказа.":"Зарахується при оплаті наступного замовлення.","Оплата с баланса":"Оплата з балансу","LUMI+ активен — 5% кэшбека на каждый заказ":"LUMI+ активний — 5% кешбеку за кожне замовлення","Отменить заказ? Исполнитель ещё не найден — отмена бесплатна.":"Скасувати замовлення? Виконавця ще не знайдено — скасування безкоштовне.","Отменить заказ? Возможна плата за отмену.":"Скасувати замовлення? Можлива плата за скасування.","Заказ отменён":"Замовлення скасовано"});
 
 function t(ru,params){
   let s=ru;
@@ -4277,16 +4277,22 @@ function statusBadge(s){
   return `<span class="badge ${cl}">${pre}${lab}</span>`;
 }
 function bookingRow(b){
+  // While the order is still searching, the customer can cancel it right from
+  // the list (free — no cleaner assigned yet), without opening the details.
+  const canCancel=state.user.role==='customer' && b.status==='searching';
   const row=el(`<div class="card bk">
     <div class="thumb">${SVC_ICON[b.service]||I.broom}</div>
     <div class="meta">
       <h4>${svcLabelRu(b.serviceLabel)}</h4>
       <div class="muted tiny" style="margin:3px 0 6px">${I.pin} ${b.city} · ${roomsWord(b.rooms)} · ${timeAgo(b.createdAt)}</div>
       ${statusBadge(b.status)}
+      ${canCancel?`<div style="margin-top:8px"><button class="btn ghost sm list-cancel" data-id="${b.id}">${t('Отменить')}</button></div>`:''}
     </div>
     <div class="price">${b.price!=null?money(b.price):money(b.payout)}<div class="muted tiny" style="font-weight:500">${b.price!=null?'итого':'ваша выплата'}</div></div>
   </div>`);
   row.onclick=()=>openBooking(b.id);
+  const lc=row.querySelector('.list-cancel');
+  if(lc)lc.onclick=(e)=>{ e.stopPropagation(); cancelBooking(b.id,b.status); };
   return row;
 }
 
@@ -4556,7 +4562,7 @@ function renderActions(b,ctx){
   bind('enrouteBtn',async()=>{try{await api('/api/bookings/'+b.id+'/enroute','POST');toast('Клиент видит, что вы в пути');renderBookingDetail(b.id);}catch(e){toast(e.message,true);}});
   bind('startBtn',()=>transition(b.id,'in_progress'));
   bind('completeBtn',()=>transition(b.id,'completed'));
-  bind('cancelBtn',()=>transition(b.id,'cancelled'));
+  bind('cancelBtn',()=>cancelBooking(b.id,b.status));
   bind('payBtn',()=>startPayment(b.id));
   bind('payCardBtn',()=>startCardPayment(b.id));
   bind('reviewBtn',()=>openReview(b.id));
@@ -4870,6 +4876,20 @@ async function handlePaymentReturn(){
   if(paid){ successBurst&&successBurst(); toast(t('Оплата прошла — спасибо!')); }
   else toast(t('Платёж обрабатывается — обновите заказ через минуту'));
   if(state.user){ state.view='bookings'; render(); openBooking(id); }
+}
+// Customer cancels a booking. Free while still searching (no cleaner yet);
+// a fee may apply once a cleaner is assigned — the confirm makes that clear.
+async function cancelBooking(id,status){
+  const free=status==='searching';
+  if(!confirm(free
+    ? t('Отменить заказ? Исполнитель ещё не найден — отмена бесплатна.')
+    : t('Отменить заказ? Возможна плата за отмену.'))) return;
+  try{
+    await api('/api/bookings/'+id+'/status','POST',{status:'cancelled'});
+    toast(t('Заказ отменён'));
+    const modal=document.querySelector('.modal-bg'); if(modal&&window.closeModal)closeModal();
+    render();
+  }catch(e){ toast(e.message,true); }
 }
 async function transition(id,status){
   try{await api('/api/bookings/'+id+'/status','POST',{status});
