@@ -23,10 +23,16 @@ const qs = require('querystring');
 function config() {
   return {
     key: (process.env.LUMI_STRIPE_SECRET_KEY || '').trim(),
+    pubKey: (process.env.LUMI_STRIPE_PUBLISHABLE_KEY || '').trim(),
     webhookSecret: (process.env.LUMI_STRIPE_WEBHOOK_SECRET || '').trim(),
   };
 }
 function isEnabled() { return !!config().key; }
+// Publishable key is public and safe to hand to the browser.
+function publishableKey() { return config().pubKey; }
+// Embedded card entry (Payment Element) needs BOTH the secret and the
+// publishable key; without the publishable key we fall back to hosted Checkout.
+function inlineEnabled() { const c = config(); return !!(c.key && c.pubKey); }
 
 // form-encoded POST/GET to api.stripe.com; resolves { status, json } — never throws.
 function apiReq(method, path, form) {
@@ -97,6 +103,18 @@ async function createPaymentCheckout({ customerId, amount, description, bookingI
   });
   const url = r.json && r.json.url;
   return url ? { ok: true, url, id: r.json.id } : { ok: false, status: r.status, error: r.json && r.json.error };
+}
+
+// Create a SetupIntent for embedded card entry (Stripe Payment Element). The
+// browser confirms it with Stripe.js so raw card data never touches our server.
+// Returns { ok, clientSecret } — the client secret the Payment Element needs.
+async function createSetupIntent(customerId) {
+  if (!isEnabled()) return { ok: false, skipped: true };
+  const r = await apiReq('POST', '/v1/setup_intents', {
+    customer: customerId, usage: 'off_session', 'payment_method_types[0]': 'card',
+  });
+  const cs = r.json && r.json.client_secret;
+  return cs ? { ok: true, clientSecret: cs, id: r.json.id } : { ok: false, status: r.status, error: r.json && r.json.error };
 }
 
 // The customer's default saved card, as { pmId, brand, last4, exp } — or null.
@@ -193,6 +211,7 @@ function verifyWebhook(rawBody, sigHeader, toleranceSec = 300) {
 }
 
 module.exports = {
-  isEnabled, config, ensureCustomer, createSetupCheckout, createPaymentCheckout, getDefaultCard,
+  isEnabled, publishableKey, inlineEnabled, config, ensureCustomer,
+  createSetupCheckout, createPaymentCheckout, createSetupIntent, getDefaultCard,
   setDefaultCard, detachCard, getSetupPaymentMethod, chargeOffSession, verifyWebhook,
 };

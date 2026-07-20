@@ -71,7 +71,7 @@ const SECURITY_HEADERS = {
   // img-src allows OpenStreetMap tiles (map display); connect-src allows the
   // Nominatim geocoder (address → coordinates for GPS dispatch). Both are
   // key-free public OSM services; everything else stays same-origin.
-  'Content-Security-Policy': "default-src 'self'; img-src 'self' data: https://*.tile.openstreetmap.org; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://nominatim.openstreetmap.org; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
+  'Content-Security-Policy': "default-src 'self'; img-src 'self' data: https://*.tile.openstreetmap.org; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://js.stripe.com; connect-src 'self' https://nominatim.openstreetmap.org https://api.stripe.com; frame-src https://js.stripe.com https://hooks.stripe.com https://m.stripe.network; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy': 'geolocation=(self), camera=(self), microphone=()',
@@ -105,6 +105,9 @@ function audit(action, actorId, target, meta) {
 const COMMISSION_RATE = 0.20;      // hidden platform cut on each completed job
 const CURRENCY = 'PLN';
 const PREMIUM_DISCOUNT = 0.10;     // LUMI+ members save 10% on every booking
+// LUMI+ subscription: a flat monthly fee charged off-session from the saved
+// card, in exchange for 5% cashback to the LUMI wallet on every completed order.
+const PLUS_PLAN = { priceMinor: 3900, currency: CURRENCY, cashbackRate: 0.05, period: 'month' };
 
 // Launch market — Poland first (Product Vision, phase 1)
 const CITIES = ['Warsaw', 'Kraków', 'Wrocław', 'Poznań', 'Gdańsk', 'Łódź'];
@@ -246,6 +249,7 @@ const db = {
   reservations: loadJSON('reservations.json', {}), // id -> guest reservation (short-term rental)
   devices: loadJSON('devices.json', {}),     // userId -> [{ token, platform, at }] for native push
   payments: loadJSON('payments.json', {}),   // sessionId -> { bookingId, userId, amount(grosz), status, orderId, at } (Przelewy24)
+  walletTx: loadJSON('wallet-tx.json', {}),  // userId -> [{ id, ts, kind, amountMinor, currency, note, ... }] customer payments ledger
 };
 const persist = {
   users: () => saveJSON('users.json', db.users),
@@ -262,7 +266,16 @@ const persist = {
   reservations: () => saveJSON('reservations.json', db.reservations),
   devices: () => saveJSON('devices.json', db.devices),
   payments: () => saveJSON('payments.json', db.payments),
+  walletTx: () => saveJSON('wallet-tx.json', db.walletTx),
 };
+// Customer-facing payments ledger ("Бухгалтерия платежей"): top-ups, card
+// charges, LUMI+ fees and cashback. Amounts are minor units (grosz); positive =
+// credit to the wallet, negative = charged from the card.
+function walletTxAdd(userId, entry) {
+  (db.walletTx[userId] || (db.walletTx[userId] = [])).push({ id: uid('wt_'), ts: now(), ...entry });
+  persist.walletTx();
+}
+function walletTxList(userId) { return (db.walletTx[userId] || []).slice(-100).reverse(); }
 
 // ─────────── Notifications (15_NOTIFICATION_SYSTEM.md) ───────────
 const DEFAULT_NOTIF_PREFS = {
@@ -1116,6 +1129,9 @@ route('GET', '/api/catalog', async (req, res) => {
     frequencyDiscounts: cityPrices.FREQUENCY_DISCOUNTS,
     paymentsEnabled: pay.isEnabled() || stripe.isEnabled(),
     cardsEnabled: stripe.isEnabled(),
+    cardsInline: stripe.inlineEnabled(),
+    stripePublishableKey: stripe.publishableKey() || null,
+    plusPlan: PLUS_PLAN,
   });
 });
 route('POST', '/api/estimate', async (req, res) => {
@@ -1803,12 +1819,67 @@ route('POST', '/api/subscribe', async (req, res) => {
   const user = authUser(req);
   if (!user) return send(res, 401, { error: 'Not authenticated.' });
   const b = await readBody(req);
-  user.subscription = b.active === false ? null : 'plus';
-  if (user.subscription === 'plus') user.premiumSince = now();
+  // Cancel — free, immediate.
+  if (b.active === false) {
+    user.subscription = null; persist.users();
+    audit('subscription.cancelled', user.id, user.id, {});
+    return send(res, 200, { user: publicUser(user) });
+  }
+  if (user.subscription === 'plus') return send(res, 200, { user: publicUser(user) }); // already active
+  // Activating LUMI+ charges the plan fee off-session from the saved card. When
+  // Stripe is not configured (dev), activation stays free so the flow still works.
+  if (stripe.isEnabled()) {
+    if (!user.card || !user.card.pmId) return send(res, 402, { error: 'Добавьте карту, чтобы оформить LUMI+.', code: 'NEEDS_CARD' });
+    const period = new Date().toISOString().slice(0, 7); // YYYY-MM — one charge per month
+    const r = await stripe.chargeOffSession({
+      customerId: user.stripeCustomerId, pmId: user.card.pmId,
+      amount: PLUS_PLAN.priceMinor, description: 'LUMI+ subskrypcja',
+      idempotencyKey: `plus:${user.id}:${period}`, metadata: { userId: user.id, kind: 'subscription' },
+    });
+    if (!r.ok) {
+      if (r.requiresAction) return send(res, 402, { error: 'Банк требует подтверждение оплаты — попробуйте другую карту.', code: 'SCA_REQUIRED' });
+      return send(res, 402, { error: 'Не удалось списать оплату LUMI+. Проверьте карту.', code: 'CHARGE_FAILED', declineCode: r.declineCode });
+    }
+    walletTxAdd(user.id, { kind: 'subscription', amountMinor: -PLUS_PLAN.priceMinor, currency: PLUS_PLAN.currency, note: 'LUMI+', ref: r.id });
+  }
+  user.subscription = 'plus'; user.premiumSince = now();
   persist.users();
-  audit('subscription.' + (user.subscription === 'plus' ? 'started' : 'cancelled'), user.id, user.id, {});
-  if (user.subscription === 'plus') notify(user.id, 'subscription.started', {});
+  audit('subscription.started', user.id, user.id, { amountMinor: stripe.isEnabled() ? PLUS_PLAN.priceMinor : 0 });
+  notify(user.id, 'subscription.started', {});
   send(res, 200, { user: publicUser(user) });
+});
+// Wallet top-up: charge the saved card off-session, credit the LUMI balance.
+route('POST', '/api/wallet/topup', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  if (!stripe.isEnabled()) return send(res, 503, { error: 'Оплата картой пока не подключена.', code: 'CARDS_OFF' });
+  if (!user.card || !user.card.pmId) return send(res, 402, { error: 'Сначала добавьте карту.', code: 'NEEDS_CARD' });
+  const b = await readBody(req);
+  const amountZl = Math.round(Number(b.amount) || 0);
+  if (!(amountZl >= 10 && amountZl <= 5000)) return send(res, 400, { error: 'Сумма пополнения — от 10 до 5000 zł.', code: 'BAD_AMOUNT' });
+  const amountMinor = amountZl * 100;
+  const r = await stripe.chargeOffSession({
+    customerId: user.stripeCustomerId, pmId: user.card.pmId,
+    amount: amountMinor, description: 'LUMI doładowanie', idempotencyKey: `topup:${user.id}:${Date.now()}`,
+    metadata: { userId: user.id, kind: 'topup' },
+  });
+  if (!r.ok) {
+    if (r.requiresAction) return send(res, 402, { error: 'Банк требует подтверждение — попробуйте другую карту.', code: 'SCA_REQUIRED' });
+    return send(res, 402, { error: 'Не удалось списать с карты.', code: 'CHARGE_FAILED', declineCode: r.declineCode });
+  }
+  user.wallet = (user.wallet || 0) + amountZl; persist.users();
+  walletTxAdd(user.id, { kind: 'topup', amountMinor, currency: CURRENCY, note: 'Пополнение', ref: r.id });
+  send(res, 200, { balance: Math.round(user.wallet || 0), tx: walletTxList(user.id) });
+});
+// Wallet snapshot + the customer payments ledger ("Бухгалтерия платежей").
+route('GET', '/api/wallet', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  send(res, 200, {
+    balance: Math.round(user.wallet || 0), currency: CURRENCY,
+    card: user.card ? { brand: user.card.brand, last4: user.card.last4, exp: user.card.exp } : null,
+    tx: walletTxList(user.id),
+  });
 });
 
 // ---- Bookings ----
@@ -2068,6 +2139,33 @@ route('POST', '/api/cards/setup', async (req, res) => {
   if (!r.ok) return send(res, 502, { error: 'Не удалось открыть форму карты.', code: 'SETUP_FAILED' });
   send(res, 200, { url: r.url });
 });
+// Embedded card entry (Stripe Payment Element): create a SetupIntent the browser
+// confirms in-page. Raw card data goes straight to Stripe, never to us.
+route('POST', '/api/cards/setup-intent', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  if (!stripe.isEnabled()) return send(res, 503, { error: 'Сохранение карты пока не подключено.', code: 'CARDS_OFF' });
+  const cid = await stripe.ensureCustomer(user, user.stripeCustomerId);
+  if (!cid) return send(res, 502, { error: 'Не удалось создать профиль оплаты.', code: 'CUSTOMER_FAILED' });
+  if (user.stripeCustomerId !== cid) { user.stripeCustomerId = cid; persist.users(); }
+  const r = await stripe.createSetupIntent(cid);
+  if (!r.ok) return send(res, 502, { error: 'Не удалось открыть форму карты.', code: 'SETUP_FAILED' });
+  send(res, 200, { clientSecret: r.clientSecret, publishableKey: stripe.publishableKey() });
+});
+// After the browser confirms the SetupIntent, persist the card immediately so the
+// customer sees it without waiting on the webhook (the webhook still reconciles).
+route('POST', '/api/cards/confirm', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  if (!stripe.isEnabled()) return send(res, 503, { error: 'Сохранение карты пока не подключено.', code: 'CARDS_OFF' });
+  const cid = user.stripeCustomerId;
+  if (!cid) return send(res, 400, { error: 'No payment profile.', code: 'NO_CUSTOMER' });
+  const b = await readBody(req);
+  if (b && b.paymentMethodId) await stripe.setDefaultCard(cid, b.paymentMethodId);
+  const card = await stripe.getDefaultCard(cid);
+  if (card) { user.card = card; persist.users(); audit('card.saved', user.id, user.id, { brand: card.brand, last4: card.last4 }); }
+  send(res, 200, { card: user.card ? { brand: user.card.brand, last4: user.card.last4, exp: user.card.exp } : null });
+});
 // The customer's saved card summary (brand + last4) or null.
 route('GET', '/api/cards', async (req, res) => {
   const user = authUser(req);
@@ -2127,6 +2225,7 @@ async function autoChargeBooking(bk) {
         persist.bookings();
         audit('payment.captured', bk.customerId, bk.id, { method: 'card_on_match', amount, paymentIntent: r.id });
         notify(bk.customerId, 'payment.captured', { amount: `${bk.price} zł`, service: bk.serviceLabel });
+        walletTxAdd(bk.customerId, { kind: 'charge', amountMinor: -amount, currency: bk.currency || CURRENCY, note: bk.serviceLabel || 'Заказ', bookingId: bk.id, ref: r.id });
       }
     } else if (r.requiresAction) {
       bk.paymentStatus = 'action_required'; persist.bookings();
@@ -2443,6 +2542,17 @@ function settlePayment(bk) {
     cleaner.wallet = (cleaner.wallet || 0) + bk.payout;
     cleaner.jobsDone = (cleaner.jobsDone || 0) + 1;
     persist.users();
+  }
+  // LUMI+ perk: 5% cashback to the customer's LUMI wallet on every completed order.
+  const customer = db.users[bk.customerId];
+  if (customer && customer.subscription === 'plus') {
+    const cashMinor = Math.round(bk.price * 100 * PLUS_PLAN.cashbackRate);
+    if (cashMinor > 0) {
+      customer.wallet = (customer.wallet || 0) + cashMinor / 100;
+      persist.users();
+      walletTxAdd(customer.id, { kind: 'cashback', amountMinor: cashMinor, currency: bk.currency, note: 'LUMI+ cashback', bookingId: bk.id });
+      notify(customer.id, 'cashback.earned', { amount: `${(cashMinor / 100).toFixed(2)} zł`, service: bk.serviceLabel });
+    }
   }
   // Immutable, idempotent ledger entries in minor units (grosz). Keyed by
   // booking so a replayed completion never double-books money (14_PAYMENT §2/§8).
@@ -3034,6 +3144,45 @@ route('POST', '/api/admin/users/:id/reactivate', async (req, res, params) => {
   persist.users();
   audit('user.reactivated', admin.id, target.id, {});
   send(res, 200, { ok: true });
+});
+// ── Weekly cleaner payouts (manual bank transfers, every Tuesday) ──
+// Cleaners accrue their earnings in `wallet`; the operator runs this every
+// Tuesday to get the "who + how much + bank account" list, pays by bank
+// transfer, then settles the batch (which zeroes those balances).
+route('GET', '/api/admin/payouts', async (req, res) => {
+  const admin = requireCap(req, res, 'payouts.manage'); if (!admin) return;
+  const cleaners = Object.values(db.users)
+    .filter((u) => u.role === 'cleaner' && !u.deletedAt && Math.round(u.wallet || 0) > 0)
+    .map((u) => ({
+      id: u.id, name: u.name, email: u.email || '', phone: u.phone || '',
+      bankAccount: u.bankAccount || '', bankName: u.bankName || '',
+      amount: Math.round(u.wallet || 0),
+    }))
+    .sort((a, b) => b.amount - a.amount);
+  send(res, 200, {
+    weekOf: new Date().toISOString().slice(0, 10), currency: CURRENCY,
+    cleaners, total: cleaners.reduce((s, c) => s + c.amount, 0),
+  });
+});
+// Mark a payout batch as paid: write an immutable ledger entry per cleaner and
+// zero their balance (audited). The wallet check makes a double-click a no-op.
+route('POST', '/api/admin/payouts/settle', async (req, res) => {
+  const admin = requireCap(req, res, 'payouts.manage'); if (!admin) return;
+  const b = await readBody(req);
+  const ids = Array.isArray(b.ids) ? b.ids : [];
+  let settled = 0, total = 0;
+  for (const id of ids) {
+    const u = db.users[id];
+    if (!u || u.role !== 'cleaner') continue;
+    const amount = Math.round(u.wallet || 0);
+    if (amount <= 0) continue;
+    ledger.record({ type: 'provider_settlement', amountMinor: -amount * 100, currency: CURRENCY, actor: id, reason: 'weekly_bank_payout' }, `settle:${id}:${Date.now()}`);
+    u.wallet = 0; settled++; total += amount;
+    audit('payout.settled', admin.id, id, { amount });
+    notify(id, 'payout.sent', { amount: `${amount} zł` });
+  }
+  persist.users();
+  send(res, 200, { settled, total });
 });
 // §6 booking management — force re-dispatch (release the provider back to search).
 route('POST', '/api/admin/bookings/:id/redispatch', async (req, res, params) => {

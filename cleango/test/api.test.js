@@ -496,6 +496,43 @@ async function main() {
       if (me.json.user.card) assert.ok(!('pmId' in me.json.user.card), 'payment-method id stripped');
     });
 
+    // ── Embedded card window + wallet + LUMI+ + weekly payouts (Stripe off ⇒ no-op) ──
+    await ok('cards inline / wallet / LUMI+ / payouts: shapes and gating without Stripe', async () => {
+      // Catalog advertises the inline-card capability + the LUMI+ plan.
+      const cat = await req('GET', '/api/catalog', { token: customerTok });
+      assert.strictEqual(cat.json.cardsInline, false, 'inline off without publishable key');
+      assert.strictEqual(cat.json.stripePublishableKey, null, 'no publishable key leaked when unset');
+      assert.ok(cat.json.plusPlan && cat.json.plusPlan.priceMinor === 3900, 'LUMI+ is 39 zł');
+      assert.strictEqual(cat.json.plusPlan.cashbackRate, 0.05, 'LUMI+ is 5% cashback');
+      // Embedded card endpoints are safe no-ops until Stripe is configured.
+      const si = await req('POST', '/api/cards/setup-intent', { token: customerTok });
+      assert.strictEqual(si.status, 503); assert.strictEqual(si.json.code, 'CARDS_OFF');
+      const cf = await req('POST', '/api/cards/confirm', { token: customerTok, body: { paymentMethodId: 'pm_x' } });
+      assert.strictEqual(cf.status, 503);
+      // Wallet snapshot + ledger.
+      const w = await req('GET', '/api/wallet', { token: customerTok });
+      assert.strictEqual(w.status, 200);
+      assert.strictEqual(typeof w.json.balance, 'number');
+      assert.ok(Array.isArray(w.json.tx), 'ledger is an array');
+      // Top-up requires Stripe; off ⇒ 503.
+      const tu = await req('POST', '/api/wallet/topup', { token: customerTok, body: { amount: 100 } });
+      assert.strictEqual(tu.status, 503); assert.strictEqual(tu.json.code, 'CARDS_OFF');
+      // LUMI+ activates free when Stripe is off (dev), then cancels.
+      const sub = await req('POST', '/api/subscribe', { token: customerTok, body: { active: true } });
+      assert.strictEqual(sub.status, 200);
+      assert.strictEqual(sub.json.user.subscription, 'plus');
+      const unsub = await req('POST', '/api/subscribe', { token: customerTok, body: { active: false } });
+      assert.strictEqual(unsub.json.user.subscription, null, 'cancel clears the subscription');
+      // Weekly payout file: capability-gated; admin gets the who/how-much/IBAN list.
+      const notAdm = await req('GET', '/api/admin/payouts', { token: customerTok });
+      assert.strictEqual(notAdm.status, 403);
+      const adm = await req('POST', '/api/login', { body: { email: 'admin@cleango.app', password: 'cleango123' } });
+      const po = await req('GET', '/api/admin/payouts', { token: adm.json.token });
+      assert.strictEqual(po.status, 200);
+      assert.ok(Array.isArray(po.json.cleaners) && typeof po.json.total === 'number', 'payout batch shape');
+      po.json.cleaners.forEach((c) => assert.ok('bankAccount' in c && 'amount' in c, 'each row carries IBAN + amount'));
+    });
+
     // ── Recommendations are scoped to the customer's city ──
     await ok('recommended cleaners: only from the customer’s city', async () => {
       const adm = await req('POST', '/api/login', { body: { email: 'admin@cleango.app', password: 'cleango123' } });

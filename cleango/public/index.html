@@ -651,7 +651,8 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .hero-ai{display:inline-flex;align-items:center;gap:8px;margin-top:14px;max-width:100%;
   padding:8px 13px;border-radius:999px;background:rgba(255,255,255,.09);
   border:1px solid rgba(255,255,255,.16);font-size:13px;font-weight:600;
-  color:rgba(255,255,255,.92);cursor:pointer;transition:background .2s;position:relative;z-index:2}
+  color:rgba(255,255,255,.92);cursor:pointer;transition:background .2s;position:relative;z-index:2;
+  transform:translateZ(0)}   /* own compositor layer: text swaps don't repaint the hero behind */
 .hero-ai:hover{background:rgba(255,255,255,.17)}
 .hero-ai .hai-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none;
   box-shadow:0 0 0 0 rgba(var(--glow),.6);animation:pulse 1.9s infinite}
@@ -1967,7 +1968,7 @@ async function api(path,method='GET',body){
   if(state.token) h['Authorization']='Bearer '+state.token;
   const r=await fetch(API+path,{method,headers:h,body:body?JSON.stringify(body):undefined});
   const data=await r.json().catch(()=>({}));
-  if(!r.ok) throw new Error(data.error||'Something went wrong');
+  if(!r.ok){ const err=new Error(data.error||'Something went wrong'); err.code=data.code; err.status=r.status; throw err; }
   return data;
 }
 
@@ -2826,23 +2827,15 @@ function startHeroAI(){
   wrap.onkeydown=(e)=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();wrap.click();}};
   if(reduce){el.textContent=sugg[0];return;}
   let idx=0;
-  // On phones the per-character typewriter resizes this pill (and repaints the
-  // whole layered hero) every 40ms, which reads as a stutter each time the line
-  // updates. Swap in a cheap cross-fade: change the full text while it's faded to
-  // opacity 0 (so the width change is invisible), then fade it back in.
-  if(mq('(max-width:760px)')){
-    const show=()=>{ wrap.classList.remove('faded'); el.textContent=sugg[idx++%sugg.length];
-      window.__heroAiT=setTimeout(()=>{ wrap.classList.add('faded');
-        window.__heroAiT=setTimeout(show,420); },4200); };
-    show(); return;
-  }
-  const type=(s,done)=>{ wrap.classList.add('typing'); el.textContent=''; let i=0;
-    const tick=()=>{ el.textContent=s.slice(0,i++);
-      if(i<=s.length){window.__heroAiT=setTimeout(tick,40);}
-      else{wrap.classList.remove('typing');window.__heroAiT=setTimeout(done,3800);} };
-    tick(); };
-  const loop=()=>type(sugg[idx++%sugg.length],loop);
-  loop();
+  // The old per-character typewriter resized this pill and repainted the whole
+  // layered hero on every 40ms tick — a visible stutter each time the line
+  // changed, on desktop as well as phones. Cross-fade the full message instead:
+  // swap the text while it's faded to opacity 0 (so the width change is invisible)
+  // and fade it back in — one cheap, compositor-friendly repaint per rotation.
+  const show=()=>{ wrap.classList.remove('faded'); el.textContent=sugg[idx++%sugg.length];
+    window.__heroAiT=setTimeout(()=>{ wrap.classList.add('faded');
+      window.__heroAiT=setTimeout(show,420); },4200); };
+  show();
 }
 function startHeroClock(){
   const set=()=>{const e=document.getElementById('heroClock');if(!e)return false;
@@ -3817,19 +3810,31 @@ function viewPremium(){
       ${plus?`<div class="badge green" style="margin-top:16px">${I.check}Вы участник LUMI+</div>`:`<div style="font-size:34px;font-weight:800;margin-top:14px">39 zł<span style="font-size:15px;opacity:.7">/мес</span></div>`}
     </div>`));
   const perks=[
-    [I.cash,'Скидка 10% на каждый заказ','Специальные цены на все услуги, применяются автоматически.'],
+    [I.cash,'5% кэшбек на каждый заказ','Возвращаем 5% от суммы каждого заказа на баланс LUMI.'],
     [I.flash,'Приоритетная подача','Ваши заказы уходят исполнителям первыми.'],
     [I.star,'Любимый исполнитель','Заказывайте того же исполнителя по расписанию.'],
     [I.ai,'Автопилот умного дома','AI сам заказывает регулярное обслуживание.'],
   ];
-  const pg=el(`<div class="grid" style="margin-top:18px">${perks.map(([i,t,d])=>`<div class="card pad row" style="gap:14px"><div style="width:44px;height:44px;border-radius:12px;background:var(--primary-050);color:var(--primary-600);display:grid;place-items:center;flex:none">${i}</div><div><b>${t}</b><div class="muted tiny" style="margin-top:2px">${d}</div></div></div>`).join('')}</div>`);
+  const pg=el(`<div class="grid" style="margin-top:18px">${perks.map(([i,tt,d])=>`<div class="card pad row" style="gap:14px"><div style="width:44px;height:44px;border-radius:12px;background:var(--primary-050);color:var(--primary-600);display:grid;place-items:center;flex:none">${i}</div><div><b>${t(tt)}</b><div class="muted tiny" style="margin-top:2px">${t(d)}</div></div></div>`).join('')}</div>`);
   c.appendChild(pg);stagger(pg);
-  const btn=el(`<button class="btn block" style="margin-top:20px">${plus?'Отменить подписку':'Стать участником LUMI+'}</button>`);
+  const cardsOn=state.catalog&&state.catalog.cardsEnabled;
+  if(!plus && cardsOn){
+    c.appendChild(el(`<p class="muted tiny" style="text-align:center;margin-top:14px">${t('39 zł спишутся с привязанной карты сразу при оформлении.')}</p>`));
+  }
+  const btn=el(`<button class="btn block" style="margin-top:14px">${plus?t('Отменить подписку'):t('Стать участником LUMI+')}</button>`);
   btn.onclick=async()=>{
+    // Activating LUMI+ charges 39 zł off-session — a saved card is required.
+    if(!plus && cardsOn && !(state.user&&state.user.card)){
+      toast(t('Сначала добавьте карту в Кошельке'),true); state.view='wallet'; render(); return;
+    }
+    btn.disabled=true;
     try{const {user}=await api('/api/subscribe','POST',{active:!plus});state.user=user;
       if(!plus)confetti();
-      toast(plus?'Подписка отменена':'Добро пожаловать в LUMI+ — скидка 10% на всё!');render();}
-    catch(e){toast(e.message,true);}
+      toast(plus?t('Подписка отменена'):t('Добро пожаловать в LUMI+!'));render();}
+    catch(e){
+      if(e.code==='NEEDS_CARD'){ toast(t('Сначала добавьте карту в Кошельке'),true); state.view='wallet'; render(); return; }
+      toast(e.message,true); btn.disabled=false;
+    }
   };
   c.appendChild(btn);
   if(plus){const gb=el(`<button class="btn ghost block" style="margin-top:10px">На главную</button>`);gb.onclick=()=>{state.view='home';render();};c.appendChild(gb);}
@@ -4769,13 +4774,72 @@ async function startCardPayment(id){
   }catch(e){ toast(e.message,true); }
   if(btn){btn.disabled=false;}
 }
-// Add / replace the saved card via Stripe Checkout (setup mode).
+// Lazily load Stripe.js (only when the customer opens the card window).
+let _stripeJsP=null;
+function loadStripeJs(){
+  if(window.Stripe)return Promise.resolve(window.Stripe);
+  if(_stripeJsP)return _stripeJsP;
+  _stripeJsP=new Promise((resolve,reject)=>{
+    const s=document.createElement('script');s.src='https://js.stripe.com/v3/';
+    s.onload=()=>resolve(window.Stripe);s.onerror=()=>reject(new Error('stripe_js_failed'));
+    document.head.appendChild(s);
+  });
+  return _stripeJsP;
+}
+// Add / replace the saved card. Prefer the embedded Payment Element window
+// (Uber-style, no leaving the app); fall back to hosted Checkout if not configured.
 async function addCard(){
+  const cat=state.catalog||{};
+  if(cat.cardsInline && cat.stripePublishableKey)return openCardModal();
   try{
     const {url}=await api('/api/cards/setup','POST');
     if(url){ location.href=url; return; }
     toast(t('Не удалось открыть форму карты'),true);
   }catch(e){ toast(e.message,true); }
+}
+// The in-page card window: Stripe Payment Element on a SetupIntent. Raw card data
+// goes straight to Stripe (PCI-safe); on success we persist the card immediately.
+async function openCardModal(){
+  const cat=state.catalog||{};
+  let Stripe;
+  try{ Stripe=await loadStripeJs(); }catch(e){ toast(t('Не удалось загрузить форму оплаты'),true); return; }
+  let clientSecret,publishableKey;
+  try{ ({clientSecret,publishableKey}=await api('/api/cards/setup-intent','POST')); }
+  catch(e){ toast(e.message,true); return; }
+  if(!clientSecret){ toast(t('Не удалось открыть форму карты'),true); return; }
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  const stripe=Stripe(publishableKey||cat.stripePublishableKey);
+  const elements=stripe.elements({clientSecret,appearance:{theme:dark?'night':'stripe',variables:{colorPrimary:'#14C871'}}});
+  const paymentEl=elements.create('payment',{layout:'tabs'});
+  const modal=el(`<div class="modal-bg" id="cardModalBg">
+    <div class="modal" style="max-width:440px">
+      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h2 style="margin:0">${t('Привязать карту')}</h2>
+        <button class="iconbtn" id="cardModalX" aria-label="${t('Закрыть')}">✕</button>
+      </div>
+      <div id="cardPayEl" style="min-height:44px"></div>
+      <div id="cardPayErr" class="muted tiny" style="color:var(--danger);margin-top:8px;min-height:14px"></div>
+      <button class="btn block" id="cardPaySubmit" style="margin-top:14px">${t('Сохранить карту')}</button>
+      <p class="muted tiny" style="text-align:center;margin-top:10px">${t('Данные карты защищены Stripe. Мы не храним номер карты.')}</p>
+    </div>
+  </div>`);
+  document.body.appendChild(modal);
+  if(window.i18nApply)i18nApply(modal);
+  paymentEl.mount($('#cardPayEl',modal));
+  const close=()=>{ try{paymentEl.destroy();}catch(e){} modal.remove(); };
+  $('#cardModalX',modal).onclick=close;
+  modal.addEventListener('click',(e)=>{ if(e.target===modal)close(); });
+  const submit=$('#cardPaySubmit',modal),errBox=$('#cardPayErr',modal);
+  submit.onclick=async()=>{
+    submit.disabled=true;submit.textContent=t('Сохраняем…');errBox.textContent='';
+    const {error,setupIntent}=await stripe.confirmSetup({elements,redirect:'if_required'});
+    if(error){ errBox.textContent=error.message||t('Не удалось сохранить карту'); submit.disabled=false; submit.textContent=t('Сохранить карту'); return; }
+    try{
+      const r=await api('/api/cards/confirm','POST',{paymentMethodId:setupIntent&&setupIntent.payment_method});
+      if(state.user)state.user.card=r.card;
+    }catch(e){/* charged/saved on Stripe; webhook reconciles */}
+    close();toast(t('Карта сохранена'));render();
+  };
 }
 async function removeCard(){
   if(!confirm(t('Удалить сохранённую карту?')))return;
@@ -4952,18 +5016,70 @@ async function loadMessages(id){
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 
 /* ---------- WALLET ---------- */
+// Next Tuesday (the weekly cleaner-payout day).
+function nextTuesday(){ const d=new Date(); let add=(2-d.getDay()+7)%7; if(add===0)add=7; d.setDate(d.getDate()+add); d.setHours(0,0,0,0); return d; }
+// One row of the customer payments ledger ("Бухгалтерия платежей").
+function walletTxRow(e){
+  const zl=Math.abs(e.amountMinor||0)/100, credit=(e.amountMinor||0)>=0;
+  const label={topup:'Пополнение',cashback:'Кэшбек LUMI+',subscription:'LUMI+ подписка',charge:'Оплата заказа',refund:'Возврат'}[e.kind]||e.note||e.kind;
+  return `<div class="card bk" style="cursor:default"><div class="thumb">${I.cash}</div>
+    <div class="meta"><h4>${t(label)}</h4><div class="muted tiny">${fmtTime(e.ts)}</div></div>
+    <div class="price" style="color:${credit?'var(--primary-600)':'var(--ink)'}">${credit?'+':'−'}${money(zl)}</div></div>`;
+}
+// Top up the LUMI balance by charging the saved card off-session.
+async function openTopupModal(){
+  const u=state.user;
+  if(!(state.catalog&&state.catalog.cardsEnabled)){ toast(t('Оплата картой пока не подключена'),true); return; }
+  if(!(u&&u.card)){ toast(t('Сначала добавьте карту'),true); return; }
+  let sel=100;
+  const modal=el(`<div class="modal-bg"><div class="modal" style="max-width:400px">
+     <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:14px"><h2 style="margin:0">${t('Пополнить баланс')}</h2><button class="iconbtn" id="tuX" aria-label="${t('Закрыть')}">✕</button></div>
+     <div class="row" id="tuAmts" style="gap:8px;flex-wrap:wrap;margin-bottom:12px">${[50,100,200,500].map(a=>`<button class="btn ghost sm tu-amt" data-a="${a}">${a} zł</button>`).join('')}</div>
+     <label class="field"><span>${t('Своя сумма, zł')}</span><input class="input" id="tuCustom" type="number" min="10" max="5000" placeholder="100"></label>
+     <div class="muted tiny" style="margin:6px 0 12px">${t('Спишем с карты')} ${esc(u.card.brand||'')} ···· ${esc(u.card.last4||'')}</div>
+     <button class="btn block" id="tuGo">${t('Пополнить')}</button>
+  </div></div>`);
+  document.body.appendChild(modal); if(window.i18nApply)i18nApply(modal);
+  const custom=$('#tuCustom',modal), go=$('#tuGo',modal);
+  const mark=()=>modal.querySelectorAll('.tu-amt').forEach(b=>b.style.borderColor=(+b.dataset.a===sel&&!custom.value)?'var(--primary)':'');
+  modal.querySelectorAll('.tu-amt').forEach(b=>b.onclick=()=>{ custom.value=''; sel=+b.dataset.a; mark(); });
+  custom.oninput=()=>{ sel=Math.round(+custom.value||0); mark(); };
+  mark();
+  const close=()=>modal.remove();
+  $('#tuX',modal).onclick=close; modal.addEventListener('click',e=>{if(e.target===modal)close();});
+  go.onclick=async()=>{
+    if(!(sel>=10&&sel<=5000)){ toast(t('Сумма от 10 до 5000 zł'),true); return; }
+    go.disabled=true; go.textContent=t('Списываем…');
+    try{ const r=await api('/api/wallet/topup','POST',{amount:sel});
+      if(state.user)state.user.wallet=r.balance;
+      toast(t('Баланс пополнен')); close(); render();
+    }catch(e){ toast(e.message,true); go.disabled=false; go.textContent=t('Пополнить'); }
+  };
+}
 async function viewWallet(){
   const u=state.user;
+  const isCleaner=u.role==='cleaner';
   const c=el(`<div style="max-width:640px;margin:0 auto"></div>`);
   c.appendChild(el(`
     <div class="card pad" style="background:linear-gradient(135deg,#18D07A,#0A8573);color:#fff;margin-bottom:20px;box-shadow:0 20px 50px rgba(var(--glow),.34)">
-      <div style="opacity:.85;font-size:14px">${u.role==='cleaner'?'Доступный баланс':'Баланс LUMI'}</div>
+      <div style="opacity:.85;font-size:14px">${isCleaner?t('Доступный баланс'):t('Баланс LUMI')}</div>
       <div style="font-size:40px;font-weight:800;letter-spacing:-.03em;margin:4px 0"><span id="balNum">0</span> zł</div>
       <div class="row" style="gap:10px;margin-top:14px">
-        ${u.role==='cleaner'?`<button class="btn" id="withdraw" style="background:#fff;color:var(--primary-600)">Вывести</button>`:`<button class="btn" id="topup" style="background:#fff;color:var(--primary-600)">Пополнить</button>`}
+        ${isCleaner?'':`<button class="btn" id="topup" style="background:#fff;color:var(--primary-600)">${t('Пополнить')}</button>`}
       </div>
     </div>`));
-  // Payment method (Stripe card-on-file) — customers only, when cards are enabled.
+  // Cleaners: weekly manual bank payouts every Tuesday.
+  if(isCleaner){
+    const nt=nextTuesday();
+    c.appendChild(el(`<div class="card pad" style="margin-bottom:20px">
+      <div class="row" style="justify-content:space-between;margin-bottom:8px"><b style="font-size:16px">${t('Вывод денег')}</b><span class="badge green">${t('каждый вторник')}</span></div>
+      <p class="muted tiny" style="margin-bottom:2px">${t('Выплаты приходят на ваш банковский счёт каждый вторник.')}</p>
+      <div class="row" style="justify-content:space-between;margin-top:10px"><span class="muted tiny">${t('Ближайшая выплата')}</span><b>${nt.toLocaleDateString(curLocale())}</b></div>
+      <div class="row" style="justify-content:space-between;margin-top:4px"><span class="muted tiny">${t('К выплате')}</span><b>${money(Math.round(u.wallet||0))}</b></div>
+      ${u.hasBankDetails?'':`<p class="muted tiny" style="color:var(--danger);margin-top:10px">${t('Добавьте номер счёта в профиле, чтобы получать выплаты.')}</p>`}
+    </div>`));
+  }
+  // Customers: card on file (add / remove).
   if(u.role==='customer' && state.catalog && state.catalog.cardsEnabled){
     const card=u.card;
     const cardCard=el(`<div class="card pad" style="margin-bottom:20px">
@@ -4983,27 +5099,32 @@ async function viewWallet(){
     const rep=$('#cardReplace',cardCard); if(rep)rep.onclick=addCard;
     const del=$('#cardDel',cardCard); if(del)del.onclick=removeCard;
   }
-  const hist=el(`<div><div class="section-title">История</div><div class="grid" id="hist"></div></div>`);
+  const histTitle=isCleaner?t('История начислений'):t('Бухгалтерия платежей');
+  const hist=el(`<div><div class="section-title">${histTitle}</div><div class="grid" id="hist"></div></div>`);
   c.appendChild(hist);
   shell(c);
   countUp($('#balNum',c),Math.round(u.wallet||0),900);
-  const w=$('#withdraw',c);if(w)w.onclick=()=>toast('Заявка на вывод создана — деньги придут за 1–2 дня');
-  const tpBtn=$('#topup',c);if(tpBtn)tpBtn.onclick=()=>toast('Пополнение скоро будет доступно');
-  try{
-    const {bookings}=await api('/api/bookings');
-    const done=bookings.filter(b=>b.status==='completed');
-    const list=$('#hist',c);
-    if(!done.length){list.appendChild(emptyState('Пока нет операций','Здесь появятся завершённые заказы.'));return;}
-    done.forEach(b=>{
-      const amt=u.role==='cleaner'?b.payout:b.price;
-      list.appendChild(el(`<div class="card bk" style="cursor:default">
+  const tpBtn=$('#topup',c);if(tpBtn)tpBtn.onclick=openTopupModal;
+  const list=$('#hist',c);
+  if(isCleaner){
+    try{
+      const {bookings}=await api('/api/bookings');
+      const done=bookings.filter(b=>b.status==='completed');
+      if(!done.length){list.appendChild(emptyState(t('Пока нет операций'),t('Здесь появятся завершённые заказы.')));return;}
+      done.forEach(b=>list.appendChild(el(`<div class="card bk" style="cursor:default">
         <div class="thumb">${I.cash}</div>
         <div class="meta"><h4>${svcLabelRu(b.serviceLabel)}</h4><div class="muted tiny">${fmtTime(b.updatedAt)}</div></div>
-        <div class="price" style="color:var(--primary-600)">${u.role==='cleaner'?'+':'−'}${money(amt)}</div>
-      </div>`));
-    });
-    stagger(list);
-  }catch{}
+        <div class="price" style="color:var(--primary-600)">+${money(b.payout)}</div></div>`)));
+      stagger(list);
+    }catch{}
+  }else{
+    try{
+      const {tx}=await api('/api/wallet');
+      if(!tx||!tx.length){list.appendChild(emptyState(t('Пока нет операций'),t('Здесь появятся пополнения, списания и кэшбек.')));return;}
+      tx.forEach(e=>list.appendChild(el(walletTxRow(e))));
+      stagger(list);
+    }catch{}
+  }
 }
 
 /* ---------- CLEANER JOBS FEED ---------- */
@@ -5080,6 +5201,17 @@ async function viewAdmin(){
           <h4 style="margin-bottom:14px">Исполнители ${stats.pendingKyc?`<span class="badge amber" style="margin-left:8px">${stats.pendingKyc} на проверке</span>`:''}</h4>
           <table class="tbl"><thead><tr><th>Имя</th><th>Рейтинг</th><th>Заказов</th><th>Баланс</th><th>Статус</th><th></th></tr></thead><tbody id="clBody"></tbody></table>
         </div>
+        <div class="card pad">
+          <div class="row" style="justify-content:space-between;margin-bottom:8px;gap:10px;flex-wrap:wrap">
+            <h4>Выплаты исполнителям</h4><span class="badge green">каждый вторник</span>
+          </div>
+          <p class="muted tiny" style="margin-bottom:12px">Каждый вторник сформируйте файл: кому и сколько перевести + номер счёта (IBAN) каждого исполнителя. После перевода отметьте выплаты выполненными.</p>
+          <div class="row" style="gap:10px;flex-wrap:wrap">
+            <button class="btn" id="payoutFile">${I.receipt||''} Сформировать файл выплат</button>
+            <button class="btn ghost" id="payoutSettle" disabled>Отметить выплаченными</button>
+          </div>
+          <div id="payoutBox" class="tiny muted" style="margin-top:12px"></div>
+        </div>
         <div class="card pad" style="overflow-x:auto">
           <div class="row" style="justify-content:space-between;margin-bottom:12px;gap:10px;flex-wrap:wrap">
             <h4>Пользователи</h4>
@@ -5100,6 +5232,28 @@ async function viewAdmin(){
     const us=$('#usrSearch',body); let ut=null;
     if(us){us.value=admUserQ;us.oninput=()=>{admUserQ=us.value.trim();clearTimeout(ut);ut=setTimeout(()=>loadAdminUsers(admUserQ,admUserRole),250);};}
     const kg=$('.kpi-grid',body);stagger(kg);
+    // Weekly payout file (who + how much + IBAN) and settle.
+    const payoutFile=$('#payoutFile',body), payoutSettle=$('#payoutSettle',body), payoutBox=$('#payoutBox',body);
+    let lastPayout=null;
+    if(payoutFile)payoutFile.onclick=async()=>{
+      payoutFile.disabled=true;
+      try{
+        const data=await api('/api/admin/payouts'); lastPayout=data;
+        if(!data.cleaners.length){ payoutBox.textContent=t('Нет исполнителей с балансом к выплате.'); if(payoutSettle)payoutSettle.disabled=true; }
+        else{ downloadPayoutCsv(data);
+          payoutBox.innerHTML=`<b>${data.cleaners.length}</b> ${t('исполнителей')} · ${t('итого')} <b>${money(data.total)}</b> — ${t('файл скачан')}.`;
+          if(payoutSettle)payoutSettle.disabled=false; }
+      }catch(e){ toast(e.message,true); }
+      payoutFile.disabled=false;
+    };
+    if(payoutSettle)payoutSettle.onclick=async()=>{
+      if(!lastPayout||!lastPayout.cleaners.length)return;
+      if(!confirm(t('Отметить эти выплаты выполненными? Балансы исполнителей обнулятся.')))return;
+      payoutSettle.disabled=true;
+      try{ const r=await api('/api/admin/payouts/settle','POST',{ids:lastPayout.cleaners.map(c=>c.id)});
+        toast(t('Выплачено')+`: ${money(r.total)}`); viewAdmin();
+      }catch(e){ toast(e.message,true); payoutSettle.disabled=false; }
+    };
     const clBody=$('#clBody',body);
     cleaners.forEach(cl=>{
       const tr=el(`<tr style="cursor:pointer"><td><div class="row" style="gap:9px">${avatarEl(cl,30)}<b>${cl.name}</b></div></td><td>⭐ ${cl.rating}</td><td>${cl.jobsDone}</td><td>${money(cl.wallet||0)}</td>
@@ -5133,6 +5287,18 @@ async function viewAdmin(){
   }catch(err){toast(err.message,true);}
 }
 function kpi(ico,val,lab,bg,fg){return `<div class="card pad kpi"><div class="ico" style="background:${bg};color:${fg}">${ico}</div><b>${val}</b><div class="lab">${lab}</div></div>`;}
+// Build and download the weekly cleaner-payout CSV (name, bank, IBAN, amount).
+// A UTF-8 BOM keeps Cyrillic readable in Excel; every cell is CSV-escaped.
+function downloadPayoutCsv(data){
+  const rows=[['Имя','Email','Телефон','Банк','Номер счёта (IBAN)','Сумма, zł']];
+  data.cleaners.forEach(c=>rows.push([c.name,c.email,c.phone,c.bankName,c.bankAccount,c.amount]));
+  rows.push(['','','','','ИТОГО',data.total]);
+  const csv=rows.map(r=>r.map(cell=>{const s=String(cell==null?'':cell);return /[",;\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}).join(',')).join('\r\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`lumi-vyplaty-${data.weekOf}.csv`;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},150);
+}
 const U_ROLE_TABS=[['','Все'],['customer','Клиенты'],['cleaner','Исполнители'],['company','Компании'],['admin','Админы']];
 async function loadAdminUsers(q,role){
   admUserRole=role||''; admUserQ=q||'';

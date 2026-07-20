@@ -4,17 +4,27 @@
 const assert = require('assert');
 const crypto = require('crypto');
 
-for (const k of ['LUMI_STRIPE_SECRET_KEY', 'LUMI_STRIPE_WEBHOOK_SECRET']) delete process.env[k];
+for (const k of ['LUMI_STRIPE_SECRET_KEY', 'LUMI_STRIPE_WEBHOOK_SECRET', 'LUMI_STRIPE_PUBLISHABLE_KEY']) delete process.env[k];
 const S = require('./stripe');
 
 // 1 — Disabled by default → isEnabled false, charge/setup are no-ops.
 assert.strictEqual(S.isEnabled(), false, 'disabled without a key');
+assert.strictEqual(S.inlineEnabled(), false, 'inline needs both keys');
+assert.strictEqual(S.publishableKey(), '', 'no publishable key by default');
 (async () => {
   const ch = await S.chargeOffSession({ customerId: 'cus_x', pmId: 'pm_x', amount: 1000 });
   assert.strictEqual(ch.ok, false); assert.strictEqual(ch.skipped, true);
   const setup = await S.createSetupCheckout({ customerId: 'cus_x', successUrl: 'a', cancelUrl: 'b' });
   assert.strictEqual(setup.ok, false); assert.strictEqual(setup.skipped, true);
+  const si = await S.createSetupIntent('cus_x');
+  assert.strictEqual(si.ok, false); assert.strictEqual(si.skipped, true);
   assert.strictEqual(await S.getDefaultCard('cus_x'), null, 'no card when disabled');
+
+  // 1b — Publishable key alone does NOT enable inline (secret key still required).
+  process.env.LUMI_STRIPE_PUBLISHABLE_KEY = 'pk_test_abc';
+  assert.strictEqual(S.publishableKey(), 'pk_test_abc', 'publishable key surfaced');
+  assert.strictEqual(S.inlineEnabled(), false, 'inline still off without a secret key');
+  delete process.env.LUMI_STRIPE_PUBLISHABLE_KEY;
 
   // 2 — Webhook signature verifies with the real Stripe scheme (t=..,v1=hmac).
   process.env.LUMI_STRIPE_WEBHOOK_SECRET = 'whsec_test123';

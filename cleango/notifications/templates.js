@@ -141,7 +141,17 @@ const T = {
   'subscription.started': {
     category: 'account', priority: 'normal', channels: ['in_app', 'push', 'email'],
     deepLink: 'lumi://premium',
-    ru: { title: 'LUMI+ активирован', body: 'Скидка 10% на все заказы теперь ваша.' },
+    ru: { title: 'LUMI+ активирован', body: '5% кэшбека на каждый заказ теперь ваши.' },
+  },
+  'cashback.earned': {
+    category: 'account', priority: 'normal', channels: ['in_app'],
+    deepLink: 'lumi://wallet',
+    ru: { title: 'Кэшбек LUMI+', body: 'Начислено {amount} за «{service}».' },
+  },
+  'payout.sent': {
+    category: 'account', priority: 'normal', channels: ['in_app', 'push'],
+    deepLink: 'lumi://wallet',
+    ru: { title: 'Выплата отправлена', body: 'Перевели {amount} на ваш счёт.' },
   },
   'smart_home.recommendation': {
     category: 'smart_home', priority: 'normal', channels: ['in_app', 'push'],
