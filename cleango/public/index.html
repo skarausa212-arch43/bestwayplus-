@@ -1642,6 +1642,9 @@ Object.assign(TR.uk,{"5% кэшбек на каждый заказ":"5% кешб
 Object.assign(TR.pl,{"Приоритетная подача":"Priorytetowa wysyłka","Любимый исполнитель":"Ulubiony wykonawca","Заказывайте того же исполнителя по расписанию.":"Zamawiaj tego samego wykonawcę według harmonogramu.","AI сам заказывает регулярное обслуживание.":"AI samo zamawia regularną obsługę.","Подписка, которая берёт дом на себя.":"Subskrypcja, która bierze dom na siebie.","Вы участник LUMI+":"Jesteś członkiem LUMI+","На главную":"Na stronę główną"});
 Object.assign(TR.en,{"Приоритетная подача":"Priority dispatch","Любимый исполнитель":"Favorite cleaner","Заказывайте того же исполнителя по расписанию.":"Book the same cleaner on a schedule.","AI сам заказывает регулярное обслуживание.":"AI books regular upkeep for you.","Подписка, которая берёт дом на себя.":"A subscription that takes the home off your hands.","Вы участник LUMI+":"You’re a LUMI+ member","На главную":"Home"});
 Object.assign(TR.uk,{"Приоритетная подача":"Пріоритетна подача","Любимый исполнитель":"Улюблений виконавець","Заказывайте того же исполнителя по расписанию.":"Замовляйте того самого виконавця за розкладом.","AI сам заказывает регулярное обслуживание.":"AI сам замовляє регулярне обслуговування.","Подписка, которая берёт дом на себя.":"Підписка, яка бере дім на себе.","Вы участник LUMI+":"Ви учасник LUMI+","На главную":"На головну"});
+Object.assign(TR.pl,{"Зачтётся при оплате следующего заказа.":"Zostanie zaliczone przy następnym zamówieniu.","Оплата с баланса":"Płatność z salda"});
+Object.assign(TR.en,{"Зачтётся при оплате следующего заказа.":"Applied to your next order.","Оплата с баланса":"Paid from balance"});
+Object.assign(TR.uk,{"Зачтётся при оплате следующего заказа.":"Зарахується при оплаті наступного замовлення.","Оплата с баланса":"Оплата з балансу"});
 
 function t(ru,params){
   let s=ru;
@@ -5028,40 +5031,10 @@ function nextTuesday(){ const d=new Date(); let add=(2-d.getDay()+7)%7; if(add==
 // One row of the customer payments ledger ("Бухгалтерия платежей").
 function walletTxRow(e){
   const zl=Math.abs(e.amountMinor||0)/100, credit=(e.amountMinor||0)>=0;
-  const label={topup:'Пополнение',cashback:'Кэшбек LUMI+',subscription:'LUMI+ подписка',charge:'Оплата заказа',refund:'Возврат'}[e.kind]||e.note||e.kind;
+  const label={topup:'Пополнение',cashback:'Кэшбек LUMI+',subscription:'LUMI+ подписка',charge:'Оплата заказа',redeem:'Оплата с баланса',refund:'Возврат'}[e.kind]||e.note||e.kind;
   return `<div class="card bk" style="cursor:default"><div class="thumb">${I.cash}</div>
     <div class="meta"><h4>${t(label)}</h4><div class="muted tiny">${fmtTime(e.ts)}</div></div>
     <div class="price" style="color:${credit?'var(--primary-600)':'var(--ink)'}">${credit?'+':'−'}${money(zl)}</div></div>`;
-}
-// Top up the LUMI balance by charging the saved card off-session.
-async function openTopupModal(){
-  const u=state.user;
-  if(!(state.catalog&&state.catalog.cardsEnabled)){ toast(t('Оплата картой пока не подключена'),true); return; }
-  if(!(u&&u.card)){ toast(t('Сначала добавьте карту'),true); return; }
-  let sel=100;
-  const modal=el(`<div class="modal-bg"><div class="modal" style="max-width:400px">
-     <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:14px"><h2 style="margin:0">${t('Пополнить баланс')}</h2><button class="iconbtn" id="tuX" aria-label="${t('Закрыть')}">✕</button></div>
-     <div class="row" id="tuAmts" style="gap:8px;flex-wrap:wrap;margin-bottom:12px">${[50,100,200,500].map(a=>`<button class="btn ghost sm tu-amt" data-a="${a}">${a} zł</button>`).join('')}</div>
-     <label class="field"><span>${t('Своя сумма, zł')}</span><input class="input" id="tuCustom" type="number" min="10" max="5000" placeholder="100"></label>
-     <div class="muted tiny" style="margin:6px 0 12px">${t('Спишем с карты')} ${esc(u.card.brand||'')} ···· ${esc(u.card.last4||'')}</div>
-     <button class="btn block" id="tuGo">${t('Пополнить')}</button>
-  </div></div>`);
-  document.body.appendChild(modal); if(window.i18nApply)i18nApply(modal);
-  const custom=$('#tuCustom',modal), go=$('#tuGo',modal);
-  const mark=()=>modal.querySelectorAll('.tu-amt').forEach(b=>b.style.borderColor=(+b.dataset.a===sel&&!custom.value)?'var(--primary)':'');
-  modal.querySelectorAll('.tu-amt').forEach(b=>b.onclick=()=>{ custom.value=''; sel=+b.dataset.a; mark(); });
-  custom.oninput=()=>{ sel=Math.round(+custom.value||0); mark(); };
-  mark();
-  const close=()=>modal.remove();
-  $('#tuX',modal).onclick=close; modal.addEventListener('click',e=>{if(e.target===modal)close();});
-  go.onclick=async()=>{
-    if(!(sel>=10&&sel<=5000)){ toast(t('Сумма от 10 до 5000 zł'),true); return; }
-    go.disabled=true; go.textContent=t('Списываем…');
-    try{ const r=await api('/api/wallet/topup','POST',{amount:sel});
-      if(state.user)state.user.wallet=r.balance;
-      toast(t('Баланс пополнен')); close(); render();
-    }catch(e){ toast(e.message,true); go.disabled=false; go.textContent=t('Пополнить'); }
-  };
 }
 async function viewWallet(){
   const u=state.user;
@@ -5071,9 +5044,7 @@ async function viewWallet(){
     <div class="card pad" style="background:linear-gradient(135deg,#18D07A,#0A8573);color:#fff;margin-bottom:20px;box-shadow:0 20px 50px rgba(var(--glow),.34)">
       <div style="opacity:.85;font-size:14px">${isCleaner?t('Доступный баланс'):t('Баланс LUMI')}</div>
       <div style="font-size:40px;font-weight:800;letter-spacing:-.03em;margin:4px 0"><span id="balNum">0</span> zł</div>
-      <div class="row" style="gap:10px;margin-top:14px">
-        ${isCleaner?'':`<button class="btn" id="topup" style="background:#fff;color:var(--primary-600)">${t('Пополнить')}</button>`}
-      </div>
+      ${isCleaner?'':`<div style="opacity:.8;font-size:13px">${t('Зачтётся при оплате следующего заказа.')}</div>`}
     </div>`));
   // Cleaners: weekly manual bank payouts every Tuesday.
   if(isCleaner){
@@ -5111,7 +5082,6 @@ async function viewWallet(){
   c.appendChild(hist);
   shell(c);
   countUp($('#balNum',c),Math.round(u.wallet||0),900);
-  const tpBtn=$('#topup',c);if(tpBtn)tpBtn.onclick=openTopupModal;
   const list=$('#hist',c);
   if(isCleaner){
     try{

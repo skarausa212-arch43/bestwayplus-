@@ -2207,25 +2207,51 @@ async function autoChargeBooking(bk) {
   try {
     if (!bk || bk.paid || !stripe.isEnabled()) return;
     const customer = db.users[bk.customerId];
-    if (!customer || !customer.stripeCustomerId || !customer.card || !customer.card.pmId) {
+    if (!customer) return;
+    const priceMinor = Math.round((bk.price || 0) * 100);
+    if (priceMinor <= 0) return;
+    // Redeem the LUMI balance (cashback) first, then charge the card for the rest.
+    let applyMinor = Math.min(Math.round((customer.wallet || 0) * 100), priceMinor);
+    let remainderMinor = priceMinor - applyMinor;
+    // Stripe won't take a sub-2 zł charge; if the leftover is that small, keep the
+    // balance intact and put the whole amount on the card instead.
+    if (remainderMinor > 0 && remainderMinor < 200) { applyMinor = 0; remainderMinor = priceMinor; }
+    const redeem = () => {
+      if (applyMinor <= 0) return;
+      customer.wallet = (customer.wallet || 0) - applyMinor / 100; persist.users();
+      bk.balanceApplied = applyMinor / 100;
+      walletTxAdd(customer.id, { kind: 'redeem', amountMinor: -applyMinor, currency: bk.currency || CURRENCY, note: bk.serviceLabel || 'Заказ', bookingId: bk.id });
+    };
+
+    // Fully covered by the LUMI balance — no card needed.
+    if (remainderMinor === 0) {
+      redeem();
+      bk.paid = true; bk.paidAt = now(); bk.paymentStatus = 'paid'; bk.paymentMethod = 'balance';
+      persist.bookings();
+      audit('payment.captured', bk.customerId, bk.id, { method: 'balance', amount: applyMinor });
+      notify(bk.customerId, 'payment.captured', { amount: `${bk.price} zł`, service: bk.serviceLabel });
+      return;
+    }
+    // Card needed for the remainder.
+    if (!customer.stripeCustomerId || !customer.card || !customer.card.pmId) {
       bk.paymentStatus = 'awaiting_card'; persist.bookings();
       notify(bk.customerId, 'payment.action_required', { service: bk.serviceLabel, bookingId: bk.id });
       return;
     }
-    const amount = Math.round((bk.price || 0) * 100);
     const r = await stripe.chargeOffSession({
-      customerId: customer.stripeCustomerId, pmId: customer.card.pmId, amount,
+      customerId: customer.stripeCustomerId, pmId: customer.card.pmId, amount: remainderMinor,
       description: `LUMI · ${bk.serviceLabel || 'uborka'} · ${bk.id}`,
       idempotencyKey: 'charge_' + bk.id,               // one charge per booking, even on retries
       metadata: { bookingId: bk.id, userId: bk.customerId },
     });
     if (r.ok) {
       if (!bk.paid) {
+        redeem();
         bk.paid = true; bk.paidAt = now(); bk.paymentStatus = 'paid'; bk.paymentMethod = 'card'; bk.stripePaymentIntentId = r.id;
         persist.bookings();
-        audit('payment.captured', bk.customerId, bk.id, { method: 'card_on_match', amount, paymentIntent: r.id });
+        audit('payment.captured', bk.customerId, bk.id, { method: 'card_on_match', amount: remainderMinor, balanceApplied: applyMinor, paymentIntent: r.id });
         notify(bk.customerId, 'payment.captured', { amount: `${bk.price} zł`, service: bk.serviceLabel });
-        walletTxAdd(bk.customerId, { kind: 'charge', amountMinor: -amount, currency: bk.currency || CURRENCY, note: bk.serviceLabel || 'Заказ', bookingId: bk.id, ref: r.id });
+        walletTxAdd(bk.customerId, { kind: 'charge', amountMinor: -remainderMinor, currency: bk.currency || CURRENCY, note: bk.serviceLabel || 'Заказ', bookingId: bk.id, ref: r.id });
       }
     } else if (r.requiresAction) {
       bk.paymentStatus = 'action_required'; persist.bookings();
