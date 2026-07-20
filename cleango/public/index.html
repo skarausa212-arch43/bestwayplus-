@@ -4840,7 +4840,7 @@ async function openCardModal(){
   const stripe=Stripe(publishableKey||cat.stripePublishableKey);
   const elements=stripe.elements({clientSecret,appearance:{theme:dark?'night':'stripe',variables:{colorPrimary:'#14C871'}}});
   const paymentEl=elements.create('payment',{layout:'tabs'});
-  const modal=el(`<div class="modal-bg" id="cardModalBg">
+  const modal=el(`<div class="modal-bg show" id="cardModalBg">
     <div class="modal" style="max-width:440px">
       <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:14px">
         <h2 style="margin:0">${t('Привязать карту')}</h2>
@@ -5405,7 +5405,7 @@ async function loadAdminPlatform(){
     const S=f.summary; const el2=$('#finSummary',box); if(el2)el2.innerHTML=
       `Оборот: <b>${zl(S.grossCapturedMinor)}</b> · Комиссия: <b style="color:var(--primary-600)">${zl(S.platformRevenueMinor)}</b> · Выплаты: <b>${zl(-S.providerPayoutMinor)}</b> · Штрафы отмен: <b>${zl(S.cancellationFeeMinor)}</b> · Возвраты: <b style="color:var(--danger)">${zl(-S.refundMinor)}</b> · Записей: ${S.count}`;
   }).catch(()=>{ const el2=$('#finSummary',box); if(el2)el2.textContent='Нет доступа к бухгалтерии.'; });
-  $('#finCsv',box).onclick=()=>{ if(!finData){toast('Бухгалтерия ещё грузится',true);return;} downloadFinanceCsv(finData); };
+  const finCsv=$('#finCsv',box); if(finCsv)finCsv.onclick=()=>{ if(!finData){toast('Бухгалтерия ещё грузится',true);return;} downloadFinanceCsv(finData); };
 
   // Global search — jump to any user (open/impersonate) or booking.
   const admSearch=$('#admSearch',box), admRes=$('#admSearchRes',box); let st=null;
@@ -5413,7 +5413,7 @@ async function loadAdminPlatform(){
     st=setTimeout(async()=>{ try{ const r=await api('/api/admin/search?q='+encodeURIComponent(q)); renderAdminSearch(admRes,r); }catch(e){} },250); };
 
   const bcSend=$('#bcSend',box), bcResult=$('#bcResult',box);
-  bcSend.onclick=async()=>{
+  if(bcSend)bcSend.onclick=async()=>{
     const title=$('#bcTitle',box).value.trim(), bodyTxt=$('#bcBody',box).value.trim();
     if(!title||!bodyTxt){ toast('Заполните заголовок и текст',true); return; }
     const aud=$('#bcAudience',box).value, city=$('#bcCity',box).value;
@@ -5427,29 +5427,38 @@ async function loadAdminPlatform(){
     bcSend.disabled=false; bcSend.textContent='Отправить рассылку';
   };
 
-  // Danger zone — wipe all non-admin users + operational data (typed confirmation).
+  // Danger zone — wipe all non-admin users + operational data. TWO confirmations:
+  // (1) acknowledge the warning, (2) type the word УДАЛИТЬ.
   const pfReset=$('#pfReset',box), pfResetMsg=$('#pfResetMsg',box);
+  const modal=(html)=>{ const m=el(`<div class="modal-bg show"><div class="modal" style="max-width:420px">${html}</div></div>`); document.body.appendChild(m); m.addEventListener('click',e=>{if(e.target===m)m.remove();}); return m; };
   if(pfReset)pfReset.onclick=()=>{
-    const m=el(`<div class="modal-bg"><div class="modal" style="max-width:420px">
-      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px"><h2 style="margin:0;color:var(--danger)">Очистить базу</h2><button class="iconbtn" id="rzX" aria-label="Закрыть">✕</button></div>
-      <p class="muted tiny" style="margin-bottom:12px">Будут удалены <b>все пользователи кроме админов</b> и все заказы, объекты, чаты и история. Настройки платформы сохранятся. <b>Отменить нельзя.</b></p>
-      <label class="field"><span>Введите слово <b>УДАЛИТЬ</b> для подтверждения</span><input class="input" id="rzWord" placeholder="УДАЛИТЬ" autocomplete="off"></label>
-      <div id="rzErr" class="tiny muted" style="color:var(--danger);min-height:14px;margin-bottom:8px"></div>
-      <button class="btn block" id="rzGo" style="background:var(--danger)">Удалить всё безвозвратно</button>
-    </div></div>`);
-    document.body.appendChild(m);
-    const close=()=>m.remove();
-    $('#rzX',m).onclick=close; m.addEventListener('click',e=>{if(e.target===m)close();});
-    const go=$('#rzGo',m), err=$('#rzErr',m);
-    go.onclick=async()=>{
-      const word=$('#rzWord',m).value.trim();
-      if(word.toUpperCase()!=='УДАЛИТЬ'){ err.textContent='Введите слово УДАЛИТЬ.'; return; }
-      go.disabled=true; go.textContent='Удаляем…'; err.textContent='';
-      try{ const r=await api('/api/admin/reset-data','POST',{confirm:word});
-        close(); toast(`Удалено пользователей: ${r.removedUsers}. Осталось админов: ${r.keptAdmins}.`);
-        if(pfResetMsg)pfResetMsg.textContent=`Готово: удалено ${r.removedUsers}, осталось админов ${r.keptAdmins}.`;
-        viewAdmin();
-      }catch(e){ err.textContent=e.message; go.disabled=false; go.textContent='Удалить всё безвозвратно'; }
+    // Step 1 — acknowledge.
+    const m1=modal(`
+      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px"><h2 style="margin:0;color:var(--danger)">Очистить базу — шаг 1 из 2</h2><button class="iconbtn" id="rzX1" aria-label="Закрыть">✕</button></div>
+      <p class="muted tiny" style="margin-bottom:14px">Будут удалены <b>все пользователи кроме админов</b> и все заказы, объекты, чаты и история. Настройки платформы сохранятся. <b>Действие необратимо.</b></p>
+      <div class="row" style="gap:10px"><button class="btn ghost" id="rzCancel1" style="flex:1">Отмена</button><button class="btn" id="rzNext" style="flex:1;background:var(--danger)">Продолжить</button></div>`);
+    $('#rzX1',m1).onclick=()=>m1.remove(); $('#rzCancel1',m1).onclick=()=>m1.remove();
+    $('#rzNext',m1).onclick=()=>{
+      m1.remove();
+      // Step 2 — type the confirmation word.
+      const m2=modal(`
+        <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px"><h2 style="margin:0;color:var(--danger)">Очистить базу — шаг 2 из 2</h2><button class="iconbtn" id="rzX2" aria-label="Закрыть">✕</button></div>
+        <p class="muted tiny" style="margin-bottom:12px">Последнее подтверждение. Введите слово <b>УДАЛИТЬ</b>, чтобы удалить всё безвозвратно.</p>
+        <label class="field"><span>Слово подтверждения</span><input class="input" id="rzWord" placeholder="УДАЛИТЬ" autocomplete="off"></label>
+        <div id="rzErr" class="tiny muted" style="color:var(--danger);min-height:14px;margin-bottom:8px"></div>
+        <button class="btn block" id="rzGo" style="background:var(--danger)">Удалить всё безвозвратно</button>`);
+      $('#rzX2',m2).onclick=()=>m2.remove();
+      const go=$('#rzGo',m2), err=$('#rzErr',m2);
+      go.onclick=async()=>{
+        const word=$('#rzWord',m2).value.trim();
+        if(word.toUpperCase()!=='УДАЛИТЬ'){ err.textContent='Введите слово УДАЛИТЬ.'; return; }
+        go.disabled=true; go.textContent='Удаляем…'; err.textContent='';
+        try{ const r=await api('/api/admin/reset-data','POST',{confirm:word});
+          m2.remove(); toast(`Удалено пользователей: ${r.removedUsers}. Осталось админов: ${r.keptAdmins}.`);
+          if(pfResetMsg)pfResetMsg.textContent=`Готово: удалено ${r.removedUsers}, осталось админов ${r.keptAdmins}.`;
+          viewAdmin();
+        }catch(e){ err.textContent=e.message||'Ошибка'; go.disabled=false; go.textContent='Удалить всё безвозвратно'; }
+      };
     };
   };
 }
@@ -5735,7 +5744,7 @@ async function openAdminUser(id){
 // In-app delete-user dialog (a real modal, NOT window.prompt/confirm — those are
 // blocked in the Capacitor native webview, which silently cancelled the delete).
 function openDeleteUser(p){
-  const m=el(`<div class="modal-bg"><div class="modal" style="max-width:420px">
+  const m=el(`<div class="modal-bg show"><div class="modal" style="max-width:420px">
     <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px"><h2 style="margin:0;color:var(--danger)">${t('Удалить пользователя')}</h2><button class="iconbtn" id="duX" aria-label="${t('Закрыть')}">✕</button></div>
     <p class="muted tiny" style="margin-bottom:12px"><b>${esc(p.name)}</b> · ${t('Необратимо: профиль анонимизируется (GDPR), доступ закрывается навсегда.')}</p>
     <label class="field"><span>${t('Причина удаления')} *</span><textarea class="input" id="duReason" rows="2" placeholder="${t('Напр.: спам / просьба пользователя')}"></textarea></label>
