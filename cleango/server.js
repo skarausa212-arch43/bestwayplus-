@@ -114,6 +114,24 @@ const PLUS_PLAN = { priceMinor: 3900, currency: CURRENCY, cashbackRate: 0.05, pe
 // withhold this share of the order (the rest is refunded).
 const LATE_CANCEL_FEE_RATE = 0.40;
 
+// ── Dynamic platform settings (admin-editable, persisted) ──
+// Every knob falls back to the launch default above; the admin panel overrides
+// them live (open cities, economy, a site-wide announcement) without a redeploy.
+function settingsDefaults() {
+  return {
+    openCities: OPEN_CITIES.slice(),
+    commissionRate: COMMISSION_RATE,
+    plusPriceMinor: PLUS_PLAN.priceMinor,
+    plusCashbackRate: PLUS_PLAN.cashbackRate,
+    lateCancelRate: LATE_CANCEL_FEE_RATE,
+    announcement: { text: '', active: false },
+  };
+}
+function getSettings() {
+  const d = settingsDefaults(); const s = db.settings || {};
+  return { ...d, ...s, announcement: { ...d.announcement, ...(s.announcement || {}) } };
+}
+
 // Launch market — Poland first (Product Vision, phase 1)
 const CITIES = ['Warsaw', 'Kraków', 'Wrocław', 'Poznań', 'Gdańsk', 'Łódź'];
 // Cities open for new sign-ups at launch; the rest render as "coming soon" and
@@ -260,6 +278,7 @@ const db = {
   devices: loadJSON('devices.json', {}),     // userId -> [{ token, platform, at }] for native push
   payments: loadJSON('payments.json', {}),   // sessionId -> { bookingId, userId, amount(grosz), status, orderId, at } (Przelewy24)
   walletTx: loadJSON('wallet-tx.json', {}),  // userId -> [{ id, ts, kind, amountMinor, currency, note, ... }] customer payments ledger
+  settings: loadJSON('settings.json', {}),   // admin-editable platform settings (open cities, economy, announcement)
 };
 const persist = {
   users: () => saveJSON('users.json', db.users),
@@ -277,6 +296,7 @@ const persist = {
   devices: () => saveJSON('devices.json', db.devices),
   payments: () => saveJSON('payments.json', db.payments),
   walletTx: () => saveJSON('wallet-tx.json', db.walletTx),
+  settings: () => saveJSON('settings.json', db.settings),
 };
 // Customer-facing payments ledger ("Бухгалтерия платежей"): top-ups, card
 // charges, LUMI+ fees and cashback. Amounts are minor units (grosz); positive =
@@ -587,7 +607,7 @@ function estimatePrice(input) {
     ? Math.max(1, Math.round((0.12 * wCount + extraDurH) * 10) / 10)
     : Math.max(1.5, (rooms * 0.6 + baths * 0.5) * svc.rate + extraDurH);
   const total = Math.round(price);
-  const commission = Math.round(total * COMMISSION_RATE);
+  const commission = Math.round(total * getSettings().commissionRate);
 
   return {
     service: input.service || 'standard',
@@ -721,8 +741,9 @@ route('POST', '/api/register', async (req, res) => {
   if (phone.replace(/\D/g, '').length < 9) return send(res, 400, { error: 'Укажите корректный номер телефона.', code: 'PHONE_REQUIRED' });
   // Launch gating: only open cities accept sign-ups (admins are exempt). Server-
   // authoritative, so a tampered client can't register in a "coming soon" city.
-  if (role !== 'admin' && !OPEN_CITIES.includes(b.city)) {
-    return send(res, 400, { error: `Регистрация пока доступна только в городе ${OPEN_CITIES.join(', ')}. Остальные города — скоро.`, code: 'CITY_CLOSED' });
+  const openCities = getSettings().openCities;
+  if (role !== 'admin' && !openCities.includes(b.city)) {
+    return send(res, 400, { error: `Регистрация пока доступна только в городе ${openCities.join(', ')}. Остальные города — скоро.`, code: 'CITY_CLOSED' });
   }
   if (Object.values(db.users).some((u) => u.email === email)) {
     return send(res, 409, { error: 'An account with this email already exists.' });
@@ -1139,14 +1160,15 @@ route('GET', '/api/catalog', async (req, res) => {
   }
   send(res, 200, {
     services: SERVICE_CATALOG, extras, extraCategories: EXTRAS_CATEGORIES, equipment: EQUIPMENT,
-    commissionRate: COMMISSION_RATE, currency: CURRENCY, oauth: oauth.providers(),
+    commissionRate: getSettings().commissionRate, currency: CURRENCY, oauth: oauth.providers(),
     serviceFrom: serviceFromTable(),
     frequencyDiscounts: cityPrices.FREQUENCY_DISCOUNTS,
     paymentsEnabled: pay.isEnabled() || stripe.isEnabled(),
     cardsEnabled: stripe.isEnabled(),
     cardsInline: stripe.inlineEnabled(),
     stripePublishableKey: stripe.publishableKey() || null,
-    plusPlan: PLUS_PLAN,
+    plusPlan: { priceMinor: getSettings().plusPriceMinor, cashbackRate: getSettings().plusCashbackRate, currency: PLUS_PLAN.currency, period: PLUS_PLAN.period },
+    announcement: getSettings().announcement.active ? getSettings().announcement.text : null,
   });
 });
 route('POST', '/api/estimate', async (req, res) => {
@@ -1195,7 +1217,7 @@ route('POST', '/api/ai/photo-analysis', async (req, res) => {
   const r = ai.analyzeImages(b.images || []);
   send(res, 200, { analysis: r.data, ai: r.meta });
 });
-route('GET', '/api/cities', async (req, res) => send(res, 200, { cities: CITIES, open: OPEN_CITIES }));
+route('GET', '/api/cities', async (req, res) => send(res, 200, { cities: CITIES, open: getSettings().openCities }));
 route('GET', '/api/categories', async (req, res) => send(res, 200, { categories: SERVICE_CATEGORIES }));
 
 // AI Concierge — natural-language intent → a ready-to-book suggestion.
@@ -1615,7 +1637,7 @@ const TURNOVER_CHECKLIST = [
 // normal booking pipeline; assigns the preferred cleaner when asked & possible.
 function createTurnoverBooking(p, turnover, assign) {
   const est = estimatePrice({ service: 'turnover', rooms: p.rooms, baths: p.baths, city: p.city });
-  const price = est.total, commission = Math.round(price * COMMISSION_RATE);
+  const price = est.total, commission = Math.round(price * getSettings().commissionRate);
   const pref = assign && p.strSettings.preferredCleanerId ? db.users[p.strSettings.preferredCleanerId] : null;
   const canAssign = pref && pref.role === 'cleaner' && pref.verified && !pref.deletedAt && !enforceSuspension(pref);
   const id = uid('b_'); const t = now();
@@ -1843,23 +1865,24 @@ route('POST', '/api/subscribe', async (req, res) => {
   if (user.subscription === 'plus') return send(res, 200, { user: publicUser(user) }); // already active
   // Activating LUMI+ charges the plan fee off-session from the saved card. When
   // Stripe is not configured (dev), activation stays free so the flow still works.
+  const plusPriceMinor = getSettings().plusPriceMinor;
   if (stripe.isEnabled()) {
     if (!user.card || !user.card.pmId) return send(res, 402, { error: 'Добавьте карту, чтобы оформить LUMI+.', code: 'NEEDS_CARD' });
     const period = new Date().toISOString().slice(0, 7); // YYYY-MM — one charge per month
     const r = await stripe.chargeOffSession({
       customerId: user.stripeCustomerId, pmId: user.card.pmId,
-      amount: PLUS_PLAN.priceMinor, description: 'LUMI+ subskrypcja',
+      amount: plusPriceMinor, description: 'LUMI+ subskrypcja',
       idempotencyKey: `plus:${user.id}:${period}`, metadata: { userId: user.id, kind: 'subscription' },
     });
     if (!r.ok) {
       if (r.requiresAction) return send(res, 402, { error: 'Банк требует подтверждение оплаты — попробуйте другую карту.', code: 'SCA_REQUIRED' });
       return send(res, 402, { error: 'Не удалось списать оплату LUMI+. Проверьте карту.', code: 'CHARGE_FAILED', declineCode: r.declineCode });
     }
-    walletTxAdd(user.id, { kind: 'subscription', amountMinor: -PLUS_PLAN.priceMinor, currency: PLUS_PLAN.currency, note: 'LUMI+', ref: r.id });
+    walletTxAdd(user.id, { kind: 'subscription', amountMinor: -plusPriceMinor, currency: PLUS_PLAN.currency, note: 'LUMI+', ref: r.id });
   }
   user.subscription = 'plus'; user.premiumSince = now();
   persist.users();
-  audit('subscription.started', user.id, user.id, { amountMinor: stripe.isEnabled() ? PLUS_PLAN.priceMinor : 0 });
+  audit('subscription.started', user.id, user.id, { amountMinor: stripe.isEnabled() ? plusPriceMinor : 0 });
   notify(user.id, 'subscription.started', {});
   send(res, 200, { user: publicUser(user) });
 });
@@ -1924,7 +1947,7 @@ route('POST', '/api/bookings', async (req, res) => {
     if (pc && pc.role === 'cleaner' && pc.verified && !pc.deletedAt) invitedCleanerId = pc.id;
   }
   const price = isPlus ? Math.round(est.total * (1 - PREMIUM_DISCOUNT)) : est.total;
-  const commission = Math.round(price * COMMISSION_RATE);
+  const commission = Math.round(price * getSettings().commissionRate);
   const id = uid('b_');
   const booking = {
     id,
@@ -2565,7 +2588,7 @@ route('POST', '/api/bookings/:id/status', async (req, res, params) => {
       const providerState = bk.status;
       const beforeDeparture = ['searching', 'accepted'].includes(providerState);
       // Free before the cleaner departs; a flat 40% withheld once they're on the way.
-      const feeMinor = beforeDeparture ? 0 : Math.round((bk.price || 0) * 100 * LATE_CANCEL_FEE_RATE);
+      const feeMinor = beforeDeparture ? 0 : Math.round((bk.price || 0) * 100 * getSettings().lateCancelRate);
       if (feeMinor > 0) {
         ledger.record({ type: 'cancellation_fee', bookingId: bk.id, amountMinor: feeMinor, currency: bk.currency, actor: user.id, reason: 'customer_cancellation' }, `cancelfee:${bk.id}`);
         bk.cancellationFee = pricing.toMajor(feeMinor);
@@ -2626,7 +2649,7 @@ function settlePayment(bk) {
   // LUMI+ perk: 5% cashback to the customer's LUMI wallet on every completed order.
   const customer = db.users[bk.customerId];
   if (customer && customer.subscription === 'plus') {
-    const cashMinor = Math.round(bk.price * 100 * PLUS_PLAN.cashbackRate);
+    const cashMinor = Math.round(bk.price * 100 * getSettings().plusCashbackRate);
     if (cashMinor > 0) {
       customer.wallet = (customer.wallet || 0) + cashMinor / 100;
       persist.users();
@@ -2807,7 +2830,7 @@ function buildReceipt(bk, viewer) {
     const netExVat = Math.round(bk.price / 1.23);   // informational VAT split (§42)
     return { ...base, kind: 'admin', items, total: bk.price, payout: bk.payout,
       commission: bk.commission, platformRevenue: bk.commission, netExVat, vat: bk.price - netExVat,
-      commissionRate: Math.round(COMMISSION_RATE * 100) };
+      commissionRate: Math.round(getSettings().commissionRate * 100) };
   }
   // Customer receipt — itemized, total paid, NO commission/payout.
   return { ...base, kind: 'customer', items, total: bk.price };
@@ -3263,6 +3286,33 @@ route('POST', '/api/admin/payouts/settle', async (req, res) => {
   }
   persist.users();
   send(res, 200, { settled, total });
+});
+
+// ── Platform settings (super-admin): open cities, economy, site announcement ──
+route('GET', '/api/admin/settings', async (req, res) => {
+  const admin = requireCap(req, res, 'pricing.manage'); if (!admin) return;
+  send(res, 200, { settings: getSettings(), cities: CITIES });
+});
+route('POST', '/api/admin/settings', async (req, res) => {
+  const admin = requireCap(req, res, 'pricing.manage'); if (!admin) return;
+  const b = await readBody(req);
+  const next = { ...(db.settings || {}) };
+  const changed = {};
+  if (Array.isArray(b.openCities)) {
+    const oc = b.openCities.filter((c) => CITIES.includes(c));
+    if (oc.length) { next.openCities = oc; changed.openCities = oc; }   // never leave zero cities open
+  }
+  const clampRate = (v) => Math.max(0, Math.min(0.95, Number(v) || 0));
+  if (b.commissionRate != null) changed.commissionRate = next.commissionRate = clampRate(b.commissionRate);
+  if (b.plusCashbackRate != null) changed.plusCashbackRate = next.plusCashbackRate = clampRate(b.plusCashbackRate);
+  if (b.lateCancelRate != null) changed.lateCancelRate = next.lateCancelRate = clampRate(b.lateCancelRate);
+  if (b.plusPriceMinor != null) changed.plusPriceMinor = next.plusPriceMinor = Math.max(0, Math.min(100000, Math.round(Number(b.plusPriceMinor) || 0)));
+  if (b.announcement != null) {
+    changed.announcement = next.announcement = { text: String((b.announcement || {}).text || '').slice(0, 280), active: !!(b.announcement || {}).active };
+  }
+  db.settings = next; persist.settings();
+  audit('settings.updated', admin.id, null, changed);
+  send(res, 200, { settings: getSettings() });
 });
 // §6 booking management — force re-dispatch (release the provider back to search).
 route('POST', '/api/admin/bookings/:id/redispatch', async (req, res, params) => {
@@ -3750,7 +3800,7 @@ function seedBookings({ anna, marek, cleaners, prop }) {
   const mkBooking = (over) => {
     const svc = over.svc, rooms = over.rooms, baths = over.baths, city = over.city;
     const est = estimatePrice({ service: svc[0], rooms, baths, city });
-    const price = est.total, commission = Math.round(price * COMMISSION_RATE);
+    const price = est.total, commission = Math.round(price * getSettings().commissionRate);
     const id = uid('b_');
     db.bookings[id] = {
       id, customerId: over.cust, propertyId: over.cust === anna ? prop.id : null, cleanerId: over.cleaner || null,

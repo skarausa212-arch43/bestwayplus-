@@ -567,6 +567,35 @@ async function main() {
       po.json.cleaners.forEach((c) => assert.ok('bankAccount' in c && 'amount' in c, 'each row carries IBAN + amount'));
     });
 
+    // ── Super-admin platform settings: economy knobs, announcement, broadcast ──
+    await ok('admin settings: capability-gated, drive live economy + announcement + broadcast', async () => {
+      const adm = (await req('POST', '/api/login', { body: { email: 'admin@cleango.app', password: 'cleango123' } })).json.token;
+      // Non-admin cannot read or write settings.
+      assert.strictEqual((await req('GET', '/api/admin/settings', { token: customerTok })).status, 403);
+      assert.strictEqual((await req('POST', '/api/admin/settings', { token: customerTok, body: { commissionRate: 0.9 } })).status, 403);
+      const before = (await req('GET', '/api/admin/settings', { token: adm })).json.settings;
+      // Change the commission → the public catalog reflects it live.
+      await req('POST', '/api/admin/settings', { token: adm, body: { commissionRate: 0.25 } });
+      assert.strictEqual((await req('GET', '/api/catalog', { token: customerTok })).json.commissionRate, 0.25);
+      // Rates are clamped (can't set 900%).
+      await req('POST', '/api/admin/settings', { token: adm, body: { commissionRate: 9 } });
+      assert.strictEqual((await req('GET', '/api/catalog', { token: customerTok })).json.commissionRate, 0.95);
+      // Restore the original commission so later price/payout assertions are unaffected.
+      await req('POST', '/api/admin/settings', { token: adm, body: { commissionRate: before.commissionRate } });
+      // Announcement flows to the catalog when active, and clears when off.
+      await req('POST', '/api/admin/settings', { token: adm, body: { announcement: { text: 'Запускаемся!', active: true } } });
+      assert.strictEqual((await req('GET', '/api/catalog', { token: customerTok })).json.announcement, 'Запускаемся!');
+      await req('POST', '/api/admin/settings', { token: adm, body: { announcement: { text: 'Запускаемся!', active: false } } });
+      assert.strictEqual((await req('GET', '/api/catalog', { token: customerTok })).json.announcement, null);
+      // Empty open-cities is ignored (never lock everyone out).
+      await req('POST', '/api/admin/settings', { token: adm, body: { openCities: [] } });
+      assert.ok((await req('GET', '/api/admin/settings', { token: adm })).json.settings.openCities.length > 0, 'open cities never emptied');
+      // Broadcast reaches a segment.
+      const bc = await req('POST', '/api/admin/notifications/broadcast', { token: adm, body: { title: 'Hi', body: 'Msg', reason: 'test', targetRole: 'customer' } });
+      assert.strictEqual(bc.status, 200);
+      assert.ok(bc.json.sent >= 1, 'broadcast delivered to at least one customer');
+    });
+
     // ── Recommendations are scoped to the customer's city ──
     await ok('recommended cleaners: only from the customer’s city', async () => {
       const adm = await req('POST', '/api/login', { body: { email: 'admin@cleango.app', password: 'cleango123' } });

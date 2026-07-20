@@ -1063,6 +1063,10 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
   .badge.flash,.hero .badge,.gpill{backdrop-filter:none;-webkit-backdrop-filter:none}
 }
 /* language switcher */
+.announce-banner{display:flex;align-items:center;gap:9px;margin:0 0 16px;padding:12px 16px;border-radius:14px;
+  background:linear-gradient(120deg,var(--primary-050),rgba(47,214,206,.12));border:1px solid var(--primary-200,rgba(20,200,113,.3));
+  color:var(--ink);font-weight:600;font-size:14px;line-height:1.4}
+.announce-banner span{flex:1}
 .langbtn{display:inline-flex;align-items:center;gap:5px;width:auto;padding:0 10px}
 .langbtn b{font-size:11px;font-weight:800;letter-spacing:.04em}
 .lang-menu{position:fixed;z-index:120;min-width:190px;background:var(--surface);border:1px solid var(--line);
@@ -2409,7 +2413,7 @@ function shell(content){
           <span class="uc-txt"><b>${u.name.split(' ')[0]}</b><span>${roleLabel}</span></span>
         </button>
       </div>
-      <div class="main"><div class="content view-enter"></div></div>
+      <div class="main">${(state.catalog&&state.catalog.announcement)?`<div class="announce-banner">📣 <span>${esc(state.catalog.announcement)}</span></div>`:''}<div class="content view-enter"></div></div>
     </div>
     <div class="tabbar"></div>
   </div>`);
@@ -5213,6 +5217,7 @@ async function viewAdmin(){
           </div>
           <div id="payoutBox" class="tiny muted" style="margin-top:12px"></div>
         </div>
+        <div class="card pad" id="platformCard"><div class="muted tiny">Загрузка…</div></div>
         <div class="card pad" style="overflow-x:auto">
           <div class="row" style="justify-content:space-between;margin-bottom:12px;gap:10px;flex-wrap:wrap">
             <h4>Пользователи</h4>
@@ -5230,6 +5235,7 @@ async function viewAdmin(){
     loadAdminUsers(admUserQ,admUserRole);
     loadAdminDisputes();
     loadAdminSupport();
+    loadAdminPlatform();
     const us=$('#usrSearch',body); let ut=null;
     if(us){us.value=admUserQ;us.oninput=()=>{admUserQ=us.value.trim();clearTimeout(ut);ut=setTimeout(()=>loadAdminUsers(admUserQ,admUserRole),250);};}
     const kg=$('.kpi-grid',body);stagger(kg);
@@ -5288,6 +5294,86 @@ async function viewAdmin(){
   }catch(err){toast(err.message,true);}
 }
 function kpi(ico,val,lab,bg,fg){return `<div class="card pad kpi"><div class="ico" style="background:${bg};color:${fg}">${ico}</div><b>${val}</b><div class="lab">${lab}</div></div>`;}
+// Super-admin platform controls: open/close cities for sign-up, live economy
+// knobs, a site-wide announcement, and a broadcast to a customer/cleaner segment.
+async function loadAdminPlatform(){
+  const box=$('#platformCard'); if(!box)return;
+  let data; try{ data=await api('/api/admin/settings'); }catch(e){ box.innerHTML=`<div class="muted tiny">Платформа: нет доступа (${esc(e.message)})</div>`; return; }
+  const s=data.settings, cities=data.cities;
+  const pct=(r)=>Math.round((r||0)*100);
+  box.innerHTML=`
+    <h4 style="margin-bottom:4px">⚙️ Платформа</h4>
+    <p class="muted tiny" style="margin-bottom:14px">Супер-управление: города, экономика, объявление и рассылка.</p>
+
+    <div style="margin-bottom:18px">
+      <b style="font-size:14px">Города регистрации</b>
+      <p class="muted tiny" style="margin:2px 0 8px">Отмеченные открыты для новых регистраций, остальные — «скоро».</p>
+      <div class="row" style="gap:8px;flex-wrap:wrap">${cities.map(c=>`<label class="chip" style="cursor:pointer;gap:7px"><input type="checkbox" class="pf-city" value="${c}" ${s.openCities.includes(c)?'checked':''}> ${c}</label>`).join('')}</div>
+      <button class="btn sm" id="pfCitiesSave" style="margin-top:10px">Сохранить города</button>
+    </div>
+
+    <div style="margin-bottom:18px">
+      <b style="font-size:14px">Экономика</b>
+      <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+        <label class="field" style="margin:0"><span>Комиссия платформы, %</span><input class="input" id="pfComm" type="number" min="0" max="95" value="${pct(s.commissionRate)}"></label>
+        <label class="field" style="margin:0"><span>LUMI+ цена, zł/мес</span><input class="input" id="pfPlusPrice" type="number" min="0" max="1000" value="${Math.round(s.plusPriceMinor/100)}"></label>
+        <label class="field" style="margin:0"><span>LUMI+ кэшбек, %</span><input class="input" id="pfCashback" type="number" min="0" max="95" value="${pct(s.plusCashbackRate)}"></label>
+        <label class="field" style="margin:0"><span>Штраф отмены после выезда, %</span><input class="input" id="pfLate" type="number" min="0" max="95" value="${pct(s.lateCancelRate)}"></label>
+      </div>
+      <button class="btn sm" id="pfEconSave" style="margin-top:10px">Сохранить экономику</button>
+    </div>
+
+    <div style="margin-bottom:18px">
+      <b style="font-size:14px">Объявление на весь сайт</b>
+      <p class="muted tiny" style="margin:2px 0 8px">Показывается баннером всем пользователям (акции, техработы, анонсы).</p>
+      <input class="input" id="pfAnnText" placeholder="Напр.: Запускаемся во Wrocław! 🎉" value="${esc(s.announcement.text||'')}" maxlength="280">
+      <label class="chip" style="cursor:pointer;gap:7px;margin-top:8px"><input type="checkbox" id="pfAnnActive" ${s.announcement.active?'checked':''}> Показывать баннер</label>
+      <button class="btn sm" id="pfAnnSave" style="margin-top:10px;display:block">Сохранить объявление</button>
+    </div>
+
+    <div>
+      <b style="font-size:14px">Рассылка</b>
+      <p class="muted tiny" style="margin:2px 0 8px">Уведомление + email + push выбранному сегменту.</p>
+      <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">
+        <label class="field" style="margin:0"><span>Кому</span><select class="input" id="bcAudience"><option value="">Всем</option><option value="customer">Клиентам</option><option value="cleaner">Исполнителям</option></select></label>
+        <label class="field" style="margin:0"><span>Город (необяз.)</span><select class="input" id="bcCity"><option value="">Все города</option>${cities.map(c=>`<option value="${c}">${c}</option>`).join('')}</select></label>
+      </div>
+      <label class="field" style="margin:10px 0 0"><span>Заголовок</span><input class="input" id="bcTitle" placeholder="Скидка недели"></label>
+      <label class="field" style="margin:10px 0 0"><span>Текст</span><textarea class="input" id="bcBody" rows="3" placeholder="Текст сообщения…"></textarea></label>
+      <button class="btn block" id="bcSend" style="margin-top:12px">Отправить рассылку</button>
+      <div id="bcResult" class="tiny muted" style="margin-top:8px"></div>
+    </div>`;
+
+  const save=async(payload,btn,okMsg)=>{ const t0=btn.textContent; btn.disabled=true; btn.textContent='Сохраняю…';
+    try{ const r=await api('/api/admin/settings','POST',payload); toast(okMsg); if(state.catalog)state.catalog.announcement=r.settings.announcement.active?r.settings.announcement.text:null; }
+    catch(e){ toast(e.message,true); } btn.disabled=false; btn.textContent=t0; };
+
+  $('#pfCitiesSave',box).onclick=(e)=>{ const open=[...box.querySelectorAll('.pf-city:checked')].map(i=>i.value);
+    if(!open.length){ toast('Оставьте хотя бы один город',true); return; }
+    save({openCities:open},e.target,'Города обновлены'); };
+  $('#pfEconSave',box).onclick=(e)=>save({
+    commissionRate:(+$('#pfComm',box).value||0)/100,
+    plusPriceMinor:Math.round((+$('#pfPlusPrice',box).value||0)*100),
+    plusCashbackRate:(+$('#pfCashback',box).value||0)/100,
+    lateCancelRate:(+$('#pfLate',box).value||0)/100,
+  },e.target,'Экономика обновлена');
+  $('#pfAnnSave',box).onclick=(e)=>save({announcement:{text:$('#pfAnnText',box).value,active:$('#pfAnnActive',box).checked}},e.target,'Объявление обновлено');
+
+  const bcSend=$('#bcSend',box), bcResult=$('#bcResult',box);
+  bcSend.onclick=async()=>{
+    const title=$('#bcTitle',box).value.trim(), bodyTxt=$('#bcBody',box).value.trim();
+    if(!title||!bodyTxt){ toast('Заполните заголовок и текст',true); return; }
+    const aud=$('#bcAudience',box).value, city=$('#bcCity',box).value;
+    const who=aud==='customer'?'клиентам':aud==='cleaner'?'исполнителям':'всем';
+    if(!confirm(`Отправить рассылку ${who}${city?(' в '+city):''}?`))return;
+    bcSend.disabled=true; bcSend.textContent='Отправляю…';
+    try{ const r=await api('/api/admin/notifications/broadcast','POST',{title,body:bodyTxt,reason:'admin broadcast',targetRole:aud||undefined,targetCity:city||undefined});
+      bcResult.textContent=`Отправлено: ${r.sent}`; toast(`Рассылка отправлена (${r.sent})`);
+      $('#bcTitle',box).value=''; $('#bcBody',box).value='';
+    }catch(e){ toast(e.message,true); }
+    bcSend.disabled=false; bcSend.textContent='Отправить рассылку';
+  };
+}
 // Build and download the weekly cleaner-payout CSV (name, bank, IBAN, amount).
 // A UTF-8 BOM keeps Cyrillic readable in Excel; every cell is CSV-escaped.
 function downloadPayoutCsv(data){
