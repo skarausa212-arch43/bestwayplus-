@@ -2563,8 +2563,13 @@ route('POST', '/api/bookings/:id/status', async (req, res, params) => {
 });
 
 function settlePayment(bk) {
-  if (bk.paid) return;
-  bk.paid = true;
+  // Settlement (crediting the cleaner + ledger) is guarded by its OWN flag, not
+  // by bk.paid. bk.paid means "the customer's card was already captured" (the
+  // Uber card-on-file flow charges on cleaner match), which must NOT short-circuit
+  // the cleaner's payout on completion. Only a real re-settlement is skipped.
+  if (bk.settled) return;
+  bk.settled = true;
+  if (!bk.paid) bk.paid = true;   // no-gateway/dev flow: completion == payment (for receipts)
   const cleaner = db.users[bk.cleanerId];
   if (cleaner) {
     cleaner.wallet = (cleaner.wallet || 0) + bk.payout;

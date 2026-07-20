@@ -10,6 +10,7 @@
  */
 'use strict';
 const assert = require('assert');
+const crypto = require('crypto');
 const http = require('http');
 const { spawnSync, spawn } = require('child_process');
 const fs = require('fs');
@@ -59,7 +60,7 @@ const ok = async (name, fn) => { await fn(); passed++; console.log('  ok -', nam
 
 async function main() {
   const child = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], {
-    env: { ...process.env, PORT: String(PORT), LUMI_DATA_DIR: DATA, LUMI_QUIET: '1' },
+    env: { ...process.env, PORT: String(PORT), LUMI_DATA_DIR: DATA, LUMI_QUIET: '1', LUMI_STRIPE_WEBHOOK_SECRET: 'whsec_test_regression' },
     stdio: ['ignore', 'ignore', 'inherit'],
   });
   try {
@@ -357,6 +358,39 @@ async function main() {
       await req('POST', `/api/bookings/${bookingId}/status`, { token: cleanerTok, body: { status: 'completed' } });
       const me2 = await req('GET', '/api/me', { token: cleanerTok });
       assert.strictEqual(me2.json.user.wallet, wallet1);
+    });
+
+    // ── REGRESSION: card charged on cleaner-match must NOT block the cleaner payout ──
+    // The Uber card-on-file flow marks bk.paid=true the moment the card is captured
+    // (on assignment). Settlement (crediting the cleaner) must be guarded by its own
+    // flag, not by bk.paid — otherwise a paid-by-card job completes with the cleaner
+    // never getting paid. (Reproduces the settlePayment/autoCharge `paid` collision.)
+    await ok('MONEY: cleaner is still paid when the booking was already captured (paid) on match', async () => {
+      const props = await req('GET', '/api/properties', { token: customerTok });
+      const bk = await req('POST', '/api/bookings', { token: customerTok, body: { propertyId: props.json.properties[0].id, service: 'standard' } });
+      const bid = bk.json.booking.id;
+      const acc = await req('POST', `/api/bookings/${bid}/accept`, { token: cleanerTok });
+      assert.strictEqual(acc.json.booking.status, 'accepted');
+      const payout = acc.json.booking.payout;
+      assert.ok(payout > 0, 'cleaner sees a payout');
+      // Simulate "card captured on match" via a signed Stripe webhook → bk.paid=true.
+      const payload = JSON.stringify({ id: 'evt_reg', type: 'payment_intent.succeeded', data: { object: { id: 'pi_reg', metadata: { bookingId: bid } } } });
+      const ts = Math.floor(Date.now() / 1000);
+      const sig = crypto.createHmac('sha256', 'whsec_test_regression').update(`${ts}.${payload}`).digest('hex');
+      const wh = await req('POST', '/api/payments/stripe/webhook', { headers: { 'stripe-signature': `t=${ts},v1=${sig}` }, body: JSON.parse(payload) });
+      assert.strictEqual(wh.status, 200);
+      const paidView = await req('GET', `/api/bookings/${bid}/payment`, { token: customerTok });
+      assert.strictEqual(paidView.json.paid, true, 'booking is captured before completion');
+      // Complete the job and assert the cleaner's wallet grows by exactly the payout.
+      const before = (await req('GET', '/api/me', { token: cleanerTok })).json.user.wallet;
+      await req('POST', `/api/bookings/${bid}/enroute`, { token: cleanerTok });
+      await req('POST', `/api/bookings/${bid}/photos`, { token: cleanerTok, body: { phase: 'before', photo: IMG } });
+      await req('POST', `/api/bookings/${bid}/status`, { token: cleanerTok, body: { status: 'in_progress' } });
+      await req('POST', `/api/bookings/${bid}/photos`, { token: cleanerTok, body: { phase: 'after', photo: IMG } });
+      const done = await req('POST', `/api/bookings/${bid}/status`, { token: cleanerTok, body: { status: 'completed' } });
+      assert.strictEqual(done.json.booking.status, 'completed');
+      const after = (await req('GET', '/api/me', { token: cleanerTok })).json.user.wallet;
+      assert.strictEqual(after - before, payout, 'cleaner is paid the full payout despite the pre-completion capture');
     });
 
     // ── Admin capability enforcement ──
