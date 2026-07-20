@@ -1116,6 +1116,7 @@ let state = {
   categories: null,
   flags: {},
   cities: [],
+  citiesOpen: [],       // cities open for new sign-ups (others are "coming soon")
   properties: [],
   draft: null,          // booking wizard draft
   activeBooking: null,
@@ -1642,8 +1643,8 @@ Object.assign(TR.uk,{"5% кэшбек на каждый заказ":"5% кешб
 Object.assign(TR.pl,{"Приоритетная подача":"Priorytetowa wysyłka","Любимый исполнитель":"Ulubiony wykonawca","Заказывайте того же исполнителя по расписанию.":"Zamawiaj tego samego wykonawcę według harmonogramu.","AI сам заказывает регулярное обслуживание.":"AI samo zamawia regularną obsługę.","Подписка, которая берёт дом на себя.":"Subskrypcja, która bierze dom na siebie.","Вы участник LUMI+":"Jesteś członkiem LUMI+","На главную":"Na stronę główną"});
 Object.assign(TR.en,{"Приоритетная подача":"Priority dispatch","Любимый исполнитель":"Favorite cleaner","Заказывайте того же исполнителя по расписанию.":"Book the same cleaner on a schedule.","AI сам заказывает регулярное обслуживание.":"AI books regular upkeep for you.","Подписка, которая берёт дом на себя.":"A subscription that takes the home off your hands.","Вы участник LUMI+":"You’re a LUMI+ member","На главную":"Home"});
 Object.assign(TR.uk,{"Приоритетная подача":"Пріоритетна подача","Любимый исполнитель":"Улюблений виконавець","Заказывайте того же исполнителя по расписанию.":"Замовляйте того самого виконавця за розкладом.","AI сам заказывает регулярное обслуживание.":"AI сам замовляє регулярне обслуговування.","Подписка, которая берёт дом на себя.":"Підписка, яка бере дім на себе.","Вы участник LUMI+":"Ви учасник LUMI+","На главную":"На головну"});
-Object.assign(TR.pl,{"Зачтётся при оплате следующего заказа.":"Zostanie zaliczone przy następnym zamówieniu.","Оплата с баланса":"Płatność z salda","LUMI+ активен — 5% кэшбека на каждый заказ":"LUMI+ aktywny — 5% cashbacku za każde zamówienie","Отменить заказ? Исполнитель ещё не выехал — отмена бесплатна.":"Anulować zamówienie? Wykonawca jeszcze nie wyjechał — anulowanie jest bezpłatne.","Отменить заказ? Исполнитель уже выехал — удержим 40% от суммы.":"Anulować zamówienie? Wykonawca już wyjechał — potrącimy 40% kwoty.","Заказ отменён":"Zamówienie anulowane"});
-Object.assign(TR.en,{"Зачтётся при оплате следующего заказа.":"Applied to your next order.","Оплата с баланса":"Paid from balance","LUMI+ активен — 5% кэшбека на каждый заказ":"LUMI+ active — 5% cashback on every order","Отменить заказ? Исполнитель ещё не выехал — отмена бесплатна.":"Cancel the order? The cleaner hasn’t left yet — cancellation is free.","Отменить заказ? Исполнитель уже выехал — удержим 40% от суммы.":"Cancel the order? The cleaner is already on the way — we’ll keep 40%.","Заказ отменён":"Order cancelled"});
+Object.assign(TR.pl,{"скоро":"wkrótce","Зачтётся при оплате следующего заказа.":"Zostanie zaliczone przy następnym zamówieniu.","Оплата с баланса":"Płatność z salda","LUMI+ активен — 5% кэшбека на каждый заказ":"LUMI+ aktywny — 5% cashbacku za każde zamówienie","Отменить заказ? Исполнитель ещё не выехал — отмена бесплатна.":"Anulować zamówienie? Wykonawca jeszcze nie wyjechał — anulowanie jest bezpłatne.","Отменить заказ? Исполнитель уже выехал — удержим 40% от суммы.":"Anulować zamówienie? Wykonawca już wyjechał — potrącimy 40% kwoty.","Заказ отменён":"Zamówienie anulowane"});
+Object.assign(TR.en,{"скоро":"soon","Зачтётся при оплате следующего заказа.":"Applied to your next order.","Оплата с баланса":"Paid from balance","LUMI+ активен — 5% кэшбека на каждый заказ":"LUMI+ active — 5% cashback on every order","Отменить заказ? Исполнитель ещё не выехал — отмена бесплатна.":"Cancel the order? The cleaner hasn’t left yet — cancellation is free.","Отменить заказ? Исполнитель уже выехал — удержим 40% от суммы.":"Cancel the order? The cleaner is already on the way — we’ll keep 40%.","Заказ отменён":"Order cancelled"});
 Object.assign(TR.uk,{"Зачтётся при оплате следующего заказа.":"Зарахується при оплаті наступного замовлення.","Оплата с баланса":"Оплата з балансу","LUMI+ активен — 5% кэшбека на каждый заказ":"LUMI+ активний — 5% кешбеку за кожне замовлення","Отменить заказ? Исполнитель ещё не выехал — отмена бесплатна.":"Скасувати замовлення? Виконавець ще не виїхав — скасування безкоштовне.","Отменить заказ? Исполнитель уже выехал — удержим 40% от суммы.":"Скасувати замовлення? Виконавець уже виїхав — утримаємо 40% суми.","Заказ отменён":"Замовлення скасовано"});
 
 function t(ru,params){
@@ -2256,7 +2257,7 @@ function renderAuth(){
         </label>
         <label class="field"><span>${isCo?'Контактное лицо':'Имя и фамилия'}</span><input class="input" name="name" placeholder="Анна Ковальская" value="${av(V.name)}" required></label>
         <label class="field"><span>Номер телефона</span><input class="input" name="phone" type="tel" inputmode="tel" placeholder="+48 600 700 800" value="${av(V.phone)}" required></label>
-        <label class="field"><span>Город</span><select class="input" name="city">${state.cities.map(c=>`<option ${V.city===c?'selected':''}>${c}</option>`).join('')||'<option>Warsaw</option>'}</select></label>
+        <label class="field"><span>Город</span><select class="input" name="city">${(()=>{const open=(state.citiesOpen&&state.citiesOpen.length)?state.citiesOpen:state.cities;const list=state.cities.length?state.cities:['Wrocław'];const def=V.city||open[0]||'Wrocław';return list.map(c=>{const o=open.includes(c);return `<option value="${c}" ${c===def&&o?'selected':''} ${o?'':'disabled'}>${c}${o?'':' — '+t('скоро')}</option>`;}).join('');})()}</select></label>
         ${role==='cleaner'?`
         <div class="kyc-block">
           <label class="field" style="margin-bottom:12px"><span>Регистрируетесь как</span>
@@ -2355,6 +2356,9 @@ function renderAuth(){
     };
   }
   draw();
+  // Load open/coming-soon cities for the registration selector (only Wrocław is
+  // open at launch); re-draw the form once they arrive.
+  if(!state.cities.length){ api('/api/cities').then(r=>{ state.cities=r.cities||[]; state.citiesOpen=r.open||r.cities||[]; if(mode==='register')draw(); }).catch(()=>{}); }
   root.appendChild(wrap);
   const fx=$('#authFX',wrap); if(fx) heroAurora(fx);
   const tb=$('#authTheme',wrap);
@@ -2546,7 +2550,7 @@ async function loadCatalog(){
   try{
     if(!state.catalog) state.catalog=await api('/api/catalog?city='+encodeURIComponent(state.user&&state.user.city||'Warsaw'));
     if(!state.categories){const r=await api('/api/categories');state.categories=r.categories;}
-    if(!state.cities.length){const r=await api('/api/cities');state.cities=r.cities;}
+    if(!state.cities.length){const r=await api('/api/cities');state.cities=r.cities;state.citiesOpen=r.open||r.cities;}
     try{const r=await api('/api/flags');state.flags=r.flags||{};}catch{}
   }catch{}
 }

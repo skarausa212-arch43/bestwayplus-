@@ -60,7 +60,7 @@ const ok = async (name, fn) => { await fn(); passed++; console.log('  ok -', nam
 
 async function main() {
   const child = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], {
-    env: { ...process.env, PORT: String(PORT), LUMI_DATA_DIR: DATA, LUMI_QUIET: '1', LUMI_STRIPE_WEBHOOK_SECRET: 'whsec_test_regression' },
+    env: { ...process.env, PORT: String(PORT), LUMI_DATA_DIR: DATA, LUMI_QUIET: '1', LUMI_STRIPE_WEBHOOK_SECRET: 'whsec_test_regression', LUMI_OPEN_CITIES: 'Warsaw,Kraków,Wrocław,Poznań,Gdańsk,Łódź' },
     stdio: ['ignore', 'ignore', 'inherit'],
   });
   try {

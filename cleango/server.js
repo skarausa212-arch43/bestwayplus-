@@ -116,6 +116,11 @@ const LATE_CANCEL_FEE_RATE = 0.40;
 
 // Launch market — Poland first (Product Vision, phase 1)
 const CITIES = ['Warsaw', 'Kraków', 'Wrocław', 'Poznań', 'Gdańsk', 'Łódź'];
+// Cities open for new sign-ups at launch; the rest render as "coming soon" and
+// registration in them is rejected server-side. Override with LUMI_OPEN_CITIES
+// (comma-separated). To open a new city, add it here / to the env — no code change.
+const OPEN_CITIES = (process.env.LUMI_OPEN_CITIES || 'Wrocław')
+  .split(',').map((s) => s.trim()).filter((c) => CITIES.includes(c));
 // City centroids — the geo fallback when a booking/provider has no GPS point,
 // so distance ranking still works (same city ⇒ 0 km, other city ⇒ far away).
 const CITY_COORDS = {
@@ -714,6 +719,11 @@ route('POST', '/api/register', async (req, res) => {
   // Phone is required for everyone (identity + contact for support/safety).
   const phone = String(b.phone || '').trim().slice(0, 32);
   if (phone.replace(/\D/g, '').length < 9) return send(res, 400, { error: 'Укажите корректный номер телефона.', code: 'PHONE_REQUIRED' });
+  // Launch gating: only open cities accept sign-ups (admins are exempt). Server-
+  // authoritative, so a tampered client can't register in a "coming soon" city.
+  if (role !== 'admin' && !OPEN_CITIES.includes(b.city)) {
+    return send(res, 400, { error: `Регистрация пока доступна только в городе ${OPEN_CITIES.join(', ')}. Остальные города — скоро.`, code: 'CITY_CLOSED' });
+  }
   if (Object.values(db.users).some((u) => u.email === email)) {
     return send(res, 409, { error: 'An account with this email already exists.' });
   }
@@ -752,7 +762,7 @@ route('POST', '/api/register', async (req, res) => {
     rating: role === 'cleaner' ? 5 : null,
     jobsDone: 0,
     verified: role !== 'cleaner',    // cleaners require KYC verification
-    city: CITIES.includes(b.city) ? b.city : 'Warsaw',
+    city: CITIES.includes(b.city) ? b.city : (OPEN_CITIES[0] || 'Wrocław'),
     online: false,
     subscription: null,              // 'plus' when a LUMI+ member
   };
@@ -1185,7 +1195,7 @@ route('POST', '/api/ai/photo-analysis', async (req, res) => {
   const r = ai.analyzeImages(b.images || []);
   send(res, 200, { analysis: r.data, ai: r.meta });
 });
-route('GET', '/api/cities', async (req, res) => send(res, 200, { cities: CITIES }));
+route('GET', '/api/cities', async (req, res) => send(res, 200, { cities: CITIES, open: OPEN_CITIES }));
 route('GET', '/api/categories', async (req, res) => send(res, 200, { categories: SERVICE_CATEGORIES }));
 
 // AI Concierge — natural-language intent → a ready-to-book suggestion.
