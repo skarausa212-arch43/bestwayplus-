@@ -57,6 +57,9 @@ async function waitReady(tries = 50) {
 const IMG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=';
 let passed = 0;
 const ok = async (name, fn) => { await fn(); passed++; console.log('  ok -', name); };
+// Memoized admin token — logging in fresh per test trips the 10/10min login limit.
+let _adminTok = null;
+const adminToken = async () => _adminTok || (_adminTok = (await req('POST', '/api/login', { body: { email: 'admin@cleango.app', password: 'cleango123' } })).json.token);
 
 async function main() {
   const child = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], {
@@ -560,8 +563,8 @@ async function main() {
       // Weekly payout file: capability-gated; admin gets the who/how-much/IBAN list.
       const notAdm = await req('GET', '/api/admin/payouts', { token: customerTok });
       assert.strictEqual(notAdm.status, 403);
-      const adm = await req('POST', '/api/login', { body: { email: 'admin@cleango.app', password: 'cleango123' } });
-      const po = await req('GET', '/api/admin/payouts', { token: adm.json.token });
+      const admTok = await adminToken();
+      const po = await req('GET', '/api/admin/payouts', { token: admTok });
       assert.strictEqual(po.status, 200);
       assert.ok(Array.isArray(po.json.cleaners) && typeof po.json.total === 'number', 'payout batch shape');
       po.json.cleaners.forEach((c) => assert.ok('bankAccount' in c && 'amount' in c, 'each row carries IBAN + amount'));
@@ -569,7 +572,7 @@ async function main() {
 
     // ── Super-admin platform settings: economy knobs, announcement, broadcast ──
     await ok('admin settings: capability-gated, drive live economy + announcement + broadcast', async () => {
-      const adm = (await req('POST', '/api/login', { body: { email: 'admin@cleango.app', password: 'cleango123' } })).json.token;
+      const adm = await adminToken();
       // Non-admin cannot read or write settings.
       assert.strictEqual((await req('GET', '/api/admin/settings', { token: customerTok })).status, 403);
       assert.strictEqual((await req('POST', '/api/admin/settings', { token: customerTok, body: { commissionRate: 0.9 } })).status, 403);
@@ -594,6 +597,53 @@ async function main() {
       const bc = await req('POST', '/api/admin/notifications/broadcast', { token: adm, body: { title: 'Hi', body: 'Msg', reason: 'test', targetRole: 'customer' } });
       assert.strictEqual(bc.status, 200);
       assert.ok(bc.json.sent >= 1, 'broadcast delivered to at least one customer');
+    });
+
+    // ── Super-admin: finance ledger, impersonation, global search, payout settle, maintenance ──
+    await ok('admin finance/бухгалтерия: capability-gated ledger + summary', async () => {
+      const adm = await adminToken();
+      assert.strictEqual((await req('GET', '/api/admin/finance', { token: customerTok })).status, 403);
+      const fin = await req('GET', '/api/admin/finance', { token: adm });
+      assert.strictEqual(fin.status, 200);
+      assert.ok(Array.isArray(fin.json.entries), 'ledger entries returned');
+      assert.strictEqual(typeof fin.json.summary.platformRevenueMinor, 'number');
+    });
+    await ok('admin impersonation: token acts as the user; admins are protected; audited', async () => {
+      const adm = await adminToken();
+      const cid = (await req('GET', '/api/me', { token: customerTok })).json.user.id;
+      const imp = await req('POST', `/api/admin/users/${cid}/impersonate`, { token: adm });
+      assert.strictEqual(imp.status, 200);
+      const asUser = await req('GET', '/api/me', { token: imp.json.token });
+      assert.strictEqual(asUser.json.user.id, cid, 'impersonation token resolves to the target user');
+      const admins = await req('GET', '/api/admin/users?role=admin', { token: adm });
+      const bad = await req('POST', `/api/admin/users/${admins.json.users[0].id}/impersonate`, { token: adm });
+      assert.strictEqual(bad.status, 403);
+    });
+    await ok('admin global search: finds a user by email and a booking by id', async () => {
+      const adm = await adminToken();
+      const me = (await req('GET', '/api/me', { token: customerTok })).json.user;
+      const r = await req('GET', `/api/admin/search?q=${encodeURIComponent(me.email)}`, { token: adm });
+      assert.ok(r.json.users.some((u) => u.id === me.id), 'search finds the user by email');
+      assert.strictEqual((await req('GET', '/api/admin/search?q=x', { token: customerTok })).status, 403);
+    });
+    await ok('MONEY: weekly payout settle records the provider_settlement ledger entry (no 500)', async () => {
+      const adm = await adminToken();
+      const po = await req('GET', '/api/admin/payouts', { token: adm });
+      const ids = po.json.cleaners.map((c) => c.id);
+      const settle = await req('POST', '/api/admin/payouts/settle', { token: adm, body: { ids } });
+      assert.strictEqual(settle.status, 200, 'settle must not 500 (ledger accepts provider_settlement)');
+      assert.strictEqual(typeof settle.json.settled, 'number');
+    });
+    await ok('maintenance mode: blocks new bookings + registration, shown in catalog', async () => {
+      const adm = await adminToken();
+      await req('POST', '/api/admin/settings', { token: adm, body: { maintenance: { active: true, message: 'Тех' } } });
+      assert.strictEqual((await req('GET', '/api/catalog', { token: customerTok })).json.maintenance, 'Тех');
+      const blocked = await req('POST', '/api/bookings', { token: customerTok, body: { service: 'standard', rooms: 1, baths: 1, address: 'x', city: 'Warsaw' } });
+      assert.strictEqual(blocked.status, 503);
+      assert.strictEqual(blocked.json.code, 'MAINTENANCE');
+      // Restore so later flows work.
+      await req('POST', '/api/admin/settings', { token: adm, body: { maintenance: { active: false, message: '' } } });
+      assert.strictEqual((await req('GET', '/api/catalog', { token: customerTok })).json.maintenance, null);
     });
 
     // ── Recommendations are scoped to the customer's city ──

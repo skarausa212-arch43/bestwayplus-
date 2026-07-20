@@ -13,7 +13,7 @@
 const crypto = require('crypto');
 
 const ENTRY_TYPES = new Set([
-  'authorization', 'capture', 'refund', 'provider_payout', 'tip',
+  'authorization', 'capture', 'refund', 'provider_payout', 'provider_settlement', 'tip',
   'platform_revenue', 'cancellation_fee', 'adjustment',
 ]);
 

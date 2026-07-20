@@ -2413,11 +2413,12 @@ function shell(content){
           <span class="uc-txt"><b>${u.name.split(' ')[0]}</b><span>${roleLabel}</span></span>
         </button>
       </div>
-      <div class="main">${(state.catalog&&state.catalog.announcement)?`<div class="announce-banner">📣 <span>${esc(state.catalog.announcement)}</span></div>`:''}<div class="content view-enter"></div></div>
+      <div class="main">${sessionStorage.getItem('lumi_admin_token')?`<div class="announce-banner" style="background:linear-gradient(120deg,#FEF3C7,#FDE68A);border-color:#F59E0B;color:#78350F"><span>👁 Вы вошли как ${esc(sessionStorage.getItem('lumi_imp_name')||'пользователь')}</span><button class="btn sm" id="stopImp" style="background:#78350F">Вернуться в админку</button></div>`:''}${(state.catalog&&state.catalog.maintenance)?`<div class="announce-banner" style="background:linear-gradient(120deg,#FEE2E2,#FECACA);border-color:var(--danger);color:#7F1D1D">🛠 <span>${esc(state.catalog.maintenance)}</span></div>`:''}${(state.catalog&&state.catalog.announcement)?`<div class="announce-banner">📣 <span>${esc(state.catalog.announcement)}</span></div>`:''}<div class="content view-enter"></div></div>
     </div>
     <div class="tabbar"></div>
   </div>`);
   const nav=$('.nav',app), tab=$('.tabbar',app);
+  const si=$('#stopImp',app); if(si)si.onclick=stopImpersonate;
   const pp=$('#promoPlus',app); if(pp)pp.onclick=()=>{state.view='premium';render();};
   const sup=$('.support-card',app); if(sup)sup.onclick=()=>openSupport();
   items.forEach(([v,label,icon])=>{
@@ -5331,6 +5332,28 @@ async function loadAdminPlatform(){
       <button class="btn sm" id="pfAnnSave" style="margin-top:10px;display:block">Сохранить объявление</button>
     </div>
 
+    <div style="margin-bottom:18px">
+      <b style="font-size:14px">Режим техработ</b>
+      <p class="muted tiny" style="margin:2px 0 8px">Пока включён — новые регистрации и заказы недоступны, всем показывается баннер.</p>
+      <input class="input" id="pfMntMsg" placeholder="Сообщение (необяз.): вернёмся через час" value="${esc(s.maintenance.message||'')}" maxlength="280">
+      <label class="chip" style="cursor:pointer;gap:7px;margin-top:8px;${s.maintenance.active?'border-color:var(--danger);color:var(--danger)':''}"><input type="checkbox" id="pfMntActive" ${s.maintenance.active?'checked':''}> Включить техработы</label>
+      <button class="btn sm" id="pfMntSave" style="margin-top:10px;display:block">Сохранить режим</button>
+    </div>
+
+    <div style="margin-bottom:18px">
+      <b style="font-size:14px">Бухгалтерия</b>
+      <p class="muted tiny" style="margin:2px 0 8px">Полный финансовый реестр: списания, комиссии, выплаты, штрафы, возвраты.</p>
+      <div id="finSummary" class="muted tiny">Загрузка…</div>
+      <button class="btn sm" id="finCsv" style="margin-top:10px">${I.receipt||''} Скачать бухгалтерию (CSV)</button>
+    </div>
+
+    <div style="margin-bottom:18px">
+      <b style="font-size:14px">Поиск</b>
+      <p class="muted tiny" style="margin:2px 0 8px">Найти любого пользователя или заказ и перейти к нему.</p>
+      <input class="input" id="admSearch" placeholder="Имя, email, телефон или ID заказа">
+      <div id="admSearchRes" class="grid" style="margin-top:10px"></div>
+    </div>
+
     <div>
       <b style="font-size:14px">Рассылка</b>
       <p class="muted tiny" style="margin:2px 0 8px">Уведомление + email + push выбранному сегменту.</p>
@@ -5358,6 +5381,25 @@ async function loadAdminPlatform(){
     lateCancelRate:(+$('#pfLate',box).value||0)/100,
   },e.target,'Экономика обновлена');
   $('#pfAnnSave',box).onclick=(e)=>save({announcement:{text:$('#pfAnnText',box).value,active:$('#pfAnnActive',box).checked}},e.target,'Объявление обновлено');
+  $('#pfMntSave',box).onclick=async(e)=>{
+    const active=$('#pfMntActive',box).checked;
+    if(active&&!confirm('Включить режим техработ? Клиенты не смогут регистрироваться и делать заказы.'))return;
+    await save({maintenance:{message:$('#pfMntMsg',box).value,active}},e.target,active?'Техработы включены':'Техработы выключены');
+    if(state.catalog)state.catalog.maintenance=active?($('#pfMntMsg',box).value||'Идут технические работы.'):null;
+  };
+
+  // Бухгалтерия — summary + full-ledger CSV.
+  let finData=null;
+  api('/api/admin/finance').then(f=>{ finData=f; const zl=(m)=>money(Math.round((m||0)/100));
+    const S=f.summary; const el2=$('#finSummary',box); if(el2)el2.innerHTML=
+      `Оборот: <b>${zl(S.grossCapturedMinor)}</b> · Комиссия: <b style="color:var(--primary-600)">${zl(S.platformRevenueMinor)}</b> · Выплаты: <b>${zl(-S.providerPayoutMinor)}</b> · Штрафы отмен: <b>${zl(S.cancellationFeeMinor)}</b> · Возвраты: <b style="color:var(--danger)">${zl(-S.refundMinor)}</b> · Записей: ${S.count}`;
+  }).catch(()=>{ const el2=$('#finSummary',box); if(el2)el2.textContent='Нет доступа к бухгалтерии.'; });
+  $('#finCsv',box).onclick=()=>{ if(!finData){toast('Бухгалтерия ещё грузится',true);return;} downloadFinanceCsv(finData); };
+
+  // Global search — jump to any user (open/impersonate) or booking.
+  const admSearch=$('#admSearch',box), admRes=$('#admSearchRes',box); let st=null;
+  if(admSearch)admSearch.oninput=()=>{ clearTimeout(st); const q=admSearch.value.trim(); if(q.length<2){admRes.innerHTML='';return;}
+    st=setTimeout(async()=>{ try{ const r=await api('/api/admin/search?q='+encodeURIComponent(q)); renderAdminSearch(admRes,r); }catch(e){} },250); };
 
   const bcSend=$('#bcSend',box), bcResult=$('#bcResult',box);
   bcSend.onclick=async()=>{
@@ -5373,6 +5415,65 @@ async function loadAdminPlatform(){
     }catch(e){ toast(e.message,true); }
     bcSend.disabled=false; bcSend.textContent='Отправить рассылку';
   };
+}
+// Escape one CSV cell (BOM + quoting handled by the callers).
+function csvCell(v){const s=String(v==null?'':v);return /[",;\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
+function csvDownload(rows,filename){
+  const csv=rows.map(r=>r.map(csvCell).join(',')).join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},150);
+}
+// Full accounting export — every immutable ledger entry (grosz → zł).
+function downloadFinanceCsv(f){
+  const rows=[['Дата','Тип','Сумма, zł','Валюта','Заказ','Кто','Причина','ID']];
+  const TYPE_RU={capture:'Оплата заказа',platform_revenue:'Комиссия платформы',provider_payout:'Начислено исполнителю',provider_settlement:'Выплата исполнителю (банк)',cancellation_fee:'Штраф за отмену',refund:'Возврат',authorization:'Авторизация',tip:'Чаевые',adjustment:'Корректировка'};
+  (f.entries||[]).forEach(e=>rows.push([new Date(e.at).toISOString().slice(0,19).replace('T',' '),TYPE_RU[e.type]||e.type,(e.amountMinor/100).toFixed(2),e.currency,e.bookingId||'',e.actor||'',e.reason||'',e.id]));
+  const S=f.summary;
+  rows.push([]);rows.push(['ИТОГО','','','','','','','']);
+  rows.push(['Оборот',(S.grossCapturedMinor/100).toFixed(2)]);
+  rows.push(['Комиссия платформы',(S.platformRevenueMinor/100).toFixed(2)]);
+  rows.push(['Начислено исполнителям',(S.providerPayoutMinor/100).toFixed(2)]);
+  rows.push(['Выплачено в банк',(S.providerSettledMinor/100).toFixed(2)]);
+  rows.push(['Штрафы за отмену',(S.cancellationFeeMinor/100).toFixed(2)]);
+  rows.push(['Возвраты',(S.refundMinor/100).toFixed(2)]);
+  rows.push(['Чистая позиция платформы',(S.netPlatformMinor/100).toFixed(2)]);
+  csvDownload(rows,`lumi-buhgalteria-${new Date().toISOString().slice(0,10)}.csv`);
+}
+// Render admin search results (users → open/impersonate; bookings → open).
+function renderAdminSearch(box,r){
+  box.innerHTML='';
+  if(!r.users.length&&!r.bookings.length){ box.innerHTML='<div class="muted tiny">Ничего не найдено.</div>'; return; }
+  r.users.forEach(u=>{
+    const row=el(`<div class="card bk" style="cursor:default"><div class="thumb">${I.users}</div>
+      <div class="meta"><h4>${esc(u.name)} ${u.suspended?'<span class="badge red">заблокирован</span>':''}</h4><div class="muted tiny">${ROLE_RU[u.role]||u.role} · ${esc(u.email||'')} · ${u.city||''}</div></div>
+      <div class="row" style="gap:6px"><button class="btn ghost sm" data-open="${u.id}">Профиль</button>${u.role!=='admin'?`<button class="btn ghost sm" data-imp="${u.id}" data-name="${esc(u.name)}">Войти под ним</button>`:''}</div></div>`);
+    row.querySelector('[data-open]').onclick=()=>openAdminUser(u.id);
+    const imp=row.querySelector('[data-imp]'); if(imp)imp.onclick=()=>impersonate(u.id,imp.dataset.name);
+    box.appendChild(row);
+  });
+  r.bookings.forEach(b=>{
+    const row=el(`<div class="card bk" style="cursor:pointer"><div class="thumb">${I.broom}</div>
+      <div class="meta"><h4>${esc(b.service||'Заказ')}</h4><div class="muted tiny">${b.city||''} · ${statusBadge(b.status)} · ${money(b.price)}</div></div>${I.arrow}</div>`);
+    row.onclick=()=>openBooking(b.id);
+    box.appendChild(row);
+  });
+}
+// Impersonation: swap to a debug session as the target user; keep the admin token
+// to return. A persistent banner (see shell) offers "back to admin".
+async function impersonate(userId,name){
+  if(!confirm('Войти под пользователем '+name+'? Вы увидите приложение его глазами.'))return;
+  try{ const r=await api('/api/admin/users/'+userId+'/impersonate','POST');
+    sessionStorage.setItem('lumi_admin_token',state.token);
+    sessionStorage.setItem('lumi_imp_name',name);
+    localStorage.setItem('cg_token',r.token);
+    location.reload();
+  }catch(e){ toast(e.message,true); }
+}
+function stopImpersonate(){
+  const t=sessionStorage.getItem('lumi_admin_token'); if(!t)return;
+  localStorage.setItem('cg_token',t);
+  sessionStorage.removeItem('lumi_admin_token'); sessionStorage.removeItem('lumi_imp_name');
+  location.reload();
 }
 // Build and download the weekly cleaner-payout CSV (name, bank, IBAN, amount).
 // A UTF-8 BOM keeps Cyrillic readable in Excel; every cell is CSV-escaped.

@@ -125,11 +125,12 @@ function settingsDefaults() {
     plusCashbackRate: PLUS_PLAN.cashbackRate,
     lateCancelRate: LATE_CANCEL_FEE_RATE,
     announcement: { text: '', active: false },
+    maintenance: { active: false, message: '' },
   };
 }
 function getSettings() {
   const d = settingsDefaults(); const s = db.settings || {};
-  return { ...d, ...s, announcement: { ...d.announcement, ...(s.announcement || {}) } };
+  return { ...d, ...s, announcement: { ...d.announcement, ...(s.announcement || {}) }, maintenance: { ...d.maintenance, ...(s.maintenance || {}) } };
 }
 
 // Launch market — Poland first (Product Vision, phase 1)
@@ -741,7 +742,11 @@ route('POST', '/api/register', async (req, res) => {
   if (phone.replace(/\D/g, '').length < 9) return send(res, 400, { error: 'Укажите корректный номер телефона.', code: 'PHONE_REQUIRED' });
   // Launch gating: only open cities accept sign-ups (admins are exempt). Server-
   // authoritative, so a tampered client can't register in a "coming soon" city.
-  const openCities = getSettings().openCities;
+  const cfg = getSettings();
+  if (role !== 'admin' && cfg.maintenance.active) {
+    return send(res, 503, { error: cfg.maintenance.message || 'Идут технические работы. Попробуйте позже.', code: 'MAINTENANCE' });
+  }
+  const openCities = cfg.openCities;
   if (role !== 'admin' && !openCities.includes(b.city)) {
     return send(res, 400, { error: `Регистрация пока доступна только в городе ${openCities.join(', ')}. Остальные города — скоро.`, code: 'CITY_CLOSED' });
   }
@@ -1169,6 +1174,7 @@ route('GET', '/api/catalog', async (req, res) => {
     stripePublishableKey: stripe.publishableKey() || null,
     plusPlan: { priceMinor: getSettings().plusPriceMinor, cashbackRate: getSettings().plusCashbackRate, currency: PLUS_PLAN.currency, period: PLUS_PLAN.period },
     announcement: getSettings().announcement.active ? getSettings().announcement.text : null,
+    maintenance: getSettings().maintenance.active ? (getSettings().maintenance.message || 'Идут технические работы.') : null,
   });
 });
 route('POST', '/api/estimate', async (req, res) => {
@@ -1924,6 +1930,8 @@ route('GET', '/api/wallet', async (req, res) => {
 route('POST', '/api/bookings', async (req, res) => {
   const user = authUser(req);
   if (!user || user.role !== 'customer') return send(res, 403, { error: 'Customers only.' });
+  const mnt = getSettings().maintenance;
+  if (mnt.active) return send(res, 503, { error: mnt.message || 'Идут технические работы — новые заказы временно недоступны.', code: 'MAINTENANCE' });
   const b = await readBody(req);
   // Prefer a saved property; fall back to raw address for one-off bookings.
   const prop = b.propertyId ? db.properties[b.propertyId] : null;
@@ -3310,9 +3318,55 @@ route('POST', '/api/admin/settings', async (req, res) => {
   if (b.announcement != null) {
     changed.announcement = next.announcement = { text: String((b.announcement || {}).text || '').slice(0, 280), active: !!(b.announcement || {}).active };
   }
+  if (b.maintenance != null) {
+    changed.maintenance = next.maintenance = { message: String((b.maintenance || {}).message || '').slice(0, 280), active: !!(b.maintenance || {}).active };
+  }
   db.settings = next; persist.settings();
   audit('settings.updated', admin.id, null, changed);
   send(res, 200, { settings: getSettings() });
+});
+
+// ── Бухгалтерия: the immutable financial ledger + a summary (finance role) ──
+route('GET', '/api/admin/finance', async (req, res) => {
+  const admin = requireCap(req, res, 'payments.view'); if (!admin) return;
+  const rows = ledger.all().sort((a, b) => b.at - a.at);
+  const sum = (t) => rows.filter((r) => r.type === t).reduce((s, r) => s + r.amountMinor, 0);
+  const summary = {
+    currency: CURRENCY, count: rows.length,
+    grossCapturedMinor: sum('capture'),
+    platformRevenueMinor: sum('platform_revenue'),
+    providerPayoutMinor: sum('provider_payout'),            // negative
+    providerSettledMinor: sum('provider_settlement'),        // negative (bank transfers out)
+    cancellationFeeMinor: sum('cancellation_fee'),
+    refundMinor: sum('refund'),                              // negative
+  };
+  // Net platform position = revenue + fees − refunds (settlements are payouts of held payout balance).
+  summary.netPlatformMinor = summary.platformRevenueMinor + summary.cancellationFeeMinor + summary.refundMinor;
+  send(res, 200, { summary, entries: rows.slice(0, 2000) });
+});
+
+// ── Impersonate a user (audited, super-admin) — a support/debug session token ──
+route('POST', '/api/admin/users/:id/impersonate', async (req, res, params) => {
+  const admin = requireCap(req, res, 'users.impersonate'); if (!admin) return;
+  const target = db.users[params.id];
+  if (!target || target.deletedAt) return send(res, 404, { error: 'User not found.' });
+  if (target.role === 'admin') return send(res, 403, { error: 'Cannot impersonate an admin.', code: 'ADMIN_PROTECTED' });
+  audit('user.impersonated', admin.id, target.id, {});
+  send(res, 200, { token: signToken(target.id), user: publicUser(target) });
+});
+
+// ── Global admin search: jump to any user or booking ──
+route('GET', '/api/admin/search', async (req, res) => {
+  const admin = requireCap(req, res, 'users.view'); if (!admin) return;
+  const q = String(new URL(req.url, 'http://x').searchParams.get('q') || '').trim().toLowerCase();
+  if (q.length < 2) return send(res, 200, { users: [], bookings: [] });
+  const users = Object.values(db.users)
+    .filter((u) => !u.deletedAt && ((u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q) || u.id.toLowerCase() === q || (u.phone || '').includes(q)))
+    .slice(0, 12).map((u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, city: u.city, suspended: !!u.suspended }));
+  const bookings = Object.values(db.bookings)
+    .filter((b) => b.id.toLowerCase().includes(q) || (b.address || '').toLowerCase().includes(q))
+    .slice(0, 12).map((b) => ({ id: b.id, service: b.serviceLabel, status: b.status, city: b.city, price: b.price }));
+  send(res, 200, { users, bookings });
 });
 // §6 booking management — force re-dispatch (release the provider back to search).
 route('POST', '/api/admin/bookings/:id/redispatch', async (req, res, params) => {
