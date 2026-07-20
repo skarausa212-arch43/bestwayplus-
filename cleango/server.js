@@ -3329,6 +3329,29 @@ route('POST', '/api/admin/settings', async (req, res) => {
   send(res, 200, { settings: getSettings() });
 });
 
+// ── Danger zone: wipe all non-admin users + operational data (pre-launch reset).
+// Keeps admin accounts, platform settings and feature flags. Requires an exact
+// typed confirmation and is audited. (The append-only ledger-v2 is left intact.)
+route('POST', '/api/admin/reset-data', async (req, res) => {
+  const admin = requireCap(req, res, 'users.delete'); if (!admin) return;
+  const b = await readBody(req);
+  if (String((b && b.confirm) || '').trim().toUpperCase() !== 'УДАЛИТЬ') {
+    return send(res, 400, { error: 'Введите слово УДАЛИТЬ, чтобы подтвердить.', code: 'CONFIRM_REQUIRED' });
+  }
+  const before = Object.keys(db.users).length;
+  const kept = {};
+  for (const [id, u] of Object.entries(db.users)) if (u.role === 'admin' && !u.deletedAt) kept[id] = u;
+  db.users = kept;
+  // Wipe transactional stores that reference users.
+  db.bookings = {}; db.properties = {}; db.messages = {}; db.reviews = {};
+  db.notifications = {}; db.appliances = {}; db.disputes = {}; db.support = {};
+  db.reservations = {}; db.devices = {}; db.payments = {}; db.walletTx = {}; db.ledger = [];
+  for (const p of ['users', 'bookings', 'properties', 'messages', 'reviews', 'notifications', 'appliances', 'disputes', 'support', 'reservations', 'devices', 'payments', 'walletTx', 'ledger']) persist[p]();
+  const removed = before - Object.keys(kept).length;
+  audit('data.reset', admin.id, null, { removedUsers: removed, keptAdmins: Object.keys(kept).length });
+  send(res, 200, { removedUsers: removed, keptAdmins: Object.keys(kept).length });
+});
+
 // ── Бухгалтерия: the immutable financial ledger + a summary (finance role) ──
 route('GET', '/api/admin/finance', async (req, res) => {
   const admin = requireCap(req, res, 'payments.view'); if (!admin) return;

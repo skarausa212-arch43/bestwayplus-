@@ -5369,6 +5369,13 @@ async function loadAdminPlatform(){
       <label class="field" style="margin:10px 0 0"><span>Текст</span><textarea class="input" id="bcBody" rows="3" placeholder="Текст сообщения…"></textarea></label>
       <button class="btn block" id="bcSend" style="margin-top:12px">Отправить рассылку</button>
       <div id="bcResult" class="tiny muted" style="margin-top:8px"></div>
+    </div>
+
+    <div style="margin-top:22px;padding-top:16px;border-top:1px solid var(--line)">
+      <b style="font-size:14px;color:var(--danger)">Опасная зона</b>
+      <p class="muted tiny" style="margin:2px 0 8px">Удалить всех пользователей (кроме админов) и очистить все заказы, объекты и историю. Настройки платформы сохраняются. Необратимо.</p>
+      <button class="btn" id="pfReset" style="background:var(--danger)">Очистить базу</button>
+      <div id="pfResetMsg" class="tiny muted" style="margin-top:8px"></div>
     </div>`;
 
   const save=async(payload,btn,okMsg)=>{ const t0=btn.textContent; btn.disabled=true; btn.textContent='Сохраняю…';
@@ -5418,6 +5425,32 @@ async function loadAdminPlatform(){
       $('#bcTitle',box).value=''; $('#bcBody',box).value='';
     }catch(e){ toast(e.message,true); }
     bcSend.disabled=false; bcSend.textContent='Отправить рассылку';
+  };
+
+  // Danger zone — wipe all non-admin users + operational data (typed confirmation).
+  const pfReset=$('#pfReset',box), pfResetMsg=$('#pfResetMsg',box);
+  if(pfReset)pfReset.onclick=()=>{
+    const m=el(`<div class="modal-bg"><div class="modal" style="max-width:420px">
+      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px"><h2 style="margin:0;color:var(--danger)">Очистить базу</h2><button class="iconbtn" id="rzX" aria-label="Закрыть">✕</button></div>
+      <p class="muted tiny" style="margin-bottom:12px">Будут удалены <b>все пользователи кроме админов</b> и все заказы, объекты, чаты и история. Настройки платформы сохранятся. <b>Отменить нельзя.</b></p>
+      <label class="field"><span>Введите слово <b>УДАЛИТЬ</b> для подтверждения</span><input class="input" id="rzWord" placeholder="УДАЛИТЬ" autocomplete="off"></label>
+      <div id="rzErr" class="tiny muted" style="color:var(--danger);min-height:14px;margin-bottom:8px"></div>
+      <button class="btn block" id="rzGo" style="background:var(--danger)">Удалить всё безвозвратно</button>
+    </div></div>`);
+    document.body.appendChild(m);
+    const close=()=>m.remove();
+    $('#rzX',m).onclick=close; m.addEventListener('click',e=>{if(e.target===m)close();});
+    const go=$('#rzGo',m), err=$('#rzErr',m);
+    go.onclick=async()=>{
+      const word=$('#rzWord',m).value.trim();
+      if(word.toUpperCase()!=='УДАЛИТЬ'){ err.textContent='Введите слово УДАЛИТЬ.'; return; }
+      go.disabled=true; go.textContent='Удаляем…'; err.textContent='';
+      try{ const r=await api('/api/admin/reset-data','POST',{confirm:word});
+        close(); toast(`Удалено пользователей: ${r.removedUsers}. Осталось админов: ${r.keptAdmins}.`);
+        if(pfResetMsg)pfResetMsg.textContent=`Готово: удалено ${r.removedUsers}, осталось админов ${r.keptAdmins}.`;
+        viewAdmin();
+      }catch(e){ err.textContent=e.message; go.disabled=false; go.textContent='Удалить всё безвозвратно'; }
+    };
   };
 }
 // Escape one CSV cell (BOM + quoting handled by the callers).

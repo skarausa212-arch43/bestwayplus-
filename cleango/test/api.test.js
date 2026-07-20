@@ -650,6 +650,16 @@ async function main() {
       await req('POST', '/api/admin/settings', { token: adm, body: { maintenance: { active: false, message: '' } } });
       assert.strictEqual((await req('GET', '/api/catalog', { token: customerTok })).json.maintenance, null);
     });
+    await ok('danger zone: reset-data is capability-gated and needs the exact confirmation', async () => {
+      const adm = await adminToken();
+      // Non-admin cannot reset — even with the right word.
+      assert.strictEqual((await req('POST', '/api/admin/reset-data', { token: customerTok, body: { confirm: 'УДАЛИТЬ' } })).status, 403);
+      // Admin without the exact confirmation is rejected (does NOT wipe).
+      const noConfirm = await req('POST', '/api/admin/reset-data', { token: adm, body: {} });
+      assert.strictEqual(noConfirm.status, 400);
+      assert.strictEqual(noConfirm.json.code, 'CONFIRM_REQUIRED');
+      assert.strictEqual((await req('POST', '/api/admin/reset-data', { token: adm, body: { confirm: 'нет' } })).status, 400);
+    });
 
     // ── Recommendations are scoped to the customer's city ──
     await ok('recommended cleaners: only from the customer’s city', async () => {
