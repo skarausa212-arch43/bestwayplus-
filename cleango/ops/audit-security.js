@@ -73,7 +73,7 @@ const ts = Date.now();
   });
   await ok('KYC: незаверенный исполнитель, админ верифицирует', async () => {
     const em = `kyc${ts}@t.co`;
-    const reg = await api('/api/register', 'POST', { email: em, password: 'Passw0rd!Long1', name: 'New Cleaner', role: 'cleaner', phone: '+48500600888', entityType: 'individual', avatar: IMG, idDocument: IMG, pesel: '44051401359', bankName: 'mBank', bankAccount: 'PL27114020040000300201355387', bio: 'Опыт 3 года, генеральная и послеремонтная уборка, свои средства.' }, null);
+    const reg = await api('/api/register', 'POST', { email: em, password: 'Passw0rd!Long1', name: 'New Cleaner', role: 'cleaner', phone: '+48500600888', entityType: 'individual', teamSize: 2, avatar: IMG, idDocument: IMG, pesel: '44051401359', bankName: 'mBank', bankAccount: 'PL27114020040000300201355387', bio: 'Опыт 3 года, генеральная и послеремонтная уборка, свои средства.' }, null);
     eq(reg.status, 200, 'cleaner reg');
     const uid = reg.json.user.id;
     if (reg.json.user.verified) throw new Error('cleaner verified at registration');

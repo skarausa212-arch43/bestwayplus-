@@ -63,7 +63,7 @@ const adminToken = async () => _adminTok || (_adminTok = (await req('POST', '/ap
 
 async function main() {
   const child = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], {
-    env: { ...process.env, PORT: String(PORT), LUMI_DATA_DIR: DATA, LUMI_QUIET: '1', LUMI_STRIPE_WEBHOOK_SECRET: 'whsec_test_regression', LUMI_OPEN_CITIES: 'Warsaw,Kraków,Wrocław,Poznań,Gdańsk,Łódź' },
+    env: { ...process.env, PORT: String(PORT), LUMI_DATA_DIR: DATA, LUMI_QUIET: '1', LUMI_STRIPE_WEBHOOK_SECRET: 'whsec_test_regression', LUMI_OPEN_CITIES: 'Warsaw,Kraków,Wrocław,Poznań,Gdańsk,Łódź', LUMI_REG_LIMIT: '100' },
     stdio: ['ignore', 'ignore', 'inherit'],
   });
   try {
@@ -118,7 +118,11 @@ async function main() {
     });
 
     await ok('cleaner registration: individual requires PESEL + bank; company needs no photos', async () => {
-      const base = { phone: '600700800', role: 'cleaner', city: 'Warsaw', bio: 'Professional cleaning, five years of experience and my own equipment.' };
+      const base = { phone: '600700800', role: 'cleaner', city: 'Warsaw', teamSize: 3, bio: 'Professional cleaning, five years of experience and my own equipment.' };
+      // Team size is mandatory for cleaners.
+      const noTeam = await req('POST', '/api/register', { body: { ...base, teamSize: undefined, name: 'NT', email: 'nt@x.pl', password: 'averylongpassword', entityType: 'individual', avatar: IMG, idDocument: IMG, pesel: '44051401359', bankName: 'mBank', bankAccount: 'PL27114020040000300201355387' } });
+      assert.strictEqual(noTeam.status, 400);
+      assert.strictEqual(noTeam.json.code, 'TEAM_SIZE_REQUIRED');
       // Individual: photos + PESEL + bank all required.
       const noPesel = await req('POST', '/api/register', { body: { ...base, name: 'Ind One', email: 'ind1@x.pl', password: 'averylongpassword', entityType: 'individual', avatar: IMG, idDocument: IMG, bankName: 'mBank', bankAccount: 'PL27114020040000300201355387' } });
       assert.strictEqual(noPesel.status, 400);
@@ -128,6 +132,7 @@ async function main() {
       // Self payload must not leak PESEL / bank account.
       const me = await req('GET', '/api/me', { token: ind.json.token });
       assert.ok(!('pesel' in me.json.user) && !('bankAccount' in me.json.user), 'sensitive fields stripped from public payload');
+      assert.strictEqual(me.json.user.teamSize, 3, 'team size stored on the cleaner');
       // Company: no photos, but company name + NIP required.
       const noNip = await req('POST', '/api/register', { body: { ...base, name: 'Contact', email: 'co1@x.pl', password: 'averylongpassword', entityType: 'company', companyName: 'SparkClean Sp. z o.o.', bankName: 'PKO', bankAccount: 'PL27114020040000300201355387' } });
       assert.strictEqual(noNip.status, 400);
@@ -439,7 +444,7 @@ async function main() {
     let nearTok, farTok, gpsBookingId;
     await ok('GPS: cleaner shares location; garbage and non-cleaners rejected', async () => {
       const adm = await req('POST', '/api/login', { body: { email: 'admin@cleango.app', password: 'cleango123' } });
-      const base = { phone: '600700800', role: 'cleaner', city: 'Warsaw', bio: 'Professional cleaning, five years of experience and my own equipment.', entityType: 'company', companyName: 'GeoClean Sp. z o.o.', nip: '5252445281', bankName: 'PKO', bankAccount: 'PL27114020040000300201355387' };
+      const base = { phone: '600700800', role: 'cleaner', city: 'Warsaw', teamSize: 4, bio: 'Professional cleaning, five years of experience and my own equipment.', entityType: 'company', companyName: 'GeoClean Sp. z o.o.', nip: '5252445281', bankName: 'PKO', bankAccount: 'PL27114020040000300201355387' };
       const near = await req('POST', '/api/register', { body: { ...base, name: 'Near Cleaner', email: 'near@x.pl', password: 'averylongpassword' } });
       const far = await req('POST', '/api/register', { body: { ...base, name: 'Far Cleaner', email: 'far@x.pl', password: 'averylongpassword', city: 'Gdańsk' } });
       nearTok = near.json.token; farTok = far.json.token;

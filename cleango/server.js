@@ -726,7 +726,7 @@ function route(method, pattern, handler) {
 
 // ---- Auth ----
 route('POST', '/api/register', async (req, res) => {
-  const rl = rateLimit('reg:' + clientIp(req), 10, 3600000);   // 10/hour/IP (§24)
+  const rl = rateLimit('reg:' + clientIp(req), Number(process.env.LUMI_REG_LIMIT) || 10, 3600000);   // 10/hour/IP (§24)
   if (!rl.ok) return send(res, 429, { error: 'Too many attempts. Try again later.', code: 'RATE_LIMITED' }, { 'Retry-After': rl.retryAfter });
   const b = await readBody(req);
   const email = String(b.email || '').trim().toLowerCase();
@@ -765,7 +765,9 @@ route('POST', '/api/register', async (req, res) => {
   const companyName = String(b.companyName || '').trim().slice(0, 120);
   const nip = digits(b.nip);
   const pesel = digits(b.pesel);
+  const teamSize = Math.round(Number(b.teamSize));
   if (role === 'cleaner') {
+    if (!(teamSize >= 1 && teamSize <= 100)) return send(res, 400, { error: 'Укажите, сколько человек в команде (от 1 до 100).', code: 'TEAM_SIZE_REQUIRED' });
     if (bio.length < 20) return send(res, 400, { error: 'Расскажите о себе — что умеете и опыт (минимум 20 символов).', code: 'BIO_REQUIRED' });
     if (!bankName) return send(res, 400, { error: 'Укажите название банка.', code: 'BANK_NAME_REQUIRED' });
     if (bankAccount.replace(/[^0-9A-Z]/g, '').length < 20) return send(res, 400, { error: 'Укажите корректный номер счёта (IBAN).', code: 'BANK_ACCOUNT_REQUIRED' });
@@ -796,6 +798,7 @@ route('POST', '/api/register', async (req, res) => {
     user.entityType = entityType;
     user.bio = bio.slice(0, 600);
     user.experienceYears = Math.max(0, Math.min(50, Number(b.experienceYears) || 0));
+    user.teamSize = teamSize;                 // how many people work in this cleaner's team
     user.equipment = Array.isArray(b.equipment) ? b.equipment.filter((k) => EQUIPMENT[k]) : [];
     user.hasCar = !!b.hasCar;
     user.bankAccount = bankAccount;           // payout details — admin-only, never in public payloads
@@ -2356,7 +2359,7 @@ function cleanerPublic(u) {
   return {
     id: u.id, name: u.name, avatar: u.avatar || null,
     rating: u.rating || null, jobsDone: u.jobsDone || 0, city: u.city || null,
-    bio: u.bio || '', experienceYears: u.experienceYears || null,
+    bio: u.bio || '', experienceYears: u.experienceYears || null, teamSize: u.teamSize || null,
     equipment: Array.isArray(u.equipment) ? u.equipment : [], hasCar: !!u.hasCar,
     online: !!u.online, verified: !!u.verified,
   };
@@ -3202,7 +3205,7 @@ route('GET', '/api/admin/users/:id', async (req, res, params) => {
       suspendedUntil: u.suspendedUntil || null, suspendedReason: u.suspendedReason || '',
       subscription: u.subscription || null, wallet: u.wallet || 0,
       rating: u.rating || null, jobsDone: u.jobsDone || 0,
-      bio: u.bio || '', experienceYears: u.experienceYears || 0,
+      bio: u.bio || '', experienceYears: u.experienceYears || 0, teamSize: u.teamSize || null,
       equipment: Array.isArray(u.equipment) ? u.equipment : [], hasCar: !!u.hasCar,
       entityType: u.entityType || null,
       companyName: u.companyName || null, nip: u.nip || null,   // admin-only
