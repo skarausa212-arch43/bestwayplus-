@@ -1642,9 +1642,9 @@ Object.assign(TR.uk,{"5% кэшбек на каждый заказ":"5% кешб
 Object.assign(TR.pl,{"Приоритетная подача":"Priorytetowa wysyłka","Любимый исполнитель":"Ulubiony wykonawca","Заказывайте того же исполнителя по расписанию.":"Zamawiaj tego samego wykonawcę według harmonogramu.","AI сам заказывает регулярное обслуживание.":"AI samo zamawia regularną obsługę.","Подписка, которая берёт дом на себя.":"Subskrypcja, która bierze dom na siebie.","Вы участник LUMI+":"Jesteś członkiem LUMI+","На главную":"Na stronę główną"});
 Object.assign(TR.en,{"Приоритетная подача":"Priority dispatch","Любимый исполнитель":"Favorite cleaner","Заказывайте того же исполнителя по расписанию.":"Book the same cleaner on a schedule.","AI сам заказывает регулярное обслуживание.":"AI books regular upkeep for you.","Подписка, которая берёт дом на себя.":"A subscription that takes the home off your hands.","Вы участник LUMI+":"You’re a LUMI+ member","На главную":"Home"});
 Object.assign(TR.uk,{"Приоритетная подача":"Пріоритетна подача","Любимый исполнитель":"Улюблений виконавець","Заказывайте того же исполнителя по расписанию.":"Замовляйте того самого виконавця за розкладом.","AI сам заказывает регулярное обслуживание.":"AI сам замовляє регулярне обслуговування.","Подписка, которая берёт дом на себя.":"Підписка, яка бере дім на себе.","Вы участник LUMI+":"Ви учасник LUMI+","На главную":"На головну"});
-Object.assign(TR.pl,{"Зачтётся при оплате следующего заказа.":"Zostanie zaliczone przy następnym zamówieniu.","Оплата с баланса":"Płatność z salda"});
-Object.assign(TR.en,{"Зачтётся при оплате следующего заказа.":"Applied to your next order.","Оплата с баланса":"Paid from balance"});
-Object.assign(TR.uk,{"Зачтётся при оплате следующего заказа.":"Зарахується при оплаті наступного замовлення.","Оплата с баланса":"Оплата з балансу"});
+Object.assign(TR.pl,{"Зачтётся при оплате следующего заказа.":"Zostanie zaliczone przy następnym zamówieniu.","Оплата с баланса":"Płatność z salda","LUMI+ активен — 5% кэшбека на каждый заказ":"LUMI+ aktywny — 5% cashbacku za każde zamówienie"});
+Object.assign(TR.en,{"Зачтётся при оплате следующего заказа.":"Applied to your next order.","Оплата с баланса":"Paid from balance","LUMI+ активен — 5% кэшбека на каждый заказ":"LUMI+ active — 5% cashback on every order"});
+Object.assign(TR.uk,{"Зачтётся при оплате следующего заказа.":"Зарахується при оплаті наступного замовлення.","Оплата с баланса":"Оплата з балансу","LUMI+ активен — 5% кэшбека на каждый заказ":"LUMI+ активний — 5% кешбеку за кожне замовлення"});
 
 function t(ru,params){
   let s=ru;
@@ -2387,7 +2387,7 @@ function shell(content){
         <div class="promo-plus" id="promoPlus">
           <div class="pp-ic">${I.crown}</div>
           <div class="pp-t">LUMI+</div>
-          <div class="pp-sub">кэшбэк <b>10%</b><br>на каждый заказ</div>
+          <div class="pp-sub">кэшбек <b>5%</b><br>на каждый заказ</div>
           <div class="pp-btn">${u.subscription==='plus'?'Управлять':'Подробнее'} ${I.arrow}</div>
         </div>`:''}
         <div class="support-card">${I.chat}<div><b>Поддержка 24/7</b><span>Мы рядом, когда нужно</span></div></div>
@@ -2572,7 +2572,7 @@ function viewHome(){
   const homes=(state.properties||[]).length;
   const homeWord=({ru:['дом','дома','домов'],pl:['dom','domy','domów'],en:['home','homes','homes'],uk:['дім','будинки','будинків']}[state.lang]||['дом','дома','домов']);
   const statusLine=plus
-    ? t('LUMI+ активен — 10% на каждый заказ')
+    ? t('LUMI+ активен — 5% кэшбека на каждый заказ')
     : (homes?`${homes} ${plural(homes,homeWord[0],homeWord[1],homeWord[2])} ${t('на связи · всё спокойно')}`:t('Добавьте первый дом за 30 секунд'));
   c.appendChild(el(`
     <div class="hero console ${u.banner?'has-photo':'has-scene'}">
@@ -4652,7 +4652,7 @@ async function openReceipt(bookingId){
     let totalBlock='',note='';
     if(r.kind==='customer'){
       totalBlock=line('Итого оплачено',money(r.total),true);
-      note=r.plus?'Учтена скидка LUMI+ 10%.':'';
+      note=r.plus?'LUMI+: кэшбек 5% на баланс.':'';
     }else if(r.kind==='provider'){
       totalBlock=line('Ваша выплата',money(r.payout),true);
       note='Комиссия платформы вас не касается — вы получаете указанную сумму.';
@@ -4749,7 +4749,7 @@ function downloadReceiptPdf(r){
       <hr>
       ${rows?`<table><tr><td style="font-weight:700;color:#0F172A">Уборка «${svcLabelRu(r.service)}»</td><td></td></tr>${rows}</table><hr>`:''}
       <table>${totals}</table>
-      ${r.kind==='admin'?'<div class="note">Комиссия платформы указана только в администраторском чеке и скрыта в чеках клиента и исполнителя.</div>':(r.plus?'<div class="note">Учтена скидка LUMI+ 10%.</div>':'')}
+      ${r.kind==='admin'?'<div class="note">Комиссия платформы указана только в администраторском чеке и скрыта в чеках клиента и исполнителя.</div>':(r.plus?'<div class="note">LUMI+: кэшбек 5% на баланс.</div>':'')}
       <div class="foot">Спасибо, что выбираете LUMI · lumi24.pl</div>
     </div></body></html>`;
   const ifr=document.createElement('iframe');
