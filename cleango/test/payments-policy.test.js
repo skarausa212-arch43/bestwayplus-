@@ -103,6 +103,22 @@ async function main() {
       assert.ok(refund, 'customer receives a refund notification');
     });
 
+    await ok('#2 late cancel: after departure we withhold 40% and refund 60%', async () => {
+      const bk = (await req('POST', '/api/bookings', { token: cust, body: { service: 'standard', rooms: 2, baths: 1, address: 'D', city: 'Warsaw' } })).json.booking;
+      const price = bk.price;
+      await req('POST', `/api/bookings/${bk.id}/accept`, { token: cl });
+      await capture(bk.id);
+      await req('POST', `/api/bookings/${bk.id}/enroute`, { token: cl });   // now on_the_way (departed)
+      const cancel = await req('POST', `/api/bookings/${bk.id}/status`, { token: cust, body: { status: 'cancelled' } });
+      assert.strictEqual(cancel.json.booking.status, 'cancelled');
+      // Fee withheld is 40% of the price → the customer keeps a 60% refund.
+      assert.strictEqual(cancel.json.booking.cancellationFee, Math.round(price * 0.40 * 100) / 100, 'late-cancel fee is 40% of the order');
+      const notifs = (await req('GET', '/api/notifications', { token: cust })).json.notifications || [];
+      const refund = notifs.find((n) => /Вернули/.test(n.body || ''));
+      const refunded = refund && parseFloat((refund.body.match(/Вернули ([\d.]+)/) || [])[1]);
+      assert.ok(Math.abs(refunded - price * 0.60) < 0.01, `refund is 60% (got ${refunded}, expected ${(price * 0.6).toFixed(2)})`);
+    });
+
     console.log(`\n${passed} payment-policy checks passed.`);
   } catch (e) {
     console.error('PAYMENTS-POLICY TEST FAILED:', e.message);

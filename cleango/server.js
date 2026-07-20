@@ -110,6 +110,9 @@ const PREMIUM_DISCOUNT = 0;
 // LUMI+ subscription: a flat monthly fee charged off-session from the saved
 // card, in exchange for 5% cashback to the LUMI wallet on every completed order.
 const PLUS_PLAN = { priceMinor: 3900, currency: CURRENCY, cashbackRate: 0.05, period: 'month' };
+// Cancellation: free before the cleaner departs; once they're on the way we
+// withhold this share of the order (the rest is refunded).
+const LATE_CANCEL_FEE_RATE = 0.40;
 
 // Launch market — Poland first (Product Vision, phase 1)
 const CITIES = ['Warsaw', 'Kraków', 'Wrocław', 'Poznań', 'Gdańsk', 'Łódź'];
@@ -2551,8 +2554,8 @@ route('POST', '/api/bookings/:id/status', async (req, res, params) => {
     if (isCustomer) {
       const providerState = bk.status;
       const beforeDeparture = ['searching', 'accepted'].includes(providerState);
-      const feeMinor = beforeDeparture ? 0
-        : pricing.cancellationFee(Math.round(bk.price * 100), { hoursBefore: 48, providerState, subscription: bk.plusDiscount ? 'plus' : null });
+      // Free before the cleaner departs; a flat 40% withheld once they're on the way.
+      const feeMinor = beforeDeparture ? 0 : Math.round((bk.price || 0) * 100 * LATE_CANCEL_FEE_RATE);
       if (feeMinor > 0) {
         ledger.record({ type: 'cancellation_fee', bookingId: bk.id, amountMinor: feeMinor, currency: bk.currency, actor: user.id, reason: 'customer_cancellation' }, `cancelfee:${bk.id}`);
         bk.cancellationFee = pricing.toMajor(feeMinor);
