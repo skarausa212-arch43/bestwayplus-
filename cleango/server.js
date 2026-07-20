@@ -102,7 +102,7 @@ function audit(action, actorId, target, meta) {
 }
 
 // Platform economics
-const COMMISSION_RATE = 0.20;      // hidden platform cut on each completed job
+const COMMISSION_RATE = 0.15;      // hidden platform cut on each completed job
 const CURRENCY = 'PLN';
 // LUMI+ no longer discounts the price up front — the member benefit is 5%
 // cashback to the LUMI wallet (see PLUS_PLAN), redeemed on the next order.
