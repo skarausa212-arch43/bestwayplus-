@@ -113,6 +113,9 @@ const PLUS_PLAN = { priceMinor: 3900, currency: CURRENCY, cashbackRate: 0.05, pe
 // Cancellation: free before the cleaner departs; once they're on the way we
 // withhold this share of the order (the rest is refunded).
 const LATE_CANCEL_FEE_RATE = 0.40;
+// Current version of the legal documents users consent to at sign-up. Bump when
+// the Terms / Provider Agreement / Privacy Policy change materially.
+const TERMS_VERSION = '1.0';
 
 // ── Dynamic platform settings (admin-editable, persisted) ──
 // Every knob falls back to the launch default above; the admin panel overrides
@@ -750,6 +753,12 @@ route('POST', '/api/register', async (req, res) => {
   if (role !== 'admin' && !openCities.includes(b.city)) {
     return send(res, 400, { error: `Регистрация пока доступна только в городе ${openCities.join(', ')}. Остальные города — скоро.`, code: 'CITY_CLOSED' });
   }
+  // Consent gate §legal: users must accept the Terms and Privacy Policy (cleaners
+  // also the Provider Agreement) before an account is created. Server-authoritative
+  // so the acceptance is recorded with a timestamp and policy version for audit.
+  if (role !== 'admin' && !b.acceptedTerms) {
+    return send(res, 400, { error: 'Примите условия и политику конфиденциальности, чтобы зарегистрироваться.', code: 'TERMS_REQUIRED' });
+  }
   if (Object.values(db.users).some((u) => u.email === email)) {
     return send(res, 409, { error: 'An account with this email already exists.' });
   }
@@ -793,6 +802,8 @@ route('POST', '/api/register', async (req, res) => {
     city: CITIES.includes(b.city) ? b.city : (OPEN_CITIES[0] || 'Wrocław'),
     online: false,
     subscription: null,              // 'plus' when a LUMI+ member
+    acceptedTermsAt: role !== 'admin' ? now() : null,   // legal consent record
+    termsVersion: role !== 'admin' ? TERMS_VERSION : null,
   };
   if (role === 'cleaner') {
     user.entityType = entityType;

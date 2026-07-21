@@ -54,6 +54,7 @@ const EMAIL = `e2e${ts}@t.co`, PASS = 'Passw0rd!Long1';
       set('input[name="phone"]', '+48500600711');
       set('input[name="password"]', pw);
       const city = card.querySelector('select[name="city"]'); if (city) city.value = city.options[0].value;
+      const consent = card.querySelector('#regConsent'); if (!consent) throw new Error('no consent checkbox'); consent.checked = true; consent.dispatchEvent(new Event('change', { bubbles: true }));
     }, [EMAIL, PASS]);
     await pg.evaluate(() => document.querySelector('#authCard button[type="submit"]').click());
     let user = null;
@@ -273,7 +274,7 @@ const EMAIL = `e2e${ts}@t.co`, PASS = 'Passw0rd!Long1';
   // ── 15. invite family member ──
   await step('UI: пригласить члена семьи в дом', async () => {
     const em = `fam${ts}@t.co`;
-    const r = await api('/api/register', 'POST', { email: em, password: PASS, name: 'Fam', role: 'customer', phone: '+48500600712' });
+    const r = await api('/api/register', 'POST', { email: em, password: PASS, name: 'Fam', role: 'customer', phone: '+48500600712', acceptedTerms: true });
     if (r.status !== 200) throw new Error('fam register ' + r.status);
     await pg.evaluate(() => { state.view = 'properties'; render(); }); await wait(800);
     const had = await pg.evaluate(() => { const b = document.querySelector('[data-invite]'); if (!b) return false; b.click(); return true; });

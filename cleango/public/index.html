@@ -1291,6 +1291,10 @@ Object.assign(TR.uk,{"Забыли пароль?":"Забули пароль?","
 Object.assign(TR.pl,{"или":"lub","Продолжить с Google":"Kontynuuj z Google","Продолжить с Apple":"Kontynuuj z Apple"});
 Object.assign(TR.en,{"или":"or","Продолжить с Google":"Continue with Google","Продолжить с Apple":"Continue with Apple"});
 Object.assign(TR.uk,{"или":"або","Продолжить с Google":"Продовжити з Google","Продолжить с Apple":"Продовжити з Apple"});
+/* registration consent */
+Object.assign(TR.pl,{"Я принимаю":"Akceptuję","Договор исполнителя":"Umowę wykonawcy","Условия использования":"Regulamin","Политику конфиденциальности":"Politykę prywatności","и":"oraz","Отметьте согласие с условиями, чтобы продолжить":"Zaznacz zgodę na warunki, aby kontynuować"});
+Object.assign(TR.en,{"Я принимаю":"I accept the","Договор исполнителя":"Provider Agreement","Условия использования":"Terms of Service","Политику конфиденциальности":"Privacy Policy","и":"and","Отметьте согласие с условиями, чтобы продолжить":"Please accept the terms to continue"});
+Object.assign(TR.uk,{"Я принимаю":"Я приймаю","Договор исполнителя":"Договір виконавця","Условия использования":"Умови використання","Политику конфиденциальности":"Політику конфіденційності","и":"та","Отметьте согласие с условиями, чтобы продолжить":"Позначте згоду з умовами, щоб продовжити"});
 /* cleaner registration: individual / company, PESEL, bank */
 Object.assign(TR.pl,{"Регистрируетесь как":"Rejestrujesz się jako","Физлицо":"Osoba fizyczna","Фирма":"Firma","Контактное лицо":"Osoba kontaktowa","Название фирмы *":"Nazwa firmy *","NIP (10 цифр) *":"NIP (10 cyfr) *","PESEL (11 цифр) *":"PESEL (11 cyfr) *","О компании — услуги и опыт *":"O firmie — usługi i doświadczenie *","Лет на рынке":"Lat na rynku","Банковские реквизиты для выплат":"Dane bankowe do wypłat","Название банка *":"Nazwa banku *","Номер счёта (IBAN) *":"Numer konta (IBAN) *"});
 Object.assign(TR.en,{"Регистрируетесь как":"You’re registering as","Физлицо":"Individual","Фирма":"Company","Контактное лицо":"Contact person","Название фирмы *":"Company name *","NIP (10 цифр) *":"NIP (10 digits) *","PESEL (11 цифр) *":"PESEL (11 digits) *","О компании — услуги и опыт *":"About the company — services & experience *","Лет на рынке":"Years on the market","Банковские реквизиты для выплат":"Bank details for payouts","Название банка *":"Bank name *","Номер счёта (IBAN) *":"Account number (IBAN) *"});
@@ -2303,6 +2307,10 @@ function renderAuth(){
         </div>`:''}`;})():''}
         <label class="field"><span>Email</span><input class="input" type="email" name="email" placeholder="you@example.com" ${mode==='register'?`value="${esc(String(reg.vals?.email||'')).replace(/"/g,'&quot;')}"`:''} required></label>
         <label class="field"><span>Пароль</span><input class="input" type="password" name="password" placeholder="${mode==='register'?'минимум 12 символов':'ваш пароль'}" minlength="${mode==='register'?12:1}" required>${mode==='register'?'<span class="hint" style="margin-top:6px;display:block">Не меньше 12 символов. Можно фразу — так надёжнее.</span>':''}</label>
+        ${mode==='register'?`<label class="consent" style="display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:13.5px;line-height:1.5;cursor:pointer">
+          <input type="checkbox" name="acceptedTerms" id="regConsent" required style="margin-top:2px;width:18px;height:18px;flex:0 0 auto;accent-color:#14C871">
+          <span>${t('Я принимаю')} ${role==='cleaner'?`<a href="/terms-provider.html?lang=${state.lang}" target="_blank" rel="noopener">${t('Договор исполнителя')}</a>, `:''}<a href="/terms.html?lang=${state.lang}" target="_blank" rel="noopener">${t('Условия использования')}</a> ${t('и')} <a href="/privacy.html?lang=${state.lang}" target="_blank" rel="noopener">${t('Политику конфиденциальности')}</a>.</span>
+        </label>`:''}
         <button class="btn block" type="submit" style="margin-top:6px">${mode==='login'?'Войти':'Создать аккаунт'} ${I.arrow}</button>
         ${mode==='login'?'<div style="text-align:center;margin-top:12px"><button type="button" class="linklike" data-forgot>Забыли пароль?</button></div>':''}
       </form>
@@ -2344,10 +2352,11 @@ function renderAuth(){
         if(!reg.avatar){toast('Загрузите своё фото',true);return;}
         if(!reg.idDocument){toast('Загрузите фото документа',true);return;}
       }
+      if(mode==='register'&&!f.get('acceptedTerms')){toast(t('Отметьте согласие с условиями, чтобы продолжить'),true);return;}
       btn.disabled=true;btn.textContent='Подождите…';
       try{
         const payload=Object.fromEntries(f);
-        if(mode==='register'){payload.role=role;payload.locale=state.lang;}
+        if(mode==='register'){payload.role=role;payload.locale=state.lang;payload.acceptedTerms=!!f.get('acceptedTerms');}
         if(mode==='register'&&role==='cleaner'){
           payload.entityType=reg.entityType;payload.equipment=reg.equipment;payload.hasCar=reg.hasCar===true;
           if(!asCompany){payload.avatar=reg.avatar;payload.idDocument=reg.idDocument;}

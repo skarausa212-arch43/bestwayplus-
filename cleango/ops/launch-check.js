@@ -54,6 +54,7 @@ const CHECKS = [
   ['Marketing', 'Landing page', false, () => exists('public/landing.html')],
   ['Marketing', 'Privacy policy', true, () => exists('public/privacy.html')],
   ['Marketing', 'Terms', true, () => exists('public/terms.html')],
+  ['Marketing', 'Provider agreement', true, () => exists('public/terms-provider.html')],
   ['Marketing', 'Brand guidelines', false, () => exists('public/brand.html') && exists('assets/README.md')],
   ['Marketing', 'Investor overview', false, () => exists('public/investors.html')],
   ['Marketing', 'Asset library (structure + naming)', false, () => { try { require('child_process').execFileSync(process.execPath, [path.join(ROOT, 'ops/asset-check.js')], { stdio: 'ignore' }); return true; } catch { return false; } }],

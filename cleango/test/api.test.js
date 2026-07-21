@@ -89,10 +89,19 @@ async function main() {
     await ok('registration enforces password policy then succeeds', async () => {
       const weak = await req('POST', '/api/register', { body: { name: 'T', email: 't@x.pl', password: 'short', role: 'customer' } });
       assert.strictEqual(weak.status, 400);
-      const good = await req('POST', '/api/register', { body: { name: 'Test Customer', email: 'testcust@x.pl', password: 'averylongpassword', phone: '600700800', role: 'customer', city: 'Warsaw' } });
+      const good = await req('POST', '/api/register', { body: { name: 'Test Customer', email: 'testcust@x.pl', password: 'averylongpassword', phone: '600700800', role: 'customer', city: 'Warsaw', acceptedTerms: true } });
       assert.strictEqual(good.status, 200);
       assert.ok(good.json.token);
       customerTok = good.json.token;
+    });
+    await ok('registration requires accepting the terms', async () => {
+      const noConsent = await req('POST', '/api/register', { body: { name: 'No Consent', email: 'noconsent@x.pl', password: 'averylongpassword', phone: '600700800', role: 'customer', city: 'Warsaw' } });
+      assert.strictEqual(noConsent.status, 400);
+      assert.strictEqual(noConsent.json.code, 'TERMS_REQUIRED');
+      const withConsent = await req('POST', '/api/register', { body: { name: 'With Consent', email: 'withconsent@x.pl', password: 'averylongpassword', phone: '600700800', role: 'customer', city: 'Warsaw', acceptedTerms: true } });
+      assert.strictEqual(withConsent.status, 200);
+      const me = await req('GET', '/api/me', { token: withConsent.json.token });
+      assert.strictEqual(me.json.user.termsVersion, '1.0', 'terms version recorded on consent');
     });
     await ok('login works and rejects bad credentials generically', async () => {
       const bad = await req('POST', '/api/login', { body: { email: 'testcust@x.pl', password: 'wrong-password!!' } });
@@ -118,7 +127,7 @@ async function main() {
     });
 
     await ok('cleaner registration: individual requires PESEL + bank; company needs no photos', async () => {
-      const base = { phone: '600700800', role: 'cleaner', city: 'Warsaw', teamSize: 3, bio: 'Professional cleaning, five years of experience and my own equipment.' };
+      const base = { phone: '600700800', role: 'cleaner', city: 'Warsaw', teamSize: 3, acceptedTerms: true, bio: 'Professional cleaning, five years of experience and my own equipment.' };
       // Team size is mandatory for cleaners.
       const noTeam = await req('POST', '/api/register', { body: { ...base, teamSize: undefined, name: 'NT', email: 'nt@x.pl', password: 'averylongpassword', entityType: 'individual', avatar: IMG, idDocument: IMG, pesel: '44051401359', bankName: 'mBank', bankAccount: 'PL27114020040000300201355387' } });
       assert.strictEqual(noTeam.status, 400);
@@ -333,7 +342,7 @@ async function main() {
 
     // ── Chat permission (RLS-equivalent) ──
     await ok('SECURITY: non-participant cannot read the booking chat', async () => {
-      const outsider = await req('POST', '/api/register', { body: { name: 'Eve', email: 'eve@x.pl', password: 'averylongpassword', phone: '600700800', role: 'customer', city: 'Warsaw' } });
+      const outsider = await req('POST', '/api/register', { body: { name: 'Eve', email: 'eve@x.pl', password: 'averylongpassword', phone: '600700800', role: 'customer', city: 'Warsaw', acceptedTerms: true } });
       const r = await req('GET', `/api/bookings/${bookingId}/messages`, { token: outsider.json.token });
       assert.strictEqual(r.status, 403);
     });
@@ -417,7 +426,7 @@ async function main() {
     // ── Admin suspend kills the session (auth invariant) ──
     await ok('SECURITY: suspended user is denied at login and with a live token', async () => {
       const adm = await req('POST', '/api/login', { body: { email: 'admin@cleango.app', password: 'cleango123' } });
-      const victim = await req('POST', '/api/register', { body: { name: 'Victim', email: 'victim@x.pl', password: 'averylongpassword', phone: '600700800', role: 'customer', city: 'Warsaw' } });
+      const victim = await req('POST', '/api/register', { body: { name: 'Victim', email: 'victim@x.pl', password: 'averylongpassword', phone: '600700800', role: 'customer', city: 'Warsaw', acceptedTerms: true } });
       const vTok = victim.json.token;
       const uid = victim.json.user.id;
       await req('POST', `/api/admin/users/${uid}/suspend`, { token: adm.json.token, body: { reason: 'test' } });
@@ -444,7 +453,7 @@ async function main() {
     let nearTok, farTok, gpsBookingId;
     await ok('GPS: cleaner shares location; garbage and non-cleaners rejected', async () => {
       const adm = await req('POST', '/api/login', { body: { email: 'admin@cleango.app', password: 'cleango123' } });
-      const base = { phone: '600700800', role: 'cleaner', city: 'Warsaw', teamSize: 4, bio: 'Professional cleaning, five years of experience and my own equipment.', entityType: 'company', companyName: 'GeoClean Sp. z o.o.', nip: '5252445281', bankName: 'PKO', bankAccount: 'PL27114020040000300201355387' };
+      const base = { phone: '600700800', role: 'cleaner', city: 'Warsaw', teamSize: 4, acceptedTerms: true, bio: 'Professional cleaning, five years of experience and my own equipment.', entityType: 'company', companyName: 'GeoClean Sp. z o.o.', nip: '5252445281', bankName: 'PKO', bankAccount: 'PL27114020040000300201355387' };
       const near = await req('POST', '/api/register', { body: { ...base, name: 'Near Cleaner', email: 'near@x.pl', password: 'averylongpassword' } });
       const far = await req('POST', '/api/register', { body: { ...base, name: 'Far Cleaner', email: 'far@x.pl', password: 'averylongpassword', city: 'Gdańsk' } });
       nearTok = near.json.token; farTok = far.json.token;

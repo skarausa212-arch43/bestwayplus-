@@ -32,7 +32,7 @@ async function waitReady(n = 50) { for (let i = 0; i < n; i++) { try { if ((awai
 
 let passed = 0;
 const ok = async (name, fn) => { await fn(); passed++; console.log('  ok -', name); };
-const reg = (city, tag) => req('POST', '/api/register', { body: { name: 'C', email: `city${tag}${Date.now()}@t.co`, password: 'Passw0rd!Long1', role: 'customer', city, phone: '+48512345600' } });
+const reg = (city, tag) => req('POST', '/api/register', { body: { name: 'C', email: `city${tag}${Date.now()}@t.co`, password: 'Passw0rd!Long1', role: 'customer', city, phone: '+48512345600', acceptedTerms: true } });
 
 async function main() {
   // No LUMI_OPEN_CITIES → default (Wrocław only).
