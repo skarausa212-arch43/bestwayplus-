@@ -1089,9 +1089,123 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .oauth-btn.apple{background:#000;border-color:#000;color:#fff}
 .oauth-btn.apple:hover{background:#111;border-color:#111}
 :root[data-theme="dark"] .oauth-btn.apple{background:#fff;border-color:#fff;color:#000}
+
+/* ═══════════════ AURORA GLASS · TACTILE (design v2) ═══════════════
+   Living aurora backdrop + frosted-glass surfaces + recessed "press me"
+   buttons. Perf rules preserved: blobs are pure radial-gradients (no filter)
+   animated by transform only; backdrop blur is desktop-only; phones get
+   translucent-solid surfaces and a static aurora (zero per-frame cost). */
+.aurora{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.aurora i{position:absolute;border-radius:50%;will-change:transform}
+.aurora .a1{width:56vmax;height:56vmax;left:-18vmax;top:-14vmax;
+  background:radial-gradient(circle,rgba(57,230,166,.34),transparent 66%);animation:auDrift1 26s ease-in-out infinite}
+.aurora .a2{width:48vmax;height:48vmax;right:-16vmax;top:6vmax;
+  background:radial-gradient(circle,rgba(91,214,255,.28),transparent 66%);animation:auDrift2 32s ease-in-out infinite}
+.aurora .a3{width:52vmax;height:52vmax;left:6vmax;bottom:-20vmax;
+  background:radial-gradient(circle,rgba(157,139,255,.24),transparent 66%);animation:auDrift3 29s ease-in-out infinite}
+.aurora .a4{width:36vmax;height:36vmax;right:2vmax;bottom:-6vmax;
+  background:radial-gradient(circle,rgba(20,200,113,.26),transparent 66%);animation:auDrift1 38s ease-in-out infinite reverse}
+@keyframes auDrift1{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(5vmax,-4vmax,0) scale(1.12)}}
+@keyframes auDrift2{0%,100%{transform:translate3d(0,0,0) scale(1.08)}50%{transform:translate3d(-6vmax,5vmax,0) scale(.92)}}
+@keyframes auDrift3{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(4vmax,-5vmax,0) scale(1.15)}}
+:root[data-theme="dark"] .aurora .a1{background:radial-gradient(circle,rgba(20,200,113,.16),transparent 66%)}
+:root[data-theme="dark"] .aurora .a2{background:radial-gradient(circle,rgba(56,140,255,.13),transparent 66%)}
+:root[data-theme="dark"] .aurora .a3{background:radial-gradient(circle,rgba(124,98,255,.12),transparent 66%)}
+:root[data-theme="dark"] .aurora .a4{background:radial-gradient(circle,rgba(18,196,190,.12),transparent 66%)}
+
+/* frosted-glass surfaces (desktop gets real blur; phones translucent-solid) */
+.card{background:color-mix(in srgb,var(--surface) 76%,transparent);
+  border-color:color-mix(in srgb,#ffffff 55%,var(--line));
+  box-shadow:0 14px 38px -14px rgba(17,60,42,.16),inset 0 1px 0 rgba(255,255,255,.55)}
+:root[data-theme="dark"] .card{background:color-mix(in srgb,var(--surface) 74%,transparent);
+  border-color:color-mix(in srgb,#ffffff 10%,var(--line));
+  box-shadow:0 14px 38px -12px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.05)}
+@media(min-width:761px){
+  .card{backdrop-filter:blur(18px) saturate(1.35);-webkit-backdrop-filter:blur(18px) saturate(1.35)}
+  .topbar{background:color-mix(in srgb,var(--bg) 62%,transparent)}
+}
+.modal .card,.lang-menu{background:color-mix(in srgb,var(--surface) 94%,transparent)}
+
+/* ── tactile keys: convex face seated in a recessed channel ── */
+.btn{
+  box-shadow:0 0 0 5px color-mix(in srgb,var(--surface) 42%,transparent),
+             0 0 0 6px rgba(12,70,52,.08),
+             0 12px 24px -8px rgba(var(--glow),.55),
+             inset 0 2px 2px rgba(255,255,255,.45),
+             inset 0 -4px 8px rgba(4,90,60,.42);
+  transition:transform .1s var(--ease),box-shadow .12s var(--ease),background .15s;
+}
+.btn:hover{transform:translateY(-1px);
+  box-shadow:0 0 0 5px color-mix(in srgb,var(--surface) 42%,transparent),
+             0 0 0 6px rgba(12,70,52,.08),
+             0 16px 30px -8px rgba(var(--glow),.62),
+             inset 0 2px 2px rgba(255,255,255,.5),
+             inset 0 -4px 8px rgba(4,90,60,.42)}
+.btn:active{transform:translateY(2px) scale(.985);
+  box-shadow:0 0 0 5px color-mix(in srgb,var(--surface) 42%,transparent),
+             0 0 0 6px rgba(12,70,52,.1),
+             0 4px 10px -6px rgba(var(--glow),.4),
+             inset 0 3px 8px rgba(3,60,40,.55),
+             inset 0 -1px 2px rgba(255,255,255,.18)}
+.btn.ghost{background:color-mix(in srgb,var(--surface-2) 72%,transparent);
+  box-shadow:inset 3px 3px 8px rgba(12,70,52,.14),inset -3px -3px 8px rgba(255,255,255,.6)}
+.btn.ghost:hover{transform:none;background:color-mix(in srgb,var(--surface-2) 90%,transparent)}
+.btn.ghost:active{transform:translateY(1px);
+  box-shadow:inset 4px 4px 10px rgba(12,70,52,.24),inset -2px -2px 6px rgba(255,255,255,.4)}
+:root[data-theme="dark"] .btn.ghost{
+  box-shadow:inset 3px 3px 8px rgba(0,0,0,.5),inset -2px -2px 6px rgba(255,255,255,.05)}
+:root[data-theme="dark"] .btn.ghost:active{
+  box-shadow:inset 4px 4px 10px rgba(0,0,0,.65),inset -1px -1px 4px rgba(255,255,255,.04)}
+.btn.danger{box-shadow:0 0 0 5px color-mix(in srgb,var(--surface) 42%,transparent),
+             0 0 0 6px rgba(120,20,20,.1),0 12px 24px -8px rgba(240,68,56,.5),
+             inset 0 2px 2px rgba(255,255,255,.4),inset 0 -4px 8px rgba(120,10,20,.45)}
+.btn:disabled{box-shadow:none}
+/* primary CTA breathes softly (desktop only — continuous loops stay off phones) */
+@media(min-width:641px){
+  .btn.block{animation:ctaBreathe 3.4s ease-in-out infinite}
+  @keyframes ctaBreathe{0%,100%{box-shadow:0 0 0 5px color-mix(in srgb,var(--surface) 42%,transparent),0 0 0 6px rgba(12,70,52,.08),0 12px 24px -8px rgba(var(--glow),.5),inset 0 2px 2px rgba(255,255,255,.45),inset 0 -4px 8px rgba(4,90,60,.42)}
+    50%{box-shadow:0 0 0 5px color-mix(in srgb,var(--surface) 42%,transparent),0 0 0 6px rgba(12,70,52,.08),0 18px 34px -8px rgba(var(--glow),.72),inset 0 2px 2px rgba(255,255,255,.55),inset 0 -4px 8px rgba(4,90,60,.42)}}
+}
+
+/* recessed wells: icon buttons, segments, selected options, tab pills */
+.iconbtn{background:color-mix(in srgb,var(--surface-2) 70%,transparent);
+  box-shadow:inset 2px 2px 6px rgba(12,70,52,.14),inset -2px -2px 6px rgba(255,255,255,.65)}
+.iconbtn:hover{transform:none;box-shadow:inset 3px 3px 7px rgba(12,70,52,.2),inset -2px -2px 5px rgba(255,255,255,.5)}
+:root[data-theme="dark"] .iconbtn{box-shadow:inset 2px 2px 6px rgba(0,0,0,.45),inset -2px -2px 6px rgba(255,255,255,.04)}
+.seg{background:color-mix(in srgb,var(--surface-2) 74%,transparent);
+  box-shadow:inset 2px 2px 6px rgba(12,70,52,.12),inset -2px -2px 6px rgba(255,255,255,.5)}
+:root[data-theme="dark"] .seg{box-shadow:inset 2px 2px 6px rgba(0,0,0,.45),inset -2px -2px 6px rgba(255,255,255,.03)}
+.seg button.active{box-shadow:0 4px 12px -4px rgba(var(--glow),.45),inset 0 1px 1px rgba(255,255,255,.6),inset 0 -2px 4px rgba(4,90,60,.18)}
+.opt.sel,.extra.sel{box-shadow:inset 3px 3px 8px rgba(6,110,70,.22),inset -2px -2px 6px rgba(255,255,255,.55)}
+:root[data-theme="dark"] .opt.sel,:root[data-theme="dark"] .extra.sel{
+  box-shadow:inset 3px 3px 8px rgba(0,0,0,.5),inset -1px -1px 4px rgba(120,255,190,.08)}
+.tabbar button{border-radius:14px;transition:transform .12s var(--ease)}
+.tabbar button:active{transform:scale(.92)}
+.tabbar button.active{background:color-mix(in srgb,var(--primary-050) 80%,transparent);
+  box-shadow:inset 2px 2px 6px rgba(10,120,80,.22),inset -2px -2px 6px rgba(255,255,255,.55)}
+:root[data-theme="dark"] .tabbar button.active{background:var(--primary-050);
+  box-shadow:inset 2px 2px 6px rgba(0,0,0,.5),inset -1px -1px 4px rgba(120,255,190,.06)}
+.input{box-shadow:inset 2px 2px 5px rgba(12,70,52,.07),inset -2px -2px 5px rgba(255,255,255,.5)}
+:root[data-theme="dark"] .input{box-shadow:inset 2px 2px 5px rgba(0,0,0,.35)}
+
+/* ── extra motion: one-shot entrance stagger for cards (cheap, non-looping) ── */
+.main .grid>.card,.main>.card{animation:cardIn .5s var(--ease) both}
+.main .grid>.card:nth-child(1){animation-delay:.02s}
+.main .grid>.card:nth-child(2){animation-delay:.07s}
+.main .grid>.card:nth-child(3){animation-delay:.12s}
+.main .grid>.card:nth-child(4){animation-delay:.17s}
+.main .grid>.card:nth-child(5){animation-delay:.22s}
+.main .grid>.card:nth-child(6){animation-delay:.27s}
+@keyframes cardIn{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+/* phones: static aurora (keeps the look, zero per-frame work) */
+@media(max-width:640px){
+  .aurora i{animation:none!important}
+  .btn.block{animation:none}
+}
 </style>
 </head>
 <body>
+<div class="aurora" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="a3"></i><i class="a4"></i></div>
 <div id="root"></div>
 <div class="toast" id="toast"></div>
 
