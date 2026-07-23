@@ -1295,6 +1295,10 @@ Object.assign(TR.uk,{"или":"або","Продолжить с Google":"Про�
 Object.assign(TR.pl,{"Я принимаю":"Akceptuję","Договор исполнителя":"Umowę wykonawcy","Условия использования":"Regulamin","Политику конфиденциальности":"Politykę prywatności","и":"oraz","Отметьте согласие с условиями, чтобы продолжить":"Zaznacz zgodę na warunki, aby kontynuować"});
 Object.assign(TR.en,{"Я принимаю":"I accept the","Договор исполнителя":"Provider Agreement","Условия использования":"Terms of Service","Политику конфиденциальности":"Privacy Policy","и":"and","Отметьте согласие с условиями, чтобы продолжить":"Please accept the terms to continue"});
 Object.assign(TR.uk,{"Я принимаю":"Я приймаю","Договор исполнителя":"Договір виконавця","Условия использования":"Умови використання","Политику конфиденциальности":"Політику конфіденційності","и":"та","Отметьте согласие с условиями, чтобы продолжить":"Позначте згоду з умовами, щоб продовжити"});
+/* wallet cashback label (customer balance is accumulated cashback) */
+Object.assign(TR.pl,{"Кэшбек LUMI":"Cashback LUMI"});
+Object.assign(TR.en,{"Кэшбек LUMI":"LUMI Cashback"});
+Object.assign(TR.uk,{"Кэшбек LUMI":"Кешбек LUMI"});
 /* cleaner registration: individual / company, PESEL, bank */
 Object.assign(TR.pl,{"Регистрируетесь как":"Rejestrujesz się jako","Физлицо":"Osoba fizyczna","Фирма":"Firma","Контактное лицо":"Osoba kontaktowa","Название фирмы *":"Nazwa firmy *","NIP (10 цифр) *":"NIP (10 cyfr) *","PESEL (11 цифр) *":"PESEL (11 cyfr) *","О компании — услуги и опыт *":"O firmie — usługi i doświadczenie *","Лет на рынке":"Lat na rynku","Банковские реквизиты для выплат":"Dane bankowe do wypłat","Название банка *":"Nazwa banku *","Номер счёта (IBAN) *":"Numer konta (IBAN) *"});
 Object.assign(TR.en,{"Регистрируетесь как":"You’re registering as","Физлицо":"Individual","Фирма":"Company","Контактное лицо":"Contact person","Название фирмы *":"Company name *","NIP (10 цифр) *":"NIP (10 digits) *","PESEL (11 цифр) *":"PESEL (11 digits) *","О компании — услуги и опыт *":"About the company — services & experience *","Лет на рынке":"Years on the market","Банковские реквизиты для выплат":"Bank details for payouts","Название банка *":"Bank name *","Номер счёта (IBAN) *":"Account number (IBAN) *"});
@@ -5084,7 +5088,7 @@ async function viewWallet(){
   const c=el(`<div style="max-width:640px;margin:0 auto"></div>`);
   c.appendChild(el(`
     <div class="card pad" style="background:linear-gradient(135deg,#18D07A,#0A8573);color:#fff;margin-bottom:20px;box-shadow:0 20px 50px rgba(var(--glow),.34)">
-      <div style="opacity:.85;font-size:14px">${isCleaner?t('Доступный баланс'):t('Баланс LUMI')}</div>
+      <div style="opacity:.85;font-size:14px">${isCleaner?t('Доступный баланс'):t('Кэшбек LUMI')}</div>
       <div style="font-size:40px;font-weight:800;letter-spacing:-.03em;margin:4px 0"><span id="balNum">0</span> zł</div>
       ${isCleaner?'':`<div style="opacity:.8;font-size:13px">${t('Зачтётся при оплате следующего заказа.')}</div>`}
     </div>`));
