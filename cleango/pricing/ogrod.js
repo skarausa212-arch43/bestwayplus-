@@ -104,7 +104,8 @@ function availability(month) {
   const out = {};
   for (const k of Object.keys(SERVICE_SEASON)) {
     const ok = inSeason(k, month);
-    out[k] = { available: ok, season: SEASON[SERVICE_SEASON[k]].label, availableFrom: ok ? null : MONTHS_PL[nextOpenMonth(k, month)] };
+    const nm = ok ? null : nextOpenMonth(k, month);
+    out[k] = { available: ok, season: SEASON[SERVICE_SEASON[k]].label, availableFrom: ok ? null : MONTHS_PL[nm], availableFromMonth: nm };
   }
   return out;
 }
@@ -126,7 +127,8 @@ function estimate(input = {}, opts = {}) {
   let totalG = 0;
   let durationMin = 0;
   const push = (l) => { lines.push(l); totalG += l.amountG; };
-  const excludeIf = (key) => (inSeason(key, month) ? null : { excluded: 'season', availableFrom: MONTHS_PL[nextOpenMonth(key, month)] });
+  const excludeIf = (key) => { if (inSeason(key, month)) return null;
+    const nm = nextOpenMonth(key, month); return { excluded: 'season', availableFrom: MONTHS_PL[nm], availableFromMonth: nm }; };
 
   const lawn = clampInt(input.lawnM2, 0, 100000);
   const wantMow = !!input.koszenie && lawn > 0;

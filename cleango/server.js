@@ -1255,7 +1255,7 @@ route('POST', '/api/ogrod/estimate', async (req, res) => {
   send(res, 200, {
     estimate: {
       currency: est.currency,
-      lines: est.lines.map((l) => ({ key: l.key, label: l.label, qty: l.qty, unit: l.unit, amount: l.amountG / 100, excluded: l.excluded || null, availableFrom: l.availableFrom || null })),
+      lines: est.lines.map((l) => ({ key: l.key, label: l.label, qty: l.qty, unit: l.unit, amount: l.amountG / 100, excluded: l.excluded || null, availableFrom: l.availableFrom || null, availableFromMonth: Number.isInteger(l.availableFromMonth) ? l.availableFromMonth : null })),
       total: est.totalG / 100,
       minOrder: est.minOrderG / 100,
       belowMin: est.belowMin,
