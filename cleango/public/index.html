@@ -1237,6 +1237,26 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .og-razem .tm{font-size:12.5px;color:var(--ink-3);font-weight:600}
 .og-warn{font-size:12.5px;color:var(--warn);font-weight:600;margin:4px 0}
 .og-hint{font-size:12px;color:var(--ink-3);margin-top:2px}
+
+/* ═══ provider sign-up: profession picker + equipment groups ═══ */
+.prof-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:6px}
+.prof{display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:14px;font-weight:700;font-size:13.5px;color:var(--ink);
+  background:color-mix(in srgb,var(--surface-2) 72%,transparent);text-align:left;
+  box-shadow:inset 2px 2px 6px rgba(12,70,52,.12),inset -2px -2px 6px rgba(255,255,255,.55);transition:transform .12s var(--ease)}
+.prof:active{transform:scale(.97)}
+.prof .pi{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;flex:none;background:var(--surface);color:var(--ink-2);box-shadow:0 3px 8px rgba(16,60,42,.12)}
+.prof .pi svg{width:17px;height:17px}
+.prof .pc{margin-left:auto;width:20px;height:20px;color:var(--primary-600)}
+.prof .pc svg{width:20px;height:20px}
+.prof.on{background:var(--primary-050);color:var(--primary-600);
+  box-shadow:inset 3px 3px 8px rgba(10,120,80,.28),inset -2px -2px 6px rgba(255,255,255,.6)}
+.prof.on .pi{color:#fff;background:linear-gradient(135deg,#1ad57f,#0b8f75);box-shadow:0 5px 12px rgba(12,130,90,.4)}
+.prof.soon{opacity:.55}
+.prof.soon .badge{margin-left:auto}
+:root[data-theme="dark"] .prof{box-shadow:inset 2px 2px 6px rgba(0,0,0,.45),inset -2px -2px 6px rgba(255,255,255,.04)}
+:root[data-theme="dark"] .prof.on{box-shadow:inset 3px 3px 8px rgba(0,0,0,.55),inset -1px -1px 4px rgba(120,255,190,.07)}
+.eq-group{margin-bottom:10px;animation:cardIn .35s var(--ease) both}
+.eq-head{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3);margin:8px 0 6px}
 </style>
 </head>
 <body>
@@ -1452,6 +1472,10 @@ Object.assign(TR.uk,{"Кэшбек LUMI":"Кешбек LUMI"});
 Object.assign(TR.pl,{"Стрижка газона":"Koszenie trawnika","Вертикуляция газона":"Wertykulacja trawnika","Аэрация газона":"Aeracja trawnika","Пакет: Регенерация газона":"Pakiet: Regeneracja trawnika","Стрижка живой изгороди":"Przycinanie żywopłotu","Сгребание листьев":"Grabienie liści","Прополка клумб":"Pielenie rabat","Вывоз скошенной травы":"Wywóz pokosu poza posesję","Вывоз и утилизация веток":"Wywóz i utylizacja gałęzi","Вывоз листьев":"Wywóz liści","Газон":"Trawnik","Площадь газона":"Metraż trawnika","Живая изгородь":"Żywopłot","Длина изгороди":"Długość żywopłotu","Высота":"Wysokość","Клумбы":"Rabaty","Укладка газона":"Zakładanie trawnika","посевной":"z siewu","рулонный":"z rolki","с подготовкой основания":"z przygotowaniem podłoża","Запросить расчёт":"Poproś o wycenę","Разово":"Jednorazowo","Раз в 2 недели −15%":"Co 2 tygodnie −15%","Каждую неделю −20%":"Co tydzień −20%","Трава выше 15 см / заросли":"Trawa powyżej 15 cm / zarośla","высокая трава ×1,5":"wysoka trawa ×1,5","Скидка −20% (каждую неделю)":"Rabat −20% (co tydzień)","Скидка −15% (раз в 2 недели)":"Rabat −15% (co 2 tygodnie)","стрижка + подравнивание краёв + сгребание и уборка травы":"koszenie + podkaszanie krawędzi + zgrabienie i uprzątnięcie pokosu","вертикуляция + аэрация + удобрение + подсев · семена и удобрение в цене":"wertykulacja + aeracja + nawożenie + podsiew · nasiona i nawóz w cenie","до 100 см":"do 100 cm","до 150 см":"do 150 cm","до 200 см":"do 200 cm","до 250 см":"do 250 cm","выше 250 см":"powyżej 250 cm","индивидуальный расчёт":"wycena indywidualna","Сезон: апрель–октябрь":"Sezon: kwiecień–październik","выезд по Вроцлаву 0 zł":"dojazd we Wrocławiu 0 zł","мин. заказ":"min. zamówienie","Доступно с:":"Dostępne od:","Записаться — напомним":"Zapisz się — przypomnimy","Напомним 🌱":"Przypomnimy 🌱","Укажите площадь — цена посчитается сама.":"Podaj metraż — cena policzy się sama.","Минимальная сумма заказа":"Minimalna wartość zamówienia","добавьте услугу":"dodaj usługę","Позиции «индивидуальный расчёт» — закажите через форму расчёта.":"Pozycje „wycena indywidualna” zamówisz przez formularz wyceny.","Отправлено — подготовим расчёт и ответим на почту.":"Wysłano — przygotujemy wycenę i odpowiemy na e-mail.","Пожелания садовнику":"Uwagi dla ogrodnika","например: калитка со двора, во дворе собака…":"np. brama od podwórza, pies w ogrodzie…","Оплата: карта — спишем автоматически после подбора садовника.":"Płatność: karta — pobierzemy automatycznie po dopasowaniu ogrodnika.","Оплата картой после подбора — добавьте карту в Кошельке.":"Płatność kartą po dopasowaniu — dodasz kartę w Portfelu.","Заказ принят — ищем садовника 🌿":"Zamówienie przyjęte — szukamy ogrodnika 🌿","Минутку…":"Chwila…","улица, дом — Вроцлав":"ulica, numer — Wrocław","пог. м":"mb","Телефон":"Telefon","Заказ":"Zamówienie","январь":"styczeń","февраль":"luty","март":"marzec","апрель":"kwiecień","май":"maj","июнь":"czerwiec","июль":"lipiec","август":"sierpień","сентябрь":"wrzesień","октябрь":"październik","ноябрь":"listopad","декабрь":"grudzień"});
 Object.assign(TR.en,{"Стрижка газона":"Lawn mowing","Вертикуляция газона":"Lawn scarification","Аэрация газона":"Lawn aeration","Пакет: Регенерация газона":"Package: Lawn regeneration","Стрижка живой изгороди":"Hedge trimming","Сгребание листьев":"Leaf raking","Прополка клумб":"Flower-bed weeding","Вывоз скошенной травы":"Clippings haul-away","Вывоз и утилизация веток":"Branches haul-away & disposal","Вывоз листьев":"Leaves haul-away","Газон":"Lawn","Площадь газона":"Lawn area","Живая изгородь":"Hedge","Длина изгороди":"Hedge length","Высота":"Height","Клумбы":"Flower beds","Укладка газона":"New lawn installation","посевной":"seeded","рулонный":"turf rolls","с подготовкой основания":"incl. ground preparation","Запросить расчёт":"Request a quote","Разово":"One-time","Раз в 2 недели −15%":"Every 2 weeks −15%","Каждую неделю −20%":"Weekly −20%","Трава выше 15 см / заросли":"Grass over 15 cm / overgrowth","высокая трава ×1,5":"tall grass ×1.5","Скидка −20% (каждую неделю)":"Discount −20% (weekly)","Скидка −15% (раз в 2 недели)":"Discount −15% (biweekly)","стрижка + подравнивание краёв + сгребание и уборка травы":"mowing + edge trimming + raking and clean-up","вертикуляция + аэрация + удобрение + подсев · семена и удобрение в цене":"scarifying + aeration + fertilizing + overseeding · seeds and fertilizer included","до 100 см":"up to 100 cm","до 150 см":"up to 150 cm","до 200 см":"up to 200 cm","до 250 см":"up to 250 cm","выше 250 см":"over 250 cm","индивидуальный расчёт":"individual quote","Сезон: апрель–октябрь":"Season: April–October","выезд по Вроцлаву 0 zł":"travel in Wrocław 0 zł","мин. заказ":"min. order","Доступно с:":"Available from:","Записаться — напомним":"Sign up — we’ll remind you","Напомним 🌱":"We’ll remind you 🌱","Укажите площадь — цена посчитается сама.":"Enter the area — the price calculates itself.","Минимальная сумма заказа":"Minimum order value","добавьте услугу":"add a service","Позиции «индивидуальный расчёт» — закажите через форму расчёта.":"“Individual quote” items are ordered via the quote form.","Отправлено — подготовим расчёт и ответим на почту.":"Sent — we’ll prepare a quote and reply by email.","Пожелания садовнику":"Notes for the gardener","например: калитка со двора, во дворе собака…":"e.g. side gate, dog in the garden…","Оплата: карта — спишем автоматически после подбора садовника.":"Payment: card — charged automatically once a gardener is matched.","Оплата картой после подбора — добавьте карту в Кошельке.":"Card payment after matching — add a card in the Wallet.","Заказ принят — ищем садовника 🌿":"Order placed — finding your gardener 🌿","Минутку…":"One moment…","улица, дом — Вроцлав":"street, number — Wrocław","пог. м":"lm","Телефон":"Phone","Заказ":"Order","январь":"January","февраль":"February","март":"March","апрель":"April","май":"May","июнь":"June","июль":"July","август":"August","сентябрь":"September","октябрь":"October","ноябрь":"November","декабрь":"December"});
 Object.assign(TR.uk,{"Стрижка газона":"Стрижка газону","Вертикуляция газона":"Вертикуляція газону","Аэрация газона":"Аерація газону","Пакет: Регенерация газона":"Пакет: Регенерація газону","Стрижка живой изгороди":"Підстригання живоплоту","Сгребание листьев":"Згрібання листя","Прополка клумб":"Прополювання клумб","Вывоз скошенной травы":"Вивіз скошеної трави","Вывоз и утилизация веток":"Вивіз та утилізація гілок","Вывоз листьев":"Вивіз листя","Газон":"Газон","Площадь газона":"Площа газону","Живая изгородь":"Живопліт","Длина изгороди":"Довжина живоплоту","Высота":"Висота","Клумбы":"Клумби","Укладка газона":"Укладання газону","посевной":"посівний","рулонный":"рулонний","с подготовкой основания":"з підготовкою основи","Запросить расчёт":"Запросити розрахунок","Разово":"Разово","Раз в 2 недели −15%":"Раз на 2 тижні −15%","Каждую неделю −20%":"Щотижня −20%","Трава выше 15 см / заросли":"Трава вище 15 см / зарості","высокая трава ×1,5":"висока трава ×1,5","Скидка −20% (каждую неделю)":"Знижка −20% (щотижня)","Скидка −15% (раз в 2 недели)":"Знижка −15% (раз на 2 тижні)","стрижка + подравнивание краёв + сгребание и уборка травы":"стрижка + підрівнювання країв + згрібання та прибирання трави","вертикуляция + аэрация + удобрение + подсев · семена и удобрение в цене":"вертикуляція + аерація + добриво + підсів · насіння й добриво в ціні","до 100 см":"до 100 см","до 150 см":"до 150 см","до 200 см":"до 200 см","до 250 см":"до 250 см","выше 250 см":"вище 250 см","индивидуальный расчёт":"індивідуальний розрахунок","Сезон: апрель–октябрь":"Сезон: квітень–жовтень","выезд по Вроцлаву 0 zł":"виїзд по Вроцлаву 0 zł","мин. заказ":"мін. замовлення","Доступно с:":"Доступно з:","Записаться — напомним":"Записатися — нагадаємо","Напомним 🌱":"Нагадаємо 🌱","Укажите площадь — цена посчитается сама.":"Вкажіть площу — ціна порахується сама.","Минимальная сумма заказа":"Мінімальна сума замовлення","добавьте услугу":"додайте послугу","Позиции «индивидуальный расчёт» — закажите через форму расчёта.":"Позиції «індивідуальний розрахунок» замовите через форму розрахунку.","Отправлено — подготовим расчёт и ответим на почту.":"Надіслано — підготуємо розрахунок і відповімо на пошту.","Пожелания садовнику":"Побажання садівникові","например: калитка со двора, во дворе собака…":"напр.: хвіртка з двору, у дворі собака…","Оплата: карта — спишем автоматически после подбора садовника.":"Оплата: картка — спишемо автоматично після підбору садівника.","Оплата картой после подбора — добавьте карту в Кошельке.":"Оплата карткою після підбору — додайте картку в Гаманці.","Заказ принят — ищем садовника 🌿":"Замовлення прийнято — шукаємо садівника 🌿","Минутку…":"Хвилинку…","улица, дом — Вроцлав":"вулиця, будинок — Вроцлав","пог. м":"пог. м","Телефон":"Телефон","Заказ":"Замовлення","январь":"січень","февраль":"лютий","март":"березень","апрель":"квітень","май":"травень","июнь":"червень","июль":"липень","август":"серпень","сентябрь":"вересень","октябрь":"жовтень","ноябрь":"листопад","декабрь":"грудень"});
+/* provider professions + garden gear */
+Object.assign(TR.pl,{"Кем вы можете работать? *":"W jakiej roli możesz pracować? *","Выберите профессии — остальные откроются скоро.":"Wybierz profesje — pozostałe wkrótce.","Выберите, кем вы можете работать":"Wybierz, w jakiej roli możesz pracować","скоро":"wkrótce","Газонокосилка":"Kosiarka","Триммер / бензокоса":"Podkaszarka / kosa spalinowa","Кусторез / ножницы для изгороди":"Nożyce do żywopłotu","Вертикуттер":"Wertykulator","Аэратор":"Aerator","Воздуходувка":"Dmuchawa","Садовый инвентарь (грабли, секатор)":"Narzędzia ogrodowe (grabie, sekator)"});
+Object.assign(TR.en,{"Кем вы можете работать? *":"What can you work as? *","Выберите профессии — остальные откроются скоро.":"Pick your professions — more coming soon.","Выберите, кем вы можете работать":"Pick what you can work as","скоро":"coming soon","Газонокосилка":"Lawn mower","Триммер / бензокоса":"String trimmer / brushcutter","Кусторез / ножницы для изгороди":"Hedge trimmer / shears","Вертикуттер":"Scarifier","Аэратор":"Aerator","Воздуходувка":"Leaf blower","Садовый инвентарь (грабли, секатор)":"Garden tools (rake, pruner)"});
+Object.assign(TR.uk,{"Кем вы можете работать? *":"Ким ви можете працювати? *","Выберите профессии — остальные откроются скоро.":"Оберіть професії — решта незабаром.","Выберите, кем вы можете работать":"Оберіть, ким ви можете працювати","скоро":"незабаром","Газонокосилка":"Газонокосарка","Триммер / бензокоса":"Тример / бензокоса","Кусторез / ножницы для изгороди":"Кущоріз / ножиці для живоплоту","Вертикуттер":"Вертикутер","Аэратор":"Аератор","Воздуходувка":"Повітродувка","Садовый инвентарь (грабли, секатор)":"Садовий інвентар (граблі, секатор)"});
 /* cleaner registration: individual / company, PESEL, bank */
 Object.assign(TR.pl,{"Регистрируетесь как":"Rejestrujesz się jako","Физлицо":"Osoba fizyczna","Фирма":"Firma","Контактное лицо":"Osoba kontaktowa","Название фирмы *":"Nazwa firmy *","NIP (10 цифр) *":"NIP (10 cyfr) *","PESEL (11 цифр) *":"PESEL (11 cyfr) *","О компании — услуги и опыт *":"O firmie — usługi i doświadczenie *","Лет на рынке":"Lat na rynku","Банковские реквизиты для выплат":"Dane bankowe do wypłat","Название банка *":"Nazwa banku *","Номер счёта (IBAN) *":"Numer konta (IBAN) *"});
 Object.assign(TR.en,{"Регистрируетесь как":"You’re registering as","Физлицо":"Individual","Фирма":"Company","Контактное лицо":"Contact person","Название фирмы *":"Company name *","NIP (10 цифр) *":"NIP (10 digits) *","PESEL (11 цифр) *":"PESEL (11 digits) *","О компании — услуги и опыт *":"About the company — services & experience *","Лет на рынке":"Years on the market","Банковские реквизиты для выплат":"Bank details for payouts","Название банка *":"Bank name *","Номер счёта (IBAN) *":"Account number (IBAN) *"});
@@ -2327,7 +2351,7 @@ function renderAuth(){
   const _resetToken=(new URLSearchParams(location.search)).get('reset');
   const clearReset=()=>{ try{history.replaceState({},'',location.pathname);}catch{} };
   let mode=_resetToken?'reset':'login', role='customer';
-  const reg={avatar:null,idDocument:null,equipment:[],hasCar:null,entityType:'individual',vals:{}};   // cleaner KYC + questionnaire
+  const reg={avatar:null,idDocument:null,equipment:[],professions:['cleaning'],hasCar:null,entityType:'individual',vals:{}};   // cleaner KYC + questionnaire
   const root=$('#root');
   root.innerHTML='';
   const wrap=el(`<div class="auth-split">
@@ -2448,9 +2472,18 @@ function renderAuth(){
           <label class="field"><span>${isCo?'О компании — услуги и опыт *':'О себе — что умеете и опыт работы *'}</span><textarea class="input" name="bio" rows="3" minlength="20" required placeholder="${isCo?'Например: клининговая компания, 5 лет на рынке. Генеральная, послеремонтная уборка, мойка окон. Своё оборудование и эко-средства, бригада из 4 человек.':'Например: 3 года опыта. Генеральная и послеремонтная уборка, мытьё окон, свои эко-средства. Пунктуальна и внимательна к деталям.'}">${av(V.bio)}</textarea></label>
           <label class="field"><span>${isCo?'Лет на рынке':'Опыт работы, лет'}</span><input class="input" type="number" name="experienceYears" min="0" max="50" value="${av(V.experienceYears)||'0'}"></label>
           <label class="field"><span>Сколько человек в команде *</span><input class="input" type="number" name="teamSize" min="1" max="100" required placeholder="1" value="${av(V.teamSize)||''}"></label>
-          <div class="kyc-title" style="margin-top:6px">Оборудование</div>
+          <div class="kyc-title" style="margin-top:6px">Кем вы можете работать? *</div>
+          <p class="muted tiny" style="margin:-6px 0 8px">Выберите профессии — остальные откроются скоро.</p>
+          <div class="prof-grid" id="regProf">${Object.entries(state.catalog?.professions||{}).map(([k,p])=>`
+            <button type="button" class="prof ${p.active?(reg.professions.includes(k)?'on':''):'soon'}" data-prof="${k}">
+              <span class="pi">${{cleaning:I.broom,garden:I.leaf,handyman:I.wrench,electrical:I.bolt,plumbing:I.drop}[k]||I.broom}</span>
+              <span>${p.label}</span>
+              ${p.active?`<span class="pc">${reg.professions.includes(k)?I.check:''}</span>`:'<span class="badge grey">Скоро</span>'}
+            </button>`).join('')}</div>
+          <div class="kyc-title" style="margin-top:12px">Оборудование</div>
           <p class="muted tiny" style="margin:-6px 0 8px">Каким оборудованием вы располагаете?</p>
-          <div id="regEquip">${Object.entries(state.catalog?.equipment||{}).map(([k,v])=>`<label class="chk"><input type="checkbox" data-eq="${k}" ${reg.equipment.includes(k)?'checked':''}><span>${v}</span></label>`).join('')}</div>
+          <div id="regEquip">${reg.professions.map(pk=>{const p=(state.catalog?.professions||{})[pk];if(!p)return '';
+            return `<div class="eq-group"><div class="eq-head">${p.label}</div>${p.equipment.map(k=>`<label class="chk"><input type="checkbox" data-eq="${k}" ${reg.equipment.includes(k)?'checked':''}><span>${(state.catalog?.equipment||{})[k]||k}</span></label>`).join('')}</div>`;}).join('')}</div>
           <div class="kyc-title" style="margin-top:12px">Транспорт</div>
           <p class="muted tiny" style="margin:-6px 0 8px">Есть ли ${isCo?'у компании':'у вас'} собственный автомобиль?</p>
           <div class="seg" id="regCar" style="margin-bottom:4px">
@@ -2493,6 +2526,17 @@ function renderAuth(){
     wireUp('upAvatar','avatar',420);
     wireUp('upId','idDocument',1400);
     // equipment checkboxes + car (persist in `reg`, no full redraw)
+    card.querySelectorAll('#regProf [data-prof]').forEach(b=>b.onclick=()=>{
+      const k=b.dataset.prof;const p=(state.catalog?.professions||{})[k];
+      if(!p||!p.active){toast(`${p?t(p.label):''} — ${t('скоро')}`.trim());return;}
+      snap();
+      if(reg.professions.includes(k)){reg.professions=reg.professions.filter(x=>x!==k);}
+      else reg.professions.push(k);
+      // drop gear of a deselected profession so the payload stays honest
+      const allowed=new Set(reg.professions.flatMap(x=>((state.catalog?.professions||{})[x]||{}).equipment||[]));
+      reg.equipment=reg.equipment.filter(x=>allowed.has(x));
+      draw();
+    });
     card.querySelectorAll('#regEquip [data-eq]').forEach(cb=>cb.onchange=()=>{
       const k=cb.dataset.eq; reg.equipment=reg.equipment.filter(x=>x!==k); if(cb.checked)reg.equipment.push(k);
     });
@@ -2509,13 +2553,14 @@ function renderAuth(){
         if(!reg.avatar){toast('Загрузите своё фото',true);return;}
         if(!reg.idDocument){toast('Загрузите фото документа',true);return;}
       }
+      if(mode==='register'&&role==='cleaner'&&!reg.professions.length){toast(t('Выберите, кем вы можете работать'),true);return;}
       if(mode==='register'&&!f.get('acceptedTerms')){toast(t('Отметьте согласие с условиями, чтобы продолжить'),true);return;}
       btn.disabled=true;btn.textContent='Подождите…';
       try{
         const payload=Object.fromEntries(f);
         if(mode==='register'){payload.role=role;payload.locale=state.lang;payload.acceptedTerms=!!f.get('acceptedTerms');}
         if(mode==='register'&&role==='cleaner'){
-          payload.entityType=reg.entityType;payload.equipment=reg.equipment;payload.hasCar=reg.hasCar===true;
+          payload.entityType=reg.entityType;payload.equipment=reg.equipment;payload.professions=reg.professions;payload.hasCar=reg.hasCar===true;
           if(!asCompany){payload.avatar=reg.avatar;payload.idDocument=reg.idDocument;}
         }
         const res=await api(mode==='login'?'/api/login':'/api/register','POST',payload);

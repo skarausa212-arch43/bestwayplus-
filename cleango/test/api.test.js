@@ -778,6 +778,28 @@ async function main() {
       assert.strictEqual(waw.status, 400);
       assert.strictEqual(waw.json.code, 'GARDEN_CITY');
     });
+    await ok('PROFESSIONS: sign-up validates active professions; job board filters by them', async () => {
+      // Coming-soon-only selection is rejected (nothing active picked).
+      const soon = await req('POST', '/api/register', { body: { name: 'Handy', email: 'handy@x.pl', password: 'averylongpassword', phone: '600700800', role: 'cleaner', city: 'Wrocław', teamSize: 1, acceptedTerms: true, professions: ['handyman'], bio: 'Repairs and small jobs, ten years of experience.', entityType: 'company', companyName: 'FixIt Sp. z o.o.', nip: '5252445281', bankName: 'PKO', bankAccount: 'PL27114020040000300201355387' } });
+      assert.strictEqual(soon.status, 400);
+      assert.strictEqual(soon.json.code, 'PROFESSION_REQUIRED');
+      // A garden-only provider registers fine and is verified by the admin.
+      const gard = await req('POST', '/api/register', { body: { name: 'Gardener', email: 'gardener@x.pl', password: 'averylongpassword', phone: '600700800', role: 'cleaner', city: 'Wrocław', teamSize: 2, acceptedTerms: true, professions: ['garden', 'plumbing'], bio: 'Lawns, hedges and garden care with my own equipment.', equipment: ['g_mower', 'g_trimmer'], entityType: 'company', companyName: 'GreenCare Sp. z o.o.', nip: '5252445281', bankName: 'PKO', bankAccount: 'PL27114020040000300201355387' } });
+      assert.strictEqual(gard.status, 200);
+      assert.deepStrictEqual(gard.json.user.professions, ['garden'], 'inactive plumbing dropped, garden kept');
+      assert.deepStrictEqual(gard.json.user.equipment, ['g_mower', 'g_trimmer'], 'garden gear stored');
+      const adm = await adminToken();
+      await req('POST', '/api/admin/verify-cleaner', { token: adm, body: { cleanerId: gard.json.user.id, verified: true } });
+      // The gardener's board shows the open GARDEN order but no cleaning orders.
+      const gBoard = await req('GET', '/api/bookings', { token: gard.json.token });
+      const gOpen = gBoard.json.bookings.filter((x) => x.status === 'searching');
+      assert.ok(gOpen.some((x) => x.service === 'garden'), 'gardener sees the garden order');
+      assert.ok(!gOpen.some((x) => x.service !== 'garden'), 'gardener sees no cleaning orders');
+      // A legacy cleaner (no professions field → cleaning) must NOT see garden orders.
+      const cBoard = await req('GET', '/api/bookings', { token: cleanerTok });
+      const cOpen = cBoard.json.bookings.filter((x) => x.status === 'searching');
+      assert.ok(!cOpen.some((x) => x.service === 'garden'), 'cleaning-only provider does not see garden orders');
+    });
     await ok('OGROD: season reminder is stored and deduped', async () => {
       const r1 = await req('POST', '/api/ogrod/remind', { token: customerTok, body: { service: 'wertykulacja' } });
       assert.strictEqual(r1.status, 200);

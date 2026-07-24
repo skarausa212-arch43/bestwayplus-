@@ -489,7 +489,29 @@ const EQUIPMENT = {
   tools:     'Инвентарь (швабра, вёдра, микрофибра)',
   prochem:   'Профессиональная химия',
   eco:       'Экологичные средства',
+  // garden (ogrodnik) gear — shown when the "garden" profession is picked
+  g_mower:   'Газонокосилка',
+  g_trimmer: 'Триммер / бензокоса',
+  g_hedge:   'Кусторез / ножницы для изгороди',
+  g_vert:    'Вертикуттер',
+  g_aer:     'Аэратор',
+  g_blower:  'Воздуходувка',
+  g_tools:   'Садовый инвентарь (грабли, секатор)',
 };
+// What a provider can work as. Inactive ones show as «скоро» at sign-up and
+// cannot be selected; flip active when the vertical launches.
+const PROFESSIONS = {
+  cleaning:   { label: 'Уборка',      active: true,  equipment: ['vacuum', 'extractor', 'steamer', 'ladder', 'tools', 'prochem', 'eco'] },
+  garden:     { label: 'Сад',         active: true,  equipment: ['g_mower', 'g_trimmer', 'g_hedge', 'g_vert', 'g_aer', 'g_blower', 'g_tools'] },
+  handyman:   { label: 'Мастер',      active: false, equipment: [] },
+  electrical: { label: 'Электрик',    active: false, equipment: [] },
+  plumbing:   { label: 'Сантехник',   active: false, equipment: [] },
+};
+// Legacy providers (registered before professions existed) are cleaners.
+const providerProfessions = (u) => (Array.isArray(u.professions) && u.professions.length ? u.professions : ['cleaning']);
+// Can this provider serve this booking? Garden orders go to gardeners only;
+// everything else is the cleaning vertical.
+const providerServes = (u, bk) => providerProfessions(u).includes(bk.service === 'garden' ? 'garden' : 'cleaning');
 const EXTRAS_CATEGORIES = {
   kitchen:   'Кухня',
   bath:      'Санузел',
@@ -778,7 +800,11 @@ route('POST', '/api/register', async (req, res) => {
   const nip = digits(b.nip);
   const pesel = digits(b.pesel);
   const teamSize = Math.round(Number(b.teamSize));
+  // Professions: at least one ACTIVE profession; unknown/coming-soon are dropped.
+  const professions = [...new Set((Array.isArray(b.professions) ? b.professions : ['cleaning'])
+    .filter((k) => PROFESSIONS[k] && PROFESSIONS[k].active))];
   if (role === 'cleaner') {
+    if (!professions.length) return send(res, 400, { error: 'Выберите, кем вы можете работать (хотя бы одну профессию).', code: 'PROFESSION_REQUIRED' });
     if (!(teamSize >= 1 && teamSize <= 100)) return send(res, 400, { error: 'Укажите, сколько человек в команде (от 1 до 100).', code: 'TEAM_SIZE_REQUIRED' });
     if (bio.length < 20) return send(res, 400, { error: 'Расскажите о себе — что умеете и опыт (минимум 20 символов).', code: 'BIO_REQUIRED' });
     if (!bankName) return send(res, 400, { error: 'Укажите название банка.', code: 'BANK_NAME_REQUIRED' });
@@ -813,6 +839,7 @@ route('POST', '/api/register', async (req, res) => {
     user.bio = bio.slice(0, 600);
     user.experienceYears = Math.max(0, Math.min(50, Number(b.experienceYears) || 0));
     user.teamSize = teamSize;                 // how many people work in this cleaner's team
+    user.professions = professions;           // what they work as (cleaning / garden / …)
     user.equipment = Array.isArray(b.equipment) ? b.equipment.filter((k) => EQUIPMENT[k]) : [];
     user.hasCar = !!b.hasCar;
     user.bankAccount = bankAccount;           // payout details — admin-only, never in public payloads
@@ -989,6 +1016,10 @@ route('PATCH', '/api/me', async (req, res) => {
   if (typeof b.bio === 'string') user.bio = b.bio.slice(0, 280);
   if (b.experienceYears != null) user.experienceYears = Math.max(0, Math.min(50, Number(b.experienceYears) || 0));
   if (Array.isArray(b.equipment)) user.equipment = b.equipment.filter((k) => EQUIPMENT[k]);
+  if (Array.isArray(b.professions)) {
+    const next = [...new Set(b.professions.filter((k) => PROFESSIONS[k] && PROFESSIONS[k].active))];
+    if (next.length) user.professions = next;
+  }
   if (typeof b.hasCar === 'boolean') user.hasCar = b.hasCar;
   if (typeof b.name === 'string' && b.name.trim()) user.name = b.name.trim().slice(0, 60);
   persist.users();
@@ -1182,6 +1213,7 @@ route('GET', '/api/catalog', async (req, res) => {
   }
   send(res, 200, {
     services: SERVICE_CATALOG, extras, extraCategories: EXTRAS_CATEGORIES, equipment: EQUIPMENT,
+    professions: Object.fromEntries(Object.entries(PROFESSIONS).map(([k, v]) => [k, { label: v.label, active: v.active, equipment: v.equipment }])),
     commissionRate: getSettings().commissionRate, currency: CURRENCY, oauth: oauth.providers(),
     serviceFrom: serviceFromTable(),
     frequencyDiscounts: cityPrices.FREQUENCY_DISCOUNTS,
@@ -2180,7 +2212,7 @@ function cleanerGeo(c) {
 function dispatchNearestFirst(booking) {
   const instant = booking.urgency === 'flash';
   const candidates = Object.values(db.users)
-    .filter((c) => c.role === 'cleaner' && !c.deletedAt && c.verified)
+    .filter((c) => c.role === 'cleaner' && !c.deletedAt && c.verified && providerServes(c, booking))
     .map((c) => ({
       id: c.id, verified: c.verified, online: c.online, status: 'active',
       location: cleanerGeo(c), serviceRadiusKm: 30,
@@ -2193,7 +2225,7 @@ function dispatchNearestFirst(booking) {
   const offer = (ids) => { for (const pid of ids) notify(pid, 'provider.new_offer', { service: booking.serviceLabel, payout: `${booking.payout} zł`, bookingId: booking.id }); };
   if (!ranked.length) {
     // Safety net (no one in radius / no GPS data at all): legacy behavior.
-    for (const c of Object.values(db.users)) if (c.role === 'cleaner' && c.online && c.verified) notify(c.id, 'provider.new_offer', { service: booking.serviceLabel, payout: `${booking.payout} zł`, bookingId: booking.id });
+    for (const c of Object.values(db.users)) if (c.role === 'cleaner' && c.online && c.verified && providerServes(c, booking)) notify(c.id, 'provider.new_offer', { service: booking.serviceLabel, payout: `${booking.payout} zł`, bookingId: booking.id });
     return;
   }
   const ids = ranked.map((r) => r.providerId);
@@ -2216,7 +2248,7 @@ route('GET', '/api/bookings', async (req, res) => {
     list = list.filter((x) => x.customerId === user.id);
   } else if (user.role === 'cleaner') {
     // Open jobs (searching) + jobs assigned to this cleaner
-    list = list.filter((x) => x.cleanerId === user.id || x.status === 'searching');
+    list = list.filter((x) => x.cleanerId === user.id || (x.status === 'searching' && providerServes(user, x)));
   }
   // admin sees all
   list.sort((a, b) => b.createdAt - a.createdAt);
@@ -2501,6 +2533,7 @@ function cleanerPublic(u) {
     id: u.id, name: u.name, avatar: u.avatar || null,
     rating: u.rating || null, jobsDone: u.jobsDone || 0, city: u.city || null,
     bio: u.bio || '', experienceYears: u.experienceYears || null, teamSize: u.teamSize || null,
+    professions: providerProfessions(u),
     equipment: Array.isArray(u.equipment) ? u.equipment : [], hasCar: !!u.hasCar,
     online: !!u.online, verified: !!u.verified,
   };
