@@ -169,10 +169,10 @@ function validLoc(loc) {
 const SERVICE_CATEGORIES = [
   { key: 'cleaning',   label: 'Cleaning',          active: true,  desc: 'Homes, offices, move-outs' },
   { key: 'windows',    label: 'Windows',           active: true,  desc: 'Interior & exterior glass' },
-  { key: 'handyman',   label: 'Handyman',          active: false, desc: 'Repairs & odd jobs' },
+  { key: 'garden',     label: 'Garden',            active: false, desc: 'Lawn, hedges, care' },
   { key: 'electrical', label: 'Electrician',       active: false, desc: 'Wiring, fixtures, sockets' },
   { key: 'plumbing',   label: 'Plumbing',          active: false, desc: 'Leaks, taps, drains' },
-  { key: 'garden',     label: 'Garden',            active: false, desc: 'Lawn, hedges, care' },
+  { key: 'handyman',   label: 'Handyman',          active: false, desc: 'Repairs & odd jobs' },
   { key: 'drycleaning',label: 'Dry cleaning',      active: false, desc: 'Sofas, carpets, curtains' },
   { key: 'assembly',   label: 'Furniture assembly',active: false, desc: 'Flat-pack & mounting' },
 ];
