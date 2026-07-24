@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CargoGo — demo MVP</title>
+<style>
+  :root {
+    --brand: #00A876; --brand-soft: #E8F6F0;
+    --ink: #1E2430; --sub: #7A8394; --faint: #AEB6C4;
+    --line: #EEF0F4; --bg: #EEF1F5; --card: #FFF;
+    --danger: #E2544A; --danger-soft: #FDEEED;
+    --warn: #F5A623; --warn-soft: #FEF5E4;
+    --info: #4D8DFF; --info-soft: #EBF2FF;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; }
+  body { background: #DDE2E9; display: flex; justify-content: center; min-height: 100vh; padding: 12px 0; }
+  #phone { width: 100%; max-width: 420px; background: var(--bg); border-radius: 28px; overflow: hidden; position: relative; display: flex; flex-direction: column; height: 92vh; min-height: 640px; box-shadow: 0 20px 60px rgba(15,23,42,.25); }
+
+  .roles { display: flex; gap: 4px; padding: 10px 12px; background: var(--ink); }
+  .roles button { flex: 1; padding: 9px 4px; border: none; border-radius: 10px; font-weight: 800; font-size: 12px; cursor: pointer; background: transparent; color: #8A94A6; position: relative; }
+  .roles button.active { background: var(--brand); color: #fff; }
+  .roles .rbadge { position: absolute; top: 2px; right: 6px; background: var(--danger); color: #fff; font-size: 9px; min-width: 15px; height: 15px; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 0 3px; }
+
+  .topbar { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px 4px; gap: 8px; }
+  .logo { font-size: 20px; font-weight: 900; color: var(--ink); }
+  .logo span { color: var(--brand); }
+  .lang { display: flex; gap: 3px; background: #fff; border-radius: 999px; padding: 3px; box-shadow: 0 4px 12px rgba(15,23,42,.08); }
+  .lang button { border: none; background: transparent; font-size: 12px; font-weight: 800; color: var(--faint); padding: 6px 8px; border-radius: 999px; cursor: pointer; }
+  .lang button.on { background: var(--brand); color: #fff; }
+  .bell { width: 40px; height: 40px; border-radius: 20px; background: #fff; border: none; font-size: 16px; cursor: pointer; position: relative; box-shadow: 0 4px 12px rgba(15,23,42,.08); flex-shrink: 0; }
+  .bell .badge { position: absolute; top: 2px; right: 2px; background: var(--danger); color: #fff; font-size: 9px; min-width: 16px; height: 16px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+
+  #screen { flex: 1; overflow-y: auto; padding: 10px 14px 20px; }
+  .card { background: var(--card); border-radius: 20px; padding: 16px; margin-bottom: 10px; box-shadow: 0 6px 24px rgba(15,23,42,.06); }
+  h2 { font-size: 18px; color: var(--ink); margin-bottom: 8px; }
+  .sub { font-size: 13px; color: var(--sub); }
+  .faint { font-size: 11px; color: var(--faint); }
+  .row { display: flex; align-items: center; justify-content: space-between; }
+
+  .btn { display: block; width: 100%; padding: 14px; border: none; border-radius: 14px; font-size: 15px; font-weight: 800; cursor: pointer; background: var(--brand); color: #fff; transition: transform .1s; }
+  .btn:active { transform: scale(.98); }
+  .btn.sec { background: var(--brand-soft); color: var(--brand); }
+  .btn.danger { background: var(--danger); }
+  .btn.ghost { background: transparent; color: var(--sub); }
+  .btn:disabled { background: var(--line); color: var(--faint); cursor: default; }
+  .btn.mt { margin-top: 8px; }
+
+  input, select { width: 100%; padding: 12px 14px; border: 1px solid transparent; border-radius: 12px; background: #F8F9FB; font-size: 14px; color: var(--ink); margin-bottom: 8px; outline: none; }
+  input:focus { border-color: var(--brand); }
+  label { font-size: 12px; font-weight: 700; color: var(--sub); display: block; margin: 6px 0 4px; }
+
+  .pill { display: inline-block; padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; }
+  .pill.brand { background: var(--brand-soft); color: var(--brand); }
+  .pill.info { background: var(--info-soft); color: var(--info); }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); }
+  .pill.danger { background: var(--danger-soft); color: var(--danger); }
+
+  .seg { display: flex; background: #F1F3F7; border-radius: 999px; padding: 3px; gap: 2px; }
+  .seg button { flex: 1; padding: 8px 6px; border: none; border-radius: 999px; font-weight: 700; font-size: 13px; background: transparent; color: var(--faint); cursor: pointer; }
+  .seg button.on { background: #fff; color: var(--ink); box-shadow: 0 2px 8px rgba(15,23,42,.12); }
+
+  .vopt { border: 2px solid var(--line); border-radius: 14px; padding: 12px; margin-bottom: 8px; cursor: pointer; }
+  .vopt.on { border-color: var(--brand); background: var(--brand-soft); }
+
+  .map { position: relative; height: 170px; border-radius: 16px; background: #F1EFEA; overflow: hidden; margin-bottom: 10px; }
+  .blk { position: absolute; background: #E7E3DA; border-radius: 8px; }
+  .park { position: absolute; background: #CDE8C9; border-radius: 8px; }
+  .river { position: absolute; height: 12px; width: 120%; left: -10%; background: #BADAF2; border-radius: 6px; transform: rotate(-4deg); }
+  .street-h { position: absolute; left: 0; right: 0; height: 7px; background: #fff; }
+  .street-v { position: absolute; top: 0; bottom: 0; width: 6px; background: #fff; }
+  .route { position: absolute; background: var(--brand); border-radius: 3px; opacity: .85; }
+  .pin { position: absolute; width: 24px; height: 24px; border-radius: 12px; background: #fff; border: 2px solid var(--brand); display: flex; align-items: center; justify-content: center; font-size: 11px; transform: translate(-50%, -50%); transition: left 1s linear, top 1s linear; }
+  .pin.truck { width: 34px; height: 34px; border-radius: 17px; font-size: 15px; z-index: 2; box-shadow: 0 0 0 6px rgba(0,168,118,.15); }
+  .radar { position: absolute; left: 50%; top: 45%; width: 60px; height: 60px; border: 3px solid var(--brand); border-radius: 50%; transform: translate(-50%, -50%); animation: radar 1.6s ease-out infinite; }
+  @keyframes radar { from { width: 30px; height: 30px; opacity: .8; } to { width: 130px; height: 130px; opacity: 0; } }
+
+  #toast { position: absolute; top: 96px; left: 14px; right: 14px; background: var(--ink); color: #fff; border-radius: 14px; padding: 12px 14px; z-index: 50; transform: translateY(-140px); transition: transform .35s cubic-bezier(.22,1,.36,1); cursor: pointer; box-shadow: 0 10px 30px rgba(15,23,42,.35); }
+  #toast.show { transform: translateY(0); }
+  #toast b { font-size: 13px; } #toast div { font-size: 12px; color: #C9CFD9; margin-top: 2px; }
+
+  .chatbox { max-height: 260px; overflow-y: auto; margin-bottom: 8px; }
+  .msg { max-width: 80%; padding: 10px 12px; border-radius: 14px; margin: 4px 0; font-size: 14px; }
+  .msg.mine { background: var(--brand); color: #fff; margin-left: auto; }
+  .msg.their { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+  .msg.sys { background: transparent; color: var(--faint); font-size: 11px; text-align: center; max-width: 100%; }
+  .msg .trnote { display: block; font-size: 10px; opacity: .75; margin-top: 3px; }
+  .quick { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 6px; }
+  .quick button { white-space: nowrap; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 7px 11px; font-size: 12px; color: var(--sub); cursor: pointer; }
+
+  .offer-timer { width: 38px; height: 38px; border-radius: 19px; background: var(--brand-soft); color: var(--brand); font-weight: 900; display: flex; align-items: center; justify-content: center; }
+  .offer-timer.low { background: var(--danger-soft); color: var(--danger); }
+  .stars button { font-size: 30px; background: none; border: none; cursor: pointer; opacity: .25; }
+  .stars button.on { opacity: 1; }
+  .code-big { font-size: 34px; font-weight: 900; letter-spacing: 10px; color: var(--warn); text-align: center; }
+  .notif-item { border-left: 3px solid var(--brand); }
+  .notif-item.unread { background: var(--brand-soft); }
+  .switch { position: relative; width: 52px; height: 30px; }
+  .switch input { display: none; }
+  .switch .tr { position: absolute; inset: 0; background: var(--line); border-radius: 15px; transition: .2s; }
+  .switch input:checked + .tr { background: var(--brand); }
+  .switch .th { position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 12px; background: #fff; transition: .2s; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+  .switch input:checked + .tr .th { left: 25px; }
+  .fade { animation: fade .35s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+</style>
+</head>
+<body>
+<div id="phone">
+  <div class="roles">
+    <button id="rb-customer" onclick="setRole('customer')">👤 <span data-r="role.customer"></span><span class="rbadge" id="badge-customer" style="display:none"></span></button>
+    <button id="rb-driver" onclick="setRole('driver')">🧑‍✈️ <span data-r="role.driver"></span><span class="rbadge" id="badge-driver" style="display:none"></span></button>
+    <button id="rb-admin" onclick="setRole('admin')">🛠️ Admin</button>
+  </div>
+  <div class="topbar">
+    <div class="logo">Cargo<span>Go</span></div>
+    <div class="lang" id="langSel"></div>
+    <button class="bell" onclick="openNotifs()">🔔<span class="badge" id="bellBadge" style="display:none"></span></button>
+  </div>
+  <div id="toast" onclick="hideToast()"><b id="toastTitle"></b><div id="toastBody"></div></div>
+  <div id="screen"></div>
+</div>
+
+<script>
+// ═══════════ ЛОКАЛИЗАЦИЯ (PL / RU / EN) ═══════════
+const I18N = {
+  pl: {
+    'role.customer':'Klient','role.driver':'Kierowca',
+    'step1':'1/3 · Adresy','step2':'2/3 · Pojazd i ładunek','step3':'3/3 · Podsumowanie',
+    'from':'Skąd (załadunek)','to':'Dokąd (rozładunek)','home':'🏠 Dom','work':'💼 Praca',
+    'ph.from':'np. Legnicka 58, Wrocław','ph.to':'np. Krzywoustego 110, Wrocław',
+    'next':'Dalej','back':'Wstecz','close':'Zamknij',
+    'v.small_bus':'Mały bus','v.big_bus':'Duży bus','v.laweta':'Laweta',
+    'vd.small_bus':'Drobne przeprowadzki, AGD, meble, paczki.','vd.big_bus':'Większe przeprowadzki, palety, duże meble.','vd.laweta':'Transport samochodów, motocykli i niesprawnych pojazdów.',
+    'upto':'do','cargoQ':'Co przewozimy?','ph.cargo':'np. Sofa 3-osobowa',
+    'carRun':'Czy pojazd odpala?','yes':'Tak','no.winch':'Nie (+{0} zł wciągarka)',
+    'loaders':'Pomoc przy załadunku','no':'Nie','ppl':'os.',
+    'sum.transport':'Transport','sum.dist':'Dystans','sum.loader':'Dodatkowy pracownik','sum.urgent':'Pilne zamówienie','sum.svc':'Opłata serwisowa','total':'Razem',
+    'payNote':'💳 Visa •• 5282 · kwota zostanie zablokowana (płatność testowa)','payBtn':'Przejdź do płatności',
+    'history':'Historia','cancel':'Anuluj zamówienie','codeFor':'Kod potwierdzenia dla kierowcy:',
+    'st.searching':'Szukanie kierowcy','st.accepted':'Kierowca przyjął zamówienie','st.driver_en_route':'Kierowca jedzie po ładunek','st.driver_arrived':'Kierowca jest na miejscu','st.loading':'Załadunek','st.in_transit':'Transport w trakcie','st.arrived_destination':'Kierowca dotarł do celu','st.unloading':'Rozładunek','st.awaiting_confirmation':'Oczekiwanie na potwierdzenie','st.completed':'Zamówienie zakończone','st.cancelled':'Zamówienie anulowane',
+    'a.driver_en_route':'Jadę po ładunek','a.driver_arrived':'Jestem na miejscu','a.loading':'Rozpoczynam załadunek','a.in_transit':'Ładunek załadowany — ruszam','a.arrived_destination':'Dotarłem do celu','a.unloading':'Rozpoczynam rozładunek','a.awaiting_confirmation':'Rozładunek zakończony',
+    'chat':'💬 Czat','chatWith':'💬 Czat z klientem','ph.msg':'Napisz wiadomość…','firstMsg':'Napisz pierwszą wiadomość.','translated':'🌐 przetłumaczono','translating':'tłumaczę…',
+    'q.0':'Jestem na miejscu.','q.1':'Proszę zadzwonić po przyjeździe.','q.2':'Proszę poczekać 5 minut.','q.3':'Gdzie dokładnie Pan/Pani jest?','q.4':'Ładunek jest gotowy.','q.5':'Nie mogę znaleźć wejścia.',
+    'delivered':'Dostarczono!','rateMarek':'Oceń kierowcę Marka','tip':'Napiwek','noTip':'Bez','sendRate':'Wyślij ocenę',
+    'newOrder':'Nowe zlecenie!','yourNet':'Twój zarobek (po prowizji 18%)','accept':'Przyjmij','reject':'Odrzuć',
+    'offerGone':'⏱ Oferta wygasła lub odrzucona.','showAgain':'Pokaż ponownie',
+    'online':'🟢 Online — otrzymujesz zlecenia','offline':'⚪ Offline — włącz, aby otrzymywać zlecenia',
+    'earnings':'Zarobki','order':'Zlecenie','tipW':'napiwek','payout':'Wypłać na konto',
+    'demoHintD':'💡 Demo: przełącz się na rolę Klient, złóż zamówienie — pojawi się tutaj (przy Online).',
+    'codeFrom':'Kod od klienta','ph.code':'4 cyfry','finish':'Zakończ zlecenie','badCode':'Nieprawidłowy kod. Poproś klienta o kod z aplikacji.',
+    'notifs':'🔔 Powiadomienia','noNotifs':'Brak powiadomień.',
+    'n.payBlocked':'Płatność zablokowana','n.payBlockedB':'Środki ({0} zł) zablokowane. Szukamy kierowcy.',
+    'n.newOrder':'Nowe zlecenie!','n.newOrderB':'{0} → {1}. Wejdź Online, aby przyjąć.',
+    'n.jobDone':'Zlecenie zakończone','n.jobDoneB':'Zarobek {0} zł dopisany do salda.',
+    'n.payDone':'Płatność wykonana','n.payDoneB':'Pobrano {0} zł z karty Visa •• 5282.',
+    'n.cancelled':'Zamówienie anulowane','n.cancByCust':'Klient anulował zamówienie.','n.cancByDrv':'Kierowca anulował zlecenie.',
+    'n.tip':'Napiwek! 💚','n.tipB':'Klient zostawił {0} zł napiwku.','n.rate':'Nowa ocena','n.rateB':'Klient ocenił przejazd na {0} ★',
+    'n.online':'Jesteś Online','n.onlineB':'Będziesz otrzymywać zlecenia z Twojej okolicy.',
+    'n.msg':'Nowa wiadomość','n.payout':'Wypłata zlecona','n.payoutB':'{0} zł trafi na konto w 1 dzień roboczy (mock).',
+    'nc.accepted':'Kierowca znaleziony! Marek jedzie do Ciebie.','nc.driver_en_route':'Kierowca jedzie po ładunek.','nc.driver_arrived':'Kierowca jest na miejscu.','nc.loading':'Rozpoczął się załadunek.','nc.in_transit':'Twój ładunek jest w drodze.','nc.arrived_destination':'Kierowca dotarł do celu.','nc.unloading':'Trwa rozładunek.','nc.awaiting_confirmation':'Podaj kierowcy kod potwierdzenia: {0}','nc.completed':'Zamówienie zakończone. Dziękujemy!',
+    'adm.orders':'Zamówienia','adm.online':'Kierowcy online','adm.rev':'Przychód (prowizja)','adm.disputes':'Spory','adm.drivers':'Kierowcy','adm.approved':'Zatwierdzony','adm.tariffs':'Taryfy','adm.none':'Brak aktywnych.','adm.base':'baza','adm.comm':'Prowizja serwisu','adm.helper':'Pomocnik','adm.winch':'Wciągarka (laweta)',
+    'wait.free':'⏳ Bezpłatne oczekiwanie: zostało {0} min','wait.paid':'⏱ Płatne oczekiwanie: {0} min · +{1} zł','wait.demo':'(demo: 1 min = 3 s)',
+    'n.waitPaid':'Płatne oczekiwanie','n.waitPaidB':'Minęło 10 min bezpłatnych. Naliczamy 2 zł/min.',
+    'pr.btn':'💰 Zaproponuj zmianę ceny','pr.amount':'Nowa cena (zł)','pr.reason':'Powód (np. dodatkowe piętro)','pr.send':'Wyślij do klienta','pr.pending':'⏳ Czekamy na decyzję klienta…','pr.title':'Kierowca proponuje nową cenę','pr.accept':'Akceptuję','pr.decline':'Odrzucam',
+    'n.prSent':'Propozycja wysłana','n.prSentB':'Klient musi zaakceptować nową cenę: {0} zł.','n.pr':'Nowa propozycja ceny','n.prB':'Kierowca proponuje {0} zł. Powód: {1}','n.prAcc':'Cena zaakceptowana','n.prAccB':'Nowa cena zamówienia: {0} zł.','n.prDec':'Propozycja odrzucona','n.prDecB':'Klient odrzucił zmianę ceny. Obowiązuje {0} zł.',
+    'alert.addr':'Podaj adresy!','mapDemo':'Mapa demo',
+  },
+  ru: {
+    'role.customer':'Клиент','role.driver':'Водитель',
+    'step1':'1/3 · Адреса','step2':'2/3 · Транспорт и груз','step3':'3/3 · Итог',
+    'from':'Откуда (погрузка)','to':'Куда (разгрузка)','home':'🏠 Дом','work':'💼 Работа',
+    'ph.from':'напр. Legnicka 58, Wrocław','ph.to':'напр. Krzywoustego 110, Wrocław',
+    'next':'Далее','back':'Назад','close':'Закрыть',
+    'v.small_bus':'Малый бус','v.big_bus':'Большой бус','v.laweta':'Эвакуатор',
+    'vd.small_bus':'Мелкие переезды, техника, мебель, посылки.','vd.big_bus':'Крупные переезды, палеты, большая мебель.','vd.laweta':'Перевозка авто, мотоциклов и неисправных машин.',
+    'upto':'до','cargoQ':'Что перевозим?','ph.cargo':'напр. Диван 3-местный',
+    'carRun':'Машина заводится?','yes':'Да','no.winch':'Нет (+{0} zł лебёдка)',
+    'loaders':'Помощь при погрузке','no':'Нет','ppl':'чел.',
+    'sum.transport':'Транспорт','sum.dist':'Расстояние','sum.loader':'Доп. работник','sum.urgent':'Срочный заказ','sum.svc':'Сервисный сбор','total':'Итого',
+    'payNote':'💳 Visa •• 5282 · сумма будет заблокирована (тестовая оплата)','payBtn':'Перейти к оплате',
+    'history':'История','cancel':'Отменить заказ','codeFor':'Код подтверждения для водителя:',
+    'st.searching':'Поиск водителя','st.accepted':'Водитель принял заказ','st.driver_en_route':'Водитель едет за грузом','st.driver_arrived':'Водитель на месте','st.loading':'Погрузка','st.in_transit':'Груз в пути','st.arrived_destination':'Водитель прибыл в пункт назначения','st.unloading':'Разгрузка','st.awaiting_confirmation':'Ожидание подтверждения','st.completed':'Заказ завершён','st.cancelled':'Заказ отменён',
+    'a.driver_en_route':'Еду за грузом','a.driver_arrived':'Я на месте','a.loading':'Начинаю погрузку','a.in_transit':'Груз загружен — выезжаю','a.arrived_destination':'Прибыл в пункт назначения','a.unloading':'Начинаю разгрузку','a.awaiting_confirmation':'Разгрузка завершена',
+    'chat':'💬 Чат','chatWith':'💬 Чат с клиентом','ph.msg':'Напишите сообщение…','firstMsg':'Напишите первое сообщение.','translated':'🌐 переведено','translating':'перевожу…',
+    'q.0':'Я на месте.','q.1':'Позвоните, пожалуйста, по приезде.','q.2':'Подождите, пожалуйста, 5 минут.','q.3':'Где именно вы находитесь?','q.4':'Груз готов.','q.5':'Не могу найти вход.',
+    'delivered':'Доставлено!','rateMarek':'Оцените водителя Марека','tip':'Чаевые','noTip':'Без','sendRate':'Отправить оценку',
+    'newOrder':'Новый заказ!','yourNet':'Ваш заработок (после комиссии 18%)','accept':'Принять','reject':'Отклонить',
+    'offerGone':'⏱ Предложение истекло или отклонено.','showAgain':'Показать снова',
+    'online':'🟢 Online — вы получаете заказы','offline':'⚪ Offline — включите, чтобы получать заказы',
+    'earnings':'Заработок','order':'Заказ','tipW':'чаевые','payout':'Вывести на счёт',
+    'demoHintD':'💡 Демо: переключитесь на роль Клиент, оформите заказ — он появится здесь (при Online).',
+    'codeFrom':'Код от клиента','ph.code':'4 цифры','finish':'Завершить заказ','badCode':'Неверный код. Попросите у клиента код из приложения.',
+    'notifs':'🔔 Уведомления','noNotifs':'Уведомлений нет.',
+    'n.payBlocked':'Оплата заблокирована','n.payBlockedB':'Средства ({0} zł) заблокированы. Ищем водителя.',
+    'n.newOrder':'Новый заказ!','n.newOrderB':'{0} → {1}. Выйдите Online, чтобы принять.',
+    'n.jobDone':'Заказ завершён','n.jobDoneB':'Заработок {0} zł зачислен на баланс.',
+    'n.payDone':'Оплата проведена','n.payDoneB':'Списано {0} zł с карты Visa •• 5282.',
+    'n.cancelled':'Заказ отменён','n.cancByCust':'Клиент отменил заказ.','n.cancByDrv':'Водитель отменил заказ.',
+    'n.tip':'Чаевые! 💚','n.tipB':'Клиент оставил {0} zł чаевых.','n.rate':'Новая оценка','n.rateB':'Клиент оценил поездку на {0} ★',
+    'n.online':'Вы Online','n.onlineB':'Вы будете получать заказы поблизости.',
+    'n.msg':'Новое сообщение','n.payout':'Выплата заказана','n.payoutB':'{0} zł поступят на счёт за 1 рабочий день (mock).',
+    'nc.accepted':'Водитель найден! Марек едет к вам.','nc.driver_en_route':'Водитель едет за грузом.','nc.driver_arrived':'Водитель на месте.','nc.loading':'Началась погрузка.','nc.in_transit':'Ваш груз в пути.','nc.arrived_destination':'Водитель прибыл в пункт назначения.','nc.unloading':'Идёт разгрузка.','nc.awaiting_confirmation':'Назовите водителю код подтверждения: {0}','nc.completed':'Заказ завершён. Спасибо!',
+    'adm.orders':'Заказы','adm.online':'Водители online','adm.rev':'Доход (комиссия)','adm.disputes':'Споры','adm.drivers':'Водители','adm.approved':'Одобрен','adm.tariffs':'Тарифы','adm.none':'Нет активных.','adm.base':'база','adm.comm':'Комиссия сервиса','adm.helper':'Помощник','adm.winch':'Лебёдка (эвакуатор)',
+    'wait.free':'⏳ Бесплатное ожидание: осталось {0} мин','wait.paid':'⏱ Платное ожидание: {0} мин · +{1} zł','wait.demo':'(демо: 1 мин = 3 с)',
+    'n.waitPaid':'Платное ожидание','n.waitPaidB':'10 бесплатных минут истекли. Начисляем 2 zł/мин.',
+    'pr.btn':'💰 Предложить новую цену','pr.amount':'Новая цена (zł)','pr.reason':'Причина (напр. доп. этаж)','pr.send':'Отправить клиенту','pr.pending':'⏳ Ждём решения клиента…','pr.title':'Водитель предлагает новую цену','pr.accept':'Принимаю','pr.decline':'Отклоняю',
+    'n.prSent':'Предложение отправлено','n.prSentB':'Клиент должен принять новую цену: {0} zł.','n.pr':'Новое предложение цены','n.prB':'Водитель предлагает {0} zł. Причина: {1}','n.prAcc':'Цена принята','n.prAccB':'Новая цена заказа: {0} zł.','n.prDec':'Предложение отклонено','n.prDecB':'Клиент отклонил изменение цены. Действует {0} zł.',
+    'alert.addr':'Укажите адреса!','mapDemo':'Демо-карта',
+  },
+  en: {
+    'role.customer':'Customer','role.driver':'Driver',
+    'step1':'1/3 · Addresses','step2':'2/3 · Vehicle & cargo','step3':'3/3 · Summary',
+    'from':'From (pickup)','to':'To (drop-off)','home':'🏠 Home','work':'💼 Work',
+    'ph.from':'e.g. Legnicka 58, Wrocław','ph.to':'e.g. Krzywoustego 110, Wrocław',
+    'next':'Next','back':'Back','close':'Close',
+    'v.small_bus':'Small van','v.big_bus':'Large van','v.laweta':'Tow truck',
+    'vd.small_bus':'Small moves, appliances, furniture, parcels.','vd.big_bus':'Bigger moves, pallets, large furniture.','vd.laweta':'Transport of cars, motorcycles and non-running vehicles.',
+    'upto':'up to','cargoQ':'What are we moving?','ph.cargo':'e.g. 3-seater sofa',
+    'carRun':'Does the vehicle start?','yes':'Yes','no.winch':'No (+{0} zł winch)',
+    'loaders':'Loading help','no':'No','ppl':'ppl',
+    'sum.transport':'Transport','sum.dist':'Distance','sum.loader':'Extra helper','sum.urgent':'Urgent order','sum.svc':'Service fee','total':'Total',
+    'payNote':'💳 Visa •• 5282 · amount will be held (test payment)','payBtn':'Proceed to payment',
+    'history':'History','cancel':'Cancel order','codeFor':'Confirmation code for the driver:',
+    'st.searching':'Finding a driver','st.accepted':'Driver accepted the order','st.driver_en_route':'Driver heading to pickup','st.driver_arrived':'Driver has arrived','st.loading':'Loading','st.in_transit':'In transit','st.arrived_destination':'Driver reached destination','st.unloading':'Unloading','st.awaiting_confirmation':'Awaiting confirmation','st.completed':'Order completed','st.cancelled':'Order cancelled',
+    'a.driver_en_route':'Heading to pickup','a.driver_arrived':'I have arrived','a.loading':'Starting loading','a.in_transit':'Loaded — departing','a.arrived_destination':'Reached destination','a.unloading':'Starting unloading','a.awaiting_confirmation':'Unloading finished',
+    'chat':'💬 Chat','chatWith':'💬 Chat with customer','ph.msg':'Type a message…','firstMsg':'Write the first message.','translated':'🌐 translated','translating':'translating…',
+    'q.0':'I have arrived.','q.1':'Please call upon arrival.','q.2':'Please wait 5 minutes.','q.3':'Where exactly are you?','q.4':'The cargo is ready.','q.5':'I can\u2019t find the entrance.',
+    'delivered':'Delivered!','rateMarek':'Rate driver Marek','tip':'Tip','noTip':'None','sendRate':'Send rating',
+    'newOrder':'New job!','yourNet':'Your earnings (after 18% fee)','accept':'Accept','reject':'Decline',
+    'offerGone':'⏱ Offer expired or declined.','showAgain':'Show again',
+    'online':'🟢 Online — receiving jobs','offline':'⚪ Offline — switch on to receive jobs',
+    'earnings':'Earnings','order':'Job','tipW':'tip','payout':'Withdraw to bank',
+    'demoHintD':'💡 Demo: switch to the Customer role, place an order — it will appear here (while Online).',
+    'codeFrom':'Code from the customer','ph.code':'4 digits','finish':'Complete job','badCode':'Invalid code. Ask the customer for the code from the app.',
+    'notifs':'🔔 Notifications','noNotifs':'No notifications.',
+    'n.payBlocked':'Payment held','n.payBlockedB':'Funds ({0} zł) held. Finding a driver.',
+    'n.newOrder':'New job!','n.newOrderB':'{0} → {1}. Go Online to accept.',
+    'n.jobDone':'Job completed','n.jobDoneB':'Earnings of {0} zł added to your balance.',
+    'n.payDone':'Payment completed','n.payDoneB':'{0} zł charged to Visa •• 5282.',
+    'n.cancelled':'Order cancelled','n.cancByCust':'The customer cancelled the order.','n.cancByDrv':'The driver cancelled the job.',
+    'n.tip':'Tip! 💚','n.tipB':'The customer left a {0} zł tip.','n.rate':'New rating','n.rateB':'The customer rated the trip {0} ★',
+    'n.online':'You are Online','n.onlineB':'You will receive jobs nearby.',
+    'n.msg':'New message','n.payout':'Payout requested','n.payoutB':'{0} zł will arrive within 1 business day (mock).',
+    'nc.accepted':'Driver found! Marek is on his way.','nc.driver_en_route':'Driver heading to pickup.','nc.driver_arrived':'Driver has arrived.','nc.loading':'Loading has started.','nc.in_transit':'Your cargo is on the way.','nc.arrived_destination':'Driver reached the destination.','nc.unloading':'Unloading in progress.','nc.awaiting_confirmation':'Give the driver the confirmation code: {0}','nc.completed':'Order completed. Thank you!',
+    'adm.orders':'Orders','adm.online':'Drivers online','adm.rev':'Revenue (commission)','adm.disputes':'Disputes','adm.drivers':'Drivers','adm.approved':'Approved','adm.tariffs':'Tariffs','adm.none':'No active orders.','adm.base':'base','adm.comm':'Service commission','adm.helper':'Helper','adm.winch':'Winch (tow truck)',
+    'wait.free':'⏳ Free waiting: {0} min left','wait.paid':'⏱ Paid waiting: {0} min · +{1} zł','wait.demo':'(demo: 1 min = 3 s)',
+    'n.waitPaid':'Paid waiting','n.waitPaidB':'10 free minutes are up. Charging 2 zł/min.',
+    'pr.btn':'💰 Propose a new price','pr.amount':'New price (zł)','pr.reason':'Reason (e.g. extra floor)','pr.send':'Send to customer','pr.pending':'⏳ Waiting for the customer\u2019s decision…','pr.title':'The driver proposes a new price','pr.accept':'Accept','pr.decline':'Decline',
+    'n.prSent':'Proposal sent','n.prSentB':'The customer must accept the new price: {0} zł.','n.pr':'New price proposal','n.prB':'The driver proposes {0} zł. Reason: {1}','n.prAcc':'Price accepted','n.prAccB':'New order price: {0} zł.','n.prDec':'Proposal declined','n.prDecB':'The customer declined the change. {0} zł stands.',
+    'alert.addr':'Enter the addresses!','mapDemo':'Demo map',
+  },
+};
+const LANGS = ['pl','ru','en'];
+
+// Язык у каждой роли свой — как в реальном приложении
+const userLang = { customer: 'ru', driver: 'pl', admin: 'en' };
+
+function t(key, params, lang) {
+  const L = lang || userLang[S.role];
+  let s = (I18N[L] && I18N[L][key]) || I18N.pl[key] || key;
+  (params || []).forEach((p, i) => { s = s.replace('{' + i + '}', p); });
+  return s;
+}
+
+// ═══════════ КОНФИГ ═══════════
+const CFG = { code: '4217', commission: 0.18, loaderPrice: 40, serviceFeePct: 0.10, urgentFee: 20, winchFee: 60 };
+const VEHICLES = {
+  small_bus: { emoji: '🚐', payload: 1000, base: 25, perKm: 3.5 },
+  big_bus:   { emoji: '🚚', payload: 1500, base: 35, perKm: 4.5 },
+  laweta:    { emoji: '🛻', payload: 2500, base: 80, perKm: 5.5 },
+};
+const NEXT = {
+  accepted: 'driver_en_route', driver_en_route: 'driver_arrived', driver_arrived: 'loading',
+  loading: 'in_transit', in_transit: 'arrived_destination', arrived_destination: 'unloading',
+  unloading: 'awaiting_confirmation',
+};
+const ROUTE_PTS = [[14,80],[30,80],[30,52],[60,52],[60,24],[82,24]];
+const FLOW_ORDER = ['accepted','driver_en_route','driver_arrived','loading','in_transit','arrived_destination','unloading','awaiting_confirmation'];
+
+// ═══════════ СОСТОЯНИЕ ═══════════
+const S = {
+  role: 'customer', view: 'home',
+  order: null, history: [],
+  notifs: [],   // {role, titleKey, bodyKey, params, rawBody?, read, time}
+  msgs: [],     // {from, key?} — быстрая фраза | {from, text, lang, tr:{pl,ru,en}, pending}
+  driverOnline: false, offerTimer: 0, offerInt: null,
+  balance: 1240, earnings: [{ id: 'A8F2K1', gross: 138, tip: 10 }],
+  wiz: { step: 1, from: '', to: '', vt: 'small_bus', cargo: '', loaders: 0, carRunning: true, urgent: true },
+  rating: 0, tip: 0,
+  wait: { mins: 0, fee: 0, int: null, notified: false },
+  priceReq: null, // {amount, reason, status:'pending'}
+  showPrForm: false,
+};
+
+// ═══════════ УВЕДОМЛЕНИЯ (рендерятся на языке роли-получателя) ═══════════
+function notify(role, titleKey, bodyKey, params, rawBody) {
+  const n = { role, titleKey, bodyKey, params: params || [], rawBody, read: false,
+    time: new Date().toLocaleTimeString('pl-PL', {hour:'2-digit',minute:'2-digit'}) };
+  S.notifs.unshift(n);
+  if (S.role === role) showToast(renderNotifTitle(n), renderNotifBody(n));
+  updateBadges();
+}
+function renderNotifTitle(n) { return t(n.titleKey, n.params, userLang[n.role]); }
+function renderNotifBody(n) { return n.rawBody || t(n.bodyKey, n.params, userLang[n.role]); }
+let toastTO;
+function showToast(tt, b) {
+  document.getElementById('toastTitle').textContent = '🔔 ' + tt;
+  document.getElementById('toastBody').textContent = b;
+  document.getElementById('toast').classList.add('show');
+  clearTimeout(toastTO); toastTO = setTimeout(hideToast, 3500);
+}
+function hideToast() { document.getElementById('toast').classList.remove('show'); }
+function unread(role) { return S.notifs.filter(n => n.role === role && !n.read).length; }
+function updateBadges() {
+  ['customer','driver'].forEach(r => {
+    const el = document.getElementById('badge-' + r), n = unread(r);
+    el.style.display = n && S.role !== r ? 'flex' : 'none'; el.textContent = n;
+  });
+  const bell = document.getElementById('bellBadge'), n = unread(S.role);
+  bell.style.display = n ? 'flex' : 'none'; bell.textContent = n;
+}
+function openNotifs() { S.view = 'notifs'; render(); }
+
+// ═══════════ АВТОПЕРЕВОД ЧАТА ═══════════
+// Быстрые фразы (q.*) переведены в словаре — мгновенно и офлайн.
+// Свободный текст переводится через Claude API; при недоступности сети остаётся оригинал.
+async function translateFree(msg) {
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6', max_tokens: 1000,
+        messages: [{ role: 'user', content:
+          'Translate this chat message into Polish, Russian and English. Reply ONLY with JSON like {"pl":"...","ru":"...","en":"..."} and nothing else. Message: ' + JSON.stringify(msg.text) }],
+      }),
+    });
+    const data = await resp.json();
+    const txt = (data.content || []).map(c => c.text || '').join('');
+    const parsed = JSON.parse(txt.replace(/```json|```/g, '').trim());
+    msg.tr = { pl: parsed.pl, ru: parsed.ru, en: parsed.en };
+  } catch (e) {
+    msg.tr = { pl: msg.text, ru: msg.text, en: msg.text }; // фолбэк: оригинал
+  }
+  msg.pending = false;
+  render();
+}
+
+function sendChat(from, text) {
+  if (!text || !text.trim()) return;
+  const msg = { from, text: text.trim(), lang: userLang[from], tr: null, pending: true };
+  msg.tr = {}; msg.tr[msg.lang] = msg.text;
+  S.msgs.push(msg);
+  notify(from === 'customer' ? 'driver' : 'customer', 'n.msg', null, [], msg.text);
+  render();
+  translateFree(msg);
+}
+function sendQuick(from, idx) {
+  S.msgs.push({ from, key: 'q.' + idx });
+  const toRole = from === 'customer' ? 'driver' : 'customer';
+  notify(toRole, 'n.msg', 'q.' + idx, []);
+  render();
+}
+function msgText(m, viewerLang) {
+  if (m.key) return { text: t(m.key, [], viewerLang), translated: false }; // словарь — всегда на языке зрителя
+  if (m.lang === viewerLang) return { text: m.text, translated: false };
+  if (m.tr && m.tr[viewerLang]) return { text: m.tr[viewerLang], translated: true };
+  return { text: m.text, translated: false, pending: m.pending };
+}
+
+// ═══════════ ЛОГИКА ЗАКАЗА ═══════════
+function calcPrice(w) {
+  const v = VEHICLES[w.vt];
+  const km = Math.max(3, Math.min(40, (w.from.length + w.to.length) * 0.4));
+  const transport = v.base + (w.vt === 'laweta' && !w.carRunning ? CFG.winchFee : 0);
+  const dist = Math.round(km * v.perKm);
+  const loaders = w.vt === 'laweta' ? 0 : w.loaders * CFG.loaderPrice;
+  const urgent = w.urgent ? CFG.urgentFee : 0;
+  const svc = Math.round((transport + dist + loaders + urgent) * CFG.serviceFeePct);
+  return { km, transport, dist, loaders, urgent, svc, total: transport + dist + loaders + urgent + svc };
+}
+function sysMsg(statusKey) { S.msgs.push({ from: 'sys', key: 'st.' + statusKey }); }
+
+const WAIT_FREE_MIN = 10, WAIT_PRICE = 2, WAIT_TICK_MS = 3000; // demo: 1 min = 3 s
+function startWait() {
+  S.wait = { mins: 0, fee: 0, int: null, notified: false };
+  S.wait.int = setInterval(() => {
+    S.wait.mins++;
+    if (S.wait.mins > WAIT_FREE_MIN) {
+      S.wait.fee = (S.wait.mins - WAIT_FREE_MIN) * WAIT_PRICE;
+      if (!S.wait.notified) {
+        S.wait.notified = true;
+        notify('customer', 'n.waitPaid', 'n.waitPaidB', []);
+        notify('driver', 'n.waitPaid', 'n.waitPaidB', []);
+      }
+    }
+    render();
+  }, WAIT_TICK_MS);
+}
+function stopWait() {
+  if (!S.wait.int) return;
+  clearInterval(S.wait.int); S.wait.int = null;
+  if (S.wait.fee > 0 && S.order) S.order.price.total += S.wait.fee; // §36: доплата в счёт
+}
+function setStatus(st) {
+  if (!S.order) return;
+  if (S.order.status === 'driver_arrived' && st !== 'driver_arrived') stopWait();
+  S.order.status = st;
+  if (st === 'driver_arrived') startWait();
+  sysMsg(st);
+  if (I18N.pl['nc.' + st]) notify('customer', 'st.' + st, 'nc.' + st, [CFG.code]);
+  render();
+}
+// §37: запрос изменения цены
+function sendPriceReq() {
+  const amount = parseInt(document.getElementById('prAmount').value, 10);
+  const reason = document.getElementById('prReason').value.trim() || '—';
+  if (!amount || amount <= 0) return;
+  S.priceReq = { amount, reason, status: 'pending' };
+  S.showPrForm = false;
+  notify('driver', 'n.prSent', 'n.prSentB', [amount]);
+  notify('customer', 'n.pr', 'n.prB', [amount, reason]);
+  render();
+}
+function answerPriceReq(accept) {
+  if (!S.priceReq) return;
+  if (accept) {
+    S.order.price.total = S.priceReq.amount;
+    notify('driver', 'n.prAcc', 'n.prAccB', [S.priceReq.amount]);
+    notify('customer', 'n.prAcc', 'n.prAccB', [S.priceReq.amount]);
+  } else {
+    notify('driver', 'n.prDec', 'n.prDecB', [S.order.price.total]);
+  }
+  S.priceReq = null;
+  render();
+}
+function waitHTML() {
+  if (!S.wait.int && !S.wait.fee) return '';
+  const paid = S.wait.mins > WAIT_FREE_MIN;
+  const txt = paid
+    ? t('wait.paid', [S.wait.mins - WAIT_FREE_MIN, S.wait.fee])
+    : t('wait.free', [WAIT_FREE_MIN - S.wait.mins]);
+  return `<div class="card" style="border:2px solid ${paid ? 'var(--warn)' : 'var(--line)'}">
+    <b style="color:${paid ? 'var(--warn)' : 'var(--ink)'}">${txt}</b>
+    <div class="faint">${t('wait.demo')}</div></div>`;
+}
+function placeOrder() {
+  const w = S.wiz;
+  if (!w.from.trim() || !w.to.trim()) return alert(t('alert.addr'));
+  S.order = { id: 'Z' + Date.now().toString().slice(-5), ...w, price: calcPrice(w), status: 'searching', driver: null };
+  S.msgs = [];
+  notify('customer', 'n.payBlocked', 'n.payBlockedB', [S.order.price.total]);
+  notify('driver', 'n.newOrder', 'n.newOrderB', [w.from, w.to]);
+  S.view = 'active'; render();
+  if (S.driverOnline) startOffer();
+}
+function startOffer() {
+  if (!S.order || S.order.status !== 'searching' || S.offerInt) return;
+  S.offerTimer = 20;
+  S.offerInt = setInterval(() => {
+    S.offerTimer--;
+    if (S.offerTimer <= 0) stopOffer();
+    if (S.role === 'driver') render();
+  }, 1000);
+}
+function stopOffer() { clearInterval(S.offerInt); S.offerInt = null; S.offerTimer = 0; }
+function acceptOrder() {
+  stopOffer();
+  S.order.driver = { name: 'Marek K.', rating: 4.9, car: 'Renault Master · DW 4521K' };
+  setStatus('accepted');
+}
+function rejectOrder() { stopOffer(); render(); }
+function confirmCode() {
+  const v = document.getElementById('codeInp').value.trim();
+  if (v !== CFG.code) return alert(t('badCode'));
+  const net = Math.round(S.order.price.total * (1 - CFG.commission));
+  S.balance += net;
+  S.earnings.unshift({ id: S.order.id, gross: S.order.price.total, tip: 0 });
+  setStatus('completed');
+  notify('driver', 'n.jobDone', 'n.jobDoneB', [net]);
+  notify('customer', 'n.payDone', 'n.payDoneB', [S.order.price.total]);
+}
+function cancelOrder(by) {
+  stopOffer(); stopWait(); S.wait = { mins: 0, fee: 0, int: null, notified: false }; S.priceReq = null; S.showPrForm = false;
+  setStatus('cancelled');
+  notify(by === 'customer' ? 'driver' : 'customer', 'n.cancelled', by === 'customer' ? 'n.cancByCust' : 'n.cancByDrv', []);
+  S.history.unshift(S.order); S.order = null; S.view = 'home'; render();
+}
+function finishRating() {
+  if (S.tip > 0) { notify('driver', 'n.tip', 'n.tipB', [S.tip]); S.balance += S.tip; S.earnings[0].tip = S.tip; }
+  if (S.rating > 0) notify('driver', 'n.rate', 'n.rateB', [S.rating]);
+  S.history.unshift(S.order); S.order = null;
+  S.wiz = { step: 1, from: '', to: '', vt: 'small_bus', cargo: '', loaders: 0, carRunning: true, urgent: true };
+  S.rating = 0; S.tip = 0; S.wait = { mins: 0, fee: 0, int: null, notified: false }; S.priceReq = null; S.showPrForm = false;
+  S.view = 'home'; render();
+}
+
+// ═══════════ РЕНДЕР ═══════════
+function setRole(r) { S.role = r; S.view = 'home'; render(); }
+function setLang(l) { userLang[S.role] = l; render(); }
+function set(patch) { Object.assign(S.wiz, patch); render(); }
+
+function mapHTML(progress, searching) {
+  const blocks = '<div class="blk" style="left:4%;top:5%;width:24%;height:22%"></div><div class="blk" style="left:34%;top:5%;width:26%;height:16%"></div><div class="blk" style="left:68%;top:5%;width:28%;height:26%"></div><div class="blk" style="left:4%;top:36%;width:18%;height:28%"></div><div class="blk" style="left:4%;top:72%;width:28%;height:24%"></div><div class="blk" style="left:40%;top:66%;width:22%;height:28%"></div><div class="blk" style="left:72%;top:60%;width:24%;height:34%"></div><div class="park" style="left:36%;top:52%;width:22%;height:10%"></div><div class="river" style="top:42%"></div><div class="street-h" style="top:30%"></div><div class="street-h" style="top:68%"></div><div class="street-v" style="left:30%"></div><div class="street-v" style="left:61%"></div>';
+  let route = '';
+  if (progress != null) {
+    for (let i = 0; i < ROUTE_PTS.length - 1; i++) {
+      const [x1,y1] = ROUTE_PTS[i], [x2,y2] = ROUTE_PTS[i+1];
+      const horiz = y1 === y2;
+      route += `<div class="route" style="left:${Math.min(x1,x2)}%;top:${Math.min(y1,y2)}%;width:${horiz?Math.abs(x2-x1)+'%':'4px'};height:${horiz?'4px':Math.abs(y2-y1)+'%'}"></div>`;
+    }
+    const idx = Math.min(Math.floor(progress * (ROUTE_PTS.length - 1)), ROUTE_PTS.length - 1);
+    const [tx,ty] = ROUTE_PTS[idx];
+    route += `<div class="pin" style="left:${ROUTE_PTS[0][0]}%;top:${ROUTE_PTS[0][1]}%">📍</div>
+              <div class="pin" style="left:${ROUTE_PTS[5][0]}%;top:${ROUTE_PTS[5][1]}%">🏁</div>
+              <div class="pin truck" style="left:${tx}%;top:${ty}%">🚚</div>`;
+  }
+  return `<div class="map">${blocks}${route}${searching ? '<div class="radar"></div>' : ''}<div class="faint" style="position:absolute;bottom:4px;right:8px">${t('mapDemo')}</div></div>`;
+}
+
+function chatHTML(me) {
+  const L = userLang[me];
+  const msgs = S.msgs.map(m => {
+    if (m.from === 'sys') return `<div class="msg sys">— ${t(m.key, [], L)} —</div>`;
+    const r = msgText(m, L);
+    const note = r.pending ? `<span class="trnote">${t('translating')}</span>`
+               : r.translated ? `<span class="trnote">${t('translated')}</span>` : '';
+    return `<div class="msg ${m.from === me ? 'mine' : 'their'}">${r.text}${note}</div>`;
+  }).join('');
+  return `<div class="card"><h2>${t(me === 'driver' ? 'chatWith' : 'chat')}</h2>
+    <div class="chatbox" id="chatbox">${msgs || '<div class="sub">' + t('firstMsg') + '</div>'}</div>
+    <div class="quick">${[0,1,2,3,4,5].map(i => `<button onclick="sendQuick('${me}',${i})">${t('q.'+i, [], L)}</button>`).join('')}</div>
+    <div style="display:flex;gap:6px">
+      <input id="chatInp" placeholder="${t('ph.msg')}" style="margin:0" onkeydown="if(event.key==='Enter'){sendChat('${me}',this.value);this.value=''}">
+      <button class="btn" style="width:52px" onclick="const i=document.getElementById('chatInp');sendChat('${me}',i.value);i.value=''">➤</button>
+    </div></div>`;
+}
+
+function progressOf(st) { const i = FLOW_ORDER.indexOf(st); return i < 0 ? (st === 'completed' ? 1 : 0) : i / (FLOW_ORDER.length - 1); }
+
+function customerHome() {
+  const w = S.wiz, p = calcPrice(w);
+  if (S.order && S.order.status !== 'cancelled') return customerActive();
+  const steps = {
+    1: `<h2>${t('step1')}</h2>
+        <label>${t('from')}</label><input value="${w.from}" oninput="S.wiz.from=this.value" placeholder="${t('ph.from')}">
+        <button class="pill brand" style="border:none;cursor:pointer;margin-bottom:8px" onclick="set({from:'Legnicka 58, Wrocław'})">${t('home')}</button>
+        <button class="pill brand" style="border:none;cursor:pointer;margin-bottom:8px" onclick="set({from:'Świdnicka 12, Wrocław'})">${t('work')}</button>
+        <label>${t('to')}</label><input value="${w.to}" oninput="S.wiz.to=this.value" placeholder="${t('ph.to')}">
+        <button class="btn mt" onclick="set({step:2})">${t('next')}</button>`,
+    2: `<h2>${t('step2')}</h2>
+        ${Object.entries(VEHICLES).map(([k,v]) => `
+          <div class="vopt ${w.vt===k?'on':''}" onclick="set({vt:'${k}'})">
+            <div class="row"><b>${v.emoji} ${t('v.'+k)}</b><span class="sub">${t('upto')} ${v.payload} kg</span></div>
+            <div class="sub">${t('vd.'+k)}</div>
+          </div>`).join('')}
+        <label>${t('cargoQ')}</label><input value="${w.cargo}" oninput="S.wiz.cargo=this.value" placeholder="${t('ph.cargo')}">
+        ${w.vt === 'laweta'
+          ? `<label>${t('carRun')}</label><div class="seg">
+              <button class="${w.carRunning?'on':''}" onclick="set({carRunning:true})">${t('yes')}</button>
+              <button class="${!w.carRunning?'on':''}" onclick="set({carRunning:false})">${t('no.winch',[CFG.winchFee])}</button></div>`
+          : `<label>${t('loaders')}</label><div class="seg">
+              ${[0,1,2].map(n => `<button class="${w.loaders===n?'on':''}" onclick="set({loaders:${n}})">${n===0?t('no'):n+' '+t('ppl')}</button>`).join('')}</div>`}
+        <button class="btn mt" onclick="set({step:3})">${t('next')}</button>
+        <button class="btn ghost mt" onclick="set({step:1})">${t('back')}</button>`,
+    3: `<h2>${t('step3')}</h2>
+        <div class="row" style="margin:4px 0"><span class="sub">${t('sum.transport')} · ${t('v.'+w.vt)}</span><span class="sub">${p.transport} zł</span></div>
+        <div class="row" style="margin:4px 0"><span class="sub">${t('sum.dist')} · ${p.km.toFixed(0)} km</span><span class="sub">${p.dist} zł</span></div>
+        ${p.loaders ? `<div class="row" style="margin:4px 0"><span class="sub">${t('sum.loader')}</span><span class="sub">${p.loaders} zł</span></div>` : ''}
+        ${p.urgent ? `<div class="row" style="margin:4px 0"><span class="sub">${t('sum.urgent')}</span><span class="sub">${p.urgent} zł</span></div>` : ''}
+        <div class="row" style="margin:4px 0"><span class="sub">${t('sum.svc')}</span><span class="sub">${p.svc} zł</span></div>
+        <div class="row" style="border-top:1px solid var(--line);padding-top:8px;margin-top:8px">
+          <b>${t('total')}</b><b style="font-size:22px">${p.total} zł</b></div>
+        <div class="sub" style="margin:8px 0">${t('payNote')}</div>
+        <button class="btn" onclick="placeOrder()">${t('payBtn')}</button>
+        <button class="btn ghost mt" onclick="set({step:2})">${t('back')}</button>`,
+  };
+  return `<div class="card fade">${steps[w.step]}</div>` + (S.history.length ? `<div class="card"><h2>${t('history')}</h2>${S.history.map(o => `<div class="row" style="padding:6px 0;border-bottom:1px solid var(--line)"><span class="sub">${o.from} → ${o.to}</span><span class="pill ${o.status==='completed'?'brand':'danger'}">${o.price.total} zł</span></div>`).join('')}</div>` : '');
+}
+
+function customerActive() {
+  const o = S.order;
+  if (o.status === 'completed') return rateScreen();
+  const searching = o.status === 'searching';
+  return `<div class="fade">
+    ${mapHTML(searching ? null : progressOf(o.status), searching)}
+    <div class="card">
+      <div class="row"><span class="pill ${searching?'warn':'info'}">${t('st.'+o.status)}</span><b style="font-size:19px">${o.price.total} zł</b></div>
+      <div class="sub" style="margin-top:8px">📍 ${o.from}</div>
+      <div class="sub">🏁 ${o.to}</div>
+      ${o.status === 'awaiting_confirmation' ? `<div style="background:var(--warn-soft);border-radius:12px;padding:12px;margin-top:10px"><div class="sub" style="font-weight:800;color:var(--ink)">${t('codeFor')}</div><div class="code-big">${CFG.code}</div></div>` : ''}
+    </div>
+    ${waitHTML()}
+    ${S.priceReq && S.priceReq.status === 'pending' ? `<div class="card" style="border:2px solid var(--info)">
+      <b>${t('pr.title')}</b>
+      <div class="row" style="margin:8px 0"><span class="sub">${S.priceReq.reason}</span><b style="font-size:20px;color:var(--info)">${S.priceReq.amount} zł</b></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn ghost" style="flex:1" onclick="answerPriceReq(false)">${t('pr.decline')}</button>
+        <button class="btn" style="flex:2" onclick="answerPriceReq(true)">${t('pr.accept')}</button>
+      </div></div>` : ''}
+    ${o.driver ? `<div class="card"><div class="row">
+      <div><b>👨‍🔧 ${o.driver.name}</b> <span style="color:var(--warn);font-weight:700">★ ${o.driver.rating}</span><div class="sub">${o.driver.car}</div></div>
+      <button class="btn sec" style="width:auto;padding:10px 14px" onclick="S.view = S.view==='chat' ? 'active' : 'chat'; render()">💬</button>
+    </div></div>` : ''}
+    ${S.view === 'chat' ? chatHTML('customer') : ''}
+    <button class="btn ${searching?'danger':'ghost'} mt" onclick="cancelOrder('customer')">${t('cancel')}</button>
+  </div>`;
+}
+
+function rateScreen() {
+  return `<div class="card fade" style="text-align:center">
+    <div style="font-size:40px">✅</div><h2>${t('delivered')}</h2>
+    <div class="sub" style="margin-bottom:12px">${t('rateMarek')}</div>
+    <div class="stars">${[1,2,3,4,5].map(n => `<button class="${n<=S.rating?'on':''}" onclick="S.rating=${n};render()">⭐</button>`).join('')}</div>
+    <label style="text-align:left">${t('tip')}</label>
+    <div class="seg" style="margin-bottom:12px">${[0,5,10,20].map(n => `<button class="${S.tip===n?'on':''}" onclick="S.tip=${n};render()">${n===0?t('noTip'):n+' zł'}</button>`).join('')}</div>
+    <button class="btn" ${S.rating===0?'disabled':''} onclick="finishRating()">${t('sendRate')}</button>
+  </div>`;
+}
+
+function driverHome() {
+  const o = S.order;
+  const hasOffer = S.driverOnline && o && o.status === 'searching' && S.offerTimer > 0;
+  const hasActive = o && o.driver && !['completed','cancelled'].includes(o.status);
+  const net = o ? Math.round(o.price.total * (1 - CFG.commission)) : 0;
+  return `<div class="fade">
+    <div class="card"><div class="row">
+      <div><b style="font-size:18px">${S.balance} zł</b><div class="sub">★ 4.9 · 214</div></div>
+      <label class="switch"><input type="checkbox" ${S.driverOnline?'checked':''} onchange="toggleOnline(this.checked)"><span class="tr"><span class="th"></span></span></label>
+    </div>
+    <div class="sub" style="margin-top:6px">${S.driverOnline ? t('online') : t('offline')}</div></div>
+
+    ${hasOffer ? `<div class="card" style="border:2px solid var(--brand)">
+      <div class="row"><h2>${t('newOrder')}</h2><div class="offer-timer ${S.offerTimer<=5?'low':''}">${S.offerTimer}</div></div>
+      <div class="sub">📍 ${o.from}</div><div class="sub">🏁 ${o.to}</div>
+      <div class="sub">📦 ${o.cargo || t('v.'+o.vt)} · ${o.price.km.toFixed(0)} km${o.loaders ? ' · +'+o.loaders+' '+t('ppl') : ''}</div>
+      <div class="row" style="margin:10px 0"><span class="sub">${t('yourNet')}</span><b style="color:var(--brand);font-size:20px">${net} zł</b></div>
+      <div style="display:flex;gap:8px"><button class="btn ghost" style="flex:1" onclick="rejectOrder()">${t('reject')}</button><button class="btn" style="flex:2" onclick="acceptOrder()">${t('accept')}</button></div>
+    </div>` : ''}
+
+    ${!hasOffer && S.driverOnline && o && o.status === 'searching' ? `<div class="card"><div class="sub">${t('offerGone')} <button class="pill brand" style="border:none;cursor:pointer" onclick="startOffer();render()">${t('showAgain')}</button></div></div>` : ''}
+
+    ${hasActive ? driverActive() : ''}
+    ${!hasActive && !hasOffer ? `<div class="card"><div class="sub">${t('demoHintD')}</div></div>` : ''}
+
+    <div class="card"><h2>${t('earnings')}</h2>
+      ${S.earnings.map(e => { const c = Math.round(e.gross * CFG.commission); return `<div class="row" style="padding:6px 0;border-bottom:1px solid var(--line)"><span class="sub">${t('order')} ${e.id} · ${e.gross} zł − ${c} zł${e.tip?' + '+t('tipW')+' '+e.tip+' zł':''}</span><b style="color:var(--brand)">+${e.gross - c + (e.tip||0)} zł</b></div>`; }).join('')}
+      <button class="btn sec mt" onclick="notify('driver','n.payout','n.payoutB',[S.balance])">${t('payout')}</button>
+    </div>
+  </div>`;
+}
+
+function driverActive() {
+  const o = S.order;
+  const nx = NEXT[o.status];
+  return `${mapHTML(progressOf(o.status), false)}
+    <div class="card">
+      <div class="row"><span class="pill info">${t('st.'+o.status)}</span><b>${o.price.total} zł</b></div>
+      <div class="sub" style="margin-top:8px">📍 ${o.from}</div><div class="sub">🏁 ${o.to}</div>
+      <div class="sub">📦 ${o.cargo || t('v.'+o.vt)}</div>
+    </div>
+    ${waitHTML()}
+    ${nx ? `<button class="btn" onclick="setStatus('${nx}')">${t('a.'+nx)}</button>` : ''}
+    ${S.priceReq && S.priceReq.status === 'pending' ? `<div class="card" style="margin-top:8px"><div class="sub">${t('pr.pending')}</div></div>`
+      : S.showPrForm ? `<div class="card" style="margin-top:8px">
+          <label>${t('pr.amount')}</label><input id="prAmount" inputmode="numeric" value="${o.price.total + 20}">
+          <label>${t('pr.reason')}</label><input id="prReason" placeholder="${t('pr.reason')}">
+          <button class="btn" onclick="sendPriceReq()">${t('pr.send')}</button>
+        </div>`
+      : `<button class="btn sec mt" onclick="S.showPrForm=true;render()">${t('pr.btn')}</button>`}
+    ${o.status === 'awaiting_confirmation' ? `<div class="card mt" style="margin-top:8px"><h2>${t('codeFrom')}</h2><input id="codeInp" placeholder="${t('ph.code')}" inputmode="numeric"><button class="btn" onclick="confirmCode()">${t('finish')}</button></div>` : ''}
+    <button class="btn sec mt" onclick="S.view = S.view==='chat' ? 'home' : 'chat'; render()">${t('chatWith')}</button>
+    ${S.view === 'chat' ? chatHTML('driver') : ''}
+    <button class="btn ghost mt" onclick="cancelOrder('driver')">${t('cancel')}</button>`;
+}
+
+function toggleOnline(v) {
+  S.driverOnline = v;
+  if (v) {
+    notify('driver', 'n.online', 'n.onlineB', []);
+    if (S.order && S.order.status === 'searching') startOffer();
+  }
+  render();
+}
+
+function adminHome() {
+  const all = [...(S.order ? [S.order] : []), ...S.history];
+  return `<div class="fade">
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+      ${[[t('adm.orders'), all.length + 1], [t('adm.online'), S.driverOnline ? 1 : 0], [t('adm.rev'), Math.round(S.earnings.reduce((s,e)=>s+e.gross,0)*CFG.commission) + ' zł'], [t('adm.disputes'), 0]].map(([l,v]) => `<div class="card" style="flex:1;min-width:44%;margin:0"><div class="sub">${l}</div><b style="font-size:22px">${v}</b></div>`).join('')}
+    </div>
+    <div class="card"><h2>${t('adm.drivers')}</h2><div class="row"><div><b>Marek Kaczmarek</b><div class="sub">Renault Master · DW 4521K</div></div><span class="pill brand">${t('adm.approved')}</span></div></div>
+    <div class="card"><h2>${t('adm.orders')}</h2>${all.length ? all.map(o => `<div class="row" style="padding:6px 0;border-bottom:1px solid var(--line)"><span class="sub">${o.from} → ${o.to}</span><span class="pill ${o.status==='completed'?'brand':o.status==='cancelled'?'danger':'info'}">${t('st.'+o.status)}</span></div>`).join('') : '<div class="sub">' + t('adm.none') + '</div>'}</div>
+    <div class="card"><h2>${t('adm.tariffs')}</h2>${[[t('v.small_bus')+' — '+t('adm.base'),'25 zł'],[t('v.big_bus')+' — '+t('adm.base'),'35 zł'],[t('v.laweta')+' — '+t('adm.base'),'80 zł'],[t('adm.comm'),'18%'],[t('adm.helper'),'40 zł'],[t('adm.winch'),'60 zł']].map(([l,v]) => `<div class="row" style="padding:5px 0"><span class="sub">${l}</span><b>${v}</b></div>`).join('')}</div>
+  </div>`;
+}
+
+function notifsScreen() {
+  const items = S.notifs.filter(n => n.role === S.role);
+  const html = `<div class="fade">
+    <div class="card"><div class="row"><h2>${t('notifs')}</h2><button class="pill brand" style="border:none;cursor:pointer" onclick="S.view='home';render()">${t('close')}</button></div></div>
+    ${items.length ? items.map(n => `<div class="card notif-item ${n.read?'':'unread'}"><b style="font-size:14px">${renderNotifTitle(n)}</b><div class="sub">${renderNotifBody(n)}</div><div class="faint" style="margin-top:4px">${n.time}</div></div>`).join('') : '<div class="card"><div class="sub">' + t('noNotifs') + '</div></div>'}
+  </div>`;
+  items.forEach(n => n.read = true);
+  setTimeout(updateBadges, 50);
+  return html;
+}
+
+function render() {
+  document.querySelectorAll('.roles button').forEach(b => b.classList.remove('active'));
+  document.getElementById('rb-' + S.role).classList.add('active');
+  document.querySelectorAll('[data-r]').forEach(el => {
+    // подписи ролей — на языке активной роли
+    el.textContent = t(el.getAttribute('data-r'));
+  });
+  document.getElementById('langSel').innerHTML = LANGS.map(l =>
+    `<button class="${userLang[S.role]===l?'on':''}" onclick="setLang('${l}')">${l.toUpperCase()}</button>`).join('');
+  const scr = document.getElementById('screen');
+  let html = '';
+  if (S.view === 'notifs') html = notifsScreen();
+  else if (S.role === 'customer') html = customerHome();
+  else if (S.role === 'driver') html = driverHome();
+  else html = adminHome();
+  scr.innerHTML = html;
+  updateBadges();
+  const cb = document.getElementById('chatbox');
+  if (cb) cb.scrollTop = cb.scrollHeight;
+}
+render();
+</script>
+</body>
+</html>
