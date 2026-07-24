@@ -731,6 +731,60 @@ async function main() {
       assert.strictEqual(again.status, 404);
     });
 
+    // ── Ogród (garden) — server-authoritative calculator + booking ──
+    await ok('OGROD: config exposes prices + seasonal availability', async () => {
+      const r = await req('GET', '/api/ogrod/config');
+      assert.strictEqual(r.status, 200);
+      assert.strictEqual(r.json.minOrder, 120);
+      assert.deepStrictEqual(r.json.cities, ['Wrocław']);
+      assert.strictEqual(r.json.koszenie.tiers[0].perM2, 1.2);
+      assert.ok('koszenie' in r.json.availability && 'wertykulacja' in r.json.availability);
+    });
+    await ok('OGROD: estimate — tiers, ×1.5, -20% only on koszenie, addons flat', async () => {
+      const r = await req('POST', '/api/ogrod/estimate', { body: { koszenie: true, lawnM2: 300, highGrass: true, mowFrequency: 'coTydzien', removeClippings: true, scheduledFor: '2026-07-15T10:00' } });
+      const lines = Object.fromEntries(r.json.estimate.lines.map((l) => [l.key, l.amount]));
+      assert.strictEqual(lines.koszenie, 540);          // 300×1.20×1.5
+      assert.strictEqual(lines.rabat, -108);            // -20% of koszenie only
+      assert.strictEqual(lines.wywozTrawy, 40);
+      assert.strictEqual(r.json.estimate.total, 472);
+    });
+    await ok('OGROD: estimate respects the scheduled month for seasons', async () => {
+      const jul = await req('POST', '/api/ogrod/estimate', { body: { wertykulacja: true, lawnM2: 300, scheduledFor: '2026-07-15T10:00' } });
+      assert.strictEqual(jul.json.estimate.lines[0].excluded, 'season');
+      const sep = await req('POST', '/api/ogrod/estimate', { body: { wertykulacja: true, lawnM2: 300, scheduledFor: '2026-09-15T10:00' } });
+      assert.strictEqual(sep.json.estimate.lines[0].amount, 600);
+    });
+    await ok('OGROD MONEY: booking price is computed server-side; client price ignored; commission hidden', async () => {
+      const prop = await req('POST', '/api/properties', { token: customerTok, body: { type: 'house', label: 'Ogród dom', city: 'Wrocław', rooms: 3, baths: 1, address: 'ul. Ogrodowa 7' } });
+      const gp = prop.json.property.id;
+      const bk = await req('POST', '/api/bookings', { token: customerTok, body: { service: 'garden', propertyId: gp, price: 1, payout: 9999, garden: { koszenie: true, lawnM2: 300, mowFrequency: 'coTydzien', removeClippings: true }, scheduledFor: '2026-07-20T10:00' } });
+      assert.strictEqual(bk.status, 200);
+      assert.strictEqual(bk.json.booking.price, 328);   // 360 − 72 + 40, not the tampered 1
+      assert.strictEqual(bk.json.booking.serviceLabel, 'Ogród');
+      assert.strictEqual(bk.json.booking.frequency, 'weekly');
+      assert.strictEqual(bk.json.booking.commission, undefined, 'commission never reaches the customer');
+      assert.strictEqual(bk.json.booking.payout, undefined, 'payout never reaches the customer');
+      assert.ok(bk.json.booking.garden.lines.length >= 2, 'breakdown stored for the receipt');
+      // out-of-season pick on the scheduled date → rejected
+      const seasonal = await req('POST', '/api/bookings', { token: customerTok, body: { service: 'garden', propertyId: gp, garden: { wertykulacja: true, lawnM2: 300 }, scheduledFor: '2026-07-20T10:00' } });
+      assert.strictEqual(seasonal.status, 400);
+      assert.strictEqual(seasonal.json.code, 'GARDEN_SEASON');
+      // below the 120 zł minimum → rejected
+      const small = await req('POST', '/api/bookings', { token: customerTok, body: { service: 'garden', propertyId: gp, garden: { koszenie: true, lawnM2: 80 }, scheduledFor: '2026-07-20T10:00' } });
+      assert.strictEqual(small.status, 400);
+      assert.strictEqual(small.json.code, 'GARDEN_MIN');
+      // outside Wrocław → rejected (launch gating)
+      const waw = await req('POST', '/api/bookings', { token: customerTok, body: { service: 'garden', city: 'Warsaw', address: 'x 1', garden: { koszenie: true, lawnM2: 300 }, scheduledFor: '2026-07-20T10:00' } });
+      assert.strictEqual(waw.status, 400);
+      assert.strictEqual(waw.json.code, 'GARDEN_CITY');
+    });
+    await ok('OGROD: season reminder is stored and deduped', async () => {
+      const r1 = await req('POST', '/api/ogrod/remind', { token: customerTok, body: { service: 'wertykulacja' } });
+      assert.strictEqual(r1.status, 200);
+      const bad = await req('POST', '/api/ogrod/remind', { token: customerTok, body: { service: 'nope' } });
+      assert.strictEqual(bad.status, 400);
+    });
+
     console.log(`\n${passed} API/integration checks passed.`);
   } finally {
     child.kill('SIGKILL');

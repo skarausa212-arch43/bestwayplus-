@@ -32,7 +32,7 @@ const FLAGS = {
   // Phase 2 — new verticals, dark by default.
   service_plumbing:   { phase: 2, enabled: false, label: 'Сантехника' },
   service_electrical: { phase: 2, enabled: false, label: 'Электрика' },
-  service_gardening:  { phase: 2, enabled: false, label: 'Сад' },
+  service_gardening:  { phase: 2, enabled: true,  label: 'Сад' },   // Ogród — Wrocław launch
   service_handyman:   { phase: 2, enabled: false, label: 'Мастер на час' },
   service_painting:   { phase: 2, enabled: false, label: 'Покраска' },
   // Phase 3 — segments.

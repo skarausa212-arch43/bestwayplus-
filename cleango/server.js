@@ -36,6 +36,7 @@ const cityPrices = require('./pricing/city-prices');
 const pay = require('./pay');
 const stripe = require('./pay/stripe');
 const { createLedger } = require('./pricing/ledger');
+const ogrod = require('./pricing/ogrod');
 const { renderTemplate } = require('./notifications/templates');
 const chat = require('./chat/realtime');
 const smartHome = require('./smart-home/registry');
@@ -281,7 +282,8 @@ const db = {
   reservations: loadJSON('reservations.json', {}), // id -> guest reservation (short-term rental)
   devices: loadJSON('devices.json', {}),     // userId -> [{ token, platform, at }] for native push
   payments: loadJSON('payments.json', {}),   // sessionId -> { bookingId, userId, amount(grosz), status, orderId, at } (Przelewy24)
-  walletTx: loadJSON('wallet-tx.json', {}),  // userId -> [{ id, ts, kind, amountMinor, currency, note, ... }] customer payments ledger
+  walletTx: loadJSON('wallet-tx.json', {}),
+  gardenReminders: loadJSON('garden-reminders.json', []),  // "Zapisz się — przypomnimy" season signups  // userId -> [{ id, ts, kind, amountMinor, currency, note, ... }] customer payments ledger
   settings: loadJSON('settings.json', {}),   // admin-editable platform settings (open cities, economy, announcement)
 };
 const persist = {
@@ -301,6 +303,7 @@ const persist = {
   payments: () => saveJSON('payments.json', db.payments),
   walletTx: () => saveJSON('wallet-tx.json', db.walletTx),
   settings: () => saveJSON('settings.json', db.settings),
+  gardenReminders: () => saveJSON('garden-reminders.json', db.gardenReminders),
 };
 // Customer-facing payments ledger ("Бухгалтерия платежей"): top-ups, card
 // charges, LUMI+ fees and cashback. Amounts are minor units (grosz); positive =
@@ -1206,6 +1209,74 @@ route('POST', '/api/quote', async (req, res) => {
   const q = pricing.quote(b, ctx);
   send(res, 200, { quote: pricing.customerView(q) });
 });
+// ───────────────────────── Ogród (garden services) ─────────────────────────
+// Wrocław launch. Prices live in pricing/ogrod.js (PRICING_OGROD) — the single
+// source; the client never computes money, it renders these responses.
+route('GET', '/api/ogrod/config', async (req, res) => {
+  const month = new Date().getMonth();
+  const P = ogrod.PRICING_OGROD;
+  // Fire pending "przypomnimy" reminders the first time the user shows up while
+  // the wished-for service is in season (no scheduler needed in the MVP store).
+  const viewer = authUser(req);
+  if (viewer) {
+    let touched = false;
+    for (const r of db.gardenReminders) {
+      if (!r.notified && r.userId === viewer.id && ogrod.inSeason(r.service, month)) {
+        r.notified = true; touched = true;
+        notify(viewer.id, 'garden.season', { service: (ogrod.PRICING_OGROD[r.service] || {}).label || r.service });
+      }
+    }
+    if (touched) persist.gardenReminders();
+  }
+  // Customer-safe view: labels, rates, seasons, availability for "Dostępne od …".
+  send(res, 200, {
+    currency: P.currency,
+    cities: P.cities,
+    minOrder: P.minOrderG / 100,
+    availability: ogrod.availability(month),
+    koszenie: { label: P.koszenie.label, tiers: P.koszenie.tiers.map((t) => ({ upTo: t.upTo, perM2: t.rateG / 100 })), aboveM2: P.koszenie.aboveM2, includes: P.koszenie.includes, addons: { wywozTrawy: { label: P.koszenie.addons.wywozTrawy.label, price: 40 } }, discounts: P.koszenie.frequencyDiscounts },
+    wertykulacja: { label: P.wertykulacja.label, perM2: 2, min: 240, season: P.wertykulacja.season },
+    aeracja: { label: P.aeracja.label, perM2: 2, min: 240, season: P.aeracja.season },
+    pakietRegeneracja: { label: P.pakietRegeneracja.label, perM2: 4.4, min: 440, note: P.pakietRegeneracja.note, season: P.pakietRegeneracja.season },
+    zywoplot: { label: P.zywoplot.label, tiers: P.zywoplot.tiersByHeight.map((t) => ({ key: t.key, height: t.height, perMb: t.individual ? null : t.rateG / 100 })), includes: P.zywoplot.includes, addons: { wywozGalezi: { label: P.zywoplot.addons.wywozGalezi.label, price: 60 } } },
+    grabienieLisci: { label: P.grabienieLisci.label, perM2: 0.9, min: 120, season: P.grabienieLisci.season, addons: { wywozLisci: { label: P.grabienieLisci.addons.wywozLisci.label, price: 40 } } },
+    pielenieRabat: { label: P.pielenieRabat.label, perM2: 5.6, min: 120, includes: P.pielenieRabat.includes },
+    zakladanieTrawnika: P.zakladanieTrawnika,
+    dojazd: P.dojazd,
+  });
+});
+route('POST', '/api/ogrod/estimate', async (req, res) => {
+  const b = await readBody(req);
+  // Season is judged for the month the visit is scheduled for (falls back to now)
+  // so an out-of-season pick is caught before ordering, deterministically.
+  const sched = b.scheduledFor ? new Date(b.scheduledFor) : null;
+  const month = sched && !isNaN(sched) ? sched.getMonth() : undefined;
+  const est = ogrod.estimate(b, { month });
+  send(res, 200, {
+    estimate: {
+      currency: est.currency,
+      lines: est.lines.map((l) => ({ key: l.key, label: l.label, qty: l.qty, unit: l.unit, amount: l.amountG / 100, excluded: l.excluded || null, availableFrom: l.availableFrom || null })),
+      total: est.totalG / 100,
+      minOrder: est.minOrderG / 100,
+      belowMin: est.belowMin,
+      chargeable: est.chargeable,
+      durationMin: est.durationMin,
+    },
+  });
+});
+// "Zapisz się — przypomnimy": stores a season reminder; the customer gets an
+// in-app/push notification the next time they open the app in season.
+route('POST', '/api/ogrod/remind', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Sign in first.' });
+  const b = await readBody(req);
+  if (!ogrod.SERVICE_SEASON[b.service]) return send(res, 400, { error: 'Unknown service.' });
+  if (!db.gardenReminders.some((r) => r.userId === user.id && r.service === b.service && !r.notified)) {
+    db.gardenReminders.push({ id: uid('gr_'), userId: user.id, service: b.service, createdAt: now(), notified: false });
+    persist.gardenReminders();
+  }
+  send(res, 200, { ok: true });
+});
 // Admin pricing simulator — full breakdown incl. internal fee + guardrail warnings (13 §48).
 route('POST', '/api/admin/pricing/simulate', async (req, res) => {
   const user = authUser(req);
@@ -1951,6 +2022,65 @@ route('POST', '/api/bookings', async (req, res) => {
   const prop = b.propertyId ? db.properties[b.propertyId] : null;
   if (b.propertyId && (!prop || !canAccessProperty(user, prop))) {
     return send(res, 403, { error: 'Property not found.' });
+  }
+  // ── Ogród: its own price engine (pricing/ogrod.js), Wrocław-only launch. A
+  // separate branch so the cleaning path stays untouched; the client's numbers
+  // are ignored — everything money is recomputed here.
+  if (b.service === 'garden') {
+    const gCity = prop ? prop.city : (CITIES.includes(b.city) ? b.city : user.city);
+    if (!ogrod.PRICING_OGROD.cities.includes(gCity)) {
+      return send(res, 400, { error: `Ogród jest na razie dostępny tylko we Wrocławiu.`, code: 'GARDEN_CITY' });
+    }
+    const sched = b.scheduledFor ? new Date(b.scheduledFor) : null;
+    const month = sched && !isNaN(sched) ? sched.getMonth() : undefined;
+    const gEst = ogrod.estimate(b.garden || {}, { month });
+    const seasonal = gEst.lines.find((l) => l.excluded === 'season');
+    if (seasonal) return send(res, 400, { error: `${seasonal.label} — dostępne od: ${seasonal.availableFrom}.`, code: 'GARDEN_SEASON' });
+    if (!gEst.chargeable) return send(res, 400, { error: 'Wybierz przynajmniej jedną usługę (usługi „wycena indywidualna" zamawiamy przez formularz).', code: 'GARDEN_EMPTY' });
+    if (gEst.belowMin) return send(res, 400, { error: `Minimalna wartość zamówienia to ${gEst.minOrderG / 100} zł — dodaj usługę.`, code: 'GARDEN_MIN' });
+    const gPrice = Math.round(gEst.totalG / 100);
+    const gCommission = Math.round(gPrice * getSettings().commissionRate);
+    const gFreq = b.garden && b.garden.mowFrequency === 'coTydzien' ? 'weekly' : b.garden && b.garden.mowFrequency === 'co2Tygodnie' ? 'biweekly' : 'once';
+    const gid = uid('b_');
+    const gb = {
+      id: gid, customerId: user.id, propertyId: prop ? prop.id : null, cleanerId: null,
+      status: 'searching', service: 'garden', serviceLabel: 'Ogród',
+      address: prop ? prop.address : String(b.address || '').slice(0, 200),
+      city: gCity, rooms: 0, baths: 0, area: Number(b.garden && b.garden.lawnM2) || 0,
+      windows: null, windowSide: null, windowAccess: null, floor: null,
+      extras: [], notes: String(b.notes || '').slice(0, 500),
+      requestPhotos: (Array.isArray(b.photos) ? b.photos : []).filter((s) => validImage(s, 1500000)).slice(0, 6),
+      urgency: 'scheduled', frequency: gFreq, scheduledFor: b.scheduledFor || null,
+      location: validLoc(b.location) || (prop && validLoc(prop.location)) || cityCoords(gCity),
+      locationPrecise: !!(validLoc(b.location) || (prop && validLoc(prop.location))),
+      invitedCleanerId: null, arriveBy: null, enrouteAt: null, etaMinutes: null, track: null,
+      price: gPrice, payout: gPrice - gCommission, commission: gCommission, plusDiscount: false,
+      currency: gEst.currency, durationHours: Math.round((gEst.durationMin / 60) * 10) / 10,
+      // Customer-safe breakdown for the receipt & order card (no commission inside).
+      garden: {
+        inputs: {
+          lawnM2: Number(b.garden && b.garden.lawnM2) || 0, koszenie: !!(b.garden && b.garden.koszenie),
+          mowFrequency: gFreq === 'weekly' ? 'coTydzien' : gFreq === 'biweekly' ? 'co2Tygodnie' : 'jednorazowo',
+          highGrass: !!(b.garden && b.garden.highGrass), removeClippings: !!(b.garden && b.garden.removeClippings),
+          hedgeMb: Number(b.garden && b.garden.hedgeMb) || 0, hedgeHeight: (b.garden && b.garden.hedgeHeight) || null,
+          removeBranches: !!(b.garden && b.garden.removeBranches),
+          wertykulacja: !!(b.garden && b.garden.wertykulacja), aeracja: !!(b.garden && b.garden.aeracja),
+          pakietRegeneracja: !!(b.garden && b.garden.pakietRegeneracja),
+          grabienie: !!(b.garden && b.garden.grabienie), grabienieWywoz: !!(b.garden && b.garden.grabienieWywoz),
+          pielenieM2: Number(b.garden && b.garden.pielenieM2) || 0,
+        },
+        lines: gEst.lines.filter((l) => !l.excluded).map((l) => ({ label: l.label, qty: l.qty, unit: l.unit, amount: l.amountG / 100 })),
+      },
+      createdAt: now(), updatedAt: now(), photosBefore: [], photosAfter: [],
+      paid: false, reviewed: false, timeline: [{ status: 'searching', at: now() }],
+    };
+    db.bookings[gid] = gb;
+    persist.bookings();
+    db.messages[gid] = [];
+    persist.messages();
+    notify(user.id, 'booking.created', { service: gb.serviceLabel, bookingId: gid });
+    dispatchNearestFirst(gb);            // card auto-charge fires on match, as for cleaning
+    return send(res, 200, { booking: enrich(gb, user) });
   }
   // propertyType (house +15%, STR = apartment) and frequency come from the saved
   // property / the request so the authoritative price matches the wizard estimate.
@@ -2830,11 +2960,14 @@ route('POST', '/api/admin/support/:id/resolve', async (req, res, params) => {
 // commission — which is never present in customer/provider payloads (security §).
 function buildReceipt(bk, viewer) {
   const completedAt = (bk.timeline.find((t) => t.status === 'completed') || {}).at || bk.updatedAt;
-  const items = normalizeExtras(bk.extras).map(({ key, qty }) => {
-    const def = EXTRAS_CATALOG[key];
-    return { label: def.label, qty, unit: def.unit || null, type: def.type,
-      amount: def.type === 'percent' ? null : def.price * qty, percent: def.percent || null };
-  });
+  // Garden orders itemize from their own price lines; cleaning from extras.
+  const items = bk.garden
+    ? bk.garden.lines.map((l) => ({ label: l.label, qty: l.qty, unit: l.unit || null, type: 'flat', amount: l.amount, percent: null }))
+    : normalizeExtras(bk.extras).map(({ key, qty }) => {
+      const def = EXTRAS_CATALOG[key];
+      return { label: def.label, qty, unit: def.unit || null, type: def.type,
+        amount: def.type === 'percent' ? null : def.price * qty, percent: def.percent || null };
+    });
   const base = {
     receiptNo: 'LUMI-' + String(bk.id).replace(/^b_/, '').slice(0, 8).toUpperCase(),
     bookingId: bk.id, issuedAt: completedAt, paidAt: completedAt,

@@ -153,6 +153,11 @@ const T = {
     deepLink: 'lumi://wallet',
     ru: { title: 'Кэшбек LUMI+', body: 'Начислено {amount} за «{service}».' },
   },
+  'garden.season': {
+    category: 'order', priority: 'normal', channels: ['in_app', 'push'],
+    deepLink: 'lumi://home',
+    ru: { title: 'Ogród — sezon otwarty 🌱', body: '{service} — już dostępne. Zamów termin we Wrocławiu.' },
+  },
   'payout.sent': {
     category: 'account', priority: 'normal', channels: ['in_app', 'push'],
     deepLink: 'lumi://wallet',
