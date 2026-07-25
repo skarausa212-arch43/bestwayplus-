@@ -64,7 +64,7 @@
 const f = document.getElementById('f'), msg = document.getElementById('msg'), btn = document.getElementById('btn');
 let info = { domain: '', webmail: '' };
 
-fetch('/api/info').then(r => r.json()).then(i => {
+fetch('api/info').then(r => r.json()).then(i => {
   info = i;
   document.getElementById('dom').textContent = '@' + i.domain;
   if (i.inviteRequired) document.getElementById('inviteBlock').style.display = '';
@@ -78,7 +78,7 @@ f.addEventListener('submit', async (e) => {
   }
   btn.disabled = true;
   try {
-    const r = await fetch('/api/register', {
+    const r = await fetch('api/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
