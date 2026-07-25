@@ -3,20 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>MultiMail — all your inboxes on one screen</title>
+<title>Viply Mail — VIP inboxes on one screen</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     height: 100vh; height: 100dvh; /* dvh: честная высота на мобильных, не прыгает от адресной строки */
-    display: flex; color: #e8eef5; overflow: hidden;
-    background: #0d1420;
+    display: flex; color: #efe8d8; overflow: hidden;
+    background: radial-gradient(ellipse at 25% -10%, #171207 0%, #0b0b10 50%, #060608 100%);
   }
   /* aurora blobs drifting behind everything */
   .blob { position: fixed; border-radius: 50%; filter: blur(90px); opacity: .35; z-index: 0; pointer-events: none; }
-  .blob.b1 { width: 520px; height: 520px; background: #2d6cff; top: -140px; left: -120px; animation: drift1 24s ease-in-out infinite; }
-  .blob.b2 { width: 460px; height: 460px; background: #8a2dff; bottom: -160px; right: -100px; animation: drift2 30s ease-in-out infinite; }
-  .blob.b3 { width: 320px; height: 320px; background: #00b3a4; top: 40%; left: 45%; animation: drift3 26s ease-in-out infinite; }
+  .blob.b1 { width: 520px; height: 520px; background: #a9821f; top: -140px; left: -120px; animation: drift1 24s ease-in-out infinite; }
+  .blob.b2 { width: 460px; height: 460px; background: #5b2a8a; bottom: -160px; right: -100px; animation: drift2 30s ease-in-out infinite; }
+  .blob.b3 { width: 320px; height: 320px; background: #7a5410; top: 40%; left: 45%; animation: drift3 26s ease-in-out infinite; }
   @keyframes drift1 { 50% { transform: translate(120px, 90px) scale(1.15); } }
   @keyframes drift2 { 50% { transform: translate(-140px, -70px) scale(.9); } }
   @keyframes drift3 { 50% { transform: translate(-90px, 110px) scale(1.2); } }
@@ -26,7 +26,7 @@
   /* ============ sidebar ============ */
   aside {
     width: 285px; min-width: 285px; display: flex; flex-direction: column;
-    background: rgba(13,22,38,.72); backdrop-filter: blur(16px);
+    background: rgba(17,14,8,.78); backdrop-filter: blur(16px);
     border-right: 1px solid rgba(255,255,255,.08);
   }
   aside h1 {
@@ -34,7 +34,7 @@
     border-bottom: 1px solid rgba(255,255,255,.08);
   }
   aside h1 .mm {
-    background: linear-gradient(90deg, #6db6ff, #b48cff, #6db6ff);
+    background: linear-gradient(90deg, #8c6d1f, #d4af37, #fdf6d8, #d4af37, #8c6d1f); font-family: Georgia, serif; letter-spacing: 2px;
     background-size: 200% auto; -webkit-background-clip: text; background-clip: text;
     -webkit-text-fill-color: transparent; animation: shine 4s linear infinite;
   }
@@ -48,15 +48,15 @@
   }
   @keyframes slideIn { from { transform: translateX(-16px); opacity: 0; } to { transform: none; opacity: 1; } }
   .acc:hover { background: rgba(255,255,255,.07); transform: translateX(3px); }
-  .acc.active { background: linear-gradient(90deg, rgba(77,142,255,.25), rgba(140,90,255,.18)); box-shadow: inset 0 0 0 1px rgba(120,170,255,.3); }
+  .acc.active { background: linear-gradient(90deg, rgba(212,175,55,.22), rgba(212,175,55,.08)); box-shadow: inset 0 0 0 1px rgba(212,175,55,.35); }
   .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; box-shadow: 0 0 8px currentColor; }
   .acc .em { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .badge {
-    background: linear-gradient(135deg, #ff5d7a, #e33d5d); color: #fff; border-radius: 10px;
+    background: linear-gradient(135deg, #f2dd8e, #d4af37); color: #191203; border-radius: 10px;
     font-size: 11px; padding: 1px 7px; font-weight: 700;
   }
   .badge.hot { animation: pulse 1.8s ease-out infinite; }
-  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255,93,122,.55); } 100% { box-shadow: 0 0 0 10px rgba(255,93,122,0); } }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(212,175,55,.55); } 100% { box-shadow: 0 0 0 10px rgba(212,175,55,0); } }
   .badge.zero { background: rgba(255,255,255,.12); animation: none; }
   .acc .del { opacity: 0; border: 0; background: none; color: #ff9d9d; cursor: pointer; font-size: 15px; transition: opacity .2s, transform .15s; }
   .acc:hover .del { opacity: 1; }
@@ -65,21 +65,21 @@
 
   .addbox { padding: 14px; border-top: 1px solid rgba(255,255,255,.08); }
   .addbox input {
-    width: 100%; margin-bottom: 7px; padding: 9px 11px; font-size: 13px; color: #e8eef5;
+    width: 100%; margin-bottom: 7px; padding: 9px 11px; font-size: 13px; color: #efe8d8;
     background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.12); border-radius: 8px;
     outline: none; transition: border-color .2s, box-shadow .2s;
   }
-  .addbox input:focus { border-color: #6db6ff; box-shadow: 0 0 0 3px rgba(109,182,255,.15); }
-  .addbox input[type="checkbox"] { width: auto; flex: none; margin: 0; accent-color: #6db6ff; }
-  .addbox label { font-size: 12px; display: flex; gap: 6px; align-items: center; margin: 4px 0 8px; color: #93a9be; cursor: pointer; }
+  .addbox input:focus { border-color: #d4af37; box-shadow: 0 0 0 3px rgba(212,175,55,.15); }
+  .addbox input[type="checkbox"] { width: auto; flex: none; margin: 0; accent-color: #d4af37; }
+  .addbox label { font-size: 12px; display: flex; gap: 6px; align-items: center; margin: 4px 0 8px; color: #a3987f; cursor: pointer; }
   .addbox button {
     width: 100%; padding: 9px; border: 0; border-radius: 8px; font-weight: 700; font-size: 13.5px;
     color: #fff; cursor: pointer;
-    background: linear-gradient(90deg, #4a9eda, #7b5cff); background-size: 200% auto;
+    background: linear-gradient(100deg, #b28a2a, #d4af37 45%, #f2dd8e 60%, #d4af37); background-size: 200% auto; color: #191203;
     transition: background-position .35s, transform .15s, box-shadow .25s;
-    box-shadow: 0 6px 18px rgba(90,120,255,.3);
+    box-shadow: 0 6px 18px rgba(212,175,55,.3);
   }
-  .addbox button:hover { background-position: right center; transform: translateY(-1px); box-shadow: 0 9px 24px rgba(90,120,255,.45); }
+  .addbox button:hover { background-position: right center; transform: translateY(-1px); box-shadow: 0 9px 24px rgba(212,175,55,.45); }
   .addbox button:active { transform: scale(.97); }
   .addbox button:disabled { opacity: .6; }
   .addbox .e { color: #ffb3b3; font-size: 12px; min-height: 15px; margin-bottom: 4px; }
@@ -88,7 +88,7 @@
   main { flex: 1; display: flex; min-width: 0; }
   .list {
     width: 405px; min-width: 305px; display: flex; flex-direction: column;
-    background: rgba(16,26,44,.65); backdrop-filter: blur(14px);
+    background: rgba(14,12,9,.7); backdrop-filter: blur(14px);
     border-right: 1px solid rgba(255,255,255,.08);
   }
   .list-head {
@@ -98,12 +98,12 @@
   .list-head b { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .btn {
     border: 0; border-radius: 8px; padding: 8px 13px; cursor: pointer; font-weight: 700; font-size: 13px;
-    color: #fff; background: linear-gradient(90deg, #4a9eda, #7b5cff); background-size: 200% auto;
+    color: #191203; background: linear-gradient(100deg, #b28a2a, #d4af37 45%, #f2dd8e 60%, #d4af37); background-size: 200% auto;
     transition: background-position .35s, transform .15s; white-space: nowrap;
   }
   .btn:hover { background-position: right center; transform: translateY(-1px); }
   .btn:active { transform: scale(.96); }
-  .btn.ghost { background: rgba(255,255,255,.1); }
+  .btn.ghost { background: rgba(255,255,255,.1); color: #efe8d8; }
   #refreshBtn.spin { animation: spin .8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -116,27 +116,27 @@
   }
   @keyframes msgIn { from { transform: translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
   .m:hover { background: rgba(255,255,255,.06); transform: translateX(3px); }
-  .m.sel { background: rgba(77,142,255,.14); border-left-color: #6db6ff; }
-  .m .top { display: flex; gap: 8px; align-items: center; font-size: 12px; color: #93a9be; }
+  .m.sel { background: rgba(212,175,55,.13); border-left-color: #d4af37; }
+  .m .top { display: flex; gap: 8px; align-items: center; font-size: 12px; color: #a3987f; }
   .m .top .dot { width: 8px; height: 8px; }
   .m .top .d { margin-left: auto; white-space: nowrap; }
   .m .sub { font-size: 14px; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .m.unread .sub { font-weight: 700; }
-  .m.unread .sub::before { content: '●'; color: #6db6ff; margin-right: 6px; font-size: 10px; vertical-align: 2px; }
-  .empty { padding: 44px 24px; text-align: center; color: #7388a0; font-size: 14px; }
+  .m.unread .sub::before { content: '◆'; color: #d4af37; margin-right: 6px; font-size: 10px; vertical-align: 2px; }
+  .empty { padding: 44px 24px; text-align: center; color: #837759; font-size: 14px; }
   .empty .big { font-size: 44px; display: block; margin-bottom: 12px; animation: bob 3s ease-in-out infinite; }
   @keyframes bob { 50% { transform: translateY(-9px) rotate(6deg); } }
 
   /* ============ reading pane ============ */
-  .view { flex: 1; display: flex; flex-direction: column; min-width: 0; background: rgba(20,30,50,.5); backdrop-filter: blur(10px); }
+  .view { flex: 1; display: flex; flex-direction: column; min-width: 0; background: rgba(16,14,10,.55); backdrop-filter: blur(10px); }
   .view-head { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,.08); animation: msgIn .3s ease both; }
   .view-head h2 { font-size: 18px; margin-bottom: 7px; }
-  .view-head .meta { font-size: 13px; color: #93a9be; line-height: 1.5; }
+  .view-head .meta { font-size: 13px; color: #a3987f; line-height: 1.5; }
   .view-body { flex: 1; overflow: hidden; animation: msgIn .4s ease both; }
   /* width:1px + min-width:100% — iOS Safari иначе растягивает iframe под ширину письма */
   .view-body iframe { width: 1px; min-width: 100%; height: 100%; border: 0; background: #fff; }
   .view-body pre { padding: 20px; white-space: pre-wrap; font-family: inherit; font-size: 14.5px; overflow-y: auto; height: 100%; line-height: 1.55; }
-  .placeholder { display: flex; flex-direction: column; gap: 14px; align-items: center; justify-content: center; height: 100%; color: #7388a0; }
+  .placeholder { display: flex; flex-direction: column; gap: 14px; align-items: center; justify-content: center; height: 100%; color: #837759; }
   .placeholder .big { font-size: 58px; animation: bob 3s ease-in-out infinite; }
   .reply { padding: 12px 20px; border-top: 1px solid rgba(255,255,255,.08); }
 
@@ -154,7 +154,7 @@
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   .mwin {
     width: 540px; max-width: 94vw; padding: 24px; border-radius: 16px;
-    background: rgba(20,32,54,.95); border: 1px solid rgba(255,255,255,.12);
+    background: rgba(20,17,10,.96); border: 1px solid rgba(212,175,55,.25);
     box-shadow: 0 30px 90px rgba(0,0,0,.6);
     animation: zoomIn .3s cubic-bezier(.2,1.3,.4,1) both;
   }
@@ -162,11 +162,11 @@
   .mwin h3 { margin-bottom: 14px; font-size: 18px; }
   .mwin select, .mwin input, .mwin textarea {
     width: 100%; margin-bottom: 9px; padding: 10px 12px; font-size: 14px; font-family: inherit;
-    color: #e8eef5; background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.12); border-radius: 9px;
+    color: #efe8d8; background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.12); border-radius: 9px;
     outline: none; transition: border-color .2s, box-shadow .2s;
   }
-  .mwin select:focus, .mwin input:focus, .mwin textarea:focus { border-color: #6db6ff; box-shadow: 0 0 0 3px rgba(109,182,255,.15); }
-  .mwin select option { background: #16243c; }
+  .mwin select:focus, .mwin input:focus, .mwin textarea:focus { border-color: #d4af37; box-shadow: 0 0 0 3px rgba(212,175,55,.15); }
+  .mwin select option { background: #1c1810; }
   .mwin textarea { height: 150px; resize: vertical; }
   .mwin .row { display: flex; gap: 9px; justify-content: flex-end; }
   .mwin .st { font-size: 13px; min-height: 17px; margin-bottom: 7px; }
@@ -211,7 +211,7 @@
 
     /* reading pane slides over the list */
     .view {
-      position: fixed; inset: 0; z-index: 15; background: #101a2c;
+      position: fixed; inset: 0; z-index: 15; background: #100d08;
       transform: translateX(105%); transition: transform .3s cubic-bezier(.2,.9,.3,1);
     }
     .view.open { transform: translateX(0); }
@@ -236,7 +236,7 @@
 <div class="drawer-backdrop" id="backdrop"></div>
 
 <aside id="sidebar">
-  <h1>📬 <span class="mm">MultiMail</span></h1>
+  <h1>👑 <span class="mm">Viply Mail</span></h1>
   <div class="acc-list" id="accList"></div>
   <div class="addbox">
     <div class="e" id="addErr"></div>
@@ -282,7 +282,7 @@
 </div>
 
 <script>
-const COLORS = ['#4a9eda','#5dbb63','#e3a04a','#c05de3','#e35d5d','#3fc1c9','#e35da8','#a3b830','#8a6ee3','#5d8fe3'];
+const COLORS = ['#d4af37','#c0c0c0','#cd7f32','#e0115f','#50c878','#4a7edb','#9966cc','#ff7e5f','#40e0d0','#f2dd8e'];
 let accounts = [];      // [{id, email, color, unseen, error, messages}]
 let filter = null;      // account id or null = all
 let selected = null;    // {account, uid}
@@ -291,14 +291,14 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 // --- mailboxes remembered in this browser ---
-const saved = () => JSON.parse(localStorage.getItem('mmAccounts') || '[]');
+const saved = () => JSON.parse(localStorage.getItem('viplyAccounts') || '[]');
 const saveAcc = (email, password) => {
   const list = saved().filter((a) => a.email !== email);
   list.push({ email, p: btoa(unescape(encodeURIComponent(password))) });
-  localStorage.setItem('mmAccounts', JSON.stringify(list));
+  localStorage.setItem('viplyAccounts', JSON.stringify(list));
 };
 const forgetAcc = (email) => {
-  localStorage.setItem('mmAccounts', JSON.stringify(saved().filter((a) => a.email !== email)));
+  localStorage.setItem('viplyAccounts', JSON.stringify(saved().filter((a) => a.email !== email)));
 };
 
 async function api(url, opts) {
