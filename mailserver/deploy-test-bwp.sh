@@ -46,9 +46,12 @@ INVITE_CODE=
 WEBMAIL_URL=https://$DOMAIN/mail/webmail/
 EOF
 
+# hostname контейнера НЕ должен совпадать с почтовым доменом, иначе Postfix
+# считает домен локальным (mydestination) и виртуальные ящики не получают почту.
 cat > docker-compose.override.yml <<EOF
 services:
   mailserver:
+    hostname: mail.$DOMAIN
     environment:
       - SSL_TYPE=manual
       - SSL_CERT_PATH=/certs/cert.pem
