@@ -91,7 +91,10 @@ async function fetchInbox(acc, limit = 20) {
 
 const app = express();
 app.use(express.json({ limit: '200kb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  // HTML всегда перепроверяется браузером — иначе телефоны показывают старый кэш
+  setHeaders: (res, p) => { if (p.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache, must-revalidate'); },
+}));
 
 app.get('/api/info', (req, res) => {
   const s = getSession(req, res);
