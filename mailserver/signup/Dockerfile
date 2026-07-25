@@ -6,5 +6,6 @@ RUN npm install --omit=dev
 COPY server.js ./
 COPY public ./public
 EXPOSE 8081
-USER node
+# Работаем под root: файл аккаунтов docker-mailserver принадлежит root,
+# и под пользователем node запись в него невозможна.
 CMD ["node", "server.js"]
