@@ -1,82 +1,188 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Регистрация почтового ящика</title>
+<title>Create your mailbox</title>
 <style>
-  :root { color-scheme: light dark; }
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    background: linear-gradient(135deg, #1e3a5f, #2d6a8f);
+    background: linear-gradient(-45deg, #0f2027, #203a43, #2c5364, #24243e, #302b63);
+    background-size: 400% 400%;
+    animation: bgshift 18s ease infinite;
+    overflow: hidden; color: #eaf2f8;
   }
+  @keyframes bgshift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* floating envelopes */
+  .float {
+    position: fixed; bottom: -60px; font-size: 26px; opacity: 0;
+    animation: floatUp linear forwards; pointer-events: none; z-index: 0;
+    filter: drop-shadow(0 0 6px rgba(120,200,255,.35));
+  }
+  @keyframes floatUp {
+    0%   { transform: translateY(0) rotate(-8deg); opacity: 0; }
+    10%  { opacity: .8; }
+    90%  { opacity: .6; }
+    100% { transform: translateY(-110vh) rotate(12deg); opacity: 0; }
+  }
+
   .card {
-    background: #fff; color: #1a2733; border-radius: 16px; padding: 32px 28px;
-    width: 100%; max-width: 420px; margin: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    position: relative; z-index: 1;
+    width: 100%; max-width: 440px; margin: 16px; padding: 38px 32px;
+    border-radius: 20px;
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.16);
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    box-shadow: 0 24px 70px rgba(0,0,0,.45);
+    animation: cardIn .7s cubic-bezier(.2,.9,.3,1.2) both, hover 6s ease-in-out 1s infinite;
   }
-  h1 { font-size: 22px; margin: 0 0 4px; }
-  .sub { color: #5b6b7a; font-size: 14px; margin: 0 0 20px; }
-  label { display: block; font-size: 13px; font-weight: 600; margin: 14px 0 4px; }
+  @keyframes cardIn { from { transform: translateY(40px) scale(.94); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes hover { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+  .card.shake { animation: shake .45s ease; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-10px); } 40% { transform: translateX(9px); }
+    60% { transform: translateX(-6px); } 80% { transform: translateX(4px); }
+  }
+
+  .logo { font-size: 42px; text-align: center; animation: wiggle 3.2s ease-in-out infinite; }
+  @keyframes wiggle { 0%,100% { transform: rotate(-6deg); } 50% { transform: rotate(8deg) scale(1.08); } }
+  h1 {
+    font-size: 24px; text-align: center; margin: 10px 0 4px;
+    background: linear-gradient(90deg, #7fd7ff, #b48cff, #7fd7ff);
+    background-size: 200% auto; -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; animation: shine 4s linear infinite;
+  }
+  @keyframes shine { to { background-position: 200% center; } }
+  .sub { text-align: center; color: #a9c3d6; font-size: 14px; margin-bottom: 24px; }
+
+  label { display: block; font-size: 12.5px; font-weight: 600; margin: 15px 0 5px; color: #bcd6e8; letter-spacing: .4px; text-transform: uppercase; }
   .row { display: flex; align-items: center; gap: 8px; }
   input {
-    width: 100%; padding: 10px 12px; border: 1px solid #c8d2dc; border-radius: 8px;
-    font-size: 15px; outline: none;
+    width: 100%; padding: 12px 14px; font-size: 15px; color: #eaf2f8;
+    background: rgba(0,0,0,.28); border: 1px solid rgba(255,255,255,.14); border-radius: 10px;
+    outline: none; transition: border-color .25s, box-shadow .25s, transform .15s;
   }
-  input:focus { border-color: #2d6a8f; box-shadow: 0 0 0 3px rgba(45,106,143,.15); }
-  .domain { font-weight: 600; color: #2d6a8f; white-space: nowrap; }
+  input:focus { border-color: #7fd7ff; box-shadow: 0 0 0 4px rgba(127,215,255,.15), 0 0 18px rgba(127,215,255,.25); transform: scale(1.01); }
+  .domain { font-weight: 700; color: #7fd7ff; white-space: nowrap; text-shadow: 0 0 12px rgba(127,215,255,.6); }
+
   button {
-    width: 100%; margin-top: 20px; padding: 12px; border: 0; border-radius: 8px;
-    background: #2d6a8f; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer;
+    position: relative; overflow: hidden;
+    width: 100%; margin-top: 26px; padding: 14px; font-size: 16px; font-weight: 700;
+    color: #fff; border: 0; border-radius: 12px; cursor: pointer;
+    background: linear-gradient(90deg, #4a9eda, #7b5cff, #4a9eda);
+    background-size: 200% auto;
+    transition: background-position .4s, transform .15s, box-shadow .3s;
+    box-shadow: 0 8px 26px rgba(84,120,255,.35);
   }
-  button:hover { background: #1e5578; }
+  button:hover { background-position: right center; transform: translateY(-2px); box-shadow: 0 12px 34px rgba(84,120,255,.55); }
+  button:active { transform: translateY(1px) scale(.98); }
   button:disabled { opacity: .6; cursor: default; }
-  .msg { margin-top: 14px; font-size: 14px; padding: 10px 12px; border-radius: 8px; display: none; }
-  .msg.err { display: block; background: #fdeaea; color: #9b1c1c; }
-  .msg.ok { display: block; background: #e7f6ec; color: #14632e; }
-  .msg a { color: inherit; }
+  button::after {
+    content: ''; position: absolute; top: 0; left: -80%; width: 50%; height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,.35), transparent);
+    transform: skewX(-20deg); animation: sweep 3s ease infinite;
+  }
+  @keyframes sweep { 0%, 60% { left: -80%; } 100% { left: 140%; } }
+
+  .msg { margin-top: 16px; font-size: 14px; padding: 12px 14px; border-radius: 10px; display: none; animation: msgIn .35s ease both; }
+  @keyframes msgIn { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .msg.err { display: block; background: rgba(227,93,93,.16); border: 1px solid rgba(227,93,93,.4); color: #ffb8b8; }
+
+  /* success state */
+  .success { text-align: center; padding: 10px 0 4px; }
+  .check {
+    width: 86px; height: 86px; margin: 6px auto 18px; border-radius: 50%;
+    background: linear-gradient(135deg, #35c46f, #1f9d57); position: relative;
+    animation: pop .55s cubic-bezier(.2,1.4,.4,1) both;
+    box-shadow: 0 0 0 0 rgba(53,196,111,.5); animation: pop .55s cubic-bezier(.2,1.4,.4,1) both, pulse 2s ease-out .6s infinite;
+  }
+  @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(53,196,111,.45); } 100% { box-shadow: 0 0 0 26px rgba(53,196,111,0); } }
+  .check::after {
+    content: ''; position: absolute; left: 28px; top: 40px; width: 20px; height: 36px;
+    border: solid #fff; border-width: 0 7px 7px 0; border-radius: 3px;
+    transform-origin: center; transform: rotate(45deg) scale(0);
+    animation: tick .35s ease .35s forwards;
+  }
+  @keyframes tick { to { transform: rotate(45deg) scale(1); } }
+  .success .email { font-size: 19px; font-weight: 700; color: #7fd7ff; word-break: break-all; margin-bottom: 8px; }
+  .success a {
+    display: inline-block; margin-top: 14px; padding: 12px 26px; border-radius: 12px;
+    color: #fff; text-decoration: none; font-weight: 700;
+    background: linear-gradient(90deg, #35c46f, #1f9d57);
+    box-shadow: 0 8px 24px rgba(53,196,111,.4); transition: transform .15s, box-shadow .3s;
+  }
+  .success a:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(53,196,111,.6); }
 </style>
 </head>
 <body>
-<div class="card">
-  <h1>Создать почтовый ящик</h1>
-  <p class="sub">Бесплатный адрес на нашем домене</p>
+<div class="card" id="card">
+  <div class="logo">📮</div>
+  <h1>Create your mailbox</h1>
+  <p class="sub">Free email address on our domain</p>
   <form id="f">
-    <label for="u">Имя ящика</label>
+    <label for="u">Username</label>
     <div class="row">
-      <input id="u" name="username" autocomplete="username" placeholder="ivan.petrov" required>
+      <input id="u" name="username" autocomplete="username" placeholder="john.doe" required>
       <span class="domain" id="dom">@…</span>
     </div>
-    <label for="p">Пароль (минимум 8 символов)</label>
+    <label for="p">Password (min 8 characters)</label>
     <input id="p" name="password" type="password" autocomplete="new-password" minlength="8" required>
-    <label for="p2">Повторите пароль</label>
+    <label for="p2">Repeat password</label>
     <input id="p2" type="password" autocomplete="new-password" minlength="8" required>
     <div id="inviteBlock" style="display:none">
-      <label for="inv">Код приглашения</label>
+      <label for="inv">Invite code</label>
       <input id="inv" name="invite" autocomplete="off">
     </div>
-    <button id="btn" type="submit">Зарегистрировать</button>
+    <button id="btn" type="submit">Create mailbox ✨</button>
     <div class="msg" id="msg"></div>
   </form>
 </div>
+
 <script>
-const f = document.getElementById('f'), msg = document.getElementById('msg'), btn = document.getElementById('btn');
-let info = { domain: '', webmail: '' };
+// drifting envelopes in the background
+const EMOJI = ['✉️', '📧', '💌', '📨', '📬'];
+function spawnEnvelope() {
+  const s = document.createElement('span');
+  s.className = 'float';
+  s.textContent = EMOJI[Math.floor(Math.random() * EMOJI.length)];
+  s.style.left = Math.random() * 100 + 'vw';
+  s.style.fontSize = 16 + Math.random() * 22 + 'px';
+  s.style.animationDuration = 9 + Math.random() * 9 + 's';
+  document.body.appendChild(s);
+  setTimeout(() => s.remove(), 19000);
+}
+for (let i = 0; i < 6; i++) setTimeout(spawnEnvelope, i * 900);
+setInterval(spawnEnvelope, 2200);
+
+const f = document.getElementById('f'), msg = document.getElementById('msg'),
+      btn = document.getElementById('btn'), card = document.getElementById('card');
 
 fetch('api/info').then(r => r.json()).then(i => {
-  info = i;
   document.getElementById('dom').textContent = '@' + i.domain;
   if (i.inviteRequired) document.getElementById('inviteBlock').style.display = '';
 });
+
+function fail(text) {
+  msg.className = 'msg err'; msg.textContent = text;
+  card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
+}
 
 f.addEventListener('submit', async (e) => {
   e.preventDefault();
   msg.className = 'msg';
   if (document.getElementById('p').value !== document.getElementById('p2').value) {
-    msg.className = 'msg err'; msg.textContent = 'Пароли не совпадают.'; return;
+    fail('Passwords do not match.'); return;
   }
-  btn.disabled = true;
+  btn.disabled = true; btn.textContent = 'Creating…';
   try {
     const r = await fetch('api/register', {
       method: 'POST',
@@ -89,19 +195,21 @@ f.addEventListener('submit', async (e) => {
     });
     const data = await r.json();
     if (r.ok) {
-      msg.className = 'msg ok';
-      msg.innerHTML = 'Готово! Ваш адрес: <b>' + data.email + '</b>.' +
-        (data.webmail ? ' <a href="' + data.webmail + '">Войти в почту</a>' : '');
-      f.reset();
+      card.innerHTML = `
+        <div class="success">
+          <div class="check"></div>
+          <h1>You're all set!</h1>
+          <p class="sub">Your new address is ready:</p>
+          <div class="email">${data.email}</div>
+          ${data.webmail ? `<a href="${data.webmail}">Open your inbox →</a>` : ''}
+        </div>`;
     } else {
-      msg.className = 'msg err';
-      msg.textContent = data.error || 'Ошибка регистрации.';
+      fail(data.error || 'Registration failed.');
     }
   } catch {
-    msg.className = 'msg err';
-    msg.textContent = 'Сервер недоступен, попробуйте позже.';
+    fail('Server unavailable, please try again later.');
   } finally {
-    btn.disabled = false;
+    btn.disabled = false; btn.textContent = 'Create mailbox ✨';
   }
 });
 </script>

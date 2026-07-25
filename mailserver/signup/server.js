@@ -86,20 +86,20 @@ app.post('/api/register', (req, res) => {
   const { username, password, invite } = req.body || {};
 
   if (rateLimited(ip)) {
-    return res.status(429).json({ error: 'Слишком много попыток. Подождите час и попробуйте снова.' });
+    return res.status(429).json({ error: 'Too many attempts. Please wait an hour and try again.' });
   }
   if (INVITE_CODE && (invite || '').trim() !== INVITE_CODE) {
-    return res.status(403).json({ error: 'Неверный код приглашения.' });
+    return res.status(403).json({ error: 'Invalid invite code.' });
   }
   const user = String(username || '').toLowerCase().trim();
   if (!USERNAME_RE.test(user)) {
-    return res.status(400).json({ error: 'Имя: 1–31 символ, латиница/цифры/точка/дефис, начинается и заканчивается буквой или цифрой.' });
+    return res.status(400).json({ error: 'Username: 1–31 chars, letters/digits/dot/dash, must start and end with a letter or digit.' });
   }
   if (RESERVED.has(user)) {
-    return res.status(400).json({ error: 'Это имя зарезервировано.' });
+    return res.status(400).json({ error: 'This name is reserved.' });
   }
   if (typeof password !== 'string' || password.length < 8 || password.length > 128) {
-    return res.status(400).json({ error: 'Пароль должен быть от 8 до 128 символов.' });
+    return res.status(400).json({ error: 'Password must be 8–128 characters long.' });
   }
 
   const email = `${user}@${DOMAIN}`;
@@ -111,7 +111,7 @@ app.post('/api/register', (req, res) => {
       return addr === email;
     });
     if (taken) {
-      res.status(409).json({ error: 'Такой адрес уже занят.' });
+      res.status(409).json({ error: 'This address is already taken.' });
       return;
     }
     const hash = await hashPassword(password);
@@ -122,7 +122,7 @@ app.post('/api/register', (req, res) => {
     res.json({ ok: true, email, webmail: WEBMAIL_URL });
   }).catch((e) => {
     console.error('registration failed:', e);
-    if (!res.headersSent) res.status(500).json({ error: 'Внутренняя ошибка сервера.' });
+    if (!res.headersSent) res.status(500).json({ error: 'Internal server error.' });
   });
 });
 

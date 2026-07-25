@@ -1,119 +1,228 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Мульти-почта — все ящики на одном экране</title>
+<title>MultiMail — all your inboxes on one screen</title>
 <style>
-  :root { color-scheme: light; }
-  * { box-sizing: border-box; }
-  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #eef2f6; color: #1a2733; height: 100vh; display: flex; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    height: 100vh; display: flex; color: #e8eef5; overflow: hidden;
+    background: #0d1420;
+  }
+  /* aurora blobs drifting behind everything */
+  .blob { position: fixed; border-radius: 50%; filter: blur(90px); opacity: .35; z-index: 0; pointer-events: none; }
+  .blob.b1 { width: 520px; height: 520px; background: #2d6cff; top: -140px; left: -120px; animation: drift1 24s ease-in-out infinite; }
+  .blob.b2 { width: 460px; height: 460px; background: #8a2dff; bottom: -160px; right: -100px; animation: drift2 30s ease-in-out infinite; }
+  .blob.b3 { width: 320px; height: 320px; background: #00b3a4; top: 40%; left: 45%; animation: drift3 26s ease-in-out infinite; }
+  @keyframes drift1 { 50% { transform: translate(120px, 90px) scale(1.15); } }
+  @keyframes drift2 { 50% { transform: translate(-140px, -70px) scale(.9); } }
+  @keyframes drift3 { 50% { transform: translate(-90px, 110px) scale(1.2); } }
 
-  /* Сайдбар */
-  aside { width: 280px; min-width: 280px; background: #1e3a5f; color: #dbe6f0; display: flex; flex-direction: column; }
-  aside h1 { font-size: 17px; margin: 0; padding: 16px; border-bottom: 1px solid rgba(255,255,255,.12); }
-  .acc-list { flex: 1; overflow-y: auto; padding: 8px; }
-  .acc { display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 8px; cursor: pointer; font-size: 13.5px; }
-  .acc:hover { background: rgba(255,255,255,.08); }
-  .acc.active { background: rgba(255,255,255,.16); }
-  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  aside, .list, .view { position: relative; z-index: 1; }
+
+  /* ============ sidebar ============ */
+  aside {
+    width: 285px; min-width: 285px; display: flex; flex-direction: column;
+    background: rgba(13,22,38,.72); backdrop-filter: blur(16px);
+    border-right: 1px solid rgba(255,255,255,.08);
+  }
+  aside h1 {
+    font-size: 17px; padding: 18px 16px; letter-spacing: .3px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  aside h1 .mm {
+    background: linear-gradient(90deg, #6db6ff, #b48cff, #6db6ff);
+    background-size: 200% auto; -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; animation: shine 4s linear infinite;
+  }
+  @keyframes shine { to { background-position: 200% center; } }
+  .acc-list { flex: 1; overflow-y: auto; padding: 10px; }
+  .acc {
+    display: flex; align-items: center; gap: 9px; padding: 10px 11px; margin-bottom: 3px;
+    border-radius: 10px; cursor: pointer; font-size: 13.5px;
+    transition: background .2s, transform .15s;
+    animation: slideIn .4s ease both;
+  }
+  @keyframes slideIn { from { transform: translateX(-16px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .acc:hover { background: rgba(255,255,255,.07); transform: translateX(3px); }
+  .acc.active { background: linear-gradient(90deg, rgba(77,142,255,.25), rgba(140,90,255,.18)); box-shadow: inset 0 0 0 1px rgba(120,170,255,.3); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; box-shadow: 0 0 8px currentColor; }
   .acc .em { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .badge { background: #e35d5d; color: #fff; border-radius: 10px; font-size: 11px; padding: 1px 7px; font-weight: 700; }
-  .badge.zero { background: rgba(255,255,255,.15); }
-  .acc .del { opacity: 0; border: 0; background: none; color: #f0b5b5; cursor: pointer; font-size: 15px; }
+  .badge {
+    background: linear-gradient(135deg, #ff5d7a, #e33d5d); color: #fff; border-radius: 10px;
+    font-size: 11px; padding: 1px 7px; font-weight: 700;
+  }
+  .badge.hot { animation: pulse 1.8s ease-out infinite; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255,93,122,.55); } 100% { box-shadow: 0 0 0 10px rgba(255,93,122,0); } }
+  .badge.zero { background: rgba(255,255,255,.12); animation: none; }
+  .acc .del { opacity: 0; border: 0; background: none; color: #ff9d9d; cursor: pointer; font-size: 15px; transition: opacity .2s, transform .15s; }
   .acc:hover .del { opacity: 1; }
-  .acc.err .em { color: #f0b5b5; }
-  .addbox { padding: 12px; border-top: 1px solid rgba(255,255,255,.12); }
-  .addbox input { width: 100%; margin-bottom: 6px; padding: 8px 10px; border: 0; border-radius: 6px; font-size: 13px; }
-  .addbox button { width: 100%; padding: 8px; border: 0; border-radius: 6px; background: #4a9eda; color: #fff; font-weight: 600; cursor: pointer; }
-  .addbox label { font-size: 12px; display: flex; gap: 6px; align-items: center; margin: 6px 0; color: #b9c9d8; }
-  .addbox .e { color: #ffb3b3; font-size: 12px; min-height: 14px; }
+  .acc .del:hover { transform: scale(1.3) rotate(90deg); }
+  .acc.err .em { color: #ff9d9d; }
 
-  /* Список писем */
+  .addbox { padding: 14px; border-top: 1px solid rgba(255,255,255,.08); }
+  .addbox input {
+    width: 100%; margin-bottom: 7px; padding: 9px 11px; font-size: 13px; color: #e8eef5;
+    background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.12); border-radius: 8px;
+    outline: none; transition: border-color .2s, box-shadow .2s;
+  }
+  .addbox input:focus { border-color: #6db6ff; box-shadow: 0 0 0 3px rgba(109,182,255,.15); }
+  .addbox label { font-size: 12px; display: flex; gap: 6px; align-items: center; margin: 4px 0 8px; color: #93a9be; cursor: pointer; }
+  .addbox button {
+    width: 100%; padding: 9px; border: 0; border-radius: 8px; font-weight: 700; font-size: 13.5px;
+    color: #fff; cursor: pointer;
+    background: linear-gradient(90deg, #4a9eda, #7b5cff); background-size: 200% auto;
+    transition: background-position .35s, transform .15s, box-shadow .25s;
+    box-shadow: 0 6px 18px rgba(90,120,255,.3);
+  }
+  .addbox button:hover { background-position: right center; transform: translateY(-1px); box-shadow: 0 9px 24px rgba(90,120,255,.45); }
+  .addbox button:active { transform: scale(.97); }
+  .addbox button:disabled { opacity: .6; }
+  .addbox .e { color: #ffb3b3; font-size: 12px; min-height: 15px; margin-bottom: 4px; }
+
+  /* ============ message list ============ */
   main { flex: 1; display: flex; min-width: 0; }
-  .list { width: 400px; min-width: 300px; border-right: 1px solid #d5dee6; background: #fff; display: flex; flex-direction: column; }
-  .list-head { padding: 12px 14px; border-bottom: 1px solid #e3eaf0; display: flex; justify-content: space-between; align-items: center; }
-  .list-head b { font-size: 15px; }
-  .list-head button { border: 0; background: #eef2f6; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+  .list {
+    width: 405px; min-width: 305px; display: flex; flex-direction: column;
+    background: rgba(16,26,44,.65); backdrop-filter: blur(14px);
+    border-right: 1px solid rgba(255,255,255,.08);
+  }
+  .list-head {
+    padding: 13px 15px; display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  .list-head b { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .btn {
+    border: 0; border-radius: 8px; padding: 8px 13px; cursor: pointer; font-weight: 700; font-size: 13px;
+    color: #fff; background: linear-gradient(90deg, #4a9eda, #7b5cff); background-size: 200% auto;
+    transition: background-position .35s, transform .15s; white-space: nowrap;
+  }
+  .btn:hover { background-position: right center; transform: translateY(-1px); }
+  .btn:active { transform: scale(.96); }
+  .btn.ghost { background: rgba(255,255,255,.1); }
+  #refreshBtn.spin { animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
   .msgs { flex: 1; overflow-y: auto; }
-  .m { padding: 10px 14px; border-bottom: 1px solid #eef2f6; cursor: pointer; }
-  .m:hover { background: #f4f8fb; }
-  .m.sel { background: #e8f1f8; }
-  .m .top { display: flex; gap: 8px; align-items: center; font-size: 12px; color: #5b6b7a; }
+  .m {
+    padding: 11px 15px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,.05);
+    border-left: 3px solid transparent;
+    transition: background .2s, border-color .2s, transform .15s;
+    animation: msgIn .35s ease both;
+  }
+  @keyframes msgIn { from { transform: translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .m:hover { background: rgba(255,255,255,.06); transform: translateX(3px); }
+  .m.sel { background: rgba(77,142,255,.14); border-left-color: #6db6ff; }
+  .m .top { display: flex; gap: 8px; align-items: center; font-size: 12px; color: #93a9be; }
   .m .top .dot { width: 8px; height: 8px; }
   .m .top .d { margin-left: auto; white-space: nowrap; }
-  .m .sub { font-size: 14px; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .m .sub { font-size: 14px; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .m.unread .sub { font-weight: 700; }
-  .empty { padding: 30px; text-align: center; color: #8a99a8; font-size: 14px; }
+  .m.unread .sub::before { content: '●'; color: #6db6ff; margin-right: 6px; font-size: 10px; vertical-align: 2px; }
+  .empty { padding: 44px 24px; text-align: center; color: #7388a0; font-size: 14px; }
+  .empty .big { font-size: 44px; display: block; margin-bottom: 12px; animation: bob 3s ease-in-out infinite; }
+  @keyframes bob { 50% { transform: translateY(-9px) rotate(6deg); } }
 
-  /* Просмотр письма */
-  .view { flex: 1; display: flex; flex-direction: column; background: #fff; min-width: 0; }
-  .view-head { padding: 14px 18px; border-bottom: 1px solid #e3eaf0; }
-  .view-head h2 { margin: 0 0 6px; font-size: 17px; }
-  .view-head .meta { font-size: 13px; color: #5b6b7a; }
-  .view-body { flex: 1; overflow: hidden; }
-  .view-body iframe { width: 100%; height: 100%; border: 0; }
-  .view-body pre { padding: 18px; white-space: pre-wrap; font-family: inherit; font-size: 14px; margin: 0; overflow-y: auto; height: 100%; }
-  .placeholder { display: flex; align-items: center; justify-content: center; height: 100%; color: #8a99a8; }
-  .reply { padding: 10px 18px; border-top: 1px solid #e3eaf0; }
-  .reply button, .compose-btn { border: 0; background: #2d6a8f; color: #fff; border-radius: 6px; padding: 8px 14px; cursor: pointer; font-weight: 600; }
+  /* ============ reading pane ============ */
+  .view { flex: 1; display: flex; flex-direction: column; min-width: 0; background: rgba(20,30,50,.5); backdrop-filter: blur(10px); }
+  .view-head { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,.08); animation: msgIn .3s ease both; }
+  .view-head h2 { font-size: 18px; margin-bottom: 7px; }
+  .view-head .meta { font-size: 13px; color: #93a9be; line-height: 1.5; }
+  .view-body { flex: 1; overflow: hidden; animation: msgIn .4s ease both; }
+  .view-body iframe { width: 100%; height: 100%; border: 0; background: #fff; }
+  .view-body pre { padding: 20px; white-space: pre-wrap; font-family: inherit; font-size: 14.5px; overflow-y: auto; height: 100%; line-height: 1.55; }
+  .placeholder { display: flex; flex-direction: column; gap: 14px; align-items: center; justify-content: center; height: 100%; color: #7388a0; }
+  .placeholder .big { font-size: 58px; animation: bob 3s ease-in-out infinite; }
+  .reply { padding: 12px 20px; border-top: 1px solid rgba(255,255,255,.08); }
 
-  /* Окно написания письма */
-  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: center; justify-content: center; }
-  .modal.open { display: flex; }
-  .mwin { background: #fff; border-radius: 12px; width: 520px; max-width: 94vw; padding: 20px; }
-  .mwin h3 { margin: 0 0 12px; }
-  .mwin select, .mwin input, .mwin textarea { width: 100%; margin-bottom: 8px; padding: 8px 10px; border: 1px solid #c8d2dc; border-radius: 6px; font-size: 14px; font-family: inherit; }
-  .mwin textarea { height: 140px; resize: vertical; }
-  .mwin .row { display: flex; gap: 8px; justify-content: flex-end; }
-  .mwin .row .ghost { background: #eef2f6; color: #1a2733; }
-  .mwin .st { font-size: 13px; min-height: 16px; margin-bottom: 6px; }
-  .mwin .st.ok { color: #14632e; } .mwin .st.err { color: #9b1c1c; }
+  /* loading dots */
+  .dots span { animation: blink 1.2s infinite; font-size: 26px; }
+  .dots span:nth-child(2) { animation-delay: .2s; } .dots span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%,100% { opacity: .2; } 50% { opacity: 1; } }
+
+  /* ============ compose modal ============ */
+  .modal {
+    position: fixed; inset: 0; z-index: 10; display: none; align-items: center; justify-content: center;
+    background: rgba(5,10,20,.6); backdrop-filter: blur(6px);
+  }
+  .modal.open { display: flex; animation: fadeIn .25s ease both; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .mwin {
+    width: 540px; max-width: 94vw; padding: 24px; border-radius: 16px;
+    background: rgba(20,32,54,.95); border: 1px solid rgba(255,255,255,.12);
+    box-shadow: 0 30px 90px rgba(0,0,0,.6);
+    animation: zoomIn .3s cubic-bezier(.2,1.3,.4,1) both;
+  }
+  @keyframes zoomIn { from { transform: scale(.85) translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .mwin h3 { margin-bottom: 14px; font-size: 18px; }
+  .mwin select, .mwin input, .mwin textarea {
+    width: 100%; margin-bottom: 9px; padding: 10px 12px; font-size: 14px; font-family: inherit;
+    color: #e8eef5; background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.12); border-radius: 9px;
+    outline: none; transition: border-color .2s, box-shadow .2s;
+  }
+  .mwin select:focus, .mwin input:focus, .mwin textarea:focus { border-color: #6db6ff; box-shadow: 0 0 0 3px rgba(109,182,255,.15); }
+  .mwin select option { background: #16243c; }
+  .mwin textarea { height: 150px; resize: vertical; }
+  .mwin .row { display: flex; gap: 9px; justify-content: flex-end; }
+  .mwin .st { font-size: 13px; min-height: 17px; margin-bottom: 7px; }
+  .mwin .st.ok { color: #52d98a; } .mwin .st.err { color: #ff9d9d; }
+
+  ::-webkit-scrollbar { width: 9px; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.14); border-radius: 5px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.24); }
 
   @media (max-width: 900px) {
-    aside { width: 220px; min-width: 220px; }
-    .list { width: 300px; }
+    aside { width: 225px; min-width: 225px; }
+    .list { width: 305px; }
   }
 </style>
 </head>
 <body>
+<div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+
 <aside>
-  <h1>📬 Мульти-почта</h1>
+  <h1>📬 <span class="mm">MultiMail</span></h1>
   <div class="acc-list" id="accList"></div>
   <div class="addbox">
     <div class="e" id="addErr"></div>
-    <input id="aEmail" placeholder="адрес@домен" autocomplete="off">
-    <input id="aPass" type="password" placeholder="пароль" autocomplete="off">
-    <label><input type="checkbox" id="aRemember" checked> запомнить в этом браузере</label>
-    <button id="aBtn">+ Добавить ящик</button>
+    <input id="aEmail" placeholder="address@domain" autocomplete="off">
+    <input id="aPass" type="password" placeholder="password" autocomplete="off">
+    <label><input type="checkbox" id="aRemember" checked> remember in this browser</label>
+    <button id="aBtn">+ Add mailbox</button>
   </div>
 </aside>
 
 <main>
   <div class="list">
     <div class="list-head">
-      <b id="listTitle">Все ящики</b>
-      <div>
-        <button class="compose-btn" id="composeBtn">Написать</button>
-        <button id="refreshBtn" title="Обновить">⟳</button>
+      <b id="listTitle">All inboxes</b>
+      <div style="display:flex; gap:7px">
+        <button class="btn" id="composeBtn">✏️ Compose</button>
+        <button class="btn ghost" id="refreshBtn" title="Refresh">⟳</button>
       </div>
     </div>
-    <div class="msgs" id="msgs"><div class="empty">Добавьте ящики слева</div></div>
+    <div class="msgs" id="msgs">
+      <div class="empty"><span class="big">📭</span>Add your mailboxes on the left<br>to see all your mail in one place</div>
+    </div>
   </div>
-  <div class="view" id="view"><div class="placeholder">Выберите письмо</div></div>
+  <div class="view" id="view">
+    <div class="placeholder"><span class="big">💌</span>Select a message to read it</div>
+  </div>
 </main>
 
 <div class="modal" id="modal">
   <div class="mwin">
-    <h3>Новое письмо</h3>
+    <h3>✏️ New message</h3>
     <select id="cFrom"></select>
-    <input id="cTo" placeholder="Кому (адрес получателя)">
-    <input id="cSubj" placeholder="Тема">
-    <textarea id="cText" placeholder="Текст письма"></textarea>
+    <input id="cTo" placeholder="To (recipient address)">
+    <input id="cSubj" placeholder="Subject">
+    <textarea id="cText" placeholder="Write your message…"></textarea>
     <div class="st" id="cSt"></div>
     <div class="row">
-      <button class="compose-btn ghost" id="cCancel">Отмена</button>
-      <button class="compose-btn" id="cSend">Отправить</button>
+      <button class="btn ghost" id="cCancel">Cancel</button>
+      <button class="btn" id="cSend">Send 🚀</button>
     </div>
   </div>
 </div>
@@ -121,13 +230,13 @@
 <script>
 const COLORS = ['#4a9eda','#5dbb63','#e3a04a','#c05de3','#e35d5d','#3fc1c9','#e35da8','#a3b830','#8a6ee3','#5d8fe3'];
 let accounts = [];      // [{id, email, color, unseen, error, messages}]
-let filter = null;      // id ящика или null = все
+let filter = null;      // account id or null = all
 let selected = null;    // {account, uid}
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-// --- сохранённые в браузере ящики ---
+// --- mailboxes remembered in this browser ---
 const saved = () => JSON.parse(localStorage.getItem('mmAccounts') || '[]');
 const saveAcc = (email, password) => {
   const list = saved().filter((a) => a.email !== email);
@@ -141,13 +250,13 @@ const forgetAcc = (email) => {
 async function api(url, opts) {
   const r = await fetch(url, opts);
   const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(data.error || 'Ошибка сервера');
+  if (!r.ok) throw new Error(data.error || 'Server error');
   return data;
 }
 
 async function init() {
   const info = await api('api/info');
-  // сессия на сервере пустая, но в браузере есть сохранённые — восстановим
+  // server session is empty but the browser remembers mailboxes — restore them
   if (info.accounts.length === 0 && saved().length) {
     for (const a of saved()) {
       try {
@@ -160,25 +269,30 @@ async function init() {
 }
 
 async function reload() {
-  const data = await api('api/inbox');
-  accounts = data.accounts.map((a, i) => ({ ...a, color: COLORS[i % COLORS.length] }));
-  renderSidebar();
-  renderList();
+  $('refreshBtn').classList.add('spin');
+  try {
+    const data = await api('api/inbox');
+    accounts = data.accounts.map((a, i) => ({ ...a, color: COLORS[i % COLORS.length] }));
+    renderSidebar();
+    renderList();
+  } finally {
+    $('refreshBtn').classList.remove('spin');
+  }
 }
 
 function renderSidebar() {
   const el = $('accList');
   const totalUnseen = accounts.reduce((n, a) => n + (a.unseen || 0), 0);
   let html = `<div class="acc ${filter===null?'active':''}" data-id="">
-    <span class="dot" style="background:#fff"></span><span class="em">Все ящики</span>
-    <span class="badge ${totalUnseen?'':'zero'}">${totalUnseen}</span></div>`;
-  for (const a of accounts) {
-    html += `<div class="acc ${filter===a.id?'active':''} ${a.error?'err':''}" data-id="${a.id}">
-      <span class="dot" style="background:${a.color}"></span>
+    <span class="dot" style="background:#fff; color:#fff"></span><span class="em">All inboxes</span>
+    <span class="badge ${totalUnseen?'hot':'zero'}">${totalUnseen}</span></div>`;
+  accounts.forEach((a, i) => {
+    html += `<div class="acc ${filter===a.id?'active':''} ${a.error?'err':''}" data-id="${a.id}" style="animation-delay:${i*60}ms">
+      <span class="dot" style="background:${a.color}; color:${a.color}"></span>
       <span class="em" title="${esc(a.email)}${a.error ? ' — ' + esc(a.error) : ''}">${esc(a.email)}</span>
-      ${a.error ? '⚠️' : `<span class="badge ${a.unseen?'':'zero'}">${a.unseen}</span>`}
-      <button class="del" data-del="${a.id}" title="Убрать">✕</button></div>`;
-  }
+      ${a.error ? '⚠️' : `<span class="badge ${a.unseen?'hot':'zero'}">${a.unseen}</span>`}
+      <button class="del" data-del="${a.id}" title="Remove">✕</button></div>`;
+  });
   el.innerHTML = html;
   el.querySelectorAll('.acc').forEach((n) => n.addEventListener('click', (e) => {
     if (e.target.dataset.del !== undefined && e.target.dataset.del !== '') return;
@@ -198,14 +312,19 @@ function renderSidebar() {
 function renderList() {
   const el = $('msgs');
   const src = accounts.filter((a) => !a.error && (!filter || a.id === filter));
-  $('listTitle').textContent = filter ? (accounts.find((a) => a.id === filter)?.email || '') : 'Все ящики';
+  $('listTitle').textContent = filter ? (accounts.find((a) => a.id === filter)?.email || '') : 'All inboxes';
   const items = src.flatMap((a) => (a.messages || []).map((m) => ({ ...m, acc: a })));
   items.sort((x, y) => new Date(y.date) - new Date(x.date));
-  if (!items.length) { el.innerHTML = '<div class="empty">Писем нет</div>'; return; }
-  el.innerHTML = items.map((m) => `
+  if (!items.length) {
+    el.innerHTML = accounts.length
+      ? '<div class="empty"><span class="big">🌤️</span>No mail here yet — enjoy the calm!</div>'
+      : '<div class="empty"><span class="big">📭</span>Add your mailboxes on the left<br>to see all your mail in one place</div>';
+    return;
+  }
+  el.innerHTML = items.map((m, i) => `
     <div class="m ${m.seen?'':'unread'} ${selected && selected.uid===m.uid && selected.account===m.acc.id ? 'sel':''}"
-         data-acc="${m.acc.id}" data-uid="${m.uid}">
-      <div class="top"><span class="dot" style="background:${m.acc.color}"></span>
+         data-acc="${m.acc.id}" data-uid="${m.uid}" style="animation-delay:${Math.min(i*40, 400)}ms">
+      <div class="top"><span class="dot" style="background:${m.acc.color}; color:${m.acc.color}"></span>
         <span>${esc(m.fromName || m.from)}</span>
         <span class="d">${fmtDate(m.date)}</span></div>
       <div class="sub">${esc(m.subject)}</div>
@@ -216,24 +335,24 @@ function renderList() {
 function fmtDate(d) {
   const dt = new Date(d), now = new Date();
   return dt.toDateString() === now.toDateString()
-    ? dt.toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })
-    : dt.toLocaleDateString('ru', { day: 'numeric', month: 'short' });
+    ? dt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+    : dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
 async function openMessage(accId, uid) {
   selected = { account: accId, uid };
   renderList();
   const v = $('view');
-  v.innerHTML = '<div class="placeholder">Загрузка…</div>';
+  v.innerHTML = '<div class="placeholder"><div class="dots"><span>●</span><span>●</span><span>●</span></div>Loading message…</div>';
   try {
     const m = await api(`api/message?account=${accId}&uid=${uid}`);
     const acc = accounts.find((a) => a.id === accId);
     v.innerHTML = `
       <div class="view-head"><h2>${esc(m.subject)}</h2>
-        <div class="meta">От: ${esc(m.from)}<br>Кому: ${esc(m.to)} · ${new Date(m.date).toLocaleString('ru')}
+        <div class="meta">From: ${esc(m.from)}<br>To: ${esc(m.to)} · ${new Date(m.date).toLocaleString('en-GB')}
         ${m.attachments.length ? '<br>📎 ' + m.attachments.map((a) => esc(a.filename)).join(', ') : ''}</div></div>
       <div class="view-body" id="vb"></div>
-      <div class="reply"><button id="replyBtn">Ответить</button></div>`;
+      <div class="reply"><button class="btn" id="replyBtn">↩ Reply</button></div>`;
     const vb = $('vb');
     if (m.html) {
       const fr = document.createElement('iframe');
@@ -249,11 +368,11 @@ async function openMessage(accId, uid) {
     const cached = acc?.messages?.find((x) => x.uid === uid);
     if (cached && !cached.seen) { cached.seen = true; acc.unseen = Math.max(0, acc.unseen - 1); renderSidebar(); renderList(); }
   } catch (e) {
-    v.innerHTML = `<div class="placeholder">⚠️ ${esc(e.message)}</div>`;
+    v.innerHTML = `<div class="placeholder"><span class="big">⚠️</span>${esc(e.message)}</div>`;
   }
 }
 
-// --- написать письмо ---
+// --- compose ---
 function openCompose(fromId, to = '', subj = '') {
   $('cFrom').innerHTML = accounts.filter((a) => !a.error)
     .map((a) => `<option value="${a.id}" ${a.id===fromId?'selected':''}>${esc(a.email)}</option>`).join('');
@@ -263,25 +382,26 @@ function openCompose(fromId, to = '', subj = '') {
 }
 $('composeBtn').addEventListener('click', () => openCompose(filter));
 $('cCancel').addEventListener('click', () => $('modal').classList.remove('open'));
+$('modal').addEventListener('click', (e) => { if (e.target === $('modal')) $('modal').classList.remove('open'); });
 $('cSend').addEventListener('click', async () => {
   const st = $('cSt');
-  st.className = 'st'; st.textContent = 'Отправка…';
+  st.className = 'st'; st.textContent = 'Sending…';
   try {
     await api('api/send', { method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ account: $('cFrom').value, to: $('cTo').value, subject: $('cSubj').value, text: $('cText').value }) });
-    st.className = 'st ok'; st.textContent = 'Отправлено ✓';
-    setTimeout(() => $('modal').classList.remove('open'), 800);
+    st.className = 'st ok'; st.textContent = 'Sent! 🎉';
+    setTimeout(() => { $('modal').classList.remove('open'); reload(); }, 900);
   } catch (e) {
     st.className = 'st err'; st.textContent = e.message;
   }
 });
 
-// --- добавить ящик ---
+// --- add mailbox ---
 $('aBtn').addEventListener('click', async () => {
   const email = $('aEmail').value.trim(), password = $('aPass').value;
   $('addErr').textContent = '';
-  if (!email || !password) { $('addErr').textContent = 'Заполните адрес и пароль'; return; }
-  $('aBtn').disabled = true;
+  if (!email || !password) { $('addErr').textContent = 'Please fill in the address and password'; return; }
+  $('aBtn').disabled = true; $('aBtn').textContent = 'Connecting…';
   try {
     await api('api/accounts', { method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ email, password }) });
@@ -291,14 +411,14 @@ $('aBtn').addEventListener('click', async () => {
   } catch (e) {
     $('addErr').textContent = e.message;
   } finally {
-    $('aBtn').disabled = false;
+    $('aBtn').disabled = false; $('aBtn').textContent = '+ Add mailbox';
   }
 });
 
 $('refreshBtn').addEventListener('click', reload);
-setInterval(() => reload().catch(() => {}), 60_000); // автообновление раз в минуту
+setInterval(() => reload().catch(() => {}), 60_000); // auto-refresh every minute
 
-init().catch((e) => { $('msgs').innerHTML = `<div class="empty">⚠️ ${esc(e.message)}</div>`; });
+init().catch((e) => { $('msgs').innerHTML = `<div class="empty"><span class="big">⚠️</span>${esc(e.message)}</div>`; });
 </script>
 </body>
 </html>

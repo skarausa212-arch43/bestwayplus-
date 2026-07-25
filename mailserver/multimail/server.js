@@ -73,7 +73,7 @@ async function fetchInbox(acc, limit = 20) {
           const sender = m.envelope.from?.[0] || {};
           messages.push({
             uid: m.uid,
-            subject: m.envelope.subject || '(без темы)',
+            subject: m.envelope.subject || '(no subject)',
             from: sender.address || '',
             fromName: sender.name || '',
             date: m.internalDate,
@@ -107,14 +107,14 @@ app.post('/api/accounts', async (req, res) => {
   const s = getSession(req, res);
   const { email, password, host } = req.body || {};
   if (typeof email !== 'string' || !email.includes('@') || typeof password !== 'string' || !password) {
-    return res.status(400).json({ error: 'Укажите адрес и пароль.' });
+    return res.status(400).json({ error: 'Please provide an address and password.' });
   }
   if (s.accounts.length >= MAX_ACCOUNTS) {
-    return res.status(400).json({ error: `Не больше ${MAX_ACCOUNTS} ящиков.` });
+    return res.status(400).json({ error: `No more than ${MAX_ACCOUNTS} mailboxes.` });
   }
   const addr = email.toLowerCase().trim();
   if (s.accounts.some((a) => a.email === addr)) {
-    return res.status(409).json({ error: 'Этот ящик уже добавлен.' });
+    return res.status(409).json({ error: 'This mailbox is already added.' });
   }
   const acc = {
     id: crypto.randomBytes(6).toString('hex'),
@@ -125,7 +125,7 @@ app.post('/api/accounts', async (req, res) => {
   try {
     await withImap(acc, async () => {});
   } catch (e) {
-    return res.status(401).json({ error: 'Не удалось войти: проверьте адрес и пароль. (' + (e.responseText || e.message) + ')' });
+    return res.status(401).json({ error: 'Login failed: check the address and password. (' + (e.responseText || e.message) + ')' });
   }
   s.accounts.push(acc);
   res.json({ ok: true, id: acc.id, email: acc.email });
@@ -147,7 +147,7 @@ app.get('/api/inbox', async (req, res) => {
       const r = results[i];
       return r.status === 'fulfilled'
         ? { id: a.id, email: a.email, unseen: r.value.unseen, total: r.value.total, messages: r.value.messages }
-        : { id: a.id, email: a.email, error: r.reason?.responseText || r.reason?.message || 'ошибка' };
+        : { id: a.id, email: a.email, error: r.reason?.responseText || r.reason?.message || 'error' };
     }),
   });
 });
@@ -157,7 +157,7 @@ app.get('/api/message', async (req, res) => {
   const s = getSession(req, res);
   const acc = findAccount(s, req.query.account);
   const uid = parseInt(req.query.uid, 10);
-  if (!acc || !uid) return res.status(400).json({ error: 'Неверные параметры.' });
+  if (!acc || !uid) return res.status(400).json({ error: 'Invalid parameters.' });
   try {
     const result = await withImap(acc, async (client) => {
       const lock = await client.getMailboxLock('INBOX');
@@ -170,9 +170,9 @@ app.get('/api/message', async (req, res) => {
         lock.release();
       }
     });
-    if (!result) return res.status(404).json({ error: 'Письмо не найдено.' });
+    if (!result) return res.status(404).json({ error: 'Message not found.' });
     res.json({
-      subject: result.subject || '(без темы)',
+      subject: result.subject || '(no subject)',
       from: result.from?.text || '',
       to: result.to?.text || '',
       date: result.date,
@@ -190,8 +190,8 @@ app.post('/api/send', async (req, res) => {
   const s = getSession(req, res);
   const { account, to, subject, text } = req.body || {};
   const acc = findAccount(s, account);
-  if (!acc) return res.status(400).json({ error: 'Ящик не найден.' });
-  if (typeof to !== 'string' || !to.includes('@')) return res.status(400).json({ error: 'Укажите получателя.' });
+  if (!acc) return res.status(400).json({ error: 'Mailbox not found.' });
+  if (typeof to !== 'string' || !to.includes('@')) return res.status(400).json({ error: 'Please provide a recipient.' });
   try {
     const transport = nodemailer.createTransport({
       host: acc.host,
@@ -207,7 +207,7 @@ app.post('/api/send', async (req, res) => {
     });
     res.json({ ok: true });
   } catch (e) {
-    res.status(500).json({ error: 'Не удалось отправить: ' + (e.response || e.message) });
+    res.status(500).json({ error: 'Failed to send: ' + (e.response || e.message) });
   }
 });
 
