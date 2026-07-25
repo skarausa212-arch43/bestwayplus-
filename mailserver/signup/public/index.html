@@ -3,167 +3,238 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Viply — Premium Email</title>
+<title>Vilply — Your VIP email experience</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --bg: #09090b; --panel: rgba(255,255,255,.025); --line: rgba(255,255,255,.08);
-    --text: #ededf0; --muted: #6f6f78; --acc: #6d5df6; --acc2: #22d3ee;
+    --bg: #0B1020; --panel: #0F1224; --line: #2A2F45;
+    --text: #EEF1FA; --muted: #8B93B8; --dim: #5E6688;
+    --acc: #6366F1; --acc2: #8B5CF6; --blue: #60A5FA; --gold: #F2C97D;
   }
   body {
     min-height: 100vh; min-height: 100dvh;
-    display: flex; align-items: center; justify-content: center;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     background: var(--bg); color: var(--text);
-    overflow: hidden; -webkit-font-smoothing: antialiased;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
   }
+  /* ambient glows */
+  .glow { position: fixed; border-radius: 50%; filter: blur(150px); pointer-events: none; z-index: 0; }
+  .g1 { width: 700px; height: 700px; background: var(--acc); opacity: .16; top: -260px; right: -200px; animation: drift1 40s ease-in-out infinite; }
+  .g2 { width: 520px; height: 520px; background: var(--acc2); opacity: .10; bottom: -260px; left: -180px; animation: drift2 48s ease-in-out infinite; }
+  @keyframes drift1 { 50% { transform: translate(-100px, 90px); } }
+  @keyframes drift2 { 50% { transform: translate(120px, -70px); } }
 
-  /* soft ambient glow, barely there */
-  .glow { position: fixed; border-radius: 50%; filter: blur(140px); pointer-events: none; z-index: 0; }
-  .g1 { width: 640px; height: 640px; background: var(--acc); opacity: .13; top: -240px; left: -180px; animation: drift1 38s ease-in-out infinite; }
-  .g2 { width: 520px; height: 520px; background: var(--acc2); opacity: .07; bottom: -240px; right: -160px; animation: drift2 46s ease-in-out infinite; }
-  @keyframes drift1 { 50% { transform: translate(120px, 80px); } }
-  @keyframes drift2 { 50% { transform: translate(-140px, -60px); } }
-
-  /* faint grid, like a product page */
-  .grid {
-    position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .5;
-    background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
-                      linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
-    background-size: 56px 56px;
-    -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 100%);
-            mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 100%);
-  }
-
-  .card {
+  .page {
     position: relative; z-index: 1;
-    width: 100%; max-width: 400px; margin: 16px; padding: 40px 34px 32px;
-    border-radius: 18px;
-    background: var(--panel); border: 1px solid var(--line);
-    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    box-shadow: 0 24px 80px rgba(0,0,0,.55);
+    max-width: 1060px; margin: 0 auto; padding: 28px 22px 48px;
+  }
+
+  /* top bar with logo */
+  .nav { display: flex; align-items: center; gap: 10px; margin-bottom: 44px; }
+  .nav svg { width: 34px; height: 34px; }
+  .nav .name { font-size: 19px; font-weight: 800; letter-spacing: -.02em; }
+  .nav .name em {
+    font-style: normal;
+    background: linear-gradient(90deg, var(--acc), var(--acc2));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 52px; align-items: start; }
+
+  h1 { font-size: 46px; font-weight: 800; letter-spacing: -.03em; line-height: 1.08; }
+  h1 .grad {
+    background: linear-gradient(90deg, var(--acc2), var(--blue));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .sub { font-size: 19px; font-weight: 600; color: var(--text); margin: 18px 0 10px; }
+  .lead { color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 420px; }
+
+  .features { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 34px; max-width: 460px; }
+  .feat {
+    border: 1px solid var(--line); border-radius: 14px; padding: 16px 15px;
+    background: rgba(15,18,36,.55); backdrop-filter: blur(8px);
+    transition: border-color .2s, transform .2s;
+  }
+  .feat:hover { border-color: #3D477A; transform: translateY(-2px); }
+  .feat .ico { color: var(--acc2); margin-bottom: 9px; }
+  .feat .ico svg { width: 22px; height: 22px; }
+  .feat b { display: block; font-size: 13.5px; font-weight: 700; letter-spacing: -.01em; }
+  .feat span { display: block; font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.45; }
+
+  /* form card */
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 18px;
+    padding: 30px 28px 26px;
+    box-shadow: 0 30px 80px rgba(5,8,24,.6);
     animation: cardIn .6s cubic-bezier(.2,.8,.2,1) both;
   }
-  @keyframes cardIn { from { transform: translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes cardIn { from { transform: translateY(18px); opacity: 0; } to { transform: none; opacity: 1; } }
   .card.shake { animation: shake .4s ease; }
   @keyframes shake {
     0%,100% { transform: translateX(0); }
     25% { transform: translateX(-7px); } 50% { transform: translateX(6px); } 75% { transform: translateX(-3px); }
   }
+  .card h2 { font-size: 19px; font-weight: 800; letter-spacing: -.02em; }
+  .card .hint { color: var(--muted); font-size: 13px; margin: 5px 0 6px; }
 
-  .wordmark { font-size: 30px; font-weight: 750; letter-spacing: -.04em; }
-  .wordmark .d {
-    background: linear-gradient(90deg, var(--acc), var(--acc2));
-    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-  }
-  .tagline { color: var(--muted); font-size: 13.5px; margin: 6px 0 30px; letter-spacing: -.01em; }
-
-  label { display: block; font-size: 12.5px; font-weight: 550; margin: 16px 0 6px; color: #a0a0a8; }
-  label .opt { color: #55555c; font-weight: 450; }
+  label { display: block; font-size: 12.5px; font-weight: 600; margin: 15px 0 6px; color: #AEB6D9; }
+  label .opt { color: var(--dim); font-weight: 450; }
   .row { display: flex; align-items: center; gap: 10px; }
   .cols { display: grid; grid-template-columns: 1fr 1fr; column-gap: 10px; }
   input {
     width: 100%; padding: 11px 13px; font-size: 16px; color: var(--text);
-    background: #121216; border: 1px solid #232329; border-radius: 10px;
+    font-family: inherit;
+    background: #0D1228; border: 1px solid var(--line); border-radius: 10px;
     outline: none; transition: border-color .2s, box-shadow .2s;
   }
-  input::placeholder { color: #4c4c54; }
-  input:focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(109,93,246,.18); }
-  .domain { font-size: 15px; font-weight: 600; color: #a0a0a8; white-space: nowrap; }
+  input::placeholder { color: var(--dim); }
+  input:focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(99,102,241,.22); }
+  .domain { font-size: 15px; font-weight: 700; color: var(--acc2); white-space: nowrap; }
 
   button {
-    width: 100%; margin-top: 26px; padding: 12px; font-size: 14.5px; font-weight: 650;
-    color: #0a0a0c; background: #fff; border: 0; border-radius: 10px; cursor: pointer;
-    letter-spacing: -.01em;
-    transition: background .2s, transform .15s, box-shadow .25s;
-    box-shadow: 0 1px 0 rgba(255,255,255,.1) inset, 0 8px 28px rgba(0,0,0,.35);
+    width: 100%; margin-top: 24px; padding: 13px; font-size: 15px; font-weight: 700;
+    font-family: inherit; letter-spacing: -.01em;
+    color: #fff; border: 0; border-radius: 12px; cursor: pointer;
+    background: linear-gradient(135deg, var(--acc), var(--acc2));
+    box-shadow: 0 10px 30px rgba(99,102,241,.35);
+    transition: filter .2s, transform .15s, box-shadow .25s;
   }
-  button:hover { background: #e9e9ee; transform: translateY(-1px); }
+  button:hover { filter: brightness(1.12); transform: translateY(-1px); box-shadow: 0 14px 38px rgba(99,102,241,.45); }
   button:active { transform: translateY(0) scale(.985); }
   button:disabled { opacity: .55; cursor: default; }
+  button .arr { display: inline-block; transition: transform .2s; }
+  button:hover .arr { transform: translateX(4px); }
 
   .msg { margin-top: 14px; font-size: 13.5px; display: none; animation: msgIn .3s ease both; }
   @keyframes msgIn { from { transform: translateY(6px); opacity: 0; } to { transform: none; opacity: 1; } }
-  .msg.err { display: block; color: #f87171; }
+  .msg.err { display: block; color: #F87171; }
 
-  .perks {
-    margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line);
-    display: flex; justify-content: center; gap: 8px;
-    color: var(--muted); font-size: 12.5px; letter-spacing: -.01em;
-  }
-  .perks .sep { color: #38383f; }
-
-  /* success state */
-  .success { text-align: center; padding: 6px 0 2px; }
+  /* success */
+  .success { text-align: center; padding: 8px 0 4px; }
   .check {
-    width: 64px; height: 64px; margin: 4px auto 22px; border-radius: 50%; position: relative;
+    width: 68px; height: 68px; margin: 6px auto 22px; border-radius: 50%; position: relative;
     background: linear-gradient(135deg, var(--acc), var(--acc2));
+    box-shadow: 0 14px 40px rgba(99,102,241,.4);
     animation: pop .5s cubic-bezier(.2,1.3,.4,1) both;
   }
   @keyframes pop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   .check::after {
-    content: ''; position: absolute; left: 23px; top: 16px; width: 15px; height: 28px;
+    content: ''; position: absolute; left: 25px; top: 17px; width: 15px; height: 30px;
     border: solid #fff; border-width: 0 4px 4px 0; border-radius: 2px;
     transform-origin: center; transform: rotate(45deg) scale(0);
     animation: tick .3s ease .35s forwards;
   }
   @keyframes tick { to { transform: rotate(45deg) scale(1); } }
-  .success h2 { font-size: 20px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 8px; }
+  .success h2 { font-size: 21px; margin-bottom: 8px; }
   .success .email {
-    display: inline-block; margin: 6px 0 2px; padding: 8px 14px;
+    display: inline-block; margin: 6px 0 2px; padding: 9px 15px;
     font-size: 15px; font-weight: 600; word-break: break-all;
-    background: #121216; border: 1px solid #232329; border-radius: 10px;
+    background: #0D1228; border: 1px solid var(--line); border-radius: 10px;
   }
   .success .note { color: var(--muted); font-size: 13px; margin-top: 10px; }
   .success a {
-    display: block; margin-top: 22px; padding: 12px; border-radius: 10px;
-    color: #0a0a0c; background: #fff; text-decoration: none; font-weight: 650; font-size: 14.5px;
-    transition: background .2s, transform .15s;
+    display: block; margin-top: 22px; padding: 13px; border-radius: 12px;
+    color: #fff; background: linear-gradient(135deg, var(--acc), var(--acc2));
+    text-decoration: none; font-weight: 700; font-size: 15px;
+    box-shadow: 0 10px 30px rgba(99,102,241,.35);
+    transition: filter .2s, transform .15s;
   }
-  .success a:hover { background: #e9e9ee; transform: translateY(-1px); }
+  .success a:hover { filter: brightness(1.12); transform: translateY(-1px); }
 
-  @media (max-width: 480px) {
-    body { align-items: flex-start; overflow-y: auto; }
-    .card { margin: 28px 14px calc(28px + env(safe-area-inset-bottom, 0px)); padding: 32px 24px 26px; }
+  @media (max-width: 880px) {
+    .page { padding: 20px 16px calc(40px + env(safe-area-inset-bottom, 0px)); }
+    .nav { margin-bottom: 30px; }
+    .hero { grid-template-columns: 1fr; gap: 30px; }
+    h1 { font-size: 34px; }
+    .sub { font-size: 17px; margin-top: 14px; }
+    .features { grid-template-columns: 1fr 1fr; margin-top: 4px; max-width: none; }
+    .hero .left { display: contents; }
+    .hero .headline { order: 0; }
+    .card { order: 1; }
+    .features { order: 2; }
   }
 </style>
 </head>
 <body>
-<div class="glow g1"></div><div class="glow g2"></div><div class="grid"></div>
+<div class="glow g1"></div><div class="glow g2"></div>
 
-<div class="card" id="card">
-  <div class="wordmark">viply<span class="d">.</span></div>
-  <div class="tagline">Premium email. Zero noise.</div>
-  <form id="f">
-    <div class="cols">
-      <div>
-        <label for="fn">First name</label>
-        <input id="fn" name="firstName" autocomplete="given-name" placeholder="John" maxlength="40" required>
+<div class="page">
+  <div class="nav">
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <defs><linearGradient id="vg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#6366F1"/><stop offset="1" stop-color="#8B5CF6"/>
+      </linearGradient></defs>
+      <rect x="3" y="3" width="42" height="42" rx="11" fill="url(#vg)"/>
+      <path d="M13 17l11 13 11-13" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M39 4.5l1.5 3.1 3.1 1.5-3.1 1.5L39 13.7l-1.5-3.1-3.1-1.5 3.1-1.5z" fill="#F2C97D"/>
+    </svg>
+    <div class="name">Vilply<em>.online</em></div>
+  </div>
+
+  <div class="hero">
+    <div class="left">
+      <div class="headline">
+        <h1>Your VIP<br><span class="grad">email experience</span></h1>
+        <div class="sub">Secure. Fast. Private.</div>
+        <p class="lead">Vilply.online — premium email for people who value privacy and freedom.</p>
       </div>
-      <div>
-        <label for="ln">Last name</label>
-        <input id="ln" name="lastName" autocomplete="family-name" placeholder="Doe" maxlength="40" required>
+      <div class="features">
+        <div class="feat">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6z"/><path d="M9.5 12l2 2 3.5-4"/></svg></div>
+          <b>Top-level security</b><span>Your data stays yours</span>
+        </div>
+        <div class="feat">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L5 13h5l-1 9 8-11h-5z"/></svg></div>
+          <b>Blazing fast</b><span>Instant delivery worldwide</span>
+        </div>
+        <div class="feat">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 118 0v3"/></svg></div>
+          <b>Private by design</b><span>No tracking. No ads.</span>
+        </div>
+        <div class="feat">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l-1.5-9 5 3.5L12 5l4.5 6.5 5-3.5L20 17z"/><path d="M5 20.5h14"/></svg></div>
+          <b>VIP experience</b><span>Premium features included</span>
+        </div>
       </div>
     </div>
-    <label for="u">Your address</label>
-    <div class="row">
-      <input id="u" name="username" autocomplete="username" placeholder="john" required>
-      <span class="domain" id="dom">@…</span>
+
+    <div class="card" id="card">
+      <h2>Create your account</h2>
+      <div class="hint">Free VIP address in 30 seconds</div>
+      <form id="f">
+        <div class="cols">
+          <div>
+            <label for="fn">First name</label>
+            <input id="fn" name="firstName" autocomplete="given-name" placeholder="John" maxlength="40" required>
+          </div>
+          <div>
+            <label for="ln">Last name</label>
+            <input id="ln" name="lastName" autocomplete="family-name" placeholder="Doe" maxlength="40" required>
+          </div>
+        </div>
+        <label for="u">Your address</label>
+        <div class="row">
+          <input id="u" name="username" autocomplete="username" placeholder="john" required>
+          <span class="domain" id="dom">@…</span>
+        </div>
+        <label for="p">Password</label>
+        <input id="p" name="password" type="password" autocomplete="new-password" minlength="8" placeholder="8+ characters" required>
+        <label for="p2">Repeat password</label>
+        <input id="p2" type="password" autocomplete="new-password" minlength="8" required>
+        <label for="rec">Recovery email <span class="opt">— optional, for password reset</span></label>
+        <input id="rec" name="recovery" type="email" autocomplete="email" placeholder="you@example.com">
+        <div id="inviteBlock" style="display:none">
+          <label for="inv">Invite code</label>
+          <input id="inv" name="invite" autocomplete="off">
+        </div>
+        <button id="btn" type="submit">Create your account <span class="arr">→</span></button>
+        <div class="msg" id="msg"></div>
+      </form>
     </div>
-    <label for="p">Password</label>
-    <input id="p" name="password" type="password" autocomplete="new-password" minlength="8" placeholder="8+ characters" required>
-    <label for="p2">Repeat password</label>
-    <input id="p2" type="password" autocomplete="new-password" minlength="8" required>
-    <label for="rec">Recovery email <span class="opt">— optional, for password reset</span></label>
-    <input id="rec" name="recovery" type="email" autocomplete="email" placeholder="you@example.com">
-    <div id="inviteBlock" style="display:none">
-      <label for="inv">Invite code</label>
-      <input id="inv" name="invite" autocomplete="off">
-    </div>
-    <button id="btn" type="submit">Create account</button>
-    <div class="msg" id="msg"></div>
-  </form>
-  <div class="perks">Instant setup <span class="sep">·</span> Private <span class="sep">·</span> Ad-free</div>
+  </div>
 </div>
 
 <script>
@@ -202,13 +273,13 @@ f.addEventListener('submit', async (e) => {
     });
     const data = await r.json();
     if (r.ok) {
-      const fn = document.getElementById('fn').value.trim();
+      const fn = document.getElementById('fn').value.trim().replace(/[<>&"]/g, '');
       card.innerHTML = `
         <div class="success">
           <div class="check"></div>
-          <h2>Welcome, ${fn.replace(/[<>&"]/g, '')}!</h2>
+          <h2>Welcome, ${fn}!</h2>
           <div class="email">${data.email}</div>
-          <div class="note">Sign in anywhere with this address and your password.</div>
+          <div class="note">Your VIP email experience starts now.</div>
           ${data.webmail ? `<a href="${data.webmail}">Open inbox</a>` : ''}
         </div>`;
     } else {
@@ -217,7 +288,7 @@ f.addEventListener('submit', async (e) => {
   } catch {
     fail('Server unavailable, please try again later.');
   } finally {
-    btn.disabled = false; btn.textContent = 'Create account';
+    btn.disabled = false; btn.innerHTML = 'Create your account <span class="arr">→</span>';
   }
 });
 </script>
