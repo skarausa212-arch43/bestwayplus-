@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MultiMail — all your inboxes on one screen</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    height: 100vh; display: flex; color: #e8eef5; overflow: hidden;
+    height: 100vh; height: 100dvh; /* dvh: честная высота на мобильных, не прыгает от адресной строки */
+    display: flex; color: #e8eef5; overflow: hidden;
     background: #0d1420;
   }
   /* aurora blobs drifting behind everything */
@@ -182,7 +183,12 @@
   /* ============ mobile: single-column layout ============ */
   .menuBtn, .backBtn { display: none; }
   @media (max-width: 900px) {
-    body { overflow: hidden; }
+    /* фиксируем страницу целиком: iOS Safari не сможет «утащить» её под статус-бар после клавиатуры */
+    body { position: fixed; inset: 0; width: 100%; overflow: hidden; }
+    aside h1 { padding-top: calc(18px + env(safe-area-inset-top, 0px)); }
+    .list-head { padding-top: calc(13px + env(safe-area-inset-top, 0px)); }
+    .addbox { padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+    .reply { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
     /* sidebar becomes a slide-in drawer */
     aside {
       position: fixed; inset: 0 auto 0 0; width: min(310px, 85vw); z-index: 20;
@@ -212,7 +218,7 @@
       display: inline-block; border: 0; border-radius: 8px; padding: 7px 12px; margin-bottom: 10px;
       cursor: pointer; font-size: 14px; font-weight: 700; color: #fff; background: rgba(255,255,255,.12);
     }
-    .view-head { padding: 12px 16px; }
+    .view-head { padding: 12px 16px; padding-top: calc(12px + env(safe-area-inset-top, 0px)); }
     .view-head h2 { font-size: 16px; }
     .mwin { padding: 18px; border-radius: 14px; }
     .mwin textarea { height: 110px; }
@@ -475,6 +481,15 @@ $('aBtn').addEventListener('click', async () => {
 
 $('refreshBtn').addEventListener('click', reload);
 setInterval(() => reload().catch(() => {}), 60_000); // auto-refresh every minute
+
+// iOS Safari: после закрытия клавиатуры страница может остаться сдвинутой — возвращаем на место
+document.addEventListener('focusout', () => setTimeout(() => window.scrollTo(0, 0), 60));
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => {
+    const tag = document.activeElement?.tagName || '';
+    if (!/INPUT|TEXTAREA|SELECT/.test(tag)) window.scrollTo(0, 0);
+  });
+}
 
 init().catch((e) => { $('msgs').innerHTML = `<div class="empty"><span class="big">⚠️</span>${esc(e.message)}</div>`; });
 </script>
