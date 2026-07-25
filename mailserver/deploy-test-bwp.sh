@@ -84,7 +84,9 @@ block = '''\tredir /mail /mail/ 308
 \tredir /mail/webmail /mail/webmail/ 308
 \tredir /mail/multi /mail/multi/ 308
 \thandle_path /mail/webmail/* {
-\t\treverse_proxy 127.0.0.1:8080
+\t\treverse_proxy 127.0.0.1:8080 {
+\t\t\theader_down Location "^/(.*)" "/mail/webmail/$1"
+\t\t}
 \t}
 \thandle_path /mail/multi/* {
 \t\treverse_proxy 127.0.0.1:8082

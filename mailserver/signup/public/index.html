@@ -121,6 +121,15 @@
     box-shadow: 0 8px 24px rgba(53,196,111,.4); transition: transform .15s, box-shadow .3s;
   }
   .success a:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(53,196,111,.6); }
+
+  @media (max-width: 480px) {
+    body { align-items: flex-start; overflow-y: auto; }
+    .card { margin: 24px 12px; padding: 26px 20px; animation: cardIn .7s cubic-bezier(.2,.9,.3,1.2) both; }
+    .logo { font-size: 36px; }
+    h1 { font-size: 21px; }
+    input { font-size: 16px; } /* iOS won't zoom-jump on focus at 16px+ */
+    button { padding: 13px; }
+  }
 </style>
 </head>
 <body>

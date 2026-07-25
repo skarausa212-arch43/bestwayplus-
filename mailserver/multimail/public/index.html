@@ -173,16 +173,61 @@
   ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.14); border-radius: 5px; }
   ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.24); }
 
-  @media (max-width: 900px) {
+  @media (min-width: 901px) and (max-width: 1100px) {
     aside { width: 225px; min-width: 225px; }
     .list { width: 305px; }
+  }
+
+  /* ============ mobile: single-column layout ============ */
+  .menuBtn, .backBtn { display: none; }
+  @media (max-width: 900px) {
+    body { overflow: hidden; }
+    /* sidebar becomes a slide-in drawer */
+    aside {
+      position: fixed; inset: 0 auto 0 0; width: min(310px, 85vw); z-index: 20;
+      transform: translateX(-105%); transition: transform .3s cubic-bezier(.2,.9,.3,1);
+      box-shadow: 24px 0 60px rgba(0,0,0,.5);
+    }
+    aside.open { transform: translateX(0); }
+    .drawer-backdrop {
+      position: fixed; inset: 0; z-index: 19; background: rgba(5,10,20,.55);
+      opacity: 0; pointer-events: none; transition: opacity .3s;
+    }
+    .drawer-backdrop.show { opacity: 1; pointer-events: auto; }
+
+    .list { width: 100%; min-width: 0; border-right: 0; }
+    .menuBtn {
+      display: inline-block; border: 0; border-radius: 8px; padding: 8px 11px; cursor: pointer;
+      font-size: 16px; color: #fff; background: rgba(255,255,255,.1); flex: none;
+    }
+
+    /* reading pane slides over the list */
+    .view {
+      position: fixed; inset: 0; z-index: 15; background: #101a2c;
+      transform: translateX(105%); transition: transform .3s cubic-bezier(.2,.9,.3,1);
+    }
+    .view.open { transform: translateX(0); }
+    .backBtn {
+      display: inline-block; border: 0; border-radius: 8px; padding: 7px 12px; margin-bottom: 10px;
+      cursor: pointer; font-size: 14px; font-weight: 700; color: #fff; background: rgba(255,255,255,.12);
+    }
+    .view-head { padding: 12px 16px; }
+    .view-head h2 { font-size: 16px; }
+    .mwin { padding: 18px; border-radius: 14px; }
+    .mwin textarea { height: 110px; }
+    .m { padding: 12px 14px; }
+    .m:hover { transform: none; }
+    .blob { opacity: .25; }
+    /* 16px+ keeps iOS Safari from zoom-jumping into focused fields */
+    .addbox input, .mwin input, .mwin select, .mwin textarea { font-size: 16px; }
   }
 </style>
 </head>
 <body>
 <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+<div class="drawer-backdrop" id="backdrop"></div>
 
-<aside>
+<aside id="sidebar">
   <h1>📬 <span class="mm">MultiMail</span></h1>
   <div class="acc-list" id="accList"></div>
   <div class="addbox">
@@ -197,6 +242,7 @@
 <main>
   <div class="list">
     <div class="list-head">
+      <button class="menuBtn" id="menuBtn" title="Mailboxes">☰</button>
       <b id="listTitle">All inboxes</b>
       <div style="display:flex; gap:7px">
         <button class="btn" id="composeBtn">✏️ Compose</button>
@@ -297,7 +343,7 @@ function renderSidebar() {
   el.querySelectorAll('.acc').forEach((n) => n.addEventListener('click', (e) => {
     if (e.target.dataset.del !== undefined && e.target.dataset.del !== '') return;
     filter = n.dataset.id || null;
-    renderSidebar(); renderList();
+    renderSidebar(); renderList(); closeDrawer();
   }));
   el.querySelectorAll('.del').forEach((n) => n.addEventListener('click', async (e) => {
     e.stopPropagation();
@@ -343,12 +389,13 @@ async function openMessage(accId, uid) {
   selected = { account: accId, uid };
   renderList();
   const v = $('view');
+  v.classList.add('open');
   v.innerHTML = '<div class="placeholder"><div class="dots"><span>●</span><span>●</span><span>●</span></div>Loading message…</div>';
   try {
     const m = await api(`api/message?account=${accId}&uid=${uid}`);
     const acc = accounts.find((a) => a.id === accId);
     v.innerHTML = `
-      <div class="view-head"><h2>${esc(m.subject)}</h2>
+      <div class="view-head"><button class="backBtn" id="backBtn">← Inbox</button><h2>${esc(m.subject)}</h2>
         <div class="meta">From: ${esc(m.from)}<br>To: ${esc(m.to)} · ${new Date(m.date).toLocaleString('en-GB')}
         ${m.attachments.length ? '<br>📎 ' + m.attachments.map((a) => esc(a.filename)).join(', ') : ''}</div></div>
       <div class="view-body" id="vb"></div>
@@ -365,12 +412,22 @@ async function openMessage(accId, uid) {
     $('replyBtn').addEventListener('click', () => {
       openCompose(accId, m.from.match(/<(.+)>/)?.[1] || m.from, 'Re: ' + m.subject);
     });
+    $('backBtn').addEventListener('click', () => { v.classList.remove('open'); selected = null; renderList(); });
     const cached = acc?.messages?.find((x) => x.uid === uid);
     if (cached && !cached.seen) { cached.seen = true; acc.unseen = Math.max(0, acc.unseen - 1); renderSidebar(); renderList(); }
   } catch (e) {
-    v.innerHTML = `<div class="placeholder"><span class="big">⚠️</span>${esc(e.message)}</div>`;
+    v.innerHTML = `<div class="placeholder"><button class="backBtn" id="backBtn2">← Inbox</button><span class="big">⚠️</span>${esc(e.message)}</div>`;
+    $('backBtn2').addEventListener('click', () => { v.classList.remove('open'); selected = null; renderList(); });
   }
 }
+
+// --- mobile drawer ---
+function closeDrawer() { $('sidebar').classList.remove('open'); $('backdrop').classList.remove('show'); }
+$('menuBtn').addEventListener('click', () => {
+  $('sidebar').classList.toggle('open');
+  $('backdrop').classList.toggle('show', $('sidebar').classList.contains('open'));
+});
+$('backdrop').addEventListener('click', closeDrawer);
 
 // --- compose ---
 function openCompose(fromId, to = '', subj = '') {
