@@ -1,0 +1,216 @@
+// Мульти-почта: до 10 ящиков на одной странице.
+// Браузер не умеет IMAP, поэтому этот сервис — прокси: хранит добавленные
+// аккаунты в серверной сессии (по cookie) и по запросу забирает письма по IMAP.
+
+const express = require('express');
+const crypto = require('crypto');
+const path = require('path');
+const { ImapFlow } = require('imapflow');
+const { simpleParser } = require('mailparser');
+const nodemailer = require('nodemailer');
+
+const MAIL_HOST = process.env.MAIL_HOSTNAME;
+const PORT = process.env.PORT || 8082;
+const MAX_ACCOUNTS = 10;
+const SESSION_TTL = 12 * 3600_000; // 12 часов неактивности
+
+if (!MAIL_HOST) {
+  console.error('MAIL_HOSTNAME is not set');
+  process.exit(1);
+}
+
+// token -> { accounts: [{id, email, password, host}], touched }
+const sessions = new Map();
+setInterval(() => {
+  const now = Date.now();
+  for (const [t, s] of sessions) if (now - s.touched > SESSION_TTL) sessions.delete(t);
+}, 600_000).unref();
+
+function getSession(req, res) {
+  const cookies = Object.fromEntries(
+    (req.headers.cookie || '').split(';').map((c) => c.trim().split('=')).filter((p) => p.length === 2)
+  );
+  let token = cookies.mm;
+  if (!token || !sessions.has(token)) {
+    token = crypto.randomBytes(24).toString('hex');
+    sessions.set(token, { accounts: [], touched: Date.now() });
+    res.setHeader('Set-Cookie', `mm=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_TTL / 1000}`);
+  }
+  const s = sessions.get(token);
+  s.touched = Date.now();
+  return s;
+}
+
+function findAccount(session, id) {
+  return session.accounts.find((a) => a.id === id);
+}
+
+async function withImap(acc, fn) {
+  const client = new ImapFlow({
+    host: acc.host,
+    port: 993,
+    secure: true,
+    auth: { user: acc.email, pass: acc.password },
+    logger: false,
+  });
+  await client.connect();
+  try {
+    return await fn(client);
+  } finally {
+    await client.logout().catch(() => {});
+  }
+}
+
+async function fetchInbox(acc, limit = 20) {
+  return withImap(acc, async (client) => {
+    const lock = await client.getMailboxLock('INBOX');
+    try {
+      const status = await client.status('INBOX', { messages: true, unseen: true });
+      const messages = [];
+      if (status.messages > 0) {
+        const from = Math.max(1, status.messages - limit + 1);
+        for await (const m of client.fetch(`${from}:*`, { uid: true, envelope: true, flags: true, internalDate: true })) {
+          const sender = m.envelope.from?.[0] || {};
+          messages.push({
+            uid: m.uid,
+            subject: m.envelope.subject || '(без темы)',
+            from: sender.address || '',
+            fromName: sender.name || '',
+            date: m.internalDate,
+            seen: m.flags.has('\\Seen'),
+          });
+        }
+      }
+      messages.sort((a, b) => new Date(b.date) - new Date(a.date));
+      return { unseen: status.unseen, total: status.messages, messages };
+    } finally {
+      lock.release();
+    }
+  });
+}
+
+const app = express();
+app.use(express.json({ limit: '200kb' }));
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/api/info', (req, res) => {
+  const s = getSession(req, res);
+  res.json({
+    host: MAIL_HOST,
+    maxAccounts: MAX_ACCOUNTS,
+    accounts: s.accounts.map((a) => ({ id: a.id, email: a.email })),
+  });
+});
+
+// Добавить ящик: проверяем логин по IMAP, только потом сохраняем
+app.post('/api/accounts', async (req, res) => {
+  const s = getSession(req, res);
+  const { email, password, host } = req.body || {};
+  if (typeof email !== 'string' || !email.includes('@') || typeof password !== 'string' || !password) {
+    return res.status(400).json({ error: 'Укажите адрес и пароль.' });
+  }
+  if (s.accounts.length >= MAX_ACCOUNTS) {
+    return res.status(400).json({ error: `Не больше ${MAX_ACCOUNTS} ящиков.` });
+  }
+  const addr = email.toLowerCase().trim();
+  if (s.accounts.some((a) => a.email === addr)) {
+    return res.status(409).json({ error: 'Этот ящик уже добавлен.' });
+  }
+  const acc = {
+    id: crypto.randomBytes(6).toString('hex'),
+    email: addr,
+    password,
+    host: (typeof host === 'string' && host.trim()) || MAIL_HOST,
+  };
+  try {
+    await withImap(acc, async () => {});
+  } catch (e) {
+    return res.status(401).json({ error: 'Не удалось войти: проверьте адрес и пароль. (' + (e.responseText || e.message) + ')' });
+  }
+  s.accounts.push(acc);
+  res.json({ ok: true, id: acc.id, email: acc.email });
+});
+
+app.delete('/api/accounts/:id', (req, res) => {
+  const s = getSession(req, res);
+  const before = s.accounts.length;
+  s.accounts = s.accounts.filter((a) => a.id !== req.params.id);
+  res.json({ ok: s.accounts.length < before });
+});
+
+// Все входящие всех ящиков одним запросом
+app.get('/api/inbox', async (req, res) => {
+  const s = getSession(req, res);
+  const results = await Promise.allSettled(s.accounts.map((a) => fetchInbox(a)));
+  res.json({
+    accounts: s.accounts.map((a, i) => {
+      const r = results[i];
+      return r.status === 'fulfilled'
+        ? { id: a.id, email: a.email, unseen: r.value.unseen, total: r.value.total, messages: r.value.messages }
+        : { id: a.id, email: a.email, error: r.reason?.responseText || r.reason?.message || 'ошибка' };
+    }),
+  });
+});
+
+// Полный текст письма (и пометить прочитанным)
+app.get('/api/message', async (req, res) => {
+  const s = getSession(req, res);
+  const acc = findAccount(s, req.query.account);
+  const uid = parseInt(req.query.uid, 10);
+  if (!acc || !uid) return res.status(400).json({ error: 'Неверные параметры.' });
+  try {
+    const result = await withImap(acc, async (client) => {
+      const lock = await client.getMailboxLock('INBOX');
+      try {
+        const msg = await client.fetchOne(String(uid), { source: true }, { uid: true });
+        if (!msg || !msg.source) return null;
+        await client.messageFlagsAdd(String(uid), ['\\Seen'], { uid: true }).catch(() => {});
+        return simpleParser(msg.source);
+      } finally {
+        lock.release();
+      }
+    });
+    if (!result) return res.status(404).json({ error: 'Письмо не найдено.' });
+    res.json({
+      subject: result.subject || '(без темы)',
+      from: result.from?.text || '',
+      to: result.to?.text || '',
+      date: result.date,
+      html: result.html || null,
+      text: result.text || '',
+      attachments: (result.attachments || []).map((a) => ({ filename: a.filename, size: a.size })),
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.responseText || e.message });
+  }
+});
+
+// Отправка письма от имени любого добавленного ящика
+app.post('/api/send', async (req, res) => {
+  const s = getSession(req, res);
+  const { account, to, subject, text } = req.body || {};
+  const acc = findAccount(s, account);
+  if (!acc) return res.status(400).json({ error: 'Ящик не найден.' });
+  if (typeof to !== 'string' || !to.includes('@')) return res.status(400).json({ error: 'Укажите получателя.' });
+  try {
+    const transport = nodemailer.createTransport({
+      host: acc.host,
+      port: 465,
+      secure: true,
+      auth: { user: acc.email, pass: acc.password },
+    });
+    await transport.sendMail({
+      from: acc.email,
+      to,
+      subject: String(subject || ''),
+      text: String(text || ''),
+    });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Не удалось отправить: ' + (e.response || e.message) });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`multimail listening on :${PORT}, IMAP host ${MAIL_HOST}`);
+});

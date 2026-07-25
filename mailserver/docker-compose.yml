@@ -50,6 +50,17 @@ services:
       - ./docker-data/roundcube/db:/var/roundcube/db
     restart: always
 
+  multimail:
+    build: ./multimail
+    container_name: multimail
+    depends_on:
+      - mailserver
+    ports:
+      - "127.0.0.1:8082:8082"
+    environment:
+      - MAIL_HOSTNAME=${MAIL_HOSTNAME}
+    restart: always
+
   signup:
     build: ./signup
     container_name: mail-signup

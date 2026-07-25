@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Мульти-почта — все ящики на одном экране</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #eef2f6; color: #1a2733; height: 100vh; display: flex; }
+
+  /* Сайдбар */
+  aside { width: 280px; min-width: 280px; background: #1e3a5f; color: #dbe6f0; display: flex; flex-direction: column; }
+  aside h1 { font-size: 17px; margin: 0; padding: 16px; border-bottom: 1px solid rgba(255,255,255,.12); }
+  .acc-list { flex: 1; overflow-y: auto; padding: 8px; }
+  .acc { display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 8px; cursor: pointer; font-size: 13.5px; }
+  .acc:hover { background: rgba(255,255,255,.08); }
+  .acc.active { background: rgba(255,255,255,.16); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .acc .em { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .badge { background: #e35d5d; color: #fff; border-radius: 10px; font-size: 11px; padding: 1px 7px; font-weight: 700; }
+  .badge.zero { background: rgba(255,255,255,.15); }
+  .acc .del { opacity: 0; border: 0; background: none; color: #f0b5b5; cursor: pointer; font-size: 15px; }
+  .acc:hover .del { opacity: 1; }
+  .acc.err .em { color: #f0b5b5; }
+  .addbox { padding: 12px; border-top: 1px solid rgba(255,255,255,.12); }
+  .addbox input { width: 100%; margin-bottom: 6px; padding: 8px 10px; border: 0; border-radius: 6px; font-size: 13px; }
+  .addbox button { width: 100%; padding: 8px; border: 0; border-radius: 6px; background: #4a9eda; color: #fff; font-weight: 600; cursor: pointer; }
+  .addbox label { font-size: 12px; display: flex; gap: 6px; align-items: center; margin: 6px 0; color: #b9c9d8; }
+  .addbox .e { color: #ffb3b3; font-size: 12px; min-height: 14px; }
+
+  /* Список писем */
+  main { flex: 1; display: flex; min-width: 0; }
+  .list { width: 400px; min-width: 300px; border-right: 1px solid #d5dee6; background: #fff; display: flex; flex-direction: column; }
+  .list-head { padding: 12px 14px; border-bottom: 1px solid #e3eaf0; display: flex; justify-content: space-between; align-items: center; }
+  .list-head b { font-size: 15px; }
+  .list-head button { border: 0; background: #eef2f6; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+  .msgs { flex: 1; overflow-y: auto; }
+  .m { padding: 10px 14px; border-bottom: 1px solid #eef2f6; cursor: pointer; }
+  .m:hover { background: #f4f8fb; }
+  .m.sel { background: #e8f1f8; }
+  .m .top { display: flex; gap: 8px; align-items: center; font-size: 12px; color: #5b6b7a; }
+  .m .top .dot { width: 8px; height: 8px; }
+  .m .top .d { margin-left: auto; white-space: nowrap; }
+  .m .sub { font-size: 14px; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .m.unread .sub { font-weight: 700; }
+  .empty { padding: 30px; text-align: center; color: #8a99a8; font-size: 14px; }
+
+  /* Просмотр письма */
+  .view { flex: 1; display: flex; flex-direction: column; background: #fff; min-width: 0; }
+  .view-head { padding: 14px 18px; border-bottom: 1px solid #e3eaf0; }
+  .view-head h2 { margin: 0 0 6px; font-size: 17px; }
+  .view-head .meta { font-size: 13px; color: #5b6b7a; }
+  .view-body { flex: 1; overflow: hidden; }
+  .view-body iframe { width: 100%; height: 100%; border: 0; }
+  .view-body pre { padding: 18px; white-space: pre-wrap; font-family: inherit; font-size: 14px; margin: 0; overflow-y: auto; height: 100%; }
+  .placeholder { display: flex; align-items: center; justify-content: center; height: 100%; color: #8a99a8; }
+  .reply { padding: 10px 18px; border-top: 1px solid #e3eaf0; }
+  .reply button, .compose-btn { border: 0; background: #2d6a8f; color: #fff; border-radius: 6px; padding: 8px 14px; cursor: pointer; font-weight: 600; }
+
+  /* Окно написания письма */
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: center; justify-content: center; }
+  .modal.open { display: flex; }
+  .mwin { background: #fff; border-radius: 12px; width: 520px; max-width: 94vw; padding: 20px; }
+  .mwin h3 { margin: 0 0 12px; }
+  .mwin select, .mwin input, .mwin textarea { width: 100%; margin-bottom: 8px; padding: 8px 10px; border: 1px solid #c8d2dc; border-radius: 6px; font-size: 14px; font-family: inherit; }
+  .mwin textarea { height: 140px; resize: vertical; }
+  .mwin .row { display: flex; gap: 8px; justify-content: flex-end; }
+  .mwin .row .ghost { background: #eef2f6; color: #1a2733; }
+  .mwin .st { font-size: 13px; min-height: 16px; margin-bottom: 6px; }
+  .mwin .st.ok { color: #14632e; } .mwin .st.err { color: #9b1c1c; }
+
+  @media (max-width: 900px) {
+    aside { width: 220px; min-width: 220px; }
+    .list { width: 300px; }
+  }
+</style>
+</head>
+<body>
+<aside>
+  <h1>📬 Мульти-почта</h1>
+  <div class="acc-list" id="accList"></div>
+  <div class="addbox">
+    <div class="e" id="addErr"></div>
+    <input id="aEmail" placeholder="адрес@домен" autocomplete="off">
+    <input id="aPass" type="password" placeholder="пароль" autocomplete="off">
+    <label><input type="checkbox" id="aRemember" checked> запомнить в этом браузере</label>
+    <button id="aBtn">+ Добавить ящик</button>
+  </div>
+</aside>
+
+<main>
+  <div class="list">
+    <div class="list-head">
+      <b id="listTitle">Все ящики</b>
+      <div>
+        <button class="compose-btn" id="composeBtn">Написать</button>
+        <button id="refreshBtn" title="Обновить">⟳</button>
+      </div>
+    </div>
+    <div class="msgs" id="msgs"><div class="empty">Добавьте ящики слева</div></div>
+  </div>
+  <div class="view" id="view"><div class="placeholder">Выберите письмо</div></div>
+</main>
+
+<div class="modal" id="modal">
+  <div class="mwin">
+    <h3>Новое письмо</h3>
+    <select id="cFrom"></select>
+    <input id="cTo" placeholder="Кому (адрес получателя)">
+    <input id="cSubj" placeholder="Тема">
+    <textarea id="cText" placeholder="Текст письма"></textarea>
+    <div class="st" id="cSt"></div>
+    <div class="row">
+      <button class="compose-btn ghost" id="cCancel">Отмена</button>
+      <button class="compose-btn" id="cSend">Отправить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORS = ['#4a9eda','#5dbb63','#e3a04a','#c05de3','#e35d5d','#3fc1c9','#e35da8','#a3b830','#8a6ee3','#5d8fe3'];
+let accounts = [];      // [{id, email, color, unseen, error, messages}]
+let filter = null;      // id ящика или null = все
+let selected = null;    // {account, uid}
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// --- сохранённые в браузере ящики ---
+const saved = () => JSON.parse(localStorage.getItem('mmAccounts') || '[]');
+const saveAcc = (email, password) => {
+  const list = saved().filter((a) => a.email !== email);
+  list.push({ email, p: btoa(unescape(encodeURIComponent(password))) });
+  localStorage.setItem('mmAccounts', JSON.stringify(list));
+};
+const forgetAcc = (email) => {
+  localStorage.setItem('mmAccounts', JSON.stringify(saved().filter((a) => a.email !== email)));
+};
+
+async function api(url, opts) {
+  const r = await fetch(url, opts);
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || 'Ошибка сервера');
+  return data;
+}
+
+async function init() {
+  const info = await api('api/info');
+  // сессия на сервере пустая, но в браузере есть сохранённые — восстановим
+  if (info.accounts.length === 0 && saved().length) {
+    for (const a of saved()) {
+      try {
+        await api('api/accounts', { method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ email: a.email, password: decodeURIComponent(escape(atob(a.p))) }) });
+      } catch { forgetAcc(a.email); }
+    }
+  }
+  await reload();
+}
+
+async function reload() {
+  const data = await api('api/inbox');
+  accounts = data.accounts.map((a, i) => ({ ...a, color: COLORS[i % COLORS.length] }));
+  renderSidebar();
+  renderList();
+}
+
+function renderSidebar() {
+  const el = $('accList');
+  const totalUnseen = accounts.reduce((n, a) => n + (a.unseen || 0), 0);
+  let html = `<div class="acc ${filter===null?'active':''}" data-id="">
+    <span class="dot" style="background:#fff"></span><span class="em">Все ящики</span>
+    <span class="badge ${totalUnseen?'':'zero'}">${totalUnseen}</span></div>`;
+  for (const a of accounts) {
+    html += `<div class="acc ${filter===a.id?'active':''} ${a.error?'err':''}" data-id="${a.id}">
+      <span class="dot" style="background:${a.color}"></span>
+      <span class="em" title="${esc(a.email)}${a.error ? ' — ' + esc(a.error) : ''}">${esc(a.email)}</span>
+      ${a.error ? '⚠️' : `<span class="badge ${a.unseen?'':'zero'}">${a.unseen}</span>`}
+      <button class="del" data-del="${a.id}" title="Убрать">✕</button></div>`;
+  }
+  el.innerHTML = html;
+  el.querySelectorAll('.acc').forEach((n) => n.addEventListener('click', (e) => {
+    if (e.target.dataset.del !== undefined && e.target.dataset.del !== '') return;
+    filter = n.dataset.id || null;
+    renderSidebar(); renderList();
+  }));
+  el.querySelectorAll('.del').forEach((n) => n.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const acc = accounts.find((a) => a.id === n.dataset.del);
+    await api('api/accounts/' + n.dataset.del, { method: 'DELETE' });
+    if (acc) forgetAcc(acc.email);
+    if (filter === n.dataset.del) filter = null;
+    await reload();
+  }));
+}
+
+function renderList() {
+  const el = $('msgs');
+  const src = accounts.filter((a) => !a.error && (!filter || a.id === filter));
+  $('listTitle').textContent = filter ? (accounts.find((a) => a.id === filter)?.email || '') : 'Все ящики';
+  const items = src.flatMap((a) => (a.messages || []).map((m) => ({ ...m, acc: a })));
+  items.sort((x, y) => new Date(y.date) - new Date(x.date));
+  if (!items.length) { el.innerHTML = '<div class="empty">Писем нет</div>'; return; }
+  el.innerHTML = items.map((m) => `
+    <div class="m ${m.seen?'':'unread'} ${selected && selected.uid===m.uid && selected.account===m.acc.id ? 'sel':''}"
+         data-acc="${m.acc.id}" data-uid="${m.uid}">
+      <div class="top"><span class="dot" style="background:${m.acc.color}"></span>
+        <span>${esc(m.fromName || m.from)}</span>
+        <span class="d">${fmtDate(m.date)}</span></div>
+      <div class="sub">${esc(m.subject)}</div>
+    </div>`).join('');
+  el.querySelectorAll('.m').forEach((n) => n.addEventListener('click', () => openMessage(n.dataset.acc, +n.dataset.uid)));
+}
+
+function fmtDate(d) {
+  const dt = new Date(d), now = new Date();
+  return dt.toDateString() === now.toDateString()
+    ? dt.toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })
+    : dt.toLocaleDateString('ru', { day: 'numeric', month: 'short' });
+}
+
+async function openMessage(accId, uid) {
+  selected = { account: accId, uid };
+  renderList();
+  const v = $('view');
+  v.innerHTML = '<div class="placeholder">Загрузка…</div>';
+  try {
+    const m = await api(`api/message?account=${accId}&uid=${uid}`);
+    const acc = accounts.find((a) => a.id === accId);
+    v.innerHTML = `
+      <div class="view-head"><h2>${esc(m.subject)}</h2>
+        <div class="meta">От: ${esc(m.from)}<br>Кому: ${esc(m.to)} · ${new Date(m.date).toLocaleString('ru')}
+        ${m.attachments.length ? '<br>📎 ' + m.attachments.map((a) => esc(a.filename)).join(', ') : ''}</div></div>
+      <div class="view-body" id="vb"></div>
+      <div class="reply"><button id="replyBtn">Ответить</button></div>`;
+    const vb = $('vb');
+    if (m.html) {
+      const fr = document.createElement('iframe');
+      fr.sandbox = 'allow-same-origin';
+      fr.srcdoc = m.html;
+      vb.appendChild(fr);
+    } else {
+      vb.innerHTML = `<pre>${esc(m.text)}</pre>`;
+    }
+    $('replyBtn').addEventListener('click', () => {
+      openCompose(accId, m.from.match(/<(.+)>/)?.[1] || m.from, 'Re: ' + m.subject);
+    });
+    const cached = acc?.messages?.find((x) => x.uid === uid);
+    if (cached && !cached.seen) { cached.seen = true; acc.unseen = Math.max(0, acc.unseen - 1); renderSidebar(); renderList(); }
+  } catch (e) {
+    v.innerHTML = `<div class="placeholder">⚠️ ${esc(e.message)}</div>`;
+  }
+}
+
+// --- написать письмо ---
+function openCompose(fromId, to = '', subj = '') {
+  $('cFrom').innerHTML = accounts.filter((a) => !a.error)
+    .map((a) => `<option value="${a.id}" ${a.id===fromId?'selected':''}>${esc(a.email)}</option>`).join('');
+  $('cTo').value = to; $('cSubj').value = subj; $('cText').value = '';
+  $('cSt').textContent = ''; $('cSt').className = 'st';
+  $('modal').classList.add('open');
+}
+$('composeBtn').addEventListener('click', () => openCompose(filter));
+$('cCancel').addEventListener('click', () => $('modal').classList.remove('open'));
+$('cSend').addEventListener('click', async () => {
+  const st = $('cSt');
+  st.className = 'st'; st.textContent = 'Отправка…';
+  try {
+    await api('api/send', { method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ account: $('cFrom').value, to: $('cTo').value, subject: $('cSubj').value, text: $('cText').value }) });
+    st.className = 'st ok'; st.textContent = 'Отправлено ✓';
+    setTimeout(() => $('modal').classList.remove('open'), 800);
+  } catch (e) {
+    st.className = 'st err'; st.textContent = e.message;
+  }
+});
+
+// --- добавить ящик ---
+$('aBtn').addEventListener('click', async () => {
+  const email = $('aEmail').value.trim(), password = $('aPass').value;
+  $('addErr').textContent = '';
+  if (!email || !password) { $('addErr').textContent = 'Заполните адрес и пароль'; return; }
+  $('aBtn').disabled = true;
+  try {
+    await api('api/accounts', { method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password }) });
+    if ($('aRemember').checked) saveAcc(email, password);
+    $('aEmail').value = ''; $('aPass').value = '';
+    await reload();
+  } catch (e) {
+    $('addErr').textContent = e.message;
+  } finally {
+    $('aBtn').disabled = false;
+  }
+});
+
+$('refreshBtn').addEventListener('click', reload);
+setInterval(() => reload().catch(() => {}), 60_000); // автообновление раз в минуту
+
+init().catch((e) => { $('msgs').innerHTML = `<div class="empty">⚠️ ${esc(e.message)}</div>`; });
+</script>
+</body>
+</html>
