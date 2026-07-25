@@ -117,6 +117,21 @@
   .btn.ghost:hover { background: rgba(148,163,214,.2); filter: none; }
   #refreshBtn.spin { animation: spin .8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
+  aside h1 svg path:last-of-type {
+    transform-box: fill-box; transform-origin: center;
+    animation: twinkle 2.6s ease-in-out infinite;
+  }
+  @keyframes twinkle {
+    0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    50% { transform: scale(.45) rotate(40deg); opacity: .5; }
+  }
+  #composeBtn { animation: btnGlow 3.2s ease-in-out infinite; }
+  @keyframes btnGlow {
+    0%, 100% { box-shadow: 0 4px 16px rgba(99,102,241,.28); }
+    50% { box-shadow: 0 6px 28px rgba(139,92,246,.55); }
+  }
+  .badge.bump { animation: bump .5s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.4); } 100% { transform: scale(1); } }
 
   .msgs { flex: 1; overflow-y: auto; }
   .m {
@@ -127,7 +142,8 @@
     animation: msgIn .3s ease both;
   }
   @keyframes msgIn { from { transform: translateY(6px); opacity: 0; } to { transform: none; opacity: 1; } }
-  .m:hover { background: rgba(255,255,255,.04); }
+  .m { transition: background .15s, border-color .15s, transform .15s; }
+  .m:hover { background: rgba(255,255,255,.04); transform: translateX(3px); }
   .m.sel { background: rgba(109,93,246,.10); border-left-color: var(--acc); }
   .m .ava {
     width: 34px; height: 34px; border-radius: 50%; flex: none; margin-top: 1px;
@@ -337,11 +353,17 @@ async function init() {
   await reload();
 }
 
+const prevUnseen = {};
 async function reload() {
   $('refreshBtn').classList.add('spin');
   try {
     const data = await api('api/inbox');
-    accounts = data.accounts.map((a, i) => ({ ...a, color: COLORS[i % COLORS.length] }));
+    accounts = data.accounts.map((a, i) => ({
+      ...a,
+      color: COLORS[i % COLORS.length],
+      bump: (a.unseen || 0) > (prevUnseen[a.id] ?? (a.unseen || 0)),
+    }));
+    accounts.forEach((a) => { prevUnseen[a.id] = a.unseen || 0; });
     renderSidebar();
     renderList();
   } finally {
@@ -359,7 +381,7 @@ function renderSidebar() {
     html += `<div class="acc ${filter===a.id?'active':''} ${a.error?'err':''}" data-id="${a.id}" style="animation-delay:${i*60}ms">
       <span class="dot" style="background:${a.color}; color:${a.color}"></span>
       <span class="em" title="${esc(a.email)}${a.error ? ' — ' + esc(a.error) : ''}">${esc(a.email)}</span>
-      ${a.error ? '⚠️' : `<span class="badge ${a.unseen?'hot':'zero'}">${a.unseen}</span>`}
+      ${a.error ? '⚠️' : `<span class="badge ${a.unseen?'hot':'zero'} ${a.bump?'bump':''}">${a.unseen}</span>`}
       <button class="del" data-del="${a.id}" title="Remove">✕</button></div>`;
   });
   el.innerHTML = html;

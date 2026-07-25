@@ -27,6 +27,38 @@
   @keyframes drift1 { 50% { transform: translate(-100px, 90px); } }
   @keyframes drift2 { 50% { transform: translate(120px, -70px); } }
 
+  /* shooting light beams */
+  .beam {
+    position: fixed; left: -45vw; width: 40vw; height: 2px; z-index: 0; opacity: .75;
+    background: linear-gradient(90deg, transparent, rgba(139,92,246,.9), rgba(96,165,250,.6), transparent);
+    border-radius: 2px; filter: drop-shadow(0 0 6px rgba(139,92,246,.8));
+    animation: beam 7s linear infinite;
+  }
+  .beam.bm2 { top: 66%; animation-delay: 3.2s; animation-duration: 9s; opacity: .5; }
+  .beam.bm1 { top: 16%; }
+  @keyframes beam { 0% { transform: translateX(0) rotate(-6deg); } 55%, 100% { transform: translateX(330vw) rotate(-6deg); } }
+
+  /* floating particles */
+  .pt {
+    position: fixed; bottom: -12px; border-radius: 50%; z-index: 0; pointer-events: none;
+    animation: ptUp linear forwards;
+  }
+  @keyframes ptUp {
+    0% { transform: translateY(0); opacity: 0; }
+    10% { opacity: .8; } 85% { opacity: .4; }
+    100% { transform: translateY(-108vh); opacity: 0; }
+  }
+
+  /* logo sparkle twinkle */
+  .nav svg path:last-of-type {
+    transform-box: fill-box; transform-origin: center;
+    animation: twinkle 2.6s ease-in-out infinite;
+  }
+  @keyframes twinkle {
+    0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    50% { transform: scale(.45) rotate(40deg); opacity: .5; }
+  }
+
   .page {
     position: relative; z-index: 1;
     max-width: 1060px; margin: 0 auto; padding: 28px 22px 48px;
@@ -44,23 +76,41 @@
 
   .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 52px; align-items: start; }
 
-  h1 { font-size: 46px; font-weight: 800; letter-spacing: -.03em; line-height: 1.08; }
+  h1 { font-size: 46px; font-weight: 800; letter-spacing: -.03em; line-height: 1.08; animation: rise .7s ease both; }
   h1 .grad {
-    background: linear-gradient(90deg, var(--acc2), var(--blue));
+    background: linear-gradient(90deg, var(--acc2), var(--blue), var(--acc2));
+    background-size: 200% auto;
     -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    animation: gradShift 4.5s linear infinite;
   }
+  @keyframes gradShift { to { background-position: 200% center; } }
+  @keyframes rise { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .sub, .lead { animation: rise .7s ease both; }
+  .sub { animation-delay: .12s; } .lead { animation-delay: .2s; }
   .sub { font-size: 19px; font-weight: 600; color: var(--text); margin: 18px 0 10px; }
   .lead { color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 420px; }
 
   .features { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 34px; max-width: 460px; }
   .feat {
+    position: relative; overflow: hidden;
     border: 1px solid var(--line); border-radius: 14px; padding: 16px 15px;
     background: rgba(15,18,36,.55); backdrop-filter: blur(8px);
-    transition: border-color .2s, transform .2s;
+    transition: border-color .25s, transform .25s, box-shadow .3s;
+    animation: rise .6s ease both;
   }
-  .feat:hover { border-color: #3D477A; transform: translateY(-2px); }
+  .feat:nth-child(1) { animation-delay: .25s; } .feat:nth-child(2) { animation-delay: .33s; }
+  .feat:nth-child(3) { animation-delay: .41s; } .feat:nth-child(4) { animation-delay: .49s; }
+  .feat:hover { border-color: #4A55A8; transform: translateY(-4px); box-shadow: 0 14px 34px rgba(99,102,241,.2); }
+  .feat::before {
+    content: ''; position: absolute; top: 0; left: -80%; width: 55%; height: 100%;
+    background: linear-gradient(115deg, transparent, rgba(139,92,246,.14), transparent);
+    transform: skewX(-20deg); transition: left .55s ease;
+  }
+  .feat:hover::before { left: 130%; }
   .feat .ico { color: var(--acc2); margin-bottom: 9px; }
   .feat .ico svg { width: 22px; height: 22px; }
+  .feat:hover .ico svg { animation: wiggle .5s ease; }
+  @keyframes wiggle { 0%,100% { transform: rotate(0); } 30% { transform: rotate(-12deg) scale(1.15); } 65% { transform: rotate(9deg); } }
   .feat b { display: block; font-size: 13.5px; font-weight: 700; letter-spacing: -.01em; }
   .feat span { display: block; font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.45; }
 
@@ -95,14 +145,25 @@
   .domain { font-size: 15px; font-weight: 700; color: var(--acc2); white-space: nowrap; }
 
   button {
+    position: relative; overflow: hidden;
     width: 100%; margin-top: 24px; padding: 13px; font-size: 15px; font-weight: 700;
     font-family: inherit; letter-spacing: -.01em;
     color: #fff; border: 0; border-radius: 12px; cursor: pointer;
     background: linear-gradient(135deg, var(--acc), var(--acc2));
-    box-shadow: 0 10px 30px rgba(99,102,241,.35);
-    transition: filter .2s, transform .15s, box-shadow .25s;
+    animation: btnGlow 3.2s ease-in-out infinite;
+    transition: filter .2s, transform .15s;
   }
-  button:hover { filter: brightness(1.12); transform: translateY(-1px); box-shadow: 0 14px 38px rgba(99,102,241,.45); }
+  @keyframes btnGlow {
+    0%, 100% { box-shadow: 0 10px 30px rgba(99,102,241,.35); }
+    50% { box-shadow: 0 12px 46px rgba(139,92,246,.6); }
+  }
+  button::after {
+    content: ''; position: absolute; top: 0; left: -80%; width: 45%; height: 100%;
+    background: linear-gradient(115deg, transparent, rgba(255,255,255,.35), transparent);
+    transform: skewX(-20deg); animation: sheen 3.4s ease infinite;
+  }
+  @keyframes sheen { 0%, 55% { left: -80%; } 100% { left: 150%; } }
+  button:hover { filter: brightness(1.12); transform: translateY(-1px); }
   button:active { transform: translateY(0) scale(.985); }
   button:disabled { opacity: .55; cursor: default; }
   button .arr { display: inline-block; transition: transform .2s; }
@@ -144,6 +205,16 @@
   }
   .success a:hover { filter: brightness(1.12); transform: translateY(-1px); }
 
+  /* confetti burst on success */
+  .cf {
+    position: fixed; top: -16px; width: 8px; height: 13px; border-radius: 2px;
+    z-index: 60; pointer-events: none; opacity: .95;
+    animation: cfFall linear forwards;
+  }
+  @keyframes cfFall {
+    to { transform: translate3d(var(--dx, 0px), 108vh, 0) rotate(var(--rot, 400deg)); opacity: .7; }
+  }
+
   @media (max-width: 880px) {
     .page { padding: 20px 16px calc(40px + env(safe-area-inset-bottom, 0px)); }
     .nav { margin-bottom: 30px; }
@@ -160,6 +231,7 @@
 </head>
 <body>
 <div class="glow g1"></div><div class="glow g2"></div>
+<div class="beam bm1"></div><div class="beam bm2"></div>
 
 <div class="page">
   <div class="nav">
@@ -238,6 +310,41 @@
 </div>
 
 <script>
+// floating particles: indigo, violet, blue and the occasional gold one
+const PT_COLORS = ['#6366F1', '#8B5CF6', '#60A5FA', '#F2C97D'];
+function spawnParticle() {
+  const p = document.createElement('span');
+  p.className = 'pt';
+  const gold = Math.random() < 0.18;
+  const c = gold ? '#F2C97D' : PT_COLORS[Math.floor(Math.random() * 3)];
+  const size = 2 + Math.random() * 3;
+  p.style.cssText = `left:${Math.random() * 100}vw; width:${size}px; height:${size}px;
+    background:${c}; box-shadow:0 0 ${6 + size * 2}px ${c};
+    animation-duration:${11 + Math.random() * 10}s;`;
+  document.body.appendChild(p);
+  setTimeout(() => p.remove(), 22000);
+}
+for (let i = 0; i < 10; i++) setTimeout(spawnParticle, i * 500);
+setInterval(spawnParticle, 1400);
+
+// confetti burst
+const CF_COLORS = ['#6366F1', '#8B5CF6', '#60A5FA', '#F2C97D', '#ffffff'];
+function confetti() {
+  for (let i = 0; i < 90; i++) {
+    const c = document.createElement('span');
+    c.className = 'cf';
+    c.style.cssText = `left:${Math.random() * 100}vw;
+      background:${CF_COLORS[Math.floor(Math.random() * CF_COLORS.length)]};
+      animation-duration:${2 + Math.random() * 2.2}s;
+      animation-delay:${Math.random() * .5}s;
+      width:${5 + Math.random() * 6}px; height:${8 + Math.random() * 8}px;`;
+    c.style.setProperty('--dx', (Math.random() * 240 - 120) + 'px');
+    c.style.setProperty('--rot', (Math.random() * 900 - 450) + 'deg');
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 5200);
+  }
+}
+
 const f = document.getElementById('f'), msg = document.getElementById('msg'),
       btn = document.getElementById('btn'), card = document.getElementById('card');
 
@@ -282,6 +389,7 @@ f.addEventListener('submit', async (e) => {
           <div class="note">Your VIP email experience starts now.</div>
           ${data.webmail ? `<a href="${data.webmail}">Open inbox</a>` : ''}
         </div>`;
+      confetti();
     } else {
       fail(data.error || 'Registration failed.');
     }
