@@ -1,0 +1,66 @@
+services:
+  mailserver:
+    image: ghcr.io/docker-mailserver/docker-mailserver:14.0
+    container_name: mailserver
+    hostname: ${MAIL_HOSTNAME}
+    env_file: .env
+    ports:
+      - "25:25"     # SMTP (приём почты от других серверов)
+      - "465:465"   # SMTPS (отправка из почтовых клиентов)
+      - "587:587"   # Submission (отправка из почтовых клиентов)
+      - "993:993"   # IMAPS (чтение почты клиентами)
+    volumes:
+      - ./docker-data/dms/mail-data/:/var/mail/
+      - ./docker-data/dms/mail-state/:/var/mail-state/
+      - ./docker-data/dms/mail-logs/:/var/log/mail/
+      - ./docker-data/dms/config/:/tmp/docker-mailserver/
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - ENABLE_RSPAMD=1
+      - ENABLE_CLAMAV=0
+      - ENABLE_FAIL2BAN=1
+      - ENABLE_OPENDKIM=0
+      - ENABLE_OPENDMARC=0
+      - ENABLE_POLICYD_SPF=0
+      - SSL_TYPE=letsencrypt
+      - PERMIT_DOCKER=none
+      - SPOOF_PROTECTION=1
+    restart: always
+    stop_grace_period: 1m
+    healthcheck:
+      test: "ss --listening --tcp | grep -P 'LISTEN.+:smtp' || exit 1"
+      timeout: 3s
+      retries: 0
+
+  webmail:
+    image: roundcube/roundcubemail:latest
+    container_name: webmail
+    depends_on:
+      - mailserver
+    ports:
+      - "127.0.0.1:8080:80"
+    environment:
+      - ROUNDCUBEMAIL_DEFAULT_HOST=ssl://${MAIL_HOSTNAME}
+      - ROUNDCUBEMAIL_DEFAULT_PORT=993
+      - ROUNDCUBEMAIL_SMTP_SERVER=ssl://${MAIL_HOSTNAME}
+      - ROUNDCUBEMAIL_SMTP_PORT=465
+      - ROUNDCUBEMAIL_SKIN=elastic
+    volumes:
+      - ./docker-data/roundcube/db:/var/roundcube/db
+    restart: always
+
+  signup:
+    build: ./signup
+    container_name: mail-signup
+    depends_on:
+      - mailserver
+    ports:
+      - "127.0.0.1:8081:8081"
+    environment:
+      - MAIL_DOMAIN=${MAIL_DOMAIN}
+      - INVITE_CODE=${INVITE_CODE:-}
+      - WEBMAIL_URL=${WEBMAIL_URL:-}
+    volumes:
+      - ./docker-data/dms/config/:/config/
+    restart: always

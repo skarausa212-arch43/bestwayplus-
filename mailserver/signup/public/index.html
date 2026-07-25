@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Регистрация почтового ящика</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, #1e3a5f, #2d6a8f);
+  }
+  .card {
+    background: #fff; color: #1a2733; border-radius: 16px; padding: 32px 28px;
+    width: 100%; max-width: 420px; margin: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.35);
+  }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: #5b6b7a; font-size: 14px; margin: 0 0 20px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin: 14px 0 4px; }
+  .row { display: flex; align-items: center; gap: 8px; }
+  input {
+    width: 100%; padding: 10px 12px; border: 1px solid #c8d2dc; border-radius: 8px;
+    font-size: 15px; outline: none;
+  }
+  input:focus { border-color: #2d6a8f; box-shadow: 0 0 0 3px rgba(45,106,143,.15); }
+  .domain { font-weight: 600; color: #2d6a8f; white-space: nowrap; }
+  button {
+    width: 100%; margin-top: 20px; padding: 12px; border: 0; border-radius: 8px;
+    background: #2d6a8f; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  button:hover { background: #1e5578; }
+  button:disabled { opacity: .6; cursor: default; }
+  .msg { margin-top: 14px; font-size: 14px; padding: 10px 12px; border-radius: 8px; display: none; }
+  .msg.err { display: block; background: #fdeaea; color: #9b1c1c; }
+  .msg.ok { display: block; background: #e7f6ec; color: #14632e; }
+  .msg a { color: inherit; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Создать почтовый ящик</h1>
+  <p class="sub">Бесплатный адрес на нашем домене</p>
+  <form id="f">
+    <label for="u">Имя ящика</label>
+    <div class="row">
+      <input id="u" name="username" autocomplete="username" placeholder="ivan.petrov" required>
+      <span class="domain" id="dom">@…</span>
+    </div>
+    <label for="p">Пароль (минимум 8 символов)</label>
+    <input id="p" name="password" type="password" autocomplete="new-password" minlength="8" required>
+    <label for="p2">Повторите пароль</label>
+    <input id="p2" type="password" autocomplete="new-password" minlength="8" required>
+    <div id="inviteBlock" style="display:none">
+      <label for="inv">Код приглашения</label>
+      <input id="inv" name="invite" autocomplete="off">
+    </div>
+    <button id="btn" type="submit">Зарегистрировать</button>
+    <div class="msg" id="msg"></div>
+  </form>
+</div>
+<script>
+const f = document.getElementById('f'), msg = document.getElementById('msg'), btn = document.getElementById('btn');
+let info = { domain: '', webmail: '' };
+
+fetch('/api/info').then(r => r.json()).then(i => {
+  info = i;
+  document.getElementById('dom').textContent = '@' + i.domain;
+  if (i.inviteRequired) document.getElementById('inviteBlock').style.display = '';
+});
+
+f.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  msg.className = 'msg';
+  if (document.getElementById('p').value !== document.getElementById('p2').value) {
+    msg.className = 'msg err'; msg.textContent = 'Пароли не совпадают.'; return;
+  }
+  btn.disabled = true;
+  try {
+    const r = await fetch('/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: document.getElementById('u').value,
+        password: document.getElementById('p').value,
+        invite: document.getElementById('inv').value,
+      }),
+    });
+    const data = await r.json();
+    if (r.ok) {
+      msg.className = 'msg ok';
+      msg.innerHTML = 'Готово! Ваш адрес: <b>' + data.email + '</b>.' +
+        (data.webmail ? ' <a href="' + data.webmail + '">Войти в почту</a>' : '');
+      f.reset();
+    } else {
+      msg.className = 'msg err';
+      msg.textContent = data.error || 'Ошибка регистрации.';
+    }
+  } catch {
+    msg.className = 'msg err';
+    msg.textContent = 'Сервер недоступен, попробуйте позже.';
+  } finally {
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
