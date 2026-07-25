@@ -4,6 +4,7 @@
 
 const express = require('express');
 const crypto = require('crypto');
+const fs = require('fs');
 const path = require('path');
 const { ImapFlow } = require('imapflow');
 const { simpleParser } = require('mailparser');
@@ -12,7 +13,8 @@ const nodemailer = require('nodemailer');
 const MAIL_HOST = process.env.MAIL_HOSTNAME;
 const PORT = process.env.PORT || 8082;
 const MAX_ACCOUNTS = 10;
-const SESSION_TTL = 12 * 3600_000; // 12 часов неактивности
+const SESSION_TTL = 30 * 24 * 3600_000; // 30 дней; продлевается при каждом заходе
+const SESSIONS_FILE = process.env.SESSIONS_FILE || '/data/sessions.json';
 
 if (!MAIL_HOST) {
   console.error('MAIL_HOSTNAME is not set');
@@ -20,11 +22,41 @@ if (!MAIL_HOST) {
 }
 
 // token -> { accounts: [{id, email, password, host}], touched }
+// Сессии переживают перезапуск контейнера: пишем их в файл на диске.
 const sessions = new Map();
+try {
+  const raw = JSON.parse(fs.readFileSync(SESSIONS_FILE, 'utf8'));
+  const now = Date.now();
+  for (const [t, s] of Object.entries(raw)) {
+    if (now - s.touched < SESSION_TTL) sessions.set(t, s);
+  }
+  console.log(`restored ${sessions.size} sessions from disk`);
+} catch (e) {
+  if (e.code !== 'ENOENT') console.error('could not restore sessions:', e.message);
+}
+
+let saveTimer = null;
+function persistSessions() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try {
+      fs.mkdirSync(path.dirname(SESSIONS_FILE), { recursive: true });
+      const tmp = SESSIONS_FILE + '.tmp';
+      fs.writeFileSync(tmp, JSON.stringify(Object.fromEntries(sessions)), { mode: 0o600 });
+      fs.renameSync(tmp, SESSIONS_FILE);
+    } catch (e) {
+      console.error('failed to persist sessions:', e.message);
+    }
+  }, 500);
+  saveTimer.unref?.();
+}
+
 setInterval(() => {
   const now = Date.now();
-  for (const [t, s] of sessions) if (now - s.touched > SESSION_TTL) sessions.delete(t);
-}, 600_000).unref();
+  let removed = 0;
+  for (const [t, s] of sessions) if (now - s.touched > SESSION_TTL) { sessions.delete(t); removed++; }
+  if (removed) persistSessions();
+}, 3600_000).unref();
 
 function getSession(req, res) {
   const cookies = Object.fromEntries(
@@ -34,10 +66,12 @@ function getSession(req, res) {
   if (!token || !sessions.has(token)) {
     token = crypto.randomBytes(24).toString('hex');
     sessions.set(token, { accounts: [], touched: Date.now() });
-    res.setHeader('Set-Cookie', `mm=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_TTL / 1000}`);
   }
+  // куку продлеваем на каждом запросе — «заходишь хоть раз в месяц, и вход не слетает»
+  res.setHeader('Set-Cookie', `mm=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_TTL / 1000}`);
   const s = sessions.get(token);
   s.touched = Date.now();
+  persistSessions();
   return s;
 }
 
@@ -131,6 +165,7 @@ app.post('/api/accounts', async (req, res) => {
     return res.status(401).json({ error: 'Login failed: check the address and password. (' + (e.responseText || e.message) + ')' });
   }
   s.accounts.push(acc);
+  persistSessions();
   res.json({ ok: true, id: acc.id, email: acc.email });
 });
 
@@ -138,6 +173,7 @@ app.delete('/api/accounts/:id', (req, res) => {
   const s = getSession(req, res);
   const before = s.accounts.length;
   s.accounts = s.accounts.filter((a) => a.id !== req.params.id);
+  persistSessions();
   res.json({ ok: s.accounts.length < before });
 });
 

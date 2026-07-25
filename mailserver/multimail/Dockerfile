@@ -5,5 +5,5 @@ RUN npm install --omit=dev
 COPY server.js ./
 COPY public ./public
 EXPOSE 8082
-USER node
+# root: пишем сессии в примонтированный /data, принадлежащий root на хосте
 CMD ["node", "server.js"]

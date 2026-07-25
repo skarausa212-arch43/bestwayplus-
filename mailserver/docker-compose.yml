@@ -59,6 +59,8 @@ services:
       - "127.0.0.1:8082:8082"
     environment:
       - MAIL_HOSTNAME=${MAIL_HOSTNAME}
+    volumes:
+      - ./docker-data/multimail:/data
     restart: always
 
   signup:
