@@ -416,20 +416,26 @@ async function openMessage(accId, uid) {
         '<style>html,body{margin:0;padding:10px;box-sizing:border-box;-webkit-text-size-adjust:100%;word-break:break-word;}' +
         'img{max-width:100%!important;height:auto!important;}</style>';
       fr.srcdoc = baseCss + m.html;
-      // письма свёрстаны под 600-800px — ужимаем под ширину экрана
-      fr.addEventListener('load', () => {
+      // письма свёрстаны под 600-800px — ужимаем под ширину экрана;
+      // пересчитываем несколько раз: картинки догружаются и меняют ширину
+      const fit = () => {
         try {
           const d = fr.contentDocument;
+          if (!d || !d.body) return;
+          d.body.style.transform = ''; d.body.style.width = '';
           const w = Math.max(d.documentElement.scrollWidth, d.body.scrollWidth);
           const avail = fr.getBoundingClientRect().width;
-          if (w > avail + 4) {
+          if (w > avail + 2) {
             const s = avail / w;
             d.body.style.transformOrigin = '0 0';
             d.body.style.transform = `scale(${s})`;
             d.body.style.width = w + 'px';
           }
+          d.documentElement.style.overflowX = 'hidden';
+          d.body.style.overflowX = 'hidden';
         } catch {}
-      });
+      };
+      fr.addEventListener('load', () => { fit(); setTimeout(fit, 400); setTimeout(fit, 1500); });
       vb.appendChild(fr);
     } else {
       vb.innerHTML = `<pre>${esc(m.text)}</pre>`;
