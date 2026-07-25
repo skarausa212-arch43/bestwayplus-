@@ -12,6 +12,8 @@
     "test:api": "node test/api.test.js",
     "lint": "node -e \"['server.js'].forEach(f=>require('child_process').execFileSync(process.execPath,['--check',f],{stdio:'inherit'}));console.log('lint ok')\"",
     "security-scan": "node ops/secret-scan.js",
+    "audit-security": "node ops/audit-security.js",
+    "lifecycle-check": "node ops/lifecycle-check.js",
     "rules-check": "node ops/rules-check.js",
     "asset-check": "node ops/asset-check.js",
     "launch-check": "node ops/launch-check.js"

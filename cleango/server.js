@@ -2199,7 +2199,9 @@ route('POST', '/api/bookings', async (req, res) => {
   } else {
     dispatchNearestFirst(booking);
   }
-  return send(res, 200, { booking });
+  // Return the role-shaped view — the raw booking carries commission/payout,
+  // which must never reach the customer (CLAUDE.md §Security — hide commission).
+  return send(res, 200, { booking: enrich(booking, user) });
 });
 
 // GPS dispatch: rank eligible providers by real distance (live GPS point when

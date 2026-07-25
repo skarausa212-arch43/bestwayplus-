@@ -316,6 +316,11 @@ async function main() {
       const bk = await req('POST', '/api/bookings', { token: customerTok, body: { propertyId: pid, service: 'standard' } });
       assert.strictEqual(bk.status, 200);
       assert.strictEqual(bk.json.booking.status, 'searching');
+      // SECURITY (regression): the creation response is role-shaped — the
+      // platform commission and provider payout must never reach the customer.
+      assert.strictEqual(bk.json.booking.commission, undefined, 'commission hidden on creation response');
+      assert.strictEqual(bk.json.booking.payout, undefined, 'payout hidden on creation response');
+      assert.ok(bk.json.booking.price > 0, 'customer sees the price they pay');
       bookingId = bk.json.booking.id;
     });
 
