@@ -11,6 +11,8 @@ const DOMAIN = process.env.MAIL_DOMAIN;
 const INVITE_CODE = (process.env.INVITE_CODE || '').trim();
 const WEBMAIL_URL = process.env.WEBMAIL_URL || '';
 const ACCOUNTS_FILE = process.env.ACCOUNTS_FILE || '/config/postfix-accounts.cf';
+// Профили пользователей (имя, фамилия, резервный email) — для восстановления пароля
+const PROFILES_FILE = process.env.PROFILES_FILE || '/config/user-profiles.json';
 const PORT = process.env.PORT || 8081;
 
 if (!DOMAIN) {
@@ -25,6 +27,22 @@ const RESERVED = new Set([
 ]);
 
 const USERNAME_RE = /^[a-z0-9](?:[a-z0-9._-]{0,29}[a-z0-9])?$/;
+const NAME_RE = /^[\p{L}][\p{L}' -]{0,39}$/u; // буквы любого алфавита, пробел, дефис, апостроф
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+function readProfiles() {
+  try {
+    return JSON.parse(fs.readFileSync(PROFILES_FILE, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+function saveProfiles(profiles) {
+  const tmp = PROFILES_FILE + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(profiles, null, 2), { mode: 0o600 });
+  fs.renameSync(tmp, PROFILES_FILE);
+}
 
 // Простое ограничение частоты: не больше 5 регистраций с одного IP в час
 const attempts = new Map();
@@ -86,7 +104,7 @@ app.get('/api/info', (_req, res) => {
 
 app.post('/api/register', (req, res) => {
   const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress;
-  const { username, password, invite } = req.body || {};
+  const { username, password, invite, firstName, lastName, recovery } = req.body || {};
 
   if (rateLimited(ip)) {
     return res.status(429).json({ error: 'Too many attempts. Please wait an hour and try again.' });
@@ -104,8 +122,23 @@ app.post('/api/register', (req, res) => {
   if (typeof password !== 'string' || password.length < 8 || password.length > 128) {
     return res.status(400).json({ error: 'Password must be 8–128 characters long.' });
   }
+  const fName = String(firstName || '').trim();
+  const lName = String(lastName || '').trim();
+  if (!NAME_RE.test(fName)) {
+    return res.status(400).json({ error: 'Please enter your first name (letters only).' });
+  }
+  if (!NAME_RE.test(lName)) {
+    return res.status(400).json({ error: 'Please enter your last name (letters only).' });
+  }
+  const recoveryEmail = String(recovery || '').trim().toLowerCase();
+  if (recoveryEmail && !EMAIL_RE.test(recoveryEmail)) {
+    return res.status(400).json({ error: 'Recovery email looks invalid.' });
+  }
 
   const email = `${user}@${DOMAIN}`;
+  if (recoveryEmail === email) {
+    return res.status(400).json({ error: 'Recovery email must be a different address.' });
+  }
 
   enqueue(async () => {
     const existing = readAccounts();
@@ -121,7 +154,15 @@ app.post('/api/register', (req, res) => {
     const line = `${email}|{SHA512-CRYPT}${hash}\n`;
     const prefix = existing && !existing.endsWith('\n') ? '\n' : '';
     fs.appendFileSync(ACCOUNTS_FILE, prefix + line, { mode: 0o644 });
-    console.log(`registered ${email} (ip ${ip})`);
+    const profiles = readProfiles();
+    profiles[email] = {
+      firstName: fName,
+      lastName: lName,
+      recoveryEmail: recoveryEmail || null,
+      createdAt: new Date().toISOString(),
+    };
+    saveProfiles(profiles);
+    console.log(`registered ${email} (${fName} ${lName}, recovery: ${recoveryEmail ? 'yes' : 'no'}, ip ${ip})`);
     res.json({ ok: true, email, webmail: WEBMAIL_URL });
   }).catch((e) => {
     console.error('registration failed:', e);

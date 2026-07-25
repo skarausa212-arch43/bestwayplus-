@@ -59,7 +59,9 @@
   .tagline { color: var(--muted); font-size: 13.5px; margin: 6px 0 30px; letter-spacing: -.01em; }
 
   label { display: block; font-size: 12.5px; font-weight: 550; margin: 16px 0 6px; color: #a0a0a8; }
+  label .opt { color: #55555c; font-weight: 450; }
   .row { display: flex; align-items: center; gap: 10px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; column-gap: 10px; }
   input {
     width: 100%; padding: 11px 13px; font-size: 16px; color: var(--text);
     background: #121216; border: 1px solid #232329; border-radius: 10px;
@@ -133,6 +135,16 @@
   <div class="wordmark">viply<span class="d">.</span></div>
   <div class="tagline">Premium email. Zero noise.</div>
   <form id="f">
+    <div class="cols">
+      <div>
+        <label for="fn">First name</label>
+        <input id="fn" name="firstName" autocomplete="given-name" placeholder="John" maxlength="40" required>
+      </div>
+      <div>
+        <label for="ln">Last name</label>
+        <input id="ln" name="lastName" autocomplete="family-name" placeholder="Doe" maxlength="40" required>
+      </div>
+    </div>
     <label for="u">Your address</label>
     <div class="row">
       <input id="u" name="username" autocomplete="username" placeholder="john" required>
@@ -142,6 +154,8 @@
     <input id="p" name="password" type="password" autocomplete="new-password" minlength="8" placeholder="8+ characters" required>
     <label for="p2">Repeat password</label>
     <input id="p2" type="password" autocomplete="new-password" minlength="8" required>
+    <label for="rec">Recovery email <span class="opt">— optional, for password reset</span></label>
+    <input id="rec" name="recovery" type="email" autocomplete="email" placeholder="you@example.com">
     <div id="inviteBlock" style="display:none">
       <label for="inv">Invite code</label>
       <input id="inv" name="invite" autocomplete="off">
@@ -178,17 +192,21 @@ f.addEventListener('submit', async (e) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        firstName: document.getElementById('fn').value,
+        lastName: document.getElementById('ln').value,
         username: document.getElementById('u').value,
         password: document.getElementById('p').value,
+        recovery: document.getElementById('rec').value,
         invite: document.getElementById('inv').value,
       }),
     });
     const data = await r.json();
     if (r.ok) {
+      const fn = document.getElementById('fn').value.trim();
       card.innerHTML = `
         <div class="success">
           <div class="check"></div>
-          <h2>Your address is ready</h2>
+          <h2>Welcome, ${fn.replace(/[<>&"]/g, '')}!</h2>
           <div class="email">${data.email}</div>
           <div class="note">Sign in anywhere with this address and your password.</div>
           ${data.webmail ? `<a href="${data.webmail}">Open inbox</a>` : ''}
