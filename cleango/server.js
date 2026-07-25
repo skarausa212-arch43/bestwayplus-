@@ -2064,6 +2064,9 @@ route('POST', '/api/bookings', async (req, res) => {
       return send(res, 400, { error: `Ogród jest na razie dostępny tylko we Wrocławiu.`, code: 'GARDEN_CITY' });
     }
     const sched = b.scheduledFor ? new Date(b.scheduledFor) : null;
+    if (sched && !isNaN(sched) && sched.getTime() < now() - 2 * 3600000) {
+      return send(res, 400, { error: 'Выберите дату в будущем.', code: 'GARDEN_PAST_DATE' });
+    }
     const month = sched && !isNaN(sched) ? sched.getMonth() : undefined;
     const gEst = ogrod.estimate(b.garden || {}, { month });
     const seasonal = gEst.lines.find((l) => l.excluded === 'season');
@@ -2091,15 +2094,16 @@ route('POST', '/api/bookings', async (req, res) => {
       // Customer-safe breakdown for the receipt & order card (no commission inside).
       garden: {
         inputs: {
-          lawnM2: Number(b.garden && b.garden.lawnM2) || 0, koszenie: !!(b.garden && b.garden.koszenie),
+          lawnM2: Math.max(0, Math.min(100000, Math.round(Number(b.garden && b.garden.lawnM2) || 0))), koszenie: !!(b.garden && b.garden.koszenie),
           mowFrequency: gFreq === 'weekly' ? 'coTydzien' : gFreq === 'biweekly' ? 'co2Tygodnie' : 'jednorazowo',
           highGrass: !!(b.garden && b.garden.highGrass), removeClippings: !!(b.garden && b.garden.removeClippings),
-          hedgeMb: Number(b.garden && b.garden.hedgeMb) || 0, hedgeHeight: (b.garden && b.garden.hedgeHeight) || null,
+          hedgeMb: Math.max(0, Math.min(10000, Math.round(Number(b.garden && b.garden.hedgeMb) || 0))),
+          hedgeHeight: ['h100', 'h150', 'h200', 'h250', 'h250plus'].includes(b.garden && b.garden.hedgeHeight) ? b.garden.hedgeHeight : null,
           removeBranches: !!(b.garden && b.garden.removeBranches),
           wertykulacja: !!(b.garden && b.garden.wertykulacja), aeracja: !!(b.garden && b.garden.aeracja),
           pakietRegeneracja: !!(b.garden && b.garden.pakietRegeneracja),
           grabienie: !!(b.garden && b.garden.grabienie), grabienieWywoz: !!(b.garden && b.garden.grabienieWywoz),
-          pielenieM2: Number(b.garden && b.garden.pielenieM2) || 0,
+          pielenieM2: Math.max(0, Math.min(10000, Math.round(Number(b.garden && b.garden.pielenieM2) || 0))),
         },
         lines: gEst.lines.filter((l) => !l.excluded).map((l) => ({ label: l.label, qty: l.qty, unit: l.unit, amount: l.amountG / 100 })),
       },
@@ -2566,6 +2570,8 @@ function enrich(bk, viewer) {
   if (viewer && viewer.role === 'cleaner') {
     delete out.commission;
     delete out.price;
+    // Garden breakdown: keep the work scope (labels/qty), strip customer prices.
+    if (out.garden) out.garden = { ...out.garden, lines: (out.garden.lines || []).map(({ label, qty, unit }) => ({ label, qty, unit })) };
     // Real distance from the cleaner to the job (their fresh GPS point or
     // city centroid) — shown on the job card so «ближайший» is transparent.
     if (bk.location) out.distanceKm = Math.round(dispatch.distanceKm(cleanerGeo(viewer), bk.location) * 10) / 10;
@@ -2599,6 +2605,11 @@ route('POST', '/api/bookings/:id/accept', async (req, res, params) => {
   const bk = db.bookings[params.id];
   if (!bk) return send(res, 404, { error: 'Booking not found.' });
   if (bk.status !== 'searching') return send(res, 409, { error: 'This job is no longer available.' });
+  // The board already filters by profession; enforce it here too so a direct
+  // API call cannot grab a job outside the provider's professions.
+  if (!providerServes(user, bk)) {
+    return send(res, 403, { error: 'Этот заказ доступен только исполнителям с профессией «Сад».', code: 'PROFESSION_MISMATCH' });
+  }
   // Favorite-cleaner invite: reserved for the invited provider.
   if (bk.invitedCleanerId && bk.invitedCleanerId !== user.id) {
     return send(res, 403, { error: 'Этот заказ зарезервирован за приглашённым исполнителем.', code: 'RESERVED_INVITE' });

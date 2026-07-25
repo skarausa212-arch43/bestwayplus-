@@ -23,16 +23,20 @@ const eq = (a, b, m) => { if (a !== b) throw new Error((m || '') + ` expected ${
 const ts = Date.now();
 
 (async () => {
+  // Registration is city-gated; pick an open city so the audit works on any
+  // LUMI_OPEN_CITIES config.
+  const cfg = (await api('/api/cities')).json;
+  const CITY = (cfg.open || cfg.cities || ['Wrocław'])[0];
   // ── actors ──
-  const cust = (await api('/api/register', 'POST', { email: `c${ts}@t.co`, password: 'Passw0rd!Long1', name: 'Client A', role: 'customer', phone: '+48500600801', acceptedTerms: true })).json;
-  const cust2 = (await api('/api/register', 'POST', { email: `c2${ts}@t.co`, password: 'Passw0rd!Long1', name: 'Client B', role: 'customer', phone: '+48500600802', acceptedTerms: true })).json;
+  const cust = (await api('/api/register', 'POST', { email: `c${ts}@t.co`, password: 'Passw0rd!Long1', name: 'Client A', role: 'customer', city: CITY, phone: '+48500600801', acceptedTerms: true })).json;
+  const cust2 = (await api('/api/register', 'POST', { email: `c2${ts}@t.co`, password: 'Passw0rd!Long1', name: 'Client B', role: 'customer', city: CITY, phone: '+48500600802', acceptedTerms: true })).json;
   const cA = cust.token, cB = cust2.token;
   const piotr = (await api('/api/login', 'POST', { email: 'piotr@example.com', password: 'cleango123' })).json.token;
   const zofia = (await api('/api/login', 'POST', { email: 'zofia@example.com', password: 'cleango123' })).json.token;
   const admin = (await api('/api/login', 'POST', { email: 'admin@cleango.app', password: 'cleango123' })).json.token;
 
   // property + booking for A, taken by piotr
-  const prop = (await api('/api/properties', 'POST', { type: 'apartment', label: 'Sec Flat', city: 'Warsaw', rooms: 2, baths: 1 }, cA)).json.property;
+  const prop = (await api('/api/properties', 'POST', { type: 'apartment', label: 'Sec Flat', city: CITY, rooms: 2, baths: 1 }, cA)).json.property;
   const bk = (await api('/api/bookings', 'POST', { propertyId: prop.id, service: 'standard' }, cA)).json.booking;
   await api(`/api/bookings/${bk.id}/accept`, 'POST', {}, piotr);
 
@@ -73,7 +77,7 @@ const ts = Date.now();
   });
   await ok('KYC: незаверенный исполнитель, админ верифицирует', async () => {
     const em = `kyc${ts}@t.co`;
-    const reg = await api('/api/register', 'POST', { email: em, password: 'Passw0rd!Long1', name: 'New Cleaner', role: 'cleaner', phone: '+48500600888', entityType: 'individual', teamSize: 2, acceptedTerms: true, avatar: IMG, idDocument: IMG, pesel: '44051401359', bankName: 'mBank', bankAccount: 'PL27114020040000300201355387', bio: 'Опыт 3 года, генеральная и послеремонтная уборка, свои средства.' }, null);
+    const reg = await api('/api/register', 'POST', { email: em, password: 'Passw0rd!Long1', name: 'New Cleaner', role: 'cleaner', city: CITY, phone: '+48500600888', entityType: 'individual', teamSize: 2, acceptedTerms: true, avatar: IMG, idDocument: IMG, pesel: '44051401359', bankName: 'mBank', bankAccount: 'PL27114020040000300201355387', bio: 'Опыт 3 года, генеральная и послеремонтная уборка, свои средства.' }, null);
     eq(reg.status, 200, 'cleaner reg');
     const uid = reg.json.user.id;
     if (reg.json.user.verified) throw new Error('cleaner verified at registration');
@@ -84,7 +88,7 @@ const ts = Date.now();
   let victim = null;
   await ok('Блокировка: админ блокирует клиента, тот не может войти', async () => {
     const em = `susp${ts}@t.co`;
-    victim = (await api('/api/register', 'POST', { email: em, password: 'Passw0rd!Long1', name: 'Victim', role: 'customer', phone: '+48500600809', acceptedTerms: true }, null)).json;
+    victim = (await api('/api/register', 'POST', { email: em, password: 'Passw0rd!Long1', name: 'Victim', role: 'customer', city: CITY, phone: '+48500600809', acceptedTerms: true }, null)).json;
     const s = await api(`/api/admin/users/${victim.user.id}/suspend`, 'POST', { reason: 'test', days: 7 }, admin);
     eq(s.status, 200, 'suspend');
     const login = await api('/api/login', 'POST', { email: em, password: 'Passw0rd!Long1' });
@@ -100,7 +104,7 @@ const ts = Date.now();
   });
   await ok('Удаление аккаунта (GDPR): PII анонимизируется, сессия отзывается', async () => {
     const em = `del${ts}@t.co`;
-    const u = (await api('/api/register', 'POST', { email: em, password: 'Passw0rd!Long1', name: 'To Delete', role: 'customer', phone: '+48500600810', acceptedTerms: true }, null)).json;
+    const u = (await api('/api/register', 'POST', { email: em, password: 'Passw0rd!Long1', name: 'To Delete', role: 'customer', city: CITY, phone: '+48500600810', acceptedTerms: true }, null)).json;
     const del = await api('/api/me/delete-request', 'POST', {}, u.token);
     eq(del.status, 200, 'delete');
     const after = await api('/api/me', 'GET', null, u.token);
@@ -110,7 +114,7 @@ const ts = Date.now();
   });
   await ok('Удаление с активным заказом блокируется (409)', async () => {
     const em = `del2${ts}@t.co`;
-    const u = (await api('/api/register', 'POST', { email: em, password: 'Passw0rd!Long1', name: 'Busy', role: 'customer', phone: '+48500600811', acceptedTerms: true }, null)).json;
+    const u = (await api('/api/register', 'POST', { email: em, password: 'Passw0rd!Long1', name: 'Busy', role: 'customer', city: CITY, phone: '+48500600811', acceptedTerms: true }, null)).json;
     const pr = (await api('/api/properties', 'POST', { type: 'apartment', label: 'x', city: 'Warsaw', rooms: 1, baths: 1 }, u.token)).json.property;
     await api('/api/bookings', 'POST', { propertyId: pr.id, service: 'standard' }, u.token);
     const del = await api('/api/me/delete-request', 'POST', {}, u.token);
