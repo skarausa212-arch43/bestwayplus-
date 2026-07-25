@@ -91,8 +91,19 @@ function rateLimit(key, max, windowMs) {
   return { ok: true };
 }
 setInterval(() => { const t = Date.now(); for (const [k, v] of rlBuckets) if (t > v.reset) rlBuckets.delete(k); }, 60000).unref?.();
+// Client IP for rate limiting. X-Forwarded-For is attacker-controlled, so it is
+// only trusted when we know how many reverse proxies sit in front of us
+// (LUMI_TRUST_PROXY = number of hops; deploy/deploy.sh sets 1 for nginx).
+// nginx appends the real peer with $proxy_add_x_forwarded_for, so the trusted
+// value is counted from the RIGHT — taking the left-most entry would let anyone
+// spoof a fresh IP per request and walk straight through the limits.
+const TRUSTED_PROXY_HOPS = Math.max(0, Math.min(5, Number(process.env.LUMI_TRUST_PROXY) || 0));
 function clientIp(req) {
-  return (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || 'unknown';
+  const peer = req.socket.remoteAddress || 'unknown';
+  if (!TRUSTED_PROXY_HOPS) return peer;
+  const chain = String(req.headers['x-forwarded-for'] || '').split(',').map((x) => x.trim()).filter(Boolean);
+  if (!chain.length) return peer;
+  return chain[Math.max(0, chain.length - TRUSTED_PROXY_HOPS)] || peer;
 }
 
 // Append-only audit log for sensitive actions (§30). Never logs tokens/PII bodies.
@@ -686,16 +697,24 @@ function send(res, status, body, headers = {}) {
   });
   res.end(data);
 }
+// Malformed JSON must NOT be silently coerced to {} — a body truncated by a
+// flaky mobile network would otherwise create an order with default values the
+// customer never agreed to. An empty body is fine ({}); broken JSON is a 400.
+class BadJsonError extends Error { constructor() { super('Malformed JSON body.'); this.code = 'BAD_JSON'; } }
 function readBody(req) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     let raw = '';
     req.on('data', (c) => {
       raw += c;
       if (raw.length > 5e6) req.destroy();   // 5MB guard (photos are base64 thumbnails)
     });
     req.on('end', () => {
-      try { resolve(raw ? JSON.parse(raw) : {}); }
-      catch { resolve({}); }
+      if (!raw) return resolve({});
+      let parsed;
+      try { parsed = JSON.parse(raw); }
+      catch { return reject(new BadJsonError()); }
+      // Only object bodies are meaningful for our API; arrays/scalars are noise.
+      resolve(parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {});
     });
   });
 }
@@ -4027,6 +4046,9 @@ const server = http.createServer(async (req, res) => {
     }
     serveStatic(req, res);
   } catch (err) {
+    if (err && err.code === 'BAD_JSON') {
+      return res.headersSent ? undefined : send(res, 400, { error: 'Некорректный формат запроса.', code: 'BAD_JSON' });
+    }
     console.error(JSON.stringify({ at: new Date().toISOString(), requestId, level: 'error', msg: String(err && err.message || err) }));
     if (!res.headersSent) send(res, 500, { error: 'Internal server error.' });
   }

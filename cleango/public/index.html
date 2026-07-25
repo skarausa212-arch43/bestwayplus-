@@ -191,9 +191,15 @@ textarea.input{resize:vertical;min-height:80px}
 .opt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px}
 .opt{position:relative;padding:16px;border:1.5px solid var(--line);border-radius:15px;cursor:pointer;transition:.15s;text-align:center}
 .opt:hover{border-color:var(--primary)}
-.opt-info{position:absolute;top:7px;right:7px;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line-strong);
-  background:var(--surface);color:var(--ink-3);font:700 13px/1 Georgia,serif;font-style:italic;cursor:pointer;display:grid;place-items:center;z-index:2}
-.opt-info:hover{border-color:var(--primary);color:var(--primary-600)}
+/* The hit area is the full 40×40 button (WCAG target size); the visible dot is
+   the 22px circle drawn by ::before, so the design is unchanged but the control
+   is comfortably tappable on a phone. */
+.opt-info{position:absolute;top:-2px;right:-2px;width:40px;height:40px;border:0;background:none;padding:0;
+  color:var(--ink-3);font:700 13px/1 Georgia,serif;font-style:italic;cursor:pointer;display:grid;place-items:center;z-index:3}
+.opt-info::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:22px;height:22px;
+  border-radius:50%;border:1.5px solid var(--line-strong);background:var(--surface);z-index:-1;transition:border-color .15s}
+.opt-info:hover{color:var(--primary-600)}
+.opt-info:hover::before{border-color:var(--primary)}
 /* frequency plan chips */
 .freq-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .freq-chip{display:flex;flex-direction:column;gap:2px;align-items:flex-start;padding:11px 12px;border:1.5px solid var(--line-strong);
@@ -967,11 +973,22 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .support-card b{display:block;font-size:13.5px}.support-card span{color:var(--ink-3);font-size:12px}
 .mainwrap{min-width:0;display:flex;flex-direction:column}
 .dash .topbar{border-bottom:1px solid var(--line);padding:12px 26px}
-.userchip{display:flex;align-items:center;gap:10px;padding:5px 12px 5px 5px;border-radius:15px;transition:background .15s}
+.userchip{display:flex;align-items:center;gap:10px;padding:5px 12px 5px 5px;border-radius:15px;transition:background .15s;min-width:0;flex:0 1 auto}
 .userchip:hover{background:var(--surface-2)}
-.userchip .avatar{width:38px;height:38px}
-.userchip .uc-txt{display:flex;flex-direction:column;line-height:1.15;text-align:left}
+.userchip .avatar{width:38px;height:38px;flex:none}
+/* The name must never push the header past the viewport on narrow phones —
+   it shrinks and ellipsises instead (that overflow used to scroll the page
+   sideways and squash the icon buttons to 12px). */
+.userchip .uc-txt{display:flex;flex-direction:column;line-height:1.15;text-align:left;min-width:0;overflow:hidden}
+.userchip .uc-txt b,.userchip .uc-txt>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 .userchip .uc-txt b{font-size:14px}.userchip .uc-txt>span{font-size:12px;color:var(--primary-600);font-weight:600}
+/* Header controls keep their tap size; only the name area gives way. */
+.topbar .iconbtn,.topbar .langbtn{flex:none}
+.topbar .brand,.topbar .mobile-brand{flex:none;min-width:0}
+@media(max-width:400px){
+  .userchip .uc-txt{display:none}          /* very small phones: avatar only */
+  .topbar{gap:10px}
+}
 .mobile-brand{display:none}
 .dash .main{padding:26px}
 /* home dashboard grid: hero full width, then main + right rail */
@@ -1258,6 +1275,15 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .eq-group{margin-bottom:10px;animation:cardIn .35s var(--ease) both}
 .eq-head{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3);margin:8px 0 6px}
 
+/* Grid/flex children default to min-width:auto, so a long word or a wide card
+   can blow a track past the viewport and scroll the whole page sideways.
+   Let tracks shrink, and collapse hard-coded 2-column grids on small phones. */
+.grid>*,.kpi-grid>*,.svc-grid>*,.row>*{min-width:0}
+@media(max-width:560px){
+  .grid[style*="1fr 1fr"]{grid-template-columns:1fr!important}
+  .grid[style*="repeat(4,1fr)"],.grid[style*="repeat(3,1fr)"]{grid-template-columns:1fr 1fr!important}
+}
+
 /* ── compact provider sign-up: chip-style equipment, tighter rhythm ── */
 .row2{gap:10px;align-items:flex-start}
 .row2 .field{flex:1;min-width:0}
@@ -1490,6 +1516,10 @@ Object.assign(TR.uk,{"Стрижка газона":"Стрижка газону"
 Object.assign(TR.pl,{"Кем вы можете работать? *":"W jakiej roli możesz pracować? *","Выберите профессии — остальные откроются скоро.":"Wybierz profesje — pozostałe wkrótce.","Выберите, кем вы можете работать":"Wybierz, w jakiej roli możesz pracować","скоро":"wkrótce","Газонокосилка":"Kosiarka","Триммер / бензокоса":"Podkaszarka / kosa spalinowa","Кусторез / ножницы для изгороди":"Nożyce do żywopłotu","Вертикуттер":"Wertykulator","Аэратор":"Aerator","Воздуходувка":"Dmuchawa","Садовый инвентарь (грабли, секатор)":"Narzędzia ogrodowe (grabie, sekator)"});
 Object.assign(TR.en,{"Кем вы можете работать? *":"What can you work as? *","Выберите профессии — остальные откроются скоро.":"Pick your professions — more coming soon.","Выберите, кем вы можете работать":"Pick what you can work as","скоро":"coming soon","Газонокосилка":"Lawn mower","Триммер / бензокоса":"String trimmer / brushcutter","Кусторез / ножницы для изгороди":"Hedge trimmer / shears","Вертикуттер":"Scarifier","Аэратор":"Aerator","Воздуходувка":"Leaf blower","Садовый инвентарь (грабли, секатор)":"Garden tools (rake, pruner)"});
 Object.assign(TR.uk,{"Кем вы можете работать? *":"Ким ви можете працювати? *","Выберите профессии — остальные откроются скоро.":"Оберіть професії — решта незабаром.","Выберите, кем вы можете работать":"Оберіть, ким ви можете працювати","скоро":"незабаром","Газонокосилка":"Газонокосарка","Триммер / бензокоса":"Тример / бензокоса","Кусторез / ножницы для изгороди":"Кущоріз / ножиці для живоплоту","Вертикуттер":"Вертикутер","Аэратор":"Аератор","Воздуходувка":"Повітродувка","Садовый инвентарь (грабли, секатор)":"Садовий інвентар (граблі, секатор)"});
+/* release audit: strings that leaked untranslated */
+Object.assign(TR.pl,{"Новинка":"Nowość","Заказы приходят только когда вы «На линии».":"Zlecenia przychodzą tylko, gdy jesteś „Na linii”.","⏳ Аккаунт на проверке у администратора.":"⏳ Konto w weryfikacji u administratora.","отз.":"opinii","назад":"temu","только что":"przed chwilą","Рейтинг":"Ocena","ч":"h"});
+Object.assign(TR.en,{"Новинка":"New","Заказы приходят только когда вы «На линии».":"Jobs arrive only while you are “Online”.","⏳ Аккаунт на проверке у администратора.":"⏳ Account pending admin review.","отз.":"reviews","назад":"ago","только что":"just now","Рейтинг":"Rating","ч":"h"});
+Object.assign(TR.uk,{"Новинка":"Новинка","Заказы приходят только когда вы «На линии».":"Замовлення надходять лише коли ви «На лінії».","⏳ Аккаунт на проверке у администратора.":"⏳ Акаунт на перевірці в адміністратора.","отз.":"відгуків","назад":"тому","только что":"щойно","Рейтинг":"Рейтинг","ч":"год"});
 /* cleaner registration: individual / company, PESEL, bank */
 Object.assign(TR.pl,{"Регистрируетесь как":"Rejestrujesz się jako","Физлицо":"Osoba fizyczna","Фирма":"Firma","Контактное лицо":"Osoba kontaktowa","Название фирмы *":"Nazwa firmy *","NIP (10 цифр) *":"NIP (10 cyfr) *","PESEL (11 цифр) *":"PESEL (11 cyfr) *","О компании — услуги и опыт *":"O firmie — usługi i doświadczenie *","Лет на рынке":"Lat na rynku","Банковские реквизиты для выплат":"Dane bankowe do wypłat","Название банка *":"Nazwa banku *","Номер счёта (IBAN) *":"Numer konta (IBAN) *"});
 Object.assign(TR.en,{"Регистрируетесь как":"You’re registering as","Физлицо":"Individual","Фирма":"Company","Контактное лицо":"Contact person","Название фирмы *":"Company name *","NIP (10 цифр) *":"NIP (10 digits) *","PESEL (11 цифр) *":"PESEL (11 digits) *","О компании — услуги и опыт *":"About the company — services & experience *","Лет на рынке":"Years on the market","Банковские реквизиты для выплат":"Bank details for payouts","Название банка *":"Bank name *","Номер счёта (IBAN) *":"Account number (IBAN) *"});
@@ -2172,7 +2202,24 @@ async function shareCleanerLocation(){
   _lastLocSent=Date.now();
   api('/api/cleaner/location','POST',loc).catch(()=>{});
 }
-function timeAgo(ts){const s=(Date.now()-ts)/1000;if(s<60)return'только что';if(s<3600){const m=Math.floor(s/60);return m+' '+plural(m,'мин','мин','мин')+' назад';}if(s<86400){const h=Math.floor(s/3600);return h+' '+plural(h,'час','часа','часов')+' назад';}const d=Math.floor(s/86400);return d+' '+plural(d,'день','дня','дней')+' назад';}
+// Relative time, localized. Built with Intl so pl/en/uk read naturally instead
+// of leaking Russian ("3 мин назад") into a Polish or English UI.
+function timeAgo(ts){
+  const s=(Date.now()-ts)/1000;
+  const loc={ru:'ru-RU',pl:'pl-PL',en:'en-GB',uk:'uk-UA'}[state.lang]||'ru-RU';
+  try{
+    const rtf=new Intl.RelativeTimeFormat(loc,{numeric:'auto'});
+    if(s<60)return rtf.format(0,'minute');
+    if(s<3600)return rtf.format(-Math.floor(s/60),'minute');
+    if(s<86400)return rtf.format(-Math.floor(s/3600),'hour');
+    return rtf.format(-Math.floor(s/86400),'day');
+  }catch(e){
+    if(s<60)return t('только что');
+    if(s<3600){const m=Math.floor(s/60);return m+' '+plural(m,'мин','мин','мин')+' '+t('назад');}
+    if(s<86400){const h=Math.floor(s/3600);return h+' '+plural(h,'час','часа','часов')+' '+t('назад');}
+    const d=Math.floor(s/86400);return d+' '+plural(d,'день','дня','дней')+' '+t('назад');
+  }
+}
 // Format dates/times in the active UI language (falls back to Polish).
 function curLocale(){return ({pl:'pl-PL',en:'en-GB',ru:'ru-RU',uk:'uk-UA'})[state.lang]||'pl-PL';}
 function fmtTime(ts){return new Date(ts).toLocaleString(curLocale(),{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'});}
@@ -2884,7 +2931,7 @@ function viewHome(){
       <div class="ico ${CAT_COLOR[cat.key]||'c-cleaning'}">${CAT_ICON[cat.key]||I.broom}</div>
       <h4>${label}</h4>
       <div class="from">${active?(CAT_DESC_RU[cat.key]||cat.desc):'Скоро'}</div>
-      ${active?(flagOn?'<span class="badge green" style="position:absolute;top:12px;right:12px">Новинка</span>':''):'<span class="badge grey" style="position:absolute;top:12px;right:12px">Скоро</span>'}
+      ${active?(flagOn?`<span class="badge green" style="position:absolute;top:12px;right:12px">${t('Новинка')}</span>`:''):`<span class="badge grey" style="position:absolute;top:12px;right:12px">${t('Скоро')}</span>`}
     </div>`);
     card.style.position='relative';
     card.onclick=()=>{ active?(cat.key==='garden'?openOgrodCalc():startBooking(cat.key==='windows'?'windows':'standard')):toast(`${label} — скоро в вашем городе`); };
@@ -5557,7 +5604,7 @@ async function viewJobs(){
   const cur=u.presence||(u.online?'online':'offline');
   const PRESENCE=[['online','На линии','var(--primary)'],['busy','Занят','#F2A93B'],['break','Перерыв','#8B93A7'],['offline','Не в сети','var(--line)']];
   c.appendChild(el(`<div class="card pad" style="margin-bottom:18px">
-    <div style="flex:1"><h3>Статус доступности</h3><p class="muted tiny" style="margin:4px 0 12px">${u.verified?'Заказы приходят только когда вы «На линии».':'⏳ Аккаунт на проверке у администратора.'}</p></div>
+    <div style="flex:1"><h3>Статус доступности</h3><p class="muted tiny" style="margin:4px 0 12px">${u.verified?t('Заказы приходят только когда вы «На линии».'):t('⏳ Аккаунт на проверке у администратора.')}</p></div>
     <div class="row" id="presence" style="gap:8px;flex-wrap:wrap">
       ${PRESENCE.map(([k,label,col])=>`<button class="btn sm ${k===cur?'':'ghost'}" data-pres="${k}" ${u.verified?'':'disabled'} style="${k===cur?`background:${col};color:${k==='offline'?'var(--ink)':'#fff'}`:''}">${label}</button>`).join('')}
     </div>
@@ -6225,7 +6272,7 @@ async function viewEarnings(){
       </div>
       <div class="section-title">Показатели</div>
       <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px">
-        ${perfCard('Рейтинг',m.rating?('⭐ '+m.rating):'—',m.reviews+' отзыв.')}
+        ${perfCard(t('Рейтинг'),m.rating?('⭐ '+m.rating):'—',m.reviews+' '+t('отз.'))}
         ${perfCard('Завершаемость',m.completionRate+'%','')}
         ${perfCard('Приём заказов',m.acceptanceRate+'%','')}
         ${perfCard('Пунктуальность',m.punctuality+'%','')}

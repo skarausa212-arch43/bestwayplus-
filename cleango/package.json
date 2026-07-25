@@ -17,7 +17,10 @@
     "lifecycle-check": "node ops/lifecycle-check.js",
     "rules-check": "node ops/rules-check.js",
     "asset-check": "node ops/asset-check.js",
-    "launch-check": "node ops/launch-check.js"
+    "launch-check": "node ops/launch-check.js",
+    "spa-check": "node ops/spa-syntax-check.js",
+    "ui-audit": "node ops/ui-audit.js",
+    "release-audit": "node ops/release-audit.js"
   },
   "dependencies": {}
 }
