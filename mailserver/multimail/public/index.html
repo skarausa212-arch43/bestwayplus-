@@ -133,6 +133,24 @@
   .badge.bump { animation: bump .5s cubic-bezier(.2,1.4,.4,1); }
   @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.4); } 100% { transform: scale(1); } }
 
+  /* paper plane flying off when a message is sent */
+  .plane {
+    position: fixed; z-index: 80; width: 40px; height: 40px; pointer-events: none;
+    color: #8B5CF6; filter: drop-shadow(0 0 14px rgba(139,92,246,.9));
+    animation: fly 1.1s cubic-bezier(.3,.1,.55,1) forwards;
+  }
+  @keyframes fly {
+    0% { transform: translate(0, 0) rotate(0deg) scale(.9); opacity: 1; }
+    20% { transform: translate(6vw, -4vh) rotate(6deg) scale(1.1); }
+    100% { transform: translate(72vw, -85vh) rotate(26deg) scale(.45); opacity: 0; }
+  }
+  .puff {
+    position: fixed; z-index: 79; width: 5px; height: 5px; border-radius: 50%;
+    background: #F2C97D; box-shadow: 0 0 10px #F2C97D; pointer-events: none;
+    animation: puff .7s ease-out forwards;
+  }
+  @keyframes puff { to { transform: translate(var(--dx), var(--dy)) scale(.15); opacity: 0; } }
+
   .msgs { flex: 1; overflow-y: auto; }
   .m {
     display: flex; gap: 10px; align-items: flex-start;
@@ -512,6 +530,28 @@ function openCompose(fromId, to = '', subj = '') {
 $('composeBtn').addEventListener('click', () => openCompose(filter));
 $('cCancel').addEventListener('click', () => $('modal').classList.remove('open'));
 $('modal').addEventListener('click', (e) => { if (e.target === $('modal')) $('modal').classList.remove('open'); });
+function launchPlane() {
+  const r = $('cSend').getBoundingClientRect();
+  const x = r.left + r.width / 2 - 20, y = r.top + r.height / 2 - 20;
+  const p = document.createElement('div');
+  p.className = 'plane';
+  p.style.left = x + 'px'; p.style.top = y + 'px';
+  p.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>';
+  document.body.appendChild(p);
+  for (let i = 0; i < 8; i++) {
+    const q = document.createElement('span');
+    q.className = 'puff';
+    q.style.left = (x + 18) + 'px'; q.style.top = (y + 18) + 'px';
+    const a = Math.random() * Math.PI * 2, d = 26 + Math.random() * 34;
+    q.style.setProperty('--dx', Math.cos(a) * d + 'px');
+    q.style.setProperty('--dy', Math.sin(a) * d + 'px');
+    q.style.animationDelay = (Math.random() * .12) + 's';
+    document.body.appendChild(q);
+    setTimeout(() => q.remove(), 900);
+  }
+  setTimeout(() => p.remove(), 1200);
+}
+
 $('cSend').addEventListener('click', async () => {
   const st = $('cSt');
   st.className = 'st'; st.textContent = 'Sending…';
@@ -519,6 +559,7 @@ $('cSend').addEventListener('click', async () => {
     await api('api/send', { method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ account: $('cFrom').value, to: $('cTo').value, subject: $('cSubj').value, text: $('cText').value }) });
     st.className = 'st ok'; st.textContent = 'Sent ✓';
+    launchPlane();
     setTimeout(() => { $('modal').classList.remove('open'); reload(); }, 900);
   } catch (e) {
     st.className = 'st err'; st.textContent = e.message;

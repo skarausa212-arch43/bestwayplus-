@@ -327,6 +327,19 @@ function spawnParticle() {
 for (let i = 0; i < 10; i++) setTimeout(spawnParticle, i * 500);
 setInterval(spawnParticle, 1400);
 
+// 3D tilt: feature cards follow the cursor (desktop only)
+if (matchMedia('(pointer: fine)').matches) {
+  document.querySelectorAll('.feat').forEach((el) => {
+    el.addEventListener('mousemove', (e) => {
+      const r = el.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width - .5;
+      const y = (e.clientY - r.top) / r.height - .5;
+      el.style.transform = `perspective(600px) rotateY(${x * 10}deg) rotateX(${-y * 10}deg) translateY(-4px)`;
+    });
+    el.addEventListener('mouseleave', () => { el.style.transform = ''; });
+  });
+}
+
 // confetti burst
 const CF_COLORS = ['#6366F1', '#8B5CF6', '#60A5FA', '#F2C97D', '#ffffff'];
 function confetti() {
