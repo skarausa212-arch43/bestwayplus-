@@ -117,9 +117,13 @@ echo "--- multimail API:"
 curl -s https://$DOMAIN/mail/multi/api/info; echo
 echo "--- webmail HTTP-код:"
 curl -s -o /dev/null -w '%{http_code}\n' https://$DOMAIN/mail/webmail/
-echo "--- регистрация тестового ящика demo@$DOMAIN (пароль в /root/bwp-mail-demo.txt):"
-DEMOPASS=$(openssl rand -base64 12)
-curl -s -X POST https://$DOMAIN/mail/api/register -H 'Content-Type: application/json' \
-  -d "{\"username\":\"demo\",\"password\":\"$DEMOPASS\"}"; echo
-echo "demo@$DOMAIN  $DEMOPASS" > /root/bwp-mail-demo.txt && chmod 600 /root/bwp-mail-demo.txt
+if ! grep -q "^demo@$DOMAIN|" docker-data/dms/config/postfix-accounts.cf; then
+  echo "--- регистрация тестового ящика demo@$DOMAIN (пароль в /root/bwp-mail-demo.txt):"
+  DEMOPASS=$(openssl rand -base64 12)
+  curl -s -X POST https://$DOMAIN/mail/api/register -H 'Content-Type: application/json' \
+    -d "{\"username\":\"demo\",\"password\":\"$DEMOPASS\"}"; echo
+  echo "demo@$DOMAIN  $DEMOPASS" > /root/bwp-mail-demo.txt && chmod 600 /root/bwp-mail-demo.txt
+else
+  echo "--- demo@$DOMAIN уже существует, пароль не трогаем"
+fi
 echo "=== Готово ==="
