@@ -100,6 +100,17 @@
   .addbox button:active { transform: scale(.98); }
   .addbox button:disabled { opacity: .55; }
   .addbox .e { color: #f87171; font-size: 12px; min-height: 15px; margin-bottom: 4px; }
+  .addbox .alt {
+    width: 100%; margin-top: 7px; padding: 9px; border: 0; border-radius: 8px;
+    font-weight: 650; font-size: 13px; font-family: inherit; cursor: pointer;
+    background: rgba(148,163,214,.12); color: var(--text); box-shadow: none;
+    transition: background .15s;
+  }
+  .addbox .alt:hover { background: rgba(148,163,214,.2); }
+  .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .addrline { display: flex; align-items: center; gap: 8px; }
+  .addrline input { margin-bottom: 9px; }
+  .rdom { font-weight: 700; color: var(--gold); font-size: 14px; white-space: nowrap; margin-bottom: 9px; }
 
   /* ============ message list ============ */
   main { flex: 1; display: flex; min-width: 0; }
@@ -302,6 +313,7 @@
     <input id="aPass" type="password" placeholder="password" autocomplete="off">
     <label><input type="checkbox" id="aRemember" checked> remember in this browser</label>
     <button id="aBtn">+ Add mailbox</button>
+    <button id="newAddrBtn" class="alt">Create new address</button>
   </div>
 </aside>
 
@@ -323,6 +335,28 @@
     <div class="placeholder">Select a message</div>
   </div>
 </main>
+
+<div class="modal" id="regModal">
+  <div class="mwin">
+    <h3>Create a new address</h3>
+    <div class="cols2">
+      <input id="rFn" placeholder="First name" maxlength="40">
+      <input id="rLn" placeholder="Last name" maxlength="40">
+    </div>
+    <div class="addrline">
+      <input id="rUser" placeholder="name" autocomplete="off">
+      <span class="rdom" id="rDom">@…</span>
+    </div>
+    <input id="rPass" type="password" placeholder="Password (8+ characters)" autocomplete="new-password">
+    <input id="rRec" type="email" placeholder="Recovery email (optional)">
+    <input id="rInv" placeholder="Invite code" style="display:none">
+    <div class="st" id="rSt"></div>
+    <div class="row">
+      <button class="btn ghost" id="rCancel">Cancel</button>
+      <button class="btn" id="rCreate">Create</button>
+    </div>
+  </div>
+</div>
 
 <div class="modal" id="modal">
   <div class="mwin">
@@ -591,6 +625,51 @@ $('aBtn').addEventListener('click', async () => {
     $('addErr').textContent = e.message;
   } finally {
     $('aBtn').disabled = false; $('aBtn').textContent = '+ Add mailbox';
+  }
+});
+
+// --- register a brand-new address without leaving the app ---
+let regInviteRequired = false;
+fetch('../api/info').then((r) => r.json()).then((i) => {
+  $('rDom').textContent = '@' + i.domain;
+  regInviteRequired = i.inviteRequired;
+  if (regInviteRequired) $('rInv').style.display = '';
+}).catch(() => {});
+
+function closeReg() { $('regModal').classList.remove('open'); }
+$('newAddrBtn').addEventListener('click', () => {
+  $('rSt').textContent = ''; $('rSt').className = 'st';
+  $('regModal').classList.add('open');
+});
+$('rCancel').addEventListener('click', closeReg);
+$('regModal').addEventListener('click', (e) => { if (e.target === $('regModal')) closeReg(); });
+$('rCreate').addEventListener('click', async () => {
+  const st = $('rSt');
+  const password = $('rPass').value;
+  if (password.length < 8) { st.className = 'st err'; st.textContent = 'Password must be 8+ characters.'; return; }
+  st.className = 'st'; st.textContent = 'Creating…';
+  $('rCreate').disabled = true;
+  try {
+    const data = await api('../api/register', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        firstName: $('rFn').value, lastName: $('rLn').value,
+        username: $('rUser').value, password,
+        recovery: $('rRec').value, invite: $('rInv').value,
+      }),
+    });
+    st.textContent = 'Connecting ' + data.email + '…';
+    await api('api/accounts', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: data.email, password }) });
+    if ($('aRemember').checked) saveAcc(data.email, password);
+    st.className = 'st ok'; st.textContent = data.email + ' created ✓';
+    ['rFn','rLn','rUser','rPass','rRec','rInv'].forEach((id) => { $(id).value = ''; });
+    setTimeout(closeReg, 900);
+    await reload();
+  } catch (e) {
+    st.className = 'st err'; st.textContent = e.message;
+  } finally {
+    $('rCreate').disabled = false;
   }
 });
 

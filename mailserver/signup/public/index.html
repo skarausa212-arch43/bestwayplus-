@@ -60,9 +60,21 @@
   @keyframes orbit { to { transform: rotate(360deg); } }
   .brand .name { font-size: 18px; font-weight: 800; letter-spacing: -.02em; }
   .brand .name em { font-style: normal; background: linear-gradient(90deg, var(--acc), var(--cyan)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-  .hud { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; color: var(--muted); display: flex; gap: 16px; }
+  .hud { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; color: var(--muted); display: flex; gap: 16px; align-items: center; }
   .hud .ok { color: #3ECF6E; animation: blink 2.4s steps(2) infinite; }
   @keyframes blink { 50% { opacity: .3; } }
+  .signin {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .1em; font-weight: 700;
+    color: var(--cyan); text-decoration: none; padding: 8px 14px;
+    border: 1px solid rgba(76,201,240,.4);
+    clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+    transition: background .2s, color .2s;
+  }
+  .signin:hover { background: rgba(76,201,240,.14); }
+  .signin:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+  .altlink { display: block; margin-top: 16px; text-align: center; font-size: 13px; color: var(--muted); }
+  .altlink a { color: var(--cyan); text-decoration: none; font-weight: 600; }
+  .altlink a:hover { text-decoration: underline; }
 
   /* ===== hero ===== */
   .hero { display: grid; grid-template-columns: 1.12fr 1fr; gap: 60px; padding: 64px 0 40px; align-items: start; }
@@ -193,7 +205,7 @@
   @media (max-width: 860px) {
     .hero { grid-template-columns: 1fr; gap: 40px; padding: 36px 0 30px; }
     .tele { grid-template-columns: repeat(2, 1fr); max-width: none; }
-    .hud { display: none; }
+    .hud span { display: none; } /* на телефоне остаётся только кнопка SIGN IN */
     .page { padding-bottom: calc(50px + env(safe-area-inset-bottom, 0px)); }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -219,7 +231,7 @@
       </div>
       <div class="name">Viply<em>.online</em></div>
     </div>
-    <div class="hud"><span><span class="ok">●</span> LINK SECURE</span><span id="clock">--:--:--</span></div>
+    <div class="hud"><span><span class="ok">●</span> LINK SECURE</span><span id="clock">--:--:--</span><a class="signin" href="multi/">SIGN IN ▸</a></div>
   </header>
 
   <main class="hero">
@@ -261,11 +273,22 @@
       </div>
       <button id="btn" type="submit">INITIALIZE ACCOUNT ▸</button>
       <div class="msg" id="msg"></div>
+      <div class="altlink">Already have an address? <a href="multi/">Sign in ▸</a></div>
     </form>
   </main>
 </div>
 
 <script>
+/* ===== уже вошедших отправляем сразу в почту ===== */
+(function () {
+  try {
+    const saved = JSON.parse(localStorage.getItem('viplyAccounts') || '[]');
+    fetch('multi/api/info').then((r) => r.json()).then((i) => {
+      if ((i.accounts && i.accounts.length) || saved.length) location.replace('multi/');
+    }).catch(() => {});
+  } catch {}
+})();
+
 /* ===== warp starfield ===== */
 const cv = document.getElementById('stars'), cx = cv.getContext('2d');
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
