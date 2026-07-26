@@ -203,10 +203,20 @@
   @keyframes cfFall { to { transform: translate3d(var(--dx, 0px), 108vh, 0) rotate(var(--rot, 400deg)); opacity: .6; } }
 
   @media (max-width: 860px) {
-    .hero { grid-template-columns: 1fr; gap: 40px; padding: 36px 0 30px; }
+    .hero { grid-template-columns: 1fr; gap: 40px; padding: 30px 0 26px; }
     .tele { grid-template-columns: repeat(2, 1fr); max-width: none; }
     .hud span { display: none; } /* на телефоне остаётся только кнопка SIGN IN */
-    .page { padding-bottom: calc(50px + env(safe-area-inset-bottom, 0px)); }
+    .page { padding: 0 18px calc(50px + env(safe-area-inset-bottom, 0px)); }
+    .nav { height: auto; padding: calc(14px + env(safe-area-inset-top, 0px)) 0 6px; }
+    .brand .name { font-size: 16px; }
+    .orb { width: 38px; height: 38px; }
+    /* перспективная сетка на телефоне глючит и шумит — оставляем чистые звёзды */
+    .floor, .horizon { display: none; }
+    /* панель формы плотнее, чтобы фон не просвечивал кашей */
+    .panel { background: rgba(11,14,30,.94); backdrop-filter: none; -webkit-backdrop-filter: none; padding: 24px 18px 22px; }
+    h1 { font-size: clamp(2.2rem, 9.5vw, 2.8rem); }
+    .lead { font-size: 15.5px; }
+    .mod .v { font-size: 15px; }
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; }
@@ -296,7 +306,8 @@ let W, H, stars = [];
 function resize() { W = cv.width = innerWidth; H = cv.height = innerHeight; }
 addEventListener('resize', resize); resize();
 const STAR_COLORS = ['#EDF0FF', '#8A7CFF', '#4CC9F0', '#EDF0FF', '#F2C97D'];
-for (let i = 0; i < 200; i++) {
+const STAR_COUNT = innerWidth < 700 ? 90 : 200; // телефону хватит меньшего роя
+for (let i = 0; i < STAR_COUNT; i++) {
   stars.push({ x: (Math.random() - .5) * 2000, y: (Math.random() - .5) * 2000, z: Math.random() * 1000 + 1,
                c: STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)] });
 }
