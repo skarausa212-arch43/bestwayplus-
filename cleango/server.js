@@ -2296,7 +2296,7 @@ function cleanerGeo(c) {
 function dispatchNearestFirst(booking) {
   const instant = booking.urgency === 'flash';
   const candidates = Object.values(db.users)
-    .filter((c) => c.role === 'cleaner' && !c.deletedAt && c.verified && providerServes(c, booking))
+    .filter((c) => c.role === 'cleaner' && !c.deletedAt && c.verified && !c.investigationSince && providerServes(c, booking))
     .map((c) => ({
       id: c.id, verified: c.verified, online: c.online, status: 'active',
       location: cleanerGeo(c), serviceRadiusKm: 30,
@@ -2682,6 +2682,7 @@ route('POST', '/api/bookings/:id/accept', async (req, res, params) => {
   const user = authUser(req);
   if (!user || user.role !== 'cleaner') return send(res, 403, { error: 'Cleaners only.' });
   if (!user.verified) return send(res, 403, { error: 'Your account is pending verification.' });
+  if (user.investigationSince) return send(res, 403, { error: 'Приём заказов приостановлен на время разбирательства по инциденту.', code: 'UNDER_INVESTIGATION' });
   const bk = db.bookings[params.id];
   if (!bk) return send(res, 404, { error: 'Booking not found.' });
   if (bk.status !== 'searching') return send(res, 409, { error: 'This job is no longer available.' });
@@ -2951,11 +2952,31 @@ const DISPUTE_CATEGORIES = {
   quality:    'Плохо убрано / качество',
   no_show:    'Исполнитель не пришёл',
   late:       'Опоздание',
+  theft:      'Кража / пропажа вещей',
   damage:     'Повреждение имущества',
+  safety:     'Угроза безопасности / недопустимое поведение',
   payment:    'Спор по оплате',
   behavior:   'Поведение / общение',
   other:      'Другое',
 };
+// Incidents that touch a customer's safety or property. Opening one freezes the
+// provider's payout and takes them off dispatch until a human resolves it —
+// otherwise the money would leave on the next Tuesday run and the platform
+// would have no leverage left (§Safety).
+const SEVERE_DISPUTES = new Set(['theft', 'damage', 'safety']);
+// Providers with an unresolved severe incident: excluded from the weekly payout
+// batch and from dispatch. Returns a Map providerId -> [disputeId, …].
+function providersUnderInvestigation() {
+  const held = new Map();
+  for (const d of Object.values(db.disputes)) {
+    if (d.status !== 'open' || !SEVERE_DISPUTES.has(d.category)) continue;
+    const bk = db.bookings[d.bookingId];
+    if (!bk || !bk.cleanerId) continue;
+    if (!held.has(bk.cleanerId)) held.set(bk.cleanerId, []);
+    held.get(bk.cleanerId).push(d.id);
+  }
+  return held;
+}
 function disputeView(d) {
   const bk = db.bookings[d.bookingId];
   const opener = db.users[d.openedBy];
@@ -2991,8 +3012,23 @@ route('POST', '/api/bookings/:id/issue', async (req, res, params) => {
   const d = { id, bookingId: bk.id, openedBy: user.id, openedRole: user.role, category, description, photo, status: 'open', createdAt: now() };
   db.disputes[id] = d;
   persist.disputes();
-  audit('dispute.opened', user.id, bk.id, { category });
+  audit('dispute.opened', user.id, bk.id, { category, severe: SEVERE_DISPUTES.has(category) });
   notify(user.id, 'dispute.opened', { service: bk.serviceLabel, bookingId: bk.id });
+  // Severe incident (theft / damage / safety): freeze the provider immediately —
+  // no new jobs, no payout — and alert every admin. Reversible on resolution.
+  if (SEVERE_DISPUTES.has(category) && bk.cleanerId) {
+    const provider = db.users[bk.cleanerId];
+    if (provider) {
+      provider.online = false;                 // stop taking new jobs right now
+      provider.investigationSince = provider.investigationSince || now();
+      persist.users();
+    }
+    for (const a of Object.values(db.users)) {
+      if (a.role === 'admin' && !a.deletedAt) {
+        notify(a.id, 'dispute.opened_admin', { who: user.name, category: DISPUTE_CATEGORIES[category], service: bk.serviceLabel, bookingId: bk.id });
+      }
+    }
+  }
   // Alert every admin.
   for (const a of Object.values(db.users)) {
     if (a.role === 'admin') notify(a.id, 'dispute.opened_admin', { who: user.name, category: DISPUTE_CATEGORIES[category], service: bk.serviceLabel, bookingId: bk.id });
@@ -3030,6 +3066,11 @@ route('POST', '/api/admin/disputes/:id/resolve', async (req, res, params) => {
   persist.disputes();
   audit('dispute.resolved', admin.id, d.bookingId, { disputeId: d.id });
   const bk = db.bookings[d.bookingId];
+  // Lift the investigation flag once this provider has no other open severe case.
+  if (bk && bk.cleanerId && !providersUnderInvestigation().has(bk.cleanerId)) {
+    const provider = db.users[bk.cleanerId];
+    if (provider && provider.investigationSince) { delete provider.investigationSince; persist.users(); }
+  }
   notify(d.openedBy, 'dispute.resolved', { service: bk ? bk.serviceLabel : 'заказ', resolution: d.resolution, bookingId: d.bookingId });
   send(res, 200, { dispute: disputeView(d) });
 });
@@ -3533,17 +3574,23 @@ route('POST', '/api/admin/users/:id/reactivate', async (req, res, params) => {
 // transfer, then settles the batch (which zeroes those balances).
 route('GET', '/api/admin/payouts', async (req, res) => {
   const admin = requireCap(req, res, 'payouts.manage'); if (!admin) return;
-  const cleaners = Object.values(db.users)
-    .filter((u) => u.role === 'cleaner' && !u.deletedAt && Math.round(u.wallet || 0) > 0)
-    .map((u) => ({
-      id: u.id, name: u.name, email: u.email || '', phone: u.phone || '',
-      bankAccount: u.bankAccount || '', bankName: u.bankName || '',
-      amount: Math.round(u.wallet || 0),
-    }))
+  const investigation = providersUnderInvestigation();
+  const row = (u) => ({
+    id: u.id, name: u.name, email: u.email || '', phone: u.phone || '',
+    bankAccount: u.bankAccount || '', bankName: u.bankName || '',
+    amount: Math.round(u.wallet || 0),
+  });
+  const all = Object.values(db.users).filter((u) => u.role === 'cleaner' && !u.deletedAt && Math.round(u.wallet || 0) > 0);
+  // Money owed to a provider with an open theft/damage/safety case stays on the
+  // platform until the case is closed — that is the only real leverage we have.
+  const cleaners = all.filter((u) => !investigation.has(u.id)).map(row).sort((a, b) => b.amount - a.amount);
+  const held = all.filter((u) => investigation.has(u.id))
+    .map((u) => ({ ...row(u), disputes: investigation.get(u.id), reason: 'under_investigation' }))
     .sort((a, b) => b.amount - a.amount);
   send(res, 200, {
     weekOf: new Date().toISOString().slice(0, 10), currency: CURRENCY,
     cleaners, total: cleaners.reduce((s, c) => s + c.amount, 0),
+    held, heldTotal: held.reduce((s, c) => s + c.amount, 0),
   });
 });
 // Mark a payout batch as paid: write an immutable ledger entry per cleaner and
@@ -3552,10 +3599,15 @@ route('POST', '/api/admin/payouts/settle', async (req, res) => {
   const admin = requireCap(req, res, 'payouts.manage'); if (!admin) return;
   const b = await readBody(req);
   const ids = Array.isArray(b.ids) ? b.ids : [];
+  const investigation = providersUnderInvestigation();
   let settled = 0, total = 0;
+  const blocked = [];
   for (const id of ids) {
     const u = db.users[id];
     if (!u || u.role !== 'cleaner') continue;
+    // Never pay out while a severe incident is open — enforced here too, not
+    // just hidden in the UI list.
+    if (investigation.has(id)) { blocked.push(id); continue; }
     const amount = Math.round(u.wallet || 0);
     if (amount <= 0) continue;
     ledger.record({ type: 'provider_settlement', amountMinor: -amount * 100, currency: CURRENCY, actor: id, reason: 'weekly_bank_payout' }, `settle:${id}:${Date.now()}`);
@@ -3564,7 +3616,7 @@ route('POST', '/api/admin/payouts/settle', async (req, res) => {
     notify(id, 'payout.sent', { amount: `${amount} zł` });
   }
   persist.users();
-  send(res, 200, { settled, total });
+  send(res, 200, { settled, total, blocked, blockedCount: blocked.length });
 });
 
 // ── Platform settings (super-admin): open cities, economy, site announcement ──

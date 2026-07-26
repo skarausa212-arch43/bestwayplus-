@@ -832,6 +832,59 @@ async function main() {
       assert.strictEqual(bad.status, 400);
     });
 
+    // ── SAFETY: theft/damage incident freezes the provider and their money ──
+    await ok('SAFETY: жалоба на кражу замораживает выплату и снимает исполнителя с линии', async () => {
+      const adm = await adminToken();
+      // fresh provider + completed job so there is real money to hold
+      const prov = await req('POST', '/api/register', { body: { name: 'Held Provider', email: 'held@x.pl', password: 'averylongpassword', phone: '600700800', role: 'cleaner', city: 'Warsaw', teamSize: 1, acceptedTerms: true, professions: ['cleaning'], entityType: 'company', companyName: 'HeldCo Sp. z o.o.', nip: '5252445281', bankName: 'PKO', bankAccount: 'PL27114020040000300201355387', bio: 'Профессиональная уборка квартир и домов, свой инвентарь.' } });
+      assert.strictEqual(prov.status, 200);
+      const provTok = prov.json.token, provId = prov.json.user.id;
+      await req('POST', '/api/admin/verify-cleaner', { token: adm, body: { cleanerId: provId, verified: true } });
+      await req('POST', '/api/cleaner/online', { token: provTok, body: { online: true } });
+      const props = await req('GET', '/api/properties', { token: customerTok });
+      const pid = props.json.properties[0].id;
+      const bk = (await req('POST', '/api/bookings', { token: customerTok, body: { propertyId: pid, service: 'standard' } })).json.booking;
+      await req('POST', `/api/bookings/${bk.id}/accept`, { token: provTok });
+      await req('POST', `/api/bookings/${bk.id}/enroute`, { token: provTok });
+      await req('POST', `/api/bookings/${bk.id}/photos`, { token: provTok, body: { phase: 'before', photo: IMG } });
+      await req('POST', `/api/bookings/${bk.id}/status`, { token: provTok, body: { status: 'in_progress' } });
+      await req('POST', `/api/bookings/${bk.id}/photos`, { token: provTok, body: { phase: 'after', photo: IMG } });
+      await req('POST', `/api/bookings/${bk.id}/status`, { token: provTok, body: { status: 'completed' } });
+      const earned = (await req('GET', '/api/me', { token: provTok })).json.user.wallet;
+      assert.ok(earned > 0, 'provider earned money');
+      // before the incident the provider is in the payout batch
+      const before = await req('GET', '/api/admin/payouts', { token: adm });
+      assert.ok(before.json.cleaners.some((c) => c.id === provId), 'provider payable before incident');
+      // customer reports theft
+      const inc = await req('POST', `/api/bookings/${bk.id}/issue`, { token: customerTok, body: { category: 'theft', description: 'После уборки пропали наличные из ящика стола.' } });
+      assert.strictEqual(inc.status, 200);
+      // money is held, not payable
+      const after = await req('GET', '/api/admin/payouts', { token: adm });
+      assert.ok(!after.json.cleaners.some((c) => c.id === provId), 'provider must NOT be in the payable list');
+      assert.ok(after.json.held.some((c) => c.id === provId), 'provider must appear as held');
+      assert.strictEqual(after.json.heldTotal, Math.round(earned), 'held amount equals what they earned');
+      // a direct settle attempt is refused server-side
+      const settle = await req('POST', '/api/admin/payouts/settle', { token: adm, body: { ids: [provId] } });
+      assert.strictEqual(settle.json.settled, 0, 'settle must not pay a provider under investigation');
+      assert.deepStrictEqual(settle.json.blocked, [provId], 'blocked list reports why');
+      const walletStill = (await req('GET', '/api/me', { token: provTok })).json.user.wallet;
+      assert.strictEqual(Math.round(walletStill), Math.round(earned), 'money still on the platform');
+      // and they cannot take new jobs while under investigation
+      const bk2 = (await req('POST', '/api/bookings', { token: customerTok, body: { propertyId: pid, service: 'standard' } })).json.booking;
+      const grab = await req('POST', `/api/bookings/${bk2.id}/accept`, { token: provTok });
+      assert.strictEqual(grab.status, 403);
+      assert.strictEqual(grab.json.code, 'UNDER_INVESTIGATION');
+      // resolving the case releases both the money and the account
+      const list = await req('GET', '/api/admin/disputes', { token: adm });
+      const d = list.json.disputes.find((x) => x.bookingId === bk.id);
+      const res2 = await req('POST', `/api/admin/disputes/${d.id}/resolve`, { token: adm, body: { resolution: 'Проверено, возмещено клиенту.' } });
+      assert.strictEqual(res2.status, 200);
+      const freed = await req('GET', '/api/admin/payouts', { token: adm });
+      assert.ok(freed.json.cleaners.some((c) => c.id === provId), 'payable again after resolution');
+      const grab2 = await req('POST', `/api/bookings/${bk2.id}/accept`, { token: provTok });
+      assert.strictEqual(grab2.status, 200, 'can work again after resolution');
+    });
+
     // ── SEO: robots.txt + sitemap.xml (crawlability) ──
     await ok('SEO: robots.txt отдаётся, закрывает /api и ссылается на sitemap', async () => {
       const r = await req('GET', '/robots.txt');
