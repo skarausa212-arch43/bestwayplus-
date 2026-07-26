@@ -1284,6 +1284,18 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
   .grid[style*="repeat(4,1fr)"],.grid[style*="repeat(3,1fr)"]{grid-template-columns:1fr 1fr!important}
 }
 
+/* Safety notices: identity-on-file line under the assigned provider, and the
+   "what happens now" panel when a theft/damage incident is being reported. */
+.idcheck{display:flex;gap:10px;align-items:flex-start;margin-top:12px;padding:11px 13px;border-radius:14px;
+  background:var(--primary-050);color:var(--ink);font-size:12.5px;line-height:1.5}
+.idcheck svg{width:17px;height:17px;flex:none;margin-top:1px;color:var(--primary-600)}
+.idcheck b{display:block;font-size:13px;margin-bottom:2px;color:var(--primary-600)}
+.severe-note{margin:0 0 14px;padding:12px 14px;border-radius:14px;background:color-mix(in srgb,var(--warn) 12%,transparent);
+  border:1px solid color-mix(in srgb,var(--warn) 35%,transparent);font-size:12.5px;line-height:1.5}
+.severe-note b{font-size:13px}
+.severe-note ul{margin:6px 0 0;padding-left:18px}
+.severe-note li{margin:3px 0}
+
 /* ── compact provider sign-up: chip-style equipment, tighter rhythm ── */
 .row2{gap:10px;align-items:flex-start}
 .row2 .field{flex:1;min-width:0}
@@ -1518,6 +1530,10 @@ Object.assign(TR.uk,{"Стрижка газона":"Стрижка газону"
 Object.assign(TR.pl,{"Кем вы можете работать? *":"W jakiej roli możesz pracować? *","Выберите профессии — остальные откроются скоро.":"Wybierz profesje — pozostałe wkrótce.","Выберите, кем вы можете работать":"Wybierz, w jakiej roli możesz pracować","скоро":"wkrótce","Газонокосилка":"Kosiarka","Триммер / бензокоса":"Podkaszarka / kosa spalinowa","Кусторез / ножницы для изгороди":"Nożyce do żywopłotu","Вертикуттер":"Wertykulator","Аэратор":"Aerator","Воздуходувка":"Dmuchawa","Садовый инвентарь (грабли, секатор)":"Narzędzia ogrodowe (grabie, sekator)"});
 Object.assign(TR.en,{"Кем вы можете работать? *":"What can you work as? *","Выберите профессии — остальные откроются скоро.":"Pick your professions — more coming soon.","Выберите, кем вы можете работать":"Pick what you can work as","скоро":"coming soon","Газонокосилка":"Lawn mower","Триммер / бензокоса":"String trimmer / brushcutter","Кусторез / ножницы для изгороди":"Hedge trimmer / shears","Вертикуттер":"Scarifier","Аэратор":"Aerator","Воздуходувка":"Leaf blower","Садовый инвентарь (грабли, секатор)":"Garden tools (rake, pruner)"});
 Object.assign(TR.uk,{"Кем вы можете работать? *":"Ким ви можете працювати? *","Выберите профессии — остальные откроются скоро.":"Оберіть професії — решта незабаром.","Выберите, кем вы можете работать":"Оберіть, ким ви можете працювати","скоро":"незабаром","Газонокосилка":"Газонокосарка","Триммер / бензокоса":"Тример / бензокоса","Кусторез / ножницы для изгороди":"Кущоріз / ножиці для живоплоту","Вертикуттер":"Вертикутер","Аэратор":"Аератор","Воздуходувка":"Повітродувка","Садовый инвентарь (грабли, секатор)":"Садовий інвентар (граблі, секатор)"});
+/* safety: identity-on-file + incident notice */
+Object.assign(TR.pl,{"Личность подтверждена LUMI":"Tożsamość zweryfikowana przez LUMI","При регистрации проверены фото, удостоверение личности и PESEL (или NIP фирмы) и банковский счёт. По официальному запросу полиции мы передаём эти данные следствию.":"Przy rejestracji zweryfikowaliśmy zdjęcie, dokument tożsamości i PESEL (lub NIP firmy) oraz konto bankowe. Na oficjalne żądanie policji przekazujemy te dane śledczym.","Впускайте только человека с фото выше — передавать заказ другим запрещено.":"Wpuść wyłącznie osobę ze zdjęcia powyżej — przekazywanie zlecenia innym jest zabronione.","Что происходит сразу после обращения":"Co dzieje się natychmiast po zgłoszeniu","Выплата исполнителю замораживается, новые заказы он не получает.":"Wypłata dla wykonawcy zostaje wstrzymana, nowych zleceń nie otrzymuje.","Личность исполнителя подтверждена документами при регистрации: фото, удостоверение личности, PESEL или NIP фирмы, банковский счёт.":"Tożsamość wykonawcy potwierdzona dokumentami przy rejestracji: zdjęcie, dokument tożsamości, PESEL lub NIP firmy, konto bankowe.","У нас сохранены время приезда и ухода, GPS-маршрут, фото «до/после» и переписка по заказу.":"Mamy zapisane godziny przyjazdu i wyjścia, trasę GPS, zdjęcia „przed/po” i korespondencję.","По официальному запросу полиции мы передаём все эти данные следствию.":"Na oficjalne żądanie policji przekazujemy wszystkie te dane śledczym.","При краже подайте заявление в полицию и пришлите нам номер дела — без него невозможна ни претензия, ни страховая выплата. Срок обращения — 48 часов. Если вам угрожает опасность, сначала звоните 112.":"Przy kradzieży złóż zawiadomienie na policję i prześlij nam numer sprawy — bez niego nie jest możliwa ani reklamacja, ani wypłata z ubezpieczenia. Termin zgłoszenia: 48 godzin. Jeśli grozi Ci niebezpieczeństwo, najpierw dzwoń 112."});
+Object.assign(TR.en,{"Личность подтверждена LUMI":"Identity verified by LUMI","При регистрации проверены фото, удостоверение личности и PESEL (или NIP фирмы) и банковский счёт. По официальному запросу полиции мы передаём эти данные следствию.":"At sign-up we verified their photo, ID document and PESEL (or company NIP) and bank account. On an official police request we hand this data to investigators.","Впускайте только человека с фото выше — передавать заказ другим запрещено.":"Only let in the person shown above — passing the job to someone else is prohibited.","Что происходит сразу после обращения":"What happens immediately after you report","Выплата исполнителю замораживается, новые заказы он не получает.":"The provider's payout is frozen and they receive no new jobs.","Личность исполнителя подтверждена документами при регистрации: фото, удостоверение личности, PESEL или NIP фирмы, банковский счёт.":"The provider's identity was verified with documents at sign-up: photo, ID document, PESEL or company NIP, bank account.","У нас сохранены время приезда и ухода, GPS-маршрут, фото «до/после» и переписка по заказу.":"We keep the arrival and departure times, the GPS route, before/after photos and the order chat.","По официальному запросу полиции мы передаём все эти данные следствию.":"On an official police request we hand all of this to investigators.","При краже подайте заявление в полицию и пришлите нам номер дела — без него невозможна ни претензия, ни страховая выплата. Срок обращения — 48 часов. Если вам угрожает опасность, сначала звоните 112.":"For theft, file a police report and send us the case number — without it neither a claim nor an insurance payment is possible. Report within 48 hours. If you are in danger, call 112 first."});
+Object.assign(TR.uk,{"Личность подтверждена LUMI":"Особу підтверджено LUMI","При регистрации проверены фото, удостоверение личности и PESEL (или NIP фирмы) и банковский счёт. По официальному запросу полиции мы передаём эти данные следствию.":"Під час реєстрації перевірено фото, документ, що посвідчує особу, і PESEL (або NIP компанії) та банківський рахунок. За офіційним запитом поліції ми передаємо ці дані слідству.","Впускайте только человека с фото выше — передавать заказ другим запрещено.":"Впускайте лише людину з фото вище — передавати замовлення іншим заборонено.","Что происходит сразу после обращения":"Що відбувається одразу після звернення","Выплата исполнителю замораживается, новые заказы он не получает.":"Виплату виконавцю заморожено, нових замовлень він не отримує.","Личность исполнителя подтверждена документами при регистрации: фото, удостоверение личности, PESEL или NIP фирмы, банковский счёт.":"Особу виконавця підтверджено документами при реєстрації: фото, документ, PESEL або NIP компанії, банківський рахунок.","У нас сохранены время приезда и ухода, GPS-маршрут, фото «до/после» и переписка по заказу.":"У нас збережено час приїзду та виходу, GPS-маршрут, фото «до/після» і листування щодо замовлення.","По официальному запросу полиции мы передаём все эти данные следствию.":"За офіційним запитом поліції ми передаємо всі ці дані слідству.","При краже подайте заявление в полицию и пришлите нам номер дела — без него невозможна ни претензия, ни страховая выплата. Срок обращения — 48 часов. Если вам угрожает опасность, сначала звоните 112.":"У разі крадіжки подайте заяву в поліцію та надішліть нам номер справи — без нього неможливі ані претензія, ані страхова виплата. Строк звернення — 48 годин. Якщо вам загрожує небезпека, спершу телефонуйте 112."});
 /* release audit: strings that leaked untranslated */
 Object.assign(TR.pl,{"Новинка":"Nowość","Заказы приходят только когда вы «На линии».":"Zlecenia przychodzą tylko, gdy jesteś „Na linii”.","⏳ Аккаунт на проверке у администратора.":"⏳ Konto w weryfikacji u administratora.","отз.":"opinii","назад":"temu","только что":"przed chwilą","Рейтинг":"Ocena","ч":"h"});
 Object.assign(TR.en,{"Новинка":"New","Заказы приходят только когда вы «На линии».":"Jobs arrive only while you are “Online”.","⏳ Аккаунт на проверке у администратора.":"⏳ Account pending admin review.","отз.":"reviews","назад":"ago","только что":"just now","Рейтинг":"Rating","ч":"h"});
@@ -4814,7 +4830,10 @@ async function renderBookingDetail(id){
       ${b.cleaner?`<div class="card pad" style="margin-bottom:14px"><div class="row">
         ${avatarEl(b.cleaner,44)}
         <div style="flex:1"><b>${esc(b.cleaner.name)}</b><div class="tiny muted">${b.cleaner.jobsDone} ${plural(b.cleaner.jobsDone,'заказ','заказа','заказов')} · ⭐ ${b.cleaner.rating||'—'}</div></div>
-        ${isCustomer?`<button class="iconbtn" data-prof="${b.cleanerId}" title="Профиль">${I.users}</button><button class="iconbtn" id="favBtn" data-fav="${b.cleanerId}" title="В избранное" style="color:${(state.user.favoriteProviders||[]).includes(b.cleanerId)?'var(--danger)':'var(--ink-3)'}">${I.heart}</button>`:'<span class="badge green">Назначен</span>'}</div></div>`:''}
+        ${isCustomer?`<button class="iconbtn" data-prof="${b.cleanerId}" title="Профиль">${I.users}</button><button class="iconbtn" id="favBtn" data-fav="${b.cleanerId}" title="В избранное" style="color:${(state.user.favoriteProviders||[]).includes(b.cleanerId)?'var(--danger)':'var(--ink-3)'}">${I.heart}</button>`:'<span class="badge green">Назначен</span>'}</div>
+        ${isCustomer?`<div class="idcheck">${I.lock||'🔒'}<div><b>${t('Личность подтверждена LUMI')}</b>
+          <div>${t('При регистрации проверены фото, удостоверение личности и PESEL (или NIP фирмы) и банковский счёт. По официальному запросу полиции мы передаём эти данные следствию.')}</div>
+          <div class="hint tiny" style="margin-top:4px">${t('Впускайте только человека с фото выше — передавать заказ другим запрещено.')}</div></div></div>`:''}</div>`:''}
 
       <div id="respZone"></div>
       <div id="trackZone"></div>
@@ -5078,13 +5097,27 @@ async function openIssue(bookingId){
     <p class="muted tiny" style="margin-bottom:16px">Опишите, что пошло не так — модератор LUMI разберётся и свяжется с вами.</p>
     <label class="field"><span>Что случилось?</span></label>
     <div class="issue-cats" id="issueCats" style="margin-bottom:14px">${Object.entries(cats).map(([k,v])=>`<button type="button" class="chip ${k==='quality'?'sel':''}" data-cat="${k}">${v}</button>`).join('')}</div>
+    <div class="severe-note" id="issueSevere" style="display:none">
+      <b>${t('Что происходит сразу после обращения')}</b>
+      <ul>
+        <li>${t('Выплата исполнителю замораживается, новые заказы он не получает.')}</li>
+        <li>${t('Личность исполнителя подтверждена документами при регистрации: фото, удостоверение личности, PESEL или NIP фирмы, банковский счёт.')}</li>
+        <li>${t('У нас сохранены время приезда и ухода, GPS-маршрут, фото «до/после» и переписка по заказу.')}</li>
+        <li><b>${t('По официальному запросу полиции мы передаём все эти данные следствию.')}</b></li>
+      </ul>
+      <p class="hint tiny" style="margin-top:6px">${t('При краже подайте заявление в полицию и пришлите нам номер дела — без него невозможна ни претензия, ни страховая выплата. Срок обращения — 48 часов. Если вам угрожает опасность, сначала звоните 112.')}</p>
+    </div>
     <label class="field"><span>Подробности</span><textarea class="input" id="issueDesc" rows="4" placeholder="Например: не помыли пол на кухне и не вынесли мусор." maxlength="1000"></textarea></label>
     <button class="btn ghost block" id="issuePhoto" style="margin-bottom:12px">${I.cam} Прикрепить фото (необязательно)</button>
     <div id="issuePhotoPrev"></div>
     <button class="btn block" id="issueSubmit">Отправить обращение ${I.arrow}</button>
   </div>`);
   showModalNode(inner);
-  inner.querySelectorAll('#issueCats [data-cat]').forEach(b=>b.onclick=()=>{state2.cat=b.dataset.cat;inner.querySelectorAll('#issueCats .chip').forEach(x=>x.classList.toggle('sel',x===b));});
+  const severeNote=$('#issueSevere',inner);
+  const SEVERE=['theft','damage','safety'];
+  const syncSevere=()=>{ if(severeNote) severeNote.style.display=SEVERE.includes(state2.cat)?'':'none'; };
+  inner.querySelectorAll('#issueCats [data-cat]').forEach(b=>b.onclick=()=>{state2.cat=b.dataset.cat;inner.querySelectorAll('#issueCats .chip').forEach(x=>x.classList.toggle('sel',x===b));syncSevere();});
+  syncSevere();
   $('#issuePhoto',inner).onclick=()=>pickImage((img)=>{state2.photo=img;$('#issuePhotoPrev',inner).innerHTML=`<img src="${img}" style="width:100%;max-height:180px;object-fit:cover;border-radius:12px;margin-bottom:12px">`;},1200,0.72);
   $('#issueSubmit',inner).onclick=async()=>{
     const description=$('#issueDesc',inner).value.trim();
