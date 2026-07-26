@@ -832,6 +832,37 @@ async function main() {
       assert.strictEqual(bad.status, 400);
     });
 
+    // ── SEO: robots.txt + sitemap.xml (crawlability) ──
+    await ok('SEO: robots.txt отдаётся, закрывает /api и ссылается на sitemap', async () => {
+      const r = await req('GET', '/robots.txt');
+      assert.strictEqual(r.status, 200);
+      assert.ok(/text\/plain/.test(r.headers['content-type']), 'content-type: ' + r.headers['content-type']);
+      assert.ok(/^User-agent: \*/m.test(r.text), 'no User-agent line');
+      assert.ok(/^Disallow: \/api\//m.test(r.text), 'API not disallowed');
+      assert.ok(/^Sitemap: https?:\/\/[^\s]+\/sitemap\.xml$/m.test(r.text), 'no absolute Sitemap line');
+    });
+    await ok('SEO: sitemap.xml валиден, содержит все публичные страницы и hreflang', async () => {
+      const r = await req('GET', '/sitemap.xml');
+      assert.strictEqual(r.status, 200);
+      assert.ok(/application\/xml/.test(r.headers['content-type']), 'content-type: ' + r.headers['content-type']);
+      assert.ok(r.text.startsWith('<?xml'), 'not an XML document');
+      assert.ok(/<urlset[^>]+sitemaps\.org\/schemas\/sitemap\/0\.9/.test(r.text), 'wrong namespace');
+      for (const p of ['/', '/landing.html', '/terms.html', '/terms-provider.html', '/privacy.html']) {
+        assert.ok(r.text.includes('<loc>') && new RegExp(`<loc>https?://[^<]*${p.replace('/', '\\/')}</loc>`).test(r.text), 'missing page ' + p);
+      }
+      // legal pages must advertise all four language versions
+      for (const l of ['pl', 'en', 'uk', 'ru']) {
+        assert.ok(r.text.includes(`hreflang="${l}"`), 'missing hreflang ' + l);
+      }
+      assert.ok(r.text.includes('hreflang="x-default"'), 'missing x-default');
+      // every <loc> must be absolute (relative URLs are silently ignored by crawlers)
+      const locs = [...r.text.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+      assert.ok(locs.length >= 5, 'too few urls: ' + locs.length);
+      assert.ok(locs.every((u) => /^https?:\/\//.test(u)), 'relative <loc> present');
+      // the investor deck must never be advertised to crawlers
+      assert.ok(!r.text.includes('investors.html'), 'investor page listed in sitemap');
+    });
+
     console.log(`\n${passed} API/integration checks passed.`);
   } finally {
     child.kill('SIGKILL');

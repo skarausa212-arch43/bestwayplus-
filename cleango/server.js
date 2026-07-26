@@ -756,7 +756,66 @@ const MIME = {
   '.ico': 'image/x-icon',
   '.json': 'application/json',
   '.webmanifest': 'application/manifest+json',
+  '.xml': 'application/xml; charset=utf-8',
+  '.txt': 'text/plain; charset=utf-8',
 };
+
+// ──────────────────────── SEO: robots.txt + sitemap.xml ────────────────────
+// Generated rather than hard-coded so the host always matches LUMI_APP_URL and
+// <lastmod> reflects the real file mtime (a stale sitemap gets ignored by
+// crawlers). The legal pages exist in 4 languages behind ?lang=, so each is
+// listed once as the canonical URL with hreflang alternates — that is how the
+// Polish/English/Ukrainian versions get indexed instead of counting as
+// duplicates of the Russian one.
+const SEO_LANGS = ['pl', 'en', 'uk', 'ru'];
+const SEO_PAGES = [
+  { path: '/',                    file: 'index.html',          priority: '1.0', changefreq: 'weekly' },
+  { path: '/landing.html',        file: 'landing.html',        priority: '0.9', changefreq: 'weekly' },
+  { path: '/terms.html',          file: 'terms.html',          priority: '0.4', changefreq: 'yearly', langs: true },
+  { path: '/terms-provider.html', file: 'terms-provider.html', priority: '0.4', changefreq: 'yearly', langs: true },
+  { path: '/privacy.html',        file: 'privacy.html',        priority: '0.4', changefreq: 'yearly', langs: true },
+  { path: '/brand.html',          file: 'brand.html',          priority: '0.3', changefreq: 'yearly' },
+];
+// Never indexed: the API, and the investor deck (business figures should not
+// rank in search — it stays reachable by direct link).
+const SEO_DISALLOW = ['/api/', '/investors.html'];
+const xmlEsc = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+function pageLastmod(file) {
+  try { return fs.statSync(path.join(PUBLIC_DIR, file)).mtime.toISOString().slice(0, 10); }
+  catch { return new Date().toISOString().slice(0, 10); }
+}
+function buildSitemap() {
+  const urls = SEO_PAGES.filter((p) => fs.existsSync(path.join(PUBLIC_DIR, p.file))).map((p) => {
+    const loc = APP_URL + p.path;
+    const alts = p.langs
+      ? SEO_LANGS.map((l) => `    <xhtml:link rel="alternate" hreflang="${l}" href="${xmlEsc(`${loc}?lang=${l}`)}"/>`).join('\n')
+        + `\n    <xhtml:link rel="alternate" hreflang="x-default" href="${xmlEsc(loc)}"/>`
+      : '';
+    return [
+      '  <url>',
+      `    <loc>${xmlEsc(loc)}</loc>`,
+      `    <lastmod>${pageLastmod(p.file)}</lastmod>`,
+      `    <changefreq>${p.changefreq}</changefreq>`,
+      `    <priority>${p.priority}</priority>`,
+      alts,
+      '  </url>',
+    ].filter(Boolean).join('\n');
+  });
+  return `<?xml version="1.0" encoding="UTF-8"?>\n`
+    + `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n`
+    + urls.join('\n') + `\n</urlset>\n`;
+}
+function buildRobots() {
+  return [
+    'User-agent: *',
+    ...SEO_DISALLOW.map((d) => `Disallow: ${d}`),
+    'Allow: /',
+    '',
+    '# Crawl the app shell and the marketing/legal pages; the API is not content.',
+    `Sitemap: ${APP_URL}/sitemap.xml`,
+    '',
+  ].join('\n');
+}
 
 // ─────────────────────────── API routes ───────────────────────────
 
@@ -4028,6 +4087,14 @@ const server = http.createServer(async (req, res) => {
     const bare = req.url.split('?')[0];
     if (bare === '/healthz') return send(res, 200, { status: 'ok', uptime: Math.round((Date.now() - STARTED_AT) / 1000) });
     if (bare === '/readyz') { const r = readiness(); return send(res, r.ok ? 200 : 503, r); }
+    if (bare === '/robots.txt') {
+      res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=3600', ...SECURITY_HEADERS });
+      return res.end(buildRobots());
+    }
+    if (bare === '/sitemap.xml') {
+      res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600', ...SECURITY_HEADERS });
+      return res.end(buildSitemap());
+    }
     if (bare === '/metrics') {
       res.writeHead(200, { 'Content-Type': 'text/plain; version=0.0.4; charset=utf-8', ...SECURITY_HEADERS });
       return res.end(metricsText());

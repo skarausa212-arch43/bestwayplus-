@@ -55,6 +55,11 @@ const CHECKS = [
   ['Marketing', 'Privacy policy', true, () => exists('public/privacy.html')],
   ['Marketing', 'Terms', true, () => exists('public/terms.html')],
   ['Marketing', 'Provider agreement', true, () => exists('public/terms-provider.html')],
+  ['Marketing', 'SEO: robots.txt + sitemap.xml served', true, () => /bare === '\/robots\.txt'/.test(server) && /bare === '\/sitemap\.xml'/.test(server)],
+  ['Marketing', 'SEO: canonical + hreflang on public pages', false, () => {
+    const pages = ['public/terms.html', 'public/privacy.html', 'public/terms-provider.html'];
+    return pages.every((f) => { try { const h = require('fs').readFileSync(path.join(ROOT, f), 'utf8'); return /rel="canonical"/.test(h) && /hreflang="pl"/.test(h); } catch { return false; } });
+  }],
   ['Marketing', 'Brand guidelines', false, () => exists('public/brand.html') && exists('assets/README.md')],
   ['Marketing', 'Investor overview', false, () => exists('public/investors.html')],
   ['Marketing', 'Asset library (structure + naming)', false, () => { try { require('child_process').execFileSync(process.execPath, [path.join(ROOT, 'ops/asset-check.js')], { stdio: 'ignore' }); return true; } catch { return false; } }],
