@@ -70,6 +70,11 @@ if [[ "$BACKEND" == "cpu" ]]; then
     fi
 fi
 
+# Записываем бэкенд заранее, иначе первый запуск задаст интерактивный вопрос
+if [[ ! -f config/.faceswap ]]; then
+    echo "{\"backend\": \"$BACKEND\"}" > config/.faceswap
+fi
+
 echo "==> Проверка"
 ./venv/bin/python faceswap.py --version || true
 ./venv/bin/python faceswap.py extract --help >/dev/null && echo "extract: OK"

@@ -32,8 +32,9 @@ source venv/bin/activate
 python faceswap.py extract -i ~/видео_A.mp4 -o ~/faces/A
 python faceswap.py extract -i ~/видео_B.mp4 -o ~/faces/B
 
-# 2. Обучить модель (часы на GPU, дни на CPU).
-#    -t задаёт модель: lightweight, original, dfaker, villain, phaze_a и др.
+# 2. Обучить модель (часы на GPU, дни на CPU). Доступные модели (-t):
+#    dfaker, dfl-h128, dfl-sae, dlight, iae, lightweight, original,
+#    phaze-a, realface, unbalanced, villain
 python faceswap.py train -A ~/faces/A -B ~/faces/B -m ~/models/AB -t villain
 
 # 3. Конвертировать целевое видео/фото
@@ -43,7 +44,7 @@ python faceswap.py convert -i ~/цель.mp4 -o ~/результат -m ~/models
 GUI (нужен графический дисплей): `python faceswap.py gui`
 
 Список моделей и опций: `python faceswap.py train --help`
-- **Phaze A** (`-t phaze_a`) — конструктор архитектур, самая гибкая, требует настройки в `config/train.ini`.
+- **Phaze A** (`-t phaze-a`) — конструктор архитектур, самая гибкая, требует настройки в `config/train.ini`.
 - **Villain** (`-t villain`) — тяжёлая модель высокой детализации, требует много VRAM (рекомендуется GPU от 8 ГБ).
 - Для CPU/слабых GPU начните с `lightweight`.
 
