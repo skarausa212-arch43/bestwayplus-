@@ -25,6 +25,19 @@ if ! "$PY" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)'; t
     exit 1
 fi
 
+# tkinter — системный пакет, pip его не ставит; нужен даже для CLI (импортируется в lib/utils.py).
+# Пакет python3-tk должен совпадать с минорной версией Python (например python3.12-tk для 3.12).
+if ! "$PY" -c 'import tkinter' 2>/dev/null; then
+    PYVER="$("$PY" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+    echo "==> Ставлю tkinter для Python $PYVER (нужны права sudo)"
+    sudo apt-get install -y "python${PYVER}-tk" || sudo apt-get install -y python3-tk
+    if ! "$PY" -c 'import tkinter' 2>/dev/null; then
+        echo "tkinter так и не доступен для $PY. Установите python${PYVER}-tk" >&2
+        echo "или используйте версию Python, для которой tkinter уже установлен." >&2
+        exit 1
+    fi
+fi
+
 if [[ ! -d "$FACESWAP_DIR/.git" ]]; then
     echo "==> Клонирую faceswap в $FACESWAP_DIR"
     git clone --depth 1 https://github.com/deepfakes/faceswap.git "$FACESWAP_DIR"
@@ -43,6 +56,19 @@ fi
 
 echo "==> Устанавливаю зависимости (requirements_${BACKEND}.txt)"
 ./venv/bin/pip install -r "requirements/requirements_${BACKEND}.txt"
+
+if [[ "$BACKEND" == "cpu" ]]; then
+    # requirements_cpu.txt использует --extra-index-url, и pip может взять
+    # CUDA-сборку torch с PyPI (~5 ГБ). Принудительно ставим CPU-сборку (~1.5 ГБ).
+    if ./venv/bin/python -c 'import torch, sys; sys.exit(0 if "+cpu" in torch.__version__ else 1)' 2>/dev/null; then
+        echo "==> torch уже CPU-сборки"
+    else
+        echo "==> Пробую заменить torch на компактную CPU-сборку"
+        ./venv/bin/pip install --force-reinstall "torch>=2.3.0,<2.13.0" "torchvision>=0.18.0,<0.28.0" \
+            --index-url https://download.pytorch.org/whl/cpu \
+            || echo "==> download.pytorch.org недоступен — остаётся универсальная сборка с PyPI (больше по размеру, но работает и на CPU)"
+    fi
+fi
 
 echo "==> Проверка"
 ./venv/bin/python faceswap.py --version || true
