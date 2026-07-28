@@ -661,14 +661,31 @@ $('rCreate').addEventListener('click', async () => {
         recovery: $('rRec').value, invite: $('rInv').value,
       }),
     });
-    st.textContent = 'Connecting ' + data.email + '…';
-    await api('api/accounts', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: data.email, password }) });
+    // серверу нужно несколько секунд, чтобы увидеть нового пользователя — пробуем подключить с повторами
+    st.textContent = 'Activating ' + data.email + '…';
+    let connected = false;
+    for (let i = 0; i < 10 && !connected; i++) {
+      try {
+        await api('api/accounts', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: data.email, password }) });
+        connected = true;
+      } catch (err) {
+        if (/already added/i.test(err.message)) { connected = true; break; }
+        if (i === 9) throw new Error('Mailbox created, but activation is slow — add it manually in a minute.');
+        st.textContent = 'Activating ' + data.email + '… (' + (i + 1) + ')';
+        await new Promise((r) => setTimeout(r, 2500));
+      }
+    }
     if ($('aRemember').checked) saveAcc(data.email, password);
     st.className = 'st ok'; st.textContent = data.email + ' created ✓';
     ['rFn','rLn','rUser','rPass','rRec','rInv'].forEach((id) => { $(id).value = ''; });
     setTimeout(closeReg, 900);
     await reload();
+    // на телефоне показываем панель ящиков, чтобы новый адрес был сразу виден слева
+    if (matchMedia('(max-width: 900px)').matches) {
+      $('sidebar').classList.add('open'); $('backdrop').classList.add('show');
+      setTimeout(closeDrawer, 2600);
+    }
   } catch (e) {
     st.className = 'st err'; st.textContent = e.message;
   } finally {
