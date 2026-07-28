@@ -202,9 +202,9 @@
   .view-head { padding: 16px 20px; border-bottom: 1px solid var(--line); animation: msgIn .25s ease both; }
   .view-head h2 { font-size: 17px; font-weight: 650; letter-spacing: -.01em; margin-bottom: 7px; }
   .view-head .meta { font-size: 12.5px; color: var(--muted); line-height: 1.55; }
-  .view-body { flex: 1; overflow: hidden; animation: msgIn .3s ease both; }
-  /* width:1px + min-width:100% — iOS Safari otherwise inflates the iframe to the email's width */
-  .view-body iframe { width: 1px; min-width: 100%; height: 100%; border: 0; background: #fff; }
+  .view-body { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; animation: msgIn .3s ease both; }
+  .frwrap { overflow: hidden; }
+  .view-body iframe { display: block; width: 100%; height: 100%; border: 0; background: #fff; transform-origin: 0 0; }
   .view-body pre { padding: 20px; white-space: pre-wrap; font-family: inherit; font-size: 14px; overflow-y: auto; height: 100%; line-height: 1.6; }
   .placeholder { display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; height: 100%; color: var(--dim); font-size: 13.5px; }
   .reply { padding: 12px 20px; border-top: 1px solid var(--line); }
@@ -512,33 +512,36 @@ async function openMessage(accId, uid) {
       <div class="reply"><button class="btn" id="replyBtn">Reply</button></div>`;
     const vb = $('vb');
     if (m.html) {
+      const wrap = document.createElement('div');
+      wrap.className = 'frwrap';
       const fr = document.createElement('iframe');
-      fr.sandbox = 'allow-same-origin';
+      fr.setAttribute('scrolling', 'no');
+      // ссылки открываются в новой вкладке; скрипты в письме по-прежнему запрещены
+      fr.sandbox = 'allow-same-origin allow-popups allow-popups-to-escape-sandbox';
       const baseCss = '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+        '<base target="_blank">' +
         '<style>html,body{margin:0;padding:10px;box-sizing:border-box;-webkit-text-size-adjust:100%;word-break:break-word;}' +
         'img{max-width:100%!important;height:auto!important;}</style>';
       fr.srcdoc = baseCss + m.html;
-      // письма свёрстаны под 600-800px — ужимаем под ширину экрана;
-      // пересчитываем несколько раз: картинки догружаются и меняют ширину
+      // масштабируем сам iframe: письмо рендерится в своей родной ширине,
+      // а рамка целиком ужимается под экран — iOS так не «распирает»
       const fit = () => {
         try {
           const d = fr.contentDocument;
           if (!d || !d.body) return;
-          d.body.style.transform = ''; d.body.style.width = '';
-          const w = Math.max(d.documentElement.scrollWidth, d.body.scrollWidth);
-          const avail = fr.getBoundingClientRect().width;
-          if (w > avail + 2) {
-            const s = avail / w;
-            d.body.style.transformOrigin = '0 0';
-            d.body.style.transform = `scale(${s})`;
-            d.body.style.width = w + 'px';
-          }
-          d.documentElement.style.overflowX = 'hidden';
-          d.body.style.overflowX = 'hidden';
+          const avail = vb.clientWidth;
+          const w = Math.max(d.documentElement.scrollWidth, d.body.scrollWidth, avail);
+          const h = Math.max(d.documentElement.scrollHeight, d.body.scrollHeight, 200);
+          const sc = Math.min(1, avail / w);
+          fr.style.width = w + 'px';
+          fr.style.height = h + 'px';
+          fr.style.transform = sc < 1 ? `scale(${sc})` : '';
+          wrap.style.height = Math.ceil(h * sc) + 'px';
         } catch {}
       };
       fr.addEventListener('load', () => { fit(); setTimeout(fit, 400); setTimeout(fit, 1500); });
-      vb.appendChild(fr);
+      wrap.appendChild(fr);
+      vb.appendChild(wrap);
     } else {
       vb.innerHTML = `<pre>${esc(m.text)}</pre>`;
     }
