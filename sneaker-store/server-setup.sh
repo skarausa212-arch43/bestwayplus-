@@ -60,16 +60,23 @@ server {
     server_name _;
     root /var/www/solehaus;
     index index.html;
-    location / { try_files $uri $uri/ =404; }
+    location / {
+        try_files $uri $uri/ =404;
+        # site updates every minute — don't let browsers cache stale HTML
+        add_header Cache-Control "no-cache, must-revalidate";
+    }
 }
 NGINX
 ln -sf /etc/nginx/sites-available/solehaus /etc/nginx/sites-enabled/solehaus
 rm -f /etc/nginx/sites-enabled/default
 
 echo ">> scheduling sync every minute"
-( crontab -l 2>/dev/null | grep -v -E 'solehaus-(deploy|sync)'; \
-  echo "* * * * * /usr/local/bin/solehaus-sync.sh" ) | crontab -
+# Use /etc/cron.d (NOT `crontab -`): when this script is run via `curl | bash`,
+# `crontab -` would read the rest of the script from stdin and the job would
+# never be installed. A cron.d file has no such stdin dependency.
 systemctl enable --now cron
+echo '* * * * * root /usr/local/bin/solehaus-sync.sh' > /etc/cron.d/solehaus
+chmod 644 /etc/cron.d/solehaus
 
 echo ">> starting nginx"
 nginx -t && systemctl enable --now nginx && systemctl reload nginx
