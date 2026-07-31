@@ -158,6 +158,11 @@
   .card-media .shoe.acc{transform:rotate(0)}
   .card:hover .card-media .shoe{transform:rotate(-8deg) scale(1.08) translateY(-4px)}
   .card:hover .card-media .shoe.acc{transform:scale(1.08) translateY(-4px)}
+  /* real product photo (used when a product has an `img`) */
+  .shoe.photo-wrap{position:absolute!important;inset:0;width:100%!important;transform:none!important;filter:none;display:grid;place-items:center}
+  .shoe.photo-wrap img.photo{width:100%;height:100%;object-fit:contain;padding:8%}
+  .card:hover .card-media .shoe.photo-wrap{transform:scale(1.05)!important}
+  .qv-media .shoe.photo-wrap img.photo,.ci .thumb .shoe.photo-wrap img.photo{padding:6%}
   .card-media .ghost{position:absolute;font-weight:900;font-size:120px;letter-spacing:-.05em;color:rgba(255,255,255,.10);left:-10px;bottom:-34px;line-height:1;pointer-events:none;user-select:none}
   .tag{position:absolute;top:12px;left:12px;z-index:2;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:6px 11px;border-radius:8px;background:rgba(0,0,0,.55);color:#fff;backdrop-filter:blur(6px)}
   .tag.nike{background:color-mix(in srgb,var(--nike) 90%,#000)}
@@ -565,6 +570,7 @@ function accSVG(kind,main,accent){
   return `<svg viewBox="0 0 200 160"><path d="M78 40 L122 40 L120 96 C120 120 80 120 80 96 Z" fill="${c}"/><path d="M78 40 L122 40 L121 54 L79 54 Z" fill="${a}"/><path d="M80 100 C80 122 120 122 120 100 L118 126 C118 138 82 138 82 126 Z" fill="${shade(c,-14)}"/></svg>`;
 }
 function mediaFor(p){
+  if(p.img) return `<img class="photo" src="${p.img}" alt="${p.name}" loading="lazy">`;
   if(p.type==='accessories') return accSVG(p.acc,p.colors[0],p.colors[1]);
   return shoeSVG(p.colors[0],p.colors[1],p.colors[2]==='#111119'?'#2a2a33':(p.colors[2]||'#20202a'));
 }
@@ -649,7 +655,7 @@ function renderGrid(){
           <svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
         </button>
         <span class="ghost">${isAcc?'ACC':p.brand.slice(0,3).toUpperCase()}</span>
-        <div class="shoe ${isAcc?'acc':''}">${mediaFor(p)}</div>
+        <div class="shoe ${isAcc?'acc':''} ${p.img?'photo-wrap':''}">${mediaFor(p)}</div>
         <div class="quick" data-open="${p.id}">Quick view</div>
       </div>
       <div class="card-body">
@@ -711,7 +717,7 @@ function openQuickView(id){
   $('#qvBody').innerHTML=`
     <div class="qv-media" style="background:${bgFor(p.brand)}">
       <span class="ghost">${isAcc?'ACC':p.brand.slice(0,3).toUpperCase()}</span>
-      <div class="shoe ${isAcc?'acc':''}">${mediaFor(p)}</div>
+      <div class="shoe ${isAcc?'acc':''} ${p.img?'photo-wrap':''}">${mediaFor(p)}</div>
     </div>
     <div class="qv-info">
       <div class="brandrow"><span class="tag ${p.brand}" style="position:static">${brandLabel}</span><span class="stars">${'★'.repeat(p.rating)}${'☆'.repeat(5-p.rating)}</span></div>
@@ -776,7 +782,7 @@ function renderCart(){
   box.innerHTML=cart.map(c=>{
     const p=PRODUCTS.find(x=>x.id===c.id);const isAcc=p.type==='accessories';
     return `<div class="ci">
-      <div class="thumb" style="background:${bgFor(p.brand)}"><div class="shoe ${isAcc?'acc':''}">${mediaFor(p)}</div></div>
+      <div class="thumb" style="background:${bgFor(p.brand)}"><div class="shoe ${isAcc?'acc':''} ${p.img?'photo-wrap':''}">${mediaFor(p)}</div></div>
       <div class="ci-info">
         <h4>${p.name}</h4>
         <div class="meta">${p.brand.charAt(0).toUpperCase()+p.brand.slice(1)} · Size ${c.size}</div>
