@@ -1,35 +1,38 @@
-# SOLEHAUS — магазин кроссовок и аксессуаров
+# SOLEHAUS — sneakers & accessories store
 
-Витрина интернет-магазина оригинальных кроссовок и аксессуаров **Nike** и **Adidas**.
-Один самодостаточный файл `index.html` — без сборки, без зависимостей, без бэкенда.
+A storefront for authentic **Nike** and **Adidas** sneakers and accessories.
+A single self-contained `index.html` — no build step, no dependencies, no backend.
 
-## Что внутри
+## What's inside
 
-- **Витрина каталога** — 12 товаров (кроссовки + аксессуары) с фильтрами по брендам и поиском.
-- **Быстрый просмотр** товара — модалка с описанием, выбором размера (EU 39–46), отметкой «нет в наличии».
-- **Корзина** — выдвижная панель: количество, удаление, прогресс до бесплатной доставки, подсчёт итога.
-- **Оформление заказа** — форма с валидацией и экраном подтверждения (демо, оплата не списывается).
-- **Избранное**, тосты-уведомления, тёмная/светлая тема — всё сохраняется в `localStorage`.
-- **Адаптив** — от десктопа (4 колонки) до телефона (2 колонки).
-- Иллюстрации товаров — встроенный SVG, перекрашиваемый под каждую модель (внешних картинок нет).
+- **Catalog storefront** — 13 products (sneakers + accessories) with brand filters and live search.
+- **Quick view** — modal with description and size selection (EU 39–46 for sneakers, custom sizes for gear), out-of-stock states.
+- **Cart** — slide-out drawer: quantities, remove, free-shipping progress bar, total.
+- **Checkout** — form with validation and an order confirmation screen (demo, no real charge).
+- **Favorites**, toast notifications, dark/light theme — all persisted in `localStorage`.
+- **Responsive** — from desktop (4 columns) down to mobile (2 columns).
+- Product art is inline SVG, recolored per model (no external images).
+- Featured accessory: **adidas FIFA World Cup 26™ Trionda Training Ball** (JD8032).
 
-## Запуск
+Prices are shown in USD.
 
-Просто открой файл в браузере:
+## Run
+
+Just open the file in a browser:
 
 ```bash
-xdg-open sneaker-store/index.html    # или двойной клик
+xdg-open sneaker-store/index.html    # or double-click
 ```
 
-## Деплой на сервер (nginx)
+## Deploy to a server (nginx)
 
 ```bash
-# на сервере
+# on the server
 mkdir -p /var/www/solehaus
 cp index.html /var/www/solehaus/
 ```
 
-Минимальный конфиг nginx:
+Minimal nginx config:
 
 ```nginx
 server {
@@ -41,11 +44,12 @@ server {
 }
 ```
 
-Статика — можно раздавать хоть `python3 -m http.server`, хоть nginx, хоть любым CDN.
+It's static — serve it with `python3 -m http.server`, nginx, or any CDN.
 
-## Заметки
+## Notes
 
-- Это демо-витрина. Оплата и отправка заказов не подключены — форма оформления показывает
-  подтверждение локально. Для боевого магазина нужен бэкенд (приём заказов, оплата, склад).
-- SOLEHAUS — вымышленный мультибрендовый ретейлер, не является официальным представителем
-  Nike или Adidas. Названия моделей — условные.
+- This is a demo storefront. Payments and order fulfillment are not wired up — the
+  checkout form shows a local confirmation only. A production store needs a backend
+  (order intake, payments, inventory).
+- SOLEHAUS is a fictional multi-brand retailer and is not an official Nike or Adidas
+  retailer. Sneaker model names are placeholders; the Trionda ball is a real adidas product.

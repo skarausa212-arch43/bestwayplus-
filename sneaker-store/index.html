@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="ru" data-theme="dark">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SOLEHAUS — Nike & Adidas · Кроссовки и аксессуары</title>
-<meta name="description" content="SOLEHAUS — оригинальные кроссовки и аксессуары Nike и Adidas. Быстрая доставка, гарантия подлинности.">
+<title>SOLEHAUS — Nike & Adidas · Sneakers & Accessories</title>
+<meta name="description" content="SOLEHAUS — authentic Nike and Adidas sneakers and accessories. Fast shipping, authenticity guaranteed.">
 <style>
   :root{
     --bg:#0b0b0f; --bg-2:#111119; --card:#15151f; --card-2:#1c1c28;
@@ -69,7 +69,6 @@
     background:var(--brand);color:var(--brand-ink);border-radius:20px;font-size:11px;font-weight:800;
     display:grid;place-items:center;transform:scale(0);transition:transform .25s cubic-bezier(.34,1.56,.64,1)}
   .cart-count.show{transform:scale(1)}
-  .burger{display:none}
 
   /* ============ HERO ============ */
   .hero{position:relative;padding:70px 0 40px;overflow:hidden}
@@ -156,7 +155,9 @@
   .card-media{position:relative;aspect-ratio:4/3;overflow:hidden;cursor:pointer}
   .card-media .bg{position:absolute;inset:0}
   .card-media .shoe{position:absolute;inset:0;margin:auto;width:82%;transform:rotate(-8deg);transition:transform .4s cubic-bezier(.34,1.4,.5,1);filter:drop-shadow(0 16px 18px rgba(0,0,0,.4))}
+  .card-media .shoe.acc{transform:rotate(0)}
   .card:hover .card-media .shoe{transform:rotate(-8deg) scale(1.08) translateY(-4px)}
+  .card:hover .card-media .shoe.acc{transform:scale(1.08) translateY(-4px)}
   .card-media .ghost{position:absolute;font-weight:900;font-size:120px;letter-spacing:-.05em;color:rgba(255,255,255,.10);left:-10px;bottom:-34px;line-height:1;pointer-events:none;user-select:none}
   .tag{position:absolute;top:12px;left:12px;z-index:2;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:6px 11px;border-radius:8px;background:rgba(0,0,0,.55);color:#fff;backdrop-filter:blur(6px)}
   .tag.nike{background:color-mix(in srgb,var(--nike) 90%,#000)}
@@ -166,7 +167,7 @@
   .fav.on{color:var(--nike)}
   .fav svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2}
   .fav.on svg{fill:var(--nike)}
-  .quick{position:absolute;left:12px;right:12px;bottom:12px;z-index:2;background:rgba(255,255,255,.94);color:#111;
+  .quick{position:absolute;left:12px;right:12px;bottom:12px;z:2;z-index:2;background:rgba(255,255,255,.94);color:#111;
     font-weight:800;font-size:13.5px;padding:11px;border-radius:11px;text-align:center;opacity:0;transform:translateY(12px);transition:.25s}
   .card:hover .quick{opacity:1;transform:translateY(0)}
   .card-body{padding:16px 16px 18px;display:flex;flex-direction:column;gap:4px;flex:1}
@@ -225,6 +226,7 @@
   .ci{display:flex;gap:14px;align-items:center;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:14px}
   .ci .thumb{width:64px;height:64px;border-radius:10px;flex:none;position:relative;overflow:hidden}
   .ci .thumb .shoe{position:absolute;inset:0;margin:auto;width:88%;transform:rotate(-8deg)}
+  .ci .thumb .shoe.acc{transform:rotate(0);width:78%}
   .ci-info{flex:1;min-width:0}
   .ci-info h4{font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ci-info .meta{font-size:12px;color:var(--muted)}
@@ -252,6 +254,7 @@
   .qv{display:grid;grid-template-columns:1fr 1fr}
   .qv-media{position:relative;min-height:340px;display:grid;place-items:center;overflow:hidden}
   .qv-media .shoe{width:82%;transform:rotate(-9deg);filter:drop-shadow(0 24px 24px rgba(0,0,0,.4));z-index:2}
+  .qv-media .shoe.acc{transform:rotate(0);width:70%}
   .qv-media .ghost{position:absolute;font-weight:900;font-size:180px;color:rgba(255,255,255,.09);bottom:-40px;left:-14px}
   .qv-info{padding:34px}
   .qv-info .brandrow{color:var(--muted);font-size:13px;font-weight:700;margin-bottom:8px;display:flex;gap:10px;align-items:center}
@@ -332,16 +335,16 @@
   <div class="wrap header-inner">
     <a href="#top" class="logo"><span class="mark">▲</span>SOLE<b>HAUS</b></a>
     <nav class="main">
-      <a href="#catalog" data-filter="all">Каталог</a>
+      <a href="#catalog" data-filter="all">Catalog</a>
       <a href="#catalog" data-filter="nike">Nike</a>
       <a href="#catalog" data-filter="adidas">Adidas</a>
-      <a href="#catalog" data-filter="accessories">Аксессуары</a>
+      <a href="#catalog" data-filter="accessories">Accessories</a>
     </nav>
     <div class="header-tools">
-      <button class="icon-btn" id="themeBtn" aria-label="Сменить тему" title="Тема">
+      <button class="icon-btn" id="themeBtn" aria-label="Toggle theme" title="Theme">
         <svg id="themeIcon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       </button>
-      <button class="icon-btn" id="cartBtn" aria-label="Корзина">
+      <button class="icon-btn" id="cartBtn" aria-label="Cart">
         <svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
         <span class="cart-count" id="cartCount">0</span>
       </button>
@@ -354,26 +357,26 @@
   <div class="hero-glow"><span class="g1"></span><span class="g2"></span><span class="g3"></span></div>
   <div class="wrap hero-inner">
     <div class="hero-copy">
-      <span class="eyebrow"><span class="dot"></span>Оригинал · Nike & Adidas</span>
-      <h1>Твой следующий <span class="hl">шаг</span> начинается здесь.</h1>
-      <p class="lead">Отобранные кроссовки и аксессуары от Nike и Adidas. 100% оригинал, гарантия подлинности и доставка по всему миру.</p>
+      <span class="eyebrow"><span class="dot"></span>Authentic · Nike & Adidas</span>
+      <h1>Your next <span class="hl">step</span> starts here.</h1>
+      <p class="lead">Hand-picked sneakers and accessories from Nike and Adidas. 100% authentic, guaranteed genuine, shipped worldwide.</p>
       <div class="hero-cta">
-        <a href="#catalog" class="btn btn-primary">Смотреть каталог
+        <a href="#catalog" class="btn btn-primary">Shop the catalog
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-        <a href="#new" class="btn btn-ghost">Новинки</a>
+        <a href="#new" class="btn btn-ghost">New arrivals</a>
       </div>
       <div class="hero-stats">
-        <div class="s"><b>250+</b><span>моделей в наличии</span></div>
-        <div class="s"><b>48ч</b><span>экспресс-доставка</span></div>
-        <div class="s"><b>4.9<span style="color:var(--brand)">★</span></b><span>12 400 отзывов</span></div>
+        <div class="s"><b>250+</b><span>models in stock</span></div>
+        <div class="s"><b>48h</b><span>express shipping</span></div>
+        <div class="s"><b>4.9<span style="color:var(--brand)">★</span></b><span>12,400 reviews</span></div>
       </div>
     </div>
     <div class="showcase">
       <div class="halo"></div>
       <div class="disc"></div>
       <div class="shoe" id="heroShoe"></div>
-      <div class="price-tag">от €89</div>
-      <div class="badge-float"><span class="tick">✓</span>Гарантия оригинала</div>
+      <div class="price-tag">from $89</div>
+      <div class="badge-float"><span class="tick">✓</span>Authenticity guaranteed</div>
     </div>
   </div>
 </section>
@@ -391,21 +394,21 @@
   <div class="wrap">
     <div id="new" class="section-head">
       <div>
-        <h2>Каталог</h2>
-        <p>Кроссовки и аксессуары — свежие дропы каждую неделю.</p>
+        <h2>Catalog</h2>
+        <p>Sneakers and accessories — fresh drops every week.</p>
       </div>
     </div>
 
     <div class="controls">
       <div class="filters" id="filters">
-        <button class="chip active" data-filter="all">Все <span class="n" data-count="all"></span></button>
+        <button class="chip active" data-filter="all">All <span class="n" data-count="all"></span></button>
         <button class="chip" data-filter="nike">Nike <span class="n" data-count="nike"></span></button>
         <button class="chip" data-filter="adidas">Adidas <span class="n" data-count="adidas"></span></button>
-        <button class="chip" data-filter="accessories">Аксессуары <span class="n" data-count="accessories"></span></button>
+        <button class="chip" data-filter="accessories">Accessories <span class="n" data-count="accessories"></span></button>
       </div>
       <div class="search">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
-        <input type="text" id="searchInput" placeholder="Поиск моделей…" autocomplete="off">
+        <input type="text" id="searchInput" placeholder="Search models…" autocomplete="off">
       </div>
     </div>
 
@@ -419,19 +422,19 @@
     <div class="feature-strip">
       <div class="feature">
         <div class="fi"><svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg></div>
-        <div><h4>100% оригинал</h4><p>Каждая пара проходит проверку подлинности.</p></div>
+        <div><h4>100% authentic</h4><p>Every item passes an authentication check.</p></div>
       </div>
       <div class="feature">
         <div class="fi"><svg viewBox="0 0 24 24"><path d="M3 9l1-5h16l1 5M3 9v11h18V9M3 9h18M9 13h6"/></svg></div>
-        <div><h4>Доставка 48ч</h4><p>Бесплатно при заказе от €150.</p></div>
+        <div><h4>48h shipping</h4><p>Free on orders over $150.</p></div>
       </div>
       <div class="feature">
         <div class="fi"><svg viewBox="0 0 24 24"><path d="M1 4h15v12H1zM16 8h4l3 3v5h-7M6 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg></div>
-        <div><h4>Возврат 30 дней</h4><p>Не подошло — вернём деньги без вопросов.</p></div>
+        <div><h4>30-day returns</h4><p>Didn't fit? Full refund, no questions.</p></div>
       </div>
       <div class="feature">
         <div class="fi"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
-        <div><h4>Безопасная оплата</h4><p>Visa, Mastercard, Apple Pay, крипта.</p></div>
+        <div><h4>Secure checkout</h4><p>Visa, Mastercard, Apple Pay, crypto.</p></div>
       </div>
     </div>
   </div>
@@ -443,20 +446,20 @@
     <div class="foot-grid">
       <div class="foot-about">
         <a href="#top" class="logo"><span class="mark">▲</span>SOLE<b>HAUS</b></a>
-        <p>Магазин оригинальных кроссовок и аксессуаров Nike и Adidas. С 2019 года обуваем улицы.</p>
+        <p>A store for authentic Nike and Adidas sneakers and accessories. Dressing the streets since 2019.</p>
         <div class="pay"><span>VISA</span><span>MC</span><span>APPLE PAY</span><span>USDT</span></div>
       </div>
       <div>
-        <h5>Магазин</h5>
-        <a href="#catalog">Все товары</a><a href="#catalog">Nike</a><a href="#catalog">Adidas</a><a href="#catalog">Аксессуары</a>
+        <h5>Shop</h5>
+        <a href="#catalog">All products</a><a href="#catalog">Nike</a><a href="#catalog">Adidas</a><a href="#catalog">Accessories</a>
       </div>
       <div>
-        <h5>Помощь</h5>
-        <a href="#">Доставка</a><a href="#">Возврат</a><a href="#">Таблица размеров</a><a href="#">Контакты</a>
+        <h5>Help</h5>
+        <a href="#">Shipping</a><a href="#">Returns</a><a href="#">Size guide</a><a href="#">Contact</a>
       </div>
       <div>
-        <h5>Новинки на почту</h5>
-        <p style="color:var(--muted);font-size:14px;margin-bottom:14px">Дропы и скидки первыми — без спама.</p>
+        <h5>New drops to your inbox</h5>
+        <p style="color:var(--muted);font-size:14px;margin-bottom:14px">Drops and deals first — no spam.</p>
         <form class="newsletter" id="newsletter">
           <input type="email" placeholder="you@email.com" required>
           <button type="submit">→</button>
@@ -464,17 +467,17 @@
       </div>
     </div>
     <div class="foot-bottom">
-      <span>© 2026 SOLEHAUS. Не является официальным представителем Nike или Adidas.</span>
-      <span>Сделано с ▲ для стрит-культуры</span>
+      <span>© 2026 SOLEHAUS. Not an official Nike or Adidas retailer.</span>
+      <span>Made with ▲ for street culture</span>
     </div>
   </div>
 </footer>
 
 <!-- ============ CART DRAWER ============ -->
 <div class="overlay" id="overlay"></div>
-<aside class="drawer" id="drawer" aria-label="Корзина">
+<aside class="drawer" id="drawer" aria-label="Cart">
   <div class="drawer-head">
-    <h3>Корзина</h3>
+    <h3>Cart</h3>
     <button class="close-x" id="closeCart"><svg viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
   </div>
   <div class="cart-items" id="cartItems"></div>
@@ -508,36 +511,28 @@
 function shoeSVG(main, accent, sole){
   return `<svg viewBox="0 0 440 240" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <linearGradient id="g${uid()}" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stop-color="${main}"/>
         <stop offset="1" stop-color="${shade(main,-22)}"/>
       </linearGradient>
     </defs>
-    <!-- outsole -->
     <path d="M22 196 C40 214 120 220 180 220 L372 220 C410 220 424 206 414 194 C410 189 402 187 392 187 L44 187 C28 187 16 189 22 196 Z" fill="${sole}"/>
     <path d="M30 200 L400 200" stroke="${shade(sole,-30)}" stroke-width="3" stroke-linecap="round" opacity=".5"/>
-    <!-- midsole -->
     <path d="M40 188 C34 172 44 160 70 160 L300 160 C348 160 392 172 408 190 C410 193 408 196 404 196 L44 196 C40 196 38 192 40 188 Z" fill="#f2f2ef"/>
-    <!-- upper body -->
-    <path d="M70 162 C64 132 82 104 128 100 L196 96 C214 95 226 100 252 118 C286 141 330 150 372 156 C396 159 402 172 386 176 L64 176 C58 176 56 168 70 162 Z" fill="url(#g)"/>
-    <!-- toe cap -->
+    <path d="M70 162 C64 132 82 104 128 100 L196 96 C214 95 226 100 252 118 C286 141 330 150 372 156 C396 159 402 172 386 176 L64 176 C58 176 56 168 70 162 Z" fill="url(#g${LASTUID})"/>
     <path d="M300 150 C332 154 372 158 388 168 C396 173 400 176 386 176 L300 176 Z" fill="${shade(main,-14)}"/>
-    <!-- heel counter -->
     <path d="M70 162 C64 138 76 116 108 106 L120 106 C96 120 88 140 90 162 Z" fill="${shade(main,-16)}"/>
-    <!-- collar -->
     <path d="M108 104 C120 100 134 100 148 104 L150 118 C136 112 122 112 110 118 Z" fill="${shade(main,14)}"/>
-    <!-- tongue -->
     <path d="M150 104 L172 100 L176 128 L154 130 Z" fill="${shade(main,10)}"/>
-    <!-- laces -->
     <g stroke="#f2f2ef" stroke-width="6" stroke-linecap="round" opacity=".95">
       <path d="M176 120 L210 132"/><path d="M182 134 L216 146"/><path d="M188 148 L224 160"/>
     </g>
-    <!-- side accent (generic swoosh-style curve) -->
     <path d="M120 168 C170 150 230 146 300 158 C250 164 200 168 150 174 Z" fill="${accent}"/>
-    <!-- eyelets -->
     <g fill="${shade(main,-30)}"><circle cx="178" cy="122" r="3.4"/><circle cx="184" cy="136" r="3.4"/><circle cx="190" cy="150" r="3.4"/></g>
   </svg>`;
 }
+// simple unique-id helper so gradient ids never collide
+let LASTUID=0;function uid(){LASTUID++;return LASTUID}
 // lighten/darken a hex color
 function shade(hex,pct){
   const n=parseInt(hex.replace('#',''),16);
@@ -552,53 +547,21 @@ function bgFor(brand){
   return 'radial-gradient(120% 130% at 25% 15%, #241f33, #16151f 65%)';
 }
 
-/* ---------- Product catalogue ---------- */
-const SNEAKER_SIZES=[39,40,41,42,43,44,45,46];
-const PRODUCTS=[
-  {id:'nk1',brand:'nike',type:'sneakers',name:'Aero Runner Pro',price:139,old:179,rating:5,
-   colors:['#ff5a3d','#ffd43b','#22223a'],out:[46],
-   desc:'Лёгкий беговой силуэт с амортизацией из вспененного материала. Дышащий трикотажный верх и цепкая резиновая подошва для города и трека.'},
-  {id:'nk2',brand:'nike',type:'sneakers',name:'Court Classic Low',price:109,old:0,rating:4,
-   colors:['#f4f4f2','#111119','#c9c9c9'],out:[39],
-   desc:'Вечная классика в минимализме. Гладкая кожа, чистые линии и низкий профиль — идеальны под джинсы и спортивный кэжуал.'},
-  {id:'nk3',brand:'nike',type:'sneakers',name:'Air Glide 270',price:159,old:0,rating:5,
-   colors:['#3d6dff','#e7ff3a','#12121c'],out:[],
-   desc:'Видимая воздушная подушка в пятке и агрессивный дизайн. Максимум комфорта на весь день без потери стиля.'},
-  {id:'nk4',brand:'nike',type:'sneakers',name:'Metro Knit Runner',price:129,old:149,rating:4,
-   colors:['#1f1f27','#ff4d3d','#5a5a68'],out:[41,46],
-   desc:'Носочный трикотажный крой, который садится как вторая кожа. Ультра-лёгкие для ежедневной носки и лёгких пробежек.'},
-  {id:'ad1',brand:'adidas',type:'sneakers',name:'Boost Strider',price:149,old:0,rating:5,
-   colors:['#101018','#4d9bff','#f4f4f2'],out:[],
-   desc:'Энергичный возврат каждого шага благодаря премиальной промежуточной подошве. Плетёный верх с фирменными боковыми полосами.'},
-  {id:'ad2',brand:'adidas',type:'sneakers',name:'Terrace OG',price:99,old:129,rating:4,
-   colors:['#f2efe6','#2e7d4f','#111119'],out:[40],
-   desc:'Ретро-силуэт из мира терас-культуры. Замшевые вставки, винтажная подошва и узнаваемый олдскульный характер.'},
-  {id:'ad3',brand:'adidas',type:'sneakers',name:'Ultra Glide 5',price:169,old:199,rating:5,
-   colors:['#141822','#b98bff','#e7ff3a'],out:[45],
-   desc:'Флагман для длинных дистанций. Отзывчивая амортизация, каркасная пятка и адаптивный верх Primeknit.'},
-  {id:'ad4',brand:'adidas',type:'sneakers',name:'City Runner',price:119,old:0,rating:4,
-   colors:['#e8e8ea','#111119','#ff4d3d'],out:[],
-   desc:'Универсальный городской кроссовок. Сдержанная палитра, комфортная колодка и износостойкая подошва на каждый день.'},
-  // accessories
-  {id:'nk5',brand:'nike',type:'accessories',name:'Sport Cap Essential',price:34,old:0,rating:5,acc:'cap',
-   colors:['#111119','#ff4d3d','#f4f4f2'],out:[],
-   desc:'Классическая бейсболка из гибкого хлопка с регулируемым ремешком. Незаменимый аксессуар для тренировок и улицы.'},
-  {id:'ad5',brand:'adidas',type:'accessories',name:'Gym Duffel 35L',price:54,old:69,rating:4,acc:'bag',
-   colors:['#141822','#4d9bff','#f4f4f2'],out:[],
-   desc:'Прочная спортивная сумка на 35 литров с отделением для обуви. Всё для зала в одном месте.'},
-  {id:'nk6',brand:'nike',type:'accessories',name:'Crew Socks (3 пары)',price:22,old:0,rating:5,acc:'sock',
-   colors:['#f4f4f2','#111119','#ff4d3d'],out:[],
-   desc:'Комплект из трёх пар дышащих носков с амортизацией в зоне стопы. Плотная посадка, не сползают.'},
-  {id:'ad6',brand:'adidas',type:'accessories',name:'Backpack Core 28L',price:49,old:0,rating:4,acc:'bag',
-   colors:['#111119','#b98bff','#e8e8ea'],out:[],
-   desc:'Компактный городской рюкзак с отделением для ноутбука. Лёгкий, водоотталкивающий, на каждый день.'},
-];
-
 /* ---------- accessory line icons ---------- */
 function accSVG(kind,main,accent){
   const c=main, a=accent;
   if(kind==='cap') return `<svg viewBox="0 0 200 160"><path d="M40 110 C40 60 160 60 160 110 L160 116 L40 116 Z" fill="${c}"/><path d="M40 116 C20 116 12 128 28 132 L86 132 C74 122 60 116 40 116 Z" fill="${shade(c,-18)}"/><path d="M96 66 C96 78 104 78 104 66 C104 60 96 60 96 66 Z" fill="${a}"/><path d="M60 112 L140 112" stroke="${a}" stroke-width="5" opacity=".6"/></svg>`;
   if(kind==='bag') return `<svg viewBox="0 0 200 160"><rect x="34" y="58" width="132" height="76" rx="16" fill="${c}"/><path d="M74 62 C74 44 126 44 126 62" fill="none" stroke="${shade(c,20)}" stroke-width="9"/><rect x="34" y="86" width="132" height="16" fill="${a}"/><rect x="150" y="70" width="10" height="52" rx="5" fill="${shade(c,-20)}"/></svg>`;
+  if(kind==='ball') return `<svg viewBox="0 0 200 160">
+      <circle cx="100" cy="80" r="55" fill="${c}" stroke="#15151d" stroke-width="3"/>
+      <circle cx="100" cy="80" r="55" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1" transform="scale(.94)" transform-origin="100 80"/>
+      <g stroke="#15151d" stroke-width="3" stroke-linecap="round">
+        <path d="M100 62 L100 26"/><path d="M117 74 L151 63"/><path d="M111 95 L132 124"/><path d="M89 95 L68 124"/><path d="M83 74 L49 63"/>
+      </g>
+      <path d="M100 62 L117 74 L111 95 L89 95 L83 74 Z" fill="${a}"/>
+      <path d="M100 26 A55 55 0 0 1 151 63 L117 74 Z" fill="${shade(a,20)}" opacity=".55"/>
+      <path d="M68 124 A55 55 0 0 1 49 63 L83 74 Z" fill="${shade(c,-12)}" opacity=".5"/>
+    </svg>`;
   return `<svg viewBox="0 0 200 160"><path d="M78 40 L122 40 L120 96 C120 120 80 120 80 96 Z" fill="${c}"/><path d="M78 40 L122 40 L121 54 L79 54 Z" fill="${a}"/><path d="M80 100 C80 122 120 122 120 100 L118 126 C118 138 82 138 82 126 Z" fill="${shade(c,-14)}"/></svg>`;
 }
 function mediaFor(p){
@@ -606,17 +569,62 @@ function mediaFor(p){
   return shoeSVG(p.colors[0],p.colors[1],p.colors[2]==='#111119'?'#2a2a33':(p.colors[2]||'#20202a'));
 }
 
-/* ---------- State ---------- */
+/* ---------- Product catalogue ---------- */
+const SNEAKER_SIZES=[39,40,41,42,43,44,45,46];
+const PRODUCTS=[
+  {id:'nk1',brand:'nike',type:'sneakers',name:'Aero Runner Pro',price:139,old:179,rating:5,
+   colors:['#ff5a3d','#ffd43b','#22223a'],out:[46],
+   desc:'A lightweight running silhouette with foam cushioning. Breathable knit upper and grippy rubber outsole built for the city and the track.'},
+  {id:'nk2',brand:'nike',type:'sneakers',name:'Court Classic Low',price:109,old:0,rating:4,
+   colors:['#f4f4f2','#111119','#c9c9c9'],out:[39],
+   desc:'A timeless minimalist classic. Smooth leather, clean lines and a low profile — perfect with denim or sporty casual looks.'},
+  {id:'nk3',brand:'nike',type:'sneakers',name:'Air Glide 270',price:159,old:0,rating:5,
+   colors:['#3d6dff','#e7ff3a','#12121c'],out:[],
+   desc:'A visible heel air unit and bold styling. All-day comfort with zero compromise on street presence.'},
+  {id:'nk4',brand:'nike',type:'sneakers',name:'Metro Knit Runner',price:129,old:149,rating:4,
+   colors:['#1f1f27','#ff4d3d','#5a5a68'],out:[41,46],
+   desc:'A sock-like knit construction that fits like a second skin. Ultra-light for daily wear and easy runs.'},
+  {id:'ad1',brand:'adidas',type:'sneakers',name:'Boost Strider',price:149,old:0,rating:5,
+   colors:['#101018','#4d9bff','#f4f4f2'],out:[],
+   desc:'Energy return on every step thanks to a premium midsole. Woven upper with signature side stripes.'},
+  {id:'ad2',brand:'adidas',type:'sneakers',name:'Terrace OG',price:99,old:129,rating:4,
+   colors:['#f2efe6','#2e7d4f','#111119'],out:[40],
+   desc:'A retro silhouette straight out of terrace culture. Suede overlays, a vintage sole and unmistakable old-school character.'},
+  {id:'ad3',brand:'adidas',type:'sneakers',name:'Ultra Glide 5',price:169,old:199,rating:5,
+   colors:['#141822','#b98bff','#e7ff3a'],out:[45],
+   desc:'A flagship built for long distances. Responsive cushioning, a supportive heel frame and an adaptive Primeknit upper.'},
+  {id:'ad4',brand:'adidas',type:'sneakers',name:'City Runner',price:119,old:0,rating:4,
+   colors:['#e8e8ea','#111119','#ff4d3d'],out:[],
+   desc:'A versatile everyday city sneaker. Understated palette, a comfortable fit and a hard-wearing outsole for daily miles.'},
+  // accessories
+  {id:'nk5',brand:'nike',type:'accessories',name:'Sport Cap Essential',price:34,old:0,rating:5,acc:'cap',
+   colors:['#111119','#ff4d3d','#f4f4f2'],
+   desc:'A classic six-panel cap in flexible cotton with an adjustable strap. An everyday staple for training and the street.'},
+  {id:'ad5',brand:'adidas',type:'accessories',name:'Gym Duffel 35L',price:54,old:69,rating:4,acc:'bag',
+   colors:['#141822','#4d9bff','#f4f4f2'],
+   desc:'A tough 35-liter gym bag with a dedicated shoe compartment. Everything for the gym in one place.'},
+  {id:'nk6',brand:'nike',type:'accessories',name:'Crew Socks (3-Pack)',price:22,old:0,rating:5,acc:'sock',
+   colors:['#f4f4f2','#111119','#ff4d3d'],
+   desc:'A set of three breathable socks with cushioning at the footbed. Snug fit that stays put all day.'},
+  {id:'ad6',brand:'adidas',type:'accessories',name:'Backpack Core 28L',price:49,old:0,rating:4,acc:'bag',
+   colors:['#111119','#b98bff','#e8e8ea'],
+   desc:'A compact city backpack with a padded laptop sleeve. Lightweight, water-repellent and ready for daily commutes.'},
+  {id:'ad7',brand:'adidas',type:'accessories',name:'FIFA World Cup 26™ Trionda Training Ball',price:35,old:0,rating:5,acc:'ball',sizes:['3','4','5'],
+   colors:['#f4f4f2','#e63946','#3d6dff'],
+   desc:'The official adidas training ball of the FIFA World Cup 26™. Machine-stitched panels and a butyl bladder for reliable air retention, finished with the bold Trionda graphic — built to take a beating in daily training.'},
+];
+
+/* ---------- state ---------- */
 let cart=load('sh_cart',[]);
 let favs=load('sh_favs',[]);
 let activeFilter='all';
 let searchTerm='';
 function load(k,def){try{return JSON.parse(localStorage.getItem(k))??def}catch(e){return def}}
 function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
-const fmt=n=>'€'+n.toFixed(0);
+const fmt=n=>'$'+n.toFixed(0);
 const $=s=>document.querySelector(s);
 
-/* ---------- Render grid ---------- */
+/* ---------- render grid ---------- */
 const grid=$('#grid');
 function counts(){
   const c={all:PRODUCTS.length,nike:0,adidas:0,accessories:0};
@@ -629,26 +637,27 @@ function renderGrid(){
     const ms=!searchTerm||p.name.toLowerCase().includes(searchTerm)||p.brand.includes(searchTerm);
     return mf&&ms;
   });
-  if(!list.length){grid.innerHTML='<div class="empty">Ничего не найдено. Попробуй другой запрос.</div>';return}
+  if(!list.length){grid.innerHTML='<div class="empty">Nothing found. Try another search.</div>';return}
   grid.innerHTML=list.map(p=>{
     const isFav=favs.includes(p.id);
+    const isAcc=p.type==='accessories';
     const brandLabel=p.brand.charAt(0).toUpperCase()+p.brand.slice(1);
     return `<article class="card" data-id="${p.id}">
       <div class="card-media" data-open="${p.id}" style="background:${bgFor(p.brand)}">
         <span class="tag ${p.brand}">${brandLabel}</span>
-        <button class="fav ${isFav?'on':''}" data-fav="${p.id}" aria-label="В избранное">
+        <button class="fav ${isFav?'on':''}" data-fav="${p.id}" aria-label="Add to favorites">
           <svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
         </button>
-        <span class="ghost">${p.type==='accessories'?'ACC':p.brand.slice(0,3).toUpperCase()}</span>
-        <div class="shoe">${mediaFor(p)}</div>
-        <div class="quick" data-open="${p.id}">Быстрый просмотр</div>
+        <span class="ghost">${isAcc?'ACC':p.brand.slice(0,3).toUpperCase()}</span>
+        <div class="shoe ${isAcc?'acc':''}">${mediaFor(p)}</div>
+        <div class="quick" data-open="${p.id}">Quick view</div>
       </div>
       <div class="card-body">
-        <div class="brandrow"><span>${p.type==='accessories'?'Аксессуар':'Кроссовки'}</span><span class="stars">${'★'.repeat(p.rating)}${'☆'.repeat(5-p.rating)}</span></div>
+        <div class="brandrow"><span>${isAcc?'Accessory':'Sneakers'}</span><span class="stars">${'★'.repeat(p.rating)}${'☆'.repeat(5-p.rating)}</span></div>
         <h3>${p.name}</h3>
         <div class="card-foot">
           <div class="price">${p.old?`<small>${fmt(p.old)}</small>`:''}${fmt(p.price)}</div>
-          <button class="add" data-open="${p.id}" aria-label="Добавить">
+          <button class="add" data-open="${p.id}" aria-label="Add to cart">
             <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
           </button>
         </div>
@@ -657,7 +666,7 @@ function renderGrid(){
   }).join('');
 }
 
-/* ---------- Filters & search ---------- */
+/* ---------- filters & search ---------- */
 document.querySelectorAll('#filters .chip').forEach(chip=>{
   chip.addEventListener('click',()=>{
     document.querySelectorAll('#filters .chip').forEach(c=>c.classList.remove('active'));
@@ -674,7 +683,7 @@ document.querySelectorAll('nav.main a[data-filter]').forEach(a=>{
 });
 $('#searchInput').addEventListener('input',e=>{searchTerm=e.target.value.trim().toLowerCase();renderGrid()});
 
-/* ---------- Grid click delegation ---------- */
+/* ---------- grid click delegation ---------- */
 grid.addEventListener('click',e=>{
   const fav=e.target.closest('[data-fav]');
   if(fav){toggleFav(fav.dataset.fav);return}
@@ -683,61 +692,63 @@ grid.addEventListener('click',e=>{
 });
 function toggleFav(id){
   const i=favs.indexOf(id);
-  if(i>-1){favs.splice(i,1)}else{favs.push(id);toast('Добавлено в избранное')}
+  if(i>-1){favs.splice(i,1)}else{favs.push(id);toast('Added to favorites')}
   save('sh_favs',favs);
   document.querySelectorAll(`[data-fav="${id}"]`).forEach(b=>b.classList.toggle('on',favs.includes(id)));
 }
 
-/* ---------- Quick view ---------- */
+/* ---------- quick view ---------- */
 let qvState={id:null,size:null};
 function openQuickView(id){
   const p=PRODUCTS.find(x=>x.id===id);if(!p)return;
   qvState={id,size:null};
   const isAcc=p.type==='accessories';
-  const sizes=isAcc?['ONE SIZE']:SNEAKER_SIZES;
+  let sizes,sizeLabel,autoSelect=false;
+  if(p.sizes){sizes=p.sizes;sizeLabel='Size'}
+  else if(isAcc){sizes=['ONE SIZE'];sizeLabel='Size';autoSelect=true}
+  else{sizes=SNEAKER_SIZES;sizeLabel='Size (EU)'}
   const brandLabel=p.brand.charAt(0).toUpperCase()+p.brand.slice(1);
   $('#qvBody').innerHTML=`
     <div class="qv-media" style="background:${bgFor(p.brand)}">
       <span class="ghost">${isAcc?'ACC':p.brand.slice(0,3).toUpperCase()}</span>
-      <div class="shoe">${mediaFor(p)}</div>
+      <div class="shoe ${isAcc?'acc':''}">${mediaFor(p)}</div>
     </div>
     <div class="qv-info">
       <div class="brandrow"><span class="tag ${p.brand}" style="position:static">${brandLabel}</span><span class="stars">${'★'.repeat(p.rating)}${'☆'.repeat(5-p.rating)}</span></div>
       <h3>${p.name}</h3>
       <div class="price">${p.old?`<small>${fmt(p.old)}</small>`:''}${fmt(p.price)}</div>
       <p class="desc">${p.desc}</p>
-      <div class="sizes-lbl"><span>${isAcc?'Размер':'Размер (EU)'}</span><a href="#" style="color:var(--muted)">таблица размеров</a></div>
+      <div class="sizes-lbl"><span>${sizeLabel}</span><a href="#" style="color:var(--muted)">size guide</a></div>
       <div class="sizes" id="qvSizes">
-        ${sizes.map(s=>{const dis=!isAcc&&p.out.includes(s);return `<button class="sz ${dis?'disabled':''}" data-size="${s}" ${dis?'disabled':''}>${s}</button>`}).join('')}
+        ${sizes.map(s=>{const dis=!isAcc&&!p.sizes&&p.out&&p.out.includes(s);return `<button class="sz ${dis?'disabled':''}" data-size="${s}" ${dis?'disabled':''}>${s}</button>`}).join('')}
       </div>
       <div class="qv-actions">
-        <button class="btn btn-primary" id="qvAdd">В корзину · ${fmt(p.price)}</button>
+        <button class="btn btn-primary" id="qvAdd">Add to cart · ${fmt(p.price)}</button>
         <button class="btn btn-ghost" id="qvFav">${favs.includes(id)?'♥':'♡'}</button>
       </div>
     </div>`;
-  // size selection
   $('#qvSizes').addEventListener('click',e=>{
     const b=e.target.closest('.sz');if(!b||b.classList.contains('disabled'))return;
     $('#qvSizes').querySelectorAll('.sz').forEach(s=>s.classList.remove('active'));
     b.classList.add('active');qvState.size=b.dataset.size;
   });
-  if(isAcc){qvState.size='ONE SIZE';$('#qvSizes').querySelector('.sz').classList.add('active')}
+  if(autoSelect){qvState.size='ONE SIZE';$('#qvSizes').querySelector('.sz').classList.add('active')}
   $('#qvAdd').addEventListener('click',()=>{
-    if(!qvState.size){toast('Выбери размер','!');return}
+    if(!qvState.size){toast('Select a size','!');return}
     addToCart(p.id,qvState.size);closeModal('#qvModal');
   });
   $('#qvFav').addEventListener('click',()=>{toggleFav(id);$('#qvFav').textContent=favs.includes(id)?'♥':'♡'});
   openModal('#qvModal');
 }
 
-/* ---------- Cart ---------- */
+/* ---------- cart ---------- */
 function addToCart(id,size){
   const p=PRODUCTS.find(x=>x.id===id);
   const key=id+'|'+size;
   const ex=cart.find(c=>c.key===key);
   if(ex){ex.qty++}else{cart.push({key,id,size,qty:1})}
   save('sh_cart',cart);renderCart();bumpCount();
-  toast(`${p.name} · ${size} добавлен`);
+  toast(`${p.name} · ${size} added`);
   openDrawer();
 }
 function changeQty(key,d){
@@ -759,18 +770,18 @@ function renderCart(){
   if(!cart.length){
     box.innerHTML=`<div class="cart-empty">
       <svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-      <p>Корзина пуста</p><p style="font-size:13px;margin-top:6px">Самое время что-нибудь присмотреть.</p></div>`;
+      <p>Your cart is empty</p><p style="font-size:13px;margin-top:6px">Time to find something you love.</p></div>`;
     foot.innerHTML='';return;
   }
   box.innerHTML=cart.map(c=>{
-    const p=PRODUCTS.find(x=>x.id===c.id);
+    const p=PRODUCTS.find(x=>x.id===c.id);const isAcc=p.type==='accessories';
     return `<div class="ci">
-      <div class="thumb" style="background:${bgFor(p.brand)}"><div class="shoe">${mediaFor(p)}</div></div>
+      <div class="thumb" style="background:${bgFor(p.brand)}"><div class="shoe ${isAcc?'acc':''}">${mediaFor(p)}</div></div>
       <div class="ci-info">
         <h4>${p.name}</h4>
-        <div class="meta">${p.brand.charAt(0).toUpperCase()+p.brand.slice(1)} · Размер ${c.size}</div>
+        <div class="meta">${p.brand.charAt(0).toUpperCase()+p.brand.slice(1)} · Size ${c.size}</div>
         <div class="p">${fmt(p.price*c.qty)}</div>
-        <button class="rm" data-rm="${c.key}">Удалить</button>
+        <button class="rm" data-rm="${c.key}">Remove</button>
       </div>
       <div class="qty">
         <button data-dec="${c.key}">−</button><span>${c.qty}</span><button data-inc="${c.key}">+</button>
@@ -780,12 +791,12 @@ function renderCart(){
   const total=cartTotal();
   const freeAt=150,left=Math.max(0,freeAt-total),pct=Math.min(100,total/freeAt*100);
   foot.innerHTML=`
-    <div class="drow"><span>Товаров</span><span>${cartQty()} шт.</span></div>
-    <div class="drow"><span>Доставка</span><span>${total>=freeAt?'Бесплатно':fmt(9)}</span></div>
+    <div class="drow"><span>Items</span><span>${cartQty()} pcs</span></div>
+    <div class="drow"><span>Shipping</span><span>${total>=freeAt?'Free':fmt(9)}</span></div>
     <div class="ship-bar"><i style="width:${pct}%"></i></div>
-    <div class="free-ship">${left>0?`До бесплатной доставки ещё ${fmt(left)}`:'🎉 Бесплатная доставка!'}</div>
-    <div class="drow total"><span>Итого</span><span>${fmt(total+(total>=freeAt?0:9))}</span></div>
-    <button class="checkout-btn" id="doCheckout">Оформить заказ</button>`;
+    <div class="free-ship">${left>0?`${fmt(left)} away from free shipping`:'🎉 Free shipping unlocked!'}</div>
+    <div class="drow total"><span>Total</span><span>${fmt(total+(total>=freeAt?0:9))}</span></div>
+    <button class="checkout-btn" id="doCheckout">Checkout</button>`;
   $('#doCheckout').addEventListener('click',openCheckout);
 }
 $('#cartItems').addEventListener('click',e=>{
@@ -795,30 +806,30 @@ $('#cartItems').addEventListener('click',e=>{
   if(rm)removeItem(rm.dataset.rm);
 });
 
-/* ---------- Checkout ---------- */
+/* ---------- checkout ---------- */
 function openCheckout(){
   if(!cart.length)return;
   const total=cartTotal(),ship=total>=150?0:9;
   $('#checkoutBody').innerHTML=`<div class="checkout-body">
-    <h3>Оформление заказа</h3>
-    <p class="sub">Заполни данные — это демо, реальная оплата не спишется.</p>
+    <h3>Checkout</h3>
+    <p class="sub">Fill in your details — this is a demo, no real charge will be made.</p>
     <form id="orderForm">
-      <div class="field"><label>Имя и фамилия</label><input required placeholder="Иван Петров"></div>
+      <div class="field"><label>Full name</label><input required placeholder="John Smith"></div>
       <div class="field"><label>Email</label><input type="email" required placeholder="you@email.com"></div>
       <div class="field-row">
-        <div class="field"><label>Город</label><input required placeholder="Москва"></div>
-        <div class="field"><label>Индекс</label><input required placeholder="101000"></div>
+        <div class="field"><label>City</label><input required placeholder="New York"></div>
+        <div class="field"><label>ZIP code</label><input required placeholder="10001"></div>
       </div>
-      <div class="field"><label>Адрес доставки</label><input required placeholder="ул. Примерная, 1"></div>
-      <div class="field"><label>Способ оплаты</label>
-        <select><option>Карта Visa / Mastercard</option><option>Apple Pay</option><option>Крипто (USDT)</option><option>Наличными при получении</option></select>
+      <div class="field"><label>Shipping address</label><input required placeholder="123 Example St"></div>
+      <div class="field"><label>Payment method</label>
+        <select><option>Visa / Mastercard</option><option>Apple Pay</option><option>Crypto (USDT)</option><option>Cash on delivery</option></select>
       </div>
       <div class="order-summary">
-        <div class="drow"><span>Товары (${cartQty()})</span><span>${fmt(total)}</span></div>
-        <div class="drow"><span>Доставка</span><span>${ship?fmt(ship):'Бесплатно'}</span></div>
-        <div class="drow total"><span>К оплате</span><span>${fmt(total+ship)}</span></div>
+        <div class="drow"><span>Items (${cartQty()})</span><span>${fmt(total)}</span></div>
+        <div class="drow"><span>Shipping</span><span>${ship?fmt(ship):'Free'}</span></div>
+        <div class="drow total"><span>To pay</span><span>${fmt(total+ship)}</span></div>
       </div>
-      <button type="submit" class="checkout-btn">Подтвердить заказ · ${fmt(total+ship)}</button>
+      <button type="submit" class="checkout-btn">Place order · ${fmt(total+ship)}</button>
     </form>
   </div>`;
   $('#orderForm').addEventListener('submit',e=>{
@@ -827,32 +838,33 @@ function openCheckout(){
     cart=[];save('sh_cart',cart);renderCart();bumpCount();
     $('#checkoutBody').innerHTML=`<div class="success">
       <div class="ok-circle"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>
-      <h3>Заказ оформлен!</h3>
-      <p>Спасибо за покупку в SOLEHAUS.</p>
-      <p>Номер заказа: <span class="oid">${oid}</span></p>
-      <p style="margin-top:16px">Детали отправлены на почту. Доставка — 48 часов.</p>
-      <button class="btn btn-primary" style="margin-top:24px" onclick="document.getElementById('checkoutModal').classList.remove('show')">Отлично!</button>
+      <h3>Order placed!</h3>
+      <p>Thanks for shopping at SOLEHAUS.</p>
+      <p>Order number: <span class="oid">${oid}</span></p>
+      <p style="margin-top:16px">Details have been sent to your email. Delivery in 48 hours.</p>
+      <button class="btn btn-primary" style="margin-top:24px" onclick="document.getElementById('checkoutModal').classList.remove('show')">Great!</button>
     </div>`;
     closeDrawer();
   });
   closeDrawer();openModal('#checkoutModal');
 }
 
-/* ---------- Drawer & modal helpers ---------- */
+/* ---------- drawer & modal helpers ---------- */
 const overlay=$('#overlay'),drawer=$('#drawer');
 function openDrawer(){drawer.classList.add('show');overlay.classList.add('show');document.body.style.overflow='hidden'}
 function closeDrawer(){drawer.classList.remove('show');if(!anyModalOpen())overlay.classList.remove('show'),document.body.style.overflow=''}
 function openModal(sel){$(sel).classList.add('show');overlay.classList.add('show');document.body.style.overflow='hidden'}
 function closeModal(sel){$(sel).classList.remove('show');if(!drawer.classList.contains('show')&&!anyModalOpen())overlay.classList.remove('show'),document.body.style.overflow=''}
 function anyModalOpen(){return document.querySelector('.modal.show')}
+function closeAll(){closeDrawer();document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'));overlay.classList.remove('show');document.body.style.overflow=''}
 $('#cartBtn').addEventListener('click',openDrawer);
 $('#closeCart').addEventListener('click',closeDrawer);
 $('#qvClose').addEventListener('click',()=>closeModal('#qvModal'));
 $('#checkoutClose').addEventListener('click',()=>closeModal('#checkoutModal'));
-overlay.addEventListener('click',()=>{closeDrawer();document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'));overlay.classList.remove('show');document.body.style.overflow=''});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDrawer();document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'));overlay.classList.remove('show');document.body.style.overflow=''}});
+overlay.addEventListener('click',closeAll);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAll()});
 
-/* ---------- Toast ---------- */
+/* ---------- toast ---------- */
 function toast(msg,icon='✓'){
   const t=document.createElement('div');
   t.className='toast';t.innerHTML=`<span class="ti">${icon}</span>${msg}`;
@@ -861,7 +873,7 @@ function toast(msg,icon='✓'){
   setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300)},2200);
 }
 
-/* ---------- Theme ---------- */
+/* ---------- theme ---------- */
 const themeBtn=$('#themeBtn'),root=document.documentElement;
 (function initTheme(){const saved=load('sh_theme','dark');root.setAttribute('data-theme',saved);setThemeIcon(saved)})();
 themeBtn.addEventListener('click',()=>{
@@ -874,13 +886,13 @@ function setThemeIcon(t){
     :'<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/>';
 }
 
-/* ---------- Newsletter ---------- */
-$('#newsletter').addEventListener('submit',e=>{e.preventDefault();e.target.reset();toast('Подписка оформлена!')});
+/* ---------- newsletter ---------- */
+$('#newsletter').addEventListener('submit',e=>{e.preventDefault();e.target.reset();toast('You are subscribed!')});
 
-/* ---------- Hero shoe ---------- */
+/* ---------- hero shoe ---------- */
 $('#heroShoe').innerHTML=shoeSVG('#ff5a3d','#e7ff3a','#20202a');
 
-/* ---------- Init ---------- */
+/* ---------- init ---------- */
 counts();renderGrid();renderCart();bumpCount();
 </script>
 </body>
