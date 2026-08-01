@@ -95,31 +95,51 @@ async function withImap(acc, fn) {
   }
 }
 
+// Папка спама: ищем по special-use флагу, если нет — стандартное имя Junk
+async function resolveJunk(client) {
+  try {
+    for (const box of await client.list()) {
+      if (box.specialUse === '\\Junk') return box.path;
+    }
+  } catch {}
+  return 'Junk';
+}
+
+async function fetchMailbox(client, box, limit = 20) {
+  const lock = await client.getMailboxLock(box);
+  try {
+    const status = await client.status(box, { messages: true, unseen: true });
+    const messages = [];
+    if (status.messages > 0) {
+      const from = Math.max(1, status.messages - limit + 1);
+      for await (const m of client.fetch(`${from}:*`, { uid: true, envelope: true, flags: true, internalDate: true })) {
+        const sender = m.envelope.from?.[0] || {};
+        messages.push({
+          uid: m.uid,
+          subject: m.envelope.subject || '(no subject)',
+          from: sender.address || '',
+          fromName: sender.name || '',
+          date: m.internalDate,
+          seen: m.flags.has('\\Seen'),
+        });
+      }
+    }
+    messages.sort((a, b) => new Date(b.date) - new Date(a.date));
+    return { unseen: status.unseen, total: status.messages, messages };
+  } finally {
+    lock.release();
+  }
+}
+
 async function fetchInbox(acc, limit = 20) {
   return withImap(acc, async (client) => {
-    const lock = await client.getMailboxLock('INBOX');
+    const inbox = await fetchMailbox(client, 'INBOX', limit);
+    // у свежесозданного ящика папки Junk может ещё не быть — тогда спам просто пуст
+    let spam = { unseen: 0, total: 0, messages: [] };
     try {
-      const status = await client.status('INBOX', { messages: true, unseen: true });
-      const messages = [];
-      if (status.messages > 0) {
-        const from = Math.max(1, status.messages - limit + 1);
-        for await (const m of client.fetch(`${from}:*`, { uid: true, envelope: true, flags: true, internalDate: true })) {
-          const sender = m.envelope.from?.[0] || {};
-          messages.push({
-            uid: m.uid,
-            subject: m.envelope.subject || '(no subject)',
-            from: sender.address || '',
-            fromName: sender.name || '',
-            date: m.internalDate,
-            seen: m.flags.has('\\Seen'),
-          });
-        }
-      }
-      messages.sort((a, b) => new Date(b.date) - new Date(a.date));
-      return { unseen: status.unseen, total: status.messages, messages };
-    } finally {
-      lock.release();
-    }
+      spam = await fetchMailbox(client, await resolveJunk(client), limit);
+    } catch {}
+    return { ...inbox, spam };
   });
 }
 
@@ -199,7 +219,8 @@ app.get('/api/message', async (req, res) => {
   if (!acc || !uid) return res.status(400).json({ error: 'Invalid parameters.' });
   try {
     const result = await withImap(acc, async (client) => {
-      const lock = await client.getMailboxLock('INBOX');
+      const box = req.query.folder === 'spam' ? await resolveJunk(client) : 'INBOX';
+      const lock = await client.getMailboxLock(box);
       try {
         const msg = await client.fetchOne(String(uid), { source: true }, { uid: true });
         if (!msg || !msg.source) return null;
@@ -219,6 +240,34 @@ app.get('/api/message', async (req, res) => {
       text: result.text || '',
       attachments: (result.attachments || []).map((a) => ({ filename: a.filename, size: a.size })),
     });
+  } catch (e) {
+    res.status(500).json({ error: e.responseText || e.message });
+  }
+});
+
+// Переместить письмо между входящими и спамом: to = 'inbox' (не спам) или 'spam'
+app.post('/api/move', async (req, res) => {
+  const s = getSession(req, res);
+  const { account, uid, to } = req.body || {};
+  const acc = findAccount(s, account);
+  const u = parseInt(uid, 10);
+  if (!acc || !u || !['inbox', 'spam'].includes(to)) {
+    return res.status(400).json({ error: 'Invalid parameters.' });
+  }
+  try {
+    await withImap(acc, async (client) => {
+      const junk = await resolveJunk(client);
+      const src = to === 'inbox' ? junk : 'INBOX';
+      const dst = to === 'inbox' ? 'INBOX' : junk;
+      await client.mailboxCreate(dst).catch(() => {});
+      const lock = await client.getMailboxLock(src);
+      try {
+        await client.messageMove(String(u), dst, { uid: true });
+      } finally {
+        lock.release();
+      }
+    });
+    res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: e.responseText || e.message });
   }

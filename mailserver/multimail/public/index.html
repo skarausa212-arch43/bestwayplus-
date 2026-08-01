@@ -171,6 +171,19 @@
   }
   @keyframes puff { to { transform: translate(var(--dx), var(--dy)) scale(.15); opacity: 0; } }
 
+  /* folder tabs: Inbox / Spam */
+  .ftabs { display: flex; gap: 6px; padding: 8px 14px; border-bottom: 1px solid var(--line); }
+  .ftab {
+    border: 0; border-radius: 999px; padding: 6px 14px; cursor: pointer;
+    font-family: inherit; font-size: 12.5px; font-weight: 650;
+    background: transparent; color: var(--muted);
+    transition: background .15s, color .15s;
+  }
+  .ftab:hover { background: rgba(148,163,214,.1); color: var(--text); }
+  .ftab.active { background: rgba(37,99,255,.18); color: #fff; }
+  .ftab .cnt { color: var(--gold); font-weight: 700; margin-left: 3px; }
+  .ftab.active .cnt { color: #fff; }
+
   .msgs { flex: 1; overflow-y: auto; }
   .m {
     display: flex; gap: 10px; align-items: flex-start;
@@ -327,6 +340,10 @@
         <button class="btn ghost" id="refreshBtn" title="Refresh">⟳</button>
       </div>
     </div>
+    <div class="ftabs">
+      <button class="ftab active" id="tabInbox">Inbox</button>
+      <button class="ftab" id="tabSpam">Spam<span class="cnt" id="spamCnt" style="display:none"></span></button>
+    </div>
     <div class="msgs" id="msgs">
       <div class="empty">Add a mailbox to see all<br>your mail in one place</div>
     </div>
@@ -375,9 +392,10 @@
 
 <script>
 const COLORS = ['#8B5CF6','#60A5FA','#F2C97D','#34d399','#f472b6','#5eead4','#f87171','#6366F1','#fb923c','#a78bfa'];
-let accounts = [];      // [{id, email, color, unseen, error, messages}]
+let accounts = [];      // [{id, email, color, unseen, error, messages, spam}]
 let filter = null;      // account id or null = all
-let selected = null;    // {account, uid}
+let folder = 'inbox';   // 'inbox' | 'spam'
+let selected = null;    // {account, uid, folder}
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -465,18 +483,25 @@ function renderList() {
   const el = $('msgs');
   const src = accounts.filter((a) => !a.error && (!filter || a.id === filter));
   $('listTitle').textContent = filter ? (accounts.find((a) => a.id === filter)?.email || '') : 'All inboxes';
-  const items = src.flatMap((a) => (a.messages || []).map((m) => ({ ...m, acc: a })));
+  // счётчик на вкладке Spam — по всем видимым ящикам
+  const spamTotal = src.reduce((n, a) => n + (a.spam?.total || 0), 0);
+  $('spamCnt').textContent = spamTotal;
+  $('spamCnt').style.display = spamTotal ? '' : 'none';
+  $('tabInbox').classList.toggle('active', folder === 'inbox');
+  $('tabSpam').classList.toggle('active', folder === 'spam');
+  const items = src.flatMap((a) =>
+    ((folder === 'spam' ? a.spam?.messages : a.messages) || []).map((m) => ({ ...m, acc: a })));
   items.sort((x, y) => new Date(y.date) - new Date(x.date));
   if (!items.length) {
-    el.innerHTML = accounts.length
-      ? '<div class="empty">No mail yet</div>'
-      : '<div class="empty">Add a mailbox to see all<br>your mail in one place</div>';
+    el.innerHTML = !accounts.length
+      ? '<div class="empty">Add a mailbox to see all<br>your mail in one place</div>'
+      : folder === 'spam' ? '<div class="empty">Spam is empty 🎉</div>' : '<div class="empty">No mail yet</div>';
     return;
   }
   el.innerHTML = items.map((m, i) => {
     const who = m.fromName || m.from || '?';
     return `
-    <div class="m ${m.seen?'':'unread'} ${selected && selected.uid===m.uid && selected.account===m.acc.id ? 'sel':''}"
+    <div class="m ${m.seen?'':'unread'} ${selected && selected.uid===m.uid && selected.account===m.acc.id && selected.folder===folder ? 'sel':''}"
          data-acc="${m.acc.id}" data-uid="${m.uid}" style="animation-delay:${Math.min(i*40, 400)}ms">
       <span class="ava" style="background:${m.acc.color}26; color:${m.acc.color}">${esc(who[0].toUpperCase())}</span>
       <div class="wrap">
@@ -496,20 +521,24 @@ function fmtDate(d) {
 }
 
 async function openMessage(accId, uid) {
-  selected = { account: accId, uid };
+  const fld = folder;
+  selected = { account: accId, uid, folder: fld };
   renderList();
   const v = $('view');
   v.classList.add('open');
   v.innerHTML = '<div class="placeholder"><div class="dots"><span>●</span><span>●</span><span>●</span></div>Loading message…</div>';
   try {
-    const m = await api(`api/message?account=${accId}&uid=${uid}`);
+    const m = await api(`api/message?account=${accId}&uid=${uid}&folder=${fld}`);
     const acc = accounts.find((a) => a.id === accId);
+    const moveBtn = fld === 'spam'
+      ? '<button class="btn" id="moveBtn" data-to="inbox">✓ Not spam</button>'
+      : '<button class="btn ghost" id="moveBtn" data-to="spam">🚫 Spam</button>';
     v.innerHTML = `
-      <div class="view-head"><button class="backBtn" id="backBtn">← Inbox</button><h2>${esc(m.subject)}</h2>
+      <div class="view-head"><button class="backBtn" id="backBtn">← ${fld === 'spam' ? 'Spam' : 'Inbox'}</button><h2>${esc(m.subject)}</h2>
         <div class="meta">From: ${esc(m.from)}<br>To: ${esc(m.to)} · ${new Date(m.date).toLocaleString('en-GB')}
         ${m.attachments.length ? '<br>📎 ' + m.attachments.map((a) => esc(a.filename)).join(', ') : ''}</div></div>
       <div class="view-body" id="vb"></div>
-      <div class="reply"><button class="btn" id="replyBtn">Reply</button></div>`;
+      <div class="reply" style="display:flex; gap:9px">${fld === 'spam' ? moveBtn : '<button class="btn" id="replyBtn">Reply</button>' + moveBtn}</div>`;
     const vb = $('vb');
     if (m.html) {
       const wrap = document.createElement('div');
@@ -545,17 +574,43 @@ async function openMessage(accId, uid) {
     } else {
       vb.innerHTML = `<pre>${esc(m.text)}</pre>`;
     }
-    $('replyBtn').addEventListener('click', () => {
+    $('replyBtn')?.addEventListener('click', () => {
       openCompose(accId, m.from.match(/<(.+)>/)?.[1] || m.from, 'Re: ' + m.subject);
     });
+    $('moveBtn').addEventListener('click', () => moveMessage(accId, uid, $('moveBtn').dataset.to));
     $('backBtn').addEventListener('click', () => { v.classList.remove('open'); selected = null; renderList(); });
-    const cached = acc?.messages?.find((x) => x.uid === uid);
-    if (cached && !cached.seen) { cached.seen = true; acc.unseen = Math.max(0, acc.unseen - 1); renderSidebar(); renderList(); }
+    const cachedList = fld === 'spam' ? acc?.spam?.messages : acc?.messages;
+    const cached = cachedList?.find((x) => x.uid === uid);
+    if (cached && !cached.seen) {
+      cached.seen = true;
+      if (fld === 'spam') { if (acc.spam) acc.spam.unseen = Math.max(0, acc.spam.unseen - 1); }
+      else acc.unseen = Math.max(0, acc.unseen - 1);
+      renderSidebar(); renderList();
+    }
   } catch (e) {
     v.innerHTML = `<div class="placeholder"><button class="backBtn" id="backBtn2">← Inbox</button>${esc(e.message)}</div>`;
     $('backBtn2').addEventListener('click', () => { v.classList.remove('open'); selected = null; renderList(); });
   }
 }
+
+// --- move between Inbox and Spam ---
+async function moveMessage(accId, uid, to) {
+  const btn = $('moveBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Moving…'; }
+  try {
+    await api('api/move', { method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ account: accId, uid, to }) });
+    $('view').classList.remove('open');
+    $('view').innerHTML = '<div class="placeholder">Select a message</div>';
+    selected = null;
+    await reload();
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Error: ' + e.message; }
+  }
+}
+
+$('tabInbox').addEventListener('click', () => { folder = 'inbox'; selected = null; renderList(); });
+$('tabSpam').addEventListener('click', () => { folder = 'spam'; selected = null; renderList(); });
 
 // --- mobile drawer ---
 function closeDrawer() { $('sidebar').classList.remove('open'); $('backdrop').classList.remove('show'); }
