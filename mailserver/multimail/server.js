@@ -193,6 +193,14 @@ app.post('/api/accounts', async (req, res) => {
   res.json({ ok: true, id: acc.id, email: acc.email });
 });
 
+// Полный выход: сессия забывает все ящики
+app.post('/api/logout', (req, res) => {
+  const s = getSession(req, res);
+  s.accounts = [];
+  persistSessions();
+  res.json({ ok: true });
+});
+
 app.delete('/api/accounts/:id', (req, res) => {
   const s = getSession(req, res);
   const before = s.accounts.length;

@@ -107,6 +107,8 @@
     transition: background .15s;
   }
   .addbox .alt:hover { background: rgba(148,163,214,.2); }
+  .addbox .out { color: #f87171; }
+  .addbox .out:hover { background: rgba(248,113,113,.14); }
   .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
   .addrline { display: flex; align-items: center; gap: 8px; }
   .addrline input { margin-bottom: 9px; }
@@ -327,6 +329,7 @@
     <label><input type="checkbox" id="aRemember" checked> remember in this browser</label>
     <button id="aBtn">+ Add mailbox</button>
     <button id="newAddrBtn" class="alt">Create new address</button>
+    <button id="logoutBtn" class="alt out" style="display:none">Sign out</button>
   </div>
 </aside>
 
@@ -464,6 +467,7 @@ function renderSidebar() {
       <button class="del" data-del="${a.id}" title="Remove">✕</button></div>`;
   });
   el.innerHTML = html;
+  $('logoutBtn').style.display = accounts.length ? '' : 'none';
   el.querySelectorAll('.acc').forEach((n) => n.addEventListener('click', (e) => {
     if (e.target.dataset.del !== undefined && e.target.dataset.del !== '') return;
     filter = n.dataset.id || null;
@@ -685,6 +689,14 @@ $('aBtn').addEventListener('click', async () => {
   } finally {
     $('aBtn').disabled = false; $('aBtn').textContent = '+ Add mailbox';
   }
+});
+
+// --- sign out: забыть все ящики на сервере и в этом браузере ---
+$('logoutBtn').addEventListener('click', async () => {
+  if (!confirm('Sign out and forget all mailboxes in this browser?')) return;
+  try { await api('api/logout', { method: 'POST' }); } catch {}
+  localStorage.removeItem('viplyAccounts');
+  location.href = '../';
 });
 
 // --- register a brand-new address without leaving the app ---
