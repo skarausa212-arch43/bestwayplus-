@@ -85,22 +85,67 @@
   .hero-meta{margin-top:44px;display:flex;gap:26px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
   .hero-meta b{color:var(--ink-2);font-weight:600}
 
-  /* chrome sphere visual */
-  .stage{position:relative;aspect-ratio:1/1;display:grid;place-items:center}
-  .stage .ring{position:absolute;width:92%;height:92%;border:1px solid var(--line);border-radius:50%}
-  .stage .ring.two{width:74%;height:74%;border-color:transparent;border-top-color:var(--line-2);animation:spin 22s linear infinite}
-  .sphere{position:relative;width:78%;aspect-ratio:1;border-radius:50%;overflow:hidden;
+  /* ---- SWK chrome orb (animated logo) ---- */
+  .stage{position:relative;aspect-ratio:1/1;display:grid;place-items:center;perspective:900px}
+  .orb-tilt{position:relative;width:100%;height:100%;display:grid;place-items:center;
+    transform-style:preserve-3d;transition:transform .35s var(--ease)}
+  /* pulsing blue aura behind everything */
+  .aura{position:absolute;width:70%;height:70%;border-radius:50%;filter:blur(50px);
+    background:radial-gradient(circle,rgba(58,123,255,.28),transparent 65%);
+    animation:aura 5.5s ease-in-out infinite}
+  @keyframes aura{0%,100%{transform:scale(.92);opacity:.5}50%{transform:scale(1.12);opacity:1}}
+  /* orbit rings */
+  .oring{position:absolute;border-radius:50%;pointer-events:none}
+  .oring.r1{width:96%;height:96%;border:1px solid var(--line)}
+  .oring.r2{width:82%;height:82%;border:1px dashed rgba(244,244,244,.14);animation:spin 40s linear infinite}
+  .oring.r3{width:96%;height:96%;animation:spin 13s linear infinite}
+  .oring.r3::after{content:"";position:absolute;top:-3px;left:50%;width:7px;height:7px;border-radius:50%;
+    background:var(--accent);box-shadow:0 0 12px 3px rgba(58,123,255,.8)}
+  .oring.r4{width:118%;height:44%;border:1px solid rgba(244,244,244,.10);border-radius:50%;
+    transform:rotateX(72deg) rotateZ(-14deg);animation:saturn 9s ease-in-out infinite}
+  @keyframes saturn{0%,100%{transform:rotateX(72deg) rotateZ(-14deg)}50%{transform:rotateX(72deg) rotateZ(-8deg)}}
+  /* the chrome sphere */
+  .sphere{position:relative;width:72%;aspect-ratio:1;border-radius:50%;overflow:hidden;isolation:isolate;
     background:radial-gradient(120% 120% at 34% 26%,#ffffff 0%,#dcdce1 10%,#9a9ba3 28%,#45464d 52%,#181a1e 78%,#090a0c 100%);
-    box-shadow:0 50px 120px -34px #000,inset 0 -30px 60px rgba(0,0,0,.7),inset 0 6px 22px rgba(255,255,255,.25);
+    box-shadow:0 50px 120px -30px #000,inset 0 -30px 60px rgba(0,0,0,.7),inset 0 6px 22px rgba(255,255,255,.25);
     animation:float 7s ease-in-out infinite}
-  .sphere::before{content:"";position:absolute;inset:-25%;mix-blend-mode:screen;
-    background:conic-gradient(from 0deg,transparent 0deg,rgba(255,255,255,.16) 38deg,transparent 92deg,rgba(58,123,255,.14) 172deg,transparent 232deg,rgba(255,255,255,.10) 302deg,transparent 360deg);
-    animation:spin 15s linear infinite}
-  .sphere::after{content:"";position:absolute;left:19%;top:13%;width:34%;height:26%;border-radius:50%;filter:blur(7px);
+  .sphere .sheen{position:absolute;inset:0;border-radius:50%;
+    background:conic-gradient(from 0deg,transparent 0deg,rgba(255,255,255,.17) 38deg,transparent 92deg,rgba(58,123,255,.15) 172deg,transparent 232deg,rgba(255,255,255,.10) 302deg,transparent 360deg);
+    animation:spin 14s linear infinite}
+  .sphere .glint{position:absolute;inset:0;border-radius:50%;overflow:hidden}
+  .sphere .glint::before{content:"";position:absolute;top:-20%;bottom:-20%;left:-45%;width:34%;transform:skewX(-22deg) translateX(-140%);
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);filter:blur(3px);
+    animation:glint 4.6s var(--ease) infinite}
+  @keyframes glint{0%,58%{transform:skewX(-22deg) translateX(-160%)}78%{transform:skewX(-22deg) translateX(520%)}100%{transform:skewX(-22deg) translateX(520%)}}
+  .sphere .hl{position:absolute;left:19%;top:13%;width:34%;height:26%;border-radius:50%;filter:blur(7px);
     background:radial-gradient(circle,rgba(255,255,255,.95),transparent 68%)}
-  .stage .cap{position:absolute;bottom:-4%;left:0;right:0;text-align:center;font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--faint);white-space:nowrap}
+  /* embossed SWK monogram in the chrome */
+  .sphere .mono{position:absolute;inset:0;display:grid;place-items:center;font-weight:800;letter-spacing:.06em;
+    font-size:clamp(30px,5.2vw,58px);color:rgba(10,10,12,.5);
+    text-shadow:0 1px 1px rgba(255,255,255,.5),0 -1px 2px rgba(0,0,0,.65);
+    animation:monoPulse 5.5s ease-in-out infinite}
+  @keyframes monoPulse{0%,100%{opacity:.75}50%{opacity:1}}
+  .sphere .mono i{font-style:normal;position:relative;top:-.55em;margin-left:.14em;font-size:.34em;color:var(--accent);
+    text-shadow:0 0 14px rgba(58,123,255,.9);animation:sparkle 2.6s ease-in-out infinite}
+  @keyframes sparkle{0%,100%{opacity:.5;transform:scale(.85) rotate(0)}50%{opacity:1;transform:scale(1.25) rotate(18deg)}}
+  /* floating particles */
+  .pt{position:absolute;width:4px;height:4px;border-radius:50%;background:rgba(244,244,244,.55);pointer-events:none;
+    animation:pt 6s ease-in-out infinite}
+  .pt.b{background:var(--accent);box-shadow:0 0 10px 2px rgba(58,123,255,.6)}
+  .pt:nth-child(1){left:9%;top:24%;animation-delay:0s}
+  .pt:nth-child(2){left:86%;top:18%;animation-delay:1.1s;width:3px;height:3px}
+  .pt:nth-child(3){left:78%;top:76%;animation-delay:2.2s}
+  .pt:nth-child(4){left:14%;top:70%;animation-delay:3.1s;width:3px;height:3px}
+  .pt:nth-child(5){left:50%;top:6%;animation-delay:1.8s}
+  .pt:nth-child(6){left:38%;top:92%;animation-delay:.6s;width:3px;height:3px}
+  @keyframes pt{0%,100%{transform:translateY(0);opacity:.25}50%{transform:translateY(-14px);opacity:1}}
+  /* slogan under the orb */
+  .stage .cap{position:absolute;bottom:-7%;left:0;right:0;text-align:center;white-space:nowrap;
+    font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .stage .cap b{color:var(--ink);font-weight:700}
+  .stage .cap i{font-style:normal;color:var(--accent);margin:0 10px}
   @keyframes spin{to{transform:rotate(360deg)}}
-  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
 
   /* ============ MARQUEE ============ */
   .strip{border-block:1px solid var(--line);background:var(--bg);overflow:hidden;padding:20px 0}
@@ -332,7 +377,9 @@
   @media(max-width:900px){
     nav.main{display:none}.ic.menu-btn{display:grid}
     .hero-grid{grid-template-columns:1fr;gap:20px}
-    .stage{width:min(72vw,300px);height:min(72vw,300px);aspect-ratio:auto;max-width:none;margin:8px auto 0;order:-1}
+    .stage{width:min(72vw,300px);height:min(72vw,300px);aspect-ratio:auto;max-width:none;margin:8px auto 24px;order:-1}
+    .stage .cap{bottom:-13%;white-space:normal;font-size:10px;letter-spacing:.16em}
+    .stage .cap i{margin:0 6px}
     .qv{grid-template-columns:1fr}.qv-media{min-height:260px;border-right:none;border-bottom:1px solid var(--line)}
     .news{grid-template-columns:1fr}.foot{grid-template-columns:1fr 1fr}
   }
@@ -405,9 +452,18 @@
       </div>
     </div>
     <div class="stage reveal">
-      <div class="ring"></div><div class="ring two"></div>
-      <div class="sphere"></div>
-      <div class="cap">Liquid Chrome — 001</div>
+      <div class="orb-tilt" id="orbTilt">
+        <div class="aura"></div>
+        <div class="oring r1"></div><div class="oring r2"></div><div class="oring r3"></div><div class="oring r4"></div>
+        <span class="pt"></span><span class="pt b"></span><span class="pt"></span><span class="pt b"></span><span class="pt"></span><span class="pt"></span>
+        <div class="sphere">
+          <div class="sheen"></div>
+          <div class="glint"></div>
+          <div class="hl"></div>
+          <div class="mono">SWK<i>✦</i></div>
+        </div>
+      </div>
+      <div class="cap"><b>stuffweknow.com</b><i>✦</i>wear what you know</div>
     </div>
   </div>
 </section>
@@ -726,9 +782,15 @@ function observeReveal(){
 /* ---------- hero: cursor spotlight + magnetic CTA (desktop, motion-safe) ---------- */
 const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
 if(!reduce&&matchMedia('(pointer:fine)').matches){
-  const hero=$('.hero'),spot=$('#spot');
-  hero.addEventListener('pointermove',e=>{const r=hero.getBoundingClientRect();spot.style.setProperty('--mx',(e.clientX-r.left)+'px');spot.style.setProperty('--my',(e.clientY-r.top)+'px');spot.style.opacity=1});
-  hero.addEventListener('pointerleave',()=>spot.style.opacity=0);
+  const hero=$('.hero'),spot=$('#spot'),tilt=$('#orbTilt');
+  hero.addEventListener('pointermove',e=>{
+    const r=hero.getBoundingClientRect();
+    spot.style.setProperty('--mx',(e.clientX-r.left)+'px');spot.style.setProperty('--my',(e.clientY-r.top)+'px');spot.style.opacity=1;
+    // 3D parallax tilt of the orb toward the cursor (subtle)
+    const nx=(e.clientX-r.left)/r.width-.5,ny=(e.clientY-r.top)/r.height-.5;
+    tilt.style.transform=`rotateY(${nx*10}deg) rotateX(${-ny*8}deg)`;
+  });
+  hero.addEventListener('pointerleave',()=>{spot.style.opacity=0;tilt.style.transform='rotateY(0) rotateX(0)'});
 }
 
 /* ---------- init ---------- */
