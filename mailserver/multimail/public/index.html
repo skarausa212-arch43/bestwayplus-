@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>emailinc — your private inbox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #050505; --line: rgba(148,163,214,.16); --line2: rgba(148,163,214,.07);
+    --text: #EEF1FA; --muted: #8B93B8; --dim: #5E6688; --acc: #2563FF; --acc2: #43C8FF; --gold: #43C8FF;
+  }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    height: 100vh; height: 100dvh;
+    display: flex; color: var(--text); overflow: hidden;
+    background: var(--bg); -webkit-font-smoothing: antialiased;
+  }
+  /* soft ambient glow */
+  .blob { position: fixed; border-radius: 50%; filter: blur(140px); z-index: 0; pointer-events: none; }
+  .blob.b1 { width: 620px; height: 620px; background: var(--acc); opacity: .12; top: -240px; left: -180px; animation: drift1 38s ease-in-out infinite, hueDrift 26s linear infinite; }
+  .blob.b2 { width: 520px; height: 520px; background: var(--acc2); opacity: .06; bottom: -240px; right: -160px; animation: drift2 46s ease-in-out infinite; }
+  .blob.b3 { display: none; }
+  @keyframes drift1 { 50% { transform: translate(120px, 80px); } }
+  @keyframes hueDrift { 50% { filter: blur(140px) hue-rotate(35deg); } }
+  @keyframes drift2 { 50% { transform: translate(-140px, -60px); } }
+
+  aside, .list, .view { position: relative; z-index: 1; }
+
+  /* ============ sidebar ============ */
+  aside {
+    width: 280px; min-width: 280px; display: flex; flex-direction: column;
+    background: rgba(15,18,36,.88); backdrop-filter: blur(18px);
+    border-right: 1px solid var(--line);
+  }
+  aside h1 {
+    position: relative;
+    display: flex; align-items: center; gap: 9px;
+    font-size: 16px; font-weight: 800; letter-spacing: -.02em;
+    padding: 16px; border-bottom: 1px solid var(--line);
+  }
+  aside h1::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--acc), #4CC9F0, var(--acc2), transparent);
+    background-size: 220% 100%;
+    animation: holoLine 5s linear infinite;
+  }
+  @keyframes holoLine { to { background-position: 220% 0; } }
+  aside h1 svg { width: 26px; height: 26px; flex: none; }
+  aside h1 .mm { color: #fff; }
+  aside h1 .mm2 {
+    background: linear-gradient(90deg, var(--acc), var(--acc2));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    font-weight: 700;
+  }
+  .acc-list { flex: 1; overflow-y: auto; padding: 10px; }
+  .acc {
+    display: flex; align-items: center; gap: 9px; padding: 9px 10px; margin-bottom: 2px;
+    border-radius: 8px; cursor: pointer; font-size: 13.5px; color: #b8b8c0;
+    transition: background .15s, color .15s;
+    animation: slideIn .35s ease both;
+  }
+  @keyframes slideIn { from { transform: translateY(6px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .acc:hover { background: rgba(255,255,255,.05); color: var(--text); }
+  .acc.active { background: rgba(255,255,255,.08); color: #fff; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .acc .em { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .badge {
+    background: #1E2542; color: #8B93B8; border-radius: 999px;
+    font-size: 11px; padding: 1px 8px; font-weight: 650;
+  }
+  .badge.hot { background: linear-gradient(135deg, var(--acc), var(--acc2)); color: #fff; }
+  .badge.zero { background: #151B36; color: #5E6688; }
+  .acc .del { opacity: 0; border: 0; background: none; color: #6c6c74; cursor: pointer; font-size: 14px; transition: opacity .15s, color .15s; }
+  .acc:hover .del { opacity: 1; }
+  .acc .del:hover { color: #f87171; }
+  .acc.err .em { color: #f87171; }
+
+  .addbox { padding: 14px; border-top: 1px solid var(--line); }
+  .addbox input {
+    width: 100%; margin-bottom: 7px; padding: 9px 11px; font-size: 13px; color: var(--text);
+    background: #0D1228; border: 1px solid #2A2F45; border-radius: 8px;
+    outline: none; transition: border-color .2s, box-shadow .2s;
+  }
+  .addbox input::placeholder { color: #4c4c54; }
+  .addbox input:focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(109,93,246,.15); }
+  .addbox input[type="checkbox"] { width: auto; flex: none; margin: 0; accent-color: var(--acc); }
+  .addbox label { font-size: 12px; display: flex; gap: 7px; align-items: center; margin: 4px 0 10px; color: var(--muted); cursor: pointer; }
+  .addbox button {
+    width: 100%; padding: 9px; border: 0; border-radius: 8px; font-weight: 650; font-size: 13px;
+    font-family: inherit; color: #fff; cursor: pointer;
+    background: linear-gradient(135deg, var(--acc), var(--acc2));
+    box-shadow: 0 6px 20px rgba(99,102,241,.3);
+    transition: filter .2s, transform .15s;
+  }
+  .addbox button:hover { filter: brightness(1.12); transform: translateY(-1px); }
+  .addbox button:active { transform: scale(.98); }
+  .addbox button:disabled { opacity: .55; }
+  .addbox .e { color: #f87171; font-size: 12px; min-height: 15px; margin-bottom: 4px; }
+  .addbox .alt {
+    width: 100%; margin-top: 7px; padding: 9px; border: 0; border-radius: 8px;
+    font-weight: 650; font-size: 13px; font-family: inherit; cursor: pointer;
+    background: rgba(148,163,214,.12); color: var(--text); box-shadow: none;
+    transition: background .15s;
+  }
+  .addbox .alt:hover { background: rgba(148,163,214,.2); }
+  .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .addrline { display: flex; align-items: center; gap: 8px; }
+  .addrline input { margin-bottom: 9px; }
+  .rdom { font-weight: 700; color: var(--gold); font-size: 14px; white-space: nowrap; margin-bottom: 9px; }
+
+  /* ============ message list ============ */
+  main { flex: 1; display: flex; min-width: 0; }
+  .list {
+    width: 400px; min-width: 300px; display: flex; flex-direction: column;
+    background: rgba(13,16,32,.6); backdrop-filter: blur(14px);
+    border-right: 1px solid var(--line);
+  }
+  .list-head {
+    padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .list-head b { font-size: 14px; font-weight: 650; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .btn {
+    border: 0; border-radius: 8px; padding: 8px 13px; cursor: pointer; font-weight: 650; font-size: 13px;
+    font-family: inherit; color: #fff;
+    background: linear-gradient(135deg, var(--acc), var(--acc2));
+    box-shadow: 0 4px 16px rgba(99,102,241,.28);
+    transition: filter .2s, transform .15s; white-space: nowrap;
+  }
+  .btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
+  .btn:active { transform: scale(.97); }
+  .btn.ghost { background: rgba(148,163,214,.12); color: var(--text); box-shadow: none; }
+  .btn.ghost:hover { background: rgba(148,163,214,.2); filter: none; }
+  #refreshBtn.spin { animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  aside h1 svg path:last-of-type {
+    transform-box: fill-box; transform-origin: center;
+    animation: twinkle 2.6s ease-in-out infinite;
+  }
+  @keyframes twinkle {
+    0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    50% { transform: scale(.45) rotate(40deg); opacity: .5; }
+  }
+  #composeBtn { animation: btnGlow 3.2s ease-in-out infinite; }
+  @keyframes btnGlow {
+    0%, 100% { box-shadow: 0 4px 16px rgba(99,102,241,.28); }
+    50% { box-shadow: 0 6px 28px rgba(139,92,246,.55); }
+  }
+  .badge.bump { animation: bump .5s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.4); } 100% { transform: scale(1); } }
+
+  /* paper plane flying off when a message is sent */
+  .plane {
+    position: fixed; z-index: 80; width: 40px; height: 40px; pointer-events: none;
+    color: #8B5CF6; filter: drop-shadow(0 0 14px rgba(139,92,246,.9));
+    animation: fly 1.1s cubic-bezier(.3,.1,.55,1) forwards;
+  }
+  @keyframes fly {
+    0% { transform: translate(0, 0) rotate(0deg) scale(.9); opacity: 1; }
+    20% { transform: translate(6vw, -4vh) rotate(6deg) scale(1.1); }
+    100% { transform: translate(72vw, -85vh) rotate(26deg) scale(.45); opacity: 0; }
+  }
+  .puff {
+    position: fixed; z-index: 79; width: 5px; height: 5px; border-radius: 50%;
+    background: #F2C97D; box-shadow: 0 0 10px #F2C97D; pointer-events: none;
+    animation: puff .7s ease-out forwards;
+  }
+  @keyframes puff { to { transform: translate(var(--dx), var(--dy)) scale(.15); opacity: 0; } }
+
+  .msgs { flex: 1; overflow-y: auto; }
+  .m {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 11px 14px; cursor: pointer; border-bottom: 1px solid var(--line2);
+    border-left: 2px solid transparent;
+    transition: background .15s, border-color .15s;
+    animation: msgIn .3s ease both;
+  }
+  @keyframes msgIn { from { transform: translateY(6px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .m { transition: background .15s, border-color .15s, transform .15s; }
+  .m:hover { background: rgba(255,255,255,.04); transform: translateX(3px); }
+  .m.sel { background: rgba(109,93,246,.10); border-left-color: var(--acc); }
+  .m .ava {
+    width: 34px; height: 34px; border-radius: 50%; flex: none; margin-top: 1px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13.5px;
+  }
+  .m .wrap { flex: 1; min-width: 0; }
+  .m .top { display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--muted); }
+  .m .top .dot { width: 7px; height: 7px; }
+  .m .top .d { margin-left: auto; white-space: nowrap; }
+  .m .sub { font-size: 13.5px; margin-top: 4px; color: #c6c6cd; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .m.unread .sub { font-weight: 650; color: var(--text); }
+  .m.unread .sub::before { content: '\2022'; color: var(--acc); margin-right: 6px; }
+  .empty { padding: 52px 24px; text-align: center; color: var(--dim); font-size: 13.5px; line-height: 1.6; }
+
+  /* ============ reading pane ============ */
+  .view { flex: 1; display: flex; flex-direction: column; min-width: 0; background: rgba(13,16,32,.4); backdrop-filter: blur(10px); }
+  .view-head { padding: 16px 20px; border-bottom: 1px solid var(--line); animation: msgIn .25s ease both; }
+  .view-head h2 { font-size: 17px; font-weight: 650; letter-spacing: -.01em; margin-bottom: 7px; }
+  .view-head .meta { font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+  .view-body { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; animation: msgIn .3s ease both; }
+  .frwrap { overflow: hidden; }
+  .view-body iframe { display: block; width: 100%; height: 100%; border: 0; background: #fff; transform-origin: 0 0; }
+  .view-body pre { padding: 20px; white-space: pre-wrap; font-family: inherit; font-size: 14px; overflow-y: auto; height: 100%; line-height: 1.6; }
+  .placeholder { display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; height: 100%; color: var(--dim); font-size: 13.5px; }
+  .reply { padding: 12px 20px; border-top: 1px solid var(--line); }
+
+  /* loading dots */
+  .dots span { animation: blink 1.2s infinite; font-size: 20px; color: var(--muted); }
+  .dots span:nth-child(2) { animation-delay: .2s; } .dots span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%,100% { opacity: .2; } 50% { opacity: 1; } }
+
+  /* ============ compose modal ============ */
+  .modal {
+    position: fixed; inset: 0; z-index: 10; display: none; align-items: center; justify-content: center;
+    background: rgba(0,0,0,.6); backdrop-filter: blur(8px);
+  }
+  .modal.open { display: flex; animation: fadeIn .2s ease both; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .mwin {
+    width: 530px; max-width: 94vw; padding: 22px; border-radius: 14px;
+    background: #131A33; border: 1px solid var(--line);
+    box-shadow: 0 30px 90px rgba(0,0,0,.6);
+    animation: zoomIn .25s cubic-bezier(.2,1.1,.3,1) both;
+  }
+  @keyframes zoomIn { from { transform: scale(.94) translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .mwin h3 { margin-bottom: 14px; font-size: 16px; font-weight: 650; letter-spacing: -.01em; }
+  .mwin select, .mwin input, .mwin textarea {
+    width: 100%; margin-bottom: 9px; padding: 10px 12px; font-size: 14px; font-family: inherit;
+    color: var(--text); background: #0D1228; border: 1px solid #2A2F45; border-radius: 9px;
+    outline: none; transition: border-color .2s, box-shadow .2s;
+  }
+  .mwin select:focus, .mwin input:focus, .mwin textarea:focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(109,93,246,.15); }
+  .mwin select option { background: #131A33; }
+  .mwin textarea { height: 150px; resize: vertical; }
+  .mwin .row { display: flex; gap: 9px; justify-content: flex-end; }
+  .mwin .st { font-size: 13px; min-height: 17px; margin-bottom: 7px; }
+  .mwin .st.ok { color: #34d399; } .mwin .st.err { color: #f87171; }
+
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-thumb { background: #252D4F; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #333D66; }
+
+  @media (min-width: 901px) and (max-width: 1100px) {
+    aside { width: 225px; min-width: 225px; }
+    .list { width: 305px; }
+  }
+
+  /* ============ mobile: single-column layout ============ */
+  .menuBtn, .backBtn { display: none; }
+  @media (max-width: 900px) {
+    /* pin the whole page: iOS Safari can't drag it under the status bar after the keyboard closes */
+    body { position: fixed; inset: 0; width: 100%; overflow: hidden; }
+    aside h1 { padding-top: calc(18px + env(safe-area-inset-top, 0px)); }
+    .list-head { padding-top: calc(12px + env(safe-area-inset-top, 0px)); }
+    .addbox { padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+    .reply { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+
+    /* sidebar becomes a slide-in drawer */
+    aside {
+      position: fixed; inset: 0 auto 0 0; width: min(300px, 85vw); z-index: 20;
+      transform: translateX(-105%); transition: transform .28s cubic-bezier(.2,.8,.2,1);
+      box-shadow: 24px 0 60px rgba(0,0,0,.55);
+    }
+    aside.open { transform: translateX(0); }
+    .drawer-backdrop {
+      position: fixed; inset: 0; z-index: 19; background: rgba(0,0,0,.55);
+      opacity: 0; pointer-events: none; transition: opacity .28s;
+    }
+    .drawer-backdrop.show { opacity: 1; pointer-events: auto; }
+
+    .list { width: 100%; min-width: 0; border-right: 0; }
+    .menuBtn {
+      display: inline-block; border: 0; border-radius: 8px; padding: 8px 11px; cursor: pointer;
+      font-size: 15px; color: var(--text); background: rgba(148,163,214,.12); flex: none;
+    }
+
+    /* reading pane slides over the list */
+    .view {
+      position: fixed; inset: 0; z-index: 15; background: #0D1228;
+      transform: translateX(105%); transition: transform .28s cubic-bezier(.2,.8,.2,1);
+    }
+    .view.open { transform: translateX(0); }
+    .backBtn {
+      display: inline-block; border: 0; border-radius: 8px; padding: 7px 12px; margin-bottom: 10px;
+      cursor: pointer; font-size: 13.5px; font-weight: 650; color: var(--text); background: rgba(148,163,214,.14);
+    }
+    .view-head { padding: 12px 16px; padding-top: calc(12px + env(safe-area-inset-top, 0px)); }
+    .view-head h2 { font-size: 16px; }
+    .mwin { padding: 18px; border-radius: 12px; }
+    .mwin textarea { height: 110px; }
+    .m { padding: 12px 14px; }
+    .blob { opacity: .08; }
+    /* 16px+ keeps iOS Safari from zoom-jumping into focused fields */
+    .addbox input, .mwin input, .mwin select, .mwin textarea { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+<div class="drawer-backdrop" id="backdrop"></div>
+
+<aside id="sidebar">
+  <h1><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#2563FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="19" height="15" rx="4"/><path d="M6.5 9.5l4 3.2a2.4 2.4 0 0 0 3 0L17.5 9.5" stroke="#43C8FF"/></svg><span class="mm">email</span><span class="mm2">inc</span></h1>
+  <div class="acc-list" id="accList"></div>
+  <div class="addbox">
+    <div class="e" id="addErr"></div>
+    <input id="aEmail" placeholder="address@domain" autocomplete="off">
+    <input id="aPass" type="password" placeholder="password" autocomplete="off">
+    <label><input type="checkbox" id="aRemember" checked> remember in this browser</label>
+    <button id="aBtn">+ Add mailbox</button>
+    <button id="newAddrBtn" class="alt">Create new address</button>
+  </div>
+</aside>
+
+<main>
+  <div class="list">
+    <div class="list-head">
+      <button class="menuBtn" id="menuBtn" title="Mailboxes">☰</button>
+      <b id="listTitle">All inboxes</b>
+      <div style="display:flex; gap:7px">
+        <button class="btn" id="composeBtn">Compose</button>
+        <button class="btn ghost" id="refreshBtn" title="Refresh">⟳</button>
+      </div>
+    </div>
+    <div class="msgs" id="msgs">
+      <div class="empty">Add a mailbox to see all<br>your mail in one place</div>
+    </div>
+  </div>
+  <div class="view" id="view">
+    <div class="placeholder">Select a message</div>
+  </div>
+</main>
+
+<div class="modal" id="regModal">
+  <div class="mwin">
+    <h3>Create a new address</h3>
+    <div class="cols2">
+      <input id="rFn" placeholder="First name" maxlength="40">
+      <input id="rLn" placeholder="Last name" maxlength="40">
+    </div>
+    <div class="addrline">
+      <input id="rUser" placeholder="name" autocomplete="off">
+      <span class="rdom" id="rDom">@…</span>
+    </div>
+    <input id="rPass" type="password" placeholder="Password (8+ characters)" autocomplete="new-password">
+    <input id="rRec" type="email" placeholder="Recovery email (optional)">
+    <input id="rInv" placeholder="Invite code" style="display:none">
+    <div class="st" id="rSt"></div>
+    <div class="row">
+      <button class="btn ghost" id="rCancel">Cancel</button>
+      <button class="btn" id="rCreate">Create</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="mwin">
+    <h3>New message</h3>
+    <select id="cFrom"></select>
+    <input id="cTo" placeholder="To (recipient address)">
+    <input id="cSubj" placeholder="Subject">
+    <textarea id="cText" placeholder="Write your message…"></textarea>
+    <div class="st" id="cSt"></div>
+    <div class="row">
+      <button class="btn ghost" id="cCancel">Cancel</button>
+      <button class="btn" id="cSend">Send</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORS = ['#8B5CF6','#60A5FA','#F2C97D','#34d399','#f472b6','#5eead4','#f87171','#6366F1','#fb923c','#a78bfa'];
+let accounts = [];      // [{id, email, color, unseen, error, messages}]
+let filter = null;      // account id or null = all
+let selected = null;    // {account, uid}
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// --- mailboxes remembered in this browser ---
+const saved = () => JSON.parse(localStorage.getItem('viplyAccounts') || '[]');
+const saveAcc = (email, password) => {
+  const list = saved().filter((a) => a.email !== email);
+  list.push({ email, p: btoa(unescape(encodeURIComponent(password))) });
+  localStorage.setItem('viplyAccounts', JSON.stringify(list));
+};
+const forgetAcc = (email) => {
+  localStorage.setItem('viplyAccounts', JSON.stringify(saved().filter((a) => a.email !== email)));
+};
+
+async function api(url, opts) {
+  const r = await fetch(url, opts);
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || 'Server error');
+  return data;
+}
+
+async function init() {
+  const info = await api('api/info');
+  // server session is empty but the browser remembers mailboxes — restore them
+  if (info.accounts.length === 0 && saved().length) {
+    for (const a of saved()) {
+      try {
+        await api('api/accounts', { method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ email: a.email, password: decodeURIComponent(escape(atob(a.p))) }) });
+      } catch { forgetAcc(a.email); }
+    }
+  }
+  await reload();
+}
+
+const prevUnseen = {};
+async function reload() {
+  $('refreshBtn').classList.add('spin');
+  try {
+    const data = await api('api/inbox');
+    accounts = data.accounts.map((a, i) => ({
+      ...a,
+      color: COLORS[i % COLORS.length],
+      bump: (a.unseen || 0) > (prevUnseen[a.id] ?? (a.unseen || 0)),
+    }));
+    accounts.forEach((a) => { prevUnseen[a.id] = a.unseen || 0; });
+    renderSidebar();
+    renderList();
+  } finally {
+    $('refreshBtn').classList.remove('spin');
+  }
+}
+
+function renderSidebar() {
+  const el = $('accList');
+  const totalUnseen = accounts.reduce((n, a) => n + (a.unseen || 0), 0);
+  let html = `<div class="acc ${filter===null?'active':''}" data-id="">
+    <span class="dot" style="background:#fff; color:#fff"></span><span class="em">All inboxes</span>
+    <span class="badge ${totalUnseen?'hot':'zero'}">${totalUnseen}</span></div>`;
+  accounts.forEach((a, i) => {
+    html += `<div class="acc ${filter===a.id?'active':''} ${a.error?'err':''}" data-id="${a.id}" style="animation-delay:${i*60}ms">
+      <span class="dot" style="background:${a.color}; color:${a.color}"></span>
+      <span class="em" title="${esc(a.email)}${a.error ? ' — ' + esc(a.error) : ''}">${esc(a.email)}</span>
+      ${a.error ? '⚠️' : `<span class="badge ${a.unseen?'hot':'zero'} ${a.bump?'bump':''}">${a.unseen}</span>`}
+      <button class="del" data-del="${a.id}" title="Remove">✕</button></div>`;
+  });
+  el.innerHTML = html;
+  el.querySelectorAll('.acc').forEach((n) => n.addEventListener('click', (e) => {
+    if (e.target.dataset.del !== undefined && e.target.dataset.del !== '') return;
+    filter = n.dataset.id || null;
+    renderSidebar(); renderList(); closeDrawer();
+  }));
+  el.querySelectorAll('.del').forEach((n) => n.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const acc = accounts.find((a) => a.id === n.dataset.del);
+    await api('api/accounts/' + n.dataset.del, { method: 'DELETE' });
+    if (acc) forgetAcc(acc.email);
+    if (filter === n.dataset.del) filter = null;
+    await reload();
+  }));
+}
+
+function renderList() {
+  const el = $('msgs');
+  const src = accounts.filter((a) => !a.error && (!filter || a.id === filter));
+  $('listTitle').textContent = filter ? (accounts.find((a) => a.id === filter)?.email || '') : 'All inboxes';
+  const items = src.flatMap((a) => (a.messages || []).map((m) => ({ ...m, acc: a })));
+  items.sort((x, y) => new Date(y.date) - new Date(x.date));
+  if (!items.length) {
+    el.innerHTML = accounts.length
+      ? '<div class="empty">No mail yet</div>'
+      : '<div class="empty">Add a mailbox to see all<br>your mail in one place</div>';
+    return;
+  }
+  el.innerHTML = items.map((m, i) => {
+    const who = m.fromName || m.from || '?';
+    return `
+    <div class="m ${m.seen?'':'unread'} ${selected && selected.uid===m.uid && selected.account===m.acc.id ? 'sel':''}"
+         data-acc="${m.acc.id}" data-uid="${m.uid}" style="animation-delay:${Math.min(i*40, 400)}ms">
+      <span class="ava" style="background:${m.acc.color}26; color:${m.acc.color}">${esc(who[0].toUpperCase())}</span>
+      <div class="wrap">
+        <div class="top"><span>${esc(who)}</span><span class="d">${fmtDate(m.date)}</span></div>
+        <div class="sub">${esc(m.subject)}</div>
+      </div>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('.m').forEach((n) => n.addEventListener('click', () => openMessage(n.dataset.acc, +n.dataset.uid)));
+}
+
+function fmtDate(d) {
+  const dt = new Date(d), now = new Date();
+  return dt.toDateString() === now.toDateString()
+    ? dt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+    : dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+async function openMessage(accId, uid) {
+  selected = { account: accId, uid };
+  renderList();
+  const v = $('view');
+  v.classList.add('open');
+  v.innerHTML = '<div class="placeholder"><div class="dots"><span>●</span><span>●</span><span>●</span></div>Loading message…</div>';
+  try {
+    const m = await api(`api/message?account=${accId}&uid=${uid}`);
+    const acc = accounts.find((a) => a.id === accId);
+    v.innerHTML = `
+      <div class="view-head"><button class="backBtn" id="backBtn">← Inbox</button><h2>${esc(m.subject)}</h2>
+        <div class="meta">From: ${esc(m.from)}<br>To: ${esc(m.to)} · ${new Date(m.date).toLocaleString('en-GB')}
+        ${m.attachments.length ? '<br>📎 ' + m.attachments.map((a) => esc(a.filename)).join(', ') : ''}</div></div>
+      <div class="view-body" id="vb"></div>
+      <div class="reply"><button class="btn" id="replyBtn">Reply</button></div>`;
+    const vb = $('vb');
+    if (m.html) {
+      const wrap = document.createElement('div');
+      wrap.className = 'frwrap';
+      const fr = document.createElement('iframe');
+      fr.setAttribute('scrolling', 'no');
+      // ссылки открываются в новой вкладке; скрипты в письме по-прежнему запрещены
+      fr.sandbox = 'allow-same-origin allow-popups allow-popups-to-escape-sandbox';
+      const baseCss = '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+        '<base target="_blank">' +
+        '<style>html,body{margin:0;padding:10px;box-sizing:border-box;-webkit-text-size-adjust:100%;word-break:break-word;}' +
+        'img{max-width:100%!important;height:auto!important;}</style>';
+      fr.srcdoc = baseCss + m.html;
+      // масштабируем сам iframe: письмо рендерится в своей родной ширине,
+      // а рамка целиком ужимается под экран — iOS так не «распирает»
+      const fit = () => {
+        try {
+          const d = fr.contentDocument;
+          if (!d || !d.body) return;
+          const avail = vb.clientWidth;
+          const w = Math.max(d.documentElement.scrollWidth, d.body.scrollWidth, avail);
+          const h = Math.max(d.documentElement.scrollHeight, d.body.scrollHeight, 200);
+          const sc = Math.min(1, avail / w);
+          fr.style.width = w + 'px';
+          fr.style.height = h + 'px';
+          fr.style.transform = sc < 1 ? `scale(${sc})` : '';
+          wrap.style.height = Math.ceil(h * sc) + 'px';
+        } catch {}
+      };
+      fr.addEventListener('load', () => { fit(); setTimeout(fit, 400); setTimeout(fit, 1500); });
+      wrap.appendChild(fr);
+      vb.appendChild(wrap);
+    } else {
+      vb.innerHTML = `<pre>${esc(m.text)}</pre>`;
+    }
+    $('replyBtn').addEventListener('click', () => {
+      openCompose(accId, m.from.match(/<(.+)>/)?.[1] || m.from, 'Re: ' + m.subject);
+    });
+    $('backBtn').addEventListener('click', () => { v.classList.remove('open'); selected = null; renderList(); });
+    const cached = acc?.messages?.find((x) => x.uid === uid);
+    if (cached && !cached.seen) { cached.seen = true; acc.unseen = Math.max(0, acc.unseen - 1); renderSidebar(); renderList(); }
+  } catch (e) {
+    v.innerHTML = `<div class="placeholder"><button class="backBtn" id="backBtn2">← Inbox</button>${esc(e.message)}</div>`;
+    $('backBtn2').addEventListener('click', () => { v.classList.remove('open'); selected = null; renderList(); });
+  }
+}
+
+// --- mobile drawer ---
+function closeDrawer() { $('sidebar').classList.remove('open'); $('backdrop').classList.remove('show'); }
+$('menuBtn').addEventListener('click', () => {
+  $('sidebar').classList.toggle('open');
+  $('backdrop').classList.toggle('show', $('sidebar').classList.contains('open'));
+});
+$('backdrop').addEventListener('click', closeDrawer);
+
+// --- compose ---
+function openCompose(fromId, to = '', subj = '') {
+  $('cFrom').innerHTML = accounts.filter((a) => !a.error)
+    .map((a) => `<option value="${a.id}" ${a.id===fromId?'selected':''}>${esc(a.email)}</option>`).join('');
+  $('cTo').value = to; $('cSubj').value = subj; $('cText').value = '';
+  $('cSt').textContent = ''; $('cSt').className = 'st';
+  $('modal').classList.add('open');
+}
+$('composeBtn').addEventListener('click', () => openCompose(filter));
+$('cCancel').addEventListener('click', () => $('modal').classList.remove('open'));
+$('modal').addEventListener('click', (e) => { if (e.target === $('modal')) $('modal').classList.remove('open'); });
+function launchPlane() {
+  const r = $('cSend').getBoundingClientRect();
+  const x = r.left + r.width / 2 - 20, y = r.top + r.height / 2 - 20;
+  const p = document.createElement('div');
+  p.className = 'plane';
+  p.style.left = x + 'px'; p.style.top = y + 'px';
+  p.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>';
+  document.body.appendChild(p);
+  for (let i = 0; i < 8; i++) {
+    const q = document.createElement('span');
+    q.className = 'puff';
+    q.style.left = (x + 18) + 'px'; q.style.top = (y + 18) + 'px';
+    const a = Math.random() * Math.PI * 2, d = 26 + Math.random() * 34;
+    q.style.setProperty('--dx', Math.cos(a) * d + 'px');
+    q.style.setProperty('--dy', Math.sin(a) * d + 'px');
+    q.style.animationDelay = (Math.random() * .12) + 's';
+    document.body.appendChild(q);
+    setTimeout(() => q.remove(), 900);
+  }
+  setTimeout(() => p.remove(), 1200);
+}
+
+$('cSend').addEventListener('click', async () => {
+  const st = $('cSt');
+  st.className = 'st'; st.textContent = 'Sending…';
+  try {
+    await api('api/send', { method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ account: $('cFrom').value, to: $('cTo').value, subject: $('cSubj').value, text: $('cText').value }) });
+    st.className = 'st ok'; st.textContent = 'Sent ✓';
+    launchPlane();
+    setTimeout(() => { $('modal').classList.remove('open'); reload(); }, 900);
+  } catch (e) {
+    st.className = 'st err'; st.textContent = e.message;
+  }
+});
+
+// --- add mailbox ---
+$('aBtn').addEventListener('click', async () => {
+  const email = $('aEmail').value.trim(), password = $('aPass').value;
+  $('addErr').textContent = '';
+  if (!email || !password) { $('addErr').textContent = 'Please fill in the address and password'; return; }
+  $('aBtn').disabled = true; $('aBtn').textContent = 'Connecting…';
+  try {
+    await api('api/accounts', { method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password }) });
+    if ($('aRemember').checked) saveAcc(email, password);
+    $('aEmail').value = ''; $('aPass').value = '';
+    await reload();
+  } catch (e) {
+    $('addErr').textContent = e.message;
+  } finally {
+    $('aBtn').disabled = false; $('aBtn').textContent = '+ Add mailbox';
+  }
+});
+
+// --- register a brand-new address without leaving the app ---
+let regInviteRequired = false;
+fetch('../api/info').then((r) => r.json()).then((i) => {
+  $('rDom').textContent = '@' + i.domain;
+  regInviteRequired = i.inviteRequired;
+  if (regInviteRequired) $('rInv').style.display = '';
+}).catch(() => {});
+
+function closeReg() { $('regModal').classList.remove('open'); }
+$('newAddrBtn').addEventListener('click', () => {
+  $('rSt').textContent = ''; $('rSt').className = 'st';
+  $('regModal').classList.add('open');
+});
+$('rCancel').addEventListener('click', closeReg);
+$('regModal').addEventListener('click', (e) => { if (e.target === $('regModal')) closeReg(); });
+$('rCreate').addEventListener('click', async () => {
+  const st = $('rSt');
+  const password = $('rPass').value;
+  if (password.length < 8) { st.className = 'st err'; st.textContent = 'Password must be 8+ characters.'; return; }
+  st.className = 'st'; st.textContent = 'Creating…';
+  $('rCreate').disabled = true;
+  try {
+    const data = await api('../api/register', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        firstName: $('rFn').value, lastName: $('rLn').value,
+        username: $('rUser').value, password,
+        recovery: $('rRec').value, invite: $('rInv').value,
+      }),
+    });
+    // серверу нужно несколько секунд, чтобы увидеть нового пользователя — пробуем подключить с повторами
+    st.textContent = 'Activating ' + data.email + '…';
+    let connected = false;
+    for (let i = 0; i < 10 && !connected; i++) {
+      try {
+        await api('api/accounts', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: data.email, password }) });
+        connected = true;
+      } catch (err) {
+        if (/already added/i.test(err.message)) { connected = true; break; }
+        if (i === 9) throw new Error('Mailbox created, but activation is slow — add it manually in a minute.');
+        st.textContent = 'Activating ' + data.email + '… (' + (i + 1) + ')';
+        await new Promise((r) => setTimeout(r, 2500));
+      }
+    }
+    if ($('aRemember').checked) saveAcc(data.email, password);
+    st.className = 'st ok'; st.textContent = data.email + ' created ✓';
+    ['rFn','rLn','rUser','rPass','rRec','rInv'].forEach((id) => { $(id).value = ''; });
+    setTimeout(closeReg, 900);
+    await reload();
+    // на телефоне показываем панель ящиков, чтобы новый адрес был сразу виден слева
+    if (matchMedia('(max-width: 900px)').matches) {
+      $('sidebar').classList.add('open'); $('backdrop').classList.add('show');
+      setTimeout(closeDrawer, 2600);
+    }
+  } catch (e) {
+    st.className = 'st err'; st.textContent = e.message;
+  } finally {
+    $('rCreate').disabled = false;
+  }
+});
+
+$('refreshBtn').addEventListener('click', reload);
+setInterval(() => reload().catch(() => {}), 60_000); // auto-refresh every minute
+
+// iOS Safari: после закрытия клавиатуры страница может остаться сдвинутой — возвращаем на место
+document.addEventListener('focusout', () => setTimeout(() => window.scrollTo(0, 0), 60));
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => {
+    const tag = document.activeElement?.tagName || '';
+    if (!/INPUT|TEXTAREA|SELECT/.test(tag)) window.scrollTo(0, 0);
+  });
+}
+
+init().catch((e) => { $('msgs').innerHTML = `<div class="empty">${esc(e.message)}</div>`; });
+</script>
+</body>
+</html>

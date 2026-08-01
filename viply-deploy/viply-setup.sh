@@ -1,24 +1,22 @@
 #!/bin/bash
 # ============================================================================
-# VIPLY MAIL — one-shot install on the shared server (185.173.144.182).
+# EMAILINC MAIL — one-shot install/update on the shared server (185.173.144.182).
 #
-# Deploys the mailserver/ stack from branch claude/custom-mail-server-qa82vr:
-#   docker-mailserver v14 (Postfix+Dovecot+rspamd+fail2ban)  :25/465/587/993
-#   Roundcube webmail   127.0.0.1:8080  -> https://mail.emailinc.info/webmail/
-#   Viply signup        127.0.0.1:8081  -> https://mail.emailinc.info/
-#   Viply multimail     127.0.0.1:8082  -> https://mail.emailinc.info/multi/
+# Deploys the mailserver/ stack (docker-mailserver v14 + Roundcube + EmailInc
+# signup + EmailInc multimail) and serves it at:
+#   https://emailinc.info/           - signup landing (also on mail.emailinc.info)
+#   https://emailinc.info/multi/     - multi-mailbox client
+#   https://emailinc.info/webmail/   - Roundcube
+#   mail.emailinc.info               - IMAP 993 / SMTP 465,587 / MX 25
 #
-# Differences from mailserver/setup.sh (that script assumes a free port 80):
-#   - cert via webroot through the ALREADY RUNNING nginx (no --standalone)
-#   - postmaster account created BEFORE first start (DMS refuses to boot
-#     without at least one account)
-#   - nginx vhost added next to the store one; Roundcube gets
-#     proxy_redirect/proxy_cookie_path so login doesn't bounce to /
-#   - 2G swapfile (the box has 2 GB RAM; rspamd is hungry)
+# Safe to re-run any time (updates code + rebuilds containers).
 #
-# Run once as root:
-#   bash viply-setup.sh
-# Prereq: DNS A-record  mail.emailinc.info -> 185.173.144.182  (checked below)
+# Notes vs the stock mailserver/setup.sh:
+#   - TLS via webroot through the ALREADY RUNNING nginx (no --standalone clash)
+#   - postmaster account pre-created BEFORE first DMS start
+#   - Roundcube behind /webmail/ gets Location/cookie rewrites
+#   - 2G swapfile for the 2 GB box
+#   - root domain (emailinc.info) served when its A-record exists
 # ============================================================================
 set -euo pipefail
 
@@ -26,28 +24,33 @@ DOMAIN="emailinc.info"
 HOST="mail.emailinc.info"
 SERVER_IP="185.173.144.182"
 REPO="https://github.com/skarausa212-arch43/bestwayplus-.git"
-BRANCH="claude/custom-mail-server-qa82vr"
+BRANCH="claude/new-american-server-jmg9bw"
 DIR="/opt/viply"
-INVITE="${INVITE_CODE:-viply-2026}"
+INVITE="${INVITE_CODE:-emailinc-2026}"
 
-echo "== [1/9] DNS check: $HOST must point at this server =="
-IP="$(getent hosts "$HOST" | awk '{print $1}' | head -1 || true)"
-if [ "$IP" != "$SERVER_IP" ]; then
-  echo "  A-record for $HOST does not resolve to $SERVER_IP yet (got: ${IP:-nothing})."
-  echo "  Add in Namecheap (emailinc.info -> Advanced DNS):  A  mail  $SERVER_IP"
-  echo "  Wait 10-30 min and re-run this script."
+echo "== [1/9] DNS checks =="
+MAIL_IP="$(getent hosts "$HOST" | awk '{print $1}' | head -1 || true)"
+ROOT_IP="$(getent hosts "$DOMAIN" | awk '{print $1}' | head -1 || true)"
+if [ "$MAIL_IP" != "$SERVER_IP" ]; then
+  echo "  A-record for $HOST does not resolve to $SERVER_IP yet (got: ${MAIL_IP:-nothing})."
+  echo "  Namecheap -> $DOMAIN -> Advanced DNS:  A  mail  $SERVER_IP  — wait and re-run."
   exit 1
 fi
-echo "  OK: $HOST -> $IP"
+echo "  OK: $HOST -> $MAIL_IP"
+ROOT_OK=0
+if [ "$ROOT_IP" = "$SERVER_IP" ]; then
+  ROOT_OK=1; echo "  OK: $DOMAIN -> $ROOT_IP (root domain will be served)"
+else
+  echo "  NOTE: $DOMAIN root has no A-record yet (got: ${ROOT_IP:-nothing})."
+  echo "        Add  A  @  $SERVER_IP  in Namecheap and re-run to enable https://$DOMAIN/."
+fi
 
-echo "== [2/9] swap (2 GB box needs headroom for rspamd) =="
+echo "== [2/9] swap =="
 if ! swapon --show | grep -q .; then
   fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
   grep -q '/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
   echo "  2G swapfile enabled"
-else
-  echo "  swap already present"
-fi
+else echo "  swap already present"; fi
 
 echo "== [3/9] docker =="
 command -v docker >/dev/null || curl -fsSL https://get.docker.com | sh
@@ -55,8 +58,7 @@ command -v docker >/dev/null || curl -fsSL https://get.docker.com | sh
 echo "== [4/9] code -> $DIR (branch $BRANCH) =="
 if [ -d "$DIR/.git" ]; then
   git -C "$DIR" fetch origin "$BRANCH"
-  git -C "$DIR" checkout "$BRANCH"
-  git -C "$DIR" reset --hard "origin/$BRANCH"
+  git -C "$DIR" checkout -B "$BRANCH" "origin/$BRANCH"
 else
   git clone -b "$BRANCH" "$REPO" "$DIR"
 fi
@@ -66,27 +68,34 @@ cat > .env <<ENV
 MAIL_DOMAIN=$DOMAIN
 MAIL_HOSTNAME=$HOST
 INVITE_CODE=$INVITE
-WEBMAIL_URL=https://$HOST/webmail/
+WEBMAIL_URL=https://$DOMAIN/webmail/
 ENV
 echo "  .env written (domain=$DOMAIN, hostname=$HOST, invite=$INVITE)"
 
-echo "== [5/9] TLS certificate via running nginx (webroot) =="
+echo "== [5/9] TLS certificate (webroot via running nginx) =="
 apt-get update -qq && apt-get install -y -qq certbot >/dev/null
 mkdir -p /var/www/certbot
-cat > /etc/nginx/sites-available/viply <<'NG'
-server {
-    listen 80;
-    listen [::]:80;
-    server_name mail.emailinc.info;
-    location /.well-known/acme-challenge/ { root /var/www/certbot; }
-    location / { return 301 https://$host$request_uri; }
-}
-NG
+# temporary port-80 vhost so ACME challenges pass for both names
+{
+  echo 'server {'
+  echo '    listen 80; listen [::]:80;'
+  if [ "$ROOT_OK" = 1 ]; then echo "    server_name $HOST $DOMAIN;"; else echo "    server_name $HOST;"; fi
+  echo '    location /.well-known/acme-challenge/ { root /var/www/certbot; }'
+  echo '    location / { return 301 https://$host$request_uri; }'
+  echo '}'
+} > /etc/nginx/sites-available/viply
 ln -sf /etc/nginx/sites-available/viply /etc/nginx/sites-enabled/viply
 nginx -t && systemctl reload nginx
-if [ ! -d "/etc/letsencrypt/live/$HOST" ]; then
-  certbot certonly --webroot -w /var/www/certbot -d "$HOST" \
-    --non-interactive --agree-tos -m "postmaster@$DOMAIN"
+
+CERT_DOMAINS=(-d "$HOST"); [ "$ROOT_OK" = 1 ] && CERT_DOMAINS+=(-d "$DOMAIN")
+NEED_ISSUE=0
+if [ ! -d "/etc/letsencrypt/live/$HOST" ]; then NEED_ISSUE=1
+elif [ "$ROOT_OK" = 1 ] && ! openssl x509 -in "/etc/letsencrypt/live/$HOST/cert.pem" -noout -text | grep -q "DNS:$DOMAIN"; then
+  NEED_ISSUE=1   # expand existing cert to include the root domain
+fi
+if [ "$NEED_ISSUE" = 1 ]; then
+  certbot certonly --webroot -w /var/www/certbot "${CERT_DOMAINS[@]}" \
+    --cert-name "$HOST" --expand --non-interactive --agree-tos -m "postmaster@$DOMAIN"
 fi
 echo "  certificate ready: /etc/letsencrypt/live/$HOST"
 
@@ -99,9 +108,7 @@ if [ ! -s docker-data/dms/config/postfix-accounts.cf ]; then
   printf 'postmaster@%s\n%s\n' "$DOMAIN" "$PM_PASS" > /root/viply-postmaster.txt
   chmod 600 /root/viply-postmaster.txt
   echo "  postmaster created; password saved to /root/viply-postmaster.txt"
-else
-  echo "  accounts file already exists — keeping it"
-fi
+else echo "  accounts file already exists — keeping it"; fi
 
 echo "== [7/9] containers =="
 docker compose up -d --build
@@ -114,47 +121,46 @@ if [ ! -f "docker-data/dms/config/rspamd/dkim/rsa-2048-mail-$DOMAIN.private.txt"
 fi
 
 echo "== [9/9] production nginx vhost =="
-cat > /etc/nginx/sites-available/viply <<'NG'
+SERVER_NAMES="$HOST"; [ "$ROOT_OK" = 1 ] && SERVER_NAMES="$HOST $DOMAIN"
+cat > /etc/nginx/sites-available/viply <<NG
 server {
-    listen 80;
-    listen [::]:80;
-    server_name mail.emailinc.info;
+    listen 80; listen [::]:80;
+    server_name $SERVER_NAMES;
     location /.well-known/acme-challenge/ { root /var/www/certbot; }
-    location / { return 301 https://$host$request_uri; }
+    location / { return 301 https://\$host\$request_uri; }
 }
 server {
-    listen 443 ssl;
-    listen [::]:443 ssl;
+    listen 443 ssl; listen [::]:443 ssl;
     http2 on;
-    server_name mail.emailinc.info;
+    server_name $SERVER_NAMES;
 
-    ssl_certificate     /etc/letsencrypt/live/mail.emailinc.info/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/mail.emailinc.info/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/$HOST/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$HOST/privkey.pem;
     client_max_body_size 25m;
 
-    # Viply signup landing
+    # EmailInc signup landing
     location / {
         proxy_pass http://127.0.0.1:8081;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto https;
     }
 
-    # Viply Mail — multi-mailbox client
+    # EmailInc multimail client
     location = /multi { return 301 /multi/; }
     location /multi/ {
         proxy_pass http://127.0.0.1:8082/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto https;
     }
 
-    # Roundcube webmail — MUST rewrite Location/cookies back under /webmail/
+    # Roundcube webmail — Location/cookie paths must be rewritten
     location = /webmail { return 301 /webmail/; }
     location /webmail/ {
         proxy_pass http://127.0.0.1:8080/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto https;
         proxy_redirect / /webmail/;
         proxy_cookie_path / /webmail/;
@@ -164,18 +170,23 @@ NG
 nginx -t && systemctl reload nginx
 command -v ufw >/dev/null && { ufw allow 25/tcp; ufw allow 465/tcp; ufw allow 587/tcp; ufw allow 993/tcp; ufw allow 443/tcp; } || true
 
-# cert auto-renew with container restart
 grep -q viply-cert-renew /etc/crontab 2>/dev/null || \
   echo "17 4 * * * root certbot renew --quiet --deploy-hook 'docker restart mailserver' # viply-cert-renew" >> /etc/crontab
 
 echo ""
-echo "======================= VIPLY DEPLOYED ======================="
-echo "Signup:     https://$HOST/          (invite code: $INVITE)"
-echo "Viply Mail: https://$HOST/multi/"
-echo "Webmail:    https://$HOST/webmail/"
+echo "======================= EMAILINC DEPLOYED ======================="
+if [ "$ROOT_OK" = 1 ]; then
+  echo "Signup:     https://$DOMAIN/          (invite code: $INVITE)"
+  echo "Mail app:   https://$DOMAIN/multi/"
+  echo "Webmail:    https://$DOMAIN/webmail/"
+else
+  echo "Signup:     https://$HOST/            (invite code: $INVITE)"
+  echo "Mail app:   https://$HOST/multi/"
+  echo "  (add  A @ $SERVER_IP  and re-run to enable https://$DOMAIN/)"
+fi
 echo "Postmaster: /root/viply-postmaster.txt"
 echo ""
-echo ">>> ADD THIS DNS TXT RECORD (Namecheap -> emailinc.info -> Advanced DNS)"
+echo ">>> ADD THIS DNS TXT RECORD (Namecheap -> $DOMAIN -> Advanced DNS)"
 echo ">>> Host: mail._domainkey     Value:"
 cat "docker-data/dms/config/rspamd/dkim/rsa-2048-mail-$DOMAIN.public.dns.txt" 2>/dev/null || \
   find docker-data/dms/config -name '*public*' -exec cat {} \;

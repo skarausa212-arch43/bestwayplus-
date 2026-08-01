@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>emailinc — Private. Secure. Yours.</title>
+<meta name="description" content="EmailInc — an ultra-modern secure email platform. Private address on emailinc.info: no ads, no scanning, no data resale.">
+<meta name="theme-color" content="#050505">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#050505; --panel:#101114; --panel-2:#17181D; --elev:#1D1F26;
+    --text:#F5F5F5; --muted:#9BA0AE; --dim:#5F6470;
+    --line:rgba(245,245,245,.08); --line-2:rgba(245,245,245,.15);
+    --blue:#2563FF; --cyan:#43C8FF;
+    --r:18px; --font:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --ease:cubic-bezier(.32,.72,0,1);
+  }
+  html { background: var(--bg); }
+  body {
+    min-height:100vh; min-height:100dvh;
+    font-family:var(--font); background:var(--bg); color:var(--text);
+    -webkit-font-smoothing:antialiased; overflow-x:hidden;
+  }
+  a { color:inherit; text-decoration:none; }
+  svg { display:block; }
+  ::selection { background:var(--blue); color:#fff; }
+
+  /* ===== background: mesh glow + grid + particles ===== */
+  .mesh { position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(52% 44% at 78% 6%, rgba(37,99,255,.16), transparent 70%),
+      radial-gradient(40% 34% at 12% 88%, rgba(67,200,255,.07), transparent 70%),
+      radial-gradient(34% 30% at 8% 12%, rgba(37,99,255,.08), transparent 70%);
+  }
+  .gridbg { position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.5;
+    background:
+      linear-gradient(rgba(245,245,245,.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(245,245,245,.025) 1px, transparent 1px);
+    background-size:56px 56px;
+    -webkit-mask-image:radial-gradient(70% 60% at 50% 30%, #000, transparent);
+            mask-image:radial-gradient(70% 60% at 50% 30%, #000, transparent);
+  }
+  .sphere-glow { position:fixed; z-index:0; pointer-events:none; border-radius:50%;
+    filter:blur(90px); }
+  .sg1 { width:480px; height:480px; right:-140px; top:-160px;
+    background:radial-gradient(circle, rgba(37,99,255,.30), transparent 65%);
+    animation:breathe 9s ease-in-out infinite; }
+  .sg2 { width:360px; height:360px; left:-140px; bottom:-120px;
+    background:radial-gradient(circle, rgba(67,200,255,.14), transparent 65%);
+    animation:breathe 11s ease-in-out infinite 2s; }
+  @keyframes breathe { 50% { transform:scale(1.14); opacity:.85; } }
+  .pt { position:fixed; z-index:0; width:4px; height:4px; border-radius:50%;
+    background:var(--blue); box-shadow:0 0 10px 2px rgba(37,99,255,.5);
+    pointer-events:none; animation:ptF 7s ease-in-out infinite; }
+  .pt.c { background:var(--cyan); box-shadow:0 0 10px 2px rgba(67,200,255,.45); }
+  .pt:nth-of-type(4){left:12%;top:26%;} .pt:nth-of-type(5){left:88%;top:34%;animation-delay:1.4s;width:3px;height:3px;}
+  .pt:nth-of-type(6){left:72%;top:78%;animation-delay:2.8s;} .pt:nth-of-type(7){left:28%;top:66%;animation-delay:4s;width:3px;height:3px;}
+  @keyframes ptF { 0%,100%{transform:translateY(0);opacity:.25} 50%{transform:translateY(-16px);opacity:.9} }
+
+  .page { position:relative; z-index:1; max-width:1160px; margin:0 auto; padding:0 24px 40px; }
+
+  /* ===== header ===== */
+  .nav { display:flex; align-items:center; justify-content:space-between; height:76px; }
+  .brand { display:flex; align-items:center; gap:11px; }
+  .logo-ic { width:38px; height:38px; border-radius:11px; display:grid; place-items:center; flex:none;
+    background:linear-gradient(150deg,#16181f,#0b0c10); border:1px solid var(--line-2);
+    box-shadow:0 0 24px -6px rgba(37,99,255,.5); }
+  .logo-ic svg { width:22px; height:22px; }
+  .wordmark { font-size:19px; font-weight:800; letter-spacing:-.03em; }
+  .wordmark b { color:var(--blue); font-weight:800; }
+  .nav-right { display:flex; align-items:center; gap:18px; }
+  .nav-tag { font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--dim); font-weight:600; }
+  .signin { display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:12px;
+    border:1px solid var(--line-2); font-size:13px; font-weight:600; color:var(--text);
+    transition:border-color .2s, background .2s; }
+  .signin:hover { border-color:var(--blue); background:rgba(37,99,255,.08); }
+  .signin svg { width:15px; height:15px; }
+
+  /* ===== hero ===== */
+  .hero { display:grid; grid-template-columns:1.1fr .9fr; gap:56px; padding:58px 0 30px; align-items:start; }
+  .kicker { display:inline-flex; align-items:center; gap:9px; padding:7px 14px; border-radius:100px;
+    border:1px solid rgba(37,99,255,.35); background:rgba(37,99,255,.08);
+    font-size:11px; letter-spacing:.2em; text-transform:uppercase; font-weight:700; color:var(--cyan);
+    margin-bottom:26px; }
+  .kicker .dot { width:6px; height:6px; border-radius:50%; background:var(--cyan);
+    box-shadow:0 0 0 4px rgba(67,200,255,.18); animation:pulse 2.4s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity:.4; } }
+  h1 { font-size:clamp(2.7rem,5.4vw,4.3rem); font-weight:800; letter-spacing:-.04em; line-height:1.02; }
+  h1 .blue { color:var(--blue); }
+  .lead { margin-top:22px; font-size:16.5px; line-height:1.65; color:var(--muted); max-width:46ch; }
+  .lead strong { color:var(--text); font-weight:600; }
+
+  /* feature cards */
+  .feats { margin-top:38px; display:grid; grid-template-columns:1fr 1fr; gap:12px; max-width:560px; }
+  .feat { display:flex; gap:13px; align-items:flex-start; padding:16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--r);
+    transition:border-color .25s var(--ease), transform .25s var(--ease); }
+  .feat:hover { border-color:rgba(37,99,255,.4); transform:translateY(-2px); }
+  .feat .fi { width:38px; height:38px; border-radius:11px; background:var(--panel-2);
+    display:grid; place-items:center; flex:none; color:var(--blue); }
+  .feat .fi svg { width:19px; height:19px; stroke:currentColor; fill:none; stroke-width:2;
+    stroke-linecap:round; stroke-linejoin:round; }
+  .feat h4 { font-size:13.5px; font-weight:700; letter-spacing:-.01em; display:flex; align-items:center; gap:7px; }
+  .feat p { font-size:12px; color:var(--muted); margin-top:3px; line-height:1.5; }
+  .bdg { font-size:9px; letter-spacing:.1em; font-weight:800; padding:3px 7px; border-radius:6px;
+    text-transform:uppercase; }
+  .bdg.new { background:rgba(37,99,255,.15); color:var(--cyan); border:1px solid rgba(67,200,255,.35); }
+  .bdg.beta { background:var(--panel-2); color:var(--muted); border:1px solid var(--line-2); }
+
+  /* ===== signup card ===== */
+  .card { position:relative; padding:30px 28px 26px; border-radius:var(--r);
+    background:var(--panel); border:1px solid var(--line-2);
+    box-shadow:0 30px 80px -30px rgba(0,0,0,.8), 0 0 60px -30px rgba(37,99,255,.35);
+    animation:cardIn .7s var(--ease) both; }
+  .card::before { content:''; position:absolute; left:18px; right:18px; top:-1px; height:1px;
+    background:linear-gradient(90deg, transparent, var(--blue), var(--cyan), transparent); opacity:.8; }
+  @keyframes cardIn { from { transform:translateY(22px); opacity:0; } to { transform:none; opacity:1; } }
+  .card.shake { animation:shake .4s ease; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-7px)} 50%{transform:translateX(6px)} 75%{transform:translateX(-3px)} }
+  .card h2 { font-size:16px; font-weight:800; letter-spacing:-.01em; display:flex; align-items:center; gap:10px; }
+  .card .hint { font-size:12.5px; color:var(--muted); margin-top:5px; }
+  label { display:block; font-size:10.5px; letter-spacing:.12em; color:var(--muted);
+    margin:16px 0 7px; text-transform:uppercase; font-weight:700; }
+  label .opt { color:var(--dim); text-transform:none; letter-spacing:0; font-weight:500; }
+  .row { display:flex; align-items:center; gap:10px; }
+  .cols { display:grid; grid-template-columns:1fr 1fr; column-gap:10px; }
+  input { width:100%; padding:12px 14px; font-size:16px; color:var(--text); font-family:var(--font);
+    background:var(--bg); border:1px solid var(--line); border-radius:12px;
+    outline:none; transition:border-color .2s, box-shadow .2s; caret-color:var(--blue); }
+  input::placeholder { color:var(--dim); }
+  input:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(37,99,255,.18); }
+  .domain { font-size:14px; font-weight:800; color:var(--cyan); white-space:nowrap; letter-spacing:-.01em; }
+
+  button { position:relative; width:100%; margin-top:24px; padding:14px; border:0; cursor:pointer;
+    font:700 14px/1.2 var(--font); letter-spacing:.02em; color:#fff; border-radius:13px;
+    background:var(--blue); overflow:hidden;
+    box-shadow:0 12px 30px -10px rgba(37,99,255,.6);
+    transition:filter .2s, transform .15s var(--ease); }
+  button::after { content:''; position:absolute; top:0; bottom:0; left:-40%; width:32%;
+    transform:skewX(-20deg) translateX(-120%);
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
+    animation:btnGlint 3.8s var(--ease) infinite; }
+  @keyframes btnGlint { 0%,60% { transform:skewX(-20deg) translateX(-160%);} 85%,100% { transform:skewX(-20deg) translateX(560%);} }
+  button:hover { filter:brightness(1.12); transform:translateY(-1px); }
+  button:active { transform:scale(.985); }
+  button:disabled { opacity:.55; cursor:default; }
+
+  .msg { margin-top:14px; font-size:13px; display:none; }
+  .msg.err { display:block; color:#FF6B6B; font-weight:600; }
+  .altlink { margin-top:18px; text-align:center; font-size:13px; color:var(--muted); }
+  .altlink a { color:var(--cyan); font-weight:600; }
+  .altlink a:hover { text-decoration:underline; }
+
+  /* success */
+  .success { text-align:center; padding:10px 0 6px; }
+  .check { width:74px; height:74px; margin:6px auto 20px; border-radius:50%; position:relative;
+    background:var(--blue); box-shadow:0 0 50px rgba(37,99,255,.55);
+    animation:pop .5s cubic-bezier(.2,1.3,.4,1) both; }
+  @keyframes pop { from { transform:scale(.3); opacity:0; } to { transform:scale(1); opacity:1; } }
+  .check::after { content:''; position:absolute; left:27px; top:20px; width:16px; height:30px;
+    border:solid #fff; border-width:0 4px 4px 0; border-radius:2px;
+    transform:rotate(45deg) scale(0); animation:tick .3s ease .35s forwards; }
+  @keyframes tick { to { transform:rotate(45deg) scale(1); } }
+  .success h2 { font-size:20px; font-weight:800; justify-content:center; }
+  .success .email { display:inline-block; margin:14px 0 2px; padding:10px 16px; border-radius:11px;
+    font-size:15px; font-weight:700; background:var(--bg); border:1px solid var(--line-2);
+    color:var(--cyan); word-break:break-all; }
+  .success .note { color:var(--muted); font-size:13px; margin-top:10px; }
+  .success a { display:block; margin-top:20px; padding:14px; border-radius:13px;
+    font:700 14px var(--font); color:#fff; background:var(--blue);
+    box-shadow:0 12px 30px -10px rgba(37,99,255,.6);
+    transition:filter .2s, transform .15s; }
+  .success a:hover { filter:brightness(1.12); transform:translateY(-1px); }
+
+  /* trust strip + footer */
+  .trust { display:flex; gap:26px; flex-wrap:wrap; margin-top:34px; padding-top:22px;
+    border-top:1px solid var(--line); font-size:11.5px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--dim); font-weight:600; }
+  .trust span { display:flex; align-items:center; gap:8px; }
+  .trust svg { width:14px; height:14px; stroke:var(--blue); fill:none; stroke-width:2;
+    stroke-linecap:round; stroke-linejoin:round; }
+  .foot { margin-top:56px; padding-top:22px; border-top:1px solid var(--line);
+    display:flex; justify-content:space-between; gap:14px; flex-wrap:wrap;
+    font-size:12px; color:var(--dim); }
+  .foot b { color:var(--muted); font-weight:600; }
+
+  /* confetti */
+  .cf { position:fixed; top:-16px; width:7px; height:12px; z-index:60; pointer-events:none;
+    opacity:.95; animation:cfFall linear forwards; border-radius:2px; }
+  @keyframes cfFall { to { transform:translate3d(var(--dx,0px),108vh,0) rotate(var(--rot,400deg)); opacity:.6; } }
+
+  @media (max-width:880px) {
+    .hero { grid-template-columns:1fr; gap:38px; padding:26px 0 22px; }
+    .feats { grid-template-columns:1fr 1fr; max-width:none; }
+    .nav-tag { display:none; }
+    .page { padding:0 18px calc(40px + env(safe-area-inset-bottom,0px)); }
+    .nav { height:auto; padding:calc(14px + env(safe-area-inset-top,0px)) 0 8px; }
+    h1 { font-size:clamp(2.2rem,9.2vw,2.8rem); }
+    .card { padding:24px 18px 22px; }
+  }
+  @media (max-width:480px) { .feats { grid-template-columns:1fr; } }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation:none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="mesh"></div>
+<div class="gridbg"></div>
+<div class="sphere-glow sg1"></div>
+<div class="sphere-glow sg2"></div>
+<span class="pt"></span><span class="pt c"></span><span class="pt"></span><span class="pt c"></span>
+
+<div class="page">
+  <header class="nav">
+    <div class="brand">
+      <span class="logo-ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#2563FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2.5" y="4.5" width="19" height="15" rx="4"/>
+          <path d="M6.5 9.5l4 3.2a2.4 2.4 0 0 0 3 0L17.5 9.5" stroke="#43C8FF"/>
+        </svg>
+      </span>
+      <span class="wordmark">email<b>inc</b></span>
+    </div>
+    <div class="nav-right">
+      <span class="nav-tag">Private · Secure · Yours</span>
+      <a class="signin" href="multi/">Sign in
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+    </div>
+  </header>
+
+  <main class="hero">
+    <section>
+      <span class="kicker"><span class="dot"></span>Secure email platform</span>
+      <h1>Email that<br>keeps your <span class="blue">secrets.</span></h1>
+      <p class="lead">A private address on <strong>emailinc.info</strong>, carried by our own independent server. <strong>No ads, no scanning, no data resale.</strong> Enterprise-grade privacy in thirty seconds.</p>
+
+      <div class="feats">
+        <div class="feat">
+          <span class="fi"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></span>
+          <div><h4>Secure email <span class="bdg new">New</span></h4><p>TLS in transit, hardened server, zero trackers.</p></div>
+        </div>
+        <div class="feat">
+          <span class="fi"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+          <div><h4>Private by default</h4><p>Your mailbox is yours. We never read or resell.</p></div>
+        </div>
+        <div class="feat">
+          <span class="fi"><svg viewBox="0 0 24 24"><path d="M13 3L4 14h6l-1 7 9-11h-6l1-7z"/></svg></span>
+          <div><h4>Fast setup</h4><p>Register and receive your first email in ~30 seconds.</p></div>
+        </div>
+        <div class="feat">
+          <span class="fi"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="3"/><path d="M7 9h6M7 12.5h10M7 16h8"/></svg></span>
+          <div><h4>Multi-inbox <span class="bdg beta">Beta</span></h4><p>Up to 10 mailboxes on one screen, one login.</p></div>
+        </div>
+      </div>
+
+      <div class="trust">
+        <span><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z"/></svg>Encrypted</span>
+        <span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l2.5 2.5L16 9"/></svg>Verified</span>
+        <span><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-2.7 8.4-2.7 8.4h17.4S18 15 18 8z"/><path d="M13.7 20a2 2 0 0 1-3.4 0"/></svg>No ads. Ever.</span>
+      </div>
+    </section>
+
+    <form class="card" id="card">
+      <h2>Create your address</h2>
+      <div class="hint">Free while in beta · ready in 30 seconds</div>
+      <div class="cols">
+        <div><label for="fn">First name</label><input id="fn" autocomplete="given-name" placeholder="John" maxlength="40" required></div>
+        <div><label for="ln">Last name</label><input id="ln" autocomplete="family-name" placeholder="Doe" maxlength="40" required></div>
+      </div>
+      <label for="u">Address</label>
+      <div class="row">
+        <input id="u" autocomplete="username" placeholder="john" required>
+        <span class="domain" id="dom">@…</span>
+      </div>
+      <label for="p">Password</label>
+      <input id="p" type="password" autocomplete="new-password" minlength="8" placeholder="8+ characters" required>
+      <label for="p2">Repeat password</label>
+      <input id="p2" type="password" autocomplete="new-password" minlength="8" required>
+      <label for="rec">Recovery email <span class="opt">— optional</span></label>
+      <input id="rec" type="email" autocomplete="email" placeholder="you@example.com">
+      <div id="inviteBlock" style="display:none">
+        <label for="inv">Invite code</label>
+        <input id="inv" autocomplete="off">
+      </div>
+      <button id="btn" type="submit">Create account</button>
+      <div class="msg" id="msg"></div>
+      <div class="altlink">Already have an address? <a href="multi/">Sign in →</a></div>
+    </form>
+  </main>
+
+  <footer class="foot">
+    <span><b>emailinc</b> — secure email for modern life.</span>
+    <span>emailinc.info</span>
+  </footer>
+</div>
+
+<script>
+/* ===== already signed-in users go straight to the inbox ===== */
+(function () {
+  try {
+    const saved = JSON.parse(localStorage.getItem('viplyAccounts') || '[]');
+    fetch('multi/api/info').then((r) => r.json()).then((i) => {
+      if ((i.accounts && i.accounts.length) || saved.length) location.replace('multi/');
+    }).catch(() => {});
+  } catch {}
+})();
+
+/* ===== registration ===== */
+const f = document.getElementById('card'), msg = document.getElementById('msg'),
+      btn = document.getElementById('btn'), card = document.getElementById('card');
+
+fetch('api/info').then(r => r.json()).then(i => {
+  document.getElementById('dom').textContent = '@' + i.domain;
+  if (i.inviteRequired) document.getElementById('inviteBlock').style.display = '';
+}).catch(() => { document.getElementById('dom').textContent = '@emailinc.info'; });
+
+function fail(text) {
+  msg.className = 'msg err'; msg.textContent = text;
+  card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
+}
+
+/* confetti (brand colors) */
+const CF_COLORS = ['#2563FF', '#43C8FF', '#F5F5F5', '#2563FF'];
+function confetti() {
+  for (let i = 0; i < 80; i++) {
+    const c = document.createElement('span');
+    c.className = 'cf';
+    c.style.cssText = `left:${Math.random() * 100}vw;
+      background:${CF_COLORS[Math.floor(Math.random() * CF_COLORS.length)]};
+      animation-duration:${2 + Math.random() * 2.2}s; animation-delay:${Math.random() * .5}s;
+      width:${4 + Math.random() * 6}px; height:${8 + Math.random() * 8}px;`;
+    c.style.setProperty('--dx', (Math.random() * 240 - 120) + 'px');
+    c.style.setProperty('--rot', (Math.random() * 900 - 450) + 'deg');
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 5200);
+  }
+}
+
+f.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  msg.className = 'msg';
+  if (document.getElementById('p').value !== document.getElementById('p2').value) {
+    fail('Passwords do not match.'); return;
+  }
+  btn.disabled = true; btn.textContent = 'Creating…';
+  try {
+    const r = await fetch('api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        firstName: document.getElementById('fn').value,
+        lastName: document.getElementById('ln').value,
+        username: document.getElementById('u').value,
+        password: document.getElementById('p').value,
+        recovery: document.getElementById('rec').value,
+        invite: document.getElementById('inv').value,
+      }),
+    });
+    const data = await r.json();
+    if (r.ok) {
+      const fn = document.getElementById('fn').value.trim().replace(/[<>&"]/g, '');
+      card.innerHTML = `
+        <div class="success">
+          <div class="check"></div>
+          <h2>Welcome, ${fn}</h2>
+          <div class="email">${data.email}</div>
+          <div class="note">Your private address is live. Signed, sealed, yours.</div>
+          ${data.webmail ? `<a href="${data.webmail}">Open your inbox →</a>` : ''}
+        </div>`;
+      confetti();
+    } else {
+      fail(data.error || 'Registration failed.');
+    }
+  } catch {
+    fail('Server unavailable, please try again later.');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Create account';
+  }
+});
+</script>
+</body>
+</html>
