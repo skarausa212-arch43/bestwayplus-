@@ -50,6 +50,27 @@ const CATALOG = {
 };
 const FREE_SHIP_AT = 150, SHIP_COST = 9;
 
+/* ---------- crypto payment config ---------- */
+const WALLET = (process.env.STORE_WALLET || '0xf2541E779Ee9aCe8f0B36D42cB1DdBcA8bBDFFAE');
+const USDC_CONTRACT = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'; // USDC on Ethereum mainnet
+const USDC_DECIMALS = 6;
+const ETHERSCAN_KEY = process.env.ETHERSCAN_API_KEY || '';
+const CONFIRMATIONS = Number(process.env.PAY_CONFIRMATIONS || 2);
+// transactions already credited (survives restart via order.paidTx)
+const usedTx = new Set();
+
+// give each pending order a unique amount (base + random cents) so an
+// incoming transfer can be matched to exactly one order.
+function assignUniqueAmount(base) {
+  const used = new Set(orders.filter(o => o.status === 'pending').map(o => o.payAmount));
+  for (let i = 0; i < 200; i++) {
+    const cents = Math.floor(Math.random() * 100);
+    const amt = Math.round(base * 100 + cents) / 100;
+    if (!used.has(amt)) return amt;
+  }
+  return base + 0.01;
+}
+
 /* ---------- crypto helpers ---------- */
 function hashPassword(pw) {
   const salt = crypto.randomBytes(16).toString('hex');
@@ -226,6 +247,17 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { orders: mine.reverse() });
     }
 
+    /* ----- public order status (payment polling) ----- */
+    if (req.method === 'GET' && /^\/api\/order-status\/SWK-[A-Z0-9-]+$/.test(p)) {
+      const o = orders.find(x => x.id === p.split('/')[3]);
+      if (!o) return send(res, 404, { error: 'not found' });
+      return send(res, 200, {
+        status: o.status,
+        paid: ['paid', 'shipped', 'done'].includes(o.status),
+        tx: o.paidTx || null,
+      });
+    }
+
     /* ----- orders ----- */
     if (req.method === 'POST' && p === '/api/order') {
       const b = await readBody(req);
@@ -244,17 +276,20 @@ const server = http.createServer(async (req, res) => {
       const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
       const ship = subtotal >= FREE_SHIP_AT ? 0 : SHIP_COST;
       const id = 'SWK-' + crypto.randomBytes(3).toString('hex').toUpperCase();
+      const total = subtotal + ship;
       const order = {
         id, email, name: String(b.name || '').slice(0, 80), address: String(b.address || '').slice(0, 160),
         city: String(b.city || '').slice(0, 60), zip: String(b.zip || '').slice(0, 20),
-        payment: String(b.payment || 'Card').slice(0, 40),
-        items, subtotal, ship, total: subtotal + ship, status: 'new', date: Date.now(),
+        payment: 'USDC (ERC-20)',
+        items, subtotal, ship, total,
+        payAmount: assignUniqueAmount(total),   // exact USDC to send (unique cents)
+        status: 'pending', paidTx: null, paidAt: null, date: Date.now(),
       };
       orders.push(order); saveOrders();
       const day = today();
       stats.daily[day] = stats.daily[day] || { v: 0, u: 0, o: 0 };
       stats.daily[day].o++; statsDirty = true;
-      return send(res, 201, { orderId: id, receiptUrl: `/receipt/${id}`, total: order.total });
+      return send(res, 201, { orderId: id, receiptUrl: `/receipt/${id}`, total, payAmount: order.payAmount, wallet: WALLET });
     }
 
     /* ----- admin ----- */
@@ -280,7 +315,7 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'POST' && p === '/api/admin/order-status') {
         const { id, status } = await readBody(req);
         const o = orders.find(x => x.id === id);
-        if (!o || !['new', 'paid', 'shipped', 'done', 'cancelled'].includes(status)) return send(res, 400, { error: 'bad request' });
+        if (!o || !['pending', 'new', 'paid', 'shipped', 'done', 'cancelled'].includes(status)) return send(res, 400, { error: 'bad request' });
         o.status = status; saveOrders();
         return send(res, 200, { ok: true });
       }
@@ -294,8 +329,49 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+/* ---------- on-chain payment watcher (USDC ERC-20) ---------- */
+// remember already-credited transactions so a tx is never counted twice
+orders.forEach(o => { if (o.paidTx) usedTx.add(o.paidTx.toLowerCase()); });
+
+async function pollPayments() {
+  if (!ETHERSCAN_KEY) return;
+  const pending = orders.filter(o => o.status === 'pending');
+  if (!pending.length) return;
+  try {
+    const url = `https://api.etherscan.io/api?module=account&action=tokentx`
+      + `&contractaddress=${USDC_CONTRACT}&address=${WALLET}`
+      + `&page=1&offset=100&sort=desc&apikey=${ETHERSCAN_KEY}`;
+    const res = await fetch(url);
+    const j = await res.json();
+    if (j.status !== '1' || !Array.isArray(j.result)) return;
+    let changed = false;
+    for (const tx of j.result) {
+      if (!tx.to || tx.to.toLowerCase() !== WALLET.toLowerCase()) continue;      // incoming only
+      if (Number(tx.confirmations) < CONFIRMATIONS) continue;                     // wait for confirmations
+      if (usedTx.has(tx.hash.toLowerCase())) continue;                            // already credited
+      const amt = Number(tx.value) / 10 ** USDC_DECIMALS;
+      const ts = Number(tx.timeStamp) * 1000;
+      const match = pending.find(o =>
+        o.status === 'pending' &&
+        Math.abs(o.payAmount - amt) < 0.005 &&                                    // exact fingerprint match
+        ts >= o.date - 15 * 60 * 1000);                                           // paid after order placed
+      if (match) {
+        match.status = 'paid'; match.paidTx = tx.hash; match.paidAt = ts;
+        usedTx.add(tx.hash.toLowerCase()); changed = true;
+        console.log(`[swk-store] order ${match.id} PAID (${amt} USDC) tx ${tx.hash}`);
+      }
+    }
+    if (changed) saveOrders();
+  } catch (e) {
+    console.error('[swk-store] payment poll error:', e.message);
+  }
+}
+if (ETHERSCAN_KEY) setInterval(pollPayments, 30000).unref();
+
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`[swk-store] listening on 127.0.0.1:${PORT}`);
   console.log(`[swk-store] data dir: ${DATA}`);
   console.log(`[swk-store] admin ${ADMIN_PASSWORD ? 'ENABLED' : 'DISABLED (set ADMIN_PASSWORD)'}`);
+  console.log(`[swk-store] wallet: ${WALLET}`);
+  console.log(`[swk-store] payment auto-check ${ETHERSCAN_KEY ? 'ENABLED (USDC ERC-20)' : 'DISABLED (set ETHERSCAN_API_KEY) — manual confirmation'}`);
 });

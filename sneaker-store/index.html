@@ -400,6 +400,9 @@
   .warn{font-size:12px;color:var(--muted);line-height:1.55;background:rgba(231,180,60,.06);
     border:1px solid rgba(231,180,60,.28);border-radius:12px;padding:12px 14px;margin-bottom:18px}
   .warn b{color:var(--ink);font-weight:600}
+  .pay-status{display:flex;align-items:center;justify-content:center;gap:10px;font-size:13px;color:var(--muted);margin:0 0 14px;font-weight:600}
+  .spin{width:15px;height:15px;border-radius:50%;border:2px solid var(--line-2);border-top-color:var(--accent);animation:spin360 .8s linear infinite}
+  @keyframes spin360{to{transform:rotate(360deg)}}
   .cobody{padding:clamp(24px,4vw,40px)}
   .cobody h3{font-size:26px;letter-spacing:-.03em;text-transform:uppercase;font-weight:800}
   .cobody .sub{color:var(--muted);font-size:13px;margin:6px 0 26px}
@@ -816,58 +819,67 @@ const QR_SVG=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33 33" shape-
 function openCheckout(){
   if(!cart.length)return;
   const total=cartTotal(),ship=total>=150?0:9,grand=total+ship;
-  $('#coBody').innerHTML=`<div class="cobody"><h3>Checkout</h3><p class="sub">Pay in USDC (ERC-20) · an itemized receipt is generated instantly.</p>
+  $('#coBody').innerHTML=`<div class="cobody"><h3>Checkout</h3><p class="sub">Pay in USDC (ERC-20) · payment is detected automatically on-chain.</p>
     <form id="orderForm">
       <div class="field"><label>Full name</label><input id="cName" required placeholder="John Smith" value="${AUTH?esc(AUTH.name||''):''}"></div>
       <div class="field"><label>Email</label><input id="cEmail" type="email" required placeholder="you@email.com" value="${AUTH?esc(AUTH.email):''}"></div>
       <div class="frow"><div class="field"><label>City</label><input id="cCity" required placeholder="New York"></div><div class="field"><label>ZIP</label><input id="cZip" required placeholder="10001"></div></div>
       <div class="field"><label>Address</label><input id="cAddr" required placeholder="123 Example St"></div>
       <div class="osum"><div class="drow"><span>Items (${cartQty()})</span><span>${fmt(total)}</span></div><div class="drow"><span>Shipping</span><span>${ship?fmt(ship):'Free'}</span></div><div class="drow total" style="margin:12px 0 0"><span>Total</span><span>${fmt(grand)}</span></div></div>
-      <button type="submit" class="cbtn">Continue to payment ${ICON.arrow}</button>
+      <button type="submit" class="cbtn" id="toPayBtn">Continue to payment ${ICON.arrow}</button>
       <div style="margin-top:12px;font-size:11px;color:var(--faint);text-align:center">By ordering you agree to our <a href="/policies#terms" style="text-decoration:underline">Terms</a> · <a href="/policies#returns" style="text-decoration:underline">30-day returns</a></div>
     </form></div>`;
-  $('#orderForm').addEventListener('submit',e=>{
+  $('#orderForm').addEventListener('submit',async e=>{
     e.preventDefault();
+    const btn=$('#toPayBtn');btn.disabled=true;btn.textContent='Creating order…';
     const details={name:$('#cName').value,email:$('#cEmail').value,city:$('#cCity').value,zip:$('#cZip').value,address:$('#cAddr').value};
-    cryptoPay(details,grand);
+    const payload={...details,payment:'USDC (ERC-20)',items:cart.map(c=>({id:c.id,size:c.size,qty:c.qty}))};
+    try{
+      const r=await fetch('/api/order',{method:'POST',headers:{'Content-Type':'application/json',...(AUTH?{Authorization:'Bearer '+AUTH.token}:{})},body:JSON.stringify(payload)});
+      const d=await r.json();
+      if(!r.ok){toast(d.error||'Order failed');btn.disabled=false;btn.textContent='Continue to payment';return}
+      cryptoPay(d);
+    }catch{ cryptoPay({orderId:'SWK-'+Math.floor(100000+Math.random()*899999),payAmount:grand,receiptUrl:null,offline:true}); }
   });
   closeDrawer();openModal('#coModal');
 }
 
-function cryptoPay(details,grand){
-  const usdc=grand.toFixed(2);
+let payPoll=null;
+function cryptoPay(d){
+  if(payPoll){clearInterval(payPoll);payPoll=null;}
+  const amt=Number(d.payAmount).toFixed(2);
   $('#coBody').innerHTML=`<div class="cobody">
-    <h3>Pay with crypto</h3><p class="sub">Send the exact amount to complete your order.</p>
-    <div class="pay-amt"><span>Amount due</span><b>${usdc} <em>USDC</em></b><small>≈ ${fmt(grand)} · 1 USDC ≈ $1</small></div>
+    <h3>Pay with crypto</h3><p class="sub">Send the <b style="color:var(--ink)">exact</b> amount — we detect it automatically on-chain.</p>
+    <div class="pay-amt"><span>Send exactly</span><b>${amt} <em>USDC</em></b><small>Order ${d.orderId} · ERC-20 · 1 USDC ≈ $1</small></div>
     <div class="net-badge">USDC · ERC-20 · Ethereum</div>
     <div class="qr">${QR_SVG}</div>
     <div class="addr-lbl">Send to this address</div>
     <div class="addr"><code id="wAddr">${WALLET}</code><button type="button" id="copyW" class="btn btn-secondary" style="padding:10px 14px">Copy</button></div>
-    <div class="warn">⚠ Send only <b>USDC on the Ethereum (ERC-20)</b> network. Any other coin or network will be lost. Your order ships once the payment is confirmed on-chain.</div>
-    <button class="cbtn" id="paidBtn">I've sent the payment — place order</button>
-    <button class="btn btn-secondary" style="margin-top:10px;width:100%;justify-content:center" id="backBtn">Back to details</button>
-    <div class="msg" id="payMsg" style="display:none;margin-top:12px;color:#ff6b6b;font-weight:600;font-size:13px"></div>
+    <div class="pay-status" id="payStatus"><span class="spin"></span> Waiting for payment on-chain…</div>
+    <div class="warn">⚠ Send only <b>USDC on Ethereum (ERC-20)</b>, and the <b>exact amount ${amt}</b> — the unique cents let us match your payment automatically. Other coins or networks will be lost.</div>
+    ${d.receiptUrl?`<a class="btn btn-secondary" style="width:100%;justify-content:center" href="${d.receiptUrl}" target="_blank" rel="noopener">View order / receipt</a>`:''}
+    <button class="btn btn-secondary" style="margin-top:10px;width:100%;justify-content:center" onclick="document.getElementById('coModal').classList.remove('show')">Close — I'll pay from my wallet</button>
   </div>`;
   $('#copyW').addEventListener('click',()=>{try{navigator.clipboard.writeText(WALLET)}catch(e){}toast('Address copied')});
-  $('#backBtn').addEventListener('click',openCheckout);
-  $('#paidBtn').addEventListener('click',async()=>{
-    const pb=$('#paidBtn');pb.disabled=true;pb.textContent='Confirming…';
-    const payload={...details,payment:'USDC (ERC-20)',items:cart.map(c=>({id:c.id,size:c.size,qty:c.qty}))};
-    let oid,receipt=null;
+  // pending order exists on the server now — clear the cart
+  cart=[];save('swk_cart',cart);renderCart();bump();
+  if(d.offline){ $('#payStatus').innerHTML='Demo mode — automatic check needs the live server.'; return; }
+  payPoll=setInterval(async()=>{
+    if(!$('#coModal').classList.contains('show')){clearInterval(payPoll);payPoll=null;return;}
     try{
-      const r=await fetch('/api/order',{method:'POST',headers:{'Content-Type':'application/json',...(AUTH?{Authorization:'Bearer '+AUTH.token}:{})},body:JSON.stringify(payload)});
-      const d=await r.json();
-      if(!r.ok){const m=$('#payMsg');m.style.display='block';m.textContent=d.error||'Order failed';pb.disabled=false;pb.textContent="I've sent the payment — place order";return}
-      oid=d.orderId;receipt=d.receiptUrl;
-    }catch{ oid='SWK-'+Math.floor(100000+Math.random()*899999); }
-    cart=[];save('swk_cart',cart);renderCart();bump();
-    $('#coBody').innerHTML=`<div class="success"><div class="ok">${ICON.check}</div><h3>Order Placed</h3>
-      <p>Thanks — we're confirming your USDC payment on-chain.</p><p>Order <span class="oid">${oid}</span></p>
-      ${receipt?`<a class="btn btn-primary" style="margin-top:20px;justify-content:center" href="${receipt}" target="_blank" rel="noopener">View receipt ${ICON.arrow}</a>`:''}
-      <p style="margin-top:16px">You'll get a confirmation once payment lands — usually within minutes.</p>
-      <button class="btn btn-secondary" style="margin-top:14px" onclick="document.getElementById('coModal').classList.remove('show')">Done</button></div>`;
-    closeDrawer();
-  });
+      const r=await fetch('/api/order-status/'+d.orderId);const s=await r.json();
+      if(s.paid){clearInterval(payPoll);payPoll=null;paidSuccess(d,s.tx);}
+    }catch(e){}
+  },8000);
+}
+function paidSuccess(d,tx){
+  $('#coBody').innerHTML=`<div class="success"><div class="ok">${ICON.check}</div><h3>Payment confirmed</h3>
+    <p>Your USDC payment was detected on-chain. Thank you!</p><p>Order <span class="oid">${d.orderId}</span></p>
+    ${tx?`<p style="margin-top:8px"><a href="https://etherscan.io/tx/${tx}" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600">View transaction ↗</a></p>`:''}
+    ${d.receiptUrl?`<a class="btn btn-primary" style="margin-top:18px;justify-content:center" href="${d.receiptUrl}" target="_blank" rel="noopener">View receipt ${ICON.arrow}</a>`:''}
+    <p style="margin-top:16px">We'll ship within 48h.</p>
+    <button class="btn btn-secondary" style="margin-top:14px" onclick="document.getElementById('coModal').classList.remove('show')">Done</button></div>`;
+  toast('Payment confirmed');
 }
 
 /* ---------- account ---------- */

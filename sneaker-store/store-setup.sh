@@ -38,6 +38,11 @@ else
 fi
 ADMIN_PASSWORD="$(cat /root/swk-admin.txt)"
 
+# crypto payment config
+STORE_WALLET="${STORE_WALLET:-0xf2541E779Ee9aCe8f0B36D42cB1DdBcA8bBDFFAE}"
+# put your free Etherscan API key in /root/swk-etherscan.txt to enable auto-confirmation
+ETHERSCAN_API_KEY="$(cat /root/swk-etherscan.txt 2>/dev/null || true)"
+
 echo "== [4/6] systemd service =="
 cat > "$UNIT" <<UNIT
 [Unit]
@@ -49,6 +54,8 @@ ExecStart=/usr/bin/env node $APP
 Environment=PORT=8090
 Environment=DATA_DIR=$DATA
 Environment=ADMIN_PASSWORD=$ADMIN_PASSWORD
+Environment=STORE_WALLET=$STORE_WALLET
+Environment=ETHERSCAN_API_KEY=$ETHERSCAN_API_KEY
 Restart=always
 RestartSec=3
 User=root
@@ -134,3 +141,10 @@ echo "Site:    http(s)://stuffweknow.com/          (now served by the app)"
 echo "Admin:   http(s)://stuffweknow.com/admin     password: /root/swk-admin.txt"
 echo "         $(cat /root/swk-admin.txt)"
 echo "Check:   curl -s http://127.0.0.1:8090/api/me   (should answer JSON)"
+echo "Wallet:  $STORE_WALLET"
+if [ -n "$ETHERSCAN_API_KEY" ]; then
+  echo "Payments: AUTO-CONFIRM ON (USDC ERC-20 via Etherscan)"
+else
+  echo "Payments: manual — add a free Etherscan key to enable auto-confirm:"
+  echo "          echo 'YOUR_ETHERSCAN_KEY' > /root/swk-etherscan.txt && bash \$0"
+fi
