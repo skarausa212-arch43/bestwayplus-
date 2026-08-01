@@ -152,6 +152,43 @@ const TG_TOKEN = (process.env.TELEGRAM_BOT_TOKEN || '').trim();
 let botUsername = null;
 const pendingLinks = new Map(); // linkToken -> { s: session, at }
 
+// Ящики, подключённые прямо через бота (без веб-приложения):
+// chatId(строкой) -> { accounts: [{email, password, host, tgUid}] }
+const TG_USERS_FILE = process.env.TG_USERS_FILE || '/data/tg-users.json';
+const tgUsers = new Map();
+try {
+  for (const [k, v] of Object.entries(JSON.parse(fs.readFileSync(TG_USERS_FILE, 'utf8')))) tgUsers.set(k, v);
+  console.log(`restored ${tgUsers.size} telegram users from disk`);
+} catch (e) {
+  if (e.code !== 'ENOENT') console.error('could not restore telegram users:', e.message);
+}
+let tgSaveTimer = null;
+function persistTgUsers() {
+  clearTimeout(tgSaveTimer);
+  tgSaveTimer = setTimeout(() => {
+    try {
+      fs.mkdirSync(path.dirname(TG_USERS_FILE), { recursive: true });
+      const tmp = TG_USERS_FILE + '.tmp';
+      fs.writeFileSync(tmp, JSON.stringify(Object.fromEntries(tgUsers)), { mode: 0o600 });
+      fs.renameSync(tmp, TG_USERS_FILE);
+    } catch (e) {
+      console.error('failed to persist telegram users:', e.message);
+    }
+  }, 500);
+  tgSaveTimer.unref?.();
+}
+
+// Диалог подключения в боте: chatId -> { state: 'email'|'password', email, at }
+const tgDialog = new Map();
+// Защита от перебора паролей через бота: не больше 5 неудач в час на чат
+const tgFails = new Map();
+function tgTooManyFails(chatId) {
+  const now = Date.now();
+  const list = (tgFails.get(chatId) || []).filter((t) => now - t < 3600_000);
+  tgFails.set(chatId, list);
+  return list.length >= 5;
+}
+
 async function tg(method, params) {
   const r = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/${method}`, {
     method: 'POST',
@@ -163,31 +200,93 @@ async function tg(method, params) {
   return data.result;
 }
 
+const say = (chatId, text) => tg('sendMessage', { chat_id: chatId, text });
+
 async function handleTgUpdate(u) {
   const msg = u.message;
   if (!msg || !msg.text) return;
   const chatId = msg.chat.id;
-  const [cmd, arg] = msg.text.trim().split(/\s+/);
+  const key = String(chatId);
+  const text = msg.text.trim();
+  const [cmd, arg] = text.split(/\s+/);
+
+  // Привязка по ссылке из веб-приложения
   if (cmd === '/start' && arg) {
     const p = pendingLinks.get(arg);
     if (!p || Date.now() - p.at > 600_000) {
-      await tg('sendMessage', { chat_id: chatId, text: 'This link has expired — tap the Telegram button in the mail app again.' });
+      await say(chatId, 'This link has expired — tap the Telegram button in the mail app again.');
       return;
     }
     pendingLinks.delete(arg);
     p.s.tg = { chatId, linkedAt: Date.now() };
     persistSessions();
     const list = p.s.accounts.map((a) => a.email).join('\n');
-    await tg('sendMessage', { chat_id: chatId,
-      text: `🔔 Connected! You will get a message here for every new email.\n${list ? '\nWatching:\n' + list + '\n' : ''}\nSend /stop to disconnect.` });
-  } else if (cmd === '/stop') {
-    let n = 0;
-    for (const [, s] of sessions) if (s.tg?.chatId === chatId) { delete s.tg; n++; }
-    persistSessions();
-    await tg('sendMessage', { chat_id: chatId, text: n ? '🔕 Notifications disconnected.' : 'Nothing to disconnect.' });
-  } else {
-    await tg('sendMessage', { chat_id: chatId, text: 'I deliver new-mail alerts for EmailInc. Connect me from the mail app: the 🔔 Telegram button in /multi/.' });
+    await say(chatId, `🔔 Connected! You will get a message here for every new email.\n${list ? '\nWatching:\n' + list + '\n' : ''}\nSend /stop to disconnect.`);
+    return;
   }
+
+  // Самостоятельное подключение прямо в боте
+  if (cmd === '/start' || cmd === '/connect' || cmd === '/add') {
+    tgDialog.set(key, { state: 'email', at: Date.now() });
+    await say(chatId, `📮 Let's connect your ${MAIL_DOMAIN} mailbox.\n\nSend me your address — just the name (e.g. john) or the full address (john@${MAIL_DOMAIN}).`);
+    return;
+  }
+  if (cmd === '/list') {
+    const own = tgUsers.get(key)?.accounts.map((a) => a.email) || [];
+    for (const [, s] of sessions) if (s.tg?.chatId === chatId) own.push(...s.accounts.map((a) => a.email + ' (via web)'));
+    await say(chatId, own.length ? 'Watching:\n' + own.join('\n') : 'No mailboxes connected yet. Send /connect to add one.');
+    return;
+  }
+  if (cmd === '/stop') {
+    let n = tgUsers.delete(key) ? 1 : 0;
+    for (const [, s] of sessions) if (s.tg?.chatId === chatId) { delete s.tg; n++; }
+    tgDialog.delete(key);
+    persistSessions(); persistTgUsers();
+    await say(chatId, n ? '🔕 Notifications disconnected. Send /connect to start again.' : 'Nothing to disconnect.');
+    return;
+  }
+
+  // Продолжение диалога подключения
+  const d = tgDialog.get(key);
+  if (d && Date.now() - d.at > 1800_000) { tgDialog.delete(key); }
+  const dialog = tgDialog.get(key);
+  if (dialog?.state === 'email') {
+    let addr = text.toLowerCase();
+    if (!addr.includes('@')) addr = `${addr}@${MAIL_DOMAIN}`;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(addr)) {
+      await say(chatId, 'That does not look like an address. Send just the name (john) or the full address.');
+      return;
+    }
+    dialog.email = addr; dialog.state = 'password'; dialog.at = Date.now();
+    await say(chatId, `Now send the password for ${addr}.\n🔒 I will delete your message with the password right away.`);
+    return;
+  }
+  if (dialog?.state === 'password') {
+    // пароль не должен остаться в переписке
+    await tg('deleteMessage', { chat_id: chatId, message_id: msg.message_id }).catch(() => {});
+    if (tgTooManyFails(key)) {
+      await say(chatId, 'Too many failed attempts. Please wait an hour and try again.');
+      return;
+    }
+    const acc = { email: dialog.email, password: text, host: MAIL_HOST };
+    try {
+      await withImap(acc, async () => {});
+    } catch {
+      tgFails.get(key).push(Date.now());
+      await say(chatId, `❌ Could not sign in to ${dialog.email} — check the password and send it again, or /connect to start over.`);
+      return;
+    }
+    tgDialog.delete(key);
+    const user = tgUsers.get(key) || { accounts: [] };
+    user.accounts = user.accounts.filter((a) => a.email !== acc.email);
+    user.accounts.push(acc);
+    tgUsers.set(key, user);
+    persistTgUsers();
+    await say(chatId, `🔔 ${acc.email} connected! You will get a message here for every new email.\n\n/add — connect another mailbox\n/list — show connected\n/stop — disconnect everything`);
+    return;
+  }
+
+  await say(chatId, `I deliver new-mail alerts for ${MAIL_DOMAIN}.\n\n/connect — link your mailbox\n/list — show connected\n/stop — disconnect`);
 }
 
 async function tgPollLoop() {
@@ -208,7 +307,7 @@ async function tgPollLoop() {
 
 // Фоновая проверка: по uidNext видим новые письма с прошлого захода.
 // Первый заход после привязки только запоминает uidNext — без спама историей.
-async function tgCheckAccount(s, acc) {
+async function tgCheckAccount(chatId, acc) {
   await withImap(acc, async (client) => {
     const st = await client.status('INBOX', { uidNext: true });
     const last = acc.tgUid;
@@ -227,12 +326,10 @@ async function tgCheckAccount(s, acc) {
     for (const m of fresh.slice(0, MAXN)) {
       const sender = m.envelope.from?.[0] || {};
       const who = sender.name ? `${sender.name} <${sender.address || ''}>` : (sender.address || 'unknown');
-      await tg('sendMessage', { chat_id: s.tg.chatId,
-        text: `📬 ${acc.email}\nFrom: ${who}\nSubject: ${m.envelope.subject || '(no subject)'}` });
+      await say(chatId, `📬 ${acc.email}\nFrom: ${who}\nSubject: ${m.envelope.subject || '(no subject)'}`);
     }
     if (fresh.length > MAXN) {
-      await tg('sendMessage', { chat_id: s.tg.chatId,
-        text: `…and ${fresh.length - MAXN} more new emails in ${acc.email}` });
+      await say(chatId, `…and ${fresh.length - MAXN} more new emails in ${acc.email}`);
     }
   });
 }
@@ -243,13 +340,24 @@ async function tgCheckAll() {
   tgChecking = true;
   try {
     for (const [t, p] of pendingLinks) if (Date.now() - p.at > 600_000) pendingLinks.delete(t);
+    // ящики, подключённые через бота
+    for (const [key, u] of tgUsers) {
+      for (const acc of u.accounts) {
+        await tgCheckAccount(Number(key), acc).catch(() => {});
+      }
+    }
+    // ящики, привязанные через веб; тот же адрес, уже подключённый через бота
+    // в тот же чат, пропускаем — иначе будет двойное уведомление
     for (const [, s] of sessions) {
       if (!s.tg?.chatId) continue;
+      const viaBot = new Set((tgUsers.get(String(s.tg.chatId))?.accounts || []).map((a) => a.email));
       for (const acc of s.accounts) {
-        await tgCheckAccount(s, acc).catch(() => {});
+        if (viaBot.has(acc.email)) continue;
+        await tgCheckAccount(s.tg.chatId, acc).catch(() => {});
       }
     }
     persistSessions();
+    persistTgUsers();
   } finally {
     tgChecking = false;
   }
