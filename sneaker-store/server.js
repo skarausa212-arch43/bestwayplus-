@@ -242,8 +242,11 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && p === '/api/my-orders') {
       const u = tokenUser(req);
       if (!u) return send(res, 401, { error: 'unauthorized' });
-      const mine = orders.filter(o => o.email === u.email)
-        .map(o => ({ id: o.id, date: o.date, total: o.total, status: o.status, items: o.items.length }));
+      const mine = orders.filter(o => o.email === u.email).map(o => ({
+        id: o.id, date: o.date, total: o.total, payAmount: o.payAmount, status: o.status,
+        carrier: o.carrier || '', tracking: o.tracking || '', paidTx: o.paidTx || null,
+        items: o.items.map(i => ({ name: i.name, qty: i.qty, size: i.size })),
+      }));
       return send(res, 200, { orders: mine.reverse() });
     }
 
@@ -253,7 +256,7 @@ const server = http.createServer(async (req, res) => {
       if (!o) return send(res, 404, { error: 'not found' });
       return send(res, 200, {
         status: o.status,
-        paid: ['paid', 'shipped', 'done'].includes(o.status),
+        paid: ['paid', 'processing', 'shipped', 'delivered'].includes(o.status),
         tx: o.paidTx || null,
       });
     }
@@ -283,7 +286,8 @@ const server = http.createServer(async (req, res) => {
         payment: 'USDC (ERC-20)',
         items, subtotal, ship, total,
         payAmount: assignUniqueAmount(total),   // exact USDC to send (unique cents)
-        status: 'pending', paidTx: null, paidAt: null, date: Date.now(),
+        status: 'pending', paidTx: null, paidAt: null,
+        carrier: '', tracking: '', date: Date.now(),
       };
       orders.push(order); saveOrders();
       const day = today();
@@ -313,10 +317,13 @@ const server = http.createServer(async (req, res) => {
         });
       }
       if (req.method === 'POST' && p === '/api/admin/order-status') {
-        const { id, status } = await readBody(req);
+        const { id, status, carrier, tracking } = await readBody(req);
         const o = orders.find(x => x.id === id);
-        if (!o || !['pending', 'new', 'paid', 'shipped', 'done', 'cancelled'].includes(status)) return send(res, 400, { error: 'bad request' });
-        o.status = status; saveOrders();
+        if (!o || !['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled'].includes(status)) return send(res, 400, { error: 'bad request' });
+        o.status = status;
+        if (carrier !== undefined) o.carrier = String(carrier).slice(0, 60);
+        if (tracking !== undefined) o.tracking = String(tracking).slice(0, 80);
+        saveOrders();
         return send(res, 200, { ok: true });
       }
       return send(res, 404, { error: 'not found' });

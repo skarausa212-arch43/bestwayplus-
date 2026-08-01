@@ -12,7 +12,7 @@
     --bg:#050505; --surface:#0e0e10; --surface-2:#161618; --elev:#1e1e21;
     --ink:#F4F4F4; --ink-2:#D8D8D8; --muted:#8b8b92; --faint:#5a5a61;
     --line:rgba(244,244,244,.09); --line-2:rgba(244,244,244,.16);
-    --accent:#3A7BFF; --accent-soft:rgba(58,123,255,.14);
+    --accent:#3A7BFF; --accent-soft:rgba(58,123,255,.14); --ok:#37d67a;
     --radius:14px; --radius-lg:18px; --maxw:1320px; --header-h:66px;
     --font:'Helvetica Neue','Inter',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
     --ease:cubic-bezier(.32,.72,0,1);
@@ -403,6 +403,30 @@
   .pay-status{display:flex;align-items:center;justify-content:center;gap:10px;font-size:13px;color:var(--muted);margin:0 0 14px;font-weight:600}
   .spin{width:15px;height:15px;border-radius:50%;border:2px solid var(--line-2);border-top-color:var(--accent);animation:spin360 .8s linear infinite}
   @keyframes spin360{to{transform:rotate(360deg)}}
+  /* profile order cards */
+  .ord{border:1px solid var(--line);border-radius:14px;padding:15px;margin-bottom:12px;background:var(--surface)}
+  .ord-top{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--muted)}
+  .ord-top b{color:var(--ink)}
+  .ord-status{margin:10px 0}
+  .ord-pill{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;padding:4px 11px;border-radius:100px}
+  .ord-pill.s-pending{background:rgba(255,180,60,.14);color:#ffcf8a}
+  .ord-pill.s-paid,.ord-pill.s-processing{background:rgba(58,123,255,.15);color:#9db9ff}
+  .ord-pill.s-shipped{background:rgba(231,255,58,.12);color:var(--brand)}
+  .ord-pill.s-delivered{background:rgba(55,214,122,.15);color:var(--ok)}
+  .ord-pill.s-cancelled{background:rgba(255,90,90,.12);color:#ff8a8a}
+  .stepper{display:flex;margin:8px 0 12px}
+  .step{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;position:relative;color:var(--faint);
+    font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:700}
+  .step:not(:last-child)::after{content:'';position:absolute;top:6px;left:50%;width:100%;height:2px;background:var(--line)}
+  .step.done:not(:last-child)::after{background:var(--accent)}
+  .step i{width:13px;height:13px;border-radius:50%;background:var(--surface-2);border:2px solid var(--line);z-index:1}
+  .step.on{color:var(--ink)}
+  .step.on i{background:var(--accent);border-color:var(--accent);box-shadow:0 0 0 4px rgba(58,123,255,.18)}
+  .ord-track{font-size:12.5px;color:var(--muted);margin-bottom:9px;padding:9px 11px;background:var(--bg);border:1px solid var(--line);border-radius:10px}
+  .ord-track b{color:var(--ink)}
+  .ord-items{font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:9px;line-height:1.7}
+  .ord-pending,.ord-cancel{font-size:12.5px;color:var(--muted);margin:4px 0 10px}
+  .ord-pending b{color:var(--ink)}
   .cobody{padding:clamp(24px,4vw,40px)}
   .cobody h3{font-size:26px;letter-spacing:-.03em;text-transform:uppercase;font-weight:800}
   .cobody .sub{color:var(--muted);font-size:13px;margin:6px 0 26px}
@@ -886,6 +910,28 @@ function paidSuccess(d,tx){
 const esc=s=>String(s??'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
 let AUTH=load('swk_auth',null);
 function accDot(){$('#accDot').classList.toggle('show',!!AUTH)}
+const STATUS_META={pending:{label:'Awaiting payment',step:-1},paid:{label:'Payment confirmed',step:0},processing:{label:'Processing',step:0},shipped:{label:'Shipped',step:1},delivered:{label:'Delivered',step:2},cancelled:{label:'Cancelled',step:-2}};
+const CARRIERS={usps:'https://tools.usps.com/go/TrackConfirmAction?tLabels=',ups:'https://www.ups.com/track?tracknum=',fedex:'https://www.fedex.com/fedextrack/?trknbr=',dhl:'https://www.dhl.com/en/express/tracking.html?AWB='};
+function trackLink(carrier,tracking){const base=CARRIERS[String(carrier||'').toLowerCase().replace(/[^a-z]/g,'')];return base?base+encodeURIComponent(tracking):null}
+function orderCard(o){
+  const m=STATUS_META[o.status]||{label:o.status,step:0};
+  const steps=['Processing','Shipped','Delivered'];
+  const dt=new Date(o.date).toISOString().slice(0,10);
+  const items=(o.items||[]).map(i=>`${i.qty}× ${esc(i.name)} <span style="color:var(--faint)">(${esc(i.size)})</span>`).join(' · ');
+  let mid;
+  if(o.status==='cancelled') mid=`<div class="ord-cancel">This order was cancelled.</div>`;
+  else if(o.status==='pending') mid=`<div class="ord-pending">Waiting for your USDC payment${o.payAmount?` — send exactly <b>${Number(o.payAmount).toFixed(2)} USDC</b>`:''}.</div>`;
+  else mid=`<div class="stepper">${steps.map((s,i)=>`<div class="step ${i<=m.step?'on':''} ${i<m.step?'done':''}"><i></i><span>${s}</span></div>`).join('')}</div>`;
+  const link=trackLink(o.carrier,o.tracking);
+  const track=((o.status==='shipped'||o.status==='delivered')&&o.tracking)
+    ?`<div class="ord-track">${o.status==='delivered'?'Delivered via ':'Shipped via '}<b>${esc(o.carrier||'Carrier')}</b> · ${link?`<a href="${link}" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600">${esc(o.tracking)} ↗</a>`:`<b>${esc(o.tracking)}</b>`}</div>`:'';
+  return `<div class="ord">
+    <div class="ord-top"><span><b>${o.id}</b> · ${dt}</span><span><b>$${o.total}</b> · <a href="/receipt/${o.id}" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600">Receipt</a></span></div>
+    <div class="ord-status"><span class="ord-pill s-${o.status}">${m.label}</span></div>
+    ${mid}${track}
+    <div class="ord-items">${items}</div>
+  </div>`;
+}
 function renderAccount(){
   const b=$('#accBody');
   if(!AUTH){
@@ -925,9 +971,7 @@ function renderAccount(){
     fetch('/api/my-orders',{headers:{Authorization:'Bearer '+AUTH.token}}).then(r=>r.json()).then(d=>{
       const box=$('#accOrders');
       if(!d.orders||!d.orders.length){box.textContent='No orders yet — go find something you love.';return}
-      box.innerHTML=d.orders.map(o=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)">
-        <span><b style="color:var(--ink)">${o.id}</b> · ${new Date(o.date).toISOString().slice(0,10)} · ${o.items} item(s) · <span style="text-transform:uppercase;font-size:11px;letter-spacing:.06em">${o.status}</span></span>
-        <span><b style="color:var(--ink)">$${o.total}</b> · <a href="/receipt/${o.id}" target="_blank" style="color:var(--accent);font-weight:600">receipt</a></span></div>`).join('');
+      box.innerHTML=d.orders.map(orderCard).join('');
     }).catch(()=>{$('#accOrders').textContent='Could not load orders.'});
   }
 }
