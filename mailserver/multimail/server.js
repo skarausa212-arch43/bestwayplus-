@@ -11,6 +11,8 @@ const { simpleParser } = require('mailparser');
 const nodemailer = require('nodemailer');
 
 const MAIL_HOST = process.env.MAIL_HOSTNAME;
+// Домен адресов: задаётся явно, иначе выводим из hostname (mail.example.com -> example.com)
+const MAIL_DOMAIN = process.env.MAIL_DOMAIN || (MAIL_HOST || '').replace(/^mail\./, '');
 const PORT = process.env.PORT || 8082;
 const MAX_ACCOUNTS = 10;
 const SESSION_TTL = 30 * 24 * 3600_000; // 30 дней; продлевается при каждом заходе
@@ -163,13 +165,15 @@ app.get('/api/info', (req, res) => {
 app.post('/api/accounts', async (req, res) => {
   const s = getSession(req, res);
   const { email, password, host } = req.body || {};
-  if (typeof email !== 'string' || !email.includes('@') || typeof password !== 'string' || !password) {
+  if (typeof email !== 'string' || !email.trim() || typeof password !== 'string' || !password) {
     return res.status(400).json({ error: 'Please provide an address and password.' });
   }
   if (s.accounts.length >= MAX_ACCOUNTS) {
     return res.status(400).json({ error: `No more than ${MAX_ACCOUNTS} mailboxes.` });
   }
-  const addr = email.toLowerCase().trim();
+  // можно вводить просто имя — домен допишем сами
+  let addr = email.toLowerCase().trim();
+  if (!addr.includes('@')) addr = `${addr}@${MAIL_DOMAIN}`;
   if (s.accounts.some((a) => a.email === addr)) {
     return res.status(409).json({ error: 'This mailbox is already added.' });
   }

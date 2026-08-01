@@ -47,6 +47,8 @@ services:
       - ROUNDCUBEMAIL_SMTP_SERVER=ssl://${MAIL_HOSTNAME}
       - ROUNDCUBEMAIL_SMTP_PORT=465
       - ROUNDCUBEMAIL_SKIN=elastic
+      # можно логиниться просто именем — домен допишется сам
+      - ROUNDCUBEMAIL_USERNAME_DOMAIN=${MAIL_DOMAIN}
     volumes:
       - ./docker-data/roundcube/db:/var/roundcube/db
     restart: always
@@ -60,6 +62,7 @@ services:
       - "127.0.0.1:8082:8082"
     environment:
       - MAIL_HOSTNAME=${MAIL_HOSTNAME}
+      - MAIL_DOMAIN=${MAIL_DOMAIN}
     volumes:
       - ./docker-data/multimail:/data
     restart: always

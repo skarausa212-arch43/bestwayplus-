@@ -322,7 +322,7 @@
   <div class="acc-list" id="accList"></div>
   <div class="addbox">
     <div class="e" id="addErr"></div>
-    <input id="aEmail" placeholder="address@domain" autocomplete="off">
+    <input id="aEmail" placeholder="name or address@domain" autocomplete="off">
     <input id="aPass" type="password" placeholder="password" autocomplete="off">
     <label><input type="checkbox" id="aRemember" checked> remember in this browser</label>
     <button id="aBtn">+ Add mailbox</button>
@@ -674,9 +674,10 @@ $('aBtn').addEventListener('click', async () => {
   if (!email || !password) { $('addErr').textContent = 'Please fill in the address and password'; return; }
   $('aBtn').disabled = true; $('aBtn').textContent = 'Connecting…';
   try {
-    await api('api/accounts', { method: 'POST', headers: {'Content-Type':'application/json'},
+    const added = await api('api/accounts', { method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ email, password }) });
-    if ($('aRemember').checked) saveAcc(email, password);
+    // сервер мог дописать домен — запоминаем полный адрес
+    if ($('aRemember').checked) saveAcc(added.email || email, password);
     $('aEmail').value = ''; $('aPass').value = '';
     await reload();
   } catch (e) {

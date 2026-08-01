@@ -102,53 +102,53 @@ app.get('/api/info', (_req, res) => {
   res.json({ domain: DOMAIN, inviteRequired: INVITE_CODE !== '', webmail: WEBMAIL_URL });
 });
 
-app.post('/api/register', (req, res) => {
-  const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress;
-  const { username, password, invite, firstName, lastName, recovery } = req.body || {};
+// Общая логика регистрации: возвращает { code, data } — используется и JSON-API,
+// и фолбэком для нативной отправки формы (когда JS на странице не сработал)
+function registerUser(body, ip) {
+  const { username, password, invite, firstName, lastName, recovery } = body || {};
 
   if (rateLimited(ip)) {
-    return res.status(429).json({ error: 'Too many attempts. Please wait an hour and try again.' });
+    return Promise.resolve({ code: 429, data: { error: 'Too many attempts. Please wait an hour and try again.' } });
   }
   if (INVITE_CODE && (invite || '').trim() !== INVITE_CODE) {
-    return res.status(403).json({ error: 'Invalid invite code.' });
+    return Promise.resolve({ code: 403, data: { error: 'Invalid invite code.' } });
   }
   const user = String(username || '').toLowerCase().trim();
   if (!USERNAME_RE.test(user)) {
-    return res.status(400).json({ error: 'Username: 1–31 chars, letters/digits/dot/dash, must start and end with a letter or digit.' });
+    return Promise.resolve({ code: 400, data: { error: 'Username: 1–31 chars, letters/digits/dot/dash, must start and end with a letter or digit.' } });
   }
   if (RESERVED.has(user)) {
-    return res.status(400).json({ error: 'This name is reserved.' });
+    return Promise.resolve({ code: 400, data: { error: 'This name is reserved.' } });
   }
   if (typeof password !== 'string' || password.length < 8 || password.length > 128) {
-    return res.status(400).json({ error: 'Password must be 8–128 characters long.' });
+    return Promise.resolve({ code: 400, data: { error: 'Password must be 8–128 characters long.' } });
   }
   const fName = String(firstName || '').trim();
   const lName = String(lastName || '').trim();
   if (!NAME_RE.test(fName)) {
-    return res.status(400).json({ error: 'Please enter your first name (letters only).' });
+    return Promise.resolve({ code: 400, data: { error: 'Please enter your first name (letters only).' } });
   }
   if (!NAME_RE.test(lName)) {
-    return res.status(400).json({ error: 'Please enter your last name (letters only).' });
+    return Promise.resolve({ code: 400, data: { error: 'Please enter your last name (letters only).' } });
   }
   const recoveryEmail = String(recovery || '').trim().toLowerCase();
   if (recoveryEmail && !EMAIL_RE.test(recoveryEmail)) {
-    return res.status(400).json({ error: 'Recovery email looks invalid.' });
+    return Promise.resolve({ code: 400, data: { error: 'Recovery email looks invalid.' } });
   }
 
   const email = `${user}@${DOMAIN}`;
   if (recoveryEmail === email) {
-    return res.status(400).json({ error: 'Recovery email must be a different address.' });
+    return Promise.resolve({ code: 400, data: { error: 'Recovery email must be a different address.' } });
   }
 
-  enqueue(async () => {
+  return enqueue(async () => {
     const existing = readAccounts();
     const taken = existing.split('\n').some((line) => {
       const addr = line.split('|')[0].trim().toLowerCase();
       return addr === email;
     });
     if (taken) {
-      res.status(409).json({ error: 'This address is already taken.' });
-      return;
+      return { code: 409, data: { error: 'This address is already taken.' } };
     }
     const hash = await hashPassword(password);
     const line = `${email}|{SHA512-CRYPT}${hash}\n`;
@@ -163,10 +163,38 @@ app.post('/api/register', (req, res) => {
     };
     saveProfiles(profiles);
     console.log(`registered ${email} (${fName} ${lName}, recovery: ${recoveryEmail ? 'yes' : 'no'}, ip ${ip})`);
-    res.json({ ok: true, email, webmail: WEBMAIL_URL });
+    return { code: 200, data: { ok: true, email, webmail: WEBMAIL_URL } };
+  });
+}
+
+function clientIp(req) {
+  return req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress;
+}
+
+app.post('/api/register', (req, res) => {
+  registerUser(req.body, clientIp(req)).then(({ code, data }) => {
+    res.status(code).json(data);
   }).catch((e) => {
     console.error('registration failed:', e);
-    if (!res.headersSent) res.status(500).json({ error: 'Internal server error.' });
+    res.status(500).json({ error: 'Internal server error.' });
+  });
+});
+
+// Нативная отправка формы (страница без работающего JS): регистрируем и
+// возвращаем на лендинг с результатом в query — страница его покажет
+app.post('/', express.urlencoded({ extended: false }), (req, res) => {
+  const body = req.body || {};
+  const done = (q) => res.redirect(303, '/?' + q);
+  if (body.p2 !== undefined && body.p2 !== body.password) {
+    return done('err=' + encodeURIComponent('Passwords do not match.'));
+  }
+  registerUser(body, clientIp(req)).then(({ code, data }) => {
+    done(code === 200
+      ? 'registered=' + encodeURIComponent(data.email)
+      : 'err=' + encodeURIComponent(data.error || 'Registration failed.'));
+  }).catch((e) => {
+    console.error('registration failed:', e);
+    done('err=' + encodeURIComponent('Internal server error.'));
   });
 });
 
