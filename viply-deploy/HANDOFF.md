@@ -55,6 +55,14 @@ nginx-vhost почты и сертификат НЕ созданы → emailinc.
 4. Когда Aeza откроет порт 25 + поставит PTR — тест на mail-tester.com (цель 9-10/10).
 5. Пароль postmaster: `/root/viply-postmaster.txt` на сервере.
 
+## Telegram-уведомления (опционально)
+
+Кнопка «🔔 Telegram alerts» в /multi/ появляется, только если задан токен бота:
+владелец создаёт бота у @BotFather и кладёт токен на сервер:
+`echo "ТОКЕН" > /root/emailinc-telegram.token` → перезапустить установщик.
+Привязка: кнопка → t.me-ссылка → Start; отключение: /stop боту или кнопкой.
+Чекер раз в 45с, уведомляет только про INBOX (спам молчит).
+
 ## Известные грабли (уже учтены в коде/скрипте — не сломать)
 
 - hostname контейнера ≠ MAIL_DOMAIN (иначе «unknown user»); у нас hostname=mail.emailinc.info.
