@@ -202,6 +202,19 @@ async function tg(method, params) {
 
 const say = (chatId, text) => tg('sendMessage', { chat_id: chatId, text });
 
+// Все ящики этого чата: подключённые в боте + привязанные через веб (без дублей)
+function collectChatAccounts(chatId) {
+  const accs = [...(tgUsers.get(String(chatId))?.accounts || [])];
+  const seen = new Set(accs.map((a) => a.email));
+  for (const [, s] of sessions) {
+    if (s.tg?.chatId !== chatId) continue;
+    for (const a of s.accounts) {
+      if (!seen.has(a.email)) { seen.add(a.email); accs.push(a); }
+    }
+  }
+  return accs;
+}
+
 async function handleTgUpdate(u) {
   const msg = u.message;
   if (!msg || !msg.text) return;
@@ -221,7 +234,7 @@ async function handleTgUpdate(u) {
     p.s.tg = { chatId, linkedAt: Date.now() };
     persistSessions();
     const list = p.s.accounts.map((a) => a.email).join('\n');
-    await say(chatId, `🔔 Connected! You will get a message here for every new email.\n${list ? '\nWatching:\n' + list + '\n' : ''}\nSend /stop to disconnect.`);
+    await say(chatId, `🔔 Connected! You will get a message here for every new email.\n${list ? '\nWatching:\n' + list + '\n' : ''}\n/inbox — latest mail from all mailboxes\n/stop — disconnect.`);
     return;
   }
 
@@ -229,6 +242,31 @@ async function handleTgUpdate(u) {
   if (cmd === '/start' || cmd === '/connect' || cmd === '/add') {
     tgDialog.set(key, { state: 'email', at: Date.now() });
     await say(chatId, `📮 Let's connect your ${MAIL_DOMAIN} mailbox.\n\nSend me your address — just the name (e.g. john) or the full address (john@${MAIL_DOMAIN}).`);
+    return;
+  }
+  // Единая лента: последние письма со всех подключённых ящиков
+  if (cmd === '/inbox') {
+    const accs = collectChatAccounts(chatId);
+    if (!accs.length) {
+      await say(chatId, 'No mailboxes connected yet. Send /connect to add one.');
+      return;
+    }
+    const results = await Promise.allSettled(accs.map((a) => fetchInbox(a, 5)));
+    const items = [];
+    results.forEach((r, i) => {
+      if (r.status === 'fulfilled') r.value.messages.forEach((m) => items.push({ ...m, email: accs[i].email }));
+    });
+    items.sort((a, b) => new Date(b.date) - new Date(a.date));
+    const top = items.slice(0, 10);
+    if (!top.length) {
+      await say(chatId, `📥 All quiet — no mail in ${accs.length} mailbox(es) yet.`);
+      return;
+    }
+    const lines = top.map((m) => {
+      const when = new Date(m.date).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+      return `${m.seen ? '▪️' : '🔵'} ${m.email} · ${when}\nFrom: ${m.fromName || m.from || '?'}\n${m.subject}`;
+    });
+    await say(chatId, `📥 Latest mail across ${accs.length} mailbox(es):\n\n` + lines.join('\n\n'));
     return;
   }
   if (cmd === '/list') {
@@ -282,11 +320,11 @@ async function handleTgUpdate(u) {
     user.accounts.push(acc);
     tgUsers.set(key, user);
     persistTgUsers();
-    await say(chatId, `🔔 ${acc.email} connected! You will get a message here for every new email.\n\n/add — connect another mailbox\n/list — show connected\n/stop — disconnect everything`);
+    await say(chatId, `🔔 ${acc.email} connected! You will get a message here for every new email.\n\n/inbox — latest mail from all mailboxes\n/add — connect another mailbox\n/list — show connected\n/stop — disconnect everything`);
     return;
   }
 
-  await say(chatId, `I deliver new-mail alerts for ${MAIL_DOMAIN}.\n\n/connect — link your mailbox\n/list — show connected\n/stop — disconnect`);
+  await say(chatId, `I deliver new-mail alerts for ${MAIL_DOMAIN}.\n\n/connect — link your mailbox\n/inbox — latest mail from all mailboxes\n/list — show connected\n/stop — disconnect`);
 }
 
 async function tgPollLoop() {
@@ -326,7 +364,22 @@ async function tgCheckAccount(chatId, acc) {
     for (const m of fresh.slice(0, MAXN)) {
       const sender = m.envelope.from?.[0] || {};
       const who = sender.name ? `${sender.name} <${sender.address || ''}>` : (sender.address || 'unknown');
-      await say(chatId, `📬 ${acc.email}\nFrom: ${who}\nSubject: ${m.envelope.subject || '(no subject)'}`);
+      // превью текста письма — бот работает как сборщик, а не только звонок
+      let preview = '';
+      try {
+        const lock2 = await client.getMailboxLock('INBOX');
+        try {
+          const full = await client.fetchOne(String(m.uid), { source: true }, { uid: true });
+          if (full?.source) {
+            const parsed = await simpleParser(full.source);
+            preview = (parsed.text || '').replace(/\s+/g, ' ').trim();
+            if (preview.length > 400) preview = preview.slice(0, 400) + '…';
+          }
+        } finally {
+          lock2.release();
+        }
+      } catch {}
+      await say(chatId, `📬 ${acc.email}\nFrom: ${who}\nSubject: ${m.envelope.subject || '(no subject)'}${preview ? '\n\n' + preview : ''}`);
     }
     if (fresh.length > MAXN) {
       await say(chatId, `…and ${fresh.length - MAXN} more new emails in ${acc.email}`);
