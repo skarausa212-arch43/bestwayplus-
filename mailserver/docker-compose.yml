@@ -63,6 +63,7 @@ services:
     environment:
       - MAIL_HOSTNAME=${MAIL_HOSTNAME}
       - MAIL_DOMAIN=${MAIL_DOMAIN}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
     volumes:
       - ./docker-data/multimail:/data
     restart: always

@@ -329,6 +329,7 @@
     <label><input type="checkbox" id="aRemember" checked> remember in this browser</label>
     <button id="aBtn">+ Add mailbox</button>
     <button id="newAddrBtn" class="alt">Create new address</button>
+    <button id="tgBtn" class="alt" style="display:none">🔔 Telegram alerts</button>
     <button id="logoutBtn" class="alt out" style="display:none">Sign out</button>
   </div>
 </aside>
@@ -690,6 +691,40 @@ $('aBtn').addEventListener('click', async () => {
     $('aBtn').disabled = false; $('aBtn').textContent = '+ Add mailbox';
   }
 });
+
+// --- telegram notifications ---
+let tgLinked = false;
+async function tgStatus() {
+  try {
+    const st = await api('api/telegram/status');
+    if (!st.enabled) { $('tgBtn').style.display = 'none'; return; }
+    tgLinked = st.linked;
+    $('tgBtn').style.display = '';
+    $('tgBtn').textContent = tgLinked ? '🔔 Telegram: on' : '🔔 Telegram alerts';
+  } catch {}
+}
+$('tgBtn').addEventListener('click', async () => {
+  try {
+    if (tgLinked) {
+      if (!confirm('Turn off Telegram notifications?')) return;
+      await api('api/telegram/unlink', { method: 'POST' });
+      tgLinked = false; $('tgBtn').textContent = '🔔 Telegram alerts';
+      return;
+    }
+    const { url } = await api('api/telegram/link', { method: 'POST' });
+    window.open(url, '_blank');
+    $('tgBtn').textContent = '🔔 Waiting for Telegram…';
+    // ждём, пока пользователь нажмёт Start у бота
+    for (let i = 0; i < 30 && !tgLinked; i++) {
+      await new Promise((r) => setTimeout(r, 2000));
+      await tgStatus();
+    }
+    if (!tgLinked) $('tgBtn').textContent = '🔔 Telegram alerts';
+  } catch (e) {
+    alert(e.message);
+  }
+});
+tgStatus();
 
 // --- sign out: забыть все ящики на сервере и в этом браузере ---
 $('logoutBtn').addEventListener('click', async () => {

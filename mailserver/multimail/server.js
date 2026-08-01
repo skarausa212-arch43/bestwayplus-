@@ -145,6 +145,125 @@ async function fetchInbox(acc, limit = 20) {
   });
 }
 
+// ===== Telegram-уведомления о новых письмах =====
+// Привязка: /multi/ выдаёт ссылку t.me/<бот>?start=<токен>, бот связывает chat_id
+// с сессией. Дальше фоновый чекер шлёт сообщение на каждое новое письмо в INBOX.
+const TG_TOKEN = (process.env.TELEGRAM_BOT_TOKEN || '').trim();
+let botUsername = null;
+const pendingLinks = new Map(); // linkToken -> { s: session, at }
+
+async function tg(method, params) {
+  const r = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/${method}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params || {}),
+  });
+  const data = await r.json();
+  if (!data.ok) throw new Error(`telegram ${method}: ${data.description || r.status}`);
+  return data.result;
+}
+
+async function handleTgUpdate(u) {
+  const msg = u.message;
+  if (!msg || !msg.text) return;
+  const chatId = msg.chat.id;
+  const [cmd, arg] = msg.text.trim().split(/\s+/);
+  if (cmd === '/start' && arg) {
+    const p = pendingLinks.get(arg);
+    if (!p || Date.now() - p.at > 600_000) {
+      await tg('sendMessage', { chat_id: chatId, text: 'This link has expired — tap the Telegram button in the mail app again.' });
+      return;
+    }
+    pendingLinks.delete(arg);
+    p.s.tg = { chatId, linkedAt: Date.now() };
+    persistSessions();
+    const list = p.s.accounts.map((a) => a.email).join('\n');
+    await tg('sendMessage', { chat_id: chatId,
+      text: `🔔 Connected! You will get a message here for every new email.\n${list ? '\nWatching:\n' + list + '\n' : ''}\nSend /stop to disconnect.` });
+  } else if (cmd === '/stop') {
+    let n = 0;
+    for (const [, s] of sessions) if (s.tg?.chatId === chatId) { delete s.tg; n++; }
+    persistSessions();
+    await tg('sendMessage', { chat_id: chatId, text: n ? '🔕 Notifications disconnected.' : 'Nothing to disconnect.' });
+  } else {
+    await tg('sendMessage', { chat_id: chatId, text: 'I deliver new-mail alerts for EmailInc. Connect me from the mail app: the 🔔 Telegram button in /multi/.' });
+  }
+}
+
+async function tgPollLoop() {
+  let offset = 0;
+  for (;;) {
+    try {
+      const updates = await tg('getUpdates', { timeout: 50, offset, allowed_updates: ['message'] });
+      for (const u of updates) {
+        offset = u.update_id + 1;
+        await handleTgUpdate(u).catch((e) => console.error('tg update:', e.message));
+      }
+    } catch (e) {
+      console.error('tg poll:', e.message);
+      await new Promise((r) => setTimeout(r, 5000));
+    }
+  }
+}
+
+// Фоновая проверка: по uidNext видим новые письма с прошлого захода.
+// Первый заход после привязки только запоминает uidNext — без спама историей.
+async function tgCheckAccount(s, acc) {
+  await withImap(acc, async (client) => {
+    const st = await client.status('INBOX', { uidNext: true });
+    const last = acc.tgUid;
+    acc.tgUid = st.uidNext;
+    if (last === undefined || st.uidNext <= last) return;
+    const lock = await client.getMailboxLock('INBOX');
+    const fresh = [];
+    try {
+      for await (const m of client.fetch(`${last}:*`, { uid: true, envelope: true }, { uid: true })) {
+        if (m.uid >= last) fresh.push(m);
+      }
+    } finally {
+      lock.release();
+    }
+    const MAXN = 5;
+    for (const m of fresh.slice(0, MAXN)) {
+      const sender = m.envelope.from?.[0] || {};
+      const who = sender.name ? `${sender.name} <${sender.address || ''}>` : (sender.address || 'unknown');
+      await tg('sendMessage', { chat_id: s.tg.chatId,
+        text: `📬 ${acc.email}\nFrom: ${who}\nSubject: ${m.envelope.subject || '(no subject)'}` });
+    }
+    if (fresh.length > MAXN) {
+      await tg('sendMessage', { chat_id: s.tg.chatId,
+        text: `…and ${fresh.length - MAXN} more new emails in ${acc.email}` });
+    }
+  });
+}
+
+let tgChecking = false;
+async function tgCheckAll() {
+  if (tgChecking) return; // не наслаиваем проверки, если предыдущая ещё идёт
+  tgChecking = true;
+  try {
+    for (const [t, p] of pendingLinks) if (Date.now() - p.at > 600_000) pendingLinks.delete(t);
+    for (const [, s] of sessions) {
+      if (!s.tg?.chatId) continue;
+      for (const acc of s.accounts) {
+        await tgCheckAccount(s, acc).catch(() => {});
+      }
+    }
+    persistSessions();
+  } finally {
+    tgChecking = false;
+  }
+}
+
+if (TG_TOKEN) {
+  tg('getMe').then((me) => {
+    botUsername = me.username;
+    console.log(`telegram bot @${botUsername} connected`);
+    tgPollLoop();
+    setInterval(() => tgCheckAll().catch(() => {}), 45_000).unref();
+  }).catch((e) => console.error('telegram disabled:', e.message));
+}
+
 const app = express();
 app.use(express.json({ limit: '200kb' }));
 app.use(express.static(path.join(__dirname, 'public'), {
@@ -193,10 +312,32 @@ app.post('/api/accounts', async (req, res) => {
   res.json({ ok: true, id: acc.id, email: acc.email });
 });
 
+// --- Telegram-уведомления: статус / привязка / отвязка ---
+app.get('/api/telegram/status', (req, res) => {
+  const s = getSession(req, res);
+  res.json({ enabled: !!(TG_TOKEN && botUsername), linked: !!s.tg?.chatId, bot: botUsername });
+});
+
+app.post('/api/telegram/link', (req, res) => {
+  if (!TG_TOKEN || !botUsername) return res.status(503).json({ error: 'Telegram is not configured on this server.' });
+  const s = getSession(req, res);
+  const token = crypto.randomBytes(12).toString('hex');
+  pendingLinks.set(token, { s, at: Date.now() });
+  res.json({ url: `https://t.me/${botUsername}?start=${token}` });
+});
+
+app.post('/api/telegram/unlink', (req, res) => {
+  const s = getSession(req, res);
+  delete s.tg;
+  persistSessions();
+  res.json({ ok: true });
+});
+
 // Полный выход: сессия забывает все ящики
 app.post('/api/logout', (req, res) => {
   const s = getSession(req, res);
   s.accounts = [];
+  delete s.tg;
   persistSessions();
   res.json({ ok: true });
 });

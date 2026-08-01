@@ -64,13 +64,19 @@ else
 fi
 cd "$DIR/mailserver"
 
+# Телеграм-уведомления: токен бота кладётся владельцем в файл на сервере
+# (echo "ТОКЕН" > /root/emailinc-telegram.token) — в git ему не место
+TG_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
+[ -z "$TG_TOKEN" ] && [ -f /root/emailinc-telegram.token ] && TG_TOKEN="$(tr -d '[:space:]' < /root/emailinc-telegram.token)"
+
 cat > .env <<ENV
 MAIL_DOMAIN=$DOMAIN
 MAIL_HOSTNAME=$HOST
 INVITE_CODE=$INVITE
 WEBMAIL_URL=https://$DOMAIN/webmail/
+TELEGRAM_BOT_TOKEN=$TG_TOKEN
 ENV
-echo "  .env written (domain=$DOMAIN, hostname=$HOST, invite=${INVITE:-OFF})"
+echo "  .env written (domain=$DOMAIN, hostname=$HOST, invite=${INVITE:-OFF}, telegram=$([ -n "$TG_TOKEN" ] && echo ON || echo OFF))"
 
 echo "== [5/9] TLS certificate (webroot via running nginx) =="
 apt-get update -qq && apt-get install -y -qq certbot >/dev/null
