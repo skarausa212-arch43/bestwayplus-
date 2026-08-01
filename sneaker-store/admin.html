@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — STUFFWEKNOW</title>
+<meta name="robots" content="noindex,nofollow">
+<style>
+  :root{--bg:#050505;--surface:#0e0e10;--card:#131316;--ink:#F4F4F4;--muted:#9a9aa4;--faint:#5a5a61;
+    --line:rgba(244,244,244,.09);--line2:rgba(244,244,244,.16);--brand:#e7ff3a;--accent:#3A7BFF;--ok:#37d67a;--bad:#ff5a5a;
+    --font:'Helvetica Neue','Inter',system-ui,sans-serif}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.5}
+  button,input,select{font-family:inherit}
+  .wrap{max-width:1240px;margin:0 auto;padding:0 22px}
+  header{height:62px;display:flex;align-items:center;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(5,5,5,.85);backdrop-filter:blur(16px);z-index:5}
+  .hd{display:flex;align-items:center;justify-content:space-between;width:100%}
+  .brand{font-weight:800;letter-spacing:-.02em;text-transform:uppercase;font-size:15px}
+  .brand i{font-style:normal;color:var(--brand)}
+  .hd .r{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--muted)}
+  .hd button{background:none;border:1px solid var(--line);color:var(--muted);border-radius:9px;padding:7px 13px;font-size:12px;cursor:pointer}
+  .hd button:hover{color:var(--ink);border-color:var(--line2)}
+
+  /* login */
+  .login{max-width:360px;margin:16vh auto 0;padding:30px;background:var(--card);border:1px solid var(--line);border-radius:18px}
+  .login h1{font-size:20px;font-weight:800;text-transform:uppercase;margin-bottom:4px}
+  .login p{font-size:13px;color:var(--muted);margin-bottom:18px}
+  .login input{width:100%;padding:13px 14px;border-radius:11px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:16px;outline:none}
+  .login input:focus{border-color:var(--accent)}
+  .login button{width:100%;margin-top:14px;padding:13px;border:0;border-radius:11px;background:var(--brand);color:#050505;font-weight:800;font-size:14px;cursor:pointer}
+  .login .err{color:var(--bad);font-size:13px;margin-top:10px;display:none}
+
+  /* dashboard */
+  .dash{display:none;padding:28px 0 60px}
+  h2{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);font-weight:700;margin:30px 0 14px}
+  .cards{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
+  .stat b{display:block;font-size:26px;font-weight:800;letter-spacing:-.02em}
+  .stat span{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:600}
+  .stat.hl b{color:var(--brand)}
+  /* chart */
+  .chart{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 20px 12px}
+  .bars{display:flex;align-items:flex-end;gap:6px;height:120px}
+  .bar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;position:relative}
+  .bar i{display:block;border-radius:4px 4px 0 0;background:var(--accent);opacity:.85;min-height:2px}
+  .bar u{display:block;border-radius:0;background:var(--brand);min-height:0;text-decoration:none}
+  .bar b{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--muted);font-weight:600;opacity:0}
+  .bar:hover b{opacity:1}
+  .bar span{font-size:9px;color:var(--faint);text-align:center;margin-top:6px}
+  .legend{display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--muted)}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px}
+
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;font-size:13px}
+  th{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);text-align:left;padding:13px 14px;border-bottom:1px solid var(--line)}
+  td{padding:12px 14px;border-bottom:1px solid var(--line);color:var(--muted);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td.id{color:var(--ink);font-weight:700;white-space:nowrap}
+  td .items{font-size:12px;color:var(--faint)}
+  .money{color:var(--ink);font-weight:700;white-space:nowrap}
+  select.st{background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px}
+  .pill{display:inline-block;padding:3px 9px;border-radius:100px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+  .pill.new{background:rgba(58,123,255,.15);color:#9db9ff}.pill.paid{background:rgba(231,255,58,.12);color:var(--brand)}
+  .pill.shipped{background:rgba(55,214,122,.13);color:var(--ok)}.pill.done{background:rgba(244,244,244,.1);color:var(--muted)}
+  .pill.cancelled{background:rgba(255,90,90,.12);color:var(--bad)}
+  .rcpt{color:var(--accent);font-weight:600}
+  .empty{color:var(--faint);text-align:center;padding:26px}
+  @media(max-width:1000px){.cards{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:640px){.cards{grid-template-columns:repeat(2,1fr)}.hidem{display:none}}
+</style>
+</head>
+<body>
+<header><div class="wrap hd">
+  <div class="brand">STUFFWEKNOW <i>▲</i> ADMIN</div>
+  <div class="r"><span id="upd"></span><button id="refresh" style="display:none">Refresh</button><button id="logout" style="display:none">Log out</button></div>
+</div></header>
+
+<div class="wrap">
+  <div class="login" id="login">
+    <h1>Admin access</h1>
+    <p>Enter the admin password from the server (<code>/root/swk-admin.txt</code>).</p>
+    <input type="password" id="pw" placeholder="Admin password" autocomplete="current-password">
+    <button id="enter">Enter dashboard</button>
+    <div class="err" id="lerr">Wrong password.</div>
+  </div>
+
+  <div class="dash" id="dash">
+    <h2>Overview</h2>
+    <div class="cards">
+      <div class="stat hl"><b id="sRev">—</b><span>Revenue</span></div>
+      <div class="stat"><b id="sOrders">—</b><span>Orders</span></div>
+      <div class="stat"><b id="sUsers">—</b><span>Accounts</span></div>
+      <div class="stat"><b id="sTotal">—</b><span>Total visits</span></div>
+      <div class="stat"><b id="sUnique">—</b><span>Unique visitors</span></div>
+      <div class="stat"><b id="sToday">—</b><span>Visits today</span></div>
+    </div>
+
+    <h2>Traffic & orders — last 14 days</h2>
+    <div class="chart">
+      <div class="bars" id="bars"></div>
+      <div class="legend"><span><i style="background:var(--accent)"></i>Visits</span><span><i style="background:var(--brand)"></i>Orders</span></div>
+    </div>
+
+    <h2>Orders</h2>
+    <div style="overflow-x:auto"><table id="ordersT">
+      <thead><tr><th>Order</th><th>Date</th><th class="hidem">Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Receipt</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+
+    <h2>Accounts</h2>
+    <div style="overflow-x:auto"><table id="usersT">
+      <thead><tr><th>Email</th><th class="hidem">Name</th><th>Registered</th><th>Orders</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+let KEY=sessionStorage.getItem('swk_admin')||'';
+
+async function api(path,opts={}){
+  const r=await fetch(path,{...opts,headers:{'Content-Type':'application/json','X-Admin-Key':KEY,...(opts.headers||{})}});
+  if(r.status===401)throw new Error('auth');
+  return r.json();
+}
+const fmt$=n=>'$'+Number(n).toLocaleString('en-US');
+const fmtD=t=>new Date(t).toISOString().slice(0,16).replace('T',' ');
+
+async function loadDash(){
+  const d=await api('/api/admin/overview');
+  $('#login').style.display='none';$('#dash').style.display='block';
+  $('#refresh').style.display=$('#logout').style.display='inline-block';
+  $('#sRev').textContent=fmt$(d.revenue);
+  $('#sOrders').textContent=d.ordersCount;
+  $('#sUsers').textContent=d.usersCount;
+  $('#sTotal').textContent=d.visits.total.toLocaleString();
+  $('#sUnique').textContent=d.visits.unique.toLocaleString();
+  $('#sToday').textContent=d.visits.today.toLocaleString();
+  $('#upd').textContent='Updated '+new Date().toLocaleTimeString();
+  // chart
+  const maxV=Math.max(1,...d.days.map(x=>x.v));
+  $('#bars').innerHTML=d.days.map(x=>{
+    const vh=Math.round(x.v/maxV*100), oh=x.o?Math.max(6,Math.round(x.o/maxV*100)):0;
+    return `<div class="bar"><b>${x.v}v/${x.o}o</b><u style="height:${oh}%"></u><i style="height:${vh}%"></i><span>${x.d.slice(5)}</span></div>`;
+  }).join('');
+  // orders
+  const ob=$('#ordersT tbody');
+  ob.innerHTML=d.orders.length?d.orders.map(o=>`<tr>
+    <td class="id">${o.id}</td><td>${fmtD(o.date)}</td>
+    <td class="hidem">${(o.name||'')} <div class="items">${o.email}</div></td>
+    <td>${o.items.map(i=>`${i.qty}× ${i.name} (${i.size})`).join('<br>')}</td>
+    <td class="money">${fmt$(o.total)}</td>
+    <td><span class="pill ${o.status}">${o.status}</span><br>
+      <select class="st" data-id="${o.id}">
+        ${['new','paid','shipped','done','cancelled'].map(s=>`<option ${s===o.status?'selected':''}>${s}</option>`).join('')}
+      </select></td>
+    <td><a class="rcpt" href="/receipt/${o.id}" target="_blank">open</a></td>
+  </tr>`).join(''):'<tr><td colspan="7" class="empty">No orders yet.</td></tr>';
+  ob.querySelectorAll('select.st').forEach(s=>s.addEventListener('change',async()=>{
+    await api('/api/admin/order-status',{method:'POST',body:JSON.stringify({id:s.dataset.id,status:s.value})});
+    loadDash();
+  }));
+  // users
+  $('#usersT tbody').innerHTML=d.users.length?d.users.map(u=>`<tr>
+    <td class="id">${u.email}</td><td class="hidem">${u.name||'—'}</td>
+    <td>${fmtD(u.created)}</td><td>${u.orders}</td></tr>`).join('')
+    :'<tr><td colspan="4" class="empty">No accounts yet.</td></tr>';
+}
+
+$('#enter').addEventListener('click',async()=>{
+  KEY=$('#pw').value.trim();
+  try{await loadDash();sessionStorage.setItem('swk_admin',KEY);}
+  catch{$('#lerr').style.display='block';}
+});
+$('#pw').addEventListener('keydown',e=>{if(e.key==='Enter')$('#enter').click()});
+$('#refresh').addEventListener('click',loadDash);
+$('#logout').addEventListener('click',()=>{sessionStorage.removeItem('swk_admin');location.reload()});
+if(KEY)loadDash().catch(()=>{sessionStorage.removeItem('swk_admin')});
+setInterval(()=>{if($('#dash').style.display==='block')loadDash().catch(()=>{})},60000);
+</script>
+</body>
+</html>

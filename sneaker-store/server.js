@@ -1,0 +1,300 @@
+/**
+ * STUFFWEKNOW — store server. ZERO DEPENDENCIES (Node 18+).
+ *
+ * Serves the storefront + policies + admin, and provides:
+ *   - accounts (scrypt passwords, HMAC tokens — no external JWT)
+ *   - orders with instant HTML receipts (print-to-PDF ready)
+ *   - visit counting (total / unique / daily) for the admin dashboard
+ *   - admin API guarded by ADMIN_PASSWORD (set via systemd env)
+ *
+ * Data lives in DATA_DIR (default ./data) as plain JSON — keep it out of
+ * the git tree on the server (the repo dir is hard-reset every minute).
+ */
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+
+const PORT = process.env.PORT || 8090;
+const ROOT = __dirname;
+const DATA = process.env.DATA_DIR || path.join(__dirname, 'data');
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+fs.mkdirSync(DATA, { recursive: true });
+
+/* ---------- persistence ---------- */
+const fileOf = (n) => path.join(DATA, n);
+const loadJSON = (n, d) => { try { return JSON.parse(fs.readFileSync(fileOf(n), 'utf8')); } catch { return d; } };
+const saveJSON = (n, v) => fs.writeFileSync(fileOf(n), JSON.stringify(v, null, 2));
+
+if (!fs.existsSync(fileOf('secret'))) fs.writeFileSync(fileOf('secret'), crypto.randomBytes(32).toString('hex'));
+const SECRET = fs.readFileSync(fileOf('secret'), 'utf8');
+
+const users = loadJSON('users.json', {});          // email -> {email,name,pass,created}
+const orders = loadJSON('orders.json', []);        // [{id,email,items,total,ship,status,date,address}]
+const stats = loadJSON('stats.json', { total: 0, unique: 0, daily: {} }); // daily[YYYY-MM-DD]={v,u,o}
+const saveUsers = () => saveJSON('users.json', users);
+const saveOrders = () => saveJSON('orders.json', orders);
+let statsDirty = false;
+setInterval(() => { if (statsDirty) { statsDirty = false; saveJSON('stats.json', stats); } }, 5000).unref();
+
+/* ---------- catalog (source of truth for prices) ---------- */
+const CATALOG = {
+  nk1: { name: 'Aero Runner Pro', price: 139 }, nk2: { name: 'Court Classic Low', price: 109 },
+  nk3: { name: 'Air Glide 270', price: 159 }, nk4: { name: 'Metro Knit Runner', price: 129 },
+  ad1: { name: 'Boost Strider', price: 149 }, ad2: { name: 'Terrace OG', price: 99 },
+  ad3: { name: 'Ultra Glide 5', price: 169 }, ad4: { name: 'City Runner', price: 119 },
+  nk5: { name: 'Sport Cap Essential', price: 34 }, ad5: { name: 'Gym Duffel 35L', price: 54 },
+  nk6: { name: 'Crew Socks (3-Pack)', price: 22 }, ad6: { name: 'Backpack Core 28L', price: 49 },
+  ad7: { name: 'FIFA World Cup 26™ Trionda Training Ball', price: 32 },
+};
+const FREE_SHIP_AT = 150, SHIP_COST = 9;
+
+/* ---------- crypto helpers ---------- */
+function hashPassword(pw) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  return salt + ':' + crypto.scryptSync(pw, salt, 64).toString('hex');
+}
+function verifyPassword(pw, stored) {
+  const [salt, hash] = String(stored).split(':');
+  if (!salt || !hash) return false;
+  const test = crypto.scryptSync(pw, salt, 64);
+  const ref = Buffer.from(hash, 'hex');
+  return test.length === ref.length && crypto.timingSafeEqual(test, ref);
+}
+const sign = (s) => crypto.createHmac('sha256', SECRET).update(s).digest('hex');
+function makeToken(email) {
+  const exp = Date.now() + 30 * 864e5;
+  const payload = `${email}|${exp}`;
+  return Buffer.from(`${payload}|${sign(payload)}`).toString('base64url');
+}
+function tokenUser(req) {
+  const m = /^Bearer (.+)$/.exec(req.headers.authorization || '');
+  if (!m) return null;
+  try {
+    const [email, exp, sig] = Buffer.from(m[1], 'base64url').toString().split('|');
+    if (sign(`${email}|${exp}`) !== sig || Number(exp) < Date.now()) return null;
+    return users[email] || null;
+  } catch { return null; }
+}
+
+/* ---------- tiny http helpers ---------- */
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function send(res, code, obj, headers = {}) {
+  const body = typeof obj === 'string' ? obj : JSON.stringify(obj);
+  const type = typeof obj === 'string' ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8';
+  res.writeHead(code, { 'Content-Type': type, ...headers });
+  res.end(body);
+}
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let b = '';
+    req.on('data', (c) => { b += c; if (b.length > 1e6) { reject(new Error('too big')); req.destroy(); } });
+    req.on('end', () => { try { resolve(b ? JSON.parse(b) : {}); } catch { resolve({}); } });
+  });
+}
+function serveFile(res, file, type) {
+  fs.readFile(path.join(ROOT, file), (err, buf) => {
+    if (err) return send(res, 404, 'Not found');
+    res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'no-cache, must-revalidate' });
+    res.end(buf);
+  });
+}
+
+/* ---------- visit counting ---------- */
+const today = () => new Date().toISOString().slice(0, 10);
+function countVisit(req, res) {
+  const day = today();
+  stats.daily[day] = stats.daily[day] || { v: 0, u: 0, o: 0 };
+  stats.total++; stats.daily[day].v++;
+  const cookies = Object.fromEntries((req.headers.cookie || '').split(';').map(s => s.trim().split('=')));
+  if (!cookies.swk_sid) {
+    stats.unique++; stats.daily[day].u++;
+    res.setHeader('Set-Cookie', `swk_sid=${crypto.randomUUID()}; Path=/; Max-Age=31536000; SameSite=Lax`);
+  }
+  statsDirty = true;
+}
+
+/* ---------- receipt ---------- */
+function receiptHTML(o) {
+  const rows = o.items.map(it =>
+    `<tr><td>${esc(it.name)}<span class="m"> · size ${esc(it.size)}</span></td>
+     <td class="c">${it.qty}</td><td class="r">$${it.price}</td><td class="r">$${it.price * it.qty}</td></tr>`).join('');
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Receipt ${esc(o.id)} — STUFFWEKNOW</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Helvetica Neue',Inter,Arial,sans-serif;background:#f4f4f5;color:#111;padding:40px 16px}
+  .sheet{max-width:640px;margin:0 auto;background:#fff;border:1px solid #e4e4e7;border-radius:16px;overflow:hidden}
+  .head{background:#050505;color:#f4f4f4;padding:26px 30px;display:flex;justify-content:space-between;align-items:center}
+  .head .brand{font-weight:800;font-size:18px;letter-spacing:-.02em}
+  .head .brand i{font-style:normal;color:#e7ff3a}
+  .head .no{font-size:12px;color:#a0a0ab;text-align:right}
+  .head .no b{display:block;color:#fff;font-size:14px;letter-spacing:.06em}
+  .body{padding:30px}
+  .meta{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:24px;font-size:13px;color:#52525b}
+  .meta b{display:block;color:#111;font-weight:600;margin-bottom:3px;font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:#71717a;text-align:left;padding:0 0 10px}
+  td{padding:11px 0;border-top:1px solid #f0f0f2}
+  .m{color:#a1a1aa;font-size:12px}
+  .c{text-align:center}.r{text-align:right}
+  tfoot td{border-top:1px solid #d4d4d8;font-weight:600}
+  tfoot tr.total td{font-size:17px;font-weight:800;border-top:2px solid #111;padding-top:14px}
+  .paid{display:inline-block;margin-top:22px;padding:7px 14px;border:2px solid #16a34a;color:#16a34a;
+    border-radius:8px;font-weight:800;font-size:12px;letter-spacing:.14em;transform:rotate(-3deg)}
+  .foot{padding:20px 30px 26px;border-top:1px dashed #d4d4d8;font-size:12px;color:#71717a;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+  .print{position:fixed;right:22px;bottom:22px;background:#111;color:#fff;border:0;border-radius:12px;
+    padding:14px 22px;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 12px 30px -10px rgba(0,0,0,.5)}
+  @media print{.print{display:none}body{background:#fff;padding:0}.sheet{border:none;border-radius:0}}
+</style></head><body>
+<div class="sheet">
+  <div class="head">
+    <div class="brand">STUFFWEKNOW<i>▲</i></div>
+    <div class="no">RECEIPT<b>${esc(o.id)}</b></div>
+  </div>
+  <div class="body">
+    <div class="meta">
+      <div><b>Billed to</b>${esc(o.name)}<br>${esc(o.email)}</div>
+      <div><b>Ship to</b>${esc(o.address)}<br>${esc(o.city)}, ${esc(o.zip)}</div>
+      <div><b>Date</b>${new Date(o.date).toUTCString().slice(0, 16)}<br><b style="margin-top:8px">Payment</b>${esc(o.payment)}</div>
+    </div>
+    <table>
+      <thead><tr><th>Item</th><th class="c">Qty</th><th class="r">Price</th><th class="r">Amount</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot>
+        <tr><td colspan="3">Subtotal</td><td class="r">$${o.subtotal}</td></tr>
+        <tr><td colspan="3">Shipping</td><td class="r">${o.ship ? '$' + o.ship : 'Free'}</td></tr>
+        <tr class="total"><td colspan="3">Total</td><td class="r">$${o.total}</td></tr>
+      </tfoot>
+    </table>
+    <span class="paid">CONFIRMED</span>
+  </div>
+  <div class="foot"><span>stuffweknow.com — wear what you know</span><span>Questions? Reply to your confirmation or see /policies</span></div>
+</div>
+<button class="print" onclick="print()">Print / Save PDF</button>
+</body></html>`;
+}
+
+/* ---------- admin guard ---------- */
+const isAdmin = (req) => ADMIN_PASSWORD && req.headers['x-admin-key'] === ADMIN_PASSWORD;
+
+/* ---------- server ---------- */
+const server = http.createServer(async (req, res) => {
+  const url = new URL(req.url, 'http://x');
+  const p = url.pathname;
+
+  try {
+    /* ----- pages ----- */
+    if (req.method === 'GET' && (p === '/' || p === '/index.html')) { countVisit(req, res); return serveFile(res, 'index.html', 'text/html; charset=utf-8'); }
+    if (req.method === 'GET' && p === '/policies') return serveFile(res, 'policies.html', 'text/html; charset=utf-8');
+    if (req.method === 'GET' && p === '/admin') return serveFile(res, 'admin.html', 'text/html; charset=utf-8');
+    if (req.method === 'GET' && /^\/receipt\/SWK-[A-Z0-9-]+$/.test(p)) {
+      const o = orders.find(x => x.id === p.split('/')[2]);
+      return o ? send(res, 200, receiptHTML(o)) : send(res, 404, 'Receipt not found');
+    }
+
+    /* ----- auth ----- */
+    if (req.method === 'POST' && p === '/api/register') {
+      const { email, password, name } = await readBody(req);
+      const em = String(email || '').trim().toLowerCase();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return send(res, 400, { error: 'Enter a valid email.' });
+      if (!password || password.length < 8) return send(res, 400, { error: 'Password must be 8+ characters.' });
+      if (users[em]) return send(res, 409, { error: 'This email is already registered — sign in instead.' });
+      users[em] = { email: em, name: String(name || '').slice(0, 60), pass: hashPassword(password), created: Date.now() };
+      saveUsers();
+      return send(res, 201, { token: makeToken(em), email: em, name: users[em].name });
+    }
+    if (req.method === 'POST' && p === '/api/login') {
+      const { email, password } = await readBody(req);
+      const em = String(email || '').trim().toLowerCase();
+      const u = users[em];
+      if (!u || !verifyPassword(String(password || ''), u.pass)) return send(res, 401, { error: 'Wrong email or password.' });
+      return send(res, 200, { token: makeToken(em), email: em, name: u.name });
+    }
+    if (req.method === 'GET' && p === '/api/me') {
+      const u = tokenUser(req);
+      if (!u) return send(res, 401, { error: 'unauthorized' });
+      return send(res, 200, { email: u.email, name: u.name });
+    }
+    if (req.method === 'GET' && p === '/api/my-orders') {
+      const u = tokenUser(req);
+      if (!u) return send(res, 401, { error: 'unauthorized' });
+      const mine = orders.filter(o => o.email === u.email)
+        .map(o => ({ id: o.id, date: o.date, total: o.total, status: o.status, items: o.items.length }));
+      return send(res, 200, { orders: mine.reverse() });
+    }
+
+    /* ----- orders ----- */
+    if (req.method === 'POST' && p === '/api/order') {
+      const b = await readBody(req);
+      const u = tokenUser(req);
+      const email = (u ? u.email : String(b.email || '').trim().toLowerCase());
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return send(res, 400, { error: 'Enter a valid email.' });
+      if (!Array.isArray(b.items) || !b.items.length) return send(res, 400, { error: 'Cart is empty.' });
+      if (b.items.length > 50) return send(res, 400, { error: 'Too many items.' });
+      const items = [];
+      for (const it of b.items) {
+        const c = CATALOG[it.id];
+        const qty = Math.min(20, Math.max(1, parseInt(it.qty, 10) || 1));
+        if (!c) return send(res, 400, { error: 'Unknown item in cart.' });
+        items.push({ id: it.id, name: c.name, price: c.price, size: String(it.size || '-').slice(0, 12), qty });
+      }
+      const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
+      const ship = subtotal >= FREE_SHIP_AT ? 0 : SHIP_COST;
+      const id = 'SWK-' + crypto.randomBytes(3).toString('hex').toUpperCase();
+      const order = {
+        id, email, name: String(b.name || '').slice(0, 80), address: String(b.address || '').slice(0, 160),
+        city: String(b.city || '').slice(0, 60), zip: String(b.zip || '').slice(0, 20),
+        payment: String(b.payment || 'Card').slice(0, 40),
+        items, subtotal, ship, total: subtotal + ship, status: 'new', date: Date.now(),
+      };
+      orders.push(order); saveOrders();
+      const day = today();
+      stats.daily[day] = stats.daily[day] || { v: 0, u: 0, o: 0 };
+      stats.daily[day].o++; statsDirty = true;
+      return send(res, 201, { orderId: id, receiptUrl: `/receipt/${id}`, total: order.total });
+    }
+
+    /* ----- admin ----- */
+    if (p.startsWith('/api/admin/')) {
+      if (!isAdmin(req)) return send(res, 401, { error: 'unauthorized' });
+      if (req.method === 'GET' && p === '/api/admin/overview') {
+        const days = [];
+        for (let i = 13; i >= 0; i--) {
+          const d = new Date(Date.now() - i * 864e5).toISOString().slice(0, 10);
+          days.push({ d, ...(stats.daily[d] || { v: 0, u: 0, o: 0 }) });
+        }
+        return send(res, 200, {
+          visits: { total: stats.total, unique: stats.unique, today: (stats.daily[today()] || {}).v || 0 },
+          revenue: orders.reduce((s, o) => s + (o.status !== 'cancelled' ? o.total : 0), 0),
+          ordersCount: orders.length,
+          usersCount: Object.keys(users).length,
+          days,
+          orders: orders.slice(-100).reverse(),
+          users: Object.values(users).map(u => ({ email: u.email, name: u.name, created: u.created,
+            orders: orders.filter(o => o.email === u.email).length })).reverse(),
+        });
+      }
+      if (req.method === 'POST' && p === '/api/admin/order-status') {
+        const { id, status } = await readBody(req);
+        const o = orders.find(x => x.id === id);
+        if (!o || !['new', 'paid', 'shipped', 'done', 'cancelled'].includes(status)) return send(res, 400, { error: 'bad request' });
+        o.status = status; saveOrders();
+        return send(res, 200, { ok: true });
+      }
+      return send(res, 404, { error: 'not found' });
+    }
+
+    return send(res, 404, 'Not found');
+  } catch (e) {
+    console.error(e);
+    return send(res, 500, { error: 'server error' });
+  }
+});
+
+server.listen(PORT, '127.0.0.1', () => {
+  console.log(`[swk-store] listening on 127.0.0.1:${PORT}`);
+  console.log(`[swk-store] data dir: ${DATA}`);
+  console.log(`[swk-store] admin ${ADMIN_PASSWORD ? 'ENABLED' : 'DISABLED (set ADMIN_PASSWORD)'}`);
+});

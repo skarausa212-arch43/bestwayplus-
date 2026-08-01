@@ -471,7 +471,7 @@
     </nav>
     <div class="tools">
       <button class="ic" id="searchBtn" aria-label="Search" data-ic="search"></button>
-      <button class="ic" aria-label="Account" data-ic="account"></button>
+      <button class="ic" id="accBtn" aria-label="Account"><span data-ic="account" style="display:grid;place-items:center"></span><span class="cbadge" id="accDot" style="min-width:10px;height:10px;padding:0;background:var(--ok)"></span></button>
       <button class="ic" id="cartBtn" aria-label="Cart"><span data-ic="cart" style="display:grid;place-items:center"></span><span class="cbadge" id="cbadge">0</span></button>
       <button class="ic menu-btn" aria-label="Menu" data-ic="menu"></button>
     </div>
@@ -588,7 +588,7 @@
         </div>
       </div>
       <div><h5>Shop</h5><a class="fl" href="#catalog">All Pieces</a><a class="fl" href="#catalog">Nike</a><a class="fl" href="#catalog">Adidas</a><a class="fl" href="#catalog">Objects</a></div>
-      <div><h5>Help</h5><a class="fl" href="#">Shipping</a><a class="fl" href="#">Returns</a><a class="fl" href="#">Size Guide</a><a class="fl" href="#">Contact</a></div>
+      <div><h5>Help</h5><a class="fl" href="/policies#shipping">Shipping</a><a class="fl" href="/policies#returns">Returns & Refunds</a><a class="fl" href="/policies#privacy">Privacy Policy</a><a class="fl" href="/policies#terms">Terms of Service</a><a class="fl" href="/policies#contact">Contact</a></div>
       <div><h5>Studio</h5><a class="fl" href="#">About</a><a class="fl" href="#">Drop 01</a><a class="fl" href="#">Stockists</a><a class="fl" href="#">Careers</a></div>
     </div>
     <div class="foot-btm">
@@ -610,6 +610,8 @@
 <div class="modal" id="qvModal"><div class="mcard"><button class="mx" id="qvClose" data-ic="close"></button><div class="qv" id="qvBody"></div></div></div>
 <!-- CHECKOUT -->
 <div class="modal co" id="coModal"><div class="mcard"><button class="mx" id="coClose" data-ic="close"></button><div id="coBody"></div></div></div>
+<!-- ACCOUNT -->
+<div class="modal co" id="accModal"><div class="mcard"><button class="mx" id="accClose" data-ic="close"></button><div id="accBody"></div></div></div>
 
 <div class="toasts" id="toasts"></div>
 
@@ -789,21 +791,96 @@ $('#citems').addEventListener('click',e=>{const i=e.target.closest('[data-inc]')
 /* ---------- checkout ---------- */
 function openCheckout(){
   if(!cart.length)return;const total=cartTotal(),ship=total>=150?0:9;
-  $('#coBody').innerHTML=`<div class="cobody"><h3>Checkout</h3><p class="sub">Demo checkout — no real charge is made.</p>
+  $('#coBody').innerHTML=`<div class="cobody"><h3>Checkout</h3><p class="sub">Secure checkout — an itemized receipt is generated instantly.</p>
     <form id="orderForm">
-      <div class="field"><label>Full name</label><input required placeholder="John Smith"></div>
-      <div class="field"><label>Email</label><input type="email" required placeholder="you@email.com"></div>
-      <div class="frow"><div class="field"><label>City</label><input required placeholder="New York"></div><div class="field"><label>ZIP</label><input required placeholder="10001"></div></div>
-      <div class="field"><label>Address</label><input required placeholder="123 Example St"></div>
-      <div class="field"><label>Payment</label><select><option>Visa / Mastercard</option><option>Apple Pay</option><option>Crypto (USDT)</option></select></div>
+      <div class="field"><label>Full name</label><input id="cName" required placeholder="John Smith" value="${AUTH?esc(AUTH.name||''):''}"></div>
+      <div class="field"><label>Email</label><input id="cEmail" type="email" required placeholder="you@email.com" value="${AUTH?esc(AUTH.email):''}"></div>
+      <div class="frow"><div class="field"><label>City</label><input id="cCity" required placeholder="New York"></div><div class="field"><label>ZIP</label><input id="cZip" required placeholder="10001"></div></div>
+      <div class="field"><label>Address</label><input id="cAddr" required placeholder="123 Example St"></div>
+      <div class="field"><label>Payment</label><select id="cPay"><option>Visa / Mastercard</option><option>Apple Pay</option><option>Crypto (USDT)</option></select></div>
       <div class="osum"><div class="drow"><span>Items (${cartQty()})</span><span>${fmt(total)}</span></div><div class="drow"><span>Shipping</span><span>${ship?fmt(ship):'Free'}</span></div><div class="drow total" style="margin:12px 0 0"><span>Total</span><span>${fmt(total+ship)}</span></div></div>
-      <button type="submit" class="cbtn">Place Order — ${fmt(total+ship)}</button>
+      <button type="submit" class="cbtn" id="placeBtn">Place Order — ${fmt(total+ship)}</button>
+      <div style="margin-top:12px;font-size:11px;color:var(--faint);text-align:center">By ordering you agree to our <a href="/policies#terms" style="text-decoration:underline">Terms</a> · <a href="/policies#returns" style="text-decoration:underline">30-day returns</a></div>
     </form></div>`;
-  $('#orderForm').addEventListener('submit',e=>{e.preventDefault();const oid='SWK-'+Math.floor(100000+Math.random()*899999);cart=[];save('swk_cart',cart);renderCart();bump();
-    $('#coBody').innerHTML=`<div class="success"><div class="ok">${ICON.check}</div><h3>Order Placed</h3><p>Thank you for shopping StuffWeKnow.</p><p>Order <span class="oid">${oid}</span></p><p style="margin-top:16px">Confirmation sent to your email · Delivery in 48h.</p><button class="btn btn-primary" style="margin-top:24px" onclick="document.getElementById('coModal').classList.remove('show')">Done ${ICON.arrow}</button></div>`;
-    closeDrawer();});
+  $('#orderForm').addEventListener('submit',async e=>{
+    e.preventDefault();
+    const pb=$('#placeBtn');pb.disabled=true;pb.textContent='Placing order…';
+    const payload={
+      name:$('#cName').value,email:$('#cEmail').value,city:$('#cCity').value,
+      zip:$('#cZip').value,address:$('#cAddr').value,payment:$('#cPay').value,
+      items:cart.map(c=>({id:c.id,size:c.size,qty:c.qty})),
+    };
+    let oid,receipt=null;
+    try{
+      const r=await fetch('/api/order',{method:'POST',
+        headers:{'Content-Type':'application/json',...(AUTH?{Authorization:'Bearer '+AUTH.token}:{})},
+        body:JSON.stringify(payload)});
+      const d=await r.json();
+      if(!r.ok){toast(d.error||'Order failed');pb.disabled=false;pb.textContent='Place Order';return}
+      oid=d.orderId;receipt=d.receiptUrl;
+    }catch{ oid='SWK-'+Math.floor(100000+Math.random()*899999); } // offline demo fallback
+    cart=[];save('swk_cart',cart);renderCart();bump();
+    $('#coBody').innerHTML=`<div class="success"><div class="ok">${ICON.check}</div><h3>Order Placed</h3><p>Thank you for shopping StuffWeKnow.</p><p>Order <span class="oid">${oid}</span></p>
+      ${receipt?`<a class="btn btn-primary" style="margin-top:20px;justify-content:center" href="${receipt}" target="_blank" rel="noopener">View receipt ${ICON.arrow}</a>`:''}
+      <p style="margin-top:16px">Your receipt is ready · Delivery in 48h.</p>
+      <button class="btn btn-secondary" style="margin-top:14px" onclick="document.getElementById('coModal').classList.remove('show')">Done</button></div>`;
+    closeDrawer();
+  });
   closeDrawer();openModal('#coModal');
 }
+
+/* ---------- account ---------- */
+const esc=s=>String(s??'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+let AUTH=load('swk_auth',null);
+function accDot(){$('#accDot').classList.toggle('show',!!AUTH)}
+function renderAccount(){
+  const b=$('#accBody');
+  if(!AUTH){
+    b.innerHTML=`<div class="cobody"><h3>Account</h3><p class="sub">Sign in or create an account in seconds — track orders and check out faster.</p>
+      <div class="filters" style="margin-bottom:18px"><button class="chip active" data-t="in">Sign in</button><button class="chip" data-t="up">Create account</button></div>
+      <form id="accForm">
+        <div class="field" id="fName" style="display:none"><label>Name</label><input id="aName" placeholder="John" autocomplete="name"></div>
+        <div class="field"><label>Email</label><input id="aEmail" type="email" required placeholder="you@email.com" autocomplete="email"></div>
+        <div class="field"><label>Password</label><input id="aPass" type="password" required minlength="8" placeholder="8+ characters" autocomplete="current-password"></div>
+        <button type="submit" class="cbtn" id="accGo">Sign in</button>
+        <div class="msg" id="accMsg" style="display:none;margin-top:12px;font-size:13px;color:#ff6b6b;font-weight:600"></div>
+      </form></div>`;
+    let mode='in';
+    b.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+      b.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));c.classList.add('active');
+      mode=c.dataset.t;$('#fName').style.display=mode==='up'?'':'none';
+      $('#accGo').textContent=mode==='up'?'Create account':'Sign in';
+    }));
+    $('#accForm').addEventListener('submit',async e=>{
+      e.preventDefault();
+      const go=$('#accGo');go.disabled=true;
+      try{
+        const r=await fetch(mode==='up'?'/api/register':'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({email:$('#aEmail').value,password:$('#aPass').value,name:$('#aName').value})});
+        const d=await r.json();
+        if(!r.ok){const m=$('#accMsg');m.style.display='block';m.textContent=d.error||'Failed';go.disabled=false;return}
+        AUTH={token:d.token,email:d.email,name:d.name};save('swk_auth',AUTH);accDot();
+        toast(mode==='up'?'Account created':'Signed in');renderAccount();
+      }catch{const m=$('#accMsg');m.style.display='block';m.textContent='Accounts are unavailable right now.';go.disabled=false}
+    });
+  }else{
+    b.innerHTML=`<div class="cobody"><h3>My account</h3><p class="sub">${esc(AUTH.name||'')} · ${esc(AUTH.email)}</p>
+      <h3 style="font-size:13px;letter-spacing:.1em;color:var(--faint);text-transform:uppercase;margin:18px 0 10px">Order history</h3>
+      <div id="accOrders" style="font-size:13px;color:var(--muted)">Loading…</div>
+      <button class="btn btn-secondary" style="margin-top:22px" id="accOut">Sign out</button></div>`;
+    $('#accOut').addEventListener('click',()=>{AUTH=null;save('swk_auth',null);accDot();toast('Signed out');renderAccount()});
+    fetch('/api/my-orders',{headers:{Authorization:'Bearer '+AUTH.token}}).then(r=>r.json()).then(d=>{
+      const box=$('#accOrders');
+      if(!d.orders||!d.orders.length){box.textContent='No orders yet — go find something you love.';return}
+      box.innerHTML=d.orders.map(o=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)">
+        <span><b style="color:var(--ink)">${o.id}</b> · ${new Date(o.date).toISOString().slice(0,10)} · ${o.items} item(s) · <span style="text-transform:uppercase;font-size:11px;letter-spacing:.06em">${o.status}</span></span>
+        <span><b style="color:var(--ink)">$${o.total}</b> · <a href="/receipt/${o.id}" target="_blank" style="color:var(--accent);font-weight:600">receipt</a></span></div>`).join('');
+    }).catch(()=>{$('#accOrders').textContent='Could not load orders.'});
+  }
+}
+$('#accBtn').addEventListener('click',()=>{renderAccount();openModal('#accModal')});
+$('#accClose').addEventListener('click',()=>closeModal('#accModal'));
+accDot();
 
 /* ---------- drawer / modal ---------- */
 const overlay=$('#overlay'),drawer=$('#drawer');
