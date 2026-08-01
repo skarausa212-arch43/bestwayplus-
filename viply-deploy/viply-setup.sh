@@ -26,7 +26,7 @@ SERVER_IP="185.173.144.182"
 REPO="https://github.com/skarausa212-arch43/bestwayplus-.git"
 BRANCH="claude/new-american-server-jmg9bw"
 DIR="/opt/viply"
-INVITE="${INVITE_CODE:-emailinc-2026}"
+INVITE="${INVITE_CODE:-}"   # пусто = регистрация без инвайт-кода
 
 echo "== [1/9] DNS checks =="
 MAIL_IP="$(getent hosts "$HOST" | awk '{print $1}' | head -1 || true)"
@@ -70,7 +70,7 @@ MAIL_HOSTNAME=$HOST
 INVITE_CODE=$INVITE
 WEBMAIL_URL=https://$DOMAIN/webmail/
 ENV
-echo "  .env written (domain=$DOMAIN, hostname=$HOST, invite=$INVITE)"
+echo "  .env written (domain=$DOMAIN, hostname=$HOST, invite=${INVITE:-OFF})"
 
 echo "== [5/9] TLS certificate (webroot via running nginx) =="
 apt-get update -qq && apt-get install -y -qq certbot >/dev/null
@@ -176,11 +176,11 @@ grep -q viply-cert-renew /etc/crontab 2>/dev/null || \
 echo ""
 echo "======================= EMAILINC DEPLOYED ======================="
 if [ "$ROOT_OK" = 1 ]; then
-  echo "Signup:     https://$DOMAIN/          (invite code: $INVITE)"
+  echo "Signup:     https://$DOMAIN/          (invite: ${INVITE:-not required})"
   echo "Mail app:   https://$DOMAIN/multi/"
   echo "Webmail:    https://$DOMAIN/webmail/"
 else
-  echo "Signup:     https://$HOST/            (invite code: $INVITE)"
+  echo "Signup:     https://$HOST/            (invite: ${INVITE:-not required})"
   echo "Mail app:   https://$HOST/multi/"
   echo "  (add  A @ $SERVER_IP  and re-run to enable https://$DOMAIN/)"
 fi
