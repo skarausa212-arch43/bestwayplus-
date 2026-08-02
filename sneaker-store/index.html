@@ -119,6 +119,10 @@
   .sphere .grid{position:absolute;inset:0;opacity:.15;mix-blend-mode:screen;animation:spinmap 32s linear infinite;
     background-image:repeating-linear-gradient(90deg,rgba(90,210,255,.6) 0 1px,transparent 1px 48px),repeating-linear-gradient(0deg,rgba(90,210,255,.4) 0 1px,transparent 1px 32px);
     -webkit-mask:radial-gradient(circle,#000 55%,transparent 80%);mask:radial-gradient(circle,#000 55%,transparent 80%)}
+  .sphere .city{position:absolute;inset:0;width:200%;height:100%;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22640%22%20height%3D%22320%22%20viewBox%3D%220%200%20640%20320%22%3E%0A%3Cdefs%3E%0A%3Cfilter%20id%3D%22land%22%3E%3CfeTurbulence%20type%3D%22fractalNoise%22%20baseFrequency%3D%220.011%200.02%22%20numOctaves%3D%224%22%20seed%3D%229%22%20result%3D%22n%22%2F%3E%0A%20%20%3CfeColorMatrix%20in%3D%22n%22%20type%3D%22matrix%22%20values%3D%220%200%200%200%200%20%200%200%200%200%200%20%200%200%200%200%200%20%200%200%200%2044%20-25%22%2F%3E%3C%2Ffilter%3E%0A%3Cfilter%20id%3D%22dots%22%3E%3CfeTurbulence%20type%3D%22fractalNoise%22%20baseFrequency%3D%220.5%200.5%22%20numOctaves%3D%221%22%20seed%3D%224%22%20result%3D%22d%22%2F%3E%0A%20%20%3CfeColorMatrix%20in%3D%22d%22%20type%3D%22matrix%22%20values%3D%220%200%200%200%200%20%200%200%200%200%200%20%200%200%200%200%200%20%200%200%200%2026%20-24%22%2F%3E%3C%2Ffilter%3E%0A%3C%2Fdefs%3E%0A%3Cmask%20id%3D%22landmask%22%3E%3Crect%20width%3D%22640%22%20height%3D%22320%22%20filter%3D%22url%28%23land%29%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fmask%3E%0A%3Cg%20mask%3D%22url%28%23landmask%29%22%3E%0A%20%20%3Crect%20width%3D%22640%22%20height%3D%22320%22%20filter%3D%22url%28%23dots%29%22%20fill%3D%22%23ffd9a0%22%2F%3E%0A%3C%2Fg%3E%0A%3C%2Fsvg%3E%0A") repeat-x;background-size:auto 100%;
+    mix-blend-mode:screen;opacity:.85;filter:drop-shadow(0 0 3px rgba(255,200,120,.6));animation:spinmap 32s linear infinite;
+    -webkit-mask:linear-gradient(95deg,transparent 40%,#000 74%);mask:linear-gradient(95deg,transparent 40%,#000 74%)}
+  .orbit-item.fly::after{display:none}
   .sphere .night{position:absolute;inset:0;border-radius:50%;background:radial-gradient(135% 130% at 32% 24%,transparent 42%,rgba(2,6,14,.55) 72%,rgba(1,3,8,.95) 100%)}
   .sphere .spec{position:absolute;left:15%;top:10%;width:32%;height:24%;border-radius:50%;filter:blur(10px);background:radial-gradient(circle,rgba(190,238,255,.72),transparent 70%)}
   .sphere .atmo{position:absolute;inset:0;border-radius:50%;pointer-events:none;box-shadow:inset 0 0 30px rgba(57,220,255,.22),inset -14px -18px 44px rgba(4,10,26,.55)}
@@ -574,6 +578,7 @@
         <div class="sphere">
           <div class="map"></div>
           <div class="grid"></div>
+          <div class="city"></div>
           <div class="night"></div>
           <div class="spec"></div>
           <div class="rain" id="rain"></div>
@@ -731,7 +736,8 @@ const PICON={
   dress:`<svg viewBox="0 0 256 256" fill="none"><g transform="translate(48 48) scale(1.6)" fill="none" stroke="currentColor" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round"><path d="M39 13h22l5 13-10 10 20 48H24l20-48-10-10 5-13Z"/><path d="M39 13c2 9 5 14 11 14s9-5 11-14"/><path d="M41 42h18"/></g></svg>`
 };
 document.querySelectorAll('.orbit-item[data-pic]').forEach(el=>el.innerHTML=PICON[el.dataset.pic]||'');
-document.querySelectorAll('.orbit-item[data-pic]').forEach(function(el){el.addEventListener('click',function(){var fl=el.dataset.filter||'all';activeFilter=fl;document.querySelectorAll('#filters .chip').forEach(function(c){c.classList.toggle('active',c.dataset.filter===fl)});renderGrid();var cat=document.getElementById('catalog');if(cat)cat.scrollIntoView({behavior:'smooth'});});});
+function flyToCatalog(el){try{var r=el.getBoundingClientRect();var cat=document.getElementById('catalog');if(!cat)return;var cr=cat.getBoundingClientRect();var fly=el.cloneNode(true);fly.classList.add('fly');fly.style.cssText='position:fixed;left:'+r.left+'px;top:'+r.top+'px;width:'+r.width+'px;height:'+r.height+'px;margin:0;z-index:120;animation:none;pointer-events:none;transition:transform .85s cubic-bezier(.5,0,.2,1),opacity .85s ease-in;';document.body.appendChild(fly);var tx=(cr.left+cr.width/2)-(r.left+r.width/2);var ty=(cr.top+50)-(r.top+r.height/2);requestAnimationFrame(function(){fly.style.transform='translate('+tx+'px,'+ty+'px) scale(.35) rotate(180deg)';fly.style.opacity='0';});setTimeout(function(){fly.remove();},880);}catch(e){}}
+document.querySelectorAll('.orbit-item[data-pic]').forEach(function(el){el.addEventListener('click',function(){var fl=el.dataset.filter||'all';activeFilter=fl;document.querySelectorAll('#filters .chip').forEach(function(c){c.classList.toggle('active',c.dataset.filter===fl)});flyToCatalog(el);renderGrid();var cat=document.getElementById('catalog');if(cat)cat.scrollIntoView({behavior:'smooth'});});});
 (function(){var r=document.getElementById('rain');if(!r)return;var N=matchMedia('(prefers-reduced-motion:reduce)').matches?0:26;for(var i=0;i<N;i++){var d=document.createElement('i');d.style.left=(6+Math.random()*88).toFixed(1)+'%';d.style.animationDuration=(0.8+Math.random()*0.9).toFixed(2)+'s';d.style.animationDelay=(-Math.random()*2).toFixed(2)+'s';d.style.opacity=(0.35+Math.random()*0.5).toFixed(2);r.appendChild(d);}})();
 /* starfield behind the planet + lightning that strikes a product icon */
 (function(){
