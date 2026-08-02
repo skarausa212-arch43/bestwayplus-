@@ -106,59 +106,49 @@
   .oring.r4{width:118%;height:44%;border:1px solid rgba(244,244,244,.10);border-radius:50%;
     transform:rotateX(72deg) rotateZ(-14deg);animation:saturn 9s ease-in-out infinite}
   @keyframes saturn{0%,100%{transform:rotateX(72deg) rotateZ(-14deg)}50%{transform:rotateX(72deg) rotateZ(-8deg)}}
-  /* the liquid-chrome sphere */
+  /* future-Earth globe */
   .sphere{position:relative;width:72%;aspect-ratio:1;border-radius:50%;overflow:hidden;isolation:isolate;
-    background:radial-gradient(118% 118% at 33% 24%,#ffffff 0%,#eceef2 7%,#bfc2cc 19%,#787c88 36%,#33353d 58%,#14161b 80%,#05060a 100%);
-    box-shadow:0 50px 120px -30px #000,inset 0 -34px 60px rgba(0,0,0,.75),inset 0 6px 22px rgba(255,255,255,.28);
+    background:radial-gradient(132% 130% at 33% 24%,#0a2a44 0%,#071f36 32%,#05121f 58%,#020a14 82%,#01050b 100%);
+    box-shadow:0 50px 120px -30px #000,inset 0 -20px 50px rgba(0,0,0,.72),inset 0 6px 20px rgba(120,200,255,.14);
     animation:float 7s ease-in-out infinite}
-  /* studio reflection bands — slow liquid drift */
-  .sphere .bands{position:absolute;inset:-12%;border-radius:50%;mix-blend-mode:overlay;opacity:.9;
-    background:linear-gradient(104deg,transparent 6%,rgba(255,255,255,.16) 14%,transparent 24%,
-      rgba(255,255,255,.34) 34%,transparent 46%,rgba(5,6,10,.85) 58%,transparent 70%,
-      rgba(255,255,255,.20) 80%,transparent 92%);
-    animation:bandsDrift 11s ease-in-out infinite}
-  @keyframes bandsDrift{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(7deg)}}
-  /* twin counter-rotating sheens */
-  .sphere .sheen{position:absolute;inset:0;border-radius:50%;
-    background:conic-gradient(from 0deg,transparent 0deg,rgba(255,255,255,.18) 38deg,transparent 92deg,rgba(58,123,255,.16) 172deg,transparent 232deg,rgba(255,255,255,.10) 302deg,transparent 360deg);
-    animation:spin 14s linear infinite}
-  .sphere .sheen2{position:absolute;inset:0;border-radius:50%;mix-blend-mode:screen;opacity:.7;
-    background:conic-gradient(from 140deg,transparent 0deg,rgba(122,168,255,.14) 60deg,transparent 130deg,rgba(255,255,255,.10) 210deg,transparent 290deg);
-    animation:spin 23s linear infinite reverse}
-  /* blue rim light + crescent shadow */
-  .sphere .rim{position:absolute;inset:0;border-radius:50%;
-    box-shadow:inset -16px -22px 46px rgba(58,123,255,.38),inset -4px -6px 14px rgba(122,168,255,.28),
-      inset 12px 16px 34px rgba(255,255,255,.14)}
-  .sphere .glint{position:absolute;inset:0;border-radius:50%;overflow:hidden}
-  .sphere .glint::before{content:"";position:absolute;top:-20%;bottom:-20%;left:-45%;width:34%;transform:skewX(-22deg) translateX(-140%);
-    background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);filter:blur(3px);
-    animation:glint 4.6s var(--ease) infinite}
-  @keyframes glint{0%,58%{transform:skewX(-22deg) translateX(-160%)}78%{transform:skewX(-22deg) translateX(520%)}100%{transform:skewX(-22deg) translateX(520%)}}
-  .sphere .hl{position:absolute;left:18%;top:12%;width:36%;height:28%;border-radius:50%;filter:blur(7px);
-    background:radial-gradient(circle,rgba(255,255,255,.98),transparent 66%)}
-  /* surface sparkles */
-  .sphere .sp{position:absolute;width:9px;height:9px;pointer-events:none;
-    background:radial-gradient(circle,#fff 0%,rgba(255,255,255,.9) 30%,transparent 70%);
-    clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);
-    animation:tw 3.4s ease-in-out infinite;opacity:0}
-  .sphere .sp.s1{left:28%;top:18%}
-  .sphere .sp.s2{left:66%;top:36%;animation-delay:1.2s;width:7px;height:7px}
-  .sphere .sp.s3{left:38%;top:64%;animation-delay:2.3s;width:6px;height:6px}
-  @keyframes tw{0%,100%{opacity:0;transform:scale(.4) rotate(0)}50%{opacity:1;transform:scale(1.25) rotate(45deg)}}
+  .sphere .map{position:absolute;inset:0;width:200%;height:100%;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22640%22%20height%3D%22320%22%20viewBox%3D%220%200%20640%20320%22%3E%0A%3Cdefs%3E%0A%3Cfilter%20id%3D%22land%22%20x%3D%220%22%20y%3D%220%22%20width%3D%22100%25%22%20height%3D%22100%25%22%3E%0A%20%20%3CfeTurbulence%20type%3D%22fractalNoise%22%20baseFrequency%3D%220.011%200.02%22%20numOctaves%3D%224%22%20seed%3D%229%22%20result%3D%22n%22%2F%3E%0A%20%20%3CfeColorMatrix%20in%3D%22n%22%20type%3D%22matrix%22%20values%3D%220%200%200%200%200%20%200%200%200%200%200%20%200%200%200%200%200%20%200%200%200%2044%20-25%22%20result%3D%22a%22%2F%3E%0A%20%20%3CfeFlood%20flood-color%3D%22%233fddff%22%2F%3E%0A%20%20%3CfeComposite%20in2%3D%22a%22%20operator%3D%22in%22%2F%3E%0A%3C%2Ffilter%3E%0A%3C%2Fdefs%3E%0A%3Crect%20width%3D%22640%22%20height%3D%22320%22%20filter%3D%22url%28%23land%29%22%2F%3E%0A%3C%2Fsvg%3E%0A") repeat-x;background-size:auto 100%;
+    mix-blend-mode:screen;opacity:.9;filter:drop-shadow(0 0 5px rgba(57,220,255,.65));animation:spinmap 32s linear infinite;
+    -webkit-mask:radial-gradient(circle at 50% 50%,#000 55%,rgba(0,0,0,.4) 80%,transparent 100%);
+            mask:radial-gradient(circle at 50% 50%,#000 55%,rgba(0,0,0,.4) 80%,transparent 100%)}
+  @keyframes spinmap{to{transform:translateX(-50%)}}
+  .sphere .grid{position:absolute;inset:0;opacity:.15;mix-blend-mode:screen;animation:spinmap 32s linear infinite;
+    background-image:repeating-linear-gradient(90deg,rgba(90,210,255,.6) 0 1px,transparent 1px 48px),repeating-linear-gradient(0deg,rgba(90,210,255,.4) 0 1px,transparent 1px 32px);
+    -webkit-mask:radial-gradient(circle,#000 55%,transparent 80%);mask:radial-gradient(circle,#000 55%,transparent 80%)}
+  .sphere .night{position:absolute;inset:0;border-radius:50%;background:radial-gradient(135% 130% at 32% 24%,transparent 42%,rgba(2,6,14,.55) 72%,rgba(1,3,8,.95) 100%)}
+  .sphere .spec{position:absolute;left:15%;top:10%;width:32%;height:24%;border-radius:50%;filter:blur(10px);background:radial-gradient(circle,rgba(190,238,255,.72),transparent 70%)}
+  .sphere .atmo{position:absolute;inset:0;border-radius:50%;pointer-events:none;box-shadow:inset 0 0 30px rgba(57,220,255,.22),inset -14px -18px 44px rgba(4,10,26,.55)}
+  .sphere .rain{position:absolute;inset:0;border-radius:50%;overflow:hidden;pointer-events:none;opacity:.6;
+    -webkit-mask:radial-gradient(circle,#000 60%,transparent 84%);mask:radial-gradient(circle,#000 60%,transparent 84%)}
+  .sphere .rain i{position:absolute;top:-18%;width:1px;height:13%;background:linear-gradient(rgba(150,225,255,0),rgba(150,225,255,.85));animation:raindrop linear infinite}
+  @keyframes raindrop{to{transform:translateY(760%)}}
+  .sphere .flash{position:absolute;inset:0;border-radius:50%;opacity:0;pointer-events:none;mix-blend-mode:screen;
+    background:radial-gradient(circle at 30% 58%,rgba(190,238,255,.95),rgba(110,175,255,.35) 26%,transparent 55%);animation:flash 6s steps(1,end) infinite}
+  .sphere .flash.f2{animation-duration:7.6s;animation-delay:3.1s;background:radial-gradient(circle at 72% 32%,rgba(190,238,255,.95),rgba(110,175,255,.35) 26%,transparent 55%)}
+  @keyframes flash{0%,100%{opacity:0}.6%{opacity:1}1.4%{opacity:.18}2.2%{opacity:.85}3.4%{opacity:0}}
+  .sphere .bolt{position:absolute;width:13%;stroke:#e6f5ff;stroke-width:2.2;fill:none;opacity:0;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 4px rgba(150,220,255,.95));animation:boltf 6s steps(1,end) infinite}
+  .sphere .bolt.b1{left:24%;top:46%}
+  .sphere .bolt.b2{right:20%;top:24%;animation-duration:7.6s;animation-delay:3.1s}
+  @keyframes boltf{0%,100%{opacity:0}.6%{opacity:1}2%{opacity:.9}3.2%{opacity:0}}
+  @keyframes tw{0%,100%{opacity:0}50%{opacity:1}}
   /* orbiting product chips (3D depth: scale + layering) */
   .orbit-item{position:absolute;left:50%;top:50%;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:13px;
     display:grid;place-items:center;
     background:linear-gradient(150deg,rgba(32,32,38,.94),rgba(9,9,12,.94));
     border:1px solid var(--line-2);box-shadow:0 10px 22px -6px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.06);
-    animation:orb3d 15s linear infinite;pointer-events:none}
-  .orbit-item svg{width:21px;height:21px;stroke:var(--ink);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+    animation:orb3d 15s linear infinite;pointer-events:none;color:var(--ink)}
+  .orbit-item svg{width:24px;height:24px;display:block}
   .orbit-item.i2{animation-delay:-3.75s}
   .orbit-item.i3{animation-delay:-7.5s}
   .orbit-item.i4{animation-delay:-11.25s}
   .orbit-item.accent{border-color:rgba(58,123,255,.55);
     background:linear-gradient(150deg,rgba(24,38,74,.94),rgba(9,14,30,.94));
     box-shadow:0 0 20px -2px rgba(58,123,255,.6),inset 0 1px 0 rgba(255,255,255,.08)}
-  .orbit-item.accent svg{stroke:#a9c4ff}
+  .orbit-item.accent{color:#a9c4ff}
   @keyframes orb3d{
     0%  {transform:translate(0,-11.5em) scale(.5);opacity:.55;z-index:1}
     24% {transform:translate(11em,0) scale(.9);opacity:.9;z-index:1}
@@ -173,14 +163,13 @@
     background:radial-gradient(55% 100% at 50% 30%,rgba(200,214,255,.16),transparent 72%);
     animation:reflPulse 7s ease-in-out infinite}
   @keyframes reflPulse{50%{opacity:.6;transform:scaleX(.92)}}
-  /* embossed SWK monogram in the chrome */
-  .sphere .mono{position:absolute;inset:0;display:grid;place-items:center;font-weight:800;letter-spacing:.06em;
-    font-size:clamp(30px,5.2vw,58px);color:rgba(10,10,12,.5);
-    text-shadow:0 1px 1px rgba(255,255,255,.5),0 -1px 2px rgba(0,0,0,.65);
-    animation:monoPulse 5.5s ease-in-out infinite}
-  @keyframes monoPulse{0%,100%{opacity:.75}50%{opacity:1}}
-  .sphere .mono i{font-style:normal;position:relative;top:-.55em;margin-left:.14em;font-size:.34em;color:var(--accent);
-    text-shadow:0 0 14px rgba(58,123,255,.9);animation:sparkle 2.6s ease-in-out infinite}
+  /* holographic SWK projection */
+  .sphere .mono{position:absolute;inset:0;display:grid;place-items:center;font-weight:800;letter-spacing:.16em;
+    font-size:clamp(24px,4.2vw,46px);color:rgba(205,242,255,.9);mix-blend-mode:screen;
+    text-shadow:0 0 20px rgba(57,205,255,.95),0 0 3px rgba(255,255,255,.6);animation:monoPulse 4.2s ease-in-out infinite}
+  @keyframes monoPulse{0%,100%{opacity:.5}50%{opacity:.92}}
+  .sphere .mono i{font-style:normal;position:relative;top:-.55em;margin-left:.12em;font-size:.36em;color:#8fe6ff;
+    text-shadow:0 0 14px rgba(67,200,255,.95);animation:sparkle 2.6s ease-in-out infinite}
   @keyframes sparkle{0%,100%{opacity:.5;transform:scale(.85) rotate(0)}50%{opacity:1;transform:scale(1.25) rotate(18deg)}}
   /* floating particles */
   .pt{position:absolute;width:4px;height:4px;border-radius:50%;background:rgba(244,244,244,.55);pointer-events:none;
@@ -560,19 +549,23 @@
         <div class="oring r1"></div><div class="oring r2"></div><div class="oring r3"></div><div class="oring r4"></div>
         <span class="pt"></span><span class="pt b"></span><span class="pt"></span><span class="pt b"></span><span class="pt"></span><span class="pt"></span>
         <div class="sphere">
-          <div class="bands"></div>
-          <div class="sheen"></div>
-          <div class="sheen2"></div>
-          <div class="rim"></div>
-          <div class="glint"></div>
-          <div class="hl"></div>
-          <span class="sp s1"></span><span class="sp s2"></span><span class="sp s3"></span>
+          <div class="map"></div>
+          <div class="grid"></div>
+          <div class="night"></div>
+          <div class="spec"></div>
+          <div class="rain" id="rain"></div>
+          <div class="flash"></div><div class="flash f2"></div>
+          <svg class="bolt b1" viewBox="0 0 24 40"><path d="M14 2 L5 22 H12 L9 38 L20 16 H13 Z"/></svg>
+          <svg class="bolt b2" viewBox="0 0 24 40"><path d="M14 2 L5 22 H12 L9 38 L20 16 H13 Z"/></svg>
           <div class="mono">SWK<i>✦</i></div>
+          <div class="atmo"></div>
         </div>
-        <span class="orbit-item i1"><svg viewBox="0 0 24 24"><path d="M2.5 15.5c0-1.1.7-1.9 1.9-1.9h3.6l3.1-3.1 2 1 1 2 6.1 1c2 .35 2 3.1 0 3.1H4.4a1.9 1.9 0 0 1-1.9-1.9z"/><path d="M8 13.6l1 1.9M11 11.5l1 2.1"/></svg></span>
-        <span class="orbit-item i2 accent"><svg viewBox="0 0 24 24"><path d="M4 15a8 8 0 0 1 16 0"/><path d="M20 15c2.2 0 3 2.2 .8 2.6H12"/><path d="M12 6.6V10"/></svg></span>
-        <span class="orbit-item i3"><svg viewBox="0 0 24 24"><path d="M8.5 4l3.5 2.6L15.5 4l4.5 3.2-2.2 3.1-2-1.1V20H8.2V9.2l-2 1.1L4 7.2z"/></svg></span>
-        <span class="orbit-item i4"><svg viewBox="0 0 24 24"><path d="M6 8.5h12l-1 11.5H7z"/><path d="M9 8.5a3 3 0 0 1 6 0"/></svg></span>
+        <span class="orbit-item" data-pic="sneaker" style="animation-delay:0s"></span>
+        <span class="orbit-item accent" data-pic="sunglasses" style="animation-delay:-2.5s"></span>
+        <span class="orbit-item" data-pic="hoodie" style="animation-delay:-5s"></span>
+        <span class="orbit-item" data-pic="handbag" style="animation-delay:-7.5s"></span>
+        <span class="orbit-item accent" data-pic="watch" style="animation-delay:-10s"></span>
+        <span class="orbit-item" data-pic="cap" style="animation-delay:-12.5s"></span>
         <div class="refl"></div>
       </div>
       <div class="cap"><b>stuffweknow.com</b><i>✦</i>wear what you know</div>
@@ -703,6 +696,18 @@ const ICON={
   tiktok:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 4v10.5a3.5 3.5 0 1 1-3-3.46"/><path d="M14 7.5c1 1.4 2.5 2.3 4.5 2.4"/></svg>`,
 };
 document.querySelectorAll('[data-ic]').forEach(el=>el.innerHTML=ICON[el.dataset.ic]||'');
+const PICON={
+  sneaker:`<svg viewBox="0 0 256 256" fill="none"><g transform="translate(48 48) scale(1.6)" fill="none" stroke="currentColor" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 64c10 0 17-5 23-18l6-11 14 15c6 6 14 10 27 13l3 1v15H15V64Z"/><path d="M15 72h73"/><path d="m47 47 9-7M52 53l10-7M58 58l10-7"/><path d="M72 61c0 6 5 10 16 10"/></g></svg>`,
+  hoodie:`<svg viewBox="0 0 256 256" fill="none"><g transform="translate(48 48) scale(1.6)" fill="none" stroke="currentColor" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round"><path d="M38 21c1-13 23-13 24 0l9 6 14 21-12 8-8-13v42H35V43L27 56l-12-8 14-21 9-6Z"/><path d="M38 21c4 12 20 12 24 0"/><path d="M43 16c-2 8 1 14 7 17 6-3 9-9 7-17"/><path d="M42 58h16l7 12H35l7-12Z"/><path d="M43 35v10M57 35v10"/></g></svg>`,
+  cap:`<svg viewBox="0 0 256 256" fill="none"><g transform="translate(48 48) scale(1.6)" fill="none" stroke="currentColor" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 55c3-22 19-34 40-30 14 3 24 14 25 30"/><path d="M17 55c19-4 39-4 65 0"/><path d="M82 55c8 0 13 4 14 10-20 8-39 6-55-3"/><path d="M55 26v28"/></g></svg>`,
+  handbag:`<svg viewBox="0 0 256 256" fill="none"><g transform="translate(48 48) scale(1.6)" fill="none" stroke="currentColor" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="34" width="64" height="52" rx="9"/><path d="M33 35c0-24 34-24 34 0"/><path d="M18 51h64"/><circle cx="32" cy="61" r="2" fill="currentColor" stroke="none"/><circle cx="68" cy="61" r="2" fill="currentColor" stroke="none"/></g></svg>`,
+  sunglasses:`<svg viewBox="0 0 256 256" fill="none"><g transform="translate(48 48) scale(1.6)" fill="none" stroke="currentColor" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 45c4-5 11-7 22-7 11 0 18 2 22 7"/><path d="M44 46c3-3 9-3 12 0"/><rect x="14" y="42" width="30" height="25" rx="10"/><rect x="56" y="42" width="30" height="25" rx="10"/><path d="M14 45 5 40M86 45l9-5"/></g></svg>`,
+  watch:`<svg viewBox="0 0 256 256" fill="none"><g transform="translate(48 48) scale(1.6)" fill="none" stroke="currentColor" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round"><path d="M39 9h22l4 25H35l4-25ZM35 66h30l-4 25H39l-4-25Z"/><rect x="25" y="30" width="50" height="40" rx="15"/><circle cx="50" cy="50" r="13"/><path d="M50 41v10l8 5"/></g></svg>`,
+  jacket:`<svg viewBox="0 0 256 256" fill="none"><g transform="translate(48 48) scale(1.6)" fill="none" stroke="currentColor" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round"><path d="M36 14 22 24 11 48l13 7 8-13v44h36V42l8 13 13-7-11-24-14-10"/><path d="m36 14 14 16 14-16"/><path d="m36 14 6 29 8-13 8 13 6-29"/><path d="M50 30v56"/><path d="M36 58h9M55 58h9"/></g></svg>`,
+  dress:`<svg viewBox="0 0 256 256" fill="none"><g transform="translate(48 48) scale(1.6)" fill="none" stroke="currentColor" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round"><path d="M39 13h22l5 13-10 10 20 48H24l20-48-10-10 5-13Z"/><path d="M39 13c2 9 5 14 11 14s9-5 11-14"/><path d="M41 42h18"/></g></svg>`
+};
+document.querySelectorAll('.orbit-item[data-pic]').forEach(el=>el.innerHTML=PICON[el.dataset.pic]||'');
+(function(){var r=document.getElementById('rain');if(!r)return;var N=matchMedia('(prefers-reduced-motion:reduce)').matches?0:26;for(var i=0;i<N;i++){var d=document.createElement('i');d.style.left=(6+Math.random()*88).toFixed(1)+'%';d.style.animationDuration=(0.8+Math.random()*0.9).toFixed(2)+'s';d.style.animationDelay=(-Math.random()*2).toFixed(2)+'s';d.style.opacity=(0.35+Math.random()*0.5).toFixed(2);r.appendChild(d);}})();
 
 /* SWK monogram (logo mark) */
 const SWK=`<svg viewBox="0 0 40 40" fill="none"><text x="20" y="16" font-family="Helvetica Neue,Arial" font-size="12" font-weight="800" fill="#F4F4F4" text-anchor="middle" letter-spacing="-.5">SW</text><text x="20" y="30" font-family="Helvetica Neue,Arial" font-size="12" font-weight="800" fill="#F4F4F4" text-anchor="middle" letter-spacing="1">K</text><path d="M27 8l1.4 2.6L31 12l-2.6 1.4L27 16l-1.4-2.6L23 12l2.6-1.4z" fill="#3A7BFF"/></svg>`;
