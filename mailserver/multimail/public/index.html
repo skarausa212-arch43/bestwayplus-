@@ -189,6 +189,18 @@
   .ftab .cnt { color: var(--gold); font-weight: 700; margin-left: 3px; }
   .ftab.active .cnt { color: #fff; }
 
+  /* bulk selection */
+  .bulkbar {
+    display: flex; gap: 8px; padding: 8px 14px; align-items: center;
+    border-bottom: 1px solid var(--line); font-size: 13px; font-weight: 650;
+  }
+  .bulkbar b { flex: 1; }
+  .btn.danger { background: linear-gradient(135deg, #f87171, #ef4444); box-shadow: 0 4px 16px rgba(239,68,68,.3); }
+  .m .ava { cursor: pointer; transition: transform .12s; }
+  .m .ava:hover { transform: scale(1.12); }
+  .m.picked { background: rgba(37,99,255,.14); border-left-color: var(--acc); }
+  .m.picked .ava { background: var(--acc) !important; color: #fff !important; }
+
   .msgs { flex: 1; overflow-y: auto; }
   .m {
     display: flex; gap: 10px; align-items: flex-start;
@@ -332,6 +344,7 @@
     <label><input type="checkbox" id="aRemember" checked> remember in this browser</label>
     <button id="aBtn">+ Add mailbox</button>
     <button id="newAddrBtn" class="alt">Create new address</button>
+    <button id="bundleBtn" class="alt">📦 Combo account</button>
     <button id="tgBtn" class="alt" style="display:none">🔔 Telegram alerts</button>
     <button id="logoutBtn" class="alt out" style="display:none">Sign out</button>
   </div>
@@ -350,6 +363,11 @@
     <div class="ftabs">
       <button class="ftab active" id="tabInbox">Inbox</button>
       <button class="ftab" id="tabSpam">Spam<span class="cnt" id="spamCnt" style="display:none"></span></button>
+    </div>
+    <div class="bulkbar" id="bulkbar" style="display:none">
+      <b id="bulkCount"></b>
+      <button class="btn danger" id="bulkDel">🗑 Delete</button>
+      <button class="btn ghost" id="bulkCancel">✕</button>
     </div>
     <div class="msgs" id="msgs">
       <div class="empty">Add a mailbox to see all<br>your mail in one place</div>
@@ -382,6 +400,24 @@
   </div>
 </div>
 
+<div class="modal" id="bundleModal">
+  <div class="mwin">
+    <h3>📦 Combo account</h3>
+    <div style="color:var(--muted); font-size:12.5px; line-height:1.5; margin-bottom:12px">
+      Save all your added mailboxes under one name — then sign in with it
+      on any device and they all load at once.
+    </div>
+    <input id="bName" placeholder="Combo name (e.g. my-mail)" autocomplete="off">
+    <input id="bPass" type="password" placeholder="Combo password (6+ characters)" autocomplete="off">
+    <div class="st" id="bSt"></div>
+    <div class="row">
+      <button class="btn ghost" id="bCancel">Cancel</button>
+      <button class="btn ghost" id="bLogin">Sign in</button>
+      <button class="btn" id="bCreate">Create</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="modal">
   <div class="mwin">
     <h3>New message</h3>
@@ -403,6 +439,7 @@ let accounts = [];      // [{id, email, color, unseen, error, messages, spam}]
 let filter = null;      // account id or null = all
 let folder = 'inbox';   // 'inbox' | 'spam'
 let selected = null;    // {account, uid, folder}
+let picked = new Set(); // выделенные письма: 'accId:uid'
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -435,6 +472,14 @@ async function init() {
           body: JSON.stringify({ email: a.email, password: decodeURIComponent(escape(atob(a.p))) }) });
       } catch { forgetAcc(a.email); }
     }
+  }
+  // запомненная сборка тоже восстанавливает ящики
+  if (info.accounts.length === 0) {
+    try {
+      const b = JSON.parse(localStorage.getItem('viplyBundle') || 'null');
+      if (b) await api('api/bundle/login', { method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ name: b.n, password: decodeURIComponent(escape(atob(b.p))) }) });
+    } catch { localStorage.removeItem('viplyBundle'); }
   }
   await reload();
 }
@@ -475,6 +520,7 @@ function renderSidebar() {
   el.querySelectorAll('.acc').forEach((n) => n.addEventListener('click', (e) => {
     if (e.target.dataset.del !== undefined && e.target.dataset.del !== '') return;
     filter = n.dataset.id || null;
+    picked.clear();
     renderSidebar(); renderList(); closeDrawer();
   }));
   el.querySelectorAll('.del').forEach((n) => n.addEventListener('click', async (e) => {
@@ -508,18 +554,57 @@ function renderList() {
   }
   el.innerHTML = items.map((m, i) => {
     const who = m.fromName || m.from || '?';
+    const isPicked = picked.has(m.acc.id + ':' + m.uid);
     return `
-    <div class="m ${m.seen?'':'unread'} ${selected && selected.uid===m.uid && selected.account===m.acc.id && selected.folder===folder ? 'sel':''}"
+    <div class="m ${m.seen?'':'unread'} ${isPicked?'picked':''} ${selected && selected.uid===m.uid && selected.account===m.acc.id && selected.folder===folder ? 'sel':''}"
          data-acc="${m.acc.id}" data-uid="${m.uid}" style="animation-delay:${Math.min(i*40, 400)}ms">
-      <span class="ava" style="background:${m.acc.color}26; color:${m.acc.color}">${esc(who[0].toUpperCase())}</span>
+      <span class="ava" title="Select" style="background:${m.acc.color}26; color:${m.acc.color}">${isPicked ? '✓' : esc(who[0].toUpperCase())}</span>
       <div class="wrap">
         <div class="top"><span>${esc(who)}</span><span class="d">${fmtDate(m.date)}</span></div>
         <div class="sub">${esc(m.subject)}</div>
       </div>
     </div>`;
   }).join('');
-  el.querySelectorAll('.m').forEach((n) => n.addEventListener('click', () => openMessage(n.dataset.acc, +n.dataset.uid)));
+  // клик по аватарке выделяет письмо; когда выделение начато — клик по любой строке
+  // добавляет/снимает; открыть письмо можно, когда ничего не выделено
+  el.querySelectorAll('.m').forEach((n) => n.addEventListener('click', (e) => {
+    const key = n.dataset.acc + ':' + n.dataset.uid;
+    if (e.target.closest('.ava') || picked.size) { togglePick(key); return; }
+    openMessage(n.dataset.acc, +n.dataset.uid);
+  }));
+  renderBulkbar();
 }
+
+function togglePick(key) {
+  if (picked.has(key)) picked.delete(key); else picked.add(key);
+  renderList();
+}
+
+function renderBulkbar() {
+  $('bulkbar').style.display = picked.size ? '' : 'none';
+  $('bulkCount').textContent = picked.size + ' selected';
+}
+
+$('bulkCancel').addEventListener('click', () => { picked.clear(); renderList(); });
+$('bulkDel').addEventListener('click', async () => {
+  if (!picked.size || !confirm(`Delete ${picked.size} message(s)?`)) return;
+  $('bulkDel').disabled = true;
+  try {
+    const byAcc = {};
+    for (const k of picked) {
+      const [a, u] = k.split(':');
+      (byAcc[a] = byAcc[a] || []).push(+u);
+    }
+    await api('api/delete', { method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ folder, items: Object.entries(byAcc).map(([account, uids]) => ({ account, uids })) }) });
+    picked.clear();
+    await reload();
+  } catch (e) {
+    alert(e.message);
+  } finally {
+    $('bulkDel').disabled = false;
+  }
+});
 
 function fmtDate(d) {
   const dt = new Date(d), now = new Date();
@@ -546,7 +631,7 @@ async function openMessage(accId, uid) {
         <div class="meta">From: ${esc(m.from)}<br>To: ${esc(m.to)} · ${new Date(m.date).toLocaleString('en-GB')}
         ${m.attachments.length ? '<br>📎 ' + m.attachments.map((a) => esc(a.filename)).join(', ') : ''}</div></div>
       <div class="view-body" id="vb"></div>
-      <div class="reply" style="display:flex; gap:9px">${fld === 'spam' ? moveBtn : '<button class="btn" id="replyBtn">Reply</button>' + moveBtn}</div>`;
+      <div class="reply" style="display:flex; gap:9px">${fld === 'spam' ? moveBtn : '<button class="btn" id="replyBtn">Reply</button>' + moveBtn}<button class="btn ghost" id="delOneBtn">🗑 Delete</button></div>`;
     const vb = $('vb');
     if (m.html) {
       const wrap = document.createElement('div');
@@ -586,6 +671,17 @@ async function openMessage(accId, uid) {
       openCompose(accId, m.from.match(/<(.+)>/)?.[1] || m.from, 'Re: ' + m.subject);
     });
     $('moveBtn').addEventListener('click', () => moveMessage(accId, uid, $('moveBtn').dataset.to));
+    $('delOneBtn').addEventListener('click', async () => {
+      if (!confirm('Delete this message?')) return;
+      try {
+        await api('api/delete', { method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ folder: fld, items: [{ account: accId, uids: [uid] }] }) });
+        v.classList.remove('open');
+        v.innerHTML = '<div class="placeholder">Select a message</div>';
+        selected = null;
+        await reload();
+      } catch (e) { alert(e.message); }
+    });
     $('backBtn').addEventListener('click', () => { v.classList.remove('open'); selected = null; renderList(); });
     const cachedList = fld === 'spam' ? acc?.spam?.messages : acc?.messages;
     const cached = cachedList?.find((x) => x.uid === uid);
@@ -617,8 +713,8 @@ async function moveMessage(accId, uid, to) {
   }
 }
 
-$('tabInbox').addEventListener('click', () => { folder = 'inbox'; selected = null; renderList(); });
-$('tabSpam').addEventListener('click', () => { folder = 'spam'; selected = null; renderList(); });
+$('tabInbox').addEventListener('click', () => { folder = 'inbox'; selected = null; picked.clear(); renderList(); });
+$('tabSpam').addEventListener('click', () => { folder = 'spam'; selected = null; picked.clear(); renderList(); });
 
 // --- mobile drawer ---
 function closeDrawer() { $('sidebar').classList.remove('open'); $('backdrop').classList.remove('show'); }
@@ -695,6 +791,47 @@ $('aBtn').addEventListener('click', async () => {
   }
 });
 
+// --- combo account (сборка): все ящики под одним именем и паролем ---
+function closeBundle() { $('bundleModal').classList.remove('open'); }
+$('bundleBtn').addEventListener('click', () => {
+  $('bSt').textContent = ''; $('bSt').className = 'st';
+  $('bundleModal').classList.add('open');
+});
+$('bCancel').addEventListener('click', closeBundle);
+$('bundleModal').addEventListener('click', (e) => { if (e.target === $('bundleModal')) closeBundle(); });
+const rememberBundle = (name, password) => {
+  try { localStorage.setItem('viplyBundle', JSON.stringify({ n: name, p: btoa(unescape(encodeURIComponent(password))) })); } catch {}
+};
+$('bCreate').addEventListener('click', async () => {
+  const st = $('bSt');
+  st.className = 'st'; st.textContent = 'Saving…';
+  try {
+    const d = await api('api/bundle', { method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ name: $('bName').value, password: $('bPass').value }) });
+    rememberBundle(d.name, $('bPass').value);
+    st.className = 'st ok';
+    st.textContent = `Combo “${d.name}” saved: ${d.count} mailbox(es) ✓`;
+    setTimeout(closeBundle, 1400);
+  } catch (e) {
+    st.className = 'st err'; st.textContent = e.message;
+  }
+});
+$('bLogin').addEventListener('click', async () => {
+  const st = $('bSt');
+  st.className = 'st'; st.textContent = 'Signing in…';
+  try {
+    const d = await api('api/bundle/login', { method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ name: $('bName').value, password: $('bPass').value }) });
+    rememberBundle($('bName').value.trim().toLowerCase(), $('bPass').value);
+    st.className = 'st ok';
+    st.textContent = `Loaded: ${d.total} mailbox(es) ✓`;
+    await reload();
+    setTimeout(closeBundle, 1000);
+  } catch (e) {
+    st.className = 'st err'; st.textContent = e.message;
+  }
+});
+
 // --- telegram notifications ---
 let tgLinked = false;
 async function tgStatus() {
@@ -734,6 +871,7 @@ $('logoutBtn').addEventListener('click', async () => {
   if (!confirm('Sign out and forget all mailboxes in this browser?')) return;
   try { await api('api/logout', { method: 'POST' }); } catch {}
   localStorage.removeItem('viplyAccounts');
+  localStorage.removeItem('viplyBundle');
   location.href = '../';
 });
 

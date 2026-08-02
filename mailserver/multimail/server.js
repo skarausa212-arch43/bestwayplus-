@@ -97,15 +97,17 @@ async function withImap(acc, fn) {
   }
 }
 
-// Папка спама: ищем по special-use флагу, если нет — стандартное имя Junk
-async function resolveJunk(client) {
+// Спец-папки (спам, корзина): ищем по special-use флагу, иначе стандартное имя
+async function resolveSpecial(client, use, fallback) {
   try {
     for (const box of await client.list()) {
-      if (box.specialUse === '\\Junk') return box.path;
+      if (box.specialUse === use) return box.path;
     }
   } catch {}
-  return 'Junk';
+  return fallback;
 }
+const resolveJunk = (client) => resolveSpecial(client, '\\Junk', 'Junk');
+const resolveTrash = (client) => resolveSpecial(client, '\\Trash', 'Trash');
 
 async function fetchMailbox(client, box, limit = 20) {
   const lock = await client.getMailboxLock(box);
@@ -585,6 +587,109 @@ app.post('/api/move', async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: e.responseText || e.message });
   }
+});
+
+// Пакетное удаление: письма уезжают в корзину.
+// items: [{account, uids: [..]}], folder: 'inbox' | 'spam'
+app.post('/api/delete', async (req, res) => {
+  const s = getSession(req, res);
+  const { items, folder } = req.body || {};
+  if (!Array.isArray(items) || !items.length) return res.status(400).json({ error: 'Invalid parameters.' });
+  try {
+    for (const it of items) {
+      const acc = findAccount(s, it.account);
+      const uids = (Array.isArray(it.uids) ? it.uids : []).map((u) => parseInt(u, 10)).filter(Boolean);
+      if (!acc || !uids.length) continue;
+      await withImap(acc, async (client) => {
+        const src = folder === 'spam' ? await resolveJunk(client) : 'INBOX';
+        const trash = await resolveTrash(client);
+        await client.mailboxCreate(trash).catch(() => {});
+        const lock = await client.getMailboxLock(src);
+        try {
+          await client.messageMove(uids.join(','), trash, { uid: true });
+        } finally {
+          lock.release();
+        }
+      });
+    }
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.responseText || e.message });
+  }
+});
+
+// ===== Сборка: все ящики пользователя под одним именем и паролем =====
+// Создал сборку -> на любом устройстве ввёл имя+пароль -> все почты подгрузились.
+const BUNDLES_FILE = process.env.BUNDLES_FILE || '/data/bundles.json';
+let bundles = {};
+try {
+  bundles = JSON.parse(fs.readFileSync(BUNDLES_FILE, 'utf8'));
+  console.log(`restored ${Object.keys(bundles).length} bundles from disk`);
+} catch (e) {
+  if (e.code !== 'ENOENT') console.error('could not restore bundles:', e.message);
+}
+let bundleTimer = null;
+function persistBundles() {
+  clearTimeout(bundleTimer);
+  bundleTimer = setTimeout(() => {
+    try {
+      fs.mkdirSync(path.dirname(BUNDLES_FILE), { recursive: true });
+      const tmp = BUNDLES_FILE + '.tmp';
+      fs.writeFileSync(tmp, JSON.stringify(bundles), { mode: 0o600 });
+      fs.renameSync(tmp, BUNDLES_FILE);
+    } catch (e) {
+      console.error('failed to persist bundles:', e.message);
+    }
+  }, 500);
+  bundleTimer.unref?.();
+}
+const bundleHash = (pass, salt) => crypto.scryptSync(pass, salt, 32).toString('hex');
+
+// Создать (или обновить со своим паролем) сборку из ящиков текущей сессии
+app.post('/api/bundle', (req, res) => {
+  const s = getSession(req, res);
+  const name = String(req.body?.name || '').trim().toLowerCase();
+  const pass = req.body?.password;
+  if (!/^[a-z0-9][a-z0-9._-]{1,31}$/.test(name)) {
+    return res.status(400).json({ error: 'Combo name: 2–32 chars, letters/digits/dot/dash.' });
+  }
+  if (typeof pass !== 'string' || pass.length < 6) {
+    return res.status(400).json({ error: 'Combo password must be 6+ characters.' });
+  }
+  if (!s.accounts.length) return res.status(400).json({ error: 'Add at least one mailbox first.' });
+  const ex = bundles[name];
+  if (ex && bundleHash(pass, ex.salt) !== ex.hash) {
+    return res.status(403).json({ error: 'This combo name is already taken.' });
+  }
+  const salt = ex?.salt || crypto.randomBytes(8).toString('hex');
+  bundles[name] = {
+    salt,
+    hash: bundleHash(pass, salt),
+    accounts: s.accounts.map(({ email, password, host }) => ({ email, password, host })),
+    updatedAt: new Date().toISOString(),
+  };
+  persistBundles();
+  res.json({ ok: true, name, count: bundles[name].accounts.length });
+});
+
+// Войти сборкой: все её ящики добавляются в текущую сессию
+app.post('/api/bundle/login', (req, res) => {
+  const s = getSession(req, res);
+  const name = String(req.body?.name || '').trim().toLowerCase();
+  const pass = req.body?.password;
+  const b = bundles[name];
+  if (!b || typeof pass !== 'string' || bundleHash(pass, b.salt) !== b.hash) {
+    return res.status(401).json({ error: 'Wrong combo name or password.' });
+  }
+  let added = 0;
+  for (const a of b.accounts) {
+    if (s.accounts.some((x) => x.email === a.email)) continue;
+    if (s.accounts.length >= MAX_ACCOUNTS) break;
+    s.accounts.push({ id: crypto.randomBytes(6).toString('hex'), ...a });
+    added++;
+  }
+  persistSessions();
+  res.json({ ok: true, added, total: s.accounts.length });
 });
 
 // Отправка письма от имени любого добавленного ящика
