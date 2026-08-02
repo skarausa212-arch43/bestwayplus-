@@ -47,6 +47,7 @@ const CATALOG = {
   nk6: { name: 'Crew Socks (3-Pack)', price: 22 }, ad6: { name: 'Backpack Core 28L', price: 49 },
   ad7: { name: 'FIFA World Cup 26™ Trionda Training Ball', price: 32 },
   ad8: { name: 'FIFA World Cup 26™ Trionda Competition Ball', price: 49 },
+  ad9: { name: "Samba OG Shoes", price: 65 },
 };
 const FREE_SHIP_AT = 150, SHIP_COST = 9;
 
