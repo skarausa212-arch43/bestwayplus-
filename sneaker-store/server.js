@@ -39,12 +39,6 @@ setInterval(() => { if (statsDirty) { statsDirty = false; saveJSON('stats.json',
 
 /* ---------- catalog (source of truth for prices) ---------- */
 const CATALOG = {
-  nk1: { name: 'Aero Runner Pro', price: 139 }, nk2: { name: 'Court Classic Low', price: 109 },
-  nk3: { name: 'Air Glide 270', price: 159 }, nk4: { name: 'Metro Knit Runner', price: 129 },
-  ad1: { name: 'Boost Strider', price: 149 }, ad2: { name: 'Terrace OG', price: 99 },
-  ad3: { name: 'Ultra Glide 5', price: 169 }, ad4: { name: 'City Runner', price: 119 },
-  nk5: { name: 'Sport Cap Essential', price: 34 }, ad5: { name: 'Gym Duffel 35L', price: 54 },
-  nk6: { name: 'Crew Socks (3-Pack)', price: 22 }, ad6: { name: 'Backpack Core 28L', price: 49 },
   ad7: { name: 'FIFA World Cup 26™ Trionda Training Ball', price: 32 },
   ad8: { name: 'FIFA World Cup 26™ Trionda Competition Ball', price: 49 },
   ad9: { name: "Samba OG Shoes", price: 65 },
