@@ -140,6 +140,20 @@ function countVisit(req, res) {
   statsDirty = true;
 }
 
+/* ---------- live presence (in-memory heartbeats) ---------- */
+const online = new Map(); // sid -> lastSeen ms
+function touchOnline(req) {
+  const cookies = Object.fromEntries((req.headers.cookie || '').split(';').map(s => s.trim().split('=')));
+  const sid = cookies.swk_sid || ('ip:' + (req.socket.remoteAddress || '') + '|' + (req.headers['user-agent'] || '').slice(0, 24));
+  online.set(sid, Date.now());
+}
+function onlineCount() {
+  const now = Date.now(), active = now - 45000, stale = now - 70000;
+  let n = 0;
+  for (const [k, t] of online) { if (t < stale) online.delete(k); else if (t >= active) n++; }
+  return n;
+}
+
 /* ---------- receipt ---------- */
 function receiptHTML(o) {
   const rows = o.items.map(it =>
@@ -252,6 +266,12 @@ const server = http.createServer(async (req, res) => {
         items: o.items.map(i => ({ name: i.name, qty: i.qty, size: i.size })),
       }));
       return send(res, 200, { orders: mine.reverse() });
+    }
+
+    /* ----- live online counter ----- */
+    if (req.method === 'GET' && p === '/api/online') {
+      touchOnline(req);
+      return send(res, 200, { online: Math.max(1, onlineCount()) });
     }
 
     /* ----- public order status (payment polling) ----- */

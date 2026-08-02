@@ -180,6 +180,27 @@
   @keyframes zapflash{0%{opacity:1}28%{opacity:.25}52%{opacity:1}100%{opacity:0}}
   .orbit-item.zapped{border-color:#7fdcff!important;color:#eaf7ff!important;
     box-shadow:0 0 26px 2px rgba(67,200,255,.9),inset 0 0 12px rgba(120,220,255,.5)!important}
+  /* meteors passing the planet */
+  .stage .meteor{position:absolute;width:92px;height:2px;z-index:0;pointer-events:none;border-radius:2px;
+    background:linear-gradient(90deg,transparent,rgba(190,225,255,.9));opacity:0;
+    filter:drop-shadow(0 0 4px rgba(120,190,255,.85));animation:meteor 8.5s ease-in infinite}
+  .stage .meteor::after{content:'';position:absolute;right:-3px;top:-2px;width:6px;height:6px;border-radius:50%;
+    background:#eaf7ff;box-shadow:0 0 12px 3px rgba(150,210,255,.95)}
+  .stage .meteor.m1{top:16%;left:-10%}
+  .stage .meteor.m2{top:66%;left:-8%;animation-duration:12s;animation-delay:5.5s}
+  @keyframes meteor{0%,80%{opacity:0;transform:translate(-40px,-30px) rotate(24deg)}82%{opacity:1}100%{opacity:0;transform:translate(560px,258px) rotate(24deg)}}
+  /* lightning shockwave from the planet */
+  .stage .shock{position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;
+    border:2px solid rgba(120,210,255,.85);opacity:0;pointer-events:none;z-index:3}
+  .stage .shock.go{animation:shockwave .75s ease-out}
+  @keyframes shockwave{0%{opacity:.9;transform:scale(.2)}100%{opacity:0;transform:scale(9)}}
+  /* live online counter */
+  .stage .online{position:absolute;left:0;top:1%;z-index:6;display:inline-flex;align-items:center;gap:8px;
+    padding:7px 13px;border-radius:100px;border:1px solid var(--line-2);background:rgba(9,12,20,.72);backdrop-filter:blur(8px);
+    font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+  .stage .online b{color:var(--ink)}
+  .stage .online i{width:8px;height:8px;border-radius:50%;background:var(--ok);animation:onlinepulse 2s ease-out infinite}
+  @keyframes onlinepulse{0%{box-shadow:0 0 0 0 rgba(55,214,122,.6)}100%{box-shadow:0 0 0 8px rgba(55,214,122,0)}}
   .orbit-item::after{content:attr(data-label);position:absolute;top:114%;left:50%;transform:translateX(-50%);
     white-space:nowrap;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--ink);
     background:rgba(5,5,5,.82);border:1px solid var(--line-2);padding:4px 8px;border-radius:7px;opacity:0;transition:opacity .15s;pointer-events:none}
@@ -596,6 +617,8 @@
         <span class="orbit-item" data-pic="cap" data-label="Caps" data-filter="accessories" style="animation-delay:-12.5s"></span>
         <div class="refl"></div>
       </div>
+      <span class="meteor m1"></span><span class="meteor m2"></span>
+      <div class="online" id="onlineBox"><i></i><b id="onlineN">1</b> online</div>
       <button class="storm-toggle" id="stormSound" aria-pressed="false" aria-label="Storm sound"><span id="stormIco">🔈</span> Storm</button>
       <div class="cap"><b>stuffweknow.com</b><i>✦</i>wear what you know</div>
     </div>
@@ -749,6 +772,7 @@ document.querySelectorAll('.orbit-item[data-pic]').forEach(function(el){el.addEv
   stage.insertBefore(stars,stage.firstChild);
   if(!reducedM){var sh=document.createElement('div');sh.className='shoot';stage.insertBefore(sh,stage.firstChild);}
   var zap=document.createElementNS('http://www.w3.org/2000/svg','svg'); zap.setAttribute('class','zap'); stage.appendChild(zap);
+  var shock=document.createElement('div');shock.className='shock';stage.appendChild(shock);
   function strike(){
     var items=[].slice.call(document.querySelectorAll('.orbit-item')); if(!items.length){return;}
     var chip=items[Math.floor(Math.random()*items.length)];
@@ -761,7 +785,7 @@ document.querySelectorAll('.orbit-item[data-pic]').forEach(function(el){el.addEv
     pts.push([tx,ty]);
     var d='M'+pts.map(function(p){return p[0].toFixed(1)+' '+p[1].toFixed(1)}).join(' L');
     zap.innerHTML='<path d="'+d+'" fill="none" stroke="#43c8ff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" opacity=".45" style="filter:blur(2px)"/><path d="'+d+'" fill="none" stroke="#eaf7ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
-    zap.classList.remove('on'); void zap.offsetWidth; zap.classList.add('on'); if(window.__thunder)window.__thunder();
+    zap.classList.remove('on'); void zap.offsetWidth; zap.classList.add('on'); if(window.__thunder)window.__thunder(); if(shock){shock.classList.remove('go');void shock.offsetWidth;shock.classList.add('go');}
     chip.classList.add('zapped'); setTimeout(function(){chip.classList.remove('zapped')},320);
   }
   stage.addEventListener('swk-strike',strike);
@@ -1103,6 +1127,8 @@ if(!reduce&&matchMedia('(pointer:fine)').matches){
 
 /* ---------- init ---------- */
 counts();renderGrid();renderCart();bump();
+/* live online counter */
+(function(){var el=document.getElementById('onlineN');if(!el)return;function tick(){fetch('/api/online').then(function(r){return r.json()}).then(function(d){if(d&&d.online!=null)el.textContent=d.online}).catch(function(){});}tick();setInterval(tick,15000);})();
 /* thunder sound (WebAudio synth, off by default) */
 (function(){
   var btn=document.getElementById('stormSound'); if(!btn)return;
