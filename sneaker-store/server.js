@@ -48,6 +48,9 @@ const CATALOG = {
   ad7: { name: 'FIFA World Cup 26™ Trionda Training Ball', price: 32 },
   ad8: { name: 'FIFA World Cup 26™ Trionda Competition Ball', price: 49 },
   ad9: { name: "Samba OG Shoes", price: 65 },
+  ad10: { name: "Utility 3.0 Tote Bag", price: 39 },
+  ad11: { name: "Stadium 4 Backpack", price: 42 },
+  ad12: { name: "MUST HAVES TOTE BAG SEASONAL", price: 39 },
 };
 const FREE_SHIP_AT = 150, SHIP_COST = 9;
 
