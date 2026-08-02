@@ -140,7 +140,7 @@
     display:grid;place-items:center;
     background:linear-gradient(150deg,rgba(32,32,38,.94),rgba(9,9,12,.94));
     border:1px solid var(--line-2);box-shadow:0 10px 22px -6px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.06);
-    animation:orb3d 15s linear infinite;pointer-events:none;color:var(--ink)}
+    animation:orb3d 15s linear infinite;pointer-events:auto;cursor:pointer;color:var(--ink)}
   .orbit-item svg{width:32px;height:32px;display:block}
   .orbit-item.i2{animation-delay:-3.75s}
   .orbit-item.i3{animation-delay:-7.5s}
@@ -176,6 +176,16 @@
   @keyframes zapflash{0%{opacity:1}28%{opacity:.25}52%{opacity:1}100%{opacity:0}}
   .orbit-item.zapped{border-color:#7fdcff!important;color:#eaf7ff!important;
     box-shadow:0 0 26px 2px rgba(67,200,255,.9),inset 0 0 12px rgba(120,220,255,.5)!important}
+  .orbit-item::after{content:attr(data-label);position:absolute;top:114%;left:50%;transform:translateX(-50%);
+    white-space:nowrap;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--ink);
+    background:rgba(5,5,5,.82);border:1px solid var(--line-2);padding:4px 8px;border-radius:7px;opacity:0;transition:opacity .15s;pointer-events:none}
+  .orbit-item:hover{z-index:9!important}
+  .orbit-item:hover::after{opacity:1}
+  .storm-toggle{position:absolute;right:0;bottom:-3%;z-index:6;display:inline-flex;align-items:center;gap:7px;
+    padding:8px 13px;border-radius:100px;border:1px solid var(--line-2);background:rgba(9,12,20,.72);backdrop-filter:blur(8px);
+    color:var(--muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;cursor:pointer;transition:.18s}
+  .storm-toggle:hover{color:var(--ink);border-color:rgba(58,123,255,.5)}
+  .storm-toggle.on{color:#9db9ff;border-color:rgba(58,123,255,.6);box-shadow:0 0 18px -6px rgba(58,123,255,.6)}
   /* holographic SWK projection */
   .sphere .mono{position:absolute;inset:0;display:grid;place-items:center;font-weight:800;letter-spacing:.16em;
     font-size:clamp(24px,4.2vw,46px);color:rgba(205,242,255,.9);mix-blend-mode:screen;
@@ -573,14 +583,15 @@
           <div class="mono">SWK<i>✦</i></div>
           <div class="atmo"></div>
         </div>
-        <span class="orbit-item" data-pic="sneaker" style="animation-delay:0s"></span>
-        <span class="orbit-item accent" data-pic="sunglasses" style="animation-delay:-2.5s"></span>
-        <span class="orbit-item" data-pic="hoodie" style="animation-delay:-5s"></span>
-        <span class="orbit-item" data-pic="handbag" style="animation-delay:-7.5s"></span>
-        <span class="orbit-item accent" data-pic="watch" style="animation-delay:-10s"></span>
-        <span class="orbit-item" data-pic="cap" style="animation-delay:-12.5s"></span>
+        <span class="orbit-item" data-pic="sneaker" data-label="Sneakers" data-filter="all" style="animation-delay:0s"></span>
+        <span class="orbit-item accent" data-pic="sunglasses" data-label="Accessories" data-filter="accessories" style="animation-delay:-2.5s"></span>
+        <span class="orbit-item" data-pic="hoodie" data-label="New Drop" data-filter="all" style="animation-delay:-5s"></span>
+        <span class="orbit-item" data-pic="handbag" data-label="Bags" data-filter="accessories" style="animation-delay:-7.5s"></span>
+        <span class="orbit-item accent" data-pic="watch" data-label="Accessories" data-filter="accessories" style="animation-delay:-10s"></span>
+        <span class="orbit-item" data-pic="cap" data-label="Caps" data-filter="accessories" style="animation-delay:-12.5s"></span>
         <div class="refl"></div>
       </div>
+      <button class="storm-toggle" id="stormSound" aria-pressed="false" aria-label="Storm sound"><span id="stormIco">🔈</span> Storm</button>
       <div class="cap"><b>stuffweknow.com</b><i>✦</i>wear what you know</div>
     </div>
   </div>
@@ -720,6 +731,7 @@ const PICON={
   dress:`<svg viewBox="0 0 256 256" fill="none"><g transform="translate(48 48) scale(1.6)" fill="none" stroke="currentColor" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round"><path d="M39 13h22l5 13-10 10 20 48H24l20-48-10-10 5-13Z"/><path d="M39 13c2 9 5 14 11 14s9-5 11-14"/><path d="M41 42h18"/></g></svg>`
 };
 document.querySelectorAll('.orbit-item[data-pic]').forEach(el=>el.innerHTML=PICON[el.dataset.pic]||'');
+document.querySelectorAll('.orbit-item[data-pic]').forEach(function(el){el.addEventListener('click',function(){var fl=el.dataset.filter||'all';activeFilter=fl;document.querySelectorAll('#filters .chip').forEach(function(c){c.classList.toggle('active',c.dataset.filter===fl)});renderGrid();var cat=document.getElementById('catalog');if(cat)cat.scrollIntoView({behavior:'smooth'});});});
 (function(){var r=document.getElementById('rain');if(!r)return;var N=matchMedia('(prefers-reduced-motion:reduce)').matches?0:26;for(var i=0;i<N;i++){var d=document.createElement('i');d.style.left=(6+Math.random()*88).toFixed(1)+'%';d.style.animationDuration=(0.8+Math.random()*0.9).toFixed(2)+'s';d.style.animationDelay=(-Math.random()*2).toFixed(2)+'s';d.style.opacity=(0.35+Math.random()*0.5).toFixed(2);r.appendChild(d);}})();
 /* starfield behind the planet + lightning that strikes a product icon */
 (function(){
@@ -743,7 +755,7 @@ document.querySelectorAll('.orbit-item[data-pic]').forEach(el=>el.innerHTML=PICO
     pts.push([tx,ty]);
     var d='M'+pts.map(function(p){return p[0].toFixed(1)+' '+p[1].toFixed(1)}).join(' L');
     zap.innerHTML='<path d="'+d+'" fill="none" stroke="#43c8ff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" opacity=".45" style="filter:blur(2px)"/><path d="'+d+'" fill="none" stroke="#eaf7ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
-    zap.classList.remove('on'); void zap.offsetWidth; zap.classList.add('on');
+    zap.classList.remove('on'); void zap.offsetWidth; zap.classList.add('on'); if(window.__thunder)window.__thunder();
     chip.classList.add('zapped'); setTimeout(function(){chip.classList.remove('zapped')},320);
   }
   stage.addEventListener('swk-strike',strike);
@@ -1085,6 +1097,32 @@ if(!reduce&&matchMedia('(pointer:fine)').matches){
 
 /* ---------- init ---------- */
 counts();renderGrid();renderCart();bump();
+/* thunder sound (WebAudio synth, off by default) */
+(function(){
+  var btn=document.getElementById('stormSound'); if(!btn)return;
+  var on=load('swk_storm',false), AC=null;
+  function paint(){btn.classList.toggle('on',on);var ic=document.getElementById('stormIco');if(ic)ic.textContent=on?'\uD83D\uDD0A':'\uD83D\uDD08';btn.setAttribute('aria-pressed',on);}
+  function thunder(){
+    if(!on)return;
+    try{
+      AC=AC||new (window.AudioContext||window.webkitAudioContext)();var ctx=AC,t=ctx.currentTime,dur=1.7;
+      var buf=ctx.createBuffer(1,Math.floor(ctx.sampleRate*dur),ctx.sampleRate),dt=buf.getChannelData(0);
+      for(var i=0;i<dt.length;i++){dt[i]=(Math.random()*2-1)*Math.pow(1-i/dt.length,2);}
+      var src=ctx.createBufferSource();src.buffer=buf;
+      var lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.setValueAtTime(420,t);lp.frequency.exponentialRampToValueAtTime(70,t+dur);
+      var g=ctx.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.5,t+0.06);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+      src.connect(lp);lp.connect(g);g.connect(ctx.destination);src.start(t);
+      var cb=ctx.createBuffer(1,Math.floor(ctx.sampleRate*0.13),ctx.sampleRate),cd=cb.getChannelData(0);
+      for(var j=0;j<cd.length;j++){cd[j]=(Math.random()*2-1)*(1-j/cd.length);}
+      var cr=ctx.createBufferSource();cr.buffer=cb;var hp=ctx.createBiquadFilter();hp.type='highpass';hp.frequency.value=1300;
+      var cg=ctx.createGain();cg.gain.setValueAtTime(0.2,t);cg.gain.exponentialRampToValueAtTime(0.0001,t+0.13);
+      cr.connect(hp);hp.connect(cg);cg.connect(ctx.destination);cr.start(t);
+    }catch(e){}
+  }
+  window.__thunder=thunder;
+  btn.addEventListener('click',function(){on=!on;save('swk_storm',on);paint();if(on){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.resume)AC.resume();thunder();}catch(e){}}});
+  paint();
+})();
 // stagger the hero on load, then reveal
 window.addEventListener('load',()=>{
   const loader=$('#loader');setTimeout(()=>loader.classList.add('done'),450);
