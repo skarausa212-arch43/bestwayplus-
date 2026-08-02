@@ -68,6 +68,9 @@ cd "$DIR/mailserver"
 # (echo "ТОКЕН" > /root/emailinc-telegram.token) — в git ему не место
 TG_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
 [ -z "$TG_TOKEN" ] && [ -f /root/emailinc-telegram.token ] && TG_TOKEN="$(tr -d '[:space:]' < /root/emailinc-telegram.token)"
+# Пароль postmaster (создаётся на шаге 6 при первой установке) — для писем сброса пароля
+PM_PASS=""
+[ -f /root/viply-postmaster.txt ] && PM_PASS="$(sed -n 2p /root/viply-postmaster.txt)"
 
 cat > .env <<ENV
 MAIL_DOMAIN=$DOMAIN
@@ -75,6 +78,8 @@ MAIL_HOSTNAME=$HOST
 INVITE_CODE=$INVITE
 WEBMAIL_URL=https://$DOMAIN/webmail/
 TELEGRAM_BOT_TOKEN=$TG_TOKEN
+ADMIN_EMAIL=${ADMIN_EMAIL:-romanby@$DOMAIN}
+POSTMASTER_PASS=$PM_PASS
 ENV
 echo "  .env written (domain=$DOMAIN, hostname=$HOST, invite=${INVITE:-OFF}, telegram=$([ -n "$TG_TOKEN" ] && echo ON || echo OFF))"
 
@@ -178,6 +183,40 @@ command -v ufw >/dev/null && { ufw allow 25/tcp; ufw allow 465/tcp; ufw allow 58
 
 grep -q viply-cert-renew /etc/crontab 2>/dev/null || \
   echo "17 4 * * * root certbot renew --quiet --deploy-hook 'docker restart mailserver' # viply-cert-renew" >> /etc/crontab
+
+# Мониторинг: контейнеры/сертификат/диск -> сообщение админу в Telegram
+cat > /usr/local/bin/emailinc-monitor.sh <<MON
+#!/bin/bash
+# Проверка здоровья EmailInc; шлёт алерт в Telegram-чат админа (не чаще раза в день на проблему)
+ENVF=$DIR/mailserver/.env
+TOKEN=\$(grep '^TELEGRAM_BOT_TOKEN=' "\$ENVF" 2>/dev/null | cut -d= -f2)
+CHAT=\$(grep -o '"chatId":[0-9-]*' $DIR/mailserver/docker-data/multimail/admin-chat.json 2>/dev/null | cut -d: -f2)
+[ -z "\$TOKEN" ] || [ -z "\$CHAT" ] && exit 0
+msg=""
+for c in mailserver webmail multimail mail-signup; do
+  docker ps --format '{{.Names}}' | grep -qx "\$c" || msg="\$msg
+❌ container \$c is down"
+done
+CERT=/etc/letsencrypt/live/$HOST/cert.pem
+if [ -f "\$CERT" ]; then
+  exp=\$(date -d "\$(openssl x509 -enddate -noout -in "\$CERT" | cut -d= -f2)" +%s)
+  days=\$(( (exp - \$(date +%s)) / 86400 ))
+  [ "\$days" -lt 14 ] && msg="\$msg
+⚠️ TLS certificate expires in \$days days"
+fi
+disk=\$(df --output=pcent / | tail -1 | tr -dc 0-9)
+[ "\$disk" -ge 90 ] && msg="\$msg
+⚠️ disk usage \$disk%"
+[ -z "\$msg" ] && exit 0
+STATE=/var/tmp/emailinc-monitor.state
+key="\$(date +%F) \$(echo "\$msg" | md5sum | cut -c1-8)"
+grep -qxF "\$key" "\$STATE" 2>/dev/null && exit 0
+curl -s -X POST "https://api.telegram.org/bot\$TOKEN/sendMessage" \
+  -d chat_id="\$CHAT" --data-urlencode text="🖥 EmailInc monitor:\$msg" >/dev/null && echo "\$key" >> "\$STATE"
+MON
+chmod +x /usr/local/bin/emailinc-monitor.sh
+grep -q emailinc-monitor /etc/crontab 2>/dev/null || \
+  echo "*/10 * * * * root /usr/local/bin/emailinc-monitor.sh # emailinc-monitor" >> /etc/crontab
 
 echo ""
 echo "======================= EMAILINC DEPLOYED ======================="

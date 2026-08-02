@@ -6,8 +6,15 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const { execFile } = require('child_process');
+const nodemailer = require('nodemailer');
 
 const DOMAIN = process.env.MAIL_DOMAIN;
+const MAIL_HOSTNAME = process.env.MAIL_HOSTNAME || `mail.${process.env.MAIL_DOMAIN || ''}`;
+// Пароль postmaster — для отправки писем восстановления пароля
+const POSTMASTER_PASS = (process.env.POSTMASTER_PASS || '').trim();
+const QUOTAS_FILE = process.env.QUOTAS_FILE || '/config/dovecot-quotas.cf';
+const RESETS_FILE = process.env.RESETS_FILE || '/config/password-resets.json';
+const MAILBOX_QUOTA = process.env.MAILBOX_QUOTA || '1G';
 const INVITE_CODE = (process.env.INVITE_CODE || '').trim();
 const WEBMAIL_URL = process.env.WEBMAIL_URL || '';
 const ACCOUNTS_FILE = process.env.ACCOUNTS_FILE || '/config/postfix-accounts.cf';
@@ -61,6 +68,44 @@ setInterval(() => {
     if (fresh.length) attempts.set(ip, fresh); else attempts.delete(ip);
   }
 }, 600_000).unref();
+
+// Проверка пароля против SHA512-CRYPT-хэша из файла аккаунтов:
+// хэшируем с той же солью и сравниваем
+function verifyPassword(password, fullHash) {
+  return new Promise((resolve) => {
+    const m = /^\$6\$([^$]+)\$/.exec(fullHash);
+    if (!m) return resolve(false);
+    const child = execFile('openssl', ['passwd', '-6', '-salt', m[1], '-stdin'], (err, stdout) => {
+      resolve(!err && stdout.trim() === fullHash);
+    });
+    child.stdin.end(password + '\n');
+  });
+}
+
+function accountHashFor(email) {
+  for (const line of readAccounts().split('\n')) {
+    const [addr, hash] = line.split('|');
+    if (addr?.trim().toLowerCase() === email) return (hash || '').replace('{SHA512-CRYPT}', '').trim();
+  }
+  return null;
+}
+
+function replaceAccountHash(email, newHash) {
+  const lines = readAccounts().split('\n').map((line) => {
+    const addr = line.split('|')[0]?.trim().toLowerCase();
+    return addr === email ? `${email}|{SHA512-CRYPT}${newHash}` : line;
+  });
+  const tmp = ACCOUNTS_FILE + '.tmp';
+  fs.writeFileSync(tmp, lines.join('\n'), { mode: 0o644 });
+  fs.renameSync(tmp, ACCOUNTS_FILE);
+}
+
+function readResets() {
+  try { return JSON.parse(fs.readFileSync(RESETS_FILE, 'utf8')); } catch { return {}; }
+}
+function saveResets(r) {
+  fs.writeFileSync(RESETS_FILE, JSON.stringify(r), { mode: 0o600 });
+}
 
 function hashPassword(password) {
   return new Promise((resolve, reject) => {
@@ -154,6 +199,8 @@ function registerUser(body, ip) {
     const line = `${email}|{SHA512-CRYPT}${hash}\n`;
     const prefix = existing && !existing.endsWith('\n') ? '\n' : '';
     fs.appendFileSync(ACCOUNTS_FILE, prefix + line, { mode: 0o644 });
+    // квота, чтобы один ящик не съел весь диск
+    try { fs.appendFileSync(QUOTAS_FILE, `${email}:${MAILBOX_QUOTA}\n`, { mode: 0o644 }); } catch {}
     const profiles = readProfiles();
     profiles[email] = {
       firstName: fName,
@@ -195,6 +242,79 @@ app.post('/', express.urlencoded({ extended: false }), (req, res) => {
   }).catch((e) => {
     console.error('registration failed:', e);
     done('err=' + encodeURIComponent('Internal server error.'));
+  });
+});
+
+// ===== Пароли: смена и восстановление =====
+
+app.post('/api/password/change', (req, res) => {
+  const { email, oldPassword, newPassword } = req.body || {};
+  const addr = String(email || '').toLowerCase().trim();
+  if (!addr.endsWith('@' + DOMAIN)) return res.status(400).json({ error: 'Unknown address.' });
+  if (typeof newPassword !== 'string' || newPassword.length < 8 || newPassword.length > 128) {
+    return res.status(400).json({ error: 'New password must be 8–128 characters.' });
+  }
+  enqueue(async () => {
+    const hash = accountHashFor(addr);
+    if (!hash || !(await verifyPassword(String(oldPassword || ''), hash))) {
+      res.status(403).json({ error: 'Wrong current password.' });
+      return;
+    }
+    replaceAccountHash(addr, await hashPassword(newPassword));
+    console.log(`password changed for ${addr}`);
+    res.json({ ok: true });
+  }).catch((e) => {
+    console.error('password change failed:', e);
+    if (!res.headersSent) res.status(500).json({ error: 'Internal server error.' });
+  });
+});
+
+// Шаг 1: письмо со ссылкой на резервный адрес (ответ всегда одинаковый — не палим,
+// у кого есть ящик и резервная почта)
+app.post('/api/password/forgot', (req, res) => {
+  const ip = clientIp(req);
+  const user = String(req.body?.username || '').toLowerCase().trim().replace(/@.*$/, '');
+  const generic = { ok: true, message: 'If this mailbox has a recovery email, a reset link is on its way.' };
+  if (rateLimited(ip) || !USERNAME_RE.test(user)) return res.json(generic);
+  const email = `${user}@${DOMAIN}`;
+  const profile = readProfiles()[email];
+  if (!profile?.recoveryEmail || !POSTMASTER_PASS) return res.json(generic);
+  const token = require('crypto').randomBytes(24).toString('hex');
+  const resets = readResets();
+  for (const [t, r] of Object.entries(resets)) if (r.exp < Date.now()) delete resets[t];
+  resets[token] = { email, exp: Date.now() + 3600_000 };
+  saveResets(resets);
+  nodemailer.createTransport({ host: MAIL_HOSTNAME, port: 465, secure: true,
+    auth: { user: `postmaster@${DOMAIN}`, pass: POSTMASTER_PASS } })
+    .sendMail({
+      from: `EmailInc <postmaster@${DOMAIN}>`,
+      to: profile.recoveryEmail,
+      subject: 'Reset your EmailInc password',
+      text: `Someone (hopefully you) requested a password reset for ${email}.\n\nOpen this link to set a new password (valid for 1 hour):\nhttps://${DOMAIN}/?reset=${token}\n\nIf it wasn't you, just ignore this email.`,
+    })
+    .then(() => console.log(`reset link sent for ${email}`))
+    .catch((e) => console.error('reset mail failed:', e.message));
+  res.json(generic);
+});
+
+// Шаг 2: установка нового пароля по токену из письма
+app.post('/api/password/reset', (req, res) => {
+  const { token, newPassword } = req.body || {};
+  if (typeof newPassword !== 'string' || newPassword.length < 8 || newPassword.length > 128) {
+    return res.status(400).json({ error: 'Password must be 8–128 characters.' });
+  }
+  const resets = readResets();
+  const r = resets[String(token || '')];
+  if (!r || r.exp < Date.now()) return res.status(400).json({ error: 'This link has expired — request a new one.' });
+  enqueue(async () => {
+    replaceAccountHash(r.email, await hashPassword(newPassword));
+    delete resets[String(token)];
+    saveResets(resets);
+    console.log(`password reset for ${r.email}`);
+    res.json({ ok: true, email: r.email });
+  }).catch((e) => {
+    console.error('password reset failed:', e);
+    if (!res.headersSent) res.status(500).json({ error: 'Internal server error.' });
   });
 });
 

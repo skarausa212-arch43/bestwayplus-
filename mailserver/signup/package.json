@@ -5,6 +5,7 @@
   "description": "Self-service mailbox registration for docker-mailserver",
   "main": "server.js",
   "dependencies": {
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "nodemailer": "^6.9.14"
   }
 }

@@ -19,6 +19,7 @@ services:
     environment:
       - ENABLE_RSPAMD=1
       - RSPAMD_SPAM_TO_JUNK=1   # спам кладётся в папку Junk, а не мешается со входящими
+      - ENABLE_QUOTAS=1         # квоты на ящик (пишутся в dovecot-quotas.cf при регистрации)
       - ENABLE_CLAMAV=0
       - ENABLE_FAIL2BAN=1
       - ENABLE_OPENDKIM=0
@@ -64,8 +65,10 @@ services:
       - MAIL_HOSTNAME=${MAIL_HOSTNAME}
       - MAIL_DOMAIN=${MAIL_DOMAIN}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-}
     volumes:
       - ./docker-data/multimail:/data
+      - ./docker-data/dms/config/:/dmsconfig/:ro   # админ-статистика (только чтение)
     restart: always
 
   signup:
@@ -77,8 +80,10 @@ services:
       - "127.0.0.1:8081:8081"
     environment:
       - MAIL_DOMAIN=${MAIL_DOMAIN}
+      - MAIL_HOSTNAME=${MAIL_HOSTNAME}
       - INVITE_CODE=${INVITE_CODE:-}
       - WEBMAIL_URL=${WEBMAIL_URL:-}
+      - POSTMASTER_PASS=${POSTMASTER_PASS:-}   # для писем восстановления пароля
     volumes:
       - ./docker-data/dms/config/:/config/
     restart: always
