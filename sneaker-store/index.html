@@ -7,7 +7,7 @@
 <meta name="description" content="StuffWeKnow — curated technical footwear and objects. Dark, minimal, made to last. Drop 01 now live.">
 <meta name="theme-color" content="#050505">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2215%22%20fill%3D%22%230a0a0d%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%2242%22%20width%3D%2248%22%20height%3D%229%22%20rx%3D%224.5%22%20fill%3D%22%23F4F4F4%22%2F%3E%3Cpath%20d%3D%22M13%2042%20C13%2030%2021%2024%2033%2024%20C43%2024%2051%2031%2055%2042%20Z%22%20fill%3D%22%23F4F4F4%22%2F%3E%3Cpath%20d%3D%22M18%2042%20C22%2033%2030%2030%2045%2034%20L47%2042%20Z%22%20fill%3D%22%233A7BFF%22%2F%3E%3Cg%20stroke%3D%22%230a0a0d%22%20stroke-width%3D%222.4%22%20stroke-linecap%3D%22round%22%3E%3Cpath%20d%3D%22M24%2029l3%204%22%2F%3E%3Cpath%20d%3D%22M30%2026.5l3%204%22%2F%3E%3Cpath%20d%3D%22M36%2025.5l3%204%22%2F%3E%3C%2Fg%3E%3Cpath%20d%3D%22M50%2012l1.4%203%203%201.4-3%201.4-1.4%203-1.4-3-3-1.4%203-1.4z%22%20fill%3D%22%233A7BFF%22%2F%3E%3C%2Fsvg%3E">
-<script>document.documentElement.classList.add('js')</script>
+<script>document.documentElement.classList.add('js');(function(){try{var r=localStorage.getItem('swk_theme');if(r){r=r.replace(/^"|"$/g,'')}var h=new Date().getHours();var t=(r==='light'||r==='dark')?r:((h>=7&&h<19)?'light':'dark');document.documentElement.dataset.theme=t;}catch(e){}})();</script>
 <style>
   :root{
     --bg:#050505; --surface:#0e0e10; --surface-2:#161618; --elev:#1e1e21;
@@ -552,6 +552,59 @@
     *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
     .reveal{opacity:1!important;transform:none!important}
   }
+
+  /* ===================== LIGHT THEME — "Atelier" ===================== */
+  :root[data-theme=light]{
+    --bg:#f4f1ea; --surface:#fbfaf6; --surface-2:#efece2; --elev:#ffffff;
+    --ink:#14130f; --ink-2:#38362e; --muted:#6f6d62; --faint:#9c998d;
+    --line:rgba(20,19,15,.10); --line-2:rgba(20,19,15,.20);
+    --accent:#2f5fff; --accent-soft:rgba(47,95,255,.12); --ok:#1f9d57;
+  }
+  :root[data-theme=light] body{background:radial-gradient(62% 46% at 84% -4%,rgba(47,95,255,.06),transparent 60%),var(--bg)}
+  /* glass surfaces that were hardcoded dark */
+  :root[data-theme=light] .badge{background:rgba(255,255,255,.72)}
+  :root[data-theme=light] .badge.b-limited,:root[data-theme=light] .badge.b-drop{color:#2647c8;background:rgba(47,95,255,.12)}
+  :root[data-theme=light] .wish{background:rgba(255,255,255,.72)}
+  :root[data-theme=light] .sold-veil{background:rgba(250,249,245,.62);backdrop-filter:grayscale(1) blur(1px)}
+  :root[data-theme=light] .mx{background:rgba(255,255,255,.7)}
+  :root[data-theme=light] .stage .online,
+  :root[data-theme=light] .storm-toggle{background:rgba(255,255,255,.74)}
+  :root[data-theme=light] .orbit-item::after{background:rgba(255,255,255,.94)}
+  :root[data-theme=light] .orbit-item{box-shadow:0 12px 26px -12px rgba(30,52,96,.4),inset 0 1px 0 rgba(255,255,255,.6)}
+  :root[data-theme=light] .card-media{box-shadow:0 1px 2px rgba(20,19,15,.05)}
+  :root[data-theme=light] .card:hover .card-media{box-shadow:0 26px 52px -26px rgba(24,34,64,.42)}
+  /* ---- daytime Earth ---- */
+  :root[data-theme=light] .sphere{
+    background:radial-gradient(132% 130% at 33% 22%,#eafaff 0%,#bfe6ff 24%,#7fc2f5 50%,#4a95e0 76%,#2f6dc0 100%);
+    box-shadow:0 40px 92px -34px rgba(40,92,164,.55),inset 0 -18px 46px rgba(20,60,120,.32),inset 0 8px 22px rgba(255,255,255,.5)}
+  :root[data-theme=light] .sphere .map{filter:hue-rotate(-74deg) saturate(1.4) brightness(1.04) drop-shadow(0 0 3px rgba(40,150,90,.5));opacity:.95}
+  :root[data-theme=light] .sphere .grid{opacity:.07}
+  :root[data-theme=light] .sphere .night{background:radial-gradient(135% 130% at 30% 22%,transparent 55%,rgba(20,60,110,.16) 84%,rgba(15,45,90,.3) 100%)}
+  :root[data-theme=light] .sphere .city{opacity:0}
+  :root[data-theme=light] .sphere .aurora{opacity:0!important;animation:none}
+  :root[data-theme=light] .sphere .spec{background:radial-gradient(circle,rgba(255,255,255,.94),transparent 70%);filter:blur(9px)}
+  :root[data-theme=light] .sphere .atmo{box-shadow:inset 0 0 34px rgba(180,225,255,.55),inset -12px -16px 40px rgba(30,80,150,.26)}
+  :root[data-theme=light] .sphere .rain{opacity:.32}
+  :root[data-theme=light] .aura{background:radial-gradient(circle,rgba(120,180,255,.5),transparent 68%)}
+  /* drifting clouds — only visible in daylight */
+  .sphere .clouds{position:absolute;inset:0;width:200%;height:100%;pointer-events:none;opacity:0;z-index:2;mix-blend-mode:screen;
+    background:
+      radial-gradient(44px 20px at 12% 34%,rgba(255,255,255,.9),transparent 70%),
+      radial-gradient(62px 26px at 30% 60%,rgba(255,255,255,.75),transparent 72%),
+      radial-gradient(48px 22px at 52% 26%,rgba(255,255,255,.85),transparent 70%),
+      radial-gradient(72px 30px at 72% 66%,rgba(255,255,255,.7),transparent 72%),
+      radial-gradient(52px 24px at 88% 40%,rgba(255,255,255,.82),transparent 70%);
+    background-size:auto 100%;filter:blur(3px);animation:spinmap 46s linear infinite;
+    -webkit-mask:radial-gradient(circle,#000 58%,transparent 82%);mask:radial-gradient(circle,#000 58%,transparent 82%)}
+  :root[data-theme=light] .sphere .clouds{opacity:.82}
+
+  /* ---- globe <-> product hover link ---- */
+  .orbit-item.linked{border-color:#2f5fff!important;color:#eaf2ff!important;
+    box-shadow:0 0 24px 3px rgba(47,95,255,.5),0 0 34px 5px rgba(58,123,255,.4)!important}
+  .card.linked .card-media{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft),0 20px 42px -22px rgba(58,123,255,.5)}
+  /* ---- 3D tilt on product cards ---- */
+  .js .card{perspective:820px}
+  .js .card-media{transform-style:preserve-3d;transition:border-color .35s var(--ease),transform .16s var(--ease),box-shadow .3s var(--ease)}
 </style>
 </head>
 <body>
@@ -583,6 +636,7 @@
       <button class="ic" id="searchBtn" aria-label="Search" data-ic="search"></button>
       <button class="ic" id="accBtn" aria-label="Account"><span data-ic="account" style="display:grid;place-items:center"></span><span class="cbadge" id="accDot" style="min-width:10px;height:10px;padding:0;background:var(--ok)"></span></button>
       <button class="ic" id="cartBtn" aria-label="Cart"><span data-ic="cart" style="display:grid;place-items:center"></span><span class="cbadge" id="cbadge">0</span></button>
+      <button class="ic" id="themeBtn" aria-label="Toggle light or dark theme"></button>
       <button class="ic menu-btn" aria-label="Menu" data-ic="menu"></button>
     </div>
   </div>
@@ -605,7 +659,7 @@
         <a href="#catalog" class="btn btn-secondary">The Lookbook <span data-ic="chevron"></span></a>
       </div>
       <div class="hero-meta reveal">
-        <span>Est. <b>2026</b></span><span><b>13</b> Pieces</span><span>Shipped <b>Worldwide</b></span>
+        <span>Est. <b>2026</b></span><span><b id="pieceN">0</b> Pieces</span><span>Shipped <b>Worldwide</b></span>
       </div>
     </div>
     <div class="stage reveal">
@@ -616,6 +670,7 @@
         <div class="sphere">
           <div class="map"></div>
           <div class="grid"></div>
+          <div class="clouds"></div>
           <div class="city"></div>
           <div class="night"></div>
           <div class="aurora"></div>
@@ -893,7 +948,7 @@ $('#strip').innerHTML=(()=>{const w='<b>StuffWeKnow<i></i></b><b>Luxury Streetwe
 
 /* ---------- grid ---------- */
 const grid=$('#grid');
-function counts(){$('#count').textContent=PRODUCTS.length+' pieces'}
+function counts(){$('#count').textContent=PRODUCTS.length+' pieces';var pn=document.getElementById('pieceN');if(pn)pn.textContent=PRODUCTS.length}
 function badgeCls(b){return b==='LIMITED'?'b-limited':b==='SOLD OUT'?'b-sold':b.startsWith('DROP')?'b-drop':''}
 function renderGrid(){
   const list=PRODUCTS.filter(p=>{
@@ -904,7 +959,7 @@ function renderGrid(){
   grid.innerHTML=list.map(p=>{
     const isAcc=p.type==='accessories',fav=favs.includes(p.id);
     const bd=(p.badges||[]).map(b=>`<span class="badge ${badgeCls(b)}">${b}</span>`).join('');
-    return `<article class="card reveal ${p.featured?'glass':''}" data-id="${p.id}">
+    return `<article class="card reveal ${p.featured?'glass':''}" data-id="${p.id}" data-gcat="${p.type}">
       <button class="card-media" data-open="${p.id}">
         <span class="badges">${bd}</span>
         <span class="wish ${fav?'on':''}" data-fav="${p.id}" role="button" aria-label="Wishlist">${ICON.heart}</span>
@@ -922,6 +977,7 @@ function renderGrid(){
     </article>`;
   }).join('');
   observeReveal();
+  wireGlobeLink();
 }
 grid.addEventListener('click',e=>{
   const f=e.target.closest('[data-fav]');if(f){toggleFav(f.dataset.fav);return}
@@ -1171,6 +1227,45 @@ if(!reduce&&matchMedia('(pointer:fine)').matches){
   });
   hero.addEventListener('pointerleave',()=>{spot.style.opacity=0;tilt.style.transform='translate(0,0) rotateY(0) rotateX(0)'});
 }
+
+/* ---------- theme toggle (light "Atelier" / dark) ---------- */
+(function(){
+  var root=document.documentElement, btn=document.getElementById('themeBtn');
+  var SUN='<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.1"/><path d="M12 2.4v2.2M12 19.4v2.2M2.4 12h2.2M19.4 12h2.2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>';
+  var MOON='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.9A8.5 8.5 0 1 1 11.1 3 6.7 6.7 0 0 0 21 12.9z"/></svg>';
+  function cur(){return root.dataset.theme==='light'?'light':'dark';}
+  function paint(){if(!btn)return;btn.innerHTML=cur()==='light'?MOON:SUN;btn.setAttribute('aria-pressed',cur()==='light');var mc=document.querySelector('meta[name=theme-color]');if(mc)mc.setAttribute('content',cur()==='light'?'#f4f1ea':'#050505');}
+  paint();
+  if(btn)btn.addEventListener('click',function(){root.dataset.theme=cur()==='light'?'dark':'light';save('swk_theme',cur());paint();});
+})();
+
+/* ---------- 3D tilt on product cards (desktop, motion-safe) ---------- */
+if(!matchMedia('(prefers-reduced-motion:reduce)').matches&&matchMedia('(pointer:fine)').matches){
+  var tiltEl=null;
+  grid.addEventListener('pointermove',function(e){
+    var m=e.target.closest('.card-media');
+    if(m!==tiltEl&&tiltEl){tiltEl.style.transform='';}
+    tiltEl=m; if(!m)return;
+    var r=m.getBoundingClientRect(),px=(e.clientX-r.left)/r.width-.5,py=(e.clientY-r.top)/r.height-.5;
+    m.style.transform='rotateY('+(px*7).toFixed(2)+'deg) rotateX('+(-py*7).toFixed(2)+'deg) scale(1.02)';
+  });
+  grid.addEventListener('pointerleave',function(){if(tiltEl){tiltEl.style.transform='';tiltEl=null;}});
+}
+
+/* ---------- globe <-> product hover link ---------- */
+const CARD2PIC={sneakers:['sneaker','hoodie'],accessories:['handbag','sunglasses','watch','cap']};
+function orbForType(t){return [].slice.call(document.querySelectorAll('.orbit-item[data-pic]')).filter(function(o){return (CARD2PIC[t]||[]).indexOf(o.dataset.pic)>-1;});}
+function cardsForPic(pic){return [].slice.call(document.querySelectorAll('#grid .card')).filter(function(c){return (CARD2PIC[c.dataset.gcat]||[]).indexOf(pic)>-1;});}
+function wireGlobeLink(){
+  document.querySelectorAll('#grid .card').forEach(function(c){
+    c.addEventListener('mouseenter',function(){orbForType(c.dataset.gcat).forEach(function(o){o.classList.add('linked')});});
+    c.addEventListener('mouseleave',function(){orbForType(c.dataset.gcat).forEach(function(o){o.classList.remove('linked')});});
+  });
+}
+document.querySelectorAll('.orbit-item[data-pic]').forEach(function(o){
+  o.addEventListener('mouseenter',function(){cardsForPic(o.dataset.pic).forEach(function(c){c.classList.add('linked')});});
+  o.addEventListener('mouseleave',function(){cardsForPic(o.dataset.pic).forEach(function(c){c.classList.remove('linked')});});
+});
 
 /* ---------- init ---------- */
 counts();renderGrid();renderCart();bump();
