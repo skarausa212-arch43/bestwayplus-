@@ -472,6 +472,7 @@ app.post('/api/accounts', async (req, res) => {
   }
   s.accounts.push(acc);
   persistSessions();
+  syncBundle(s); // сессия привязана к сборке — новый ящик попадает в неё сам
   res.json({ ok: true, id: acc.id, email: acc.email });
 });
 
@@ -499,6 +500,7 @@ app.post('/api/telegram/unlink', (req, res) => {
 // Полный выход: сессия забывает все ящики
 app.post('/api/logout', (req, res) => {
   const s = getSession(req, res);
+  delete s.bundle; // сначала отвязка — иначе выход опустошил бы сборку
   s.accounts = [];
   delete s.tg;
   persistSessions();
@@ -510,6 +512,7 @@ app.delete('/api/accounts/:id', (req, res) => {
   const before = s.accounts.length;
   s.accounts = s.accounts.filter((a) => a.id !== req.params.id);
   persistSessions();
+  syncBundle(s); // сборка зеркалит текущий набор ящиков
   res.json({ ok: s.accounts.length < before });
 });
 
@@ -645,6 +648,16 @@ function persistBundles() {
 }
 const bundleHash = (pass, salt) => crypto.scryptSync(pass, salt, 32).toString('hex');
 
+// Сессия, создавшая сборку или вошедшая ею, привязана к ней (s.bundle = имя):
+// каждый добавленный/удалённый ящик сразу отражается в сборке
+function syncBundle(s) {
+  const b = s.bundle && bundles[s.bundle];
+  if (!b) return;
+  b.accounts = s.accounts.map(({ email, password, host }) => ({ email, password, host }));
+  b.updatedAt = new Date().toISOString();
+  persistBundles();
+}
+
 // Создать (или обновить со своим паролем) сборку из ящиков текущей сессии
 app.post('/api/bundle', (req, res) => {
   const s = getSession(req, res);
@@ -669,6 +682,8 @@ app.post('/api/bundle', (req, res) => {
     updatedAt: new Date().toISOString(),
   };
   persistBundles();
+  s.bundle = name;
+  persistSessions();
   res.json({ ok: true, name, count: bundles[name].accounts.length });
 });
 
@@ -688,6 +703,7 @@ app.post('/api/bundle/login', (req, res) => {
     s.accounts.push({ id: crypto.randomBytes(6).toString('hex'), ...a });
     added++;
   }
+  s.bundle = name;
   persistSessions();
   res.json({ ok: true, added, total: s.accounts.length });
 });
