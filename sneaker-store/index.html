@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>STUFFWEKNOW — Drop 01 / Luxury Streetwear</title>
-<meta name="description" content="StuffWeKnow — curated technical footwear and objects. Dark, minimal, made to last. Drop 01 now live.">
-<meta name="theme-color" content="#050505">
+<title>STUFFWEKNOW — Know More. Own Less.</title>
+<meta name="description" content="STUFFWEKNOW — considered technical footwear and objects. Know more, own less. Drop 01 now live.">
+<meta name="theme-color" content="#F5F6F8">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2215%22%20fill%3D%22%230a0a0d%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%2242%22%20width%3D%2248%22%20height%3D%229%22%20rx%3D%224.5%22%20fill%3D%22%23F4F4F4%22%2F%3E%3Cpath%20d%3D%22M13%2042%20C13%2030%2021%2024%2033%2024%20C43%2024%2051%2031%2055%2042%20Z%22%20fill%3D%22%23F4F4F4%22%2F%3E%3Cpath%20d%3D%22M18%2042%20C22%2033%2030%2030%2045%2034%20L47%2042%20Z%22%20fill%3D%22%233A7BFF%22%2F%3E%3Cg%20stroke%3D%22%230a0a0d%22%20stroke-width%3D%222.4%22%20stroke-linecap%3D%22round%22%3E%3Cpath%20d%3D%22M24%2029l3%204%22%2F%3E%3Cpath%20d%3D%22M30%2026.5l3%204%22%2F%3E%3Cpath%20d%3D%22M36%2025.5l3%204%22%2F%3E%3C%2Fg%3E%3Cpath%20d%3D%22M50%2012l1.4%203%203%201.4-3%201.4-1.4%203-1.4-3-3-1.4%203-1.4z%22%20fill%3D%22%233A7BFF%22%2F%3E%3C%2Fsvg%3E">
-<script>document.documentElement.classList.add('js');(function(){try{var r=localStorage.getItem('swk_theme');if(r){r=r.replace(/^"|"$/g,'')}var h=new Date().getHours();var t=(r==='light'||r==='dark')?r:((h>=7&&h<19)?'light':'dark');document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+<script>document.documentElement.classList.add('js');(function(){try{var r=localStorage.getItem('swk_theme');if(r){r=r.replace(/^"|"$/g,'')}var t=(r==='light'||r==='dark')?r:'light';document.documentElement.dataset.theme=t;}catch(e){}})();</script>
 <style>
   :root{
     --bg:#050505; --surface:#0e0e10; --surface-2:#161618; --elev:#1e1e21;
     --ink:#F4F4F4; --ink-2:#D8D8D8; --muted:#8b8b92; --faint:#5a5a61;
     --line:rgba(244,244,244,.09); --line-2:rgba(244,244,244,.16);
-    --accent:#3A7BFF; --accent-soft:rgba(58,123,255,.14); --ok:#37d67a;
+    --accent:#2563FF; --accent-soft:rgba(37,99,255,.16); --ok:#37d67a;
     --radius:14px; --radius-lg:18px; --maxw:1320px; --header-h:66px;
     --font:'Helvetica Neue','Inter',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
     --ease:cubic-bezier(.32,.72,0,1);
@@ -58,6 +58,7 @@
     background:linear-gradient(145deg,#1c1c1f,#0b0b0c)}
   .swk svg{width:20px;height:20px}
   .wordmark{font-weight:800;font-size:17px;letter-spacing:-.02em;text-transform:uppercase}
+  .wordmark .tm{font-size:.5em;font-weight:600;vertical-align:top;letter-spacing:0;margin-left:1px;opacity:.7}
   nav.main{display:flex;gap:24px;margin-left:14px}
   nav.main a{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;
     position:relative;padding:4px 0;transition:color .18s}
@@ -295,10 +296,14 @@
   .card:hover .ph .art{transform:rotate(-8deg) scale(1.07)}
   .card:hover .ph.acc .art,.card:hover .ph.photo img{transform:scale(1.06)}
   .badges{position:absolute;top:12px;left:12px;z-index:3;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
-  .badge{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;padding:5px 9px;border-radius:7px;
-    border:1px solid var(--line-2);background:rgba(5,5,5,.6);backdrop-filter:blur(8px);color:var(--ink)}
-  .badge.b-limited,.badge.b-drop{border-color:var(--accent);color:#cddcff;background:rgba(58,123,255,.12)}
-  .badge.b-sold{color:var(--muted);border-color:var(--line)}
+  .badge{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;padding:5px 10px;border-radius:8px;
+    border:1px solid var(--line-2);background:color-mix(in srgb,var(--surface) 82%,transparent);backdrop-filter:blur(8px);color:var(--ink)}
+  .badge.b-premium{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  .badge.b-drop{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 9%,transparent)}
+  .badge.b-drop2{border-color:#8b5cf6;color:#8b5cf6;background:rgba(139,92,246,.09)}
+  .badge.b-low{border-color:#f59e0b;color:#f59e0b;background:rgba(245,158,11,.10)}
+  .badge.b-limited{border-color:var(--line-2);color:var(--ink)}
+  .badge.b-sold{color:var(--muted);border-color:var(--line-2)}
   .wish{position:absolute;top:12px;right:12px;z-index:3;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;
     color:var(--ink-2);background:rgba(5,5,5,.5);backdrop-filter:blur(8px);border:1px solid var(--line);transition:all .18s}
   .wish:hover{color:var(--ink);transform:scale(1.06)}
@@ -325,13 +330,13 @@
   .empty svg{width:40px;height:40px;color:var(--faint);margin:0 auto 16px}
 
   /* ============ BUTTONS ============ */
-  .btn{display:inline-flex;align-items:center;gap:12px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;
-    padding:15px 24px;border-radius:12px;transition:background .2s,color .2s,border-color .2s,transform .2s var(--ease)}
+  .btn{display:inline-flex;align-items:center;gap:12px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;
+    padding:15px 26px;border-radius:12px;transition:background .2s,color .2s,border-color .2s,transform .2s var(--ease)}
   .btn svg{width:17px;height:17px;transition:transform .25s var(--ease)}
   .btn-primary{background:var(--ink);color:var(--bg)}
-  .btn-primary:hover{background:#fff}.btn-primary:hover svg{transform:translateX(4px)}
+  .btn-primary:hover{background:var(--accent);color:#fff}.btn-primary:hover svg{transform:translateX(4px)}
   .btn-secondary{border:1px solid var(--line-2);color:var(--ink)}
-  .btn-secondary:hover{border-color:var(--ink);background:var(--surface)}.btn-secondary:hover svg{transform:translateX(4px)}
+  .btn-secondary:hover{border-color:var(--ink);background:var(--surface-2)}.btn-secondary:hover svg{transform:translateX(4px)}
 
   /* ============ VALUES ============ */
   .values{display:grid;grid-template-columns:repeat(4,1fr)}
@@ -553,18 +558,15 @@
     .reveal{opacity:1!important;transform:none!important}
   }
 
-  /* ===================== LIGHT THEME — "Atelier" ===================== */
+  /* ===================== LIGHT THEME — brand default ===================== */
   :root[data-theme=light]{
-    --bg:#f4f1ea; --surface:#fbfaf6; --surface-2:#efece2; --elev:#ffffff;
-    --ink:#14130f; --ink-2:#38362e; --muted:#6f6d62; --faint:#9c998d;
-    --line:rgba(20,19,15,.10); --line-2:rgba(20,19,15,.20);
-    --accent:#2f5fff; --accent-soft:rgba(47,95,255,.12); --ok:#1f9d57;
+    --bg:#F5F6F8; --surface:#FFFFFF; --surface-2:#EEF0F3; --elev:#ffffff;
+    --ink:#111111; --ink-2:#2b2d31; --muted:#6B7280; --faint:#9aa0ab;
+    --line:#E6E8EC; --line-2:#d7dbe1;
+    --accent:#2563FF; --accent-soft:rgba(37,99,255,.10); --ok:#1f9d57;
   }
-  :root[data-theme=light] body{background:radial-gradient(62% 46% at 84% -4%,rgba(47,95,255,.06),transparent 60%),var(--bg)}
-  /* glass surfaces that were hardcoded dark */
-  :root[data-theme=light] .badge{background:rgba(255,255,255,.72)}
-  :root[data-theme=light] .badge.b-limited,:root[data-theme=light] .badge.b-drop{color:#2647c8;background:rgba(47,95,255,.12)}
-  :root[data-theme=light] .wish{background:rgba(255,255,255,.72)}
+  :root[data-theme=light] body{background:radial-gradient(60% 46% at 84% -4%,rgba(37,99,255,.05),transparent 60%),var(--bg)}
+  :root[data-theme=light] .wish{background:rgba(255,255,255,.78)}
   :root[data-theme=light] .sold-veil{background:rgba(250,249,245,.62);backdrop-filter:grayscale(1) blur(1px)}
   :root[data-theme=light] .mx{background:rgba(255,255,255,.7)}
   :root[data-theme=light] .stage .online,
@@ -665,7 +667,7 @@
   <div class="wrap hd">
     <a href="#top" class="brand">
       <span class="swk" id="hdMark"></span>
-      <span class="wordmark">STUFFWEKNOW</span>
+      <span class="wordmark">STUFFWEKNOW<span class="tm">™</span></span>
     </a>
     <nav class="main">
       <a href="#catalog" data-filter="all">Shop</a>
@@ -734,7 +736,7 @@
       <span class="meteor m1"></span><span class="meteor m2"></span>
       <div class="online" id="onlineBox"><i></i><b id="onlineN">1</b> online</div>
       <button class="storm-toggle" id="stormSound" aria-pressed="false" aria-label="Storm sound"><span id="stormIco">🔈</span> Storm</button>
-      <div class="cap"><b>stuffweknow.com</b><i>✦</i>wear what you know</div>
+      <div class="cap"><b>stuffweknow.com</b><i>✦</i>know more. own less.</div>
     </div>
   </div>
 </section>
@@ -795,8 +797,8 @@
   <div class="wrap">
     <div class="news reveal">
       <div>
-        <h3>Join the list</h3>
-        <p>Early access to every drop before it goes public. No noise — only the pieces.</p>
+        <h3>Be the first to know</h3>
+        <p>Early access to every drop before it goes public. Know more, own less.</p>
       </div>
       <form id="news">
         <input type="email" placeholder="you@email.com" required>
@@ -812,8 +814,8 @@
     <div class="foot">
       <div class="about">
         <span class="swk" id="ftMark" style="width:38px;height:38px"></span>
-        <span class="wordmark">STUFFWEKNOW</span>
-        <p>Curated technical footwear and objects. Dark, minimal, made to last. Drop 01 — 2026.</p>
+        <span class="wordmark">STUFFWEKNOW<span class="tm">™</span></span>
+        <p>Considered technical footwear and objects. Know more, own less. Drop 01 — 2026.</p>
         <div class="socials">
           <a href="#" aria-label="Instagram" data-ic="instagram"></a>
           <a href="#" aria-label="TikTok" data-ic="tiktok"></a>
@@ -824,8 +826,8 @@
       <div><h5>Studio</h5><a class="fl" href="#">About</a><a class="fl" href="#">Drop 01</a><a class="fl" href="#">Stockists</a><a class="fl" href="#">Careers</a></div>
     </div>
     <div class="foot-btm">
-      <span>© 2026 StuffWeKnow. Not affiliated with Nike or Adidas.</span>
-      <span>Made in the dark</span>
+      <span>© 2026 STUFFWEKNOW™. Not affiliated with Nike or Adidas.</span>
+      <span>Know more. Own less.</span>
     </div>
   </div>
 </footer>
@@ -1015,12 +1017,12 @@ const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
 
 /* ---------- announce + marquee ---------- */
 $('#announce').innerHTML=(()=>{const t=['Drop 01 — Now Live','Free Shipping Over $150','Authenticity Guaranteed','48h Worldwide Express'];const one=t.map(x=>`<span>${x}<i></i></span>`).join('');return one+one})();
-$('#strip').innerHTML=(()=>{const w='<b>StuffWeKnow<i></i></b><b>Luxury Streetwear<i></i></b><b>Drop 01<i></i></b><b>Made To Last<i></i></b>';return w+w})();
+$('#strip').innerHTML=(()=>{const w='<b>StuffWeKnow<i></i></b><b>Know More. Own Less.<i></i></b><b>Drop 01<i></i></b><b>Made To Last<i></i></b>';return w+w})();
 
 /* ---------- grid ---------- */
 const grid=$('#grid');
 function counts(){$('#count').textContent=PRODUCTS.length+' pieces';var pn=document.getElementById('pieceN');if(pn)pn.textContent=PRODUCTS.length}
-function badgeCls(b){return b==='LIMITED'?'b-limited':b==='SOLD OUT'?'b-sold':b.startsWith('DROP')?'b-drop':''}
+function badgeCls(b){b=(b||'').toUpperCase();return b==='LIMITED'?'b-limited':b==='SOLD OUT'?'b-sold':b==='PREMIUM'?'b-premium':b==='LOW STOCK'?'b-low':b==='DROP 02'?'b-drop2':b.startsWith('DROP')?'b-drop':''}
 function renderGrid(){
   const list=PRODUCTS.filter(p=>{
     const mf=activeFilter==='all'||p.brand===activeFilter||(activeFilter==='accessories'&&p.type==='accessories');
