@@ -542,7 +542,20 @@
     .stage .cap i{margin:0 6px}
     .orbit-item{width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:14px}
     .orbit-item svg{width:26px;height:26px}
-    .qv{grid-template-columns:1fr}.qv-media{min-height:260px;border-right:none;border-bottom:1px solid var(--line)}
+    .qv{grid-template-columns:1fr}
+    /* .qv-media's child (.ph) is absolute, so it needs a definite height */
+    .qv-media{min-height:0;height:34vh;border-right:none;border-bottom:1px solid var(--line)}
+    .qv-media .ph img,.qv-media.photo img,.qv-media .art{max-height:88%;max-width:82%;width:auto;object-fit:contain}
+    .qv-info{padding:20px 20px 26px}
+    .qv-info h3{font-size:21px;margin:8px 0 12px}
+    .qv-info .desc{margin-bottom:20px}
+    .sizes{margin-bottom:22px}
+    .sz{min-width:0;height:42px;padding:0 13px;font-size:12.5px}
+    /* pin the close button so it's always tappable while scrolling
+       (drop the card transform so position:fixed is viewport-relative) */
+    .mcard{transform:none!important}
+    .mx{position:fixed;top:calc(12px + env(safe-area-inset-top));right:12px;z-index:130;width:44px;height:44px;
+      background:var(--surface);border:1px solid var(--line-2);color:var(--ink);box-shadow:0 6px 20px rgba(0,0,0,.22)}
     .news{grid-template-columns:1fr}.foot{grid-template-columns:1fr 1fr}
   }
   @media(max-width:620px){
@@ -1275,6 +1288,8 @@ function closeAll(){drawer.classList.remove('show');document.querySelectorAll('.
 $('#cartBtn').addEventListener('click',openDrawer);$('#closeCart').addEventListener('click',closeDrawer);
 $('#qvClose').addEventListener('click',()=>closeModal('#qvModal'));$('#coClose').addEventListener('click',()=>closeModal('#coModal'));
 overlay.addEventListener('click',closeAll);document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAll()});
+/* tap the modal backdrop (area around the card) to dismiss */
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeModal('#'+m.id)}));
 
 /* ---------- toast ---------- */
 function toast(msg){const t=document.createElement('div');t.className='toast';t.innerHTML=ICON.check+'<span>'+msg+'</span>';$('#toasts').appendChild(t);requestAnimationFrame(()=>t.classList.add('show'));setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),320)},2200)}
