@@ -683,9 +683,6 @@
   <div class="bar"><i></i></div>
 </div></div>
 
-<!-- ANNOUNCE -->
-<div class="announce"><div class="track" id="announce"></div></div>
-
 <!-- HEADER -->
 <header>
   <div class="wrap hd">
@@ -1040,7 +1037,6 @@ const fmt=n=>'$'+n.toFixed(0),$=s=>document.querySelector(s);
 const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
 
 /* ---------- announce + marquee ---------- */
-$('#announce').innerHTML=(()=>{const t=['Drop 01 — Now Live','Free Shipping Over $150','Authenticity Guaranteed','48h Worldwide Express'];const one=t.map(x=>`<span>${x}<i></i></span>`).join('');return one+one})();
 $('#strip').innerHTML=(()=>{const w='<b>StuffWeKnow<i></i></b><b>Know More. Own Less.<i></i></b><b>Drop 01<i></i></b><b>Made To Last<i></i></b>';return w+w})();
 
 /* ---------- grid ---------- */
