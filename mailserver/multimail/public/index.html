@@ -1191,7 +1191,13 @@ $('rCreate').addEventListener('click', async () => {
 });
 
 $('refreshBtn').addEventListener('click', reload);
-setInterval(() => reload().catch(() => {}), 60_000); // auto-refresh every minute
+// Живое обновление: каждые 30 сек, пока вкладка на виду; скрытая вкладка
+// сервер не дёргает. Возврат в приложение обновляет почту сразу.
+setInterval(() => { if (!document.hidden) reload().catch(() => {}); }, 30_000);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) reload().catch(() => {});
+});
+window.addEventListener('focus', () => reload().catch(() => {}));
 
 // iOS Safari: после закрытия клавиатуры страница может остаться сдвинутой — возвращаем на место
 document.addEventListener('focusout', () => setTimeout(() => window.scrollTo(0, 0), 60));
