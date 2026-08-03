@@ -594,6 +594,7 @@ app.get('/api/info', (req, res) => {
     maxAccounts: MAX_ACCOUNTS,
     accounts: s.accounts.map((a) => ({ id: a.id, email: a.email })),
     isAdmin: s.accounts.some((a) => a.email === ADMIN_EMAIL),
+    bundle: s.bundle || null,
   });
 });
 

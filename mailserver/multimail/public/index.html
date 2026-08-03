@@ -116,6 +116,12 @@
   .addbox .alt:hover { background: rgba(148,163,214,.2); }
   .addbox .out { color: #f87171; }
   .addbox .out:hover { background: rgba(248,113,113,.14); }
+  .addbox .binfo {
+    width: 100%; margin-top: 7px; padding: 9px; border-radius: 8px;
+    font-size: 12.5px; font-weight: 650; text-align: center;
+    background: rgba(37,99,255,.10); color: var(--acc2);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
   .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
   .addrline { display: flex; align-items: center; gap: 8px; }
   .addrline input { margin-bottom: 9px; }
@@ -367,6 +373,7 @@
     <button id="aBtn">+ Add mailbox</button>
     <button id="newAddrBtn" class="alt">Create new address</button>
     <button id="bundleBtn" class="alt">📦 Combo account</button>
+    <div id="bundleInfo" class="binfo" style="display:none"></div>
     <button id="tgBtn" class="alt" style="display:none">🔔 Telegram alerts</button>
     <button id="pwBtn" class="alt" style="display:none">🔑 Change password</button>
     <button id="adminBtn" class="alt" style="display:none">👑 Admin</button>
@@ -487,6 +494,13 @@ let unreadOnly = false;
 let limit = 20;         // сколько писем тянем на ящик (Load more увеличивает)
 let searchResults = null; // null = обычный режим, массив = режим поиска
 let isAdmin = false;
+let bundleName = null;  // сессия привязана к сборке — вместо кнопки показываем плашку
+
+function renderBundleUi() {
+  $('bundleBtn').style.display = bundleName ? 'none' : '';
+  $('bundleInfo').style.display = bundleName ? '' : 'none';
+  if (bundleName) $('bundleInfo').textContent = `📦 Combo account: ${bundleName}`;
+}
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -510,8 +524,7 @@ async function api(url, opts) {
 }
 
 async function init() {
-  const info = await api('api/info');
-  isAdmin = !!info.isAdmin;
+  let info = await api('api/info');
   // server session is empty but the browser remembers mailboxes — restore them
   if (info.accounts.length === 0 && saved().length) {
     for (const a of saved()) {
@@ -528,7 +541,11 @@ async function init() {
       if (b) await api('api/bundle/login', { method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ name: b.n, password: decodeURIComponent(escape(atob(b.p))) }) });
     } catch { localStorage.removeItem('viplyBundle'); }
+    info = await api('api/info'); // после восстановления статусы могли измениться
   }
+  isAdmin = !!info.isAdmin;
+  bundleName = info.bundle;
+  renderBundleUi();
   await reload();
 }
 
@@ -1021,6 +1038,8 @@ $('bCreate').addEventListener('click', async () => {
     const d = await api('api/bundle', { method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ name: $('bName').value, password: $('bPass').value }) });
     rememberBundle(d.name, $('bPass').value);
+    bundleName = d.name;
+    renderBundleUi();
     st.className = 'st ok';
     st.textContent = `Combo “${d.name}” saved: ${d.count} mailbox(es) ✓`;
     setTimeout(closeBundle, 1400);
@@ -1035,6 +1054,8 @@ $('bLogin').addEventListener('click', async () => {
     const d = await api('api/bundle/login', { method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ name: $('bName').value, password: $('bPass').value }) });
     rememberBundle($('bName').value.trim().toLowerCase(), $('bPass').value);
+    bundleName = $('bName').value.trim().toLowerCase();
+    renderBundleUi();
     st.className = 'st ok';
     st.textContent = `Loaded: ${d.total} mailbox(es) ✓`;
     await reload();
