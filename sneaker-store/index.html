@@ -74,7 +74,8 @@
   .ic.menu-btn{display:none}
 
   /* ============ HERO ============ */
-  .hero{position:relative;overflow:hidden;padding:clamp(48px,8vw,104px) 0 clamp(40px,6vw,72px)}
+  .hero{position:relative;overflow:hidden;padding:clamp(48px,8vw,104px) 0 clamp(16px,2.5vw,32px)}
+  #catalog{padding-top:clamp(14px,2.5vw,26px)}
   .hero-grid{position:relative;z-index:2;display:grid;grid-template-columns:1.15fr .85fr;gap:clamp(24px,5vw,60px);align-items:center}
   .hero-copy .eyebrow{display:flex;align-items:center;gap:12px;margin-bottom:26px}
   .hero-copy .eyebrow::before{content:"";width:34px;height:1px;background:var(--line-2)}
@@ -773,9 +774,6 @@
 <!-- CATALOG -->
 <section id="catalog" class="section">
   <div class="wrap">
-    <div class="sec-head reveal">
-      <div><h2>The Drop</h2><div class="n" id="count">— pieces</div></div>
-    </div>
     <div class="controls reveal">
       <div class="filters" id="filters">
         <button class="chip active" data-filter="all">All</button>
@@ -1095,7 +1093,7 @@ const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
 
 /* ---------- grid ---------- */
 const grid=$('#grid');
-function counts(){$('#count').textContent=PRODUCTS.length+' pieces';var pn=document.getElementById('pieceN');if(pn)pn.textContent=PRODUCTS.length}
+function counts(){var cn=document.getElementById('count');if(cn)cn.textContent=PRODUCTS.length+' pieces';var pn=document.getElementById('pieceN');if(pn)pn.textContent=PRODUCTS.length}
 /* product categories (footwear is all men's) */
 function productCat(p){
   if(p.type==='sneakers')return 'shoes';
