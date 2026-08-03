@@ -553,7 +553,10 @@
     .qv-info .desc{font-size:13px;line-height:1.55;margin-bottom:14px;
       display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
     .szlbl{margin-bottom:9px}
-    .sizes{gap:7px;margin-bottom:14px}
+    /* cap the size grid and scroll inside it so many sizes stay compact */
+    .sizes{gap:7px;margin-bottom:14px;max-height:150px;overflow-y:auto;overscroll-behavior:contain;
+      -webkit-overflow-scrolling:touch;padding:2px 2px 2px 0;
+      -webkit-mask:linear-gradient(#000 calc(100% - 16px),transparent);mask:linear-gradient(#000 calc(100% - 16px),transparent)}
     .sz{min-width:0;height:40px;padding:0 12px;font-size:12.5px}
     /* pin the ADD bar to the bottom so it's always visible & never clipped */
     .qv-act{position:sticky;bottom:0;margin:0 -18px;padding:12px 18px calc(14px + env(safe-area-inset-bottom));
