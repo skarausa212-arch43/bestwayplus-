@@ -204,6 +204,40 @@
   .ftab .cnt { color: var(--gold); font-weight: 700; margin-left: 3px; }
   .ftab.active .cnt { color: #fff; }
 
+  .ftab.icon { padding: 6px 11px; flex: none; }
+
+  /* пустая панель письма: анимированный логотип */
+  .ph-logo {
+    position: relative; width: 110px; height: 110px;
+    display: flex; align-items: center; justify-content: center;
+    animation: phFloat 4.5s ease-in-out infinite;
+  }
+  .ph-logo svg { width: 62px; height: 62px; filter: drop-shadow(0 10px 34px rgba(37,99,255,.5)); }
+  @keyframes phFloat { 50% { transform: translateY(-11px); } }
+  .ph-ring {
+    position: absolute; inset: 0; border-radius: 50%;
+    border: 1px solid rgba(67,200,255,.35);
+    animation: phRing 3.2s ease-out infinite;
+  }
+  .ph-ring.r2 { animation-delay: 1.05s; }
+  .ph-ring.r3 { animation-delay: 2.1s; }
+  @keyframes phRing { 0% { transform: scale(.5); opacity: .9; } 100% { transform: scale(1.7); opacity: 0; } }
+  .ph-dot {
+    position: absolute; left: 50%; top: 50%; width: 5px; height: 5px; margin: -2.5px;
+    border-radius: 50%; background: var(--acc2); box-shadow: 0 0 9px var(--acc2);
+    animation: phOrbit 6.5s linear infinite;
+  }
+  .ph-dot.d2 { background: var(--acc); box-shadow: 0 0 9px var(--acc); animation-duration: 8.5s; animation-delay: -3s; }
+  .ph-dot.d3 { width: 3.5px; height: 3.5px; animation-duration: 11s; animation-delay: -6s; opacity: .7; }
+  @keyframes phOrbit { from { transform: rotate(0deg) translateX(60px); } to { transform: rotate(360deg) translateX(60px); } }
+  .ph-title { font-size: 21px; font-weight: 800; letter-spacing: -.02em; color: #fff; margin-top: 4px; }
+  .ph-title i {
+    font-style: normal;
+    background: linear-gradient(90deg, var(--acc), var(--acc2));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .ph-sub { color: var(--dim); font-size: 13px; }
+
   .searchrow { display: flex; gap: 6px; padding: 8px 14px; border-bottom: 1px solid var(--line); align-items: center; }
   .searchrow input {
     flex: 1; padding: 8px 12px; font-size: 13px; color: var(--text);
@@ -397,8 +431,8 @@
       <button class="ftab" data-f="sent">Sent</button>
       <button class="ftab" data-f="trash">Trash</button>
       <span class="sp"></span>
-      <button class="ftab" id="unreadTgl" title="Unread only">● unread</button>
-      <button class="ftab" id="readAllBtn" title="Mark all read">✓ read</button>
+      <button class="ftab icon" id="unreadTgl" title="Unread only">●</button>
+      <button class="ftab icon" id="readAllBtn" title="Mark all read">✓</button>
     </div>
     <div class="searchrow">
       <input id="searchIn" placeholder="Search all mailboxes…" autocomplete="off">
@@ -414,7 +448,15 @@
     </div>
   </div>
   <div class="view" id="view">
-    <div class="placeholder">Select a message</div>
+    <div class="placeholder">
+      <div class="ph-logo">
+        <span class="ph-ring"></span><span class="ph-ring r2"></span><span class="ph-ring r3"></span>
+        <span class="ph-dot"></span><span class="ph-dot d2"></span><span class="ph-dot d3"></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#2563FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="19" height="15" rx="4"/><path d="M6.5 9.5l4 3.2a2.4 2.4 0 0 0 3 0L17.5 9.5" stroke="#43C8FF"/></svg>
+      </div>
+      <div class="ph-title">email<i>inc</i></div>
+      <div class="ph-sub">Select a message</div>
+    </div>
   </div>
 </main>
 
@@ -503,6 +545,12 @@ function renderBundleUi() {
 }
 
 const $ = (id) => document.getElementById(id);
+const PLACEHOLDER = document.getElementById('view').innerHTML; // анимированный логотип
+function showPlaceholder() {
+  const v = $('view');
+  v.classList.remove('open');
+  v.innerHTML = PLACEHOLDER;
+}
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 // --- mailboxes remembered in this browser ---
@@ -889,13 +937,12 @@ async function openMessage(accId, uid) {
       try {
         await api('api/delete', { method: 'POST', headers: {'Content-Type':'application/json'},
           body: JSON.stringify({ folder: fld, items: [{ account: accId, uids: [uid] }] }) });
-        v.classList.remove('open');
-        v.innerHTML = '<div class="placeholder">Select a message</div>';
+        showPlaceholder();
         selected = null;
         await reload();
       } catch (e) { alert(e.message); }
     });
-    $('backBtn').addEventListener('click', () => { v.classList.remove('open'); selected = null; renderList(); });
+    $('backBtn').addEventListener('click', () => { showPlaceholder(); selected = null; renderList(); });
     const cachedList = fld === 'spam' ? acc?.spam?.messages
       : fld === 'sent' ? acc?.sent?.messages
       : fld === 'trash' ? acc?.trash?.messages
@@ -909,7 +956,7 @@ async function openMessage(accId, uid) {
     }
   } catch (e) {
     v.innerHTML = `<div class="placeholder"><button class="backBtn" id="backBtn2">← Inbox</button>${esc(e.message)}</div>`;
-    $('backBtn2').addEventListener('click', () => { v.classList.remove('open'); selected = null; renderList(); });
+    $('backBtn2').addEventListener('click', () => { showPlaceholder(); selected = null; renderList(); });
   }
 }
 
@@ -920,8 +967,7 @@ async function moveMessage(accId, uid, to, from) {
   try {
     await api('api/move', { method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ account: accId, uid, to, from }) });
-    $('view').classList.remove('open');
-    $('view').innerHTML = '<div class="placeholder">Select a message</div>';
+    showPlaceholder();
     selected = null;
     await reload();
   } catch (e) {
