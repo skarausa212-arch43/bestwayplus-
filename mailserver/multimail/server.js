@@ -589,6 +589,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
 
 app.get('/api/info', (req, res) => {
   const s = getSession(req, res);
+  adoptBundle(s);
   res.json({
     host: MAIL_HOST,
     maxAccounts: MAX_ACCOUNTS,
@@ -610,6 +611,7 @@ app.get('/api/admin/stats', (req, res) => {
 // Добавить ящик: проверяем логин по IMAP, только потом сохраняем
 app.post('/api/accounts', async (req, res) => {
   const s = getSession(req, res);
+  adoptBundle(s); // сначала свежий состав сборки — иначе затрём чужие добавления
   const { email, password, host } = req.body || {};
   if (typeof email !== 'string' || !email.trim() || typeof password !== 'string' || !password) {
     return res.status(400).json({ error: 'Please provide an address and password.' });
@@ -673,6 +675,7 @@ app.post('/api/logout', (req, res) => {
 
 app.delete('/api/accounts/:id', (req, res) => {
   const s = getSession(req, res);
+  adoptBundle(s);
   const before = s.accounts.length;
   s.accounts = s.accounts.filter((a) => a.id !== req.params.id);
   persistSessions();
@@ -683,6 +686,7 @@ app.delete('/api/accounts/:id', (req, res) => {
 // Все входящие всех ящиков одним запросом
 app.get('/api/inbox', async (req, res) => {
   const s = getSession(req, res);
+  adoptBundle(s);
   const limit = Math.min(200, parseInt(req.query.limit, 10) || 20);
   const results = await Promise.allSettled(s.accounts.map((a) => fetchInbox(a, limit)));
   res.json({
@@ -940,6 +944,24 @@ function syncBundle(s) {
   b.accounts = s.accounts.map(({ email, password, host }) => ({ email, password, host }));
   b.updatedAt = new Date().toISOString();
   persistBundles();
+}
+
+// Обратное направление: привязанная сессия подтягивает актуальный состав сборки.
+// Добавил ящик на одном устройстве — он появляется на всех остальных.
+function adoptBundle(s) {
+  const b = s.bundle && bundles[s.bundle];
+  if (!b) return;
+  const byEmail = new Map(s.accounts.map((a) => [a.email, a]));
+  const fresh = b.accounts.slice(0, MAX_ACCOUNTS).map((a) => {
+    const old = byEmail.get(a.email);
+    // id сохраняем, чтобы открытое письмо/фильтр не слетали; tgUid — чтобы
+    // телеграм-уведомления не пересчитывали историю
+    return { ...a, id: old?.id || crypto.randomBytes(6).toString('hex'), tgUid: old?.tgUid };
+  });
+  const changed = fresh.length !== s.accounts.length ||
+    fresh.some((a, i) => a.email !== s.accounts[i]?.email);
+  s.accounts = fresh;
+  if (changed) persistSessions();
 }
 
 // Создать (или обновить со своим паролем) сборку из ящиков текущей сессии
