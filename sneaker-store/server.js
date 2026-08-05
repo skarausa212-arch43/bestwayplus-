@@ -342,18 +342,25 @@ function receiptHTML(o) {
 const isAdmin = (req) => ADMIN_PASSWORD && req.headers['x-admin-key'] === ADMIN_PASSWORD;
 
 /* ---------- marketplace helpers ---------- */
-const CATEGORIES = ['sneakers','boots','sandals','formal-shoes','tshirts','hoodies','shirts','jackets','knitwear','pants','jeans','shorts','tracksuits','dresses','activewear','backpacks','handbags','totes','duffels','crossbody','wallets','caps','watches','jewelry','sunglasses','belts','scarves','balls','equipment','electronics','collectibles','home','beauty','other'];
+const CAT_GROUPS = {
+  shoes: ['sneakers','boots','sandals','formal-shoes','heels','flats','loafers','slippers'],
+  clothing: ['tshirts','hoodies','shirts','jackets','coats','knitwear','pants','jeans','shorts','tracksuits','dresses','skirts','activewear','suits','underwear','swimwear','socks'],
+  bags: ['backpacks','handbags','totes','duffels','crossbody','wallets','luggage','purses'],
+  accessories: ['caps','hats','watches','jewelry','sunglasses','belts','scarves','gloves','ties'],
+  electronics: ['phones','laptops','tablets','audio','headphones','gaming','cameras','wearables','tech-accessories','tv','smart-home'],
+  home: ['furniture','home-decor','kitchen','bedding','lighting','tools','garden','storage'],
+  beauty: ['makeup','skincare','fragrance','haircare','nails','grooming'],
+  kids: ['kids-clothing','kids-shoes','toys','baby-gear','baby-clothing'],
+  hobbies: ['books','music','movies','collectibles','art','sports-gear','musical-instruments','crafts'],
+  sport: ['balls','equipment','fitness','cycling','outdoor'],
+  other: ['electronics-other','vintage','pet','other'],
+};
+const CATEGORIES = Object.values(CAT_GROUPS).flat();
+const CAT_OF_GROUP = {}; for (const g in CAT_GROUPS) for (const c of CAT_GROUPS[g]) CAT_OF_GROUP[c] = g;
 const CONDITIONS = ['New', 'Like new', 'Very good', 'Good', 'Fair'];
 const REGIONS = ['North America', 'South America', 'Europe', 'Asia', 'Africa', 'Oceania'];
 const RETURNS = ['No returns', '14-day returns', '30-day returns'];
-function catGroup(c) {
-  if (['sneakers','boots','sandals','formal-shoes'].includes(c)) return 'shoes';
-  if (['tshirts','hoodies','shirts','jackets','knitwear','pants','jeans','shorts','tracksuits','dresses','activewear'].includes(c)) return 'clothing';
-  if (['backpacks','handbags','totes','duffels','crossbody','wallets'].includes(c)) return 'bags';
-  if (['caps','watches','jewelry','sunglasses','belts','scarves'].includes(c)) return 'accessories';
-  if (['balls','equipment'].includes(c)) return 'balls';
-  return 'other';
-}
+function catGroup(c) { return CAT_OF_GROUP[c] || 'other'; }
 function sellerStats(email) {
   const rs = reviews.filter(r => r.to === email && r.role === 'seller');
   const rating = rs.length ? Math.round((rs.reduce((s, r) => s + r.rating, 0) / rs.length) * 10) / 10 : 0;
@@ -403,7 +410,7 @@ function offerView(o) {
   return {
     id: o.id, listingId: o.listingId, amount: o.amount, counter: o.counter || 0, status: o.status, createdAt: o.createdAt,
     title: l ? l.title : '(removed)', cover: l ? (l.cover || '') : '', price: l ? l.price : 0,
-    buyerHandle: sellerHandle(o.buyer),
+    buyerHandle: sellerHandle(o.buyer), buyer: o.buyer,
   };
 }
 
@@ -550,10 +557,10 @@ const server = http.createServer(async (req, res) => {
         category: cat, price, old: Math.max(0, Math.round(Number(b.old) * 100) / 100) || 0,
         size: String(b.size || '').slice(0, 24), condition: CONDITIONS.includes(b.condition) ? b.condition : 'Good',
         ships, returns: RETURNS.includes(b.returns) ? b.returns : 'No returns',
-        desc: String(b.desc || '').slice(0, 1500), photos, cover: photos[0], status: 'active', createdAt: Date.now(),
+        desc: String(b.desc || '').slice(0, 1500), photos, cover: photos[0], status: 'pending', createdAt: Date.now(),
       };
       listings.push(l); saveListings();
-      return send(res, 201, { listing: listingFull(l) });
+      return send(res, 201, { listing: listingFull(l), moderation: true });
     }
     /* --- edit / remove listing (owner) --- */
     if ((req.method === 'PUT' || req.method === 'DELETE') && /^\/api\/listings\/[A-Za-z0-9-]+$/.test(p)) {
@@ -727,6 +734,47 @@ const server = http.createServer(async (req, res) => {
         return send(res, 201, { ok: true });
       }
     }
+    /* --- listing chat (buyer <-> seller, per listing) --- */
+    if (p === '/api/chat/thread' && req.method === 'GET') {
+      const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
+      const lid = String(url.searchParams.get('listingId') || '');
+      const buyer = String(url.searchParams.get('buyer') || u.email).toLowerCase();
+      const l = listings.find(x => x.id === lid);
+      if (!l) return send(res, 404, { error: 'not found' });
+      if (u.email !== buyer && u.email !== l.seller) return send(res, 403, { error: 'Not part of this chat.' });
+      const tid = lid + '|' + buyer;
+      const thread = messages.filter(m => m.thread === tid).map(m => ({ from: sellerHandle(m.from), me: m.from === u.email, text: m.text, at: m.at }));
+      const counterpart = u.email === l.seller ? sellerHandle(buyer) : sellerHandle(l.seller);
+      return send(res, 200, { messages: thread, counterpart, listing: { id: l.id, title: l.title, cover: l.cover || '', price: l.price } });
+    }
+    if (p === '/api/chat/send' && req.method === 'POST') {
+      const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
+      const b = await readBody(req);
+      const l = listings.find(x => x.id === b.listingId);
+      if (!l) return send(res, 404, { error: 'not found' });
+      const buyer = String(b.buyer || u.email).toLowerCase();
+      if (u.email !== buyer && u.email !== l.seller) return send(res, 403, { error: 'Not part of this chat.' });
+      if (buyer === l.seller) return send(res, 400, { error: "You can't message yourself." });
+      const text = String(b.text || '').trim().slice(0, 1000);
+      if (!text) return send(res, 400, { error: 'Empty message.' });
+      messages.push({ id: 'M-' + crypto.randomBytes(4).toString('hex'), thread: l.id + '|' + buyer, from: u.email, text, at: Date.now() });
+      saveMessages();
+      return send(res, 201, { ok: true });
+    }
+    if (p === '/api/my/chats' && req.method === 'GET') {
+      const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
+      const byThread = {};
+      for (const m of messages) {
+        if (!m.thread) continue;
+        const [lid, buyer] = m.thread.split('|');
+        const l = listings.find(x => x.id === lid); if (!l) continue;
+        if (u.email !== buyer && u.email !== l.seller) continue;
+        const t = byThread[m.thread] || (byThread[m.thread] = { listingId: lid, buyer, title: l.title, cover: l.cover || '', price: l.price, role: u.email === l.seller ? 'seller' : 'buyer', counterpart: u.email === l.seller ? sellerHandle(buyer) : sellerHandle(l.seller), last: '', at: 0 });
+        if (m.at >= t.at) { t.last = m.text; t.at = m.at; }
+      }
+      const chats = Object.values(byThread).sort((a, b) => b.at - a.at);
+      return send(res, 200, { chats });
+    }
     /* --- translate a chat message (keyless) --- */
     if (req.method === 'POST' && p === '/api/translate') {
       const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
@@ -839,6 +887,16 @@ const server = http.createServer(async (req, res) => {
         users[em].verified = !!verified; saveUsers();
         return send(res, 200, { ok: true });
       }
+      if (req.method === 'POST' && p === '/api/admin/listing-moderate') {
+        const { id, action } = await readBody(req);
+        const l = listings.find(x => x.id === id);
+        if (!l) return send(res, 404, { error: 'not found' });
+        if (action === 'approve') l.status = 'active';
+        else if (action === 'reject') l.status = 'rejected';
+        else return send(res, 400, { error: 'bad action' });
+        saveListings();
+        return send(res, 200, { ok: true });
+      }
       if (req.method === 'POST' && p === '/api/admin/report-resolve') {
         const { id, action } = await readBody(req);
         const rp = reports.find(x => x.id === id);
@@ -849,7 +907,8 @@ const server = http.createServer(async (req, res) => {
       }
       if (req.method === 'GET' && p === '/api/admin/market') {
         return send(res, 200, {
-          listings: listings.filter(l => l.status !== 'removed').slice(-200).reverse().map(listingCard),
+          pending: listings.filter(l => l.status === 'pending').sort((a, b) => a.createdAt - b.createdAt).map(l => ({ ...listingCard(l), sellerEmail: l.seller, desc: l.desc || '', photos: (l.photos || []).slice(0, 6) })),
+          listings: listings.filter(l => l.status !== 'removed' && l.status !== 'pending').slice(-200).reverse().map(listingCard),
           disputes: orders.filter(o => o.status === 'disputed').map(orderView),
           payouts: orders.filter(o => o.status === 'released' && !o.paidOut).map(o => ({ ...orderView(o), payout: (users[o.seller] || {}).payout || '' })),
           reports: reports.filter(r => r.status === 'open').map(r => { const l = listings.find(x => x.id === r.listingId); return { id: r.id, listingId: r.listingId, title: l ? l.title : '(gone)', seller: l ? sellerHandle(l.seller) : '', reason: r.reason, from: sellerHandle(r.from), at: r.at }; }),

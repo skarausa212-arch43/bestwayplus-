@@ -71,6 +71,8 @@
   .ship .save:hover{filter:brightness(1.05)}
   .rcpt{color:var(--accent);font-weight:600}
   .empty{color:var(--faint);text-align:center;padding:26px}
+  .thumbs{display:flex;gap:5px}
+  .thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;border:1px solid var(--line)}
   @media(max-width:1000px){.cards{grid-template-columns:repeat(3,1fr)}}
   @media(max-width:640px){.cards{grid-template-columns:repeat(2,1fr)}.hidem{display:none}}
 </style>
@@ -110,6 +112,12 @@
     <h2>Orders</h2>
     <div style="overflow-x:auto"><table id="ordersT">
       <thead><tr><th>Order</th><th>Date</th><th class="hidem">Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Receipt</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+
+    <h2>Marketplace · Pending listings (moderation)</h2>
+    <div style="overflow-x:auto"><table id="modT">
+      <thead><tr><th>Item</th><th class="hidem">Seller</th><th>Category</th><th>Price</th><th>Preview</th><th>Decision</th></tr></thead>
       <tbody></tbody>
     </table></div>
 
@@ -212,6 +220,19 @@ async function loadDash(){
 async function loadMarketAdmin(){
   let m;try{m=await api('/api/admin/market');}catch(e){return;}
   const setStatus=async(id,status)=>{await api('/api/admin/order-status',{method:'POST',body:JSON.stringify({id,status})});loadDash();};
+  // pending moderation
+  const mb=$('#modT tbody');
+  mb.innerHTML=(m.pending&&m.pending.length)?m.pending.map(l=>{
+    const thumbs=(l.photos||[]).slice(0,4).map(p=>`<img src="${p}" class="thumb">`).join('');
+    return `<tr><td class="id">${(l.title||'').replace(/</g,'&lt;')}<div class="items">${(l.desc||'').replace(/</g,'&lt;').slice(0,120)}</div></td>
+      <td class="hidem">@${(l.seller&&l.seller.handle)||''}<div class="items">${l.sellerEmail||''}</div></td>
+      <td>${l.category||''}<div class="items">${(l.brand||'')} · ${(l.condition||'')}${l.size?' · '+l.size:''}</div></td>
+      <td class="money">${fmt$(l.price)}</td>
+      <td><div class="thumbs">${thumbs||'—'}</div></td>
+      <td><button class="save" data-approve="${l.id}">Approve</button> <button class="save" data-reject="${l.id}" style="background:#7a1020">Reject</button></td></tr>`;
+  }).join(''):'<tr><td colspan="6" class="empty">Nothing awaiting review.</td></tr>';
+  mb.querySelectorAll('[data-approve]').forEach(b=>b.addEventListener('click',async()=>{await api('/api/admin/listing-moderate',{method:'POST',body:JSON.stringify({id:b.dataset.approve,action:'approve'})});loadDash();}));
+  mb.querySelectorAll('[data-reject]').forEach(b=>b.addEventListener('click',async()=>{if(!confirm('Reject this listing?'))return;await api('/api/admin/listing-moderate',{method:'POST',body:JSON.stringify({id:b.dataset.reject,action:'reject'})});loadDash();}));
   const db=$('#dispT tbody');
   db.innerHTML=(m.disputes&&m.disputes.length)?m.disputes.map(o=>{
     const it=(o.items&&o.items[0])||{};

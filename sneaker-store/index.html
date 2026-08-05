@@ -800,8 +800,9 @@
       <a href="#catalog" data-filter="shoes">Shoes</a>
       <a href="#catalog" data-filter="clothing">Clothing</a>
       <a href="#catalog" data-filter="bags">Bags</a>
+      <a href="#catalog" data-filter="electronics">Electronics</a>
       <a href="#catalog" data-filter="accessories">Accessories</a>
-      <a href="#catalog" data-filter="balls">Sport</a>
+      <a href="#catalog" data-filter="sport">Sport</a>
     </nav>
     <div class="tools">
       <button class="sell-pill" id="sellBtn">Sell</button>
@@ -854,7 +855,7 @@
         <span class="orbit-item accent" data-pic="sunglasses" data-label="Accessories" data-filter="accessories" style="animation-delay:-2.5s"></span>
         <span class="orbit-item" data-pic="hoodie" data-label="Clothing" data-filter="clothing" style="animation-delay:-5s"></span>
         <span class="orbit-item" data-pic="handbag" data-label="Bags" data-filter="bags" style="animation-delay:-7.5s"></span>
-        <span class="orbit-item accent" data-pic="watch" data-label="Sport" data-filter="balls" style="animation-delay:-10s"></span>
+        <span class="orbit-item accent" data-pic="watch" data-label="Sport" data-filter="sport" style="animation-delay:-10s"></span>
         <span class="orbit-item" data-pic="cap" data-label="Accessories" data-filter="accessories" style="animation-delay:-12.5s"></span>
         <div class="refl"></div>
       </div>
@@ -876,7 +877,12 @@
         <button class="chip" data-filter="clothing">Clothing</button>
         <button class="chip" data-filter="bags">Bags</button>
         <button class="chip" data-filter="accessories">Accessories</button>
-        <button class="chip" data-filter="balls">Sport</button>
+        <button class="chip" data-filter="electronics">Electronics</button>
+        <button class="chip" data-filter="home">Home</button>
+        <button class="chip" data-filter="beauty">Beauty</button>
+        <button class="chip" data-filter="kids">Kids</button>
+        <button class="chip" data-filter="hobbies">Hobbies</button>
+        <button class="chip" data-filter="sport">Sport</button>
       </div>
       <div class="search">
         <span data-ic="search"></span>
@@ -956,6 +962,7 @@
 <div class="modal co" id="accModal"><div class="mcard"><button class="mx" id="accClose" data-ic="close"></button><div id="accBody"></div></div></div>
 <div class="modal" id="lstModal"><div class="mcard"><button class="mx" id="lstClose" data-ic="close"></button><div class="qv" id="lstBody"></div></div></div>
 <div class="modal co" id="sellModal"><div class="mcard"><button class="mx" id="sellClose" data-ic="close"></button><div id="sellBody"></div></div></div>
+<div class="modal co" id="chatModal"><div class="mcard"><button class="mx" id="chatClose" data-ic="close"></button><div id="chatBody"></div></div></div>
 
 <div class="toasts" id="toasts"></div>
 
@@ -1204,7 +1211,7 @@ function productCat(p){
 const CAT_LABEL={shoes:"Men's Shoes",backpacks:'Backpack',bags:'Bag',caps:'Cap',balls:'Ball'};
 function catLabel(p){return CAT_LABEL[productCat(p)]||'Object'}
 /* map the catalog's product category to a browse group (matches listing groups) */
-const GROUP_OF={shoes:'shoes',backpacks:'bags',bags:'bags',caps:'accessories',balls:'balls'};
+const GROUP_OF={shoes:'shoes',backpacks:'bags',bags:'bags',caps:'accessories',balls:'sport'};
 function productGroup(p){return GROUP_OF[productCat(p)]||'other';}
 function badgeCls(b){b=(b||'').toUpperCase();return b==='LIMITED'?'b-limited':b==='SOLD OUT'?'b-sold':b==='PREMIUM'?'b-premium':b==='LOW STOCK'?'b-low':b==='DROP 02'?'b-drop2':b.startsWith('DROP')?'b-drop':''}
 let LISTINGS=[];
@@ -1582,9 +1589,11 @@ document.querySelectorAll('.orbit-item[data-pic]').forEach(function(o){
 });
 
 /* ================= MARKETPLACE (frontend) ================= */
-const CAT_NAME=c=>({sneakers:'Sneakers',boots:'Boots',sandals:'Sandals & Slides','formal-shoes':'Formal Shoes',tshirts:'T‑Shirts',hoodies:'Hoodies & Sweats',shirts:'Shirts',jackets:'Jackets & Coats',knitwear:'Knitwear',pants:'Pants',jeans:'Jeans',shorts:'Shorts',tracksuits:'Tracksuits',dresses:'Dresses & Skirts',activewear:'Activewear',backpacks:'Backpack',handbags:'Handbag',totes:'Tote',duffels:'Duffel & Gym',crossbody:'Crossbody & Waist',wallets:'Wallet & Pouch',caps:'Cap & Hat',watches:'Watch',jewelry:'Jewelry',sunglasses:'Sunglasses',belts:'Belt',scarves:'Scarf & Gloves',balls:'Ball',equipment:'Equipment',electronics:'Electronics',collectibles:'Collectible',home:'Home',beauty:'Beauty',other:'Other'}[c]||'Item');
-const CAT_TREE=[['Footwear',['sneakers','boots','sandals','formal-shoes']],['Clothing',['tshirts','hoodies','shirts','jackets','knitwear','pants','jeans','shorts','tracksuits','dresses','activewear']],['Bags',['backpacks','handbags','totes','duffels','crossbody','wallets']],['Accessories',['caps','watches','jewelry','sunglasses','belts','scarves']],['Sport',['balls','equipment']],['Other',['electronics','collectibles','home','beauty','other']]];
-const BRANDS=['Nike','adidas','Jordan','New Balance','Puma','Reebok','Converse','Vans','ASICS','Yeezy','Supreme','Stüssy','Carhartt','The North Face','Ralph Lauren','Tommy Hilfiger','Lacoste','Levi\'s','Zara','H&M','Uniqlo','Gucci','Louis Vuitton','Prada','Balenciaga','Off‑White','Moncler','Stone Island','Burberry','Dior','Other'];
+const CAT_NAME=c=>({sneakers:'Sneakers',boots:'Boots',sandals:'Sandals & Slides','formal-shoes':'Formal Shoes',heels:'Heels',flats:'Flats',loafers:'Loafers',slippers:'Slippers',tshirts:'T‑Shirts',hoodies:'Hoodies & Sweats',shirts:'Shirts',jackets:'Jackets',coats:'Coats',knitwear:'Knitwear',pants:'Pants',jeans:'Jeans',shorts:'Shorts',tracksuits:'Tracksuits',dresses:'Dresses',skirts:'Skirts',activewear:'Activewear',suits:'Suits & Blazers',underwear:'Underwear',swimwear:'Swimwear',socks:'Socks',backpacks:'Backpack',handbags:'Handbag',totes:'Tote',duffels:'Duffel & Gym',crossbody:'Crossbody',wallets:'Wallet',luggage:'Luggage',purses:'Purse',caps:'Cap',hats:'Hat',watches:'Watch',jewelry:'Jewelry',sunglasses:'Sunglasses',belts:'Belt',scarves:'Scarf',gloves:'Gloves',ties:'Tie',phones:'Phones',laptops:'Laptops',tablets:'Tablets',audio:'Speakers & Audio',headphones:'Headphones',gaming:'Gaming',cameras:'Cameras',wearables:'Smartwatches',
+'tech-accessories':'Tech Accessories',tv:'TV & Displays','smart-home':'Smart Home',furniture:'Furniture','home-decor':'Home Decor',kitchen:'Kitchen',bedding:'Bedding',lighting:'Lighting',tools:'Tools',garden:'Garden',storage:'Storage',makeup:'Makeup',skincare:'Skincare',fragrance:'Fragrance',haircare:'Haircare',nails:'Nails',grooming:'Grooming','kids-clothing':'Kids Clothing','kids-shoes':'Kids Shoes',toys:'Toys','baby-gear':'Baby Gear','baby-clothing':'Baby Clothing',books:'Books',music:'Music & Vinyl',movies:'Movies',collectibles:'Collectibles',art:'Art',
+'sports-gear':'Sports Gear','musical-instruments':'Instruments',crafts:'Crafts',balls:'Ball',equipment:'Equipment',fitness:'Fitness',cycling:'Cycling',outdoor:'Outdoor','electronics-other':'Electronics',vintage:'Vintage',pet:'Pet',other:'Other'}[c]||'Item');
+const CAT_TREE=[['Shoes',['sneakers','boots','sandals','formal-shoes','heels','flats','loafers','slippers']],['Clothing',['tshirts','hoodies','shirts','jackets','coats','knitwear','pants','jeans','shorts','tracksuits','dresses','skirts','activewear','suits','underwear','swimwear','socks']],['Bags',['backpacks','handbags','totes','duffels','crossbody','wallets','luggage','purses']],['Accessories',['caps','hats','watches','jewelry','sunglasses','belts','scarves','gloves','ties']],['Electronics',['phones','laptops','tablets','audio','headphones','gaming','cameras','wearables','tech-accessories','tv','smart-home']],['Home',['furniture','home-decor','kitchen','bedding','lighting','tools','garden','storage']],['Beauty',['makeup','skincare','fragrance','haircare','nails','grooming']],['Kids & Baby',['kids-clothing','kids-shoes','toys','baby-gear','baby-clothing']],['Hobbies',['books','music','movies','collectibles','art','sports-gear','musical-instruments','crafts']],['Sport',['balls','equipment','fitness','cycling','outdoor']],['Other',['electronics-other','vintage','pet','other']]];
+const BRANDS=['Nike','adidas','Jordan','New Balance','Puma','Reebok','Converse','Vans','ASICS','Yeezy','Under Armour','Salomon','Crocs','Dr. Martens','Timberland','Supreme','Stüssy','Palace','Carhartt','Dickies','The North Face','Patagonia','Columbia','Arc\'teryx','Ralph Lauren','Tommy Hilfiger','Lacoste','Levi\'s','Wrangler','Champion','Fila','Zara','H&M','Uniqlo','Bershka','Pull&Bear','Mango','ASOS','Shein','COS','Gucci','Louis Vuitton','Prada','Balenciaga','Off‑White','Moncler','Stone Island','Burberry','Dior','Chanel','Hermès','Versace','Fendi','Bottega Veneta','Saint Laurent','Givenchy','Valentino','Ralph Lauren Purple','Apple','Samsung','Sony','Google','Microsoft','Xiaomi','Huawei','OnePlus','Dell','HP','Lenovo','Asus','Acer','LG','Nintendo','Bose','JBL','Sennheiser','Beats','GoPro','Canon','Nikon','DJI','Anker','Rolex','Omega','Casio','Seiko','Fossil','Garmin','Ray-Ban','Oakley','IKEA','Dyson','Philips','KitchenAid','Le Creuset','Lego','L\'Oréal','MAC','Estée Lauder','The Ordinary','Fenty Beauty','Dyson Beauty','Other'];
 const REGIONS=['North America','South America','Europe','Asia','Africa','Oceania'];
 const RETURNS=['No returns','14-day returns','30-day returns'];
 const BUYER_FEE_PCT=10;
@@ -1628,11 +1637,13 @@ async function openListing(id){
         <button class="btn btn-primary" style="flex:1;justify-content:center" id="lstBuy">Buy now — ${disp(price)}</button>
         <button class="btn btn-secondary" id="lstOffer" style="padding:0 16px">Make offer</button>
       </div>
+      ${(AUTH&&AUTH.email&&AUTH.email.toLowerCase()!==(s.email||'').toLowerCase())?`<button class="lst-report" id="lstMsg" style="color:var(--accent)">💬 Message the seller</button>`:''}
       <button class="lst-report" data-report="${l.id}">Report this listing</button>
     </div>`;
   const strip=$('#lstStrip');if(strip)strip.addEventListener('click',ev=>{const im=ev.target.closest('img[data-i]');if(!im)return;$('#lstMain').src=l.photos[im.dataset.i];strip.querySelectorAll('img').forEach(x=>x.classList.remove('on'));im.classList.add('on');});
   $('#lstBuy').addEventListener('click',()=>buyListing(l.id));
   $('#lstOffer').addEventListener('click',()=>makeOffer(l));
+  const lm=$('#lstMsg');if(lm)lm.addEventListener('click',()=>{if(!AUTH)return needAuth('Sign in to message');closeModal('#lstModal');openListingChat(l.id);});
   const sl=box.querySelector('[data-seller]');if(sl)sl.addEventListener('click',ev=>{ev.preventDefault();openSeller(sl.dataset.seller);});
   const tr=$('#lstTr');if(tr)tr.addEventListener('click',async()=>{const to=load('swk_chatlang','en');tr.textContent='…';try{const parts=await Promise.all([mfetch('/api/translate',{method:'POST',body:JSON.stringify({text:l.title,to})}),l.desc?mfetch('/api/translate',{method:'POST',body:JSON.stringify({text:l.desc,to})}):Promise.resolve({text:''})]);$('#lstTitle').textContent=parts[0].text;if(l.desc&&$('#lstDesc'))$('#lstDesc').textContent=parts[1].text;tr.textContent='🌐 Translated';}catch(e){tr.textContent='(translation unavailable)';}});
   const rp=box.querySelector('[data-report]');if(rp)rp.addEventListener('click',()=>{if(!AUTH)return needAuth('Sign in to report');const reason=prompt('Why are you reporting this listing?');if(reason==null)return;mfetch('/api/report',{method:'POST',body:JSON.stringify({listingId:l.id,reason})}).then(()=>toast('Thanks — reported to moderators')).catch(e=>toast(e.message));});
@@ -1678,7 +1689,11 @@ function makeOffer(l){
   const v=prompt(`Your offer for “${l.title}” (max ${fmt(l.price)}), in USD:`);
   if(v==null)return;const amt=parseFloat(v);
   if(!(amt>0))return toast('Enter a valid amount');
-  mfetch('/api/offers',{method:'POST',body:JSON.stringify({listingId:l.id,amount:amt})}).then(()=>toast('Offer sent to the seller')).catch(e=>toast(e.message));
+  mfetch('/api/offers',{method:'POST',body:JSON.stringify({listingId:l.id,amount:amt})}).then(async()=>{
+    toast('Offer sent — opening chat with the seller');
+    try{await mfetch('/api/chat/send',{method:'POST',body:JSON.stringify({listingId:l.id,text:`Hi! I've sent an offer of ${fmt(amt)} for “${l.title}”.`})});}catch(e){}
+    closeModal('#lstModal');openListingChat(l.id);
+  }).catch(e=>toast(e.message));
 }
 
 /* --- sell flow --- */
@@ -1719,7 +1734,7 @@ async function submitListing(){
   let brand=$('#slBrand').value;if(brand==='Other')brand=$('#slBrandOther').value||'';
   const body={title:$('#slTitle').value,brand,category:$('#slCat').value,size:$('#slSize').value,condition:$('#slCond').value,price:$('#slPrice').value,old:$('#slOld').value,ships:SELL_SHIP.slice(),returns:$('#slReturns').value,desc:$('#slDesc').value,photos:SELL_PHOTOS};
   $('#slGo').disabled=true;
-  try{await mfetch('/api/listings',{method:'POST',body:JSON.stringify(body)});toast('Listing published');closeModal('#sellModal');loadListings();}
+  try{await mfetch('/api/listings',{method:'POST',body:JSON.stringify(body)});toast('Submitted for review — your item goes live once approved');closeModal('#sellModal');loadListings();if($('#accModal').classList.contains('show'))loadMarket();}
   catch(e){show(e.message);$('#slGo').disabled=false;}
 }
 $('#sellBtn').addEventListener('click',openSell);
@@ -1758,34 +1773,49 @@ function mktOrderCard(o,role){
 function offerRow(o,mine){
   const S={pending:'Pending',accepted:'Accepted',declined:'Declined',used:'Purchased',superseded:'Replaced',countered:'Countered'};
   let acts='';
-  if(!mine&&o.status==='pending')acts=`<div class="ord-acts"><button class="primary" data-act="oaccept" data-id="${o.id}">Accept</button><button data-act="ocounter" data-id="${o.id}">Counter</button><button data-act="odecline" data-id="${o.id}">Decline</button></div>`;
-  else if(mine&&o.status==='countered')acts=`<div class="ord-acts"><button class="primary" data-act="oacceptcounter" data-id="${o.id}">Accept ${fmt(o.counter)}</button></div>`;
+  const msgBtn=`<button data-act="omsg" data-id="${esc(o.listingId)}|${mine?'':esc(o.buyer||'')}">💬 Message</button>`;
+  if(!mine&&o.status==='pending')acts=`<div class="ord-acts"><button class="primary" data-act="oaccept" data-id="${o.id}">Accept</button><button data-act="ocounter" data-id="${o.id}">Counter</button><button data-act="odecline" data-id="${o.id}">Decline</button>${msgBtn}</div>`;
+  else if(mine&&o.status==='countered')acts=`<div class="ord-acts"><button class="primary" data-act="oacceptcounter" data-id="${o.id}">Accept ${fmt(o.counter)}</button>${msgBtn}</div>`;
+  else acts=`<div class="ord-acts">${msgBtn}</div>`;
   const label=o.status==='countered'?`countered <b>${fmt(o.counter)}</b>`:'';
   return `<div class="ord"><div class="ord-top"><span><b>${fmt(o.amount)}</b> on “${esc(o.title)}” ${label}</span><span class="ord-pill s-${o.status==='accepted'?'released':(o.status==='pending'||o.status==='countered')?'held':'refunded'}">${S[o.status]||o.status}</span></div>
     <div class="ord-items">${mine?'Your offer':'From @'+esc(o.buyerHandle)} · asking ${fmt(o.price)}</div>${acts}</div>`;
 }
 function myListingRow(l){
+  const SL={active:'Live',pending:'Pending review',rejected:'Rejected',sold:'Sold'};
+  const pillCls=l.status==='active'?'released':l.status==='pending'?'held':l.status==='rejected'?'refunded':'held';
+  const note=l.status==='pending'?'<div class="ord-pending">⏳ Awaiting moderator approval — it goes live once approved.</div>':l.status==='rejected'?'<div class="ord-pending">This listing was not approved. Edit and resubmit, or remove it.</div>':'';
   return `<div class="ord"><div class="ord-top"><span><b>${esc(l.title)}</b>${l.boosted?' <span class="badge b-boost" style="margin-left:6px">★ Boosted</span>':''}</span><span><b>${fmt(l.price)}</b></span></div>
-    <div class="ord-items">${esc(CAT_NAME(l.category))} · ${esc(l.condition||'')} · <span class="ord-pill s-${l.status==='sold'?'released':'held'}">${l.status}</span></div>
-    ${l.status==='active'?`<div class="ord-acts"><button data-act="lview" data-id="${l.id}">View</button>${l.boosted?'':`<button data-act="boost" data-id="${l.id}">★ Boost</button>`}<button class="warn" data-act="lremove" data-id="${l.id}">Remove</button></div>`:''}</div>`;
+    <div class="ord-items">${esc(CAT_NAME(l.category))} · ${esc(l.condition||'')} · <span class="ord-pill s-${pillCls}">${SL[l.status]||l.status}</span></div>
+    ${note}
+    <div class="ord-acts"><button data-act="lview" data-id="${l.id}">View</button>${l.status==='active'&&!l.boosted?`<button data-act="boost" data-id="${l.id}">★ Boost</button>`:''}<button class="warn" data-act="lremove" data-id="${l.id}">Remove</button></div></div>`;
 }
 function paintMarket(){
   const t=MKT_TAB,d=MKT||{};
-  const counts={buying:(d.purchases||[]).length,selling:(d.sales||[]).length,listings:(d.listings||[]).length,offers:(d.offersReceived||[]).length+(d.offersMade||[]).length};
+  const counts={buying:(d.purchases||[]).length,selling:(d.sales||[]).length,listings:(d.listings||[]).length,offers:(d.offersReceived||[]).length+(d.offersMade||[]).length,chats:(MKT_CHATS||[]).length};
   const tab=(k,label)=>`<button class="mkt-tab ${t===k?'on':''}" data-tab="${k}">${label}${counts[k]?` <span class="n">${counts[k]}</span>`:''}</button>`;
   let body='';
   if(t==='buying')body=(d.purchases&&d.purchases.length)?d.purchases.map(o=>mktOrderCard(o,'buying')).join(''):'<p class="mkt-empty">No purchases yet.</p>';
   else if(t==='selling')body=(d.sales&&d.sales.length)?d.sales.map(o=>mktOrderCard(o,'selling')).join(''):'<p class="mkt-empty">No sales yet.</p>';
   else if(t==='listings')body=(d.listings&&d.listings.length)?d.listings.map(myListingRow).join(''):'<p class="mkt-empty">You have no listings. Tap “Sell” to add one.</p>';
   else if(t==='offers')body=`${(d.offersReceived&&d.offersReceived.length)?'<h4 style="font-size:12px;color:var(--faint);text-transform:uppercase;letter-spacing:.1em;margin:0 0 8px">Received</h4>'+d.offersReceived.map(o=>offerRow(o,false)).join(''):''}${(d.offersMade&&d.offersMade.length)?'<h4 style="font-size:12px;color:var(--faint);text-transform:uppercase;letter-spacing:.1em;margin:16px 0 8px">Sent</h4>'+d.offersMade.map(o=>offerRow(o,true)).join(''):''}${(!(d.offersReceived||[]).length&&!(d.offersMade||[]).length)?'<p class="mkt-empty">No offers yet.</p>':''}`;
+  else if(t==='chats')body=(MKT_CHATS&&MKT_CHATS.length)?MKT_CHATS.map(chatRow).join(''):'<p class="mkt-empty">No messages yet. Chats open when you make an offer or a buyer contacts you.</p>';
   else if(t==='payout')body=`<div class="field"><label>Payout wallet (USDC · ERC-20)</label><input id="poAddr" placeholder="0x…" value="${esc(d.payout||'')}"></div>
     <button class="cbtn" id="poSave">Save payout address</button>
     <div class="protect" style="margin-top:16px">${ICON.verified}<div><b>Owed to you: ${fmt(d.balance||0)}</b><span>Released sales awaiting payout. The store operator sends USDC to your payout address.</span></div></div>`;
-  $('#mktPanel').innerHTML=`<div class="mkt-tabs">${tab('buying','Buying')}${tab('selling','Selling')}${tab('listings','Listings')}${tab('offers','Offers')}${tab('payout','Payout')}</div><div id="mktBody">${body}</div>`;
-  $('#mktPanel').querySelectorAll('.mkt-tab').forEach(b=>b.addEventListener('click',()=>{MKT_TAB=b.dataset.tab;paintMarket();}));
+  $('#mktPanel').innerHTML=`<div class="mkt-tabs">${tab('buying','Buying')}${tab('selling','Selling')}${tab('listings','Listings')}${tab('offers','Offers')}${tab('chats','Messages')}${tab('payout','Payout')}</div><div id="mktBody">${body}</div>`;
+  $('#mktPanel').querySelectorAll('.mkt-tab').forEach(b=>b.addEventListener('click',()=>{MKT_TAB=b.dataset.tab;paintMarket();if(b.dataset.tab==='chats')loadChats();}));
+  $('#mktBody').querySelectorAll('[data-chat]').forEach(el=>el.addEventListener('click',()=>{const [lid,buyer]=el.dataset.chat.split('|');openListingChat(lid,buyer||undefined);}));
   const po=$('#poSave');if(po)po.addEventListener('click',async()=>{try{await mfetch('/api/payout',{method:'POST',body:JSON.stringify({address:$('#poAddr').value})});toast('Payout address saved');}catch(e){toast(e.message);}});
 }
-async function loadMarket(){try{MKT=await mfetch('/api/my/market');}catch(e){MKT={};}paintMarket();}
+let MKT_CHATS=null;
+function chatRow(c){
+  return `<div class="ord" style="cursor:pointer" data-chat="${esc(c.listingId)}|${c.role==='seller'?esc(c.buyer):''}">
+    <div class="ord-top"><span><b>@${esc(c.counterpart)}</b> · ${c.role==='seller'?'buyer':'seller'}</span><span style="font-size:12px;color:var(--muted)">${esc(c.title)}</span></div>
+    <div class="ord-items">${c.last?esc(c.last.slice(0,80)):'—'}</div></div>`;
+}
+async function loadChats(){try{const d=await mfetch('/api/my/chats');MKT_CHATS=d.chats||[];}catch(e){MKT_CHATS=[];}if(MKT_TAB==='chats')paintMarket();}
+async function loadMarket(){try{MKT=await mfetch('/api/my/market');}catch(e){MKT={};}try{const d=await mfetch('/api/my/chats');MKT_CHATS=d.chats||[];}catch(e){MKT_CHATS=MKT_CHATS||[];}paintMarket();}
 function mktAction(act,id){
   const done=()=>loadMarket();
   if(act==='confirm')mfetch('/api/order/'+id+'/confirm',{method:'POST'}).then(()=>{toast('Receipt confirmed — funds released');done();}).catch(e=>toast(e.message));
@@ -1800,6 +1830,7 @@ function mktAction(act,id){
   else if(act==='lremove'){if(!confirm('Remove this listing?'))return;mfetch('/api/listings/'+id,{method:'DELETE'}).then(()=>{toast('Listing removed');done();loadListings();}).catch(e=>toast(e.message));}
   else if(act==='lview'){closeModal('#accModal');openListing(id);}
   else if(act==='chat'){const box=document.getElementById('chat-'+id);if(!box)return;if(box.style.display==='none'){box.style.display='block';loadThread(id);}else box.style.display='none';}
+  else if(act==='omsg'){const [lid,buyer]=id.split('|');openListingChat(lid,buyer||undefined);}
 }
 async function loadThread(id){
   const box=document.getElementById('chat-'+id);if(!box)return;
@@ -1821,6 +1852,33 @@ async function loadThread(id){
   btn.addEventListener('click',send);inp.addEventListener('keydown',e=>{if(e.key==='Enter')send();});
   const log=box.querySelector('.chat-log');if(log)log.scrollTop=log.scrollHeight;
 }
+/* --- listing chat (buyer <-> seller, per listing) --- */
+let CHAT_CTX=null;
+function openListingChat(listingId,buyer){CHAT_CTX={listingId,buyer:buyer||null};openModal('#chatModal');paintListingChat();}
+async function paintListingChat(){
+  if(!CHAT_CTX)return;const {listingId,buyer}=CHAT_CTX;
+  const box=$('#chatBody');box.innerHTML='<p style="font-size:12px;color:var(--muted);text-align:center;padding:20px">Loading…</p>';
+  let d;try{const qs='listingId='+encodeURIComponent(listingId)+(buyer?'&buyer='+encodeURIComponent(buyer):'');d=await mfetch('/api/chat/thread?'+qs);}catch(e){box.innerHTML='<p class="mkt-empty" style="padding:20px">Could not load this chat.</p>';return;}
+  const lang=load('swk_chatlang','en');
+  const langSel=`<select class="chat-lang">${CHAT_LANGS.map(([v,n])=>`<option value="${v}" ${v===lang?'selected':''}>${n}</option>`).join('')}</select>`;
+  const L=d.listing||{};
+  box.innerHTML=`<div class="cobody" style="padding-bottom:8px"><h3 style="margin-bottom:4px">Chat with @${esc(d.counterpart)}</h3>
+    <div style="display:flex;gap:10px;align-items:center;margin:6px 0 12px">${L.cover?`<img src="${L.cover}" style="width:44px;height:44px;border-radius:10px;object-fit:cover">`:''}<div style="font-size:13px"><b>${esc(L.title||'')}</b><br><span style="color:var(--muted)">${fmt(L.price||0)}</span></div></div>
+    <div class="chat-head"><span class="chat-tr"><i>🌐 Translate to</i>${langSel}<button class="tr-all">All</button></span></div>
+    <div class="chat-log" style="max-height:46vh">${d.messages.length?d.messages.map((m,i)=>`<div class="cmsg ${m.me?'me':''}"><span class="ctext">${esc(m.text)}</span><button class="ctr" data-tr="${i}" title="Translate">🌐</button><div class="ctrans"></div></div>`).join(''):`<p style="font-size:12px;color:var(--muted);text-align:center;padding:8px">No messages yet — say hi to @${esc(d.counterpart)}.</p>`}</div>
+    <div class="chat-in"><input id="ciList" placeholder="Message @${esc(d.counterpart)}…" maxlength="1000"><button id="ciSend">Send</button></div></div>`;
+  const msgs=d.messages;
+  const curLang=()=>box.querySelector('.chat-lang').value;
+  async function translateInto(i,el){el.style.display='block';el.textContent='…';const to=curLang();save('swk_chatlang',to);try{const t=await mfetch('/api/translate',{method:'POST',body:JSON.stringify({text:msgs[i].text,to})});el.textContent=t.text;}catch(e){el.textContent='(translation unavailable)';}}
+  box.querySelectorAll('.ctr').forEach(btn=>btn.addEventListener('click',()=>translateInto(+btn.dataset.tr,btn.parentElement.querySelector('.ctrans'))));
+  box.querySelector('.tr-all').addEventListener('click',()=>box.querySelectorAll('.cmsg').forEach((c,i)=>translateInto(i,c.querySelector('.ctrans'))));
+  box.querySelector('.chat-lang').addEventListener('change',e=>save('swk_chatlang',e.target.value));
+  const inp=box.querySelector('#ciList'),btn=box.querySelector('#ciSend');
+  const send=async()=>{const t=inp.value.trim();if(!t)return;btn.disabled=true;try{await mfetch('/api/chat/send',{method:'POST',body:JSON.stringify({listingId,buyer:buyer||undefined,text:t})});await paintListingChat();}catch(e){toast(e.message);btn.disabled=false;}};
+  btn.addEventListener('click',send);inp.addEventListener('keydown',e=>{if(e.key==='Enter')send();});
+  const log=box.querySelector('.chat-log');if(log)log.scrollTop=log.scrollHeight;
+}
+$('#chatClose').addEventListener('click',()=>closeModal('#chatModal'));
 $('#accModal').addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(b){mktAction(b.dataset.act,b.dataset.id);}});
 
 /* ---------- init ---------- */
