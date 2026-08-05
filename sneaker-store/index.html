@@ -1595,6 +1595,12 @@ const CAT_NAME=c=>({sneakers:'Sneakers',boots:'Boots',sandals:'Sandals & Slides'
 'tech-accessories':'Tech Accessories',tv:'TV & Displays','smart-home':'Smart Home',furniture:'Furniture','home-decor':'Home Decor',kitchen:'Kitchen',bedding:'Bedding',lighting:'Lighting',tools:'Tools',garden:'Garden',storage:'Storage',makeup:'Makeup',skincare:'Skincare',fragrance:'Fragrance',haircare:'Haircare',nails:'Nails',grooming:'Grooming','kids-clothing':'Kids Clothing','kids-shoes':'Kids Shoes',toys:'Toys','baby-gear':'Baby Gear','baby-clothing':'Baby Clothing',books:'Books',music:'Music & Vinyl',movies:'Movies',collectibles:'Collectibles',art:'Art',
 'sports-gear':'Sports Gear','musical-instruments':'Instruments',crafts:'Crafts',balls:'Ball',equipment:'Equipment',fitness:'Fitness',cycling:'Cycling',outdoor:'Outdoor','electronics-other':'Electronics',vintage:'Vintage',pet:'Pet',other:'Other'}[c]||'Item');
 const CAT_TREE=[['Shoes',['sneakers','boots','sandals','formal-shoes','heels','flats','loafers','slippers']],['Clothing',['tshirts','hoodies','shirts','jackets','coats','knitwear','pants','jeans','shorts','tracksuits','dresses','skirts','activewear','suits','underwear','swimwear','socks']],['Bags',['backpacks','handbags','totes','duffels','crossbody','wallets','luggage','purses']],['Accessories',['caps','hats','watches','jewelry','sunglasses','belts','scarves','gloves','ties']],['Electronics',['phones','laptops','tablets','audio','headphones','gaming','cameras','wearables','tech-accessories','tv','smart-home']],['Home',['furniture','home-decor','kitchen','bedding','lighting','tools','garden','storage']],['Beauty',['makeup','skincare','fragrance','haircare','nails','grooming']],['Kids & Baby',['kids-clothing','kids-shoes','toys','baby-gear','baby-clothing']],['Hobbies',['books','music','movies','collectibles','art','sports-gear','musical-instruments','crafts']],['Sport',['balls','equipment','fitness','cycling','outdoor']],['Other',['electronics-other','vintage','pet','other']]];
+const CAT_GROUP={};CAT_TREE.forEach(([g,cs])=>cs.forEach(c=>CAT_GROUP[c]=g));
+/* which categories actually have a size (clothing/shoes/kids clothing & shoes) */
+const SIZE_CATS=new Set([...CAT_TREE[0][1],...CAT_TREE[1][1],'kids-clothing','kids-shoes','caps','hats','belts']);
+function catNeedsSize(cat){return SIZE_CATS.has(cat);}
+function sizePlaceholder(cat){const g=CAT_GROUP[cat];return g==='Shoes'?'EU 42 · UK 8 · US 9':(cat==='kids-shoes'?'EU 30 · US 12':(g==='Clothing'||cat==='kids-clothing'?'S · M · L · XL':'One size'));}
+function updateSizeVisibility(){const catEl=$('#slCat');if(!catEl)return;const cat=catEl.value;const f=$('#slSizeField');if(f)f.style.display=catNeedsSize(cat)?'':'none';const inp=$('#slSize');if(inp){if(!catNeedsSize(cat))inp.value='';inp.placeholder=sizePlaceholder(cat);}}
 const BRANDS=['Nike','adidas','Jordan','New Balance','Puma','Reebok','Converse','Vans','ASICS','Yeezy','Under Armour','Salomon','Crocs','Dr. Martens','Timberland','Supreme','Stüssy','Palace','Carhartt','Dickies','The North Face','Patagonia','Columbia','Arc\'teryx','Ralph Lauren','Tommy Hilfiger','Lacoste','Levi\'s','Wrangler','Champion','Fila','Zara','H&M','Uniqlo','Bershka','Pull&Bear','Mango','ASOS','Shein','COS','Gucci','Louis Vuitton','Prada','Balenciaga','Off‑White','Moncler','Stone Island','Burberry','Dior','Chanel','Hermès','Versace','Fendi','Bottega Veneta','Saint Laurent','Givenchy','Valentino','Ralph Lauren Purple','Apple','Samsung','Sony','Google','Microsoft','Xiaomi','Huawei','OnePlus','Dell','HP','Lenovo','Asus','Acer','LG','Nintendo','Bose','JBL','Sennheiser','Beats','GoPro','Canon','Nikon','DJI','Anker','Rolex','Omega','Casio','Seiko','Fossil','Garmin','Ray-Ban','Oakley','IKEA','Dyson','Philips','KitchenAid','Le Creuset','Lego','L\'Oréal','MAC','Estée Lauder','The Ordinary','Fenty Beauty','Dyson Beauty','Other'];
 /* keyword → {brand, category} detection from a listing title */
 const DETECT=[
@@ -1761,7 +1767,7 @@ function renderSell(){
     <div class="frow"><div class="field"><label>Brand</label><select id="slBrand">${brandOpts}</select></div>
       <div class="field"><label>Category</label><select id="slCat">${catOpts}</select></div></div>
     <div class="field" id="slBrandOtherWrap" style="display:none"><label>Brand name</label><input id="slBrandOther" maxlength="40" placeholder="Type the brand"></div>
-    <div class="frow"><div class="field"><label>Size</label><input id="slSize" maxlength="24" placeholder="42 / M / One size"></div>
+    <div class="frow"><div class="field" id="slSizeField"><label>Size</label><input id="slSize" maxlength="24" placeholder="42 / M / One size"></div>
       <div class="field"><label>Condition</label><select id="slCond">${['New','Like new','Very good','Good','Fair'].map(c=>`<option>${c}</option>`).join('')}</select></div></div>
     <div class="frow"><div class="field"><label>Price (USD)</label><input id="slPrice" type="number" min="1" step="1" placeholder="80"></div>
       <div class="field"><label>Was (optional)</label><input id="slOld" type="number" min="0" step="1" placeholder="120"></div></div>
@@ -1774,7 +1780,7 @@ function renderSell(){
   $('#photoGrid').addEventListener('click',e=>{const b=e.target.closest('[data-rm]');if(b){SELL_PHOTOS.splice(+b.dataset.rm,1);renderSell();}});
   let brandTouched=false,catTouched=false;
   $('#slBrand').addEventListener('change',e=>{brandTouched=true;$('#slBrandOtherWrap').style.display=e.target.value==='Other'?'':'none';});
-  $('#slCat').addEventListener('change',()=>{catTouched=true;});
+  $('#slCat').addEventListener('change',()=>{catTouched=true;updateSizeVisibility();});
   const applyDetect=(val)=>{
     const {brand,cat}=detectFromTitle(val);
     const catSel=$('#slCat'),brSel=$('#slBrand');
@@ -1783,9 +1789,11 @@ function renderSell(){
       if([...brSel.options].some(o=>o.value===brand)){brSel.value=brand;$('#slBrandOtherWrap').style.display='none';flashField(brSel);}
       else{brSel.value='Other';$('#slBrandOtherWrap').style.display='';$('#slBrandOther').value=brand;flashField($('#slBrandOther'));}
     }
+    updateSizeVisibility();
   };
   $('#slTitle').addEventListener('input',e=>applyDetect(e.target.value));
   if(($('#slTitle').value||'').length>2)applyDetect($('#slTitle').value);
+  updateSizeVisibility();
   $('#slShip').addEventListener('click',e=>{const l=e.target.closest('[data-rgn]');if(!l)return;const r=l.dataset.rgn,i=SELL_SHIP.indexOf(r);if(i>-1)SELL_SHIP.splice(i,1);else SELL_SHIP.push(r);l.classList.toggle('on');});
   $('#slGo').addEventListener('click',submitListing);
 }
