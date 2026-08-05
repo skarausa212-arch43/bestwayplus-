@@ -435,6 +435,8 @@
   .field input,.field select,.field textarea{width:100%;height:46px;padding:0 14px;border-radius:12px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:14.5px;outline:none;transition:.18s}
   .field textarea{height:auto;padding:12px 14px;resize:vertical}
   .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+  .field .detected,.field input.detected,.field select.detected{animation:fieldflash 1.1s var(--ease)}
+  @keyframes fieldflash{0%{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft);background:var(--accent-soft)}100%{}}
   .frow{display:flex;gap:12px}.frow .field{flex:1}
   .cbtn{width:100%;height:50px;border-radius:14px;background:var(--ink);color:#fff;font-weight:600;font-size:15px;transition:.2s;display:flex;align-items:center;justify-content:center;gap:8px}
   .cbtn:hover{background:#000;transform:translateY(-1px)}
@@ -672,6 +674,29 @@
     .qv-media.photo img,.qv-media .ph img{max-height:40vh;height:auto;width:auto;max-width:88%;margin:0 auto}
     .drawer{width:100%;max-width:100%}
   }
+  /* ============ APP BOTTOM NAV ============ */
+  .botnav{display:none}
+  @media(max-width:900px){
+    .botnav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:120;align-items:flex-end;
+      background:color-mix(in srgb,#fff 90%,transparent);backdrop-filter:blur(20px) saturate(160%);
+      -webkit-backdrop-filter:blur(20px) saturate(160%);border-top:1px solid var(--line);
+      padding:9px 4px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -6px 24px -18px rgba(17,17,17,.4)}
+    .bn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--faint);font-size:10.5px;font-weight:600;position:relative;padding:2px 0;transition:color .15s}
+    .bn svg{width:23px;height:23px;transition:transform .18s var(--ease)}
+    .bn:active svg{transform:scale(.86)}
+    .bn.active{color:var(--ink)}
+    .bn-sell{color:var(--accent)}
+    .bn-sell .bn-sellic{width:46px;height:34px;margin-top:-16px;border-radius:15px;display:grid;place-items:center;
+      background:linear-gradient(120deg,var(--accent),#9a7bff);color:#fff;box-shadow:0 8px 18px -5px rgba(91,92,255,.7);transition:transform .18s var(--ease)}
+    .bn-sell .bn-sellic svg{width:22px;height:22px}
+    .bn-sell:active .bn-sellic{transform:scale(.92) translateY(1px)}
+    .bn-badge{position:absolute;top:-3px;right:calc(50% - 22px);min-width:16px;height:16px;padding:0 4px;background:var(--bad);color:#fff;border-radius:20px;font-size:9px;font-weight:700;display:none;place-items:center}
+    .bn-badge.show{display:grid}
+    body{padding-bottom:70px}
+    .toasts{bottom:88px}
+    /* header is minimal on phones — bottom nav owns the actions */
+    #accBtn,#cartBtn,.sell-pill{display:none}
+  }
   /* compact header on phones so it never overflows sideways */
   @media(max-width:560px){
     .hd{gap:5px}
@@ -895,6 +920,14 @@
   </div>
 </footer>
 
+<!-- APP BOTTOM NAV (mobile) -->
+<nav class="botnav" id="botnav">
+  <button class="bn active" data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg><span>Home</span></button>
+  <button class="bn" data-nav="browse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg><span>Browse</span></button>
+  <button class="bn bn-sell" data-nav="sell"><span class="bn-sellic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></span><span>Sell</span></button>
+  <button class="bn" data-nav="cart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h2l2.4 12.2a1.5 1.5 0 0 0 1.5 1.2h8.2a1.5 1.5 0 0 0 1.5-1.2L21 8H6"/><circle cx="9.5" cy="20" r="1.2"/><circle cx="18" cy="20" r="1.2"/></svg><span class="bn-badge" id="botCart">0</span><span>Cart</span></button>
+  <button class="bn" data-nav="account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c.6-3.6 3.4-5.4 7-5.4s6.4 1.8 7 5.4"/></svg><span>Account</span></button>
+</nav>
 
 <!-- CART -->
 <div class="overlay" id="overlay"></div>
@@ -1290,7 +1323,15 @@ function chgQty(key,d){const it=cart.find(c=>c.key===key);if(!it)return;it.qty+=
 function rmItem(key){cart=cart.filter(c=>c.key!==key);save('swk_cart',cart);renderCart()}
 const cartTotal=()=>cart.reduce((s,c)=>{const p=PRODUCTS.find(x=>x.id===c.id);return s+(p?p.price*c.qty:0)},0);
 const cartQty=()=>cart.reduce((s,c)=>s+c.qty,0);
-function bump(){const el=$('#cbadge'),n=cartQty();el.textContent=n;el.classList.remove('show');if(n>0)requestAnimationFrame(()=>el.classList.add('show'))}
+function bump(){const el=$('#cbadge'),n=cartQty();if(el){el.textContent=n;el.classList.remove('show');if(n>0)requestAnimationFrame(()=>el.classList.add('show'));}const bc=$('#botCart');if(bc){bc.textContent=n;bc.classList.toggle('show',n>0);}}
+(function(){const nav=$('#botnav');if(!nav)return;nav.addEventListener('click',e=>{const b=e.target.closest('[data-nav]');if(!b)return;const a=b.dataset.nav;
+  if(a!=='sell'){nav.querySelectorAll('.bn').forEach(x=>x.classList.remove('active'));b.classList.add('active');}
+  if(a==='home')window.scrollTo({top:0,behavior:'smooth'});
+  else if(a==='browse'){const c=document.getElementById('catalog');if(c)c.scrollIntoView({behavior:'smooth'});}
+  else if(a==='sell')openSell();
+  else if(a==='cart')openDrawer();
+  else if(a==='account'){renderAccount();openModal('#accModal');}
+});})();
 function renderCart(){
   const box=$('#citems'),foot=$('#dfoot');$('#cbadge').textContent=cartQty();$('#cbadge').classList.toggle('show',cartQty()>0);
   if(!cart.length){box.innerHTML=`<div class="cempty">${ICON.cart}<p>Your cart is empty</p><p class="s">Nothing selected yet.</p></div>`;foot.innerHTML='';return}
@@ -1555,6 +1596,43 @@ const CAT_NAME=c=>({sneakers:'Sneakers',boots:'Boots',sandals:'Sandals & Slides'
 'sports-gear':'Sports Gear','musical-instruments':'Instruments',crafts:'Crafts',balls:'Ball',equipment:'Equipment',fitness:'Fitness',cycling:'Cycling',outdoor:'Outdoor','electronics-other':'Electronics',vintage:'Vintage',pet:'Pet',other:'Other'}[c]||'Item');
 const CAT_TREE=[['Shoes',['sneakers','boots','sandals','formal-shoes','heels','flats','loafers','slippers']],['Clothing',['tshirts','hoodies','shirts','jackets','coats','knitwear','pants','jeans','shorts','tracksuits','dresses','skirts','activewear','suits','underwear','swimwear','socks']],['Bags',['backpacks','handbags','totes','duffels','crossbody','wallets','luggage','purses']],['Accessories',['caps','hats','watches','jewelry','sunglasses','belts','scarves','gloves','ties']],['Electronics',['phones','laptops','tablets','audio','headphones','gaming','cameras','wearables','tech-accessories','tv','smart-home']],['Home',['furniture','home-decor','kitchen','bedding','lighting','tools','garden','storage']],['Beauty',['makeup','skincare','fragrance','haircare','nails','grooming']],['Kids & Baby',['kids-clothing','kids-shoes','toys','baby-gear','baby-clothing']],['Hobbies',['books','music','movies','collectibles','art','sports-gear','musical-instruments','crafts']],['Sport',['balls','equipment','fitness','cycling','outdoor']],['Other',['electronics-other','vintage','pet','other']]];
 const BRANDS=['Nike','adidas','Jordan','New Balance','Puma','Reebok','Converse','Vans','ASICS','Yeezy','Under Armour','Salomon','Crocs','Dr. Martens','Timberland','Supreme','Stüssy','Palace','Carhartt','Dickies','The North Face','Patagonia','Columbia','Arc\'teryx','Ralph Lauren','Tommy Hilfiger','Lacoste','Levi\'s','Wrangler','Champion','Fila','Zara','H&M','Uniqlo','Bershka','Pull&Bear','Mango','ASOS','Shein','COS','Gucci','Louis Vuitton','Prada','Balenciaga','Off‑White','Moncler','Stone Island','Burberry','Dior','Chanel','Hermès','Versace','Fendi','Bottega Veneta','Saint Laurent','Givenchy','Valentino','Ralph Lauren Purple','Apple','Samsung','Sony','Google','Microsoft','Xiaomi','Huawei','OnePlus','Dell','HP','Lenovo','Asus','Acer','LG','Nintendo','Bose','JBL','Sennheiser','Beats','GoPro','Canon','Nikon','DJI','Anker','Rolex','Omega','Casio','Seiko','Fossil','Garmin','Ray-Ban','Oakley','IKEA','Dyson','Philips','KitchenAid','Le Creuset','Lego','L\'Oréal','MAC','Estée Lauder','The Ordinary','Fenty Beauty','Dyson Beauty','Other'];
+/* keyword → {brand, category} detection from a listing title */
+const DETECT=[
+  [/\b(playstation|ps5|ps4|ps portal|dualsense|psvr)\b/,'Sony','gaming'],
+  [/\bxbox\b/,'Microsoft','gaming'],[/\b(nintendo|switch)\b/,'Nintendo','gaming'],
+  [/\b(steam deck|controller|console|gamepad)\b/,null,'gaming'],
+  [/\biphone\b/,'Apple','phones'],[/\bipad\b/,'Apple','tablets'],[/\b(macbook|imac|mac mini)\b/,'Apple','laptops'],
+  [/\bairpods\b/,'Apple','headphones'],[/\bapple watch\b/,'Apple','wearables'],[/\bapple\b/,'Apple',null],
+  [/\b(galaxy|samsung)\b/,'Samsung','phones'],[/\bpixel\b/,'Google','phones'],[/\b(xiaomi|redmi|poco)\b/,'Xiaomi','phones'],
+  [/\b(oneplus)\b/,'OnePlus','phones'],[/\bhuawei\b/,'Huawei','phones'],
+  [/\brolex\b/,'Rolex','watches'],[/\bomega\b/,'Omega','watches'],[/\b(casio|g-?shock)\b/,'Casio','watches'],[/\bseiko\b/,'Seiko','watches'],[/\bgarmin\b/,'Garmin','wearables'],
+  [/\b(air max|air force|dunk|blazer)\b/,'Nike','sneakers'],[/\bjordan\b/,'Jordan','sneakers'],[/\bnike\b/,'Nike','sneakers'],
+  [/\b(samba|gazelle|ultraboost|superstar|forum|campus|yeezy)\b/,'adidas','sneakers'],[/\badidas\b/,'adidas','sneakers'],
+  [/\bnew balance\b/,'New Balance','sneakers'],[/\b(puma|reebok|converse|vans|asics|salomon|crocs)\b/,null,'sneakers'],
+  [/\b(sneakers?|trainers?|shoes|boots|cleats)\b/,null,'sneakers'],
+  [/\b(hoodie|sweatshirt|sweater)\b/,null,'hoodies'],[/\b(t-?shirt|tee)\b/,null,'tshirts'],[/\b(jacket|coat|parka|puffer)\b/,null,'jackets'],
+  [/\b(jeans|denim)\b/,null,'jeans'],[/\bdress\b/,null,'dresses'],[/\b(pants|trousers|joggers)\b/,null,'pants'],
+  [/\b(backpack|rucksack)\b/,null,'backpacks'],[/\b(handbag|purse|tote)\b/,null,'handbags'],[/\bwallet\b/,null,'wallets'],
+  [/\b(sunglasses|shades)\b/,'Ray-Ban','sunglasses'],[/\b(canon)\b/,'Canon','cameras'],[/\bnikon\b/,'Nikon','cameras'],
+  [/\b(camera|dslr|mirrorless|gopro|lens)\b/,null,'cameras'],
+  [/\b(airpods|headphones|earbuds|earphones|headset)\b/,null,'headphones'],[/\b(bose|jbl|sennheiser|beats)\b/,null,'headphones'],
+  [/\b(macbook|laptop|notebook|thinkpad|zenbook)\b/,null,'laptops'],[/\b(dell|lenovo|asus|acer|msi)\b/,null,'laptops'],
+  [/\b(smartphone|phone)\b/,null,'phones'],[/\btablet\b/,null,'tablets'],[/\b(tv|monitor|display)\b/,null,'tv'],
+  [/\bwatch\b/,null,'watches'],[/\b(ring|necklace|bracelet|earrings|jewel)\b/,null,'jewelry'],
+  [/\b(guitar|piano|violin|drums?|synth|keyboard piano)\b/,null,'musical-instruments'],
+  [/\b(book|novel)\b/,null,'books'],[/\b(vinyl|\bcd\b|record)\b/,null,'music'],
+  [/\b(chair|table|sofa|couch|desk|lamp|shelf)\b/,null,'furniture'],
+  [/\b(football|soccer ball|basketball|ball)\b/,null,'balls'],[/\b(bike|bicycle|cycling)\b/,null,'cycling'],
+  [/\b(perfume|fragrance|cologne|eau de)\b/,null,'fragrance'],[/\blego\b/,'Lego','toys'],
+  [/\b(rolex|patek|audemars)\b/,null,'watches'],
+];
+function detectFromTitle(title){
+  const t=' '+String(title||'').toLowerCase().replace(/[^a-z0-9\s]/g,' ')+' ';
+  let brand=null,cat=null;
+  for(const [re,b,c] of DETECT){ if(re.test(t)){ if(b&&!brand)brand=b; if(c&&!cat)cat=c; } if(brand&&cat)break; }
+  if(!brand){ for(const bn of BRANDS){ if(bn==='Other')continue; const k=bn.toLowerCase().replace(/[^a-z0-9]/g,''); if(k.length>=3 && t.replace(/\s/g,'').includes(k)){ brand=bn; break; } } }
+  return {brand,cat};
+}
 const REGIONS=['North America','South America','Europe','Asia','Africa','Oceania'];
 const RETURNS=['No returns','14-day returns','30-day returns'];
 const BUYER_FEE_PCT=10;
@@ -1677,7 +1755,7 @@ function renderSell(){
   const catOpts=CAT_TREE.map(([g,cs])=>`<optgroup label="${g}">${cs.map(c=>`<option value="${c}">${CAT_NAME(c)}</option>`).join('')}</optgroup>`).join('');
   const brandOpts=BRANDS.map(b=>`<option>${b}</option>`).join('');
   const regionBoxes=REGIONS.map(r=>`<label class="rgn ${SELL_SHIP.includes(r)?'on':''}" data-rgn="${r}"><i></i>${r}</label>`).join('');
-  $('#sellBody').innerHTML=`<div class="cobody"><h3>List an item</h3><p class="sub">Add up to 6 photos, set your price. Buyers pay in USDC — funds are held in escrow until they confirm delivery.</p>
+  $('#sellBody').innerHTML=`<div class="cobody"><h3>List an item</h3><p class="sub">Add up to 6 photos, set your price. Buyers pay in USDT / USDC — funds are held in escrow until they confirm delivery.</p>
     <div class="photo-grid" id="photoGrid">${SELL_PHOTOS.map((p,i)=>`<div class="photo-cell"><img src="${p}">${i===0?'<span class="cover-tag">Cover</span>':''}<button class="rm" data-rm="${i}">×</button></div>`).join('')}${SELL_PHOTOS.length<6?'<label class="photo-add">+<input type="file" accept="image/*" id="photoIn" multiple hidden></label>':''}</div>
     <div class="field"><label>Title</label><input id="slTitle" maxlength="90" placeholder="e.g. adidas Samba OG — UK9"></div>
     <div class="frow"><div class="field"><label>Brand</label><select id="slBrand">${brandOpts}</select></div>
@@ -1694,10 +1772,24 @@ function renderSell(){
     <div class="msg" id="slMsg" style="display:none;margin-top:12px;font-size:13px;color:#ff6b6b;font-weight:600"></div></div>`;
   const inp=$('#photoIn');if(inp)inp.addEventListener('change',async e=>{const files=[...e.target.files].slice(0,6-SELL_PHOTOS.length);for(const f of files){try{SELL_PHOTOS.push(await compressImg(f));}catch(x){}}renderSell();});
   $('#photoGrid').addEventListener('click',e=>{const b=e.target.closest('[data-rm]');if(b){SELL_PHOTOS.splice(+b.dataset.rm,1);renderSell();}});
-  $('#slBrand').addEventListener('change',e=>{$('#slBrandOtherWrap').style.display=e.target.value==='Other'?'':'none';});
+  let brandTouched=false,catTouched=false;
+  $('#slBrand').addEventListener('change',e=>{brandTouched=true;$('#slBrandOtherWrap').style.display=e.target.value==='Other'?'':'none';});
+  $('#slCat').addEventListener('change',()=>{catTouched=true;});
+  const applyDetect=(val)=>{
+    const {brand,cat}=detectFromTitle(val);
+    const catSel=$('#slCat'),brSel=$('#slBrand');
+    if(cat&&!catTouched&&[...catSel.options].some(o=>o.value===cat)){catSel.value=cat;flashField(catSel);}
+    if(brand&&!brandTouched){
+      if([...brSel.options].some(o=>o.value===brand)){brSel.value=brand;$('#slBrandOtherWrap').style.display='none';flashField(brSel);}
+      else{brSel.value='Other';$('#slBrandOtherWrap').style.display='';$('#slBrandOther').value=brand;flashField($('#slBrandOther'));}
+    }
+  };
+  $('#slTitle').addEventListener('input',e=>applyDetect(e.target.value));
+  if(($('#slTitle').value||'').length>2)applyDetect($('#slTitle').value);
   $('#slShip').addEventListener('click',e=>{const l=e.target.closest('[data-rgn]');if(!l)return;const r=l.dataset.rgn,i=SELL_SHIP.indexOf(r);if(i>-1)SELL_SHIP.splice(i,1);else SELL_SHIP.push(r);l.classList.toggle('on');});
   $('#slGo').addEventListener('click',submitListing);
 }
+function flashField(el){if(!el)return;el.classList.remove('detected');void el.offsetWidth;el.classList.add('detected');}
 async function submitListing(){
   const msg=$('#slMsg'),show=t=>{msg.style.display='block';msg.textContent=t;};
   if(!SELL_PHOTOS.length)return show('Add at least one photo.');
