@@ -686,6 +686,16 @@
   .buy-sum>div{display:flex;justify-content:space-between;padding:4px 0;color:var(--muted)}
   .buy-sum b{color:var(--ink);font-weight:700}
   .buy-sum .tot{border-top:1px solid var(--line);margin-top:4px;padding-top:8px;font-size:15px;color:var(--ink)}
+  .vbadge{display:inline-block;font-size:10px;font-weight:700;color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,transparent);border:1px solid color-mix(in srgb,var(--ok) 40%,transparent);padding:1px 6px;border-radius:6px;margin-left:6px;vertical-align:middle}
+  .badge.b-boost{border-color:#f5a623;color:#b8770f;background:rgba(245,166,35,.14)}
+  .lst-translate{margin-top:10px;background:none;border:0;color:var(--accent);font-size:12.5px;font-weight:700;cursor:pointer;padding:0}
+  .lst-report{margin-top:14px;background:none;border:0;color:var(--faint);font-size:12px;cursor:pointer;text-decoration:underline;padding:0}
+  .lst-report:hover{color:#c0392b}
+  .filterbar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:0 0 20px;color:var(--muted)}
+  .filterbar label{display:inline-flex;align-items:center;gap:6px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:11px}
+  .filterbar select,.filterbar input{padding:7px 10px;border-radius:9px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font:inherit;font-size:13px;text-transform:none;letter-spacing:0;font-weight:500}
+  .filterbar .fprice input{width:66px}
+  .pay-or{text-align:center;font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.1em;margin:2px 0 12px}
   .frow{display:flex;gap:10px}.frow>*{flex:1;min-width:0}
   .cobody select,.cobody textarea{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--line-2);
     background:var(--surface);color:var(--ink);font:inherit;font-size:14px}
@@ -873,6 +883,7 @@
         <input type="text" id="searchInput" placeholder="Search the drop…" autocomplete="off">
       </div>
     </div>
+    <div class="filterbar reveal" id="filterbar"></div>
     <div class="grid" id="grid"></div>
   </div>
 </section>
@@ -1211,7 +1222,7 @@ function catalogCardHTML(p){
         <div class="cat">${catLabel(p)} · ${cap(p.brand)}</div>
         <h3 data-open="${p.id}">${p.name}</h3>
         <div class="card-foot">
-          <span class="price">${p.old?`<s>${fmt(p.old)}</s>`:''}${fmt(p.price)}</span>
+          <span class="price">${p.old?`<s>${disp(p.old)}</s>`:''}${disp(p.price)}</span>
           <button class="add" data-open="${p.id}" ${p.soldOut?'disabled':''} aria-label="Add">${p.soldOut?ICON.close:ICON.cart}</button>
         </div>
       </div>
@@ -1220,10 +1231,11 @@ function catalogCardHTML(p){
 function listingCardHTML(l){
   const fav=favs.includes(l.id);
   const disc=(l.old&&l.old>l.price)?`<span class="badge b-drop">-${Math.round((1-l.price/l.old)*100)}%</span>`:'';
-  const meta=l.seller.rating?('★ '+l.seller.rating+' · '+esc(l.condition||'Used')):(esc(l.condition||'Used')+' · @'+esc(l.seller.handle));
+  const ver=l.seller.verified?'✓ ':'';
+  const meta=l.seller.rating?(ver+'★ '+l.seller.rating+' · '+esc(l.condition||'Used')):(ver+esc(l.condition||'Used')+' · @'+esc(l.seller.handle));
   return `<article class="card reveal" data-listing="${l.id}" data-gcat="${l.category==='shoes'?'sneakers':'accessories'}">
       <button class="card-media" data-listing="${l.id}">
-        <span class="badges"><span class="badge b-seller">Seller</span>${disc}</span>
+        <span class="badges">${l.boosted?'<span class="badge b-boost">★ Boosted</span>':''}<span class="badge b-seller">Seller</span>${disc}</span>
         <span class="wish ${fav?'on':''}" data-fav="${l.id}" role="button" aria-label="Wishlist">${ICON.heart}</span>
         <span class="ph photo" style="background:#eef0f3"><img src="${l.cover}" alt="${esc(l.title)}" loading="lazy"></span>
         <span class="quick">View item</span>
@@ -1232,18 +1244,25 @@ function listingCardHTML(l){
         <div class="cat">${meta}</div>
         <h3 data-listing="${l.id}">${esc(l.title)}</h3>
         <div class="card-foot">
-          <span class="price">${(l.old&&l.old>l.price)?`<s>${fmt(l.old)}</s>`:''}${fmt(l.price)}</span>
+          <span class="price">${(l.old&&l.old>l.price)?`<s>${disp(l.old)}</s>`:''}${disp(l.price)}</span>
           <button class="add" data-listing="${l.id}" aria-label="View">${ICON.cart}</button>
         </div>
       </div>
     </article>`;
 }
+const FILT={sort:'new',pmin:0,pmax:0,cond:''};
 function renderGrid(){
-  const q=searchTerm;
-  const lm=LISTINGS.filter(l=>(activeFilter==='all'||l.group===activeFilter)&&(!q||(l.title+' '+(l.brand||'')).toLowerCase().includes(q)));
-  const pm=PRODUCTS.filter(p=>(activeFilter==='all'||productGroup(p)===activeFilter)&&(!q||p.name.toLowerCase().includes(q)||p.brand.includes(q)));
-  if(!lm.length&&!pm.length){grid.innerHTML=`<div class="empty"><div data-ic="search"></div><p>No pieces match. Try another search.</p></div>`;grid.querySelectorAll('[data-ic]').forEach(e=>e.innerHTML=ICON[e.dataset.ic]);return}
-  grid.innerHTML=lm.map(listingCardHTML).join('')+pm.map(catalogCardHTML).join('');
+  const q=searchTerm,{pmin,pmax,cond,sort}=FILT;
+  let lm=LISTINGS.filter(l=>(activeFilter==='all'||l.group===activeFilter)&&(!q||(l.title+' '+(l.brand||'')).toLowerCase().includes(q)));
+  let pm=PRODUCTS.filter(p=>(activeFilter==='all'||productGroup(p)===activeFilter)&&(!q||p.name.toLowerCase().includes(q)||p.brand.includes(q)));
+  if(pmin){lm=lm.filter(l=>l.price>=pmin);pm=pm.filter(p=>p.price>=pmin);}
+  if(pmax){lm=lm.filter(l=>l.price<=pmax);pm=pm.filter(p=>p.price<=pmax);}
+  if(cond){lm=lm.filter(l=>l.condition===cond);if(cond!=='New')pm=[];}
+  let items=[...lm.map(o=>({k:'l',o,price:o.price})),...pm.map(o=>({k:'p',o,price:o.price}))];
+  if(sort==='lo')items.sort((a,b)=>a.price-b.price);
+  else if(sort==='hi')items.sort((a,b)=>b.price-a.price);
+  if(!items.length){grid.innerHTML=`<div class="empty"><div data-ic="search"></div><p>No pieces match. Try another filter.</p></div>`;grid.querySelectorAll('[data-ic]').forEach(e=>e.innerHTML=ICON[e.dataset.ic]);return}
+  grid.innerHTML=items.map(it=>it.k==='l'?listingCardHTML(it.o):catalogCardHTML(it.o)).join('');
   observeReveal();wireGlobeLink();
 }
 function loadListings(){return fetch('/api/listings').then(r=>r.json()).then(d=>{LISTINGS=d.listings||[];renderGrid();}).catch(()=>{});}
@@ -1259,6 +1278,19 @@ document.querySelectorAll('#filters .chip').forEach(c=>c.addEventListener('click
 document.querySelectorAll('nav.main a[data-filter]').forEach(a=>a.addEventListener('click',()=>{activeFilter=a.dataset.filter;document.querySelectorAll('#filters .chip').forEach(c=>c.classList.toggle('active',c.dataset.filter===activeFilter));renderGrid()}));
 $('#searchInput').addEventListener('input',e=>{searchTerm=e.target.value.trim().toLowerCase();renderGrid()});
 $('#searchBtn').addEventListener('click',()=>{document.getElementById('catalog').scrollIntoView();setTimeout(()=>$('#searchInput').focus(),400)});
+function renderFilterbar(){
+  const fb=$('#filterbar');if(!fb)return;
+  fb.innerHTML=`<label>Sort <select id="fSort"><option value="new">Newest</option><option value="lo">Price ↑</option><option value="hi">Price ↓</option></select></label>
+    <label>Condition <select id="fCond"><option value="">Any</option>${['New','Like new','Very good','Good','Fair'].map(c=>`<option>${c}</option>`).join('')}</select></label>
+    <label class="fprice">Price&nbsp;$ <input type="number" id="fMin" placeholder="min" min="0"><span>–</span><input type="number" id="fMax" placeholder="max" min="0"></label>
+    <label>Currency <select id="fCur">${CURRENCIES.map(([c])=>`<option ${c===CUR?'selected':''}>${c}</option>`).join('')}</select></label>`;
+  $('#fSort').value=FILT.sort;$('#fCond').value=FILT.cond;
+  $('#fSort').addEventListener('change',e=>{FILT.sort=e.target.value;renderGrid();});
+  $('#fCond').addEventListener('change',e=>{FILT.cond=e.target.value;renderGrid();});
+  const apply=()=>{FILT.pmin=parseFloat($('#fMin').value)||0;FILT.pmax=parseFloat($('#fMax').value)||0;renderGrid();};
+  $('#fMin').addEventListener('input',apply);$('#fMax').addEventListener('input',apply);
+  $('#fCur').addEventListener('change',e=>{CUR=e.target.value;save('swk_cur',CUR);renderGrid();});
+}
 
 /* ---------- quick view ---------- */
 let qv={id:null,size:null};
@@ -1346,6 +1378,21 @@ function openCheckout(){
 }
 
 let payPoll=null;
+async function walletPay(d){
+  const eth=window.ethereum;
+  if(!eth){toast('No wallet found — install MetaMask or send manually below');return;}
+  try{
+    const USDC='0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
+    const amt=Math.round(Number(d.payAmount)*1e6);
+    const data='0xa9059cbb'+'000000000000000000000000'+WALLET.toLowerCase().replace('0x','')+amt.toString(16).padStart(64,'0');
+    const acc=await eth.request({method:'eth_requestAccounts'});
+    const chain=await eth.request({method:'eth_chainId'});
+    if(chain!=='0x1'){try{await eth.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x1'}]});}catch(e){toast('Switch your wallet to Ethereum mainnet');return;}}
+    await eth.request({method:'eth_sendTransaction',params:[{from:acc[0],to:USDC,data}]});
+    const st=$('#payStatus');if(st)st.innerHTML='<span class="spin"></span> Payment sent — confirming on-chain…';
+    toast('Payment sent from your wallet');
+  }catch(e){toast(e&&e.message?e.message.slice(0,80):'Wallet payment cancelled');}
+}
 function cryptoPay(d){
   if(payPoll){clearInterval(payPoll);payPoll=null;}
   const amt=Number(d.payAmount).toFixed(2);
@@ -1353,6 +1400,8 @@ function cryptoPay(d){
     <h3>Pay with crypto</h3><p class="sub">Send the <b style="color:var(--ink)">exact</b> amount — we detect it automatically on-chain.</p>
     <div class="pay-amt"><span>Send exactly</span><b>${amt} <em>USDC</em></b><small>Order ${d.orderId} · ERC-20 · 1 USDC ≈ $1</small></div>
     <div class="net-badge">USDC · ERC-20 · Ethereum</div>
+    <button class="btn btn-primary" id="wpay" style="width:100%;justify-content:center;margin:4px 0 14px">⚡ Pay with wallet (MetaMask)</button>
+    <div class="pay-or">or scan / send manually</div>
     <div class="qr">${QR_SVG}</div>
     <div class="addr-lbl">Send to this address</div>
     <div class="addr"><code id="wAddr">${WALLET}</code><button type="button" id="copyW" class="btn btn-secondary" style="padding:10px 14px">Copy</button></div>
@@ -1362,6 +1411,7 @@ function cryptoPay(d){
     <button class="btn btn-secondary" style="margin-top:10px;width:100%;justify-content:center" onclick="document.getElementById('coModal').classList.remove('show')">Close — I'll pay from my wallet</button>
   </div>`;
   $('#copyW').addEventListener('click',()=>{try{navigator.clipboard.writeText(WALLET)}catch(e){}toast('Address copied')});
+  $('#wpay').addEventListener('click',()=>walletPay(d));
   // pending order exists on the server now — clear the cart
   cart=[];save('swk_cart',cart);renderCart();bump();
   if(d.offline){ $('#payStatus').innerHTML='Demo mode — automatic check needs the live server.'; return; }
@@ -1539,6 +1589,14 @@ const REGIONS=['North America','South America','Europe','Asia','Africa','Oceania
 const RETURNS=['No returns','14-day returns','30-day returns'];
 const BUYER_FEE_PCT=10;
 const CHAT_LANGS=[['en','English'],['ru','Русский'],['de','Deutsch'],['uk','Українська'],['pl','Polski'],['es','Español'],['fr','Français'],['it','Italiano'],['pt','Português'],['tr','Türkçe'],['nl','Nederlands'],['ro','Română'],['zh-CN','中文'],['ja','日本語'],['ar','العربية']];
+/* display currency (prices are USD/USDC under the hood; this only changes what's shown) */
+const CURRENCIES=[['USD','$'],['EUR','€'],['GBP','£'],['UAH','₴'],['PLN','zł'],['RUB','₽'],['TRY','₺'],['JPY','¥']];
+const FX_FALLBACK={USD:1,EUR:0.92,GBP:0.79,UAH:41,PLN:4,RUB:92,TRY:34,JPY:157};
+let FX=Object.assign({},FX_FALLBACK);
+let CUR=load('swk_cur','USD');
+function curSym(c){return (CURRENCIES.find(x=>x[0]===c)||['','$'])[1];}
+function disp(usd){const v=(usd||0)*(FX[CUR]||1);return CUR==='USD'?('$'+Math.round(v)):(curSym(CUR)+Math.round(v).toLocaleString());}
+function loadFX(){return fetch('https://open.er-api.com/v6/latest/USD').then(r=>r.json()).then(j=>{if(j&&j.rates)Object.assign(FX,j.rates);}).catch(()=>{});}
 function authHdr(){return AUTH?{Authorization:'Bearer '+AUTH.token}:{}}
 async function mfetch(url,opts){opts=opts||{};opts.headers=Object.assign({'Content-Type':'application/json'},authHdr(),opts.headers||{});const r=await fetch(url,opts);let d={};try{d=await r.json()}catch(e){}if(!r.ok)throw new Error(d.error||'Request failed');return d;}
 function stars(n){n=Math.round(n||0);let s='';for(let i=1;i<=5;i++)s+=`<span class="${i<=n?'':'off'}">★</span>`;return `<span class="stars">${s}</span>`;}
@@ -1553,27 +1611,31 @@ async function openListing(id){
     <div class="qv-media photo" style="background:#eef0f3"><span class="ph"><img id="lstMain" src="${l.photos[0]||l.cover}" alt="${esc(l.title)}"></span></div>
     <div class="qv-info">
       <div class="cat">${esc(CAT_NAME(l.category))} · ${esc(l.brand||'—')} <span class="cond-tag">${esc(l.condition||'Used')}</span></div>
-      <h3>${esc(l.title)}</h3>
-      <div class="price">${(l.old&&l.old>l.price)?`<s style="color:var(--faint);font-weight:400;margin-right:8px">${fmt(l.old)}</s>`:''}${fmt(price)}${d.acceptedOfferPrice?' <span style="font-size:12px;color:var(--ok);font-weight:700">offer accepted</span>':''}</div>
+      <h3 id="lstTitle">${esc(l.title)}</h3>
+      <div class="price">${(l.old&&l.old>l.price)?`<s style="color:var(--faint);font-weight:400;margin-right:8px">${disp(l.old)}</s>`:''}${disp(price)}${d.acceptedOfferPrice?' <span style="font-size:12px;color:var(--ok);font-weight:700">offer accepted</span>':''}</div>
       ${l.size?`<div style="font-size:13px;color:var(--muted);margin-top:3px">Size ${esc(l.size)}</div>`:''}
       ${l.photos.length>1?`<div class="lst-strip" id="lstStrip">${l.photos.map((ph,i)=>`<img src="${ph}" data-i="${i}" class="${i===0?'on':''}">`).join('')}</div>`:''}
-      ${l.desc?`<p class="desc" style="margin-top:14px">${esc(l.desc)}</p>`:''}
+      ${l.desc?`<p class="desc" id="lstDesc" style="margin-top:14px">${esc(l.desc)}</p>`:''}
+      <button class="lst-translate" id="lstTr">🌐 Translate to ${CHAT_LANGS.find(x=>x[0]===load('swk_chatlang','en'))?.[1]||'English'}</button>
       <div class="ships-line"><b>Ships to:</b> ${(l.ships&&l.ships.length)?l.ships.map(esc).join(', '):'Worldwide'}<br><b>Returns:</b> ${esc(l.returns||'No returns')}</div>
       <div class="protect">${ICON.verified}<div><b>Buyer Protection</b><span>Your USDC is held in escrow and only released to the seller after you confirm the item arrived as described. Open a dispute anytime before that.</span></div></div>
       <div class="seller-row">
         <div class="av">${esc((s.handle||'?')[0].toUpperCase())}</div>
-        <div><div class="sname">@${esc(s.handle)}</div><div class="smeta">${s.rating?stars(s.rating)+' '+s.rating:'No ratings yet'} · ${s.sold||0} sold</div></div>
+        <div><div class="sname">@${esc(s.handle)}${s.verified?' <span class="vbadge">✓ Verified</span>':''}</div><div class="smeta">${s.rating?stars(s.rating)+' '+s.rating:'No ratings yet'} · ${s.sold||0} sold</div></div>
         <a href="#" data-seller="${esc(s.email)}">View shop</a>
       </div>
       <div class="qv-act">
-        <button class="btn btn-primary" style="flex:1;justify-content:center" id="lstBuy">Buy now — ${fmt(price)}</button>
+        <button class="btn btn-primary" style="flex:1;justify-content:center" id="lstBuy">Buy now — ${disp(price)}</button>
         <button class="btn btn-secondary" id="lstOffer" style="padding:0 16px">Make offer</button>
       </div>
+      <button class="lst-report" data-report="${l.id}">Report this listing</button>
     </div>`;
   const strip=$('#lstStrip');if(strip)strip.addEventListener('click',ev=>{const im=ev.target.closest('img[data-i]');if(!im)return;$('#lstMain').src=l.photos[im.dataset.i];strip.querySelectorAll('img').forEach(x=>x.classList.remove('on'));im.classList.add('on');});
   $('#lstBuy').addEventListener('click',()=>buyListing(l.id));
   $('#lstOffer').addEventListener('click',()=>makeOffer(l));
   const sl=box.querySelector('[data-seller]');if(sl)sl.addEventListener('click',ev=>{ev.preventDefault();openSeller(sl.dataset.seller);});
+  const tr=$('#lstTr');if(tr)tr.addEventListener('click',async()=>{const to=load('swk_chatlang','en');tr.textContent='…';try{const parts=await Promise.all([mfetch('/api/translate',{method:'POST',body:JSON.stringify({text:l.title,to})}),l.desc?mfetch('/api/translate',{method:'POST',body:JSON.stringify({text:l.desc,to})}):Promise.resolve({text:''})]);$('#lstTitle').textContent=parts[0].text;if(l.desc&&$('#lstDesc'))$('#lstDesc').textContent=parts[1].text;tr.textContent='🌐 Translated';}catch(e){tr.textContent='(translation unavailable)';}});
+  const rp=box.querySelector('[data-report]');if(rp)rp.addEventListener('click',()=>{if(!AUTH)return needAuth('Sign in to report');const reason=prompt('Why are you reporting this listing?');if(reason==null)return;mfetch('/api/report',{method:'POST',body:JSON.stringify({listingId:l.id,reason})}).then(()=>toast('Thanks — reported to moderators')).catch(e=>toast(e.message));});
 }
 async function openSeller(email){
   const box=$('#lstBody');box.innerHTML='<div class="cobody" style="grid-column:1/-1"><p class="sub">Loading…</p></div>';openModal('#lstModal');
@@ -1694,16 +1756,18 @@ function mktOrderCard(o,role){
   </div>`;
 }
 function offerRow(o,mine){
-  const S={pending:'Pending',accepted:'Accepted',declined:'Declined',used:'Purchased',superseded:'Replaced'};
+  const S={pending:'Pending',accepted:'Accepted',declined:'Declined',used:'Purchased',superseded:'Replaced',countered:'Countered'};
   let acts='';
-  if(!mine&&o.status==='pending')acts=`<div class="ord-acts"><button class="primary" data-act="oaccept" data-id="${o.id}">Accept</button><button data-act="odecline" data-id="${o.id}">Decline</button></div>`;
-  return `<div class="ord"><div class="ord-top"><span><b>${fmt(o.amount)}</b> on “${esc(o.title)}”</span><span class="ord-pill s-${o.status==='accepted'?'released':o.status==='pending'?'held':'refunded'}">${S[o.status]||o.status}</span></div>
+  if(!mine&&o.status==='pending')acts=`<div class="ord-acts"><button class="primary" data-act="oaccept" data-id="${o.id}">Accept</button><button data-act="ocounter" data-id="${o.id}">Counter</button><button data-act="odecline" data-id="${o.id}">Decline</button></div>`;
+  else if(mine&&o.status==='countered')acts=`<div class="ord-acts"><button class="primary" data-act="oacceptcounter" data-id="${o.id}">Accept ${fmt(o.counter)}</button></div>`;
+  const label=o.status==='countered'?`countered <b>${fmt(o.counter)}</b>`:'';
+  return `<div class="ord"><div class="ord-top"><span><b>${fmt(o.amount)}</b> on “${esc(o.title)}” ${label}</span><span class="ord-pill s-${o.status==='accepted'?'released':(o.status==='pending'||o.status==='countered')?'held':'refunded'}">${S[o.status]||o.status}</span></div>
     <div class="ord-items">${mine?'Your offer':'From @'+esc(o.buyerHandle)} · asking ${fmt(o.price)}</div>${acts}</div>`;
 }
 function myListingRow(l){
-  return `<div class="ord"><div class="ord-top"><span><b>${esc(l.title)}</b></span><span><b>${fmt(l.price)}</b></span></div>
+  return `<div class="ord"><div class="ord-top"><span><b>${esc(l.title)}</b>${l.boosted?' <span class="badge b-boost" style="margin-left:6px">★ Boosted</span>':''}</span><span><b>${fmt(l.price)}</b></span></div>
     <div class="ord-items">${esc(CAT_NAME(l.category))} · ${esc(l.condition||'')} · <span class="ord-pill s-${l.status==='sold'?'released':'held'}">${l.status}</span></div>
-    ${l.status==='active'?`<div class="ord-acts"><button data-act="lview" data-id="${l.id}">View</button><button class="warn" data-act="lremove" data-id="${l.id}">Remove</button></div>`:''}</div>`;
+    ${l.status==='active'?`<div class="ord-acts"><button data-act="lview" data-id="${l.id}">View</button>${l.boosted?'':`<button data-act="boost" data-id="${l.id}">★ Boost</button>`}<button class="warn" data-act="lremove" data-id="${l.id}">Remove</button></div>`:''}</div>`;
 }
 function paintMarket(){
   const t=MKT_TAB,d=MKT||{};
@@ -1729,7 +1793,10 @@ function mktAction(act,id){
   else if(act==='ship'){const carrier=prompt('Carrier (USPS / UPS / FedEx / DHL):','USPS');if(carrier==null)return;const tracking=prompt('Tracking number:');if(tracking==null)return;mfetch('/api/order/'+id+'/ship',{method:'POST',body:JSON.stringify({carrier,tracking})}).then(()=>{toast('Marked as shipped');done();}).catch(e=>toast(e.message));}
   else if(act==='review'){const rt=prompt('Rate 1–5 stars:');if(rt==null)return;const rating=parseInt(rt,10);const text=prompt('Add a short comment (optional):')||'';mfetch('/api/reviews',{method:'POST',body:JSON.stringify({orderId:id,rating,text})}).then(()=>{toast('Review posted');done();}).catch(e=>toast(e.message));}
   else if(act==='oaccept')mfetch('/api/offers/'+id+'/accept',{method:'POST'}).then(()=>{toast('Offer accepted');done();}).catch(e=>toast(e.message));
+  else if(act==='ocounter'){const v=prompt('Counter with your price (USD):');if(v==null)return;const amt=parseFloat(v);if(!(amt>0))return toast('Enter a valid amount');mfetch('/api/offers/'+id+'/counter',{method:'POST',body:JSON.stringify({amount:amt})}).then(()=>{toast('Counter sent');done();}).catch(e=>toast(e.message));}
+  else if(act==='oacceptcounter')mfetch('/api/offers/'+id+'/accept-counter',{method:'POST'}).then(()=>{toast('Counter accepted — open the item to buy at that price');done();}).catch(e=>toast(e.message));
   else if(act==='odecline')mfetch('/api/offers/'+id+'/decline',{method:'POST'}).then(()=>{toast('Offer declined');done();}).catch(e=>toast(e.message));
+  else if(act==='boost'){const v=prompt('Boost for how many days? ($2/day)','7');if(v==null)return;const days=parseInt(v,10);if(!(days>0))return toast('Enter days');mfetch('/api/boost',{method:'POST',body:JSON.stringify({listingId:id,days})}).then(d=>{closeModal('#accModal');openModal('#coModal');cryptoPay(d);}).catch(e=>toast(e.message));}
   else if(act==='lremove'){if(!confirm('Remove this listing?'))return;mfetch('/api/listings/'+id,{method:'DELETE'}).then(()=>{toast('Listing removed');done();loadListings();}).catch(e=>toast(e.message));}
   else if(act==='lview'){closeModal('#accModal');openListing(id);}
   else if(act==='chat'){const box=document.getElementById('chat-'+id);if(!box)return;if(box.style.display==='none'){box.style.display='block';loadThread(id);}else box.style.display='none';}
@@ -1757,7 +1824,7 @@ async function loadThread(id){
 $('#accModal').addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(b){mktAction(b.dataset.act,b.dataset.id);}});
 
 /* ---------- init ---------- */
-counts();renderGrid();renderCart();bump();loadListings();
+counts();renderFilterbar();renderGrid();renderCart();bump();loadListings();loadFX().then(()=>{if(CUR!=='USD')renderGrid();});
 /* live online counter */
 (function(){var el=document.getElementById('onlineN');if(!el)return;function tick(){fetch('/api/online').then(function(r){return r.json()}).then(function(d){if(d&&d.online!=null)el.textContent=d.online}).catch(function(){});}tick();setInterval(tick,15000);})();
 /* thunder sound (WebAudio synth, off by default) */

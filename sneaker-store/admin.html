@@ -125,6 +125,18 @@
       <tbody></tbody>
     </table></div>
 
+    <h2>Marketplace · Reported listings</h2>
+    <div style="overflow-x:auto"><table id="repT">
+      <thead><tr><th>Listing</th><th class="hidem">Seller</th><th>Reason</th><th class="hidem">By</th><th>Action</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+
+    <h2>Marketplace · Sellers (verification)</h2>
+    <div style="overflow-x:auto"><table id="verT">
+      <thead><tr><th>Seller</th><th>Listings</th><th>Verified</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+
     <h2>Accounts</h2>
     <div style="overflow-x:auto"><table id="usersT">
       <thead><tr><th>Email</th><th class="hidem">Name</th><th>Registered</th><th>Orders</th></tr></thead>
@@ -219,6 +231,21 @@ async function loadMarketAdmin(){
       <td><button class="save" data-paid="${o.id}" ${o.payout?'':'disabled'}>Mark paid-out</button></td></tr>`;
   }).join(''):'<tr><td colspan="5" class="empty">Nothing to pay out.</td></tr>';
   pb.querySelectorAll('[data-paid]').forEach(b=>b.addEventListener('click',async()=>{await api('/api/admin/payout-done',{method:'POST',body:JSON.stringify({id:b.dataset.paid})});loadDash();}));
+  // reports
+  const rb=$('#repT tbody');
+  rb.innerHTML=(m.reports&&m.reports.length)?m.reports.map(r=>`<tr>
+    <td class="id">${(r.title||'').replace(/</g,'&lt;')}</td><td class="hidem">@${r.seller}</td>
+    <td>${(r.reason||'—').replace(/</g,'&lt;')}</td><td class="hidem">@${r.from}</td>
+    <td><button class="save" data-rdismiss="${r.id}" style="background:#2a2a30;color:#ddd">Dismiss</button> <button class="save" data-rremove="${r.id}" style="background:#7a1020">Remove listing</button></td></tr>`).join(''):'<tr><td colspan="5" class="empty">No open reports.</td></tr>';
+  rb.querySelectorAll('[data-rdismiss]').forEach(b=>b.addEventListener('click',async()=>{await api('/api/admin/report-resolve',{method:'POST',body:JSON.stringify({id:b.dataset.rdismiss,action:'dismiss'})});loadDash();}));
+  rb.querySelectorAll('[data-rremove]').forEach(b=>b.addEventListener('click',async()=>{if(!confirm('Remove this listing?'))return;await api('/api/admin/report-resolve',{method:'POST',body:JSON.stringify({id:b.dataset.rremove,action:'remove'})});loadDash();}));
+  // verification
+  const vb=$('#verT tbody');
+  vb.innerHTML=(m.verifiable&&m.verifiable.length)?m.verifiable.map(u=>`<tr>
+    <td class="id">@${u.handle} <div class="items">${u.email}</div></td><td>${u.listings}</td>
+    <td><span class="pill ${u.verified?'delivered':'cancelled'}">${u.verified?'verified':'no'}</span></td>
+    <td><button class="save" data-ver="${u.email}" data-on="${u.verified?0:1}" ${u.verified?'style="background:#2a2a30;color:#ddd"':''}>${u.verified?'Unverify':'Verify'}</button></td></tr>`).join(''):'<tr><td colspan="4" class="empty">No sellers yet.</td></tr>';
+  vb.querySelectorAll('[data-ver]').forEach(b=>b.addEventListener('click',async()=>{await api('/api/admin/verify',{method:'POST',body:JSON.stringify({email:b.dataset.ver,verified:b.dataset.on==='1'})});loadDash();}));
 }
 $('#enter').addEventListener('click',async()=>{
   KEY=$('#pw').value.trim();
