@@ -682,6 +682,10 @@
   .rgn.on i::after{content:'';position:absolute;left:4px;top:1px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
   .ships-line{font-size:12.5px;color:var(--muted);margin-top:12px;line-height:1.6}
   .ships-line b{color:var(--ink)}
+  .buy-sum{margin:16px 0;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:13px}
+  .buy-sum>div{display:flex;justify-content:space-between;padding:4px 0;color:var(--muted)}
+  .buy-sum b{color:var(--ink);font-weight:700}
+  .buy-sum .tot{border-top:1px solid var(--line);margin-top:4px;padding-top:8px;font-size:15px;color:var(--ink)}
   .frow{display:flex;gap:10px}.frow>*{flex:1;min-width:0}
   .cobody select,.cobody textarea{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--line-2);
     background:var(--surface);color:var(--ink);font:inherit;font-size:14px}
@@ -709,8 +713,16 @@
   /* order chat */
   .chat-thread{margin-top:10px;border-top:1px solid var(--line);padding-top:10px}
   .chat-log{max-height:210px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
-  .cmsg{max-width:82%;padding:8px 11px;border-radius:13px;font-size:13px;line-height:1.4;background:var(--surface-2);align-self:flex-start;word-break:break-word}
+  .cmsg{position:relative;max-width:82%;padding:8px 11px;border-radius:13px;font-size:13px;line-height:1.4;background:var(--surface-2);align-self:flex-start;word-break:break-word}
   .cmsg.me{align-self:flex-end;background:var(--ink);color:var(--bg)}
+  .cmsg .ctr{position:absolute;top:-8px;right:-6px;width:22px;height:22px;border-radius:50%;border:1px solid var(--line-2);background:var(--surface);color:var(--muted);font-size:11px;cursor:pointer;opacity:0;transition:opacity .15s;line-height:1}
+  .cmsg:hover .ctr{opacity:1}
+  .cmsg .ctrans{display:none;margin-top:5px;padding-top:5px;border-top:1px dashed color-mix(in srgb,currentColor 30%,transparent);font-size:12.5px;opacity:.85}
+  .chat-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:12px;font-weight:700;color:var(--muted)}
+  .chat-tr{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+  .chat-tr i{font-style:normal;font-size:11px;color:var(--faint)}
+  .chat-lang{padding:5px 8px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font:inherit;font-size:12px}
+  .chat-tr .tr-all{padding:5px 10px;border-radius:8px;border:1px solid var(--line-2);background:transparent;color:var(--ink);font-weight:700;font-size:11px;cursor:pointer}
   .chat-in{display:flex;gap:6px}
   .chat-in input{flex:1;min-width:0;padding:9px 12px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font:inherit;font-size:13px}
   .chat-in button{padding:9px 15px;border-radius:10px;border:0;background:var(--ink);color:var(--bg);font-weight:700;font-size:12px;cursor:pointer;flex:none}
@@ -1525,6 +1537,8 @@ const CAT_TREE=[['Footwear',['sneakers','boots','sandals','formal-shoes']],['Clo
 const BRANDS=['Nike','adidas','Jordan','New Balance','Puma','Reebok','Converse','Vans','ASICS','Yeezy','Supreme','Stüssy','Carhartt','The North Face','Ralph Lauren','Tommy Hilfiger','Lacoste','Levi\'s','Zara','H&M','Uniqlo','Gucci','Louis Vuitton','Prada','Balenciaga','Off‑White','Moncler','Stone Island','Burberry','Dior','Other'];
 const REGIONS=['North America','South America','Europe','Asia','Africa','Oceania'];
 const RETURNS=['No returns','14-day returns','30-day returns'];
+const BUYER_FEE_PCT=10;
+const CHAT_LANGS=[['en','English'],['ru','Русский'],['de','Deutsch'],['uk','Українська'],['pl','Polski'],['es','Español'],['fr','Français'],['it','Italiano'],['pt','Português'],['tr','Türkçe'],['nl','Nederlands'],['ro','Română'],['zh-CN','中文'],['ja','日本語'],['ar','العربية']];
 function authHdr(){return AUTH?{Authorization:'Bearer '+AUTH.token}:{}}
 async function mfetch(url,opts){opts=opts||{};opts.headers=Object.assign({'Content-Type':'application/json'},authHdr(),opts.headers||{});const r=await fetch(url,opts);let d={};try{d=await r.json()}catch(e){}if(!r.ok)throw new Error(d.error||'Request failed');return d;}
 function stars(n){n=Math.round(n||0);let s='';for(let i=1;i<=5;i++)s+=`<span class="${i<=n?'':'off'}">★</span>`;return `<span class="stars">${s}</span>`;}
@@ -1584,6 +1598,7 @@ function buyListing(id){
     <div class="field"><label>Region</label><select id="bRegion">${regionList.map(r=>`<option>${r}</option>`).join('')}</select></div>
     <div class="field"><label>Address</label><input id="bAddr" placeholder="Street, house, apt"></div>
     <div class="frow"><div class="field"><label>City</label><input id="bCity"></div><div class="field"><label>ZIP</label><input id="bZip"></div></div>
+    <div class="buy-sum"><div><span>Item</span><b>${fmt(li.price||0)}</b></div><div><span>Buyer fee (${BUYER_FEE_PCT}%)</span><b>${fmt(Math.round((li.price||0)*BUYER_FEE_PCT)/100)}</b></div><div class="tot"><span>Total</span><b>${fmt(Math.round((li.price||0)*(1+BUYER_FEE_PCT/100)*100)/100)}</b></div></div>
     <div class="protect">${ICON.verified}<div><b>Buyer Protection</b><span>Funds are released to the seller only after you confirm the item arrived.</span></div></div>
     <button class="cbtn" id="bGo">Continue to payment</button>
     <div class="msg" id="bMsg" style="display:none;margin-top:12px;color:#ff6b6b;font-weight:600;font-size:13px"></div></div>`;
@@ -1723,8 +1738,17 @@ async function loadThread(id){
   const box=document.getElementById('chat-'+id);if(!box)return;
   box.innerHTML='<p style="font-size:12px;color:var(--muted);text-align:center;padding:6px">Loading…</p>';
   let d;try{d=await mfetch('/api/order/'+id+'/messages');}catch(e){box.innerHTML='<p class="mkt-empty">Could not load messages.</p>';return;}
-  box.innerHTML=`<div class="chat-log">${d.messages.length?d.messages.map(m=>`<div class="cmsg ${m.me?'me':''}">${esc(m.text)}</div>`).join(''):`<p style="font-size:12px;color:var(--muted);text-align:center;padding:8px">No messages yet — say hi to @${esc(d.counterpart)}.</p>`}</div>
+  const lang=load('swk_chatlang','en');
+  const langSel=`<select class="chat-lang">${CHAT_LANGS.map(([v,n])=>`<option value="${v}" ${v===lang?'selected':''}>${n}</option>`).join('')}</select>`;
+  box.innerHTML=`<div class="chat-head"><span>Chat with @${esc(d.counterpart)}</span><span class="chat-tr"><i>🌐 Translate to</i>${langSel}<button class="tr-all">All</button></span></div>
+    <div class="chat-log">${d.messages.length?d.messages.map((m,i)=>`<div class="cmsg ${m.me?'me':''}"><span class="ctext">${esc(m.text)}</span><button class="ctr" data-tr="${i}" title="Translate">🌐</button><div class="ctrans"></div></div>`).join(''):`<p style="font-size:12px;color:var(--muted);text-align:center;padding:8px">No messages yet — say hi to @${esc(d.counterpart)}.</p>`}</div>
     <div class="chat-in"><input id="ci-${id}" placeholder="Message @${esc(d.counterpart)}…" maxlength="1000"><button data-send="${id}">Send</button></div>`;
+  const msgs=d.messages;
+  const curLang=()=>box.querySelector('.chat-lang').value;
+  async function translateInto(i,el){el.style.display='block';el.textContent='…';const to=curLang();save('swk_chatlang',to);try{const t=await mfetch('/api/translate',{method:'POST',body:JSON.stringify({text:msgs[i].text,to})});el.textContent=t.text;}catch(e){el.textContent='(translation unavailable)';}}
+  box.querySelectorAll('.ctr').forEach(btn=>btn.addEventListener('click',()=>translateInto(+btn.dataset.tr,btn.parentElement.querySelector('.ctrans'))));
+  box.querySelector('.tr-all').addEventListener('click',()=>box.querySelectorAll('.cmsg').forEach((c,i)=>translateInto(i,c.querySelector('.ctrans'))));
+  box.querySelector('.chat-lang').addEventListener('change',e=>save('swk_chatlang',e.target.value));
   const inp=box.querySelector('#ci-'+id),btn=box.querySelector('[data-send]');
   const send=async()=>{const t=inp.value.trim();if(!t)return;btn.disabled=true;try{await mfetch('/api/order/'+id+'/messages',{method:'POST',body:JSON.stringify({text:t})});await loadThread(id);}catch(e){toast(e.message);btn.disabled=false;}};
   btn.addEventListener('click',send);inp.addEventListener('keydown',e=>{if(e.key==='Enter')send();});

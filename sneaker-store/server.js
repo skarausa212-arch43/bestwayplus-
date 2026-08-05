@@ -375,7 +375,8 @@ function payoutBalance(email) {
   return Math.round(orders.filter(o => o.seller === email && o.status === 'released' && !o.paidOut)
     .reduce((s, o) => s + (o.total - (o.fee || 0)), 0) * 100) / 100;
 }
-const MARKET_FEE_PCT = Number(process.env.MARKET_FEE_PCT || 5); // platform fee % on marketplace sales
+const MARKET_FEE_PCT = Number(process.env.MARKET_FEE_PCT || 10); // buyer-side platform fee % (added on top; kept by the operator)
+const MAX_OFFERS_PER_DAY = Number(process.env.MAX_OFFERS_PER_DAY || 30);
 function releaseOrder(o) {
   if (o.status !== 'shipped' && o.status !== 'delivered' && o.status !== 'disputed') return false;
   o.status = 'released'; o.releasedAt = Date.now();
@@ -579,6 +580,9 @@ const server = http.createServer(async (req, res) => {
       if (l.seller === u.email) return send(res, 400, { error: "You can't offer on your own listing." });
       const amount = Math.round(Number(b.amount) * 100) / 100;
       if (!(amount > 0) || amount > l.price) return send(res, 400, { error: 'Offer must be above 0 and at most the asking price.' });
+      const dayAgo = Date.now() - 864e5;
+      if (offers.filter(o => o.buyer === u.email && o.createdAt > dayAgo).length >= MAX_OFFERS_PER_DAY)
+        return send(res, 429, { error: `Daily limit reached — you can make up to ${MAX_OFFERS_PER_DAY} offers per day.` });
       offers.filter(o => o.listingId === l.id && o.buyer === u.email && o.status === 'pending').forEach(o => o.status = 'superseded');
       const of = { id: 'O-' + crypto.randomBytes(3).toString('hex').toUpperCase(), listingId: l.id, buyer: u.email, amount, status: 'pending', createdAt: Date.now() };
       offers.push(of); saveOffers();
@@ -608,8 +612,9 @@ const server = http.createServer(async (req, res) => {
       let price = l.price;
       const of = offers.find(o => o.listingId === l.id && o.buyer === u.email && o.status === 'accepted');
       if (of) price = of.amount;
-      const total = Math.round(price * 100) / 100;
-      const fee = Math.round(total * MARKET_FEE_PCT) / 100;
+      // buyer-side fee: buyer pays item price + fee%; seller receives the full price
+      const fee = Math.round(price * MARKET_FEE_PCT) / 100;
+      const total = Math.round((price + fee) * 100) / 100;
       const id = 'SWK-' + crypto.randomBytes(3).toString('hex').toUpperCase();
       const order = {
         id, email: u.email, name: String(b.name || u.name || '').slice(0, 80),
@@ -674,6 +679,22 @@ const server = http.createServer(async (req, res) => {
         saveMessages();
         return send(res, 201, { ok: true });
       }
+    }
+    /* --- translate a chat message (keyless) --- */
+    if (req.method === 'POST' && p === '/api/translate') {
+      const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
+      const b = await readBody(req);
+      const text = String(b.text || '').slice(0, 1000);
+      const to = String(b.to || 'en').slice(0, 5).replace(/[^a-zA-Z-]/g, '') || 'en';
+      if (!text) return send(res, 400, { error: 'Nothing to translate.' });
+      try {
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(to)}&dt=t&q=${encodeURIComponent(text)}`;
+        const r = await fetch(url);
+        const j = await r.json();
+        const out = (Array.isArray(j) && Array.isArray(j[0])) ? j[0].map(x => x[0]).join('') : text;
+        const src = (Array.isArray(j) && j[2]) ? j[2] : '';
+        return send(res, 200, { text: out, from: src });
+      } catch (e) { return send(res, 502, { error: 'Translation unavailable right now.' }); }
     }
 
     /* --- leave review (after completion) --- */
