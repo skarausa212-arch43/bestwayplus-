@@ -113,6 +113,18 @@
       <tbody></tbody>
     </table></div>
 
+    <h2>Marketplace · Disputes</h2>
+    <div style="overflow-x:auto"><table id="dispT">
+      <thead><tr><th>Order</th><th>Item</th><th class="hidem">Buyer</th><th class="hidem">Seller</th><th>Total</th><th>Reason</th><th>Resolve</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+
+    <h2>Marketplace · Payouts owed to sellers</h2>
+    <div style="overflow-x:auto"><table id="payT">
+      <thead><tr><th>Order</th><th>Seller</th><th>Payout address</th><th>Owed</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+
     <h2>Accounts</h2>
     <div style="overflow-x:auto"><table id="usersT">
       <thead><tr><th>Email</th><th class="hidem">Name</th><th>Registered</th><th>Orders</th></tr></thead>
@@ -159,7 +171,7 @@ async function loadDash(){
     <td class="money">${fmt$(o.total)}${o.payAmount?`<div class="items">${Number(o.payAmount).toFixed(2)} USDC</div>`:''}</td>
     <td><span class="pill ${o.status}">${o.status}</span>${o.paidTx?`<div class="items"><a class="rcpt" href="https://etherscan.io/tx/${o.paidTx}" target="_blank">✓ tx ↗</a></div>`:''}
       <div class="ship" data-id="${o.id}">
-        <select class="st">${['pending','paid','processing','shipped','delivered','cancelled'].map(s=>`<option ${s===o.status?'selected':''}>${s}</option>`).join('')}</select>
+        <select class="st">${['pending','paid','held','processing','shipped','delivered','released','disputed','refunded','cancelled'].map(s=>`<option ${s===o.status?'selected':''}>${s}</option>`).join('')}</select>
         <input class="carrier" placeholder="Carrier (DHL…)" value="${o.carrier?o.carrier.replace(/"/g,'&quot;'):''}">
         <input class="tracking" placeholder="Tracking #" value="${o.tracking?o.tracking.replace(/"/g,'&quot;'):''}">
         <button class="save">Save</button>
@@ -177,6 +189,7 @@ async function loadDash(){
     row.querySelector('.save').addEventListener('click',doSave);
     row.querySelector('.st').addEventListener('change',doSave);
   });
+  loadMarketAdmin();
   // users
   $('#usersT tbody').innerHTML=d.users.length?d.users.map(u=>`<tr>
     <td class="id">${u.email}</td><td class="hidem">${u.name||'—'}</td>
@@ -184,6 +197,29 @@ async function loadDash(){
     :'<tr><td colspan="4" class="empty">No accounts yet.</td></tr>';
 }
 
+async function loadMarketAdmin(){
+  let m;try{m=await api('/api/admin/market');}catch(e){return;}
+  const setStatus=async(id,status)=>{await api('/api/admin/order-status',{method:'POST',body:JSON.stringify({id,status})});loadDash();};
+  const db=$('#dispT tbody');
+  db.innerHTML=(m.disputes&&m.disputes.length)?m.disputes.map(o=>{
+    const it=(o.items&&o.items[0])||{};
+    return `<tr><td class="id">${o.id}</td><td>${(it.name||'').replace(/</g,'&lt;')}</td>
+      <td class="hidem">@${o.buyerHandle}</td><td class="hidem">@${o.sellerHandle}</td>
+      <td class="money">${fmt$(o.total)}</td><td>${(o.disputeReason||'—').replace(/</g,'&lt;')}</td>
+      <td><button class="save" data-rel="${o.id}">Release to seller</button> <button class="save" data-ref="${o.id}" style="background:#7a1020">Refund buyer</button></td></tr>`;
+  }).join(''):'<tr><td colspan="7" class="empty">No open disputes.</td></tr>';
+  db.querySelectorAll('[data-rel]').forEach(b=>b.addEventListener('click',()=>{if(confirm('Release funds to the seller?'))setStatus(b.dataset.rel,'released');}));
+  db.querySelectorAll('[data-ref]').forEach(b=>b.addEventListener('click',()=>{if(confirm('Refund the buyer? (you send the USDC back)'))setStatus(b.dataset.ref,'refunded');}));
+  const pb=$('#payT tbody');
+  pb.innerHTML=(m.payouts&&m.payouts.length)?m.payouts.map(o=>{
+    const owed=Math.round((o.total-(o.fee||0))*100)/100;
+    return `<tr><td class="id">${o.id}</td><td>@${o.sellerHandle}</td>
+      <td class="id">${o.payout?o.payout:'<span style="color:#b23">not set</span>'}</td>
+      <td class="money">${fmt$(owed)}</td>
+      <td><button class="save" data-paid="${o.id}" ${o.payout?'':'disabled'}>Mark paid-out</button></td></tr>`;
+  }).join(''):'<tr><td colspan="5" class="empty">Nothing to pay out.</td></tr>';
+  pb.querySelectorAll('[data-paid]').forEach(b=>b.addEventListener('click',async()=>{await api('/api/admin/payout-done',{method:'POST',body:JSON.stringify({id:b.dataset.paid})});loadDash();}));
+}
 $('#enter').addEventListener('click',async()=>{
   KEY=$('#pw').value.trim();
   try{await loadDash();sessionStorage.setItem('swk_admin',KEY);}

@@ -34,12 +34,14 @@ const orders = loadJSON('orders.json', []);        // [{id,email,items,total,shi
 const listings = loadJSON('listings.json', []);    // [{id,seller,title,brand,category,price,size,condition,cover,photos,desc,status,createdAt}]
 const offers = loadJSON('offers.json', []);        // [{id,listingId,buyer,amount,status,createdAt}]
 const reviews = loadJSON('reviews.json', []);      // [{id,orderId,from,to,role,rating,text,createdAt}]
+const messages = loadJSON('messages.json', []);    // [{id,orderId,from,text,at}]
 const stats = loadJSON('stats.json', { total: 0, unique: 0, daily: {} }); // daily[YYYY-MM-DD]={v,u,o}
 const saveUsers = () => saveJSON('users.json', users);
 const saveOrders = () => saveJSON('orders.json', orders);
 const saveListings = () => saveJSON('listings.json', listings);
 const saveOffers = () => saveJSON('offers.json', offers);
 const saveReviews = () => saveJSON('reviews.json', reviews);
+const saveMessages = () => saveJSON('messages.json', messages);
 const AUTO_RELEASE_DAYS = Number(process.env.AUTO_RELEASE_DAYS || 7); // buyer-protection window after shipping
 let statsDirty = false;
 setInterval(() => { if (statsDirty) { statsDirty = false; saveJSON('stats.json', stats); } }, 5000).unref();
@@ -635,6 +637,28 @@ const server = http.createServer(async (req, res) => {
       o.status = 'disputed'; o.disputeReason = String(b.reason || '').slice(0, 500); o.disputedAt = Date.now(); saveOrders();
       return send(res, 200, { ok: true });
     }
+    /* --- order chat (buyer <-> seller) --- */
+    if (/^\/api\/order\/SWK-[A-Z0-9-]+\/messages$/.test(p)) {
+      const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
+      const o = orders.find(x => x.id === p.split('/')[3]);
+      if (!o) return send(res, 404, { error: 'not found' });
+      if (o.email !== u.email && o.seller !== u.email) return send(res, 403, { error: 'Not part of this order.' });
+      if (req.method === 'GET') {
+        const thread = messages.filter(m => m.orderId === o.id).map(m => ({ from: sellerHandle(m.from), me: m.from === u.email, text: m.text, at: m.at }));
+        const counterpart = o.email === u.email ? (o.seller ? sellerHandle(o.seller) : 'STUFFWEKNOW') : sellerHandle(o.email);
+        return send(res, 200, { messages: thread, counterpart });
+      }
+      if (req.method === 'POST') {
+        const b = await readBody(req);
+        const text = String(b.text || '').trim().slice(0, 1000);
+        if (!text) return send(res, 400, { error: 'Empty message.' });
+        if (!o.seller) return send(res, 400, { error: 'Messaging is only for marketplace orders.' });
+        messages.push({ id: 'M-' + crypto.randomBytes(4).toString('hex'), orderId: o.id, from: u.email, text, at: Date.now() });
+        saveMessages();
+        return send(res, 201, { ok: true });
+      }
+    }
+
     /* --- leave review (after completion) --- */
     if (req.method === 'POST' && p === '/api/reviews') {
       const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });

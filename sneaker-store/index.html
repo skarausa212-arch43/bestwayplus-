@@ -696,6 +696,14 @@
   .mkt-empty{padding:30px 10px;text-align:center;color:var(--muted);font-size:13px}
   .rate-pick{display:flex;gap:4px;font-size:26px;color:var(--line-2);cursor:pointer}
   .rate-pick i{cursor:pointer;font-style:normal}.rate-pick i.on{color:#f5a623}
+  /* order chat */
+  .chat-thread{margin-top:10px;border-top:1px solid var(--line);padding-top:10px}
+  .chat-log{max-height:210px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+  .cmsg{max-width:82%;padding:8px 11px;border-radius:13px;font-size:13px;line-height:1.4;background:var(--surface-2);align-self:flex-start;word-break:break-word}
+  .cmsg.me{align-self:flex-end;background:var(--ink);color:var(--bg)}
+  .chat-in{display:flex;gap:6px}
+  .chat-in input{flex:1;min-width:0;padding:9px 12px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font:inherit;font-size:13px}
+  .chat-in button{padding:9px 15px;border-radius:10px;border:0;background:var(--ink);color:var(--bg);font-weight:700;font-size:12px;cursor:pointer;flex:none}
   /* ---- theme cross-fade (View Transitions circle wipe) ---- */
   ::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
   ::view-transition-new(root){z-index:2147483646}
@@ -1628,6 +1636,7 @@ function mktOrderCard(o,role){
     else if(o.status==='released')acts+=o.paidOut?`<span style="font-size:12px;color:var(--muted)">Paid out ✓</span>`:`<span style="font-size:12px;color:var(--ok);font-weight:700">Payout owed: ${fmt(Math.round((o.total-(o.fee||0))*100)/100)}</span>`;
     if((o.status==='released'||o.status==='delivered')&&!o.reviewedByMe)acts+=`<button data-act="review" data-id="${o.id}">Review buyer</button>`;
   }
+  if(o.escrow)acts+=`<button data-act="chat" data-id="${o.id}">Messages</button>`;
   const track=(o.tracking&&['shipped','delivered','released'].includes(o.status))?`<div class="ord-track">Via <b>${esc(o.carrier||'carrier')}</b> · ${esc(o.tracking)}</div>`:'';
   return `<div class="ord">
     <div class="ord-top"><span><b>${o.id}</b> · ${dt}</span><span><b>${fmt(o.total)}</b></span></div>
@@ -1635,6 +1644,7 @@ function mktOrderCard(o,role){
     <div class="ord-items">${it.qty||1}× ${esc(it.name||'')} ${it.size&&it.size!=='-'?`<span style="color:var(--faint)">(${esc(it.size)})</span>`:''}</div>
     ${track}${o.disputeReason?`<div class="ord-pending">Dispute: ${esc(o.disputeReason)}</div>`:''}
     <div class="ord-acts">${acts}</div>
+    ${o.escrow?`<div class="chat-thread" id="chat-${o.id}" style="display:none"></div>`:''}
   </div>`;
 }
 function offerRow(o,mine){
@@ -1676,6 +1686,18 @@ function mktAction(act,id){
   else if(act==='odecline')mfetch('/api/offers/'+id+'/decline',{method:'POST'}).then(()=>{toast('Offer declined');done();}).catch(e=>toast(e.message));
   else if(act==='lremove'){if(!confirm('Remove this listing?'))return;mfetch('/api/listings/'+id,{method:'DELETE'}).then(()=>{toast('Listing removed');done();loadListings();}).catch(e=>toast(e.message));}
   else if(act==='lview'){closeModal('#accModal');openListing(id);}
+  else if(act==='chat'){const box=document.getElementById('chat-'+id);if(!box)return;if(box.style.display==='none'){box.style.display='block';loadThread(id);}else box.style.display='none';}
+}
+async function loadThread(id){
+  const box=document.getElementById('chat-'+id);if(!box)return;
+  box.innerHTML='<p style="font-size:12px;color:var(--muted);text-align:center;padding:6px">Loading…</p>';
+  let d;try{d=await mfetch('/api/order/'+id+'/messages');}catch(e){box.innerHTML='<p class="mkt-empty">Could not load messages.</p>';return;}
+  box.innerHTML=`<div class="chat-log">${d.messages.length?d.messages.map(m=>`<div class="cmsg ${m.me?'me':''}">${esc(m.text)}</div>`).join(''):`<p style="font-size:12px;color:var(--muted);text-align:center;padding:8px">No messages yet — say hi to @${esc(d.counterpart)}.</p>`}</div>
+    <div class="chat-in"><input id="ci-${id}" placeholder="Message @${esc(d.counterpart)}…" maxlength="1000"><button data-send="${id}">Send</button></div>`;
+  const inp=box.querySelector('#ci-'+id),btn=box.querySelector('[data-send]');
+  const send=async()=>{const t=inp.value.trim();if(!t)return;btn.disabled=true;try{await mfetch('/api/order/'+id+'/messages',{method:'POST',body:JSON.stringify({text:t})});await loadThread(id);}catch(e){toast(e.message);btn.disabled=false;}};
+  btn.addEventListener('click',send);inp.addEventListener('keydown',e=>{if(e.key==='Enter')send();});
+  const log=box.querySelector('.chat-log');if(log)log.scrollTop=log.scrollHeight;
 }
 $('#accModal').addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(b){mktAction(b.dataset.act,b.dataset.id);}});
 
