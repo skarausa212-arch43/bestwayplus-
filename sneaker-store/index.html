@@ -148,18 +148,43 @@
   .globe .gp1{fill:var(--accent)}.globe .gp2{fill:var(--usdt)}.globe .gp3{fill:var(--eth)}.globe .gp4{fill:var(--accent)}
   .float-obj{position:absolute;display:grid;place-items:center;border-radius:22px;background:var(--surface);
     box-shadow:var(--shadow-lg);border:1px solid var(--line);font-size:34px;will-change:transform;
-    animation:floaty 6s ease-in-out infinite}
+    animation:drift-a 15s ease-in-out infinite}
   .float-obj.big{width:150px;height:180px;border-radius:28px;font-size:66px}
-  .coin{position:absolute;width:62px;height:62px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:26px;box-shadow:var(--shadow-lg);will-change:transform;animation:floaty 5s ease-in-out infinite}
+  .coin{position:absolute;width:62px;height:62px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:26px;box-shadow:var(--shadow-lg);will-change:transform;animation:drift-e 13s ease-in-out infinite}
   .coin.btc{background:linear-gradient(145deg,#ffb347,var(--btc))}
   .coin.eth{background:linear-gradient(145deg,#8aa0f5,var(--eth))}
   .coin.usdt{background:linear-gradient(145deg,#3fce9c,var(--usdt))}
   .coin.sol{background:linear-gradient(145deg,#19fb9b,#9945FF)}
+  /* each item drifts along its own slow, randomised path */
+  .hero-stage .ho{animation-name:drift-b;animation-duration:17s}
+  .hero-stage .sn{animation-name:drift-c;animation-duration:14s}
+  .hero-stage .hp{animation-name:drift-d;animation-duration:16s}
+  .hero-stage .lp{animation-name:drift-f;animation-duration:15s}
+  .hero-stage .cm{animation-name:drift-e;animation-duration:13s}
+  .hero-stage .bg{animation-name:drift-a;animation-duration:18s}
+  .hero-stage .wt{animation-name:drift-c;animation-duration:16s}
+  .hero-stage .ph{animation-name:drift-d;animation-duration:14s}
+  .hero-stage .sg{animation-name:drift-b;animation-duration:17s}
+  .hero-stage .gm{animation-name:drift-f;animation-duration:13s}
+  .hero-stage .dr{animation-name:drift-e;animation-duration:15s}
+  .hero-stage .rg{animation-name:drift-a;animation-duration:12s}
+  .hero-stage .coin.btc{animation-name:drift-c;animation-duration:12s}
+  .hero-stage .coin.eth{animation-name:drift-a;animation-duration:14s}
+  .hero-stage .coin.usdt{animation-name:drift-f;animation-duration:11s}
+  .hero-stage .coin.sol{animation-name:drift-d;animation-duration:13s}
   .shield-badge{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:96px;height:110px;z-index:3;
-    filter:drop-shadow(0 24px 40px rgba(91,92,255,.35));animation:floaty 7s ease-in-out infinite,shieldglow 4.5s ease-in-out infinite}
+    filter:drop-shadow(0 24px 40px rgba(91,92,255,.35));animation:shielddrift 11s ease-in-out infinite,shieldglow 4.5s ease-in-out infinite}
   @keyframes shieldglow{0%,100%{filter:drop-shadow(0 24px 40px rgba(91,92,255,.32))}50%{filter:drop-shadow(0 26px 56px rgba(91,92,255,.62))}}
-  @keyframes floaty{0%,100%{transform:translateY(0) rotate(var(--rot,0deg))}50%{transform:translateY(-16px) rotate(var(--rot,0deg))}}
+  @keyframes shielddrift{0%,100%{transform:translate(-50%,-50%)}33%{transform:translate(calc(-50% + 10px),calc(-50% - 14px))}66%{transform:translate(calc(-50% - 12px),calc(-50% - 4px))}}
+  /* drift paths — gentle wandering with a little rotation, ~±20px */
+  @keyframes drift-a{0%,100%{transform:translate(0,0) rotate(var(--rot,0deg))}25%{transform:translate(13px,-16px) rotate(calc(var(--rot,0deg) + 4deg))}50%{transform:translate(-7px,-24px) rotate(var(--rot,0deg))}75%{transform:translate(-17px,-7px) rotate(calc(var(--rot,0deg) - 4deg))}}
+  @keyframes drift-b{0%,100%{transform:translate(0,0) rotate(var(--rot,0deg))}30%{transform:translate(-15px,-11px) rotate(calc(var(--rot,0deg) - 3deg))}60%{transform:translate(11px,-21px) rotate(calc(var(--rot,0deg) + 3deg))}82%{transform:translate(17px,-5px) rotate(var(--rot,0deg))}}
+  @keyframes drift-c{0%,100%{transform:translate(0,0) rotate(var(--rot,0deg))}22%{transform:translate(-11px,-18px) rotate(calc(var(--rot,0deg) + 5deg))}55%{transform:translate(18px,-12px) rotate(var(--rot,0deg))}80%{transform:translate(7px,9px) rotate(calc(var(--rot,0deg) - 4deg))}}
+  @keyframes drift-d{0%,100%{transform:translate(0,0) rotate(var(--rot,0deg))}33%{transform:translate(9px,-22px) rotate(calc(var(--rot,0deg) - 3deg))}66%{transform:translate(-13px,-12px) rotate(calc(var(--rot,0deg) + 4deg))}}
+  @keyframes drift-e{0%,100%{transform:translate(0,0) rotate(var(--rot,0deg))}25%{transform:translate(-18px,7px) rotate(calc(var(--rot,0deg) - 4deg))}50%{transform:translate(-8px,17px) rotate(var(--rot,0deg))}75%{transform:translate(15px,8px) rotate(calc(var(--rot,0deg) + 4deg))}}
+  @keyframes drift-f{0%,100%{transform:translate(0,0) rotate(var(--rot,0deg))}25%{transform:translate(15px,9px) rotate(calc(var(--rot,0deg) + 3deg))}50%{transform:translate(5px,20px) rotate(var(--rot,0deg))}75%{transform:translate(-12px,11px) rotate(calc(var(--rot,0deg) - 3deg))}}
   @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes floaty{0%,100%{transform:translateY(0) rotate(var(--rot,0deg))}50%{transform:translateY(-16px) rotate(var(--rot,0deg))}}
   .particle{position:absolute;width:5px;height:5px;border-radius:50%;background:var(--accent);opacity:.5;animation:floaty 4s ease-in-out infinite}
 
   /* ============ SECTION HEADERS ============ */
