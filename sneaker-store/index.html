@@ -42,7 +42,9 @@
   .reveal{opacity:0;transform:translateY(26px);filter:blur(6px);transition:opacity .8s var(--ease),transform .8s var(--ease),filter .8s var(--ease)}
   .reveal.in-view{opacity:1;transform:none;filter:none}
   .reveal[data-d]{transition-delay:calc(var(--_d,0)*1ms)}
-  @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;filter:none;transition:none}}
+  @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;filter:none;transition:none}
+    .sell-pill::after,.btn-primary::after,.hero::before,.hero-tag i,.float-obj,.coin,.ring,.shield-badge,.hero h1 .g{animation:none!important}
+    .hero h1 .g{-webkit-text-fill-color:var(--accent);color:var(--accent)}}
 
   /* ============ LOADER ============ */
   #loader{position:fixed;inset:0;z-index:300;background:var(--bg);display:grid;place-items:center;transition:opacity .7s ease,visibility .7s}
@@ -65,22 +67,37 @@
   .hd{display:flex;align-items:center;gap:20px;width:100%}
   .brand{display:flex;align-items:center;gap:11px}
   nav.main{display:flex;gap:4px;margin-left:10px}
-  nav.main a{font-size:14px;color:var(--muted);font-weight:500;padding:8px 12px;border-radius:10px;transition:.18s;position:relative}
-  nav.main a:hover{color:var(--ink);background:var(--surface-2)}
+  nav.main a{font-size:14px;color:var(--muted);font-weight:500;padding:8px 12px;border-radius:10px;transition:color .18s;position:relative}
+  nav.main a::after{content:"";position:absolute;left:12px;right:12px;bottom:5px;height:2px;border-radius:2px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .28s var(--ease)}
+  nav.main a:hover{color:var(--ink)}
+  nav.main a:hover::after{transform:scaleX(1)}
   .tools{margin-left:auto;display:flex;align-items:center;gap:8px}
   .ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;color:var(--muted);position:relative;transition:.18s}
   .ic:hover{color:var(--ink);background:var(--surface-2)}
   .ic svg{width:20px;height:20px}
   .cbadge{position:absolute;top:4px;right:4px;min-width:16px;height:16px;padding:0 4px;background:var(--accent);color:#fff;border-radius:20px;font-size:10px;font-weight:700;display:grid;place-items:center;transform:scale(0);transition:transform .3s var(--ease)}
   .cbadge.show{transform:scale(1)}
-  .sell-pill{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 18px;border-radius:12px;background:var(--ink);color:#fff;font-weight:600;font-size:14px;transition:.2s}
+  .sell-pill{position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 17px;border-radius:12px;
+    background:linear-gradient(120deg,var(--accent),#7f80ff 55%,#9a7bff);color:#fff;font-weight:600;font-size:14px;white-space:nowrap;
+    box-shadow:0 8px 20px -8px rgba(91,92,255,.65);transition:transform .2s var(--ease),box-shadow .2s}
+  .sell-pill::after{content:"";position:absolute;top:0;left:-70%;width:45%;height:100%;
+    background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-20deg);animation:shine 3.6s ease-in-out infinite}
+  @keyframes shine{0%,58%{left:-70%}100%{left:150%}}
+  .sell-pill:hover{transform:translateY(-2px);box-shadow:0 14px 28px -8px rgba(91,92,255,.75)}
+  .sell-pill:active{transform:translateY(0) scale(.97)}
+  .sell-pill .sp-ic{display:grid;place-items:center;width:18px;height:18px;border-radius:6px;background:rgba(255,255,255,.22)}
+  .sell-pill .sp-ic svg{width:13px;height:13px}
+  .sell-pill .sp-short{display:none}
   .sell-pill:hover{background:#000;transform:translateY(-1px);box-shadow:var(--shadow)}
   .ic.menu-btn{display:none}
 
   /* ============ BUTTONS ============ */
   .btn{display:inline-flex;align-items:center;gap:9px;height:50px;padding:0 24px;border-radius:14px;font-weight:600;font-size:15px;transition:transform .2s var(--ease),box-shadow .2s var(--ease),background .2s;white-space:nowrap}
-  .btn svg{width:17px;height:17px}
-  .btn-primary{background:var(--accent);color:#fff;box-shadow:0 10px 26px -12px rgba(91,92,255,.65)}
+  .btn svg{width:17px;height:17px;transition:transform .25s var(--ease)}
+  .btn:hover svg{transform:translateX(4px)}
+  .btn-primary{position:relative;overflow:hidden;background:var(--accent);color:#fff;box-shadow:0 10px 26px -12px rgba(91,92,255,.65)}
+  .btn-primary::after{content:"";position:absolute;top:0;left:-75%;width:50%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.38),transparent);transform:skewX(-20deg);transition:left .55s var(--ease)}
+  .btn-primary:hover::after{left:150%}
   .btn-primary:hover{transform:translateY(-2px);box-shadow:0 16px 34px -12px rgba(91,92,255,.7)}
   .btn-secondary{background:var(--surface);color:var(--ink);border:1px solid var(--line-2)}
   .btn-secondary:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:transparent}
@@ -91,12 +108,15 @@
   /* ============ HERO ============ */
   .hero{padding:clamp(40px,7vw,88px) 0 clamp(48px,7vw,96px);overflow:hidden;position:relative}
   .hero::before{content:"";position:absolute;top:-30%;right:-10%;width:60%;height:120%;pointer-events:none;z-index:0;
-    background:radial-gradient(closest-side,rgba(91,92,255,.14),transparent 72%);filter:blur(20px)}
+    background:radial-gradient(closest-side,rgba(91,92,255,.16),transparent 72%);filter:blur(20px);animation:glowdrift 9s ease-in-out infinite}
+  @keyframes glowdrift{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-6%,4%) scale(1.12)}}
   .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(24px,4vw,56px);align-items:center;position:relative;z-index:1}
   .hero-tag{display:inline-flex;align-items:center;gap:9px;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--surface);border:1px solid var(--line);padding:8px 14px;border-radius:100px;box-shadow:var(--shadow-sm);margin-bottom:22px}
-  .hero-tag i{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px rgba(44,203,127,.16)}
+  .hero-tag i{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px rgba(44,203,127,.16);animation:livepulse 2s ease-in-out infinite}
+  @keyframes livepulse{0%,100%{box-shadow:0 0 0 3px rgba(44,203,127,.18)}50%{box-shadow:0 0 0 7px rgba(44,203,127,.04)}}
   .hero h1{font-size:clamp(44px,7vw,84px);line-height:.98;letter-spacing:-.045em;font-weight:700;margin-bottom:22px}
-  .hero h1 .g{color:var(--accent)}
+  .hero h1 .g{background:linear-gradient(90deg,#5B5CFF,#9a7bff,#5B5CFF);background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;animation:gradmove 5s linear infinite}
+  @keyframes gradmove{to{background-position:-200% center}}
   .hero .lead{font-size:clamp(16px,1.5vw,19px);color:var(--muted);max-width:440px;margin-bottom:30px;line-height:1.6}
   .hero-cta{display:flex;gap:12px;flex-wrap:wrap}
   .hero-trust{display:flex;align-items:center;gap:18px;margin-top:28px;flex-wrap:wrap;color:var(--muted);font-size:13px}
@@ -162,7 +182,9 @@
     display:grid;place-items:center;color:var(--muted);transition:.2s}
   .wish svg{width:18px;height:18px}
   .wish:hover{color:var(--bad);transform:scale(1.1)}
-  .wish.on{color:var(--bad)}.wish.on svg{fill:var(--bad)}
+  .wish:active{transform:scale(.82)}
+  .wish.on{color:var(--bad)}.wish.on svg{fill:var(--bad);animation:heartpop .38s var(--ease)}
+  @keyframes heartpop{0%{transform:scale(1)}35%{transform:scale(1.4)}60%{transform:scale(.9)}100%{transform:scale(1)}}
   .quick{position:absolute;left:50%;bottom:12px;transform:translateX(-50%) translateY(10px);z-index:2;opacity:0;
     font-size:12px;font-weight:600;padding:8px 14px;border-radius:100px;background:color-mix(in srgb,#fff 80%,transparent);
     backdrop-filter:blur(8px);border:1px solid var(--line);transition:.25s;white-space:nowrap}
@@ -320,7 +342,8 @@
   .controls{display:flex;align-items:center;gap:16px;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap}
   .filters{display:flex;gap:7px;flex-wrap:wrap}
   .chip{padding:9px 15px;font-size:13px;font-weight:500;border-radius:100px;border:1px solid var(--line);background:var(--surface);color:var(--muted);transition:.18s;white-space:nowrap}
-  .chip:hover{color:var(--ink);border-color:var(--line-2)}
+  .chip:hover{color:var(--ink);border-color:var(--line-2);transform:translateY(-2px)}
+  .chip{transition:.18s var(--ease)}
   .chip.active{background:var(--ink);color:#fff;border-color:var(--ink)}
   .search{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line-2);border-radius:12px;padding:0 14px;height:44px;min-width:230px;transition:.2s}
   .search:focus-within{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
@@ -649,15 +672,25 @@
     .qv-media.photo img,.qv-media .ph img{max-height:40vh;height:auto;width:auto;max-width:88%;margin:0 auto}
     .drawer{width:100%;max-width:100%}
   }
-  @media(max-width:430px){
-    .hd{gap:8px}
-    .wordmark{font-size:15px}
-    .grid,.fstrip,.why{grid-template-columns:1fr 1fr}
-    .cat-grid{grid-template-columns:1fr 1fr}
-    .reviews,.sellers,.stats{grid-template-columns:1fr}
-    .foot{grid-template-columns:1fr}
-    .sell-pill{height:38px;padding:0 13px;font-size:13px}
+  /* compact header on phones so it never overflows sideways */
+  @media(max-width:560px){
+    .hd{gap:5px}
+    .tools{gap:4px}
+    .sell-pill .sp-full{display:none}
+    .sell-pill .sp-short{display:inline}
+    .sell-pill{padding:0 12px}
     .ic{width:38px;height:38px}
+  }
+  @media(max-width:430px){
+    .hd{gap:4px;padding-left:12px;padding-right:8px}
+    .tools{gap:2px}
+    .wordmark{font-size:14px}
+    .grid,.why{grid-template-columns:1fr 1fr}
+    .cat-grid{grid-template-columns:1fr 1fr}
+    .stats{grid-template-columns:1fr}
+    .foot{grid-template-columns:1fr}
+    .sell-pill{height:36px;padding:0 11px;font-size:13px}
+    .ic{width:34px;height:34px}.ic svg{width:19px;height:19px}
   }
 </style>
 
@@ -687,8 +720,7 @@
       <button class="ic" id="searchBtn" aria-label="Search" data-ic="search"></button>
       <button class="ic" id="accBtn" aria-label="Account"><span data-ic="account" style="display:grid;place-items:center"></span><span class="cbadge" id="accDot" style="min-width:10px;height:10px;padding:0;background:var(--ok)"></span></button>
       <button class="ic" id="cartBtn" aria-label="Cart"><span data-ic="cart"></span><span class="cbadge" id="cbadge">0</span></button>
-      <button class="sell-pill" id="sellBtn">Sell an item</button>
-      <button class="ic menu-btn" aria-label="Menu" data-ic="menu"></button>
+      <button class="sell-pill magnetic" id="sellBtn"><span class="sp-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></span><span class="sp-full">Sell an item</span><span class="sp-short">Sell</span></button>
     </div>
   </div>
 </header>
@@ -1262,7 +1294,7 @@ function bump(){const el=$('#cbadge'),n=cartQty();el.textContent=n;el.classList.
 function renderCart(){
   const box=$('#citems'),foot=$('#dfoot');$('#cbadge').textContent=cartQty();$('#cbadge').classList.toggle('show',cartQty()>0);
   if(!cart.length){box.innerHTML=`<div class="cempty">${ICON.cart}<p>Your cart is empty</p><p class="s">Nothing selected yet.</p></div>`;foot.innerHTML='';return}
-  box.innerHTML=cart.map(c=>{const p=PRODUCTS.find(x=>x.id===c.id),isAcc=p.type==='accessories';
+  box.innerHTML=cart.map(c=>{const p=PRODUCTS.find(x=>x.id===c.id);if(!p)return '';const isAcc=p.type==='accessories';
     return `<div class="ci"><div class="th">${p.img?`<img src="${p.img}" alt="">`:`<span class="art ${isAcc?'acc':''}">${media(p)}</span>`}</div>
       <div class="ci-i"><h4>${esc(p.name)}</h4><div class="m">${cap(p.brand)} · Size ${esc(c.size)}</div><div class="p">${usdtLabel(p.price*c.qty)}</div><button class="rm" data-rm="${c.key}">Remove</button></div>
       <div class="qty"><button data-dec="${c.key}" aria-label="-">${ICON.minus}</button><span>${c.qty}</span><button data-inc="${c.key}" aria-label="+">${ICON.plus}</button></div></div>`}).join('');
