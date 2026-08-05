@@ -340,8 +340,18 @@ function receiptHTML(o) {
 const isAdmin = (req) => ADMIN_PASSWORD && req.headers['x-admin-key'] === ADMIN_PASSWORD;
 
 /* ---------- marketplace helpers ---------- */
-const CATEGORIES = ['shoes', 'backpacks', 'bags', 'caps', 'balls', 'apparel', 'other'];
+const CATEGORIES = ['sneakers','boots','sandals','formal-shoes','tshirts','hoodies','shirts','jackets','knitwear','pants','jeans','shorts','tracksuits','dresses','activewear','backpacks','handbags','totes','duffels','crossbody','wallets','caps','watches','jewelry','sunglasses','belts','scarves','balls','equipment','electronics','collectibles','home','beauty','other'];
 const CONDITIONS = ['New', 'Like new', 'Very good', 'Good', 'Fair'];
+const REGIONS = ['North America', 'South America', 'Europe', 'Asia', 'Africa', 'Oceania'];
+const RETURNS = ['No returns', '14-day returns', '30-day returns'];
+function catGroup(c) {
+  if (['sneakers','boots','sandals','formal-shoes'].includes(c)) return 'shoes';
+  if (['tshirts','hoodies','shirts','jackets','knitwear','pants','jeans','shorts','tracksuits','dresses','activewear'].includes(c)) return 'clothing';
+  if (['backpacks','handbags','totes','duffels','crossbody','wallets'].includes(c)) return 'bags';
+  if (['caps','watches','jewelry','sunglasses','belts','scarves'].includes(c)) return 'accessories';
+  if (['balls','equipment'].includes(c)) return 'balls';
+  return 'other';
+}
 function sellerStats(email) {
   const rs = reviews.filter(r => r.to === email && r.role === 'seller');
   const rating = rs.length ? Math.round((rs.reduce((s, r) => s + r.rating, 0) / rs.length) * 10) / 10 : 0;
@@ -352,8 +362,9 @@ function sellerHandle(email) { const u = users[email]; return (u && u.name) || (
 function listingCard(l) { // light — no full photos
   const st = sellerStats(l.seller);
   return {
-    id: l.id, title: l.title, brand: l.brand, category: l.category, price: l.price, old: l.old || 0,
+    id: l.id, title: l.title, brand: l.brand, category: l.category, group: catGroup(l.category), price: l.price, old: l.old || 0,
     size: l.size || '', condition: l.condition || '', cover: l.cover || (l.photos && l.photos[0]) || '',
+    ships: l.ships || [], returns: l.returns || 'No returns',
     status: l.status, createdAt: l.createdAt,
     seller: { handle: sellerHandle(l.seller), email: l.seller, rating: st.rating, reviews: st.reviews, sold: st.sold },
   };
@@ -501,7 +512,7 @@ const server = http.createServer(async (req, res) => {
       const cat = url.searchParams.get('category');
       const q = (url.searchParams.get('q') || '').toLowerCase().trim();
       const seller = url.searchParams.get('seller');
-      if (cat && cat !== 'all') out = out.filter(l => l.category === cat);
+      if (cat && cat !== 'all') out = out.filter(l => l.category === cat || catGroup(l.category) === cat);
       if (seller) out = out.filter(l => l.seller === seller);
       if (q) out = out.filter(l => (l.title + ' ' + l.brand).toLowerCase().includes(q));
       out = out.sort((a, b) => b.createdAt - a.createdAt).slice(0, 200).map(listingCard);
@@ -522,17 +533,19 @@ const server = http.createServer(async (req, res) => {
       const b = await readBody(req);
       const title = String(b.title || '').trim().slice(0, 90);
       const price = Math.round(Number(b.price) * 100) / 100;
-      const photos = Array.isArray(b.photos) ? b.photos.filter(x => typeof x === 'string' && x.startsWith('data:image/')).slice(0, 5) : [];
+      const photos = Array.isArray(b.photos) ? b.photos.filter(x => typeof x === 'string' && x.startsWith('data:image/')).slice(0, 6) : [];
       if (title.length < 3) return send(res, 400, { error: 'Title too short.' });
       if (!(price > 0) || price > 100000) return send(res, 400, { error: 'Enter a valid price.' });
       if (!photos.length) return send(res, 400, { error: 'Add at least one photo.' });
       for (const ph of photos) if (ph.length > 2200000) return send(res, 400, { error: 'A photo is too large — keep under ~1.5MB.' });
       const cat = CATEGORIES.includes(b.category) ? b.category : 'other';
+      const ships = Array.isArray(b.ships) ? b.ships.filter(r => REGIONS.includes(r)) : [];
       const l = {
         id: 'L-' + crypto.randomBytes(4).toString('hex').toUpperCase(),
         seller: u.email, title, brand: String(b.brand || '').slice(0, 40),
         category: cat, price, old: Math.max(0, Math.round(Number(b.old) * 100) / 100) || 0,
         size: String(b.size || '').slice(0, 24), condition: CONDITIONS.includes(b.condition) ? b.condition : 'Good',
+        ships, returns: RETURNS.includes(b.returns) ? b.returns : 'No returns',
         desc: String(b.desc || '').slice(0, 1500), photos, cover: photos[0], status: 'active', createdAt: Date.now(),
       };
       listings.push(l); saveListings();
@@ -552,6 +565,8 @@ const server = http.createServer(async (req, res) => {
       if (b.desc !== undefined) l.desc = String(b.desc).slice(0, 1500);
       if (b.condition !== undefined && CONDITIONS.includes(b.condition)) l.condition = b.condition;
       if (b.category !== undefined && CATEGORIES.includes(b.category)) l.category = b.category;
+      if (Array.isArray(b.ships)) l.ships = b.ships.filter(r => REGIONS.includes(r));
+      if (b.returns !== undefined && RETURNS.includes(b.returns)) l.returns = b.returns;
       saveListings();
       return send(res, 200, { listing: listingFull(l) });
     }
@@ -588,6 +603,8 @@ const server = http.createServer(async (req, res) => {
       const l = listings.find(x => x.id === b.listingId && x.status === 'active');
       if (!l) return send(res, 404, { error: 'Listing not available.' });
       if (l.seller === u.email) return send(res, 400, { error: "You can't buy your own listing." });
+      const region = String(b.region || '');
+      if (l.ships && l.ships.length && region && !l.ships.includes(region)) return send(res, 400, { error: `This seller does not ship to ${region}.` });
       let price = l.price;
       const of = offers.find(o => o.listingId === l.id && o.buyer === u.email && o.status === 'accepted');
       if (of) price = of.amount;

@@ -672,6 +672,16 @@
   .photo-cell .rm{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;border:0;cursor:pointer;font-size:13px;line-height:1}
   .photo-add{aspect-ratio:1;border:1.5px dashed var(--line-2);border-radius:12px;display:grid;place-items:center;cursor:pointer;color:var(--muted);font-size:26px;background:transparent}
   .photo-add:hover{border-color:var(--accent);color:var(--accent)}
+  .photo-cell .cover-tag{position:absolute;left:4px;bottom:4px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:rgba(0,0,0,.6);color:#fff;padding:2px 6px;border-radius:6px}
+  /* shipping region chips */
+  .rgns{display:flex;flex-wrap:wrap;gap:7px}
+  .rgn{display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border-radius:100px;border:1px solid var(--line-2);font-size:12.5px;font-weight:600;cursor:pointer;user-select:none;color:var(--muted)}
+  .rgn i{width:15px;height:15px;border-radius:5px;border:1.5px solid var(--line-2);display:inline-block;position:relative;flex:none}
+  .rgn.on{border-color:var(--ink);color:var(--ink)}
+  .rgn.on i{background:var(--ink);border-color:var(--ink)}
+  .rgn.on i::after{content:'';position:absolute;left:4px;top:1px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+  .ships-line{font-size:12.5px;color:var(--muted);margin-top:12px;line-height:1.6}
+  .ships-line b{color:var(--ink)}
   .frow{display:flex;gap:10px}.frow>*{flex:1;min-width:0}
   .cobody select,.cobody textarea{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--line-2);
     background:var(--surface);color:var(--ink);font:inherit;font-size:14px}
@@ -766,10 +776,10 @@
     <nav class="main">
       <a href="#catalog" data-filter="all">Shop</a>
       <a href="#catalog" data-filter="shoes">Shoes</a>
-      <a href="#catalog" data-filter="backpacks">Backpacks</a>
+      <a href="#catalog" data-filter="clothing">Clothing</a>
       <a href="#catalog" data-filter="bags">Bags</a>
-      <a href="#catalog" data-filter="caps">Caps</a>
-      <a href="#catalog" data-filter="balls">Balls</a>
+      <a href="#catalog" data-filter="accessories">Accessories</a>
+      <a href="#catalog" data-filter="balls">Sport</a>
     </nav>
     <div class="tools">
       <button class="sell-pill" id="sellBtn">Sell</button>
@@ -819,11 +829,11 @@
           <div class="atmo"></div>
         </div>
         <span class="orbit-item" data-pic="sneaker" data-label="Shoes" data-filter="shoes" style="animation-delay:0s"></span>
-        <span class="orbit-item accent" data-pic="sunglasses" data-label="Shop All" data-filter="all" style="animation-delay:-2.5s"></span>
-        <span class="orbit-item" data-pic="hoodie" data-label="Backpacks" data-filter="backpacks" style="animation-delay:-5s"></span>
+        <span class="orbit-item accent" data-pic="sunglasses" data-label="Accessories" data-filter="accessories" style="animation-delay:-2.5s"></span>
+        <span class="orbit-item" data-pic="hoodie" data-label="Clothing" data-filter="clothing" style="animation-delay:-5s"></span>
         <span class="orbit-item" data-pic="handbag" data-label="Bags" data-filter="bags" style="animation-delay:-7.5s"></span>
-        <span class="orbit-item accent" data-pic="watch" data-label="Balls" data-filter="balls" style="animation-delay:-10s"></span>
-        <span class="orbit-item" data-pic="cap" data-label="Caps" data-filter="caps" style="animation-delay:-12.5s"></span>
+        <span class="orbit-item accent" data-pic="watch" data-label="Sport" data-filter="balls" style="animation-delay:-10s"></span>
+        <span class="orbit-item" data-pic="cap" data-label="Accessories" data-filter="accessories" style="animation-delay:-12.5s"></span>
         <div class="refl"></div>
       </div>
       <span class="meteor m1"></span><span class="meteor m2"></span>
@@ -841,10 +851,10 @@
       <div class="filters" id="filters">
         <button class="chip active" data-filter="all">All</button>
         <button class="chip" data-filter="shoes">Shoes</button>
-        <button class="chip" data-filter="backpacks">Backpacks</button>
+        <button class="chip" data-filter="clothing">Clothing</button>
         <button class="chip" data-filter="bags">Bags</button>
-        <button class="chip" data-filter="caps">Caps</button>
-        <button class="chip" data-filter="balls">Balls</button>
+        <button class="chip" data-filter="accessories">Accessories</button>
+        <button class="chip" data-filter="balls">Sport</button>
       </div>
       <div class="search">
         <span data-ic="search"></span>
@@ -1170,6 +1180,9 @@ function productCat(p){
 }
 const CAT_LABEL={shoes:"Men's Shoes",backpacks:'Backpack',bags:'Bag',caps:'Cap',balls:'Ball'};
 function catLabel(p){return CAT_LABEL[productCat(p)]||'Object'}
+/* map the catalog's product category to a browse group (matches listing groups) */
+const GROUP_OF={shoes:'shoes',backpacks:'bags',bags:'bags',caps:'accessories',balls:'balls'};
+function productGroup(p){return GROUP_OF[productCat(p)]||'other';}
 function badgeCls(b){b=(b||'').toUpperCase();return b==='LIMITED'?'b-limited':b==='SOLD OUT'?'b-sold':b==='PREMIUM'?'b-premium':b==='LOW STOCK'?'b-low':b==='DROP 02'?'b-drop2':b.startsWith('DROP')?'b-drop':''}
 let LISTINGS=[];
 function catalogCardHTML(p){
@@ -1215,8 +1228,8 @@ function listingCardHTML(l){
 }
 function renderGrid(){
   const q=searchTerm;
-  const lm=LISTINGS.filter(l=>(activeFilter==='all'||l.category===activeFilter)&&(!q||(l.title+' '+l.brand).toLowerCase().includes(q)));
-  const pm=PRODUCTS.filter(p=>(activeFilter==='all'||productCat(p)===activeFilter)&&(!q||p.name.toLowerCase().includes(q)||p.brand.includes(q)));
+  const lm=LISTINGS.filter(l=>(activeFilter==='all'||l.group===activeFilter)&&(!q||(l.title+' '+(l.brand||'')).toLowerCase().includes(q)));
+  const pm=PRODUCTS.filter(p=>(activeFilter==='all'||productGroup(p)===activeFilter)&&(!q||p.name.toLowerCase().includes(q)||p.brand.includes(q)));
   if(!lm.length&&!pm.length){grid.innerHTML=`<div class="empty"><div data-ic="search"></div><p>No pieces match. Try another search.</p></div>`;grid.querySelectorAll('[data-ic]').forEach(e=>e.innerHTML=ICON[e.dataset.ic]);return}
   grid.innerHTML=lm.map(listingCardHTML).join('')+pm.map(catalogCardHTML).join('');
   observeReveal();wireGlobeLink();
@@ -1507,7 +1520,11 @@ document.querySelectorAll('.orbit-item[data-pic]').forEach(function(o){
 });
 
 /* ================= MARKETPLACE (frontend) ================= */
-const CAT_NAME=c=>({shoes:'Shoes',backpacks:'Backpack',bags:'Bag',caps:'Cap',balls:'Ball',apparel:'Apparel',other:'Item'}[c]||'Item');
+const CAT_NAME=c=>({sneakers:'Sneakers',boots:'Boots',sandals:'Sandals & Slides','formal-shoes':'Formal Shoes',tshirts:'T‑Shirts',hoodies:'Hoodies & Sweats',shirts:'Shirts',jackets:'Jackets & Coats',knitwear:'Knitwear',pants:'Pants',jeans:'Jeans',shorts:'Shorts',tracksuits:'Tracksuits',dresses:'Dresses & Skirts',activewear:'Activewear',backpacks:'Backpack',handbags:'Handbag',totes:'Tote',duffels:'Duffel & Gym',crossbody:'Crossbody & Waist',wallets:'Wallet & Pouch',caps:'Cap & Hat',watches:'Watch',jewelry:'Jewelry',sunglasses:'Sunglasses',belts:'Belt',scarves:'Scarf & Gloves',balls:'Ball',equipment:'Equipment',electronics:'Electronics',collectibles:'Collectible',home:'Home',beauty:'Beauty',other:'Other'}[c]||'Item');
+const CAT_TREE=[['Footwear',['sneakers','boots','sandals','formal-shoes']],['Clothing',['tshirts','hoodies','shirts','jackets','knitwear','pants','jeans','shorts','tracksuits','dresses','activewear']],['Bags',['backpacks','handbags','totes','duffels','crossbody','wallets']],['Accessories',['caps','watches','jewelry','sunglasses','belts','scarves']],['Sport',['balls','equipment']],['Other',['electronics','collectibles','home','beauty','other']]];
+const BRANDS=['Nike','adidas','Jordan','New Balance','Puma','Reebok','Converse','Vans','ASICS','Yeezy','Supreme','Stüssy','Carhartt','The North Face','Ralph Lauren','Tommy Hilfiger','Lacoste','Levi\'s','Zara','H&M','Uniqlo','Gucci','Louis Vuitton','Prada','Balenciaga','Off‑White','Moncler','Stone Island','Burberry','Dior','Other'];
+const REGIONS=['North America','South America','Europe','Asia','Africa','Oceania'];
+const RETURNS=['No returns','14-day returns','30-day returns'];
 function authHdr(){return AUTH?{Authorization:'Bearer '+AUTH.token}:{}}
 async function mfetch(url,opts){opts=opts||{};opts.headers=Object.assign({'Content-Type':'application/json'},authHdr(),opts.headers||{});const r=await fetch(url,opts);let d={};try{d=await r.json()}catch(e){}if(!r.ok)throw new Error(d.error||'Request failed');return d;}
 function stars(n){n=Math.round(n||0);let s='';for(let i=1;i<=5;i++)s+=`<span class="${i<=n?'':'off'}">★</span>`;return `<span class="stars">${s}</span>`;}
@@ -1527,6 +1544,7 @@ async function openListing(id){
       ${l.size?`<div style="font-size:13px;color:var(--muted);margin-top:3px">Size ${esc(l.size)}</div>`:''}
       ${l.photos.length>1?`<div class="lst-strip" id="lstStrip">${l.photos.map((ph,i)=>`<img src="${ph}" data-i="${i}" class="${i===0?'on':''}">`).join('')}</div>`:''}
       ${l.desc?`<p class="desc" style="margin-top:14px">${esc(l.desc)}</p>`:''}
+      <div class="ships-line"><b>Ships to:</b> ${(l.ships&&l.ships.length)?l.ships.map(esc).join(', '):'Worldwide'}<br><b>Returns:</b> ${esc(l.returns||'No returns')}</div>
       <div class="protect">${ICON.verified}<div><b>Buyer Protection</b><span>Your USDC is held in escrow and only released to the seller after you confirm the item arrived as described. Open a dispute anytime before that.</span></div></div>
       <div class="seller-row">
         <div class="av">${esc((s.handle||'?')[0].toUpperCase())}</div>
@@ -1559,8 +1577,11 @@ async function openSeller(email){
 }
 function buyListing(id){
   if(!AUTH)return needAuth('Sign in to buy');
+  const li=LISTINGS.find(x=>x.id===id)||{};
+  const regionList=(li.ships&&li.ships.length)?li.ships:REGIONS;
   $('#coBody').innerHTML=`<div class="cobody"><h3>Checkout</h3><p class="sub">Ship-to address for the seller. Payment is held in escrow.</p>
     <div class="field"><label>Full name</label><input id="bName" value="${esc(AUTH.name||'')}"></div>
+    <div class="field"><label>Region</label><select id="bRegion">${regionList.map(r=>`<option>${r}</option>`).join('')}</select></div>
     <div class="field"><label>Address</label><input id="bAddr" placeholder="Street, house, apt"></div>
     <div class="frow"><div class="field"><label>City</label><input id="bCity"></div><div class="field"><label>ZIP</label><input id="bZip"></div></div>
     <div class="protect">${ICON.verified}<div><b>Buyer Protection</b><span>Funds are released to the seller only after you confirm the item arrived.</span></div></div>
@@ -1568,7 +1589,7 @@ function buyListing(id){
     <div class="msg" id="bMsg" style="display:none;margin-top:12px;color:#ff6b6b;font-weight:600;font-size:13px"></div></div>`;
   closeModal('#lstModal');openModal('#coModal');
   $('#bGo').addEventListener('click',async()=>{
-    const b={listingId:id,name:$('#bName').value,address:$('#bAddr').value,city:$('#bCity').value,zip:$('#bZip').value};
+    const b={listingId:id,name:$('#bName').value,region:$('#bRegion').value,address:$('#bAddr').value,city:$('#bCity').value,zip:$('#bZip').value};
     if(!b.address.trim()){$('#bMsg').style.display='block';$('#bMsg').textContent='Enter a shipping address.';return;}
     $('#bGo').disabled=true;
     try{const d=await mfetch('/api/buy',{method:'POST',body:JSON.stringify(b)});cryptoPay(d);}
@@ -1584,24 +1605,32 @@ function makeOffer(l){
 }
 
 /* --- sell flow --- */
-const SELL_PHOTOS=[];
-function compressImg(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>{const img=new Image();img.onload=()=>{const max=1000;let w=img.width,h=img.height;if(w>h&&w>max){h=h*max/w;w=max;}else if(h>max){w=w*max/h;h=max;}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);res(c.toDataURL('image/jpeg',0.82));};img.onerror=rej;img.src=fr.result;};fr.onerror=rej;fr.readAsDataURL(file);});}
-function openSell(){if(!AUTH)return needAuth('Sign in to sell');SELL_PHOTOS.length=0;renderSell();openModal('#sellModal');}
+const SELL_PHOTOS=[],SELL_SHIP=[...REGIONS];
+function compressImg(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>{const img=new Image();img.onload=()=>{const max=1100;let w=img.width,h=img.height;if(w>h&&w>max){h=h*max/w;w=max;}else if(h>max){w=w*max/h;h=max;}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);res(c.toDataURL('image/jpeg',0.82));};img.onerror=rej;img.src=fr.result;};fr.onerror=rej;fr.readAsDataURL(file);});}
+function openSell(){if(!AUTH)return needAuth('Sign in to sell');SELL_PHOTOS.length=0;SELL_SHIP.length=0;REGIONS.forEach(r=>SELL_SHIP.push(r));renderSell();openModal('#sellModal');}
 function renderSell(){
-  $('#sellBody').innerHTML=`<div class="cobody"><h3>List an item</h3><p class="sub">Add photos and set your price. Buyers pay in USDC — funds are held in escrow until they confirm delivery.</p>
-    <div class="photo-grid" id="photoGrid">${SELL_PHOTOS.map((p,i)=>`<div class="photo-cell"><img src="${p}"><button class="rm" data-rm="${i}">×</button></div>`).join('')}${SELL_PHOTOS.length<5?'<label class="photo-add">+<input type="file" accept="image/*" id="photoIn" multiple hidden></label>':''}</div>
+  const catOpts=CAT_TREE.map(([g,cs])=>`<optgroup label="${g}">${cs.map(c=>`<option value="${c}">${CAT_NAME(c)}</option>`).join('')}</optgroup>`).join('');
+  const brandOpts=BRANDS.map(b=>`<option>${b}</option>`).join('');
+  const regionBoxes=REGIONS.map(r=>`<label class="rgn ${SELL_SHIP.includes(r)?'on':''}" data-rgn="${r}"><i></i>${r}</label>`).join('');
+  $('#sellBody').innerHTML=`<div class="cobody"><h3>List an item</h3><p class="sub">Add up to 6 photos, set your price. Buyers pay in USDC — funds are held in escrow until they confirm delivery.</p>
+    <div class="photo-grid" id="photoGrid">${SELL_PHOTOS.map((p,i)=>`<div class="photo-cell"><img src="${p}">${i===0?'<span class="cover-tag">Cover</span>':''}<button class="rm" data-rm="${i}">×</button></div>`).join('')}${SELL_PHOTOS.length<6?'<label class="photo-add">+<input type="file" accept="image/*" id="photoIn" multiple hidden></label>':''}</div>
     <div class="field"><label>Title</label><input id="slTitle" maxlength="90" placeholder="e.g. adidas Samba OG — UK9"></div>
-    <div class="frow"><div class="field"><label>Brand</label><input id="slBrand" maxlength="40" placeholder="adidas"></div>
-      <div class="field"><label>Category</label><select id="slCat">${['shoes','backpacks','bags','caps','balls','apparel','other'].map(c=>`<option value="${c}">${CAT_NAME(c)}</option>`).join('')}</select></div></div>
+    <div class="frow"><div class="field"><label>Brand</label><select id="slBrand">${brandOpts}</select></div>
+      <div class="field"><label>Category</label><select id="slCat">${catOpts}</select></div></div>
+    <div class="field" id="slBrandOtherWrap" style="display:none"><label>Brand name</label><input id="slBrandOther" maxlength="40" placeholder="Type the brand"></div>
     <div class="frow"><div class="field"><label>Size</label><input id="slSize" maxlength="24" placeholder="42 / M / One size"></div>
       <div class="field"><label>Condition</label><select id="slCond">${['New','Like new','Very good','Good','Fair'].map(c=>`<option>${c}</option>`).join('')}</select></div></div>
     <div class="frow"><div class="field"><label>Price (USD)</label><input id="slPrice" type="number" min="1" step="1" placeholder="80"></div>
       <div class="field"><label>Was (optional)</label><input id="slOld" type="number" min="0" step="1" placeholder="120"></div></div>
+    <div class="field"><label>Ships to</label><div class="rgns" id="slShip">${regionBoxes}</div></div>
+    <div class="field"><label>Returns</label><select id="slReturns">${RETURNS.map(r=>`<option>${r}</option>`).join('')}</select></div>
     <div class="field"><label>Description</label><textarea id="slDesc" rows="3" maxlength="1500" placeholder="Condition details, flaws, measurements…"></textarea></div>
     <button class="cbtn" id="slGo">Publish listing</button>
     <div class="msg" id="slMsg" style="display:none;margin-top:12px;font-size:13px;color:#ff6b6b;font-weight:600"></div></div>`;
-  const inp=$('#photoIn');if(inp)inp.addEventListener('change',async e=>{const files=[...e.target.files].slice(0,5-SELL_PHOTOS.length);for(const f of files){try{SELL_PHOTOS.push(await compressImg(f));}catch(x){}}renderSell();});
+  const inp=$('#photoIn');if(inp)inp.addEventListener('change',async e=>{const files=[...e.target.files].slice(0,6-SELL_PHOTOS.length);for(const f of files){try{SELL_PHOTOS.push(await compressImg(f));}catch(x){}}renderSell();});
   $('#photoGrid').addEventListener('click',e=>{const b=e.target.closest('[data-rm]');if(b){SELL_PHOTOS.splice(+b.dataset.rm,1);renderSell();}});
+  $('#slBrand').addEventListener('change',e=>{$('#slBrandOtherWrap').style.display=e.target.value==='Other'?'':'none';});
+  $('#slShip').addEventListener('click',e=>{const l=e.target.closest('[data-rgn]');if(!l)return;const r=l.dataset.rgn,i=SELL_SHIP.indexOf(r);if(i>-1)SELL_SHIP.splice(i,1);else SELL_SHIP.push(r);l.classList.toggle('on');});
   $('#slGo').addEventListener('click',submitListing);
 }
 async function submitListing(){
@@ -1609,7 +1638,9 @@ async function submitListing(){
   if(!SELL_PHOTOS.length)return show('Add at least one photo.');
   if(($('#slTitle').value||'').trim().length<3)return show('Add a title.');
   if(!(parseFloat($('#slPrice').value)>0))return show('Set a price.');
-  const body={title:$('#slTitle').value,brand:$('#slBrand').value,category:$('#slCat').value,size:$('#slSize').value,condition:$('#slCond').value,price:$('#slPrice').value,old:$('#slOld').value,desc:$('#slDesc').value,photos:SELL_PHOTOS};
+  if(!SELL_SHIP.length)return show('Choose at least one region you ship to.');
+  let brand=$('#slBrand').value;if(brand==='Other')brand=$('#slBrandOther').value||'';
+  const body={title:$('#slTitle').value,brand,category:$('#slCat').value,size:$('#slSize').value,condition:$('#slCond').value,price:$('#slPrice').value,old:$('#slOld').value,ships:SELL_SHIP.slice(),returns:$('#slReturns').value,desc:$('#slDesc').value,photos:SELL_PHOTOS};
   $('#slGo').disabled=true;
   try{await mfetch('/api/listings',{method:'POST',body:JSON.stringify(body)});toast('Listing published');closeModal('#sellModal');loadListings();}
   catch(e){show(e.message);$('#slGo').disabled=false;}
