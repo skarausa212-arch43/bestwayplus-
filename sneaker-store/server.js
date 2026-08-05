@@ -35,6 +35,7 @@ const listings = loadJSON('listings.json', []);    // [{id,seller,title,brand,ca
 const offers = loadJSON('offers.json', []);        // [{id,listingId,buyer,amount,status,createdAt}]
 const reviews = loadJSON('reviews.json', []);      // [{id,orderId,from,to,role,rating,text,createdAt}]
 const messages = loadJSON('messages.json', []);    // [{id,orderId,from,text,at}]
+const reports = loadJSON('reports.json', []);      // [{id,listingId,from,reason,at,status}]
 const stats = loadJSON('stats.json', { total: 0, unique: 0, daily: {} }); // daily[YYYY-MM-DD]={v,u,o}
 const saveUsers = () => saveJSON('users.json', users);
 const saveOrders = () => saveJSON('orders.json', orders);
@@ -42,6 +43,7 @@ const saveListings = () => saveJSON('listings.json', listings);
 const saveOffers = () => saveJSON('offers.json', offers);
 const saveReviews = () => saveJSON('reviews.json', reviews);
 const saveMessages = () => saveJSON('messages.json', messages);
+const saveReports = () => saveJSON('reports.json', reports);
 const AUTO_RELEASE_DAYS = Number(process.env.AUTO_RELEASE_DAYS || 7); // buyer-protection window after shipping
 let statsDirty = false;
 setInterval(() => { if (statsDirty) { statsDirty = false; saveJSON('stats.json', stats); } }, 5000).unref();
@@ -356,7 +358,7 @@ function sellerStats(email) {
   const rs = reviews.filter(r => r.to === email && r.role === 'seller');
   const rating = rs.length ? Math.round((rs.reduce((s, r) => s + r.rating, 0) / rs.length) * 10) / 10 : 0;
   const sold = orders.filter(o => o.seller === email && ['released', 'delivered'].includes(o.status)).length;
-  return { rating, reviews: rs.length, sold };
+  return { rating, reviews: rs.length, sold, verified: !!(users[email] && users[email].verified) };
 }
 function sellerHandle(email) { const u = users[email]; return (u && u.name) || (email ? email.split('@')[0] : 'seller'); }
 function listingCard(l) { // light — no full photos
@@ -364,9 +366,9 @@ function listingCard(l) { // light — no full photos
   return {
     id: l.id, title: l.title, brand: l.brand, category: l.category, group: catGroup(l.category), price: l.price, old: l.old || 0,
     size: l.size || '', condition: l.condition || '', cover: l.cover || (l.photos && l.photos[0]) || '',
-    ships: l.ships || [], returns: l.returns || 'No returns',
+    ships: l.ships || [], returns: l.returns || 'No returns', boosted: (l.boostedUntil || 0) > Date.now(),
     status: l.status, createdAt: l.createdAt,
-    seller: { handle: sellerHandle(l.seller), email: l.seller, rating: st.rating, reviews: st.reviews, sold: st.sold },
+    seller: { handle: sellerHandle(l.seller), email: l.seller, rating: st.rating, reviews: st.reviews, sold: st.sold, verified: st.verified },
   };
 }
 function listingFull(l) { return { ...listingCard(l), photos: l.photos || (l.cover ? [l.cover] : []), desc: l.desc || '' }; }
@@ -377,6 +379,7 @@ function payoutBalance(email) {
 }
 const MARKET_FEE_PCT = Number(process.env.MARKET_FEE_PCT || 10); // buyer-side platform fee % (added on top; kept by the operator)
 const MAX_OFFERS_PER_DAY = Number(process.env.MAX_OFFERS_PER_DAY || 30);
+const BOOST_PRICE_PER_DAY = Number(process.env.BOOST_PRICE_PER_DAY || 2); // USDC/day to feature a listing
 function releaseOrder(o) {
   if (o.status !== 'shipped' && o.status !== 'delivered' && o.status !== 'disputed') return false;
   o.status = 'released'; o.releasedAt = Date.now();
@@ -398,7 +401,7 @@ function orderView(o) {
 function offerView(o) {
   const l = listings.find(x => x.id === o.listingId);
   return {
-    id: o.id, listingId: o.listingId, amount: o.amount, status: o.status, createdAt: o.createdAt,
+    id: o.id, listingId: o.listingId, amount: o.amount, counter: o.counter || 0, status: o.status, createdAt: o.createdAt,
     title: l ? l.title : '(removed)', cover: l ? (l.cover || '') : '', price: l ? l.price : 0,
     buyerHandle: sellerHandle(o.buyer),
   };
@@ -516,7 +519,7 @@ const server = http.createServer(async (req, res) => {
       if (cat && cat !== 'all') out = out.filter(l => l.category === cat || catGroup(l.category) === cat);
       if (seller) out = out.filter(l => l.seller === seller);
       if (q) out = out.filter(l => (l.title + ' ' + l.brand).toLowerCase().includes(q));
-      out = out.sort((a, b) => b.createdAt - a.createdAt).slice(0, 200).map(listingCard);
+      out = out.sort((a, b) => ((b.boostedUntil || 0) > Date.now() ? 1 : 0) - ((a.boostedUntil || 0) > Date.now() ? 1 : 0) || b.createdAt - a.createdAt).slice(0, 200).map(listingCard);
       return send(res, 200, { listings: out });
     }
     /* --- listing detail (public) --- */
@@ -588,17 +591,61 @@ const server = http.createServer(async (req, res) => {
       offers.push(of); saveOffers();
       return send(res, 201, { offer: of });
     }
-    /* --- accept / decline offer (seller) --- */
-    if (req.method === 'POST' && /^\/api\/offers\/[A-Za-z0-9-]+\/(accept|decline)$/.test(p)) {
+    /* --- accept / decline / counter offer (seller) --- */
+    if (req.method === 'POST' && /^\/api\/offers\/[A-Za-z0-9-]+\/(accept|decline|counter)$/.test(p)) {
       const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
       const parts = p.split('/'); const of = offers.find(o => o.id === parts[3]); const action = parts[4];
       if (!of) return send(res, 404, { error: 'not found' });
       const l = listings.find(x => x.id === of.listingId);
       if (!l || l.seller !== u.email) return send(res, 403, { error: 'Not your listing.' });
       if (of.status !== 'pending') return send(res, 400, { error: 'Offer already handled.' });
+      if (action === 'counter') {
+        const b = await readBody(req);
+        const c = Math.round(Number(b.amount) * 100) / 100;
+        if (!(c > 0) || c > l.price) return send(res, 400, { error: 'Counter must be above 0 and at most the asking price.' });
+        of.counter = c; of.status = 'countered'; saveOffers();
+        return send(res, 200, { ok: true, status: of.status });
+      }
       of.status = action === 'accept' ? 'accepted' : 'declined';
       saveOffers();
       return send(res, 200, { ok: true, status: of.status });
+    }
+    /* --- buyer accepts the seller's counter --- */
+    if (req.method === 'POST' && /^\/api\/offers\/[A-Za-z0-9-]+\/accept-counter$/.test(p)) {
+      const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
+      const of = offers.find(o => o.id === p.split('/')[3]);
+      if (!of || of.buyer !== u.email) return send(res, 403, { error: 'Not your offer.' });
+      if (of.status !== 'countered' || !of.counter) return send(res, 400, { error: 'No counter to accept.' });
+      of.amount = of.counter; of.status = 'accepted'; saveOffers();
+      return send(res, 200, { ok: true });
+    }
+    /* --- report a listing --- */
+    if (req.method === 'POST' && p === '/api/report') {
+      const u = tokenUser(req); if (!u) return send(res, 401, { error: 'Sign in to report.' });
+      const b = await readBody(req);
+      const l = listings.find(x => x.id === b.listingId);
+      if (!l) return send(res, 404, { error: 'not found' });
+      reports.push({ id: 'RP-' + crypto.randomBytes(3).toString('hex').toUpperCase(), listingId: l.id, from: u.email, reason: String(b.reason || '').slice(0, 400), at: Date.now(), status: 'open' });
+      saveReports();
+      return send(res, 201, { ok: true });
+    }
+    /* --- boost a listing (paid, in USDC) --- */
+    if (req.method === 'POST' && p === '/api/boost') {
+      const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
+      const b = await readBody(req);
+      const l = listings.find(x => x.id === b.listingId && x.status === 'active');
+      if (!l || l.seller !== u.email) return send(res, 403, { error: 'Not your listing.' });
+      const days = Math.min(30, Math.max(1, parseInt(b.days, 10) || 7));
+      const total = Math.round(days * BOOST_PRICE_PER_DAY * 100) / 100;
+      const id = 'SWK-' + crypto.randomBytes(3).toString('hex').toUpperCase();
+      const order = {
+        id, email: u.email, boost: true, listingId: l.id, boostDays: days,
+        payment: 'USDC (ERC-20)', items: [{ id: l.id, name: 'Boost: ' + l.title, price: total, size: days + 'd', qty: 1 }],
+        subtotal: total, ship: 0, total, payAmount: assignUniqueAmount(total),
+        status: 'pending', paidTx: null, paidAt: null, date: Date.now(),
+      };
+      orders.push(order); saveOrders();
+      return send(res, 201, { orderId: id, receiptUrl: `/receipt/${id}`, total, payAmount: order.payAmount, wallet: WALLET });
     }
     /* --- buy a listing (creates escrow order) --- */
     if (req.method === 'POST' && p === '/api/buy') {
@@ -785,11 +832,28 @@ const server = http.createServer(async (req, res) => {
         o.paidOut = true; saveOrders();
         return send(res, 200, { ok: true });
       }
+      if (req.method === 'POST' && p === '/api/admin/verify') {
+        const { email, verified } = await readBody(req);
+        const em = String(email || '').toLowerCase();
+        if (!users[em]) return send(res, 404, { error: 'not found' });
+        users[em].verified = !!verified; saveUsers();
+        return send(res, 200, { ok: true });
+      }
+      if (req.method === 'POST' && p === '/api/admin/report-resolve') {
+        const { id, action } = await readBody(req);
+        const rp = reports.find(x => x.id === id);
+        if (!rp) return send(res, 404, { error: 'not found' });
+        if (action === 'remove') { const l = listings.find(x => x.id === rp.listingId); if (l) { l.status = 'removed'; saveListings(); } }
+        rp.status = 'resolved'; saveReports();
+        return send(res, 200, { ok: true });
+      }
       if (req.method === 'GET' && p === '/api/admin/market') {
         return send(res, 200, {
           listings: listings.filter(l => l.status !== 'removed').slice(-200).reverse().map(listingCard),
           disputes: orders.filter(o => o.status === 'disputed').map(orderView),
           payouts: orders.filter(o => o.status === 'released' && !o.paidOut).map(o => ({ ...orderView(o), payout: (users[o.seller] || {}).payout || '' })),
+          reports: reports.filter(r => r.status === 'open').map(r => { const l = listings.find(x => x.id === r.listingId); return { id: r.id, listingId: r.listingId, title: l ? l.title : '(gone)', seller: l ? sellerHandle(l.seller) : '', reason: r.reason, from: sellerHandle(r.from), at: r.at }; }),
+          verifiable: Object.values(users).map(u => ({ email: u.email, handle: sellerHandle(u.email), verified: !!u.verified, listings: listings.filter(l => l.seller === u.email && l.status !== 'removed').length })).filter(u => u.listings > 0),
         });
       }
       return send(res, 404, { error: 'not found' });
@@ -829,9 +893,17 @@ async function pollPayments() {
         Math.abs(o.payAmount - amt) < 0.005 &&                                    // exact fingerprint match
         ts >= o.date - 15 * 60 * 1000);                                           // paid after order placed
       if (match) {
-        match.status = match.escrow ? 'held' : 'paid'; match.paidTx = tx.hash; match.paidAt = ts;
+        match.paidTx = tx.hash; match.paidAt = ts;
+        if (match.boost) {
+          match.status = 'paid';
+          const l = listings.find(x => x.id === match.listingId);
+          if (l) { l.boostedUntil = Math.max(l.boostedUntil || 0, Date.now()) + (match.boostDays || 7) * 864e5; saveListings(); }
+          console.log(`[swk-store] listing ${match.listingId} BOOSTED ${match.boostDays}d (${amt} USDC)`);
+        } else {
+          match.status = match.escrow ? 'held' : 'paid';
+          console.log(`[swk-store] order ${match.id} ${match.escrow ? 'HELD in escrow' : 'PAID'} (${amt} USDC) tx ${tx.hash}`);
+        }
         usedTx.add(tx.hash.toLowerCase()); changed = true;
-        console.log(`[swk-store] order ${match.id} ${match.escrow ? 'HELD in escrow' : 'PAID'} (${amt} USDC) tx ${tx.hash}`);
       }
     }
     if (changed) saveOrders();
