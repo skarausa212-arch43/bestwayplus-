@@ -156,7 +156,7 @@
   .card-media .ph.photo img{object-fit:cover}
   .card:hover .card-media .ph img{transform:scale(1.06)}
   .card-media .demoart{width:100%;height:100%;display:grid;place-items:center;font-size:64px;background:linear-gradient(150deg,#fff,var(--surface-2))}
-  .badges{position:absolute;top:12px;left:12px;z-index:2;display:flex;gap:6px;flex-wrap:wrap;max-width:75%}
+  .badges{position:absolute;top:10px;left:10px;z-index:2;display:flex;gap:5px;flex-wrap:wrap;max-width:calc(100% - 56px)}
   .wish{position:absolute;top:10px;right:10px;z-index:3;width:36px;height:36px;border-radius:50%;
     background:color-mix(in srgb,#fff 78%,transparent);backdrop-filter:blur(8px);border:1px solid var(--line);
     display:grid;place-items:center;color:var(--muted);transition:.2s}
@@ -167,25 +167,27 @@
     font-size:12px;font-weight:600;padding:8px 14px;border-radius:100px;background:color-mix(in srgb,#fff 80%,transparent);
     backdrop-filter:blur(8px);border:1px solid var(--line);transition:.25s;white-space:nowrap}
   .card:hover .quick{opacity:1;transform:translateX(-50%)}
-  .card-body{padding:15px 15px 17px;display:flex;flex-direction:column;gap:8px;flex:1}
-  .card-body .cat{font-size:12px;color:var(--muted);font-weight:500;display:flex;align-items:center;gap:5px}
-  .card-body h3{font-size:15px;font-weight:600;letter-spacing:-.02em;line-height:1.25;cursor:pointer}
-  .card-price{margin-top:auto;display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
-  .cprice-main{display:flex;align-items:center;gap:7px;font-size:17px;font-weight:700;letter-spacing:-.02em}
-  .cprice-main .cico{width:19px;height:19px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:11px;font-weight:800;flex:none}
-  .cprice-fiat{font-size:12.5px;color:var(--muted);font-weight:500}
-  .cprice s{color:var(--faint);font-weight:400;margin-right:5px;font-size:13px}
-  .card-seller{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:11px;margin-top:2px}
-  .card-seller .sav{width:20px;height:20px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font-size:10px;font-weight:700;color:var(--muted);overflow:hidden;flex:none}
+  .card-body{padding:11px 12px 12px;display:flex;flex-direction:column;gap:5px;flex:1}
+  .card-body .cat{font-size:11px;color:var(--muted);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card-body h3{font-size:13.5px;font-weight:600;letter-spacing:-.015em;line-height:1.28;cursor:pointer;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .card-price{margin-top:4px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .cprice-main{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:700;letter-spacing:-.02em;white-space:nowrap}
+  .cprice-main .cico{width:17px;height:17px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:10px;font-weight:800;flex:none}
+  .cprice-fiat{display:none}
+  .cprice s{color:var(--faint);font-weight:400;margin-right:5px;font-size:12px}
+  .card-seller{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:8px;margin-top:6px;white-space:nowrap;overflow:hidden}
+  .card-seller .sh{overflow:hidden;text-overflow:ellipsis}
+  .card-seller .sav{width:18px;height:18px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font-size:9px;font-weight:700;color:var(--muted);overflow:hidden;flex:none}
   .card-seller .sav img{width:100%;height:100%;object-fit:cover}
-  .card-seller .srate{color:var(--ink);font-weight:600}
-  .card-seller .vchk{color:var(--accent)}
-  .add{width:34px;height:34px;border-radius:10px;background:var(--surface-2);color:var(--ink);display:grid;place-items:center;transition:.2s;flex:none}
+  .card-seller .srate{color:var(--ink);font-weight:600;margin-left:auto;flex:none}
+  .card-seller .vchk{color:var(--accent);flex:none}
+  .add{width:32px;height:32px;border-radius:9px;background:var(--surface-2);color:var(--ink);display:grid;place-items:center;transition:.2s;flex:none}
   .add:hover{background:var(--accent);color:#fff}
-  .add svg{width:17px;height:17px}
+  .add svg{width:16px;height:16px}
 
   /* ============ BADGES ============ */
-  .badge{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:5px 9px;border-radius:8px;display:inline-flex;align-items:center;gap:4px;line-height:1;background:var(--surface);border:1px solid var(--line);color:var(--ink);box-shadow:var(--shadow-sm)}
+  .badge{font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:4px 7px;border-radius:7px;display:inline-flex;align-items:center;gap:4px;line-height:1;background:var(--surface);border:1px solid var(--line);color:var(--ink);box-shadow:var(--shadow-sm)}
   .badge.b-escrow{background:rgba(91,92,255,.10);color:var(--accent);border-color:transparent}
   .badge.b-verified{background:rgba(44,203,127,.12);color:#1a9d5e;border-color:transparent}
   .badge.b-new{background:rgba(91,92,255,.10);color:var(--accent);border-color:transparent}
@@ -550,12 +552,27 @@
   @media(max-width:900px){
     nav.main{display:none}.ic.menu-btn{display:grid}
     .hero{padding-top:24px}
-    .hero-grid{grid-template-columns:1fr;gap:18px}
+    .hero-grid{grid-template-columns:1fr;gap:14px}
     .hero-copy{order:1}
-    /* clean, contained hero visual on phones — no floating icons overlapping text */
-    .hero-stage{order:2;max-width:280px;height:200px;aspect-ratio:auto;margin:6px auto 0;display:grid;place-items:center;overflow:visible}
-    .hero-stage .ring,.hero-stage .ring.r2,.hero-stage .glow,.hero-stage .float-obj,.hero-stage .coin{display:none}
-    .hero-stage .shield-badge{position:static;transform:none;left:auto;top:auto;width:120px;height:auto;margin:0;filter:drop-shadow(0 20px 34px rgba(91,92,255,.32))}
+    /* contained floating composition on phones — sits below the copy, nothing overflows */
+    .hero-stage{order:2;position:relative;width:320px;max-width:92vw;height:300px;aspect-ratio:auto;margin:14px auto 0;overflow:hidden;
+      border-radius:26px;background:radial-gradient(120% 120% at 50% 30%,#fff,var(--surface-2));border:1px solid var(--line);box-shadow:var(--shadow-sm)}
+    .hero-stage .ring{inset:16%}.hero-stage .ring.r2{inset:30%}
+    .hero-stage .float-obj{width:60px!important;height:60px!important;font-size:30px!important;border-radius:16px!important;animation-duration:6s}
+    .hero-stage .float-obj.big{width:74px!important;height:86px!important;font-size:38px!important}
+    .hero-stage .coin{width:42px!important;height:42px!important;font-size:19px!important}
+    .hero-stage .shield-badge{width:78px!important;height:auto!important}
+    /* neat contained placement (overrides desktop inline styles) */
+    .hero-stage .ho{left:6%!important;top:6%!important;right:auto!important;bottom:auto!important}
+    .hero-stage .sn{left:2%!important;bottom:8%!important;top:auto!important;right:auto!important}
+    .hero-stage .hp{right:5%!important;top:10%!important;left:auto!important;bottom:auto!important}
+    .hero-stage .lp{right:3%!important;bottom:8%!important;top:auto!important;left:auto!important}
+    .hero-stage .cm{left:40%!important;bottom:3%!important;top:auto!important;right:auto!important}
+    .hero-stage .btc{left:34%!important;top:4%!important;right:auto!important;bottom:auto!important}
+    .hero-stage .eth{right:8%!important;top:44%!important;left:auto!important;bottom:auto!important}
+    .hero-stage .usdt{left:6%!important;top:44%!important;right:auto!important;bottom:auto!important}
+    .hero-stage .sol{right:34%!important;bottom:6%!important;top:auto!important;left:auto!important}
+    .hero-stage .shield-badge{left:50%!important;top:48%!important;transform:translate(-50%,-50%)!important}
     .foot{grid-template-columns:1fr 1fr}
   }
   @media(max-width:680px){
@@ -603,7 +620,6 @@
     </a>
     <nav class="main">
       <a href="#catalog" data-filter="all">Browse</a>
-      <a href="#categories">Categories</a>
       <a href="#how">How It Works</a>
       <a href="#why">Fees</a>
       <a href="#faq">About</a>
@@ -637,11 +653,11 @@
     </div>
     <div class="hero-stage reveal" id="heroStage">
       <div class="ring"></div><div class="ring r2"></div><div class="glow"></div>
-      <div class="float-obj big" style="left:28%;top:8%;--rot:-4deg">🧥</div>
-      <div class="float-obj" style="left:2%;top:44%;width:104px;height:104px;--rot:6deg;animation-delay:-1.2s">👟</div>
-      <div class="float-obj" style="right:2%;top:30%;width:96px;height:96px;--rot:5deg;animation-delay:-2.4s">🎧</div>
-      <div class="float-obj" style="right:6%;bottom:6%;width:110px;height:88px;--rot:-6deg;animation-delay:-1.8s">💻</div>
-      <div class="float-obj" style="left:10%;bottom:2%;width:92px;height:92px;--rot:8deg;animation-delay:-3s">📷</div>
+      <div class="float-obj big fo ho" style="left:28%;top:8%;--rot:-4deg">🧥</div>
+      <div class="float-obj fo sn" style="left:2%;top:44%;width:104px;height:104px;--rot:6deg;animation-delay:-1.2s">👟</div>
+      <div class="float-obj fo hp" style="right:2%;top:30%;width:96px;height:96px;--rot:5deg;animation-delay:-2.4s">🎧</div>
+      <div class="float-obj fo lp" style="right:6%;bottom:6%;width:110px;height:88px;--rot:-6deg;animation-delay:-1.8s">💻</div>
+      <div class="float-obj fo cm" style="left:10%;bottom:2%;width:92px;height:92px;--rot:8deg;animation-delay:-3s">📷</div>
       <div class="coin btc" style="left:22%;top:-2%;animation-delay:-.6s">₿</div>
       <div class="coin eth" style="right:0;top:6%;width:70px;height:70px;animation-delay:-1.5s">Ξ</div>
       <div class="coin usdt" style="left:0;bottom:20%;width:56px;height:56px;animation-delay:-2.1s">₮</div>
@@ -651,34 +667,14 @@
   </div>
 </section>
 
-<!-- FEATURE STRIP -->
-<section class="section tight">
-  <div class="wrap">
-    <div class="fstrip">
-      <div class="fcard reveal"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 4v6c0 4-3.2 6.8-8 8-4.8-1.2-8-4-8-8V7l8-4z"/><path d="M9 12l2 2 4-4"/></svg></div><h4>Crypto Escrow</h4><p>Funds held securely until both sides are happy.</p></div>
-      <div class="fcard reveal" data-d="1"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 3L4 14h7l-1 7 9-11h-7l1-7z"/></svg></div><h4>Low Fees</h4><p>Keep more of what you earn. Transparent, flat fees.</p></div>
-      <div class="fcard reveal" data-d="2"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></div><h4>Global Community</h4><p>Join thousands of trusted traders worldwide.</p></div>
-      <div class="fcard reveal" data-d="3"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><h4>Secure & Private</h4><p>Your data and funds are always protected.</p></div>
-    </div>
-  </div>
-</section>
-
 <!-- FEATURED DEALS -->
-<section class="section" style="padding-top:0">
+<section class="section" style="padding-top:clamp(30px,5vw,56px)">
   <div class="wrap">
     <div class="sec-head reveal">
-      <div><h2>Featured Deals</h2><p>Hand-picked listings, every one escrow-protected.</p></div>
+      <div><h2>Featured Deals</h2><p>Hand-picked, every one escrow-protected.</p></div>
       <a href="#catalog" class="sec-link">View all <span data-ic="chevron"></span></a>
     </div>
     <div class="rail" id="featuredRail"></div>
-  </div>
-</section>
-
-<!-- TRENDING CATEGORIES -->
-<section id="categories" class="section" style="padding-top:0">
-  <div class="wrap">
-    <div class="sec-head reveal"><div><h2>Trending Categories</h2><p>Explore what the world is trading right now.</p></div></div>
-    <div class="cat-grid reveal" id="catGrid"></div>
   </div>
 </section>
 
@@ -1117,7 +1113,7 @@ let LISTINGS=[];
 function catalogCardHTML(p){
   const isAcc=p.type==='accessories',fav=favs.includes(p.id);
   const grp=productGroup(p);
-  const badges=`<span class="badge b-escrow">Escrow</span><span class="badge b-verified">✓ Official</span>`;
+  const badges=`<span class="badge b-escrow">Escrow</span>`;
   return `<article class="card reveal" data-id="${p.id}" data-gcat="${grp}">
       <button class="card-media cat-media" data-open="${p.id}">
         <span class="badges">${badges}</span>
@@ -1129,7 +1125,7 @@ function catalogCardHTML(p){
         <div class="cat">${catLabel(p)} · ${cap(p.brand)}</div>
         <h3 data-open="${p.id}">${esc(p.name)}</h3>
         <div class="card-price">${cryptoPriceHTML(p.price,p.id)}<button class="add" data-open="${p.id}" ${p.soldOut?'disabled':''} aria-label="Add">${p.soldOut?ICON.close:ICON.cart}</button></div>
-        <div class="card-seller"><span class="sav">S</span>STUFFWEKNOW <span class="vchk">✓</span> <span style="margin-left:auto"><span class="srate">Official store</span></span></div>
+        <div class="card-seller"><span class="sav">S</span><span class="sh">STUFFWEKNOW</span><span class="vchk">✓</span><span class="srate">Official</span></div>
       </div>
     </article>`;
 }
@@ -1139,7 +1135,7 @@ function cryptoPriceHTML(usd){
   return `<span class="cprice-main"><span class="cico" style="background:var(--usdt)">₮</span>${usdtAmt(usd)} USDT</span><span class="cprice-fiat">≈ ${disp(usd)}</span>`;}
 function listingCardHTML(l){
   const fav=favs.includes(l.id);
-  const badges=`${l.boosted?'<span class="badge b-hot">🔥 Hot</span>':'<span class="badge b-new">New</span>'}<span class="badge b-escrow">Escrow</span>${l.seller.verified?'<span class="badge b-verified">✓ Verified</span>':''}`;
+  const badges=`${l.boosted?'<span class="badge b-hot">🔥 Hot</span>':''}<span class="badge b-escrow">Escrow</span>`;
   const av=l.seller.avatar?`<img src="${l.seller.avatar}" alt="">`:esc((l.seller.handle||'?')[0].toUpperCase());
   const rate=l.seller.rating?`<span class="srate">★ ${l.seller.rating}</span>`:'<span>New seller</span>';
   return `<article class="card reveal" data-listing="${l.id}" data-gcat="${l.group||'other'}">
@@ -1153,7 +1149,7 @@ function listingCardHTML(l){
         <div class="cat">${esc(l.condition||'Used')}${l.size?' · '+esc(l.size):''}</div>
         <h3 data-listing="${l.id}">${esc(l.title)}</h3>
         <div class="card-price">${cryptoPriceHTML(l.price,l.id)}<button class="add" data-listing="${l.id}" aria-label="View">${ICON.cart}</button></div>
-        <div class="card-seller"><span class="sav">${av}</span>@${esc(l.seller.handle)} ${l.seller.verified?'<span class="vchk">✓</span>':''} <span style="margin-left:auto">${rate}</span></div>
+        <div class="card-seller"><span class="sav">${av}</span><span class="sh">@${esc(l.seller.handle)}</span>${l.seller.verified?'<span class="vchk">✓</span>':''}${l.seller.rating?`<span class="srate">★ ${l.seller.rating}</span>`:''}</div>
       </div>
     </article>`;
 }
