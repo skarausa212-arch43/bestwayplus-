@@ -377,6 +377,7 @@ function orderView(o) {
     listingId: o.listingId || null, cover: (listings.find(x => x.id === o.listingId) || {}).cover || (o.items && o.items[0] && '') || '',
     buyerHandle: sellerHandle(o.email), sellerEmail: o.seller || null, sellerHandle: o.seller ? sellerHandle(o.seller) : 'STUFFWEKNOW',
     disputeReason: o.disputeReason || '', shippedAt: o.shippedAt || 0,
+    name: o.name || '', address: o.address || '', city: o.city || '', zip: o.zip || '',
     items: (o.items || []).map(i => ({ name: i.name, qty: i.qty, size: i.size, price: i.price })),
   };
 }
@@ -668,7 +669,7 @@ const server = http.createServer(async (req, res) => {
       const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
       const reviewedByMe = (oid) => !!reviews.find(r => r.orderId === oid && r.from === u.email);
       const myListings = listings.filter(l => l.seller === u.email && l.status !== 'removed').sort((a, b) => b.createdAt - a.createdAt).map(listingCard);
-      const purchases = orders.filter(o => o.escrow && o.email === u.email).sort((a, b) => b.date - a.date).map(o => ({ ...orderView(o), reviewedByMe: reviewedByMe(o.id) }));
+      const purchases = orders.filter(o => o.email === u.email).sort((a, b) => b.date - a.date).map(o => ({ ...orderView(o), reviewedByMe: reviewedByMe(o.id) }));
       const sales = orders.filter(o => o.escrow && o.seller === u.email).sort((a, b) => b.date - a.date).map(o => ({ ...orderView(o), reviewedByMe: reviewedByMe(o.id) }));
       const offersMade = offers.filter(o => o.buyer === u.email).sort((a, b) => b.createdAt - a.createdAt).map(offerView);
       const offersReceived = offers.filter(o => { const l = listings.find(x => x.id === o.listingId); return l && l.seller === u.email; }).sort((a, b) => b.createdAt - a.createdAt).map(offerView);
