@@ -44,6 +44,8 @@ const saveOffers = () => saveJSON('offers.json', offers);
 const saveReviews = () => saveJSON('reviews.json', reviews);
 const saveMessages = () => saveJSON('messages.json', messages);
 const saveReports = () => saveJSON('reports.json', reports);
+/* one-time recovery: publish any listings left in 'pending' from the moderation window */
+(() => { let changed = false; for (const l of listings) if (l.status === 'pending') { l.status = 'active'; changed = true; } if (changed) saveJSON('listings.json', listings); })();
 const AUTO_RELEASE_DAYS = Number(process.env.AUTO_RELEASE_DAYS || 7); // buyer-protection window after shipping
 let statsDirty = false;
 setInterval(() => { if (statsDirty) { statsDirty = false; saveJSON('stats.json', stats); } }, 5000).unref();
@@ -519,6 +521,14 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { online: Math.max(1, onlineCount()) });
     }
 
+    /* ----- recently completed trades (public, escrow-settled) ----- */
+    if (req.method === 'GET' && p === '/api/recent-trades') {
+      const done = orders.filter(o => o.escrow && ['released', 'delivered'].includes(o.status))
+        .sort((a, b) => (b.date || 0) - (a.date || 0)).slice(0, 8)
+        .map(o => { const it = (o.items && o.items[0]) || {}; return { title: it.name || 'Item', price: o.total || 0, seller: sellerHandle(o.seller), buyer: sellerHandle(o.email), at: o.date || 0 }; });
+      return send(res, 200, { trades: done });
+    }
+
     /* ----- public order status (payment polling) ----- */
     if (req.method === 'GET' && /^\/api\/order-status\/SWK-[A-Z0-9-]+$/.test(p)) {
       const o = orders.find(x => x.id === p.split('/')[3]);
@@ -607,10 +617,10 @@ const server = http.createServer(async (req, res) => {
         category: cat, price, old: Math.max(0, Math.round(Number(b.old) * 100) / 100) || 0,
         size: String(b.size || '').slice(0, 24), condition: CONDITIONS.includes(b.condition) ? b.condition : 'Good',
         ships, returns: RETURNS.includes(b.returns) ? b.returns : 'No returns',
-        desc: String(b.desc || '').slice(0, 1500), photos, cover: photos[0], status: 'pending', createdAt: Date.now(),
+        desc: String(b.desc || '').slice(0, 1500), photos, cover: photos[0], status: 'active', createdAt: Date.now(),
       };
       listings.push(l); saveListings();
-      return send(res, 201, { listing: listingFull(l), moderation: true });
+      return send(res, 201, { listing: listingFull(l) });
     }
     /* --- edit / remove listing (owner) --- */
     if ((req.method === 'PUT' || req.method === 'DELETE') && /^\/api\/listings\/[A-Za-z0-9-]+$/.test(p)) {

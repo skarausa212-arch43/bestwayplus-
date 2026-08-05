@@ -1611,7 +1611,7 @@ async function submitListing(){
   let brand=$('#slBrand').value;if(brand==='Other')brand=$('#slBrandOther').value||'';
   const body={title:$('#slTitle').value,brand,category:$('#slCat').value,size:$('#slSize').value,condition:$('#slCond').value,price:$('#slPrice').value,old:$('#slOld').value,ships:SELL_SHIP.slice(),returns:$('#slReturns').value,desc:$('#slDesc').value,photos:SELL_PHOTOS};
   $('#slGo').disabled=true;
-  try{await mfetch('/api/listings',{method:'POST',body:JSON.stringify(body)});toast('Submitted for review — your item goes live once approved');closeModal('#sellModal');loadListings();if($('#accModal').classList.contains('show'))loadMarket();}
+  try{await mfetch('/api/listings',{method:'POST',body:JSON.stringify(body)});toast('Listing published — it’s live now');closeModal('#sellModal');loadListings();if($('#accModal').classList.contains('show'))loadMarket();}
   catch(e){show(e.message);$('#slGo').disabled=false;}
 }
 $('#sellBtn').addEventListener('click',openSell);
@@ -1872,78 +1872,45 @@ renderFilterbar();renderGrid();
   btn.addEventListener('click',function(){on=!on;save('swk_storm',on);paint();if(on){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.resume)AC.resume();thunder();}catch(e){}}});
   paint();
 })();
-/* ================= HOMEPAGE SECTIONS ================= */
-const DEMO_FEATURED=[
-  {id:'d1',title:'Essential Hoodie',price:2860,cond:'New',size:'L',emoji:'🧥',handle:'urbanvibes',rating:4.9,ver:true},
-  {id:'d2',title:'Nike Dunk Low Retro',price:2120,cond:'Like new',size:'US 10',emoji:'👟',handle:'kickstrader',rating:4.8,ver:true},
-  {id:'d3',title:'Rolex Submariner',price:6980,cond:'Very good',size:'40mm',emoji:'⌚',handle:'timepieces',rating:5.0,ver:true},
-  {id:'d4',title:'Canon EOS R6',price:2030,cond:'Good',size:'',emoji:'📷',handle:'photodeals',rating:4.7,ver:true},
-  {id:'d5',title:'PlayStation 5 Pro',price:740,cond:'New',size:'',emoji:'🎮',handle:'gamevault',rating:4.9,ver:true},
-  {id:'d6',title:'Vintage Film Camera',price:410,cond:'Good',size:'',emoji:'📸',handle:'analogclub',rating:4.6,ver:false},
-];
-function demoCardHTML(d){
-  const fav=favs.includes(d.id);
-  return `<article class="card reveal" data-demo="1">
-    <button class="card-media" data-demo="1">
-      <span class="badges"><span class="badge b-new">New</span><span class="badge b-escrow">Escrow</span>${d.ver?'<span class="badge b-verified">✓ Verified</span>':''}</span>
-      <span class="wish ${fav?'on':''}" data-fav="${d.id}" role="button" aria-label="Wishlist">${ICON.heart}</span>
-      <span class="demoart">${d.emoji}</span>
-      <span class="quick">View item</span>
-    </button>
-    <div class="card-body">
-      <div class="cat">${d.cond}${d.size?' · '+d.size:''}</div>
-      <h3 data-demo="1">${esc(d.title)}</h3>
-      <div class="card-price">${cryptoPriceHTML(d.price,d.id)}<button class="add" data-demo="1" aria-label="View">${ICON.cart}</button></div>
-      <div class="card-seller"><span class="sav">${esc(d.handle[0].toUpperCase())}</span>@${esc(d.handle)} ${d.ver?'<span class="vchk">✓</span>':''} <span style="margin-left:auto"><span class="srate">★ ${d.rating}</span></span></div>
-    </div>
-  </article>`;
-}
+/* ================= HOMEPAGE SECTIONS (real data only) ================= */
+function hideSection(el){const s=el&&el.closest('section');if(s)s.style.display='none';}
+function showSection(el){const s=el&&el.closest('section');if(s)s.style.display='';}
 function renderFeatured(){
   const rail=$('#featuredRail');if(!rail)return;
   const live=LISTINGS.slice().sort((a,b)=>(b.boosted-a.boosted)||(b.createdAt-a.createdAt)).slice(0,8);
-  let html=live.map(listingCardHTML).join('');
-  const need=Math.max(0,4-live.length);
-  if(need)html+=DEMO_FEATURED.slice(0,Math.max(need,6-live.length)).map(demoCardHTML).join('');
-  rail.innerHTML=html;observeReveal();
+  if(!live.length){hideSection(rail);rail.innerHTML='';return;}
+  showSection(rail);rail.innerHTML=live.map(listingCardHTML).join('');observeReveal();
 }
 $('#featuredRail').addEventListener('click',e=>{
   const f=e.target.closest('[data-fav]');if(f){toggleFav(f.dataset.fav);return;}
   const li=e.target.closest('[data-listing]');if(li){openListing(li.dataset.listing);return;}
-  if(e.target.closest('[data-demo]')){toast('Sample deal — real listings are in the marketplace');document.getElementById('catalog').scrollIntoView({behavior:'smooth'});}
 });
-const DEMO_SELLERS=[
-  {handle:'urbanvibes',rating:4.9,reviews:128,sold:340,trust:98,i:'U'},
-  {handle:'timepieces',rating:5.0,reviews:96,sold:210,trust:99,i:'T'},
-  {handle:'kickstrader',rating:4.8,reviews:203,sold:512,trust:96,i:'K'},
-];
 function sellerCardHTML(s){
   return `<div class="seller-c">
-    <div class="sc-top"><div class="sc-av">${s.avatar?`<img src="${s.avatar}">`:esc(s.i||s.handle[0].toUpperCase())}</div>
-      <div><div class="sc-name">@${esc(s.handle)} ${s.ver!==false?'<span class="vchk">✓</span>':''}</div><div class="sc-meta">★ ${s.rating} · ${s.reviews} reviews</div></div></div>
-    <div class="sc-stats"><div class="sc-stat"><b>${s.sold}</b><span>Sold</span></div><div class="sc-stat"><b>${s.trust}%</b><span>Trust</span></div><div class="sc-stat"><b>${s.rating}</b><span>Rating</span></div></div>
+    <div class="sc-top"><div class="sc-av">${s.avatar?`<img src="${s.avatar}">`:esc((s.handle||'?')[0].toUpperCase())}</div>
+      <div><div class="sc-name">@${esc(s.handle)} ${s.ver?'<span class="vchk">✓</span>':''}</div><div class="sc-meta">★ ${s.rating||'New'}${s.reviews?' · '+s.reviews+' reviews':''}</div></div></div>
+    <div class="sc-stats"><div class="sc-stat"><b>${s.sold}</b><span>Sold</span></div><div class="sc-stat"><b>${s.trust}%</b><span>Trust</span></div><div class="sc-stat"><b>${s.rating||'—'}</b><span>Rating</span></div></div>
   </div>`;
 }
 function renderSellers(){
   const g=$('#sellersGrid');if(!g)return;
-  const map={};LISTINGS.forEach(l=>{const s=l.seller;if(!map[s.email])map[s.email]={handle:s.handle,rating:s.rating||4.8,reviews:s.reviews||12,sold:s.sold||8,trust:s.verified?97:90,avatar:s.avatar,ver:s.verified,i:(s.handle||'?')[0].toUpperCase()};});
-  let arr=Object.values(map).sort((a,b)=>b.sold-a.sold).slice(0,3);
-  if(arr.length<3)arr=arr.concat(DEMO_SELLERS).slice(0,3);
-  g.innerHTML=arr.map(sellerCardHTML).join('');observeReveal();
+  const map={};LISTINGS.forEach(l=>{const s=l.seller;if(!s||!s.email)return;if(!map[s.email])map[s.email]={handle:s.handle,rating:s.rating||0,reviews:s.reviews||0,sold:s.sold||0,trust:s.verified?97:(s.rating?90:80),avatar:s.avatar,ver:s.verified,count:0};map[s.email].count++;});
+  const arr=Object.values(map).sort((a,b)=>(b.sold-a.sold)||(b.count-a.count)).slice(0,3);
+  if(!arr.length){hideSection(g);g.innerHTML='';return;}
+  showSection(g);g.innerHTML=arr.map(sellerCardHTML).join('');observeReveal();
 }
-const DEMO_TRADES=[
-  {t:'Rolex Submariner',p:6980,emoji:'⌚',a:'timepieces',b:'watchguy'},
-  {t:'Nike Dunk Low',p:2120,emoji:'👟',a:'kickstrader',b:'solequeen'},
-  {t:'Canon EOS R6',p:2030,emoji:'📷',a:'photodeals',b:'shutterbug'},
-  {t:'Essential Hoodie',p:2860,emoji:'🧥',a:'urbanvibes',b:'fitcollector'},
-  {t:'PlayStation 5 Pro',p:740,emoji:'🎮',a:'gamevault',b:'nextgen'},
-];
 function renderTrades(){
   const g=$('#tradesList');if(!g)return;
-  g.innerHTML=DEMO_TRADES.map(t=>{const coin=coinFor(t.t,t.p),c=CRYPTO[coin];
-    return `<div class="trade-row"><div class="tav">${t.emoji}</div>
-      <div class="tinfo"><b>${esc(t.t)}</b><span>@${esc(t.a)} → @${esc(t.b)}</span></div>
-      <div class="tdone">${ICON.check} Settled</div>
-      <div class="tprice">${cryptoAmt(t.p,coin)} ${c.n}<span>${disp(t.p)}</span></div></div>`;}).join('');
+  fetch('/api/recent-trades').then(r=>r.json()).then(d=>{
+    const t=(d&&d.trades)||[];
+    if(!t.length){hideSection(g);g.innerHTML='';return;}
+    showSection(g);
+    g.innerHTML=t.map(x=>{const coin=coinFor(x.title,x.price),c=CRYPTO[coin];
+      return `<div class="trade-row"><div class="tav">✓</div>
+        <div class="tinfo"><b>${esc(x.title)}</b><span>@${esc(x.seller)} → @${esc(x.buyer)}</span></div>
+        <div class="tdone">${ICON.check} Settled</div>
+        <div class="tprice">${cryptoAmt(x.price,coin)} ${c.n}<span>${disp(x.price)}</span></div></div>`;}).join('');
+  }).catch(()=>{hideSection(g);});
 }
 /* categories */
 const HOME_CATS=[
