@@ -272,6 +272,8 @@
     animation: msgIn .3s ease both;
   }
   @keyframes msgIn { from { transform: translateY(6px); opacity: 0; } to { transform: none; opacity: 1; } }
+  /* тихая перерисовка: авто-refresh и выделение не должны переигрывать анимации */
+  .msgs.still .m, .acc-list.still .acc { animation: none; }
   .m { transition: background .15s, border-color .15s, transform .15s; }
   .m:hover { background: rgba(255,255,255,.04); transform: translateX(3px); }
   .m.sel { background: rgba(109,93,246,.10); border-left-color: var(--acc); }
@@ -537,6 +539,9 @@ let limit = 20;         // сколько писем тянем на ящик (L
 let searchResults = null; // null = обычный режим, массив = режим поиска
 let isAdmin = false;
 let bundleName = null;  // сессия привязана к сборке — вместо кнопки показываем плашку
+// входные анимации играют только при настоящей навигации, не при каждом refresh
+let animList = true, animSide = true;
+let lastListHtml = '', lastSideHtml = '';
 
 function renderBundleUi() {
   $('bundleBtn').style.display = bundleName ? 'none' : '';
@@ -633,6 +638,7 @@ async function loadFolder(f) {
 async function setFolder(f) {
   folder = f; selected = null; picked.clear();
   searchResults = null; $('searchIn').value = ''; $('searchClear').style.display = 'none';
+  animList = true; lastListHtml = '';
   if (f === 'sent' || f === 'trash') {
     $('msgs').innerHTML = '<div class="empty">Loading…</div>';
     await loadFolder(f);
@@ -659,11 +665,13 @@ $('searchIn').addEventListener('keydown', async (e) => {
   const q = $('searchIn').value.trim();
   if (q.length < 2) return;
   $('msgs').innerHTML = '<div class="empty">Searching…</div>';
+  lastListHtml = '';
   try {
     const d = await api('api/search?q=' + encodeURIComponent(q));
     folder = 'inbox'; // поиск идёт по входящим
     searchResults = d.items;
     $('searchClear').style.display = '';
+    animList = true;
     renderList();
   } catch (err) {
     $('msgs').innerHTML = `<div class="empty">${esc(err.message)}</div>`;
@@ -671,6 +679,7 @@ $('searchIn').addEventListener('keydown', async (e) => {
 });
 $('searchClear').addEventListener('click', () => {
   searchResults = null; $('searchIn').value = ''; $('searchClear').style.display = 'none';
+  animList = true; lastListHtml = '';
   renderList();
 });
 
@@ -687,10 +696,14 @@ function renderSidebar() {
       ${a.error ? '⚠️' : `<span class="badge ${a.unseen?'hot':'zero'} ${a.bump?'bump':''}">${a.unseen}</span>`}
       <button class="del" data-del="${a.id}" title="Remove">✕</button></div>`;
   });
-  el.innerHTML = html;
   $('logoutBtn').style.display = accounts.length ? '' : 'none';
   $('pwBtn').style.display = accounts.length ? '' : 'none';
   $('adminBtn').style.display = isAdmin ? '' : 'none';
+  el.classList.toggle('still', !animSide);
+  animSide = false;
+  if (html === lastSideHtml) return; // ничего не поменялось — не дёргаем DOM
+  lastSideHtml = html;
+  el.innerHTML = html;
   el.querySelectorAll('.acc').forEach((n) => n.addEventListener('click', (e) => {
     if (e.target.dataset.del !== undefined && e.target.dataset.del !== '') return;
     filter = n.dataset.id || null;
@@ -735,17 +748,19 @@ function renderList() {
   if (unreadOnly && folder !== 'sent') items = items.filter((m) => !m.seen);
   items.sort((x, y) => new Date(y.date) - new Date(x.date));
   if (!items.length) {
-    el.innerHTML = !accounts.length
+    const emptyHtml = !accounts.length
       ? '<div class="empty">Add a mailbox to see all<br>your mail in one place</div>'
       : searchResults ? '<div class="empty">Nothing found</div>'
       : folder === 'spam' ? '<div class="empty">Spam is empty 🎉</div>'
       : folder === 'trash' ? '<div class="empty">Trash is empty</div>'
       : unreadOnly ? '<div class="empty">No unread mail ✓</div>'
       : '<div class="empty">No mail yet</div>';
+    animList = false;
+    if (emptyHtml !== lastListHtml) { lastListHtml = emptyHtml; el.innerHTML = emptyHtml; }
     renderBulkbar();
     return;
   }
-  el.innerHTML = items.map((m, i) => {
+  const listHtml = items.map((m, i) => {
     const who = folder === 'sent' ? ('To: ' + (m.to || '?')) : (m.fromName || m.from || '?');
     const letter = folder === 'sent' ? (m.to || '?')[0] : who[0];
     const isPicked = picked.has(m.acc.id + ':' + m.uid);
@@ -760,6 +775,11 @@ function renderList() {
     </div>`;
   }).join('') + (!searchResults && items.length >= limit
     ? '<div class="loadmore"><button class="btn ghost" id="moreBtn">Load more</button></div>' : '');
+  el.classList.toggle('still', !animList);
+  animList = false;
+  if (listHtml === lastListHtml) { renderBulkbar(); return; } // без изменений — без дёрганий
+  lastListHtml = listHtml;
+  el.innerHTML = listHtml;
   $('moreBtn')?.addEventListener('click', async () => {
     limit += 30;
     $('moreBtn').textContent = 'Loading…';
