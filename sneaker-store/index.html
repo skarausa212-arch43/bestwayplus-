@@ -412,6 +412,15 @@
   .cbtn{width:100%;height:50px;border-radius:14px;background:var(--ink);color:#fff;font-weight:600;font-size:15px;transition:.2s;display:flex;align-items:center;justify-content:center;gap:8px}
   .cbtn:hover{background:#000;transform:translateY(-1px)}
   .msg{font-size:13px;color:var(--bad);font-weight:500}
+  .netpick{display:flex;gap:10px}
+  .netopt{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 8px;border-radius:13px;border:1.5px solid var(--line-2);background:var(--surface);transition:.18s;position:relative}
+  .netopt .cico{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:14px;margin-bottom:3px}
+  .netopt b{font-size:14px;font-weight:700}
+  .netopt .nch{font-size:11px;color:var(--muted)}
+  .netopt.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .netpick-single{display:flex;align-items:center;gap:9px;padding:12px 14px;border-radius:12px;border:1px solid var(--line-2);background:var(--surface-2);font-weight:600;font-size:14px}
+  .netpick-single .cico{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:13px}
+  .pay-copy{padding:9px 14px;border-radius:10px;background:var(--ink);color:#fff;font-size:12.5px;font-weight:600;flex:none}
   .buysum{background:var(--surface-2);border-radius:14px;padding:16px;margin:14px 0;font-size:14px}
   .buysum .r{display:flex;justify-content:space-between;padding:5px 0;color:var(--muted)}
   .buysum .r.tot{border-top:1px solid var(--line-2);margin-top:6px;padding-top:11px;color:var(--ink);font-weight:700;font-size:16px}
@@ -755,16 +764,12 @@
 <section class="section" style="padding-top:0">
   <div class="wrap">
     <div class="crypto-band reveal" style="text-align:center">
-      <div class="eyebrow">We support</div>
+      <div class="eyebrow">Payments accepted</div>
       <div class="crypto-row">
-        <span class="crypto-chip"><span class="cc" style="background:linear-gradient(145deg,#ffb347,var(--btc))">₿</span>Bitcoin</span>
-        <span class="crypto-chip"><span class="cc" style="background:linear-gradient(145deg,#8aa0f5,var(--eth))">Ξ</span>Ethereum</span>
-        <span class="crypto-chip"><span class="cc" style="background:linear-gradient(145deg,#3fce9c,var(--usdt))">₮</span>Tether</span>
-        <span class="crypto-chip"><span class="cc" style="background:linear-gradient(145deg,#19fb9b,#9945FF)">◎</span>Solana</span>
-        <span class="crypto-chip"><span class="cc" style="background:linear-gradient(145deg,#5a8dee,#2775CA)">$</span>USDC</span>
-        <span class="crypto-chip"><span class="cc" style="background:linear-gradient(145deg,#f8d33a,#F0B90B)">⬡</span>BNB</span>
-        <span class="crypto-chip"><span class="cc" style="background:linear-gradient(145deg,#a97bff,#8247E5)">⬢</span>Polygon</span>
+        <span class="crypto-chip"><span class="cc" style="background:linear-gradient(145deg,#3fce9c,var(--usdt))">₮</span>USDT <span style="color:var(--muted);font-weight:500;margin-left:2px">· TRC-20</span></span>
+        <span class="crypto-chip"><span class="cc" style="background:linear-gradient(145deg,#5a8dee,#2775CA)">$</span>USDC <span style="color:var(--muted);font-weight:500;margin-left:2px">· ERC-20</span></span>
       </div>
+      <p style="color:var(--muted);font-size:13.5px;margin-top:14px">Stablecoins only — prices are 1:1 with USD. Funds are held in escrow until delivery.</p>
     </div>
   </div>
 </section>
@@ -799,7 +804,7 @@
     <div class="sec-head reveal" style="justify-content:center;text-align:center"><div><h2>Questions, answered</h2></div></div>
     <div class="faq reveal">
       <div class="faq-item"><button class="faq-q">How does the escrow protect me? <span class="fx" data-ic="plus"></span></button><div class="faq-a"><p>When a buyer pays, the crypto is held by the platform in escrow. It's only released to the seller once the buyer confirms the item arrived as described. Either side can open a dispute before release.</p></div></div>
-      <div class="faq-item"><button class="faq-q">Which cryptocurrencies can I use? <span class="fx" data-ic="plus"></span></button><div class="faq-a"><p>Payments settle in USDC (ERC-20) today, with prices shown as estimates in BTC, ETH and more. You can pay straight from your wallet or by sending the exact amount.</p></div></div>
+      <div class="faq-item"><button class="faq-q">Which cryptocurrencies can I use? <span class="fx" data-ic="plus"></span></button><div class="faq-a"><p>Payments are stablecoins only: <b>USDT on Tron (TRC-20)</b> or <b>USDC on Ethereum (ERC-20)</b>. Prices are shown 1:1 with USD, so 80 USDT = 80 USDC = $80. Pick your network at checkout and pay from any wallet.</p></div></div>
       <div class="faq-item"><button class="faq-q">What are the fees? <span class="fx" data-ic="plus"></span></button><div class="faq-a"><p>A flat 10% buyer fee at checkout. Sellers receive the full listed price. No listing fees, no hidden charges.</p></div></div>
       <div class="faq-item"><button class="faq-q">How do I become a verified seller? <span class="fx" data-ic="plus"></span></button><div class="faq-a"><p>Complete trades to build your trust score. Verified badges are granted to sellers with a strong track record and completed escrow deals.</p></div></div>
     </div>
@@ -1128,14 +1133,10 @@ function catalogCardHTML(p){
       </div>
     </article>`;
 }
-/* ---- crypto pricing (approx USD rates, display estimates) ---- */
-const CRYPTO={btc:{r:64000,c:'var(--btc)',s:'₿',n:'BTC',d:3},eth:{r:2450,c:'var(--eth)',s:'Ξ',n:'ETH',d:3},usdt:{r:1,c:'var(--usdt)',s:'₮',n:'USDT',d:0},sol:{r:150,c:'#9945FF',s:'◎',n:'SOL',d:2}};
-const COIN_ORDER=['eth','btc','usdt','sol'];
-function hashId(s){let h=0;s=String(s||'');for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h;}
-function coinFor(id,price){if(price>=3000)return 'btc';const k=COIN_ORDER[hashId(id)%COIN_ORDER.length];return k;}
-function cryptoAmt(usd,coin){const c=CRYPTO[coin];const v=usd/c.r;const dec=c.d;return (dec?v.toFixed(dec):Math.round(v).toLocaleString());}
-function cryptoPriceHTML(usd,id){const coin=coinFor(id,usd),c=CRYPTO[coin];
-  return `<span class="cprice-main"><span class="cico" style="background:${c.c}">${c.s}</span>${cryptoAmt(usd,coin)} ${c.n}</span><span class="cprice-fiat">≈ ${disp(usd)}</span>`;}
+/* ---- stablecoin pricing: all prices in USDT/USDC (1:1 with USD) ---- */
+function usdtAmt(usd){const n=Math.round((usd||0)*100)/100;return (n%1===0?String(n):n.toFixed(2));}
+function cryptoPriceHTML(usd){
+  return `<span class="cprice-main"><span class="cico" style="background:var(--usdt)">₮</span>${usdtAmt(usd)} USDT</span><span class="cprice-fiat">≈ ${disp(usd)}</span>`;}
 function listingCardHTML(l){
   const fav=favs.includes(l.id);
   const badges=`${l.boosted?'<span class="badge b-hot">🔥 Hot</span>':'<span class="badge b-new">New</span>'}<span class="badge b-escrow">Escrow</span>${l.seller.verified?'<span class="badge b-verified">✓ Verified</span>':''}`;
@@ -1211,12 +1212,12 @@ function openQV(id){
     <div class="qv-info">
       <div class="cat">${catLabel(p)} · ${cap(p.brand)}</div>
       <h3>${p.name}</h3>
-      <div class="price">${p.old?`<s style="color:var(--faint);font-weight:400;margin-right:8px">${fmt(p.old)}</s>`:''}${fmt(p.price)}</div>
+      <div class="price"><span class="cico" style="background:var(--usdt);display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;color:#fff;font-size:12px;vertical-align:-4px;margin-right:6px">₮</span>${usdtLabel(p.price)} <span style="font-size:14px;color:var(--muted);font-weight:500">≈ ${disp(p.price)}</span></div>
       <p class="desc">${p.desc}</p>
       <div class="szlbl"><span>${label}</span><a href="#">Size Guide</a></div>
       <div class="sizes" id="qvSizes">${sizes.map(s=>{const d=!isAcc&&!p.sizes&&p.out&&p.out.includes(s);return `<button class="sz ${d?'disabled':''}" data-size="${s}" ${d?'disabled':''}>${s}</button>`}).join('')}</div>
       <div class="qv-act">
-        <button class="btn btn-primary" id="qvAdd">Add — ${fmt(p.price)} ${ICON.arrow}</button>
+        <button class="btn btn-primary" id="qvAdd">Add — ${usdtLabel(p.price)} ${ICON.arrow}</button>
         <button class="qv-fav ${favs.includes(id)?'on':''}" id="qvFav">${ICON.heart}</button>
       </div>
     </div>`;
@@ -1259,13 +1260,14 @@ const QR_SVG=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33 33" shape-
 function openCheckout(){
   if(!cart.length)return;
   const total=cartTotal(),ship=total>=150?0:9,grand=total+ship;
-  $('#coBody').innerHTML=`<div class="cobody"><h3>Checkout</h3><p class="sub">Pay in USDC (ERC-20) · payment is detected automatically on-chain.</p>
+  $('#coBody').innerHTML=`<div class="cobody"><h3>Checkout</h3><p class="sub">Pay in USDT (TRC-20) or USDC (ERC-20) · detected automatically on-chain.</p>
     <form id="orderForm">
       <div class="field"><label>Full name</label><input id="cName" required placeholder="John Smith" value="${AUTH?esc(AUTH.name||''):''}"></div>
       <div class="field"><label>Email</label><input id="cEmail" type="email" required placeholder="you@email.com" value="${AUTH?esc(AUTH.email):''}"></div>
       <div class="frow"><div class="field"><label>City</label><input id="cCity" required placeholder="New York"></div><div class="field"><label>ZIP</label><input id="cZip" required placeholder="10001"></div></div>
       <div class="field"><label>Address</label><input id="cAddr" required placeholder="123 Example St"></div>
-      <div class="osum"><div class="drow"><span>Items (${cartQty()})</span><span>${fmt(total)}</span></div><div class="drow"><span>Shipping</span><span>${ship?fmt(ship):'Free'}</span></div><div class="drow total" style="margin:12px 0 0"><span>Total</span><span>${fmt(grand)}</span></div></div>
+      ${payNetFieldHTML()}
+      <div class="buysum"><div class="r"><span>Items (${cartQty()})</span><b>${usdtLabel(total)}</b></div><div class="r"><span>Shipping</span><b>${ship?usdtLabel(ship):'Free'}</b></div><div class="r tot"><span>Total</span><b>${usdtLabel(grand)}</b></div></div>
       <button type="submit" class="cbtn" id="toPayBtn">Continue to payment ${ICON.arrow}</button>
       <div style="margin-top:12px;font-size:11px;color:var(--faint);text-align:center">By ordering you agree to our <a href="/policies#terms" style="text-decoration:underline">Terms</a> · <a href="/policies#returns" style="text-decoration:underline">30-day returns</a></div>
     </form></div>`;
@@ -1273,7 +1275,7 @@ function openCheckout(){
     e.preventDefault();
     const btn=$('#toPayBtn');btn.disabled=true;btn.textContent='Creating order…';
     const details={name:$('#cName').value,email:$('#cEmail').value,city:$('#cCity').value,zip:$('#cZip').value,address:$('#cAddr').value};
-    const payload={...details,payment:'USDC (ERC-20)',items:cart.map(c=>({id:c.id,size:c.size,qty:c.qty}))};
+    const payload={...details,network:chosenNetwork(),items:cart.map(c=>({id:c.id,size:c.size,qty:c.qty}))};
     try{
       const r=await fetch('/api/order',{method:'POST',headers:{'Content-Type':'application/json',...(AUTH?{Authorization:'Bearer '+AUTH.token}:{})},body:JSON.stringify(payload)});
       const d=await r.json();
@@ -1281,7 +1283,7 @@ function openCheckout(){
       cryptoPay(d);
     }catch{ cryptoPay({orderId:'SWK-'+Math.floor(100000+Math.random()*899999),payAmount:grand,receiptUrl:null,offline:true}); }
   });
-  closeDrawer();openModal('#coModal');
+  closeDrawer();openModal('#coModal');wireNetPick();
 }
 
 let payPoll=null;
@@ -1303,22 +1305,24 @@ async function walletPay(d){
 function cryptoPay(d){
   if(payPoll){clearInterval(payPoll);payPoll=null;}
   const amt=Number(d.payAmount).toFixed(2);
+  const token=d.token||'USDC',chain=d.chain||'ERC-20',wallet=d.wallet||WALLET;
+  const isErc=(d.network||'usdc-erc20')==='usdc-erc20';
+  const chainName=isErc?'Ethereum':'Tron';
   $('#coBody').innerHTML=`<div class="cobody">
-    <h3>Pay with crypto</h3><p class="sub">Send the <b style="color:var(--ink)">exact</b> amount — we detect it automatically on-chain.</p>
-    <div class="pay-amt"><span>Send exactly</span><b>${amt} <em>USDC</em></b><small>Order ${d.orderId} · ERC-20 · 1 USDC ≈ $1</small></div>
-    <div class="net-badge">USDC · ERC-20 · Ethereum</div>
-    <button class="btn btn-primary" id="wpay" style="width:100%;justify-content:center;margin:4px 0 14px">⚡ Pay with wallet (MetaMask)</button>
-    <div class="pay-or">or scan / send manually</div>
-    <div class="qr">${QR_SVG}</div>
-    <div class="addr-lbl">Send to this address</div>
-    <div class="addr"><code id="wAddr">${WALLET}</code><button type="button" id="copyW" class="btn btn-secondary" style="padding:10px 14px">Copy</button></div>
+    <h3>Pay with ${token}</h3><p class="sub">Send the <b style="color:var(--ink)">exact</b> amount — we detect it automatically on-chain.</p>
+    <div class="pay-amt"><span>Send exactly</span><b>${amt} <em>${token}</em></b><small>Order ${d.orderId} · ${chain} · 1 ${token} = $1</small></div>
+    <div class="net-badge">${token} · ${chain} · ${chainName}</div>
+    ${isErc?`<button class="btn btn-primary" id="wpay" style="width:100%;justify-content:center;margin:4px 0 14px">⚡ Pay with wallet (MetaMask)</button>`
+      :`<div class="warn" style="border-color:rgba(38,161,123,.3);background:rgba(38,161,123,.07)">Open your Tron wallet (e.g. <b>TronLink</b>, Trust Wallet or an exchange) and send the exact amount below on the <b>TRC-20</b> network.</div>`}
+    <div class="addr-lbl">Send ${token} (${chain}) to this address</div>
+    <div class="addr"><code id="wAddr">${esc(wallet)}</code><button type="button" id="copyW" class="pay-copy">Copy</button></div>
     <div class="pay-status" id="payStatus"><span class="spin"></span> Waiting for payment on-chain…</div>
-    <div class="warn">⚠ Send only <b>USDC on Ethereum (ERC-20)</b>, and the <b>exact amount ${amt}</b> — the unique cents let us match your payment automatically. Other coins or networks will be lost.</div>
+    <div class="warn">⚠ Send only <b>${token} on ${chainName} (${chain})</b>, and the <b>exact amount ${amt}</b> — the unique cents let us match your payment automatically. Sending a different coin or network will be lost.</div>
     ${d.receiptUrl?`<a class="btn btn-secondary" style="width:100%;justify-content:center" href="${d.receiptUrl}" target="_blank" rel="noopener">View order / receipt</a>`:''}
     <button class="btn btn-secondary" style="margin-top:10px;width:100%;justify-content:center" onclick="document.getElementById('coModal').classList.remove('show')">Close — I'll pay from my wallet</button>
   </div>`;
-  $('#copyW').addEventListener('click',()=>{try{navigator.clipboard.writeText(WALLET)}catch(e){}toast('Address copied')});
-  $('#wpay').addEventListener('click',()=>walletPay(d));
+  $('#copyW').addEventListener('click',()=>{try{navigator.clipboard.writeText(wallet)}catch(e){}toast('Address copied')});
+  const wp=$('#wpay');if(wp)wp.addEventListener('click',()=>walletPay(d));
   // pending order exists on the server now — clear the cart
   cart=[];save('swk_cart',cart);renderCart();bump();
   if(d.offline){ $('#payStatus').innerHTML='Demo mode — automatic check needs the live server.'; return; }
@@ -1331,9 +1335,11 @@ function cryptoPay(d){
   },8000);
 }
 function paidSuccess(d,tx){
+  const token=d.token||'USDC';const isErc=(d.network||'usdc-erc20')==='usdc-erc20';
+  const txUrl=tx?(isErc?('https://etherscan.io/tx/'+tx):('https://tronscan.org/#/transaction/'+tx)):'';
   $('#coBody').innerHTML=`<div class="success"><div class="ok">${ICON.check}</div><h3>Payment confirmed</h3>
-    <p>Your USDC payment was detected on-chain. Thank you!</p><p>Order <span class="oid">${d.orderId}</span></p>
-    ${tx?`<p style="margin-top:8px"><a href="https://etherscan.io/tx/${tx}" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600">View transaction ↗</a></p>`:''}
+    <p>Your ${token} payment was detected on-chain. Thank you!</p><p>Order <span class="oid">${d.orderId}</span></p>
+    ${txUrl?`<p style="margin-top:8px"><a href="${txUrl}" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600">View transaction ↗</a></p>`:''}
     ${d.receiptUrl?`<a class="btn btn-primary" style="margin-top:18px;justify-content:center" href="${d.receiptUrl}" target="_blank" rel="noopener">View receipt ${ICON.arrow}</a>`:''}
     <p style="margin-top:16px">We'll ship within 48h.</p>
     <button class="btn btn-secondary" style="margin-top:14px" onclick="document.getElementById('coModal').classList.remove('show')">Done</button></div>`;
@@ -1522,7 +1528,7 @@ async function openListing(id){
     <div class="qv-info">
       <div class="cat">${esc(CAT_NAME(l.category))} · ${esc(l.brand||'—')} <span class="cond-tag">${esc(l.condition||'Used')}</span></div>
       <h3 id="lstTitle">${esc(l.title)}</h3>
-      <div class="price">${(l.old&&l.old>l.price)?`<s style="color:var(--faint);font-weight:400;margin-right:8px">${disp(l.old)}</s>`:''}${disp(price)}${d.acceptedOfferPrice?' <span style="font-size:12px;color:var(--ok);font-weight:700">offer accepted</span>':''}</div>
+      <div class="price"><span class="cico" style="background:var(--usdt);display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;color:#fff;font-size:12px;vertical-align:-4px;margin-right:6px">₮</span>${usdtLabel(price)} <span style="font-size:14px;color:var(--muted);font-weight:500">≈ ${disp(price)}</span>${d.acceptedOfferPrice?' <span style="font-size:12px;color:var(--ok);font-weight:700">offer accepted</span>':''}</div>
       ${l.size?`<div style="font-size:13px;color:var(--muted);margin-top:3px">Size ${esc(l.size)}</div>`:''}
       ${l.photos.length>1?`<div class="lst-strip" id="lstStrip">${l.photos.map((ph,i)=>`<img src="${ph}" data-i="${i}" class="${i===0?'on':''}">`).join('')}</div>`:''}
       ${l.desc?`<p class="desc" id="lstDesc" style="margin-top:14px">${esc(l.desc)}</p>`:''}
@@ -1537,7 +1543,7 @@ async function openListing(id){
       ${(AUTH&&AUTH.email&&AUTH.email.toLowerCase()!==(s.email||'').toLowerCase())?`<button class="lst-msg" id="lstMsg"><span>✉</span> Write seller</button>`:''}
       <button class="lst-report" data-report="${l.id}">Report this listing</button>
       <div class="qv-act">
-        <button class="btn btn-primary" style="flex:1;justify-content:center" id="lstBuy">Buy now — ${disp(price)}</button>
+        <button class="btn btn-primary" style="flex:1;justify-content:center" id="lstBuy">Buy now — ${usdtLabel(price)}</button>
         <button class="btn btn-secondary" id="lstOffer" style="padding:0 16px">Make offer</button>
       </div>
     </div>`;
@@ -1563,22 +1569,34 @@ async function openSeller(email){
   </div>`;
   box.querySelectorAll('[data-listing]').forEach(el=>el.addEventListener('click',()=>openListing(el.dataset.listing)));
 }
+/* ---- payment networks (stablecoins only) ---- */
+let PAY_NETS=[{id:'usdc-erc20',token:'USDC',chain:'ERC-20',label:'USDC (ERC-20)'}];
+function loadPayConfig(){return fetch('/api/pay-config').then(r=>r.json()).then(d=>{if(d&&Array.isArray(d.networks)&&d.networks.length)PAY_NETS=d.networks;}).catch(()=>{});}
+function payNetFieldHTML(){
+  if(PAY_NETS.length<=1){const n=PAY_NETS[0];return `<input type="hidden" id="payNet" value="${n.id}"><div class="field"><label>Payment</label><div class="netpick-single"><span class="cico" style="background:${n.token==='USDT'?'var(--usdt)':'#2775CA'}">${n.token==='USDT'?'₮':'$'}</span>${n.label}</div></div>`;}
+  return `<div class="field"><label>Pay with</label><div class="netpick" id="payNet">${PAY_NETS.map((n,i)=>`<button type="button" class="netopt ${i===0?'on':''}" data-net="${n.id}"><span class="cico" style="background:${n.token==='USDT'?'var(--usdt)':'#2775CA'}">${n.token==='USDT'?'₮':'$'}</span><b>${n.token}</b><span class="nch">${n.chain}</span></button>`).join('')}</div></div>`;
+}
+function chosenNetwork(){const el=$('#payNet');if(!el)return 'usdc-erc20';if(el.tagName==='INPUT')return el.value;const on=el.querySelector('.netopt.on');return on?on.dataset.net:'usdc-erc20';}
+function wireNetPick(){const el=$('#payNet');if(!el||el.tagName==='INPUT')return;el.querySelectorAll('.netopt').forEach(b=>b.addEventListener('click',()=>{el.querySelectorAll('.netopt').forEach(x=>x.classList.remove('on'));b.classList.add('on');}));}
+function usdtLabel(n){return `${usdtAmt(n)} USDT`;}
 function buyListing(id){
   if(!AUTH)return needAuth('Sign in to buy');
   const li=LISTINGS.find(x=>x.id===id)||{};
   const regionList=(li.ships&&li.ships.length)?li.ships:REGIONS;
+  const total=Math.round((li.price||0)*(1+BUYER_FEE_PCT/100)*100)/100;
   $('#coBody').innerHTML=`<div class="cobody"><h3>Checkout</h3><p class="sub">Ship-to address for the seller. Payment is held in escrow.</p>
     <div class="field"><label>Full name</label><input id="bName" value="${esc(AUTH.name||'')}"></div>
     <div class="field"><label>Region</label><select id="bRegion">${regionList.map(r=>`<option>${r}</option>`).join('')}</select></div>
     <div class="field"><label>Address</label><input id="bAddr" placeholder="Street, house, apt"></div>
     <div class="frow"><div class="field"><label>City</label><input id="bCity"></div><div class="field"><label>ZIP</label><input id="bZip"></div></div>
-    <div class="buy-sum"><div><span>Item</span><b>${fmt(li.price||0)}</b></div><div><span>Buyer fee (${BUYER_FEE_PCT}%)</span><b>${fmt(Math.round((li.price||0)*BUYER_FEE_PCT)/100)}</b></div><div class="tot"><span>Total</span><b>${fmt(Math.round((li.price||0)*(1+BUYER_FEE_PCT/100)*100)/100)}</b></div></div>
+    ${payNetFieldHTML()}
+    <div class="buysum"><div class="r"><span>Item</span><b>${usdtLabel(li.price||0)}</b></div><div class="r"><span>Buyer fee (${BUYER_FEE_PCT}%)</span><b>${usdtLabel(Math.round((li.price||0)*BUYER_FEE_PCT)/100)}</b></div><div class="r tot"><span>Total</span><b>${usdtLabel(total)}</b></div></div>
     <div class="protect">${ICON.verified}<div><b>Buyer Protection</b><span>Funds are released to the seller only after you confirm the item arrived.</span></div></div>
     <button class="cbtn" id="bGo">Continue to payment</button>
-    <div class="msg" id="bMsg" style="display:none;margin-top:12px;color:#ff6b6b;font-weight:600;font-size:13px"></div></div>`;
-  closeModal('#lstModal');openModal('#coModal');
+    <div class="msg" id="bMsg" style="display:none;margin-top:12px"></div></div>`;
+  closeModal('#lstModal');openModal('#coModal');wireNetPick();
   $('#bGo').addEventListener('click',async()=>{
-    const b={listingId:id,name:$('#bName').value,region:$('#bRegion').value,address:$('#bAddr').value,city:$('#bCity').value,zip:$('#bZip').value};
+    const b={listingId:id,name:$('#bName').value,region:$('#bRegion').value,address:$('#bAddr').value,city:$('#bCity').value,zip:$('#bZip').value,network:chosenNetwork()};
     if(!b.address.trim()){$('#bMsg').style.display='block';$('#bMsg').textContent='Enter a shipping address.';return;}
     $('#bGo').disabled=true;
     try{const d=await mfetch('/api/buy',{method:'POST',body:JSON.stringify(b)});cryptoPay(d);}
@@ -1867,7 +1885,7 @@ $('#chatClose').addEventListener('click',()=>closeModal('#chatModal'));
 $('#accModal').addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(b){mktAction(b.dataset.act,b.dataset.id);}});
 
 /* ---------- init ---------- */
-renderFilterbar();renderGrid();renderCart();bump();
+renderFilterbar();renderGrid();renderCart();bump();loadPayConfig();
 /* live online counter */
 (function(){var el=document.getElementById('onlineN');if(!el)return;function tick(){fetch('/api/online').then(function(r){return r.json()}).then(function(d){if(d&&d.online!=null)el.textContent=d.online}).catch(function(){});}tick();setInterval(tick,15000);})();
 /* thunder sound (WebAudio synth, off by default) */
@@ -1933,11 +1951,11 @@ function renderTrades(){
     const t=(d&&d.trades)||[];
     if(!t.length){hideSection(g);g.innerHTML='';return;}
     showSection(g);
-    g.innerHTML=t.map(x=>{const coin=coinFor(x.title,x.price),c=CRYPTO[coin];
+    g.innerHTML=t.map(x=>{
       return `<div class="trade-row"><div class="tav">✓</div>
         <div class="tinfo"><b>${esc(x.title)}</b><span>@${esc(x.seller)} → @${esc(x.buyer)}</span></div>
         <div class="tdone">${ICON.check} Settled</div>
-        <div class="tprice">${cryptoAmt(x.price,coin)} ${c.n}<span>${disp(x.price)}</span></div></div>`;}).join('');
+        <div class="tprice">${usdtAmt(x.price)} USDT<span>${disp(x.price)}</span></div></div>`;}).join('');
   }).catch(()=>{hideSection(g);});
 }
 /* categories */

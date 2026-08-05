@@ -184,6 +184,17 @@ const USDC_CONTRACT = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'; // USDC on E
 const USDC_DECIMALS = 6;
 const ETHERSCAN_KEY = process.env.ETHERSCAN_API_KEY || '';
 const CONFIRMATIONS = Number(process.env.PAY_CONFIRMATIONS || 2);
+// USDT on Tron (TRC-20). Set USDT_TRC20_WALLET to your Tron (T...) address to enable it.
+// Left empty on purpose — a wrong address would send buyers' USDT to a wallet you don't own.
+const USDT_TRC20_WALLET = process.env.USDT_TRC20_WALLET || '';
+const USDT_TRC20_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // USDT-TRC20 contract
+// accepted payment networks — stablecoins only
+const NETWORKS = {
+  'usdc-erc20': { token: 'USDC', chain: 'ERC-20', label: 'USDC (ERC-20)', wallet: () => WALLET, enabled: () => !!WALLET },
+  'usdt-trc20': { token: 'USDT', chain: 'TRC-20', label: 'USDT (TRC-20)', wallet: () => USDT_TRC20_WALLET, enabled: () => !!USDT_TRC20_WALLET },
+};
+function pickNetwork(n) { n = String(n || 'usdc-erc20'); return (NETWORKS[n] && NETWORKS[n].enabled()) ? n : 'usdc-erc20'; }
+function payMeta(order) { const net = NETWORKS[order.network] || NETWORKS['usdc-erc20']; return { network: order.network || 'usdc-erc20', token: net.token, chain: net.chain, wallet: net.wallet() }; }
 // transactions already credited (survives restart via order.paidTx)
 const usedTx = new Set();
 
@@ -521,6 +532,11 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { online: Math.max(1, onlineCount()) });
     }
 
+    /* ----- accepted payment networks (stablecoins only) ----- */
+    if (req.method === 'GET' && p === '/api/pay-config') {
+      return send(res, 200, { networks: Object.keys(NETWORKS).filter(k => NETWORKS[k].enabled()).map(k => ({ id: k, token: NETWORKS[k].token, chain: NETWORKS[k].chain, label: NETWORKS[k].label })) });
+    }
+
     /* ----- recently completed trades (public, escrow-settled) ----- */
     if (req.method === 'GET' && p === '/api/recent-trades') {
       const done = orders.filter(o => o.escrow && ['released', 'delivered'].includes(o.status))
@@ -560,12 +576,13 @@ const server = http.createServer(async (req, res) => {
       const ship = subtotal >= FREE_SHIP_AT ? 0 : SHIP_COST;
       const id = 'SWK-' + crypto.randomBytes(3).toString('hex').toUpperCase();
       const total = subtotal + ship;
+      const net = pickNetwork(b.network);
       const order = {
         id, email, name: String(b.name || '').slice(0, 80), address: String(b.address || '').slice(0, 160),
         city: String(b.city || '').slice(0, 60), zip: String(b.zip || '').slice(0, 20),
-        payment: 'USDC (ERC-20)',
+        network: net, payment: NETWORKS[net].label,
         items, subtotal, ship, total,
-        payAmount: assignUniqueAmount(total),   // exact USDC to send (unique cents)
+        payAmount: assignUniqueAmount(total),   // exact stablecoin amount to send (unique cents)
         status: 'pending', paidTx: null, paidAt: null,
         carrier: '', tracking: '', date: Date.now(),
       };
@@ -573,7 +590,7 @@ const server = http.createServer(async (req, res) => {
       const day = today();
       stats.daily[day] = stats.daily[day] || { v: 0, u: 0, o: 0 };
       stats.daily[day].o++; statsDirty = true;
-      return send(res, 201, { orderId: id, receiptUrl: `/receipt/${id}`, total, payAmount: order.payAmount, wallet: WALLET });
+      return send(res, 201, { orderId: id, receiptUrl: `/receipt/${id}`, total, payAmount: order.payAmount, ...payMeta(order) });
     }
 
     /* ================= MARKETPLACE ================= */
@@ -705,14 +722,15 @@ const server = http.createServer(async (req, res) => {
       const days = Math.min(30, Math.max(1, parseInt(b.days, 10) || 7));
       const total = Math.round(days * BOOST_PRICE_PER_DAY * 100) / 100;
       const id = 'SWK-' + crypto.randomBytes(3).toString('hex').toUpperCase();
+      const net = pickNetwork(b.network);
       const order = {
         id, email: u.email, boost: true, listingId: l.id, boostDays: days,
-        payment: 'USDC (ERC-20)', items: [{ id: l.id, name: 'Boost: ' + l.title, price: total, size: days + 'd', qty: 1 }],
+        network: net, payment: NETWORKS[net].label, items: [{ id: l.id, name: 'Boost: ' + l.title, price: total, size: days + 'd', qty: 1 }],
         subtotal: total, ship: 0, total, payAmount: assignUniqueAmount(total),
         status: 'pending', paidTx: null, paidAt: null, date: Date.now(),
       };
       orders.push(order); saveOrders();
-      return send(res, 201, { orderId: id, receiptUrl: `/receipt/${id}`, total, payAmount: order.payAmount, wallet: WALLET });
+      return send(res, 201, { orderId: id, receiptUrl: `/receipt/${id}`, total, payAmount: order.payAmount, ...payMeta(order) });
     }
     /* --- buy a listing (creates escrow order) --- */
     if (req.method === 'POST' && p === '/api/buy') {
@@ -730,10 +748,11 @@ const server = http.createServer(async (req, res) => {
       const fee = Math.round(price * MARKET_FEE_PCT) / 100;
       const total = Math.round((price + fee) * 100) / 100;
       const id = 'SWK-' + crypto.randomBytes(3).toString('hex').toUpperCase();
+      const net = pickNetwork(b.network);
       const order = {
         id, email: u.email, name: String(b.name || u.name || '').slice(0, 80),
         address: String(b.address || '').slice(0, 160), city: String(b.city || '').slice(0, 60), zip: String(b.zip || '').slice(0, 20),
-        payment: 'USDC (ERC-20)', escrow: true, seller: l.seller, listingId: l.id,
+        network: net, payment: NETWORKS[net].label, escrow: true, seller: l.seller, listingId: l.id,
         items: [{ id: l.id, name: l.title, price, size: l.size || '-', qty: 1 }],
         subtotal: price, ship: 0, total, fee,
         payAmount: assignUniqueAmount(total),
@@ -741,7 +760,7 @@ const server = http.createServer(async (req, res) => {
       };
       orders.push(order); saveOrders();
       if (of) { of.status = 'used'; saveOffers(); }
-      return send(res, 201, { orderId: id, receiptUrl: `/receipt/${id}`, total, payAmount: order.payAmount, wallet: WALLET });
+      return send(res, 201, { orderId: id, receiptUrl: `/receipt/${id}`, total, payAmount: order.payAmount, ...payMeta(order) });
     }
     /* --- seller marks shipped --- */
     if (req.method === 'POST' && /^\/api\/order\/SWK-[A-Z0-9-]+\/ship$/.test(p)) {
@@ -991,9 +1010,25 @@ const server = http.createServer(async (req, res) => {
 // remember already-credited transactions so a tx is never counted twice
 orders.forEach(o => { if (o.paidTx) usedTx.add(o.paidTx.toLowerCase()); });
 
+// credit a matched on-chain payment to its order (shared by both chains)
+function creditOrder(match, txHash, ts, amt, token) {
+  match.paidTx = txHash; match.paidAt = ts;
+  if (match.boost) {
+    match.status = 'paid';
+    const l = listings.find(x => x.id === match.listingId);
+    if (l) { l.boostedUntil = Math.max(l.boostedUntil || 0, Date.now()) + (match.boostDays || 7) * 864e5; saveListings(); }
+    console.log(`[swk-store] listing ${match.listingId} BOOSTED ${match.boostDays}d (${amt} ${token})`);
+  } else {
+    match.status = match.escrow ? 'held' : 'paid';
+    console.log(`[swk-store] order ${match.id} ${match.escrow ? 'HELD in escrow' : 'PAID'} (${amt} ${token}) tx ${txHash}`);
+  }
+  usedTx.add(String(txHash).toLowerCase());
+}
+
+// USDC on Ethereum (ERC-20) via Etherscan
 async function pollPayments() {
   if (!ETHERSCAN_KEY) return;
-  const pending = orders.filter(o => o.status === 'pending');
+  const pending = orders.filter(o => o.status === 'pending' && o.network !== 'usdt-trc20');
   if (!pending.length) return;
   try {
     const url = `https://api.etherscan.io/api?module=account&action=tokentx`
@@ -1009,23 +1044,8 @@ async function pollPayments() {
       if (usedTx.has(tx.hash.toLowerCase())) continue;                            // already credited
       const amt = Number(tx.value) / 10 ** USDC_DECIMALS;
       const ts = Number(tx.timeStamp) * 1000;
-      const match = pending.find(o =>
-        o.status === 'pending' &&
-        Math.abs(o.payAmount - amt) < 0.005 &&                                    // exact fingerprint match
-        ts >= o.date - 15 * 60 * 1000);                                           // paid after order placed
-      if (match) {
-        match.paidTx = tx.hash; match.paidAt = ts;
-        if (match.boost) {
-          match.status = 'paid';
-          const l = listings.find(x => x.id === match.listingId);
-          if (l) { l.boostedUntil = Math.max(l.boostedUntil || 0, Date.now()) + (match.boostDays || 7) * 864e5; saveListings(); }
-          console.log(`[swk-store] listing ${match.listingId} BOOSTED ${match.boostDays}d (${amt} USDC)`);
-        } else {
-          match.status = match.escrow ? 'held' : 'paid';
-          console.log(`[swk-store] order ${match.id} ${match.escrow ? 'HELD in escrow' : 'PAID'} (${amt} USDC) tx ${tx.hash}`);
-        }
-        usedTx.add(tx.hash.toLowerCase()); changed = true;
-      }
+      const match = pending.find(o => o.status === 'pending' && Math.abs(o.payAmount - amt) < 0.005 && ts >= o.date - 15 * 60 * 1000);
+      if (match) { creditOrder(match, tx.hash, ts, amt, 'USDC'); changed = true; }
     }
     if (changed) saveOrders();
   } catch (e) {
@@ -1033,6 +1053,34 @@ async function pollPayments() {
   }
 }
 if (ETHERSCAN_KEY) setInterval(pollPayments, 30000).unref();
+
+// USDT on Tron (TRC-20) via TronGrid
+async function pollPaymentsTron() {
+  if (!USDT_TRC20_WALLET) return;
+  const pending = orders.filter(o => o.status === 'pending' && o.network === 'usdt-trc20');
+  if (!pending.length) return;
+  try {
+    const url = `https://api.trongrid.io/v1/accounts/${USDT_TRC20_WALLET}/transactions/trc20?only_to=true&limit=50&contract_address=${USDT_TRC20_CONTRACT}`;
+    const res = await fetch(url, { headers: process.env.TRONGRID_API_KEY ? { 'TRON-PRO-API-KEY': process.env.TRONGRID_API_KEY } : {} });
+    const j = await res.json();
+    if (!j || !Array.isArray(j.data)) return;
+    let changed = false;
+    for (const tx of j.data) {
+      if (!tx.to || tx.to !== USDT_TRC20_WALLET) continue;                         // incoming only
+      const hash = tx.transaction_id;
+      if (!hash || usedTx.has(String(hash).toLowerCase())) continue;
+      const dec = (tx.token_info && tx.token_info.decimals) || 6;
+      const amt = Number(tx.value) / 10 ** dec;
+      const ts = Number(tx.block_timestamp) || Date.now();
+      const match = pending.find(o => o.status === 'pending' && Math.abs(o.payAmount - amt) < 0.005 && ts >= o.date - 15 * 60 * 1000);
+      if (match) { creditOrder(match, hash, ts, amt, 'USDT'); changed = true; }
+    }
+    if (changed) saveOrders();
+  } catch (e) {
+    console.error('[swk-store] tron poll error:', e.message);
+  }
+}
+if (USDT_TRC20_WALLET) setInterval(pollPaymentsTron, 30000).unref();
 
 /* ---------- auto-release escrow after the buyer-protection window ---------- */
 setInterval(() => {
