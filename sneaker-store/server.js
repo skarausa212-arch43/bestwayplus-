@@ -826,7 +826,7 @@ const server = http.createServer(async (req, res) => {
       const otherEmail = u.email === l.seller ? buyer : l.seller;
       const other = users[otherEmail] || {};
       const counterpart = sellerHandle(otherEmail);
-      return send(res, 200, { messages: thread, counterpart, counterpartAvatar: other.avatar || '', counterpartTelegram: other.telegram || '', listing: { id: l.id, title: l.title, cover: l.cover || '', price: l.price } });
+      return send(res, 200, { messages: thread, counterpart, counterpartAvatar: other.avatar || '', counterpartTelegram: other.telegram || '', listing: { id: l.id, title: l.title, cover: l.cover || '', price: l.price, seller: l.seller } });
     }
     if (p === '/api/chat/send' && req.method === 'POST') {
       const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
