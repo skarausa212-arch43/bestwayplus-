@@ -719,16 +719,34 @@
     .crypto-row{gap:10px 22px;margin-top:14px}
     .crypto-chip{font-size:14px}
     .crypto-band p{font-size:12px;margin-top:10px}
-    .qv{grid-template-columns:1fr}
+    .qv{display:flex;flex-direction:column;min-height:100dvh}
     .foot{grid-template-columns:1fr 1fr}
     .sec-head h2{font-size:26px}
     /* full-screen modal sheets on phones */
     .modal{padding:0}
     .mcard{max-width:100%;width:100%;height:100vh;height:100dvh;max-height:100dvh;border-radius:0;border:0}
     .co .mcard{max-width:100%}
-    .qv-media{min-height:0;height:auto;padding:14px 0;border-right:0;border-bottom:1px solid var(--line)}
-    .qv-media.photo img,.qv-media .ph img{max-height:40vh;height:auto;width:auto;max-width:88%;margin:0 auto}
+    .qv-media{min-height:0;height:auto;padding:10px 0;border-right:0;border-bottom:1px solid var(--line)}
+    .qv-media.photo img,.qv-media .ph img{max-height:26vh;height:auto;width:auto;max-width:82%;margin:0 auto}
     .drawer{width:100%;max-width:100%}
+    /* listing detail — fit on one screen, no scroll */
+    .qv-info{padding:12px 16px 0;display:flex;flex-direction:column;flex:1}
+    .qv-info .cat{font-size:11.5px}
+    .qv-info h3{font-size:20px;margin:5px 0 5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .qv-info .price{font-size:20px;margin-bottom:6px}
+    .qv-info .desc{font-size:13px;line-height:1.45;margin:4px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .lst-translate{margin-top:5px;font-size:12px}
+    .lst-strip{padding:8px 0 2px}.lst-strip img{width:46px;height:46px}
+    .ships-line{margin:9px 0;padding:9px 0;font-size:12px;line-height:1.45}
+    .protect{padding:9px 11px;margin:9px 0;border-radius:12px;gap:9px}
+    .protect svg{width:18px;height:18px}
+    .protect b{font-size:13px}.protect span{font-size:11.5px;line-height:1.35;display:block;margin-top:1px}
+    .seller-row{padding:9px 0;margin:9px 0}
+    .seller-row .av{width:36px;height:36px}
+    .lst-msg{height:42px;margin-top:0}
+    .lst-report{margin-top:7px;padding:4px 0}
+    .qv-act{position:sticky;bottom:0;margin-top:auto;padding:10px 0 calc(10px + env(safe-area-inset-bottom));background:var(--surface);box-shadow:0 -8px 20px -16px rgba(17,17,17,.5)}
+    .qv-act .btn{height:48px}
   }
   /* ============ APP BOTTOM NAV ============ */
   .botnav{display:none}
@@ -1742,8 +1760,8 @@ async function openListing(id){
       ${l.photos.length>1?`<div class="lst-strip" id="lstStrip">${l.photos.map((ph,i)=>`<img src="${ph}" data-i="${i}" class="${i===0?'on':''}">`).join('')}</div>`:''}
       ${l.desc?`<p class="desc" id="lstDesc" style="margin-top:14px">${esc(l.desc)}</p>`:''}
       <button class="lst-translate" id="lstTr">🌐 Translate to ${CHAT_LANGS.find(x=>x[0]===load('swk_chatlang','en'))?.[1]||'English'}</button>
-      <div class="ships-line"><b>Ships to:</b> ${(l.ships&&l.ships.length)?l.ships.map(esc).join(', '):'Worldwide'}<br><b>Returns:</b> ${esc(l.returns||'No returns')}</div>
-      <div class="protect">${ICON.verified}<div><b>Buyer Protection</b><span>Your USDC is held in escrow and only released to the seller after you confirm the item arrived as described. Open a dispute anytime before that.</span></div></div>
+      <div class="ships-line"><b>Ships:</b> ${(!l.ships||!l.ships.length||l.ships.length>=REGIONS.length)?'Worldwide':l.ships.map(esc).join(', ')} · <b>Returns:</b> ${esc(l.returns||'No returns')}</div>
+      <div class="protect">${ICON.verified}<div><b>Buyer Protection</b><span>Funds held in escrow — released only when you confirm the item arrived.</span></div></div>
       <div class="seller-row">
         <div class="av">${s.avatar?`<img src="${s.avatar}" alt="">`:esc((s.handle||'?')[0].toUpperCase())}</div>
         <div><div class="sname">@${esc(s.handle)}${s.verified?' <span class="vbadge">✓ Verified</span>':''}</div><div class="smeta">${s.rating?stars(s.rating)+' '+s.rating:'No ratings yet'} · ${s.sold||0} sold${s.telegram?` · <a href="https://t.me/${esc(s.telegram)}" target="_blank" rel="noopener" style="color:var(--accent)">✈ @${esc(s.telegram)}</a>`:''}</div></div>
