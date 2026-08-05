@@ -1352,14 +1352,12 @@ function renderFilterbar(){
   const fb=$('#filterbar');if(!fb)return;
   fb.innerHTML=`<label>Sort <select id="fSort"><option value="new">Newest</option><option value="lo">Price ↑</option><option value="hi">Price ↓</option></select></label>
     <label>Condition <select id="fCond"><option value="">Any</option>${['New','Like new','Very good','Good','Fair'].map(c=>`<option>${c}</option>`).join('')}</select></label>
-    <label class="fprice">Price&nbsp;$ <input type="number" id="fMin" placeholder="min" min="0"><span>–</span><input type="number" id="fMax" placeholder="max" min="0"></label>
-    <label>Currency <select id="fCur">${CURRENCIES.map(([c])=>`<option ${c===CUR?'selected':''}>${c}</option>`).join('')}</select></label>`;
+    <label class="fprice">Price&nbsp;$ <input type="number" id="fMin" placeholder="min" min="0"><span>–</span><input type="number" id="fMax" placeholder="max" min="0"></label>`;
   $('#fSort').value=FILT.sort;$('#fCond').value=FILT.cond;
   $('#fSort').addEventListener('change',e=>{FILT.sort=e.target.value;renderGrid();});
   $('#fCond').addEventListener('change',e=>{FILT.cond=e.target.value;renderGrid();});
   const apply=()=>{FILT.pmin=parseFloat($('#fMin').value)||0;FILT.pmax=parseFloat($('#fMax').value)||0;renderGrid();};
   $('#fMin').addEventListener('input',apply);$('#fMax').addEventListener('input',apply);
-  $('#fCur').addEventListener('change',e=>{CUR=e.target.value;save('swk_cur',CUR);renderGrid();});
 }
 
 /* ---------- quick view ---------- */
