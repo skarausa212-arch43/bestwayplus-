@@ -360,6 +360,13 @@ const CAT_OF_GROUP = {}; for (const g in CAT_GROUPS) for (const c of CAT_GROUPS[
 const CONDITIONS = ['New', 'Like new', 'Very good', 'Good', 'Fair'];
 const REGIONS = ['North America', 'South America', 'Europe', 'Asia', 'Africa', 'Oceania'];
 const RETURNS = ['No returns', '14-day returns', '30-day returns'];
+const MAX_ADDRESSES = 3;
+function profileView(u) {
+  return {
+    email: u.email, name: u.name || '', telegram: u.telegram || '', avatar: u.avatar || '',
+    addresses: Array.isArray(u.addresses) ? u.addresses : [], payout: u.payout || '', verified: !!u.verified,
+  };
+}
 function catGroup(c) { return CAT_OF_GROUP[c] || 'other'; }
 function sellerStats(email) {
   const rs = reviews.filter(r => r.to === email && r.role === 'seller');
@@ -378,7 +385,11 @@ function listingCard(l) { // light — no full photos
     seller: { handle: sellerHandle(l.seller), email: l.seller, rating: st.rating, reviews: st.reviews, sold: st.sold, verified: st.verified },
   };
 }
-function listingFull(l) { return { ...listingCard(l), photos: l.photos || (l.cover ? [l.cover] : []), desc: l.desc || '' }; }
+function listingFull(l) {
+  const c = listingCard(l);
+  const su = users[l.seller] || {};
+  return { ...c, seller: { ...c.seller, avatar: su.avatar || '', telegram: su.telegram || '' }, photos: l.photos || (l.cover ? [l.cover] : []), desc: l.desc || '' };
+}
 // funds owed to a seller that have been released but not yet paid out by the operator
 function payoutBalance(email) {
   return Math.round(orders.filter(o => o.seller === email && o.status === 'released' && !o.paidOut)
@@ -450,7 +461,46 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && p === '/api/me') {
       const u = tokenUser(req);
       if (!u) return send(res, 401, { error: 'unauthorized' });
-      return send(res, 200, { email: u.email, name: u.name });
+      return send(res, 200, profileView(u));
+    }
+    /* ----- update profile (name / telegram / avatar) ----- */
+    if (req.method === 'POST' && p === '/api/profile') {
+      const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
+      const b = await readBody(req);
+      const me = users[u.email];
+      if (b.name !== undefined) me.name = String(b.name).slice(0, 60);
+      if (b.telegram !== undefined) {
+        const tg = String(b.telegram).trim().replace(/^@/, '').slice(0, 32);
+        if (tg && !/^[a-zA-Z0-9_]{3,32}$/.test(tg)) return send(res, 400, { error: 'Telegram username must be 3–32 letters, digits or underscores.' });
+        me.telegram = tg;
+      }
+      if (b.avatar !== undefined) {
+        const a = String(b.avatar || '');
+        if (a === '') me.avatar = '';
+        else {
+          if (!a.startsWith('data:image/')) return send(res, 400, { error: 'Avatar must be an image.' });
+          if (a.length > 900000) return send(res, 400, { error: 'Avatar is too large — keep it under ~600KB.' });
+          me.avatar = a;
+        }
+      }
+      saveUsers();
+      return send(res, 200, { ok: true, profile: profileView(me) });
+    }
+    /* ----- save home addresses (up to 3) ----- */
+    if (req.method === 'POST' && p === '/api/addresses') {
+      const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
+      const b = await readBody(req);
+      const arr = Array.isArray(b.addresses) ? b.addresses.slice(0, MAX_ADDRESSES) : [];
+      const clean = arr.map(a => ({
+        label: String(a.label || '').slice(0, 30),
+        name: String(a.name || '').slice(0, 60),
+        region: REGIONS.includes(a.region) ? a.region : REGIONS[0],
+        line: String(a.line || a.address || '').slice(0, 140),
+        city: String(a.city || '').slice(0, 60),
+        zip: String(a.zip || '').slice(0, 20),
+      })).filter(a => a.line.trim());
+      users[u.email].addresses = clean; saveUsers();
+      return send(res, 200, { ok: true, addresses: clean });
     }
     if (req.method === 'GET' && p === '/api/my-orders') {
       const u = tokenUser(req);
@@ -744,8 +794,10 @@ const server = http.createServer(async (req, res) => {
       if (u.email !== buyer && u.email !== l.seller) return send(res, 403, { error: 'Not part of this chat.' });
       const tid = lid + '|' + buyer;
       const thread = messages.filter(m => m.thread === tid).map(m => ({ from: sellerHandle(m.from), me: m.from === u.email, text: m.text, at: m.at }));
-      const counterpart = u.email === l.seller ? sellerHandle(buyer) : sellerHandle(l.seller);
-      return send(res, 200, { messages: thread, counterpart, listing: { id: l.id, title: l.title, cover: l.cover || '', price: l.price } });
+      const otherEmail = u.email === l.seller ? buyer : l.seller;
+      const other = users[otherEmail] || {};
+      const counterpart = sellerHandle(otherEmail);
+      return send(res, 200, { messages: thread, counterpart, counterpartAvatar: other.avatar || '', counterpartTelegram: other.telegram || '', listing: { id: l.id, title: l.title, cover: l.cover || '', price: l.price } });
     }
     if (p === '/api/chat/send' && req.method === 'POST') {
       const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
@@ -819,7 +871,7 @@ const server = http.createServer(async (req, res) => {
       const items = listings.filter(l => l.seller === email && l.status === 'active').map(listingCard);
       const rs = reviews.filter(r => r.to === email && r.role === 'seller').slice(-30).reverse()
         .map(r => ({ rating: r.rating, text: r.text, from: sellerHandle(r.from), createdAt: r.createdAt }));
-      return send(res, 200, { handle: sellerHandle(email), joined: (users[email].created || 0), ...st, listings: items, reviews: rs });
+      return send(res, 200, { handle: sellerHandle(email), joined: (users[email].created || 0), avatar: users[email].avatar || '', telegram: users[email].telegram || '', ...st, listings: items, reviews: rs });
     }
     /* --- my marketplace dashboard --- */
     if (req.method === 'GET' && p === '/api/my/market') {

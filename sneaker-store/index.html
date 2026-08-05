@@ -674,7 +674,8 @@
   .protect span{font-size:12px;color:var(--muted);line-height:1.5}
   /* seller row */
   .seller-row{display:flex;align-items:center;gap:11px;padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:16px 0}
-  .seller-row .av{width:40px;height:40px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font-weight:800;color:var(--muted);flex:none}
+  .seller-row .av{width:40px;height:40px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font-weight:800;color:var(--muted);flex:none;overflow:hidden}
+  .seller-row .av img{width:100%;height:100%;object-fit:cover}
   .seller-row .sname{font-weight:700;font-size:14px}
   .seller-row .smeta{font-size:12px;color:var(--muted)}
   .seller-row a{margin-left:auto;font-size:12px;font-weight:700;color:var(--accent)}
@@ -736,6 +737,33 @@
   .ord-acts button.warn{color:#c77700;border-color:rgba(245,158,11,.5)}
   .ord-acts button:hover{border-color:var(--ink)}
   .mkt-empty{padding:30px 10px;text-align:center;color:var(--muted);font-size:13px}
+  /* profile panel */
+  .prof-av{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+  .pa-pic{width:76px;height:76px;border-radius:50%;overflow:hidden;flex:none;background:var(--surface-2);border:1px solid var(--line-2);
+    display:grid;place-items:center;font-size:30px;font-weight:800;color:var(--ink-2)}
+  .pa-pic img{width:100%;height:100%;object-fit:cover}
+  .pa-btns{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+  .pa-up{cursor:pointer;padding:8px 14px;font-size:13px}
+  .pa-rm{background:none;border:0;color:var(--bad,#ff5a5a);font-size:12px;font-weight:600;cursor:pointer;padding:0}
+  .tg-in{display:flex;align-items:center;border:1px solid var(--line-2);border-radius:11px;background:var(--surface);overflow:hidden}
+  .tg-in span{padding:0 4px 0 12px;color:var(--faint);font-size:15px}
+  .tg-in input{border:0!important;background:transparent!important;padding-left:2px!important}
+  .hintline{display:block;font-size:11.5px;color:var(--faint);margin-top:6px}
+  .prof-h{display:flex;align-items:center;justify-content:space-between;margin:26px 0 12px;padding-top:20px;border-top:1px solid var(--line)}
+  .prof-h h4{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);font-weight:800}
+  .prof-h span{font-size:12px;color:var(--faint);font-weight:700}
+  .addr-card{border:1px solid var(--line);border-radius:13px;padding:12px;margin-bottom:12px;background:var(--surface);display:flex;flex-direction:column;gap:8px}
+  .addr-top{display:flex;gap:8px;align-items:center}
+  .addr-top .ac-label{flex:1}
+  .ac-rm{flex:none;width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:none;color:var(--muted);cursor:pointer;font-size:13px}
+  .ac-rm:hover{color:var(--bad,#ff5a5a);border-color:var(--bad,#ff5a5a)}
+  .addr-row{display:flex;gap:8px}.addr-row input{flex:1;min-width:0}
+  .addr-card input,.addr-card select{width:100%;padding:10px 11px;border-radius:9px;border:1px solid var(--line-2);
+    background:var(--bg);color:var(--ink);font-size:13.5px;outline:none}
+  .addr-card input:focus,.addr-card select:focus{border-color:var(--accent)}
+  .chat-who{display:flex;align-items:center;gap:12px}
+  .tg-link{display:inline-block;margin-top:3px;font-size:12.5px;color:var(--accent);font-weight:600}
+  .tg-link:hover{text-decoration:underline}
   .rate-pick{display:flex;gap:4px;font-size:26px;color:var(--line-2);cursor:pointer}
   .rate-pick i{cursor:pointer;font-style:normal}.rate-pick i.on{color:#f5a623}
   /* order chat */
@@ -1521,7 +1549,7 @@ function renderAccount(){
       <div id="mktPanel"><p class="mkt-empty">Loading…</p></div>
       <button class="btn btn-secondary" style="margin-top:22px" id="accOut">Sign out</button></div>`;
     $('#accOut').addEventListener('click',()=>{AUTH=null;save('swk_auth',null);accDot();toast('Signed out');renderAccount()});
-    MKT_TAB='buying';loadMarket();
+    MKT_TAB='profile';loadMarket();
   }
 }
 $('#accBtn').addEventListener('click',()=>{renderAccount();openModal('#accModal')});
@@ -1532,7 +1560,7 @@ accDot();
 const overlay=$('#overlay'),drawer=$('#drawer');
 function openDrawer(){drawer.classList.add('show');overlay.classList.add('show');document.body.style.overflow='hidden'}
 function closeDrawer(){drawer.classList.remove('show');if(!anyModal())clearOverlay()}
-function openModal(s){$(s).classList.add('show');overlay.classList.add('show');document.body.style.overflow='hidden'}
+function openModal(s){document.querySelectorAll('.modal.show').forEach(m=>{if('#'+m.id!==s)m.classList.remove('show')});$(s).classList.add('show');overlay.classList.add('show');document.body.style.overflow='hidden'}
 function closeModal(s){$(s).classList.remove('show');if(!drawer.classList.contains('show')&&!anyModal())clearOverlay()}
 function anyModal(){return document.querySelector('.modal.show')}
 function clearOverlay(){overlay.classList.remove('show');document.body.style.overflow=''}
@@ -1647,8 +1675,8 @@ async function openListing(id){
       <div class="ships-line"><b>Ships to:</b> ${(l.ships&&l.ships.length)?l.ships.map(esc).join(', '):'Worldwide'}<br><b>Returns:</b> ${esc(l.returns||'No returns')}</div>
       <div class="protect">${ICON.verified}<div><b>Buyer Protection</b><span>Your USDC is held in escrow and only released to the seller after you confirm the item arrived as described. Open a dispute anytime before that.</span></div></div>
       <div class="seller-row">
-        <div class="av">${esc((s.handle||'?')[0].toUpperCase())}</div>
-        <div><div class="sname">@${esc(s.handle)}${s.verified?' <span class="vbadge">✓ Verified</span>':''}</div><div class="smeta">${s.rating?stars(s.rating)+' '+s.rating:'No ratings yet'} · ${s.sold||0} sold</div></div>
+        <div class="av">${s.avatar?`<img src="${s.avatar}" alt="">`:esc((s.handle||'?')[0].toUpperCase())}</div>
+        <div><div class="sname">@${esc(s.handle)}${s.verified?' <span class="vbadge">✓ Verified</span>':''}</div><div class="smeta">${s.rating?stars(s.rating)+' '+s.rating:'No ratings yet'} · ${s.sold||0} sold${s.telegram?` · <a href="https://t.me/${esc(s.telegram)}" target="_blank" rel="noopener" style="color:var(--accent)">✈ @${esc(s.telegram)}</a>`:''}</div></div>
         <a href="#" data-seller="${esc(s.email)}">View shop</a>
       </div>
       ${(AUTH&&AUTH.email&&AUTH.email.toLowerCase()!==(s.email||'').toLowerCase())?`<button class="lst-report" id="lstMsg" style="color:var(--accent)">💬 Message the seller</button>`:''}
@@ -1671,8 +1699,8 @@ async function openSeller(email){
   let d;try{d=await mfetch('/api/seller/'+encodeURIComponent(email))}catch(e){box.innerHTML='<div class="cobody" style="grid-column:1/-1"><h3>Not found</h3></div>';return;}
   box.innerHTML=`<div class="cobody" style="grid-column:1/-1">
     <div class="seller-row" style="border-top:0;margin-top:0">
-      <div class="av">${esc((d.handle||'?')[0].toUpperCase())}</div>
-      <div><div class="sname">@${esc(d.handle)}</div><div class="smeta">${d.rating?stars(d.rating)+' '+d.rating:'No ratings'} · ${d.sold||0} sold · ${d.reviews.length} reviews</div></div>
+      <div class="av">${d.avatar?`<img src="${d.avatar}" alt="">`:esc((d.handle||'?')[0].toUpperCase())}</div>
+      <div><div class="sname">@${esc(d.handle)}</div><div class="smeta">${d.rating?stars(d.rating)+' '+d.rating:'No ratings'} · ${d.sold||0} sold · ${d.reviews.length} reviews${d.telegram?` · <a href="https://t.me/${esc(d.telegram)}" target="_blank" rel="noopener" style="color:var(--accent)">✈ @${esc(d.telegram)}</a>`:''}</div></div>
     </div>
     <h3 style="font-size:13px;letter-spacing:.1em;color:var(--faint);text-transform:uppercase;margin:8px 0 10px">Listings</h3>
     <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">${d.listings.length?d.listings.map(listingCardHTML).join(''):'<p class="mkt-empty">No active listings.</p>'}</div>
@@ -1818,13 +1846,15 @@ function paintMarket(){
   else if(t==='listings')body=(d.listings&&d.listings.length)?d.listings.map(myListingRow).join(''):'<p class="mkt-empty">You have no listings. Tap “Sell” to add one.</p>';
   else if(t==='offers')body=`${(d.offersReceived&&d.offersReceived.length)?'<h4 style="font-size:12px;color:var(--faint);text-transform:uppercase;letter-spacing:.1em;margin:0 0 8px">Received</h4>'+d.offersReceived.map(o=>offerRow(o,false)).join(''):''}${(d.offersMade&&d.offersMade.length)?'<h4 style="font-size:12px;color:var(--faint);text-transform:uppercase;letter-spacing:.1em;margin:16px 0 8px">Sent</h4>'+d.offersMade.map(o=>offerRow(o,true)).join(''):''}${(!(d.offersReceived||[]).length&&!(d.offersMade||[]).length)?'<p class="mkt-empty">No offers yet.</p>':''}`;
   else if(t==='chats')body=(MKT_CHATS&&MKT_CHATS.length)?MKT_CHATS.map(chatRow).join(''):'<p class="mkt-empty">No messages yet. Chats open when you make an offer or a buyer contacts you.</p>';
+  else if(t==='profile')body=profilePanelHTML();
   else if(t==='payout')body=`<div class="field"><label>Payout wallet (USDC · ERC-20)</label><input id="poAddr" placeholder="0x…" value="${esc(d.payout||'')}"></div>
     <button class="cbtn" id="poSave">Save payout address</button>
     <div class="protect" style="margin-top:16px">${ICON.verified}<div><b>Owed to you: ${fmt(d.balance||0)}</b><span>Released sales awaiting payout. The store operator sends USDC to your payout address.</span></div></div>`;
-  $('#mktPanel').innerHTML=`<div class="mkt-tabs">${tab('buying','Buying')}${tab('selling','Selling')}${tab('listings','Listings')}${tab('offers','Offers')}${tab('chats','Messages')}${tab('payout','Payout')}</div><div id="mktBody">${body}</div>`;
+  $('#mktPanel').innerHTML=`<div class="mkt-tabs">${tab('profile','Profile')}${tab('buying','Buying')}${tab('selling','Selling')}${tab('listings','Listings')}${tab('offers','Offers')}${tab('chats','Messages')}${tab('payout','Payout')}</div><div id="mktBody">${body}</div>`;
   $('#mktPanel').querySelectorAll('.mkt-tab').forEach(b=>b.addEventListener('click',()=>{MKT_TAB=b.dataset.tab;paintMarket();if(b.dataset.tab==='chats')loadChats();}));
   $('#mktBody').querySelectorAll('[data-chat]').forEach(el=>el.addEventListener('click',()=>{const [lid,buyer]=el.dataset.chat.split('|');openListingChat(lid,buyer||undefined);}));
   const po=$('#poSave');if(po)po.addEventListener('click',async()=>{try{await mfetch('/api/payout',{method:'POST',body:JSON.stringify({address:$('#poAddr').value})});toast('Payout address saved');}catch(e){toast(e.message);}});
+  if(t==='profile')wireProfilePanel();
 }
 let MKT_CHATS=null;
 function chatRow(c){
@@ -1833,7 +1863,83 @@ function chatRow(c){
     <div class="ord-items">${c.last?esc(c.last.slice(0,80)):'—'}</div></div>`;
 }
 async function loadChats(){try{const d=await mfetch('/api/my/chats');MKT_CHATS=d.chats||[];}catch(e){MKT_CHATS=[];}if(MKT_TAB==='chats')paintMarket();}
-async function loadMarket(){try{MKT=await mfetch('/api/my/market');}catch(e){MKT={};}try{const d=await mfetch('/api/my/chats');MKT_CHATS=d.chats||[];}catch(e){MKT_CHATS=MKT_CHATS||[];}paintMarket();}
+let MKT_PROFILE=null,PROFILE_ADDR=[];
+async function loadMarket(){
+  try{MKT=await mfetch('/api/my/market');}catch(e){MKT={};}
+  try{const d=await mfetch('/api/my/chats');MKT_CHATS=d.chats||[];}catch(e){MKT_CHATS=MKT_CHATS||[];}
+  try{MKT_PROFILE=await mfetch('/api/me');PROFILE_ADDR=(MKT_PROFILE.addresses||[]).map(a=>({...a}));}catch(e){MKT_PROFILE=MKT_PROFILE||{};}
+  paintMarket();
+}
+function addrCardHTML(a,i){
+  const ropts=REGIONS.map(r=>`<option ${a.region===r?'selected':''}>${r}</option>`).join('');
+  return `<div class="addr-card" data-ai="${i}">
+    <div class="addr-top"><input class="ac-label" maxlength="30" placeholder="Label (Home, Office…)" value="${esc(a.label||'')}"><button class="ac-rm" data-arm="${i}" title="Remove">✕</button></div>
+    <input class="ac-name" maxlength="60" placeholder="Recipient full name" value="${esc(a.name||'')}">
+    <input class="ac-line" maxlength="140" placeholder="Street address, apt/house" value="${esc(a.line||'')}">
+    <div class="addr-row"><input class="ac-city" maxlength="60" placeholder="City" value="${esc(a.city||'')}"><input class="ac-zip" maxlength="20" placeholder="ZIP / Postcode" value="${esc(a.zip||'')}"></div>
+    <select class="ac-region">${ropts}</select>
+  </div>`;
+}
+function profilePanelHTML(){
+  const p=MKT_PROFILE||{},av=p.avatar||'';
+  const initial=((p.name||p.email||'?').trim()[0]||'?').toUpperCase();
+  const addrs=PROFILE_ADDR;
+  return `<div class="prof">
+    <div class="prof-av">
+      <div class="pa-pic">${av?`<img src="${av}" alt="avatar">`:`<span>${esc(initial)}</span>`}</div>
+      <div class="pa-btns">
+        <label class="btn btn-secondary pa-up">${av?'Change photo':'Upload photo'}<input type="file" accept="image/*" id="avIn" hidden></label>
+        ${av?`<button class="pa-rm" id="avRm">Remove</button>`:''}
+      </div>
+    </div>
+    <div class="field"><label>Display name</label><input id="pfName" maxlength="60" value="${esc(p.name||'')}" placeholder="Your name"></div>
+    <div class="field"><label>Telegram — for contact</label>
+      <div class="tg-in"><span>@</span><input id="pfTg" maxlength="32" placeholder="username" value="${esc(p.telegram||'')}"></div>
+      <span class="hintline">So buyers and sellers can reach you on Telegram.</span></div>
+    <button class="cbtn" id="pfSave">Save profile</button>
+    <div class="prof-h"><h4>Home addresses</h4><span>${addrs.length}/3</span></div>
+    <div id="addrList">${addrs.length?addrs.map(addrCardHTML).join(''):'<p class="mkt-empty" style="padding:12px 0">No addresses saved yet.</p>'}</div>
+    <div style="display:flex;gap:10px;margin-top:12px">
+      ${addrs.length<3?`<button class="btn btn-secondary" id="addrAdd" style="flex:1;justify-content:center">+ Add address</button>`:''}
+      <button class="cbtn" id="addrSave" style="flex:1">Save addresses</button>
+    </div>
+  </div>`;
+}
+function readProfileInputs(){
+  if(!MKT_PROFILE)return;
+  const n=$('#pfName'),tg=$('#pfTg');
+  if(n)MKT_PROFILE.name=n.value;
+  if(tg)MKT_PROFILE.telegram=tg.value;
+  const cards=document.querySelectorAll('#addrList .addr-card');
+  if(cards.length||document.querySelector('#addrList')){
+    PROFILE_ADDR=[...cards].map(c=>({
+      label:c.querySelector('.ac-label').value,name:c.querySelector('.ac-name').value,
+      line:c.querySelector('.ac-line').value,city:c.querySelector('.ac-city').value,
+      zip:c.querySelector('.ac-zip').value,region:c.querySelector('.ac-region').value,
+    }));
+  }
+}
+function wireProfilePanel(){
+  const avIn=$('#avIn');
+  if(avIn)avIn.addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const dataUrl=await compressAvatar(f);readProfileInputs();MKT_PROFILE.avatar=dataUrl;paintMarket();}catch(x){toast('Could not read image');}});
+  const avRm=$('#avRm');if(avRm)avRm.addEventListener('click',()=>{readProfileInputs();MKT_PROFILE.avatar='';paintMarket();});
+  const pfSave=$('#pfSave');if(pfSave)pfSave.addEventListener('click',async()=>{
+    readProfileInputs();pfSave.disabled=true;
+    try{const r=await mfetch('/api/profile',{method:'POST',body:JSON.stringify({name:MKT_PROFILE.name,telegram:MKT_PROFILE.telegram,avatar:MKT_PROFILE.avatar||''})});
+      MKT_PROFILE=r.profile;if(AUTH){AUTH.name=MKT_PROFILE.name;save('swk_auth',AUTH);}accDot();toast('Profile saved');}
+    catch(e){toast(e.message);}pfSave.disabled=false;
+  });
+  const addrAdd=$('#addrAdd');if(addrAdd)addrAdd.addEventListener('click',()=>{readProfileInputs();if(PROFILE_ADDR.length<3){PROFILE_ADDR.push({label:'',name:'',line:'',city:'',zip:'',region:REGIONS[0]});paintMarket();}});
+  const addrSave=$('#addrSave');if(addrSave)addrSave.addEventListener('click',async()=>{
+    readProfileInputs();addrSave.disabled=true;
+    const clean=PROFILE_ADDR.filter(a=>(a.line||'').trim());
+    try{const r=await mfetch('/api/addresses',{method:'POST',body:JSON.stringify({addresses:clean})});
+      PROFILE_ADDR=(r.addresses||[]).map(a=>({...a}));if(MKT_PROFILE)MKT_PROFILE.addresses=r.addresses;toast('Addresses saved');paintMarket();}
+    catch(e){toast(e.message);}addrSave.disabled=false;
+  });
+  document.querySelectorAll('#addrList [data-arm]').forEach(b=>b.addEventListener('click',()=>{readProfileInputs();PROFILE_ADDR.splice(+b.dataset.arm,1);paintMarket();}));
+}
+function compressAvatar(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>{const img=new Image();img.onload=()=>{const max=320;let w=img.width,h=img.height;const s=Math.min(max/w,max/h,1);w=Math.round(w*s);h=Math.round(h*s);const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);res(c.toDataURL('image/jpeg',0.85));};img.onerror=rej;img.src=fr.result;};fr.onerror=rej;fr.readAsDataURL(file);});}
 function mktAction(act,id){
   const done=()=>loadMarket();
   if(act==='confirm')mfetch('/api/order/'+id+'/confirm',{method:'POST'}).then(()=>{toast('Receipt confirmed — funds released');done();}).catch(e=>toast(e.message));
@@ -1880,8 +1986,14 @@ async function paintListingChat(){
   const lang=load('swk_chatlang','en');
   const langSel=`<select class="chat-lang">${CHAT_LANGS.map(([v,n])=>`<option value="${v}" ${v===lang?'selected':''}>${n}</option>`).join('')}</select>`;
   const L=d.listing||{};
-  box.innerHTML=`<div class="cobody" style="padding-bottom:8px"><h3 style="margin-bottom:4px">Chat with @${esc(d.counterpart)}</h3>
-    <div style="display:flex;gap:10px;align-items:center;margin:6px 0 12px">${L.cover?`<img src="${L.cover}" style="width:44px;height:44px;border-radius:10px;object-fit:cover">`:''}<div style="font-size:13px"><b>${esc(L.title||'')}</b><br><span style="color:var(--muted)">${fmt(L.price||0)}</span></div></div>
+  const av=d.counterpartAvatar||'',ini=((d.counterpart||'?')[0]||'?').toUpperCase();
+  const tg=d.counterpartTelegram||'';
+  box.innerHTML=`<div class="cobody" style="padding-bottom:8px">
+    <div class="chat-who">
+      <div class="pa-pic" style="width:44px;height:44px;font-size:18px">${av?`<img src="${av}" alt="">`:`<span>${esc(ini)}</span>`}</div>
+      <div style="min-width:0"><h3 style="margin:0;font-size:20px">@${esc(d.counterpart)}</h3>${tg?`<a class="tg-link" href="https://t.me/${esc(tg)}" target="_blank" rel="noopener">✈ Telegram: @${esc(tg)}</a>`:''}</div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;margin:12px 0">${L.cover?`<img src="${L.cover}" style="width:44px;height:44px;border-radius:10px;object-fit:cover">`:''}<div style="font-size:13px"><b>${esc(L.title||'')}</b><br><span style="color:var(--muted)">${fmt(L.price||0)}</span></div></div>
     <div class="chat-head"><span class="chat-tr"><i>🌐 Translate to</i>${langSel}<button class="tr-all">All</button></span></div>
     <div class="chat-log" style="max-height:46vh">${d.messages.length?d.messages.map((m,i)=>`<div class="cmsg ${m.me?'me':''}"><span class="ctext">${esc(m.text)}</span><button class="ctr" data-tr="${i}" title="Translate">🌐</button><div class="ctrans"></div></div>`).join(''):`<p style="font-size:12px;color:var(--muted);text-align:center;padding:8px">No messages yet — say hi to @${esc(d.counterpart)}.</p>`}</div>
     <div class="chat-in"><input id="ciList" placeholder="Message @${esc(d.counterpart)}…" maxlength="1000"><button id="ciSend">Send</button></div></div>`;
