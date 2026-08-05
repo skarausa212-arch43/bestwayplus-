@@ -1680,46 +1680,101 @@ document.querySelectorAll('.orbit-item[data-pic]').forEach(function(o){
 });
 
 /* ================= MARKETPLACE (frontend) ================= */
-const CAT_NAME=c=>({sneakers:'Sneakers',boots:'Boots',sandals:'Sandals & Slides','formal-shoes':'Formal Shoes',heels:'Heels',flats:'Flats',loafers:'Loafers',slippers:'Slippers',tshirts:'T‑Shirts',hoodies:'Hoodies & Sweats',shirts:'Shirts',jackets:'Jackets',coats:'Coats',knitwear:'Knitwear',pants:'Pants',jeans:'Jeans',shorts:'Shorts',tracksuits:'Tracksuits',dresses:'Dresses',skirts:'Skirts',activewear:'Activewear',suits:'Suits & Blazers',underwear:'Underwear',swimwear:'Swimwear',socks:'Socks',backpacks:'Backpack',handbags:'Handbag',totes:'Tote',duffels:'Duffel & Gym',crossbody:'Crossbody',wallets:'Wallet',luggage:'Luggage',purses:'Purse',caps:'Cap',hats:'Hat',watches:'Watch',jewelry:'Jewelry',sunglasses:'Sunglasses',belts:'Belt',scarves:'Scarf',gloves:'Gloves',ties:'Tie',phones:'Phones',laptops:'Laptops',tablets:'Tablets',audio:'Speakers & Audio',headphones:'Headphones',gaming:'Gaming',cameras:'Cameras',wearables:'Smartwatches',
-'tech-accessories':'Tech Accessories',tv:'TV & Displays','smart-home':'Smart Home',furniture:'Furniture','home-decor':'Home Decor',kitchen:'Kitchen',bedding:'Bedding',lighting:'Lighting',tools:'Tools',garden:'Garden',storage:'Storage',makeup:'Makeup',skincare:'Skincare',fragrance:'Fragrance',haircare:'Haircare',nails:'Nails',grooming:'Grooming','kids-clothing':'Kids Clothing','kids-shoes':'Kids Shoes',toys:'Toys','baby-gear':'Baby Gear','baby-clothing':'Baby Clothing',books:'Books',music:'Music & Vinyl',movies:'Movies',collectibles:'Collectibles',art:'Art',
-'sports-gear':'Sports Gear','musical-instruments':'Instruments',crafts:'Crafts',balls:'Ball',equipment:'Equipment',fitness:'Fitness',cycling:'Cycling',outdoor:'Outdoor','electronics-other':'Electronics',vintage:'Vintage',pet:'Pet',other:'Other'}[c]||'Item');
-const CAT_TREE=[['Shoes',['sneakers','boots','sandals','formal-shoes','heels','flats','loafers','slippers']],['Clothing',['tshirts','hoodies','shirts','jackets','coats','knitwear','pants','jeans','shorts','tracksuits','dresses','skirts','activewear','suits','underwear','swimwear','socks']],['Bags',['backpacks','handbags','totes','duffels','crossbody','wallets','luggage','purses']],['Accessories',['caps','hats','watches','jewelry','sunglasses','belts','scarves','gloves','ties']],['Electronics',['phones','laptops','tablets','audio','headphones','gaming','cameras','wearables','tech-accessories','tv','smart-home']],['Home',['furniture','home-decor','kitchen','bedding','lighting','tools','garden','storage']],['Beauty',['makeup','skincare','fragrance','haircare','nails','grooming']],['Kids & Baby',['kids-clothing','kids-shoes','toys','baby-gear','baby-clothing']],['Hobbies',['books','music','movies','collectibles','art','sports-gear','musical-instruments','crafts']],['Sport',['balls','equipment','fitness','cycling','outdoor']],['Other',['electronics-other','vintage','pet','other']]];
-const CAT_GROUP={};CAT_TREE.forEach(([g,cs])=>cs.forEach(c=>CAT_GROUP[c]=g));
-/* which categories actually have a size (clothing/shoes/kids clothing & shoes) */
-const SIZE_CATS=new Set([...CAT_TREE[0][1],...CAT_TREE[1][1],'kids-clothing','kids-shoes','caps','hats','belts']);
-function catNeedsSize(cat){return SIZE_CATS.has(cat);}
-function sizePlaceholder(cat){const g=CAT_GROUP[cat];return g==='Shoes'?'EU 42 · UK 8 · US 9':(cat==='kids-shoes'?'EU 30 · US 12':(g==='Clothing'||cat==='kids-clothing'?'S · M · L · XL':'One size'));}
+/* ============ CATALOG — grouped categories & subcategories ============ */
+/* [optgroup label, size type ('shoes'|'clothing'|''), [[slug, display name], …]] */
+const CATALOG=[
+  ['Shoes','shoes',[['sneakers','Sneakers'],['running-shoes','Running Shoes'],['basketball-shoes','Basketball Shoes'],['football-boots','Football Boots'],['boots','Boots'],['chelsea-boots','Chelsea Boots'],['hiking-boots','Hiking Boots'],['sandals','Sandals & Slides'],['flip-flops','Flip-Flops'],['formal-shoes','Formal Shoes'],['oxfords','Oxfords & Derbies'],['heels','Heels'],['flats','Flats'],['loafers','Loafers'],['espadrilles','Espadrilles'],['mules','Mules'],['slippers','Slippers']]],
+  ['Clothing','clothing',[['tshirts','T-Shirts'],['polos','Polo Shirts'],['shirts','Shirts'],['hoodies','Hoodies'],['sweatshirts','Sweatshirts'],['knitwear','Knitwear & Sweaters'],['cardigans','Cardigans'],['jackets','Jackets'],['coats','Coats'],['puffers','Puffer Jackets'],['blazers','Blazers'],['suits','Suits & Blazers'],['vests','Vests & Gilets'],['jeans','Jeans'],['pants','Pants & Chinos'],['trousers','Trousers'],['joggers','Joggers & Sweatpants'],['shorts','Shorts'],['leggings','Leggings'],['tracksuits','Tracksuits'],['dresses','Dresses'],['skirts','Skirts'],['jumpsuits','Jumpsuits'],['activewear','Activewear'],['swimwear','Swimwear'],['underwear','Underwear'],['lingerie','Lingerie'],['socks','Socks'],['sleepwear','Sleepwear']]],
+  ['Bags','',[['backpacks','Backpacks'],['handbags','Handbags'],['shoulder-bags','Shoulder Bags'],['totes','Totes'],['crossbody','Crossbody Bags'],['clutches','Clutches'],['duffels','Duffel & Gym Bags'],['messenger-bags','Messenger Bags'],['laptop-bags','Laptop Bags'],['wallets','Wallets'],['card-holders','Card Holders'],['purses','Purses'],['luggage','Luggage & Suitcases'],['belt-bags','Belt & Waist Bags']]],
+  ['Accessories','',[['watches','Watches'],['watch-straps','Watch Straps'],['jewelry','Jewelry'],['rings','Rings'],['necklaces','Necklaces'],['bracelets','Bracelets'],['earrings','Earrings'],['sunglasses','Sunglasses'],['glasses','Eyewear & Frames'],['caps','Caps'],['hats','Hats & Beanies'],['belts','Belts'],['scarves','Scarves'],['gloves','Gloves'],['ties','Ties & Bow Ties'],['hair-accessories','Hair Accessories'],['keychains','Keychains']]],
+  ['Phones & Wearables','',[['phones','Smartphones'],['phone-cases','Phone Cases'],['phone-accessories','Phone Accessories'],['tablets','Tablets'],['e-readers','E-Readers'],['smartwatches','Smartwatches'],['wearables','Wearables'],['fitness-trackers','Fitness Trackers']]],
+  ['Computers','',[['laptops','Laptops'],['desktops','Desktop PCs'],['monitors','Monitors'],['keyboards','Keyboards'],['mice','Mice'],['pc-components','PC Components'],['graphics-cards','Graphics Cards'],['storage-drives','Storage & Drives'],['networking','Networking & Wi-Fi'],['printers','Printers & Scanners'],['tech-accessories','Tech Accessories'],['power-banks','Power Banks & Chargers'],['cables','Cables & Adapters']]],
+  ['Gaming','',[['gaming-consoles','Gaming Consoles'],['console-games','Console Games'],['pc-games','PC Games'],['handheld-consoles','Handheld Consoles'],['gaming-accessories','Controllers & Accessories'],['gaming-headsets','Gaming Headsets'],['vr-headsets','VR Headsets'],['retro-gaming','Retro Gaming'],['gaming','Gaming — Other']]],
+  ['Audio','',[['headphones','Headphones'],['earbuds','Earbuds'],['speakers','Speakers'],['audio','Speakers & Audio'],['audio-hifi','Hi-Fi & Home Audio'],['microphones','Microphones'],['turntables','Turntables']]],
+  ['Photo & Video','',[['cameras','Cameras'],['camera-lenses','Camera Lenses'],['action-cameras','Action Cameras'],['drones','Drones'],['camera-accessories','Camera Accessories']]],
+  ['TV & Smart Home','',[['tv','TVs & Displays'],['projectors','Projectors'],['streaming-devices','Streaming Devices'],['smart-home','Smart Home'],['electronics-other','Other Electronics']]],
+  ['Home & Furniture','',[['furniture','Furniture'],['chairs','Chairs'],['tables','Tables'],['sofas','Sofas'],['beds','Beds & Mattresses'],['office-furniture','Office Furniture'],['home-decor','Home Decor'],['rugs','Rugs'],['lighting','Lighting'],['storage','Storage & Organization'],['bedding','Bedding'],['bath','Bath & Towels']]],
+  ['Kitchen & Appliances','',[['kitchen','Kitchenware'],['cookware','Cookware'],['tableware','Tableware'],['small-appliances','Small Appliances'],['large-appliances','Large Appliances'],['coffee','Coffee & Tea']]],
+  ['Tools & Garden','',[['tools','Hand Tools'],['power-tools','Power Tools'],['garden','Garden & Outdoor'],['plants','Plants'],['cleaning','Cleaning Supplies']]],
+  ['Beauty & Health','',[['makeup','Makeup'],['skincare','Skincare'],['fragrance','Fragrance'],['haircare','Haircare'],['nails','Nails'],['grooming','Grooming & Shaving'],['bath-body','Bath & Body'],['beauty-tools','Beauty Tools'],['health-supplements','Health & Supplements']]],
+  ['Kids & Baby','',[['kids-clothing','Kids Clothing'],['kids-shoes','Kids Shoes'],['baby-clothing','Baby Clothing'],['baby-gear','Baby Gear'],['car-seats','Car Seats'],['nursery','Nursery & Furniture'],['feeding','Feeding & Nursing'],['school-supplies','School Supplies']]],
+  ['Toys & Games','',[['toys','Toys'],['educational-toys','Educational Toys'],['board-games','Board Games'],['puzzles','Puzzles'],['building-sets','Building Sets & LEGO'],['action-figures','Action Figures'],['dolls','Dolls'],['outdoor-toys','Outdoor Toys'],['rc-toys','RC Toys']]],
+  ['Books & Media','',[['books','Books'],['comics','Comics & Manga'],['magazines','Magazines'],['movies','Movies & TV'],['textbooks','Textbooks']]],
+  ['Music & Instruments','',[['music','Music & Vinyl'],['vinyl','Vinyl Records'],['cds','CDs'],['musical-instruments','Instruments'],['guitars','Guitars'],['keyboards-pianos','Keyboards & Pianos'],['dj-equipment','DJ Equipment'],['studio-gear','Studio & Recording']]],
+  ['Collectibles & Art','',[['collectibles','Collectibles'],['trading-cards','Trading Cards'],['coins-stamps','Coins & Stamps'],['art','Art & Prints'],['antiques','Antiques'],['memorabilia','Memorabilia'],['models','Models & Kits'],['crafts','Crafts & DIY']]],
+  ['Sports & Fitness','',[['fitness','Fitness Equipment'],['weights','Weights & Dumbbells'],['yoga','Yoga & Pilates'],['cardio-machines','Cardio Machines'],['sportswear','Sportswear'],['football','Football / Soccer'],['basketball-sport','Basketball'],['racket-sports','Racket Sports'],['golf','Golf'],['boxing','Boxing & MMA'],['balls','Balls'],['equipment','Sports Equipment'],['sports-gear','Sports Gear']]],
+  ['Outdoors','',[['camping','Camping & Hiking'],['fishing','Fishing'],['cycling','Cycling & Bikes'],['bike-parts','Bike Parts'],['winter-sports','Ski & Snowboard'],['water-sports','Water Sports'],['skateboards','Skateboards'],['scooters','Scooters'],['outdoor','Outdoor Gear']]],
+  ['Auto & Moto','',[['car-parts','Car Parts'],['car-electronics','Car Electronics & Audio'],['car-accessories','Car Accessories'],['motorcycle','Motorcycle Gear'],['tires','Tires & Wheels'],['auto-tools','Auto Tools']]],
+  ['Pets','',[['pet-supplies','Pet Supplies'],['pet-food','Pet Food'],['pet','Pet'],['aquarium','Aquarium'],['pet-beds','Pet Beds']]],
+  ['Everything Else','',[['office-supplies','Office & Stationery'],['industrial','Business & Industrial'],['tickets','Tickets & Vouchers'],['gift-cards','Gift Cards'],['vintage','Vintage'],['handmade','Handmade'],['other','Other']]],
+];
+const CAT_NAME_MAP={},SIZE_TYPE={};
+CATALOG.forEach(([label,st,opts])=>opts.forEach(([slug,name])=>{CAT_NAME_MAP[slug]=name;if(st)SIZE_TYPE[slug]=st;}));
+Object.assign(SIZE_TYPE,{'kids-clothing':'clothing','baby-clothing':'clothing','kids-shoes':'kids-shoes','sportswear':'clothing'});
+const CAT_NAME=c=>CAT_NAME_MAP[c]||'Item';
+function catNeedsSize(cat){return !!SIZE_TYPE[cat];}
+function sizePlaceholder(cat){const t=SIZE_TYPE[cat];return t==='shoes'?'EU 42 · UK 8 · US 9':t==='kids-shoes'?'EU 30 · US 12':t==='clothing'?'S · M · L · XL':'One size';}
 function updateSizeVisibility(){const catEl=$('#slCat');if(!catEl)return;const cat=catEl.value;const f=$('#slSizeField');if(f)f.style.display=catNeedsSize(cat)?'':'none';const inp=$('#slSize');if(inp){if(!catNeedsSize(cat))inp.value='';inp.placeholder=sizePlaceholder(cat);}}
-const BRANDS=['Nike','adidas','Jordan','New Balance','Puma','Reebok','Converse','Vans','ASICS','Yeezy','Under Armour','Salomon','Crocs','Dr. Martens','Timberland','Supreme','Stüssy','Palace','Carhartt','Dickies','The North Face','Patagonia','Columbia','Arc\'teryx','Ralph Lauren','Tommy Hilfiger','Lacoste','Levi\'s','Wrangler','Champion','Fila','Zara','H&M','Uniqlo','Bershka','Pull&Bear','Mango','ASOS','Shein','COS','Gucci','Louis Vuitton','Prada','Balenciaga','Off‑White','Moncler','Stone Island','Burberry','Dior','Chanel','Hermès','Versace','Fendi','Bottega Veneta','Saint Laurent','Givenchy','Valentino','Ralph Lauren Purple','Apple','Samsung','Sony','Google','Microsoft','Xiaomi','Huawei','OnePlus','Dell','HP','Lenovo','Asus','Acer','LG','Nintendo','Bose','JBL','Sennheiser','Beats','GoPro','Canon','Nikon','DJI','Anker','Rolex','Omega','Casio','Seiko','Fossil','Garmin','Ray-Ban','Oakley','IKEA','Dyson','Philips','KitchenAid','Le Creuset','Lego','L\'Oréal','MAC','Estée Lauder','The Ordinary','Fenty Beauty','Dyson Beauty','Other'];
-/* keyword → {brand, category} detection from a listing title */
+const BRANDS=['Nike','adidas','Jordan','New Balance','Puma','Reebok','Converse','Vans','ASICS','Yeezy','Under Armour','Salomon','Crocs','Dr. Martens','Timberland','Supreme','Stüssy','Palace','Carhartt','Dickies','The North Face','Patagonia','Columbia','Arc\'teryx','Ralph Lauren','Tommy Hilfiger','Lacoste','Levi\'s','Wrangler','Champion','Fila','Zara','H&M','Uniqlo','Bershka','Pull&Bear','Mango','ASOS','Shein','COS','Michael Kors','Coach','Calvin Klein','Hugo Boss','Diesel','Guess','New Era','Gucci','Louis Vuitton','Prada','Balenciaga','Off-White','Moncler','Stone Island','Burberry','Dior','Chanel','Hermès','Versace','Fendi','Bottega Veneta','Saint Laurent','Givenchy','Valentino','Apple','Samsung','Sony','Google','Microsoft','Xiaomi','Huawei','OnePlus','Motorola','Oppo','Vivo','Realme','Nothing','Dell','HP','Lenovo','Asus','Acer','LG','MSI','Nvidia','AMD','Intel','Razer','Logitech','SteelSeries','Corsair','Nintendo','Valve','Meta','Bose','JBL','Sennheiser','Beats','Marshall','Sonos','Bang & Olufsen','GoPro','Canon','Nikon','Fujifilm','Leica','Sigma','Panasonic','Sharp','Hisense','TCL','DJI','Anker','Rolex','Omega','Casio','Seiko','Fossil','Garmin','Swatch','Tissot','Tag Heuer','Ray-Ban','Oakley','Carrera','IKEA','Dyson','Philips','Bosch','Makita','DeWalt','KitchenAid','Le Creuset','Nespresso','Ninja','Tefal','Zwilling','Herman Miller','Muji','HAY','Lego','L\'Oréal','MAC','Estée Lauder','The Ordinary','Fenty Beauty','Other'];
+/* keyword → [regex, brand|null, category|null] detection from a listing title */
 const DETECT=[
-  [/\b(playstation|ps5|ps4|ps portal|dualsense|psvr)\b/,'Sony','gaming'],
-  [/\bxbox\b/,'Microsoft','gaming'],[/\b(nintendo|switch)\b/,'Nintendo','gaming'],
-  [/\b(steam deck|controller|console|gamepad)\b/,null,'gaming'],
-  [/\biphone\b/,'Apple','phones'],[/\bipad\b/,'Apple','tablets'],[/\b(macbook|imac|mac mini)\b/,'Apple','laptops'],
-  [/\bairpods\b/,'Apple','headphones'],[/\bapple watch\b/,'Apple','wearables'],[/\bapple\b/,'Apple',null],
+  [/\b(ps5|ps4|playstation 5|playstation 4|playstation)\b/,'Sony','gaming-consoles'],
+  [/\b(xbox|series x|series s)\b/,'Microsoft','gaming-consoles'],
+  [/\b(nintendo switch|switch oled|switch lite|nintendo)\b/,'Nintendo','gaming-consoles'],
+  [/\b(steam deck|rog ally)\b/,null,'handheld-consoles'],
+  [/\b(dualsense|dualshock|joy-?con|controller|gamepad)\b/,null,'gaming-accessories'],
+  [/\b(psvr|quest 2|quest 3|meta quest|vr headset|oculus)\b/,null,'vr-headsets'],
+  [/\b(gaming headset)\b/,null,'gaming-headsets'],
+  [/\b(video game|ps5 game|xbox game)\b/,null,'console-games'],
+  [/\biphone\b/,'Apple','phones'],[/\bipad\b/,'Apple','tablets'],[/\b(macbook|imac|mac mini|mac studio)\b/,'Apple','laptops'],
+  [/\bairpods\b/,'Apple','earbuds'],[/\bapple watch\b/,'Apple','smartwatches'],[/\bapple\b/,'Apple',null],
   [/\b(galaxy|samsung)\b/,'Samsung','phones'],[/\bpixel\b/,'Google','phones'],[/\b(xiaomi|redmi|poco)\b/,'Xiaomi','phones'],
-  [/\b(oneplus)\b/,'OnePlus','phones'],[/\bhuawei\b/,'Huawei','phones'],
-  [/\brolex\b/,'Rolex','watches'],[/\bomega\b/,'Omega','watches'],[/\b(casio|g-?shock)\b/,'Casio','watches'],[/\bseiko\b/,'Seiko','watches'],[/\bgarmin\b/,'Garmin','wearables'],
+  [/\boneplus\b/,'OnePlus','phones'],[/\bhuawei\b/,'Huawei','phones'],[/\b(oppo|vivo|realme|motorola|moto g|nokia|nothing phone)\b/,null,'phones'],
+  [/\b(smartphone|phone)\b/,null,'phones'],[/\btablet\b/,null,'tablets'],[/\b(kindle|e-?reader)\b/,null,'e-readers'],
+  [/\b(macbook|laptop|notebook|thinkpad|zenbook|ultrabook|chromebook)\b/,null,'laptops'],
+  [/\b(desktop pc|gaming pc|tower pc)\b/,null,'desktops'],[/\b(monitor|display)\b/,null,'monitors'],
+  [/\b(rtx|gtx|radeon|graphics card|gpu)\b/,null,'graphics-cards'],[/\b(ssd|nvme|hard drive|hdd)\b/,null,'storage-drives'],
+  [/\b(keyboard|mechanical keyboard)\b/,null,'keyboards'],[/\b(mouse|gaming mouse)\b/,null,'mice'],
+  [/\b(router|wi-?fi|modem)\b/,null,'networking'],[/\b(printer|scanner)\b/,null,'printers'],[/\b(power bank|charger)\b/,null,'power-banks'],
+  [/\b(earbuds|earphones)\b/,null,'earbuds'],[/\b(headphones|headset)\b/,null,'headphones'],
+  [/\b(bose|jbl|sennheiser|beats|marshall|sonos|speaker)\b/,null,'speakers'],
+  [/\b(microphone|mic)\b/,null,'microphones'],[/\b(turntable|record player)\b/,null,'turntables'],
+  [/\bcanon\b/,'Canon','cameras'],[/\bnikon\b/,'Nikon','cameras'],[/\b(fujifilm|fuji)\b/,'Fujifilm','cameras'],[/\bleica\b/,'Leica','cameras'],
+  [/\b(gopro|action cam)\b/,'GoPro','action-cameras'],[/\b(dji|drone)\b/,'DJI','drones'],[/\b(camera lens|lens)\b/,null,'camera-lenses'],
+  [/\b(camera|dslr|mirrorless)\b/,null,'cameras'],[/\bsony\b/,'Sony',null],
+  [/\b(tv|television|oled tv|qled)\b/,null,'tv'],[/\bprojector\b/,null,'projectors'],
+  [/\b(apple tv|chromecast|fire stick|roku)\b/,null,'streaming-devices'],[/\b(alexa|echo|nest|smart bulb|smart home)\b/,null,'smart-home'],
+  [/\brolex\b/,'Rolex','watches'],[/\bomega\b/,'Omega','watches'],[/\b(casio|g-?shock)\b/,'Casio','watches'],[/\bseiko\b/,'Seiko','watches'],
+  [/\b(garmin|fitbit|fitness tracker)\b/,null,'fitness-trackers'],[/\bsmartwatch\b/,null,'smartwatches'],[/\bwatch\b/,null,'watches'],
   [/\b(air max|air force|dunk|blazer)\b/,'Nike','sneakers'],[/\bjordan\b/,'Jordan','sneakers'],[/\bnike\b/,'Nike','sneakers'],
   [/\b(samba|gazelle|ultraboost|superstar|forum|campus|yeezy)\b/,'adidas','sneakers'],[/\badidas\b/,'adidas','sneakers'],
-  [/\bnew balance\b/,'New Balance','sneakers'],[/\b(puma|reebok|converse|vans|asics|salomon|crocs)\b/,null,'sneakers'],
-  [/\b(sneakers?|trainers?|shoes|boots|cleats)\b/,null,'sneakers'],
-  [/\b(hoodie|sweatshirt|sweater)\b/,null,'hoodies'],[/\b(t-?shirt|tee)\b/,null,'tshirts'],[/\b(jacket|coat|parka|puffer)\b/,null,'jackets'],
-  [/\b(jeans|denim)\b/,null,'jeans'],[/\bdress\b/,null,'dresses'],[/\b(pants|trousers|joggers)\b/,null,'pants'],
-  [/\b(backpack|rucksack)\b/,null,'backpacks'],[/\b(handbag|purse|tote)\b/,null,'handbags'],[/\bwallet\b/,null,'wallets'],
-  [/\b(sunglasses|shades)\b/,'Ray-Ban','sunglasses'],[/\b(canon)\b/,'Canon','cameras'],[/\bnikon\b/,'Nikon','cameras'],
-  [/\b(camera|dslr|mirrorless|gopro|lens)\b/,null,'cameras'],
-  [/\b(airpods|headphones|earbuds|earphones|headset)\b/,null,'headphones'],[/\b(bose|jbl|sennheiser|beats)\b/,null,'headphones'],
-  [/\b(macbook|laptop|notebook|thinkpad|zenbook)\b/,null,'laptops'],[/\b(dell|lenovo|asus|acer|msi)\b/,null,'laptops'],
-  [/\b(smartphone|phone)\b/,null,'phones'],[/\btablet\b/,null,'tablets'],[/\b(tv|monitor|display)\b/,null,'tv'],
-  [/\bwatch\b/,null,'watches'],[/\b(ring|necklace|bracelet|earrings|jewel)\b/,null,'jewelry'],
-  [/\b(guitar|piano|violin|drums?|synth|keyboard piano)\b/,null,'musical-instruments'],
-  [/\b(book|novel)\b/,null,'books'],[/\b(vinyl|\bcd\b|record)\b/,null,'music'],
-  [/\b(chair|table|sofa|couch|desk|lamp|shelf)\b/,null,'furniture'],
-  [/\b(football|soccer ball|basketball|ball)\b/,null,'balls'],[/\b(bike|bicycle|cycling)\b/,null,'cycling'],
-  [/\b(perfume|fragrance|cologne|eau de)\b/,null,'fragrance'],[/\blego\b/,'Lego','toys'],
-  [/\b(rolex|patek|audemars)\b/,null,'watches'],
+  [/\bnew balance\b/,'New Balance','sneakers'],[/\b(puma|reebok|converse|vans|asics|salomon)\b/,null,'sneakers'],
+  [/\b(running shoes|runners)\b/,null,'running-shoes'],[/\b(football boots|soccer cleats|cleats)\b/,null,'football-boots'],
+  [/\bhiking boots\b/,null,'hiking-boots'],[/\bboots\b/,null,'boots'],[/\b(sandals|slides)\b/,null,'sandals'],
+  [/\b(heels|stilettos)\b/,null,'heels'],[/\bloafers\b/,null,'loafers'],[/\b(sneakers?|trainers?|shoes)\b/,null,'sneakers'],
+  [/\b(hoodie|sweatshirt)\b/,null,'hoodies'],[/\b(sweater|jumper|knit)\b/,null,'knitwear'],[/\b(t-?shirt|tee)\b/,null,'tshirts'],[/\bpolo\b/,null,'polos'],
+  [/\b(puffer|down jacket)\b/,null,'puffers'],[/\b(jacket|parka)\b/,null,'jackets'],[/\bcoat\b/,null,'coats'],[/\b(blazer|suit)\b/,null,'suits'],
+  [/\b(jeans|denim)\b/,null,'jeans'],[/\bdress\b/,null,'dresses'],[/\bskirt\b/,null,'skirts'],[/\b(joggers|sweatpants)\b/,null,'joggers'],
+  [/\b(pants|trousers|chinos)\b/,null,'pants'],[/\bshorts\b/,null,'shorts'],[/\bleggings\b/,null,'leggings'],[/\b(swimsuit|bikini|swim shorts)\b/,null,'swimwear'],
+  [/\b(backpack|rucksack)\b/,null,'backpacks'],[/\b(handbag|tote)\b/,null,'handbags'],[/\bcrossbody\b/,null,'crossbody'],[/\bwallet\b/,null,'wallets'],[/\b(luggage|suitcase)\b/,null,'luggage'],
+  [/\b(sunglasses|shades)\b/,'Ray-Ban','sunglasses'],[/\b(ray-?ban|oakley)\b/,null,'sunglasses'],
+  [/\b(ring|necklace|bracelet|earrings|jewel|pendant)\b/,null,'jewelry'],[/\bbelt\b/,null,'belts'],[/\b(cap|snapback)\b/,null,'caps'],[/\b(beanie|hat)\b/,null,'hats'],
+  [/\b(sofa|couch)\b/,null,'sofas'],[/\b(chair|stool)\b/,null,'chairs'],[/\b(table|desk)\b/,null,'tables'],[/\b(bed|mattress)\b/,null,'beds'],
+  [/\b(lamp|light|lighting)\b/,null,'lighting'],[/\brug\b/,null,'rugs'],[/\bfurniture\b/,null,'furniture'],
+  [/\b(pan|pot|cookware|knife set)\b/,null,'cookware'],[/\b(blender|toaster|kettle|air fryer|microwave)\b/,null,'small-appliances'],
+  [/\b(coffee machine|espresso|nespresso)\b/,null,'coffee'],[/\b(drill|saw|power tool)\b/,null,'power-tools'],[/\btools?\b/,null,'tools'],
+  [/\b(perfume|fragrance|cologne|eau de)\b/,null,'fragrance'],[/\b(makeup|lipstick|foundation|mascara)\b/,null,'makeup'],[/\b(skincare|serum|moisturizer|cream)\b/,null,'skincare'],
+  [/\blego\b/,'Lego','building-sets'],[/\bboard game\b/,null,'board-games'],[/\b(action figure|figurine)\b/,null,'action-figures'],[/\b(doll|barbie)\b/,null,'dolls'],
+  [/\b(stroller|pram|baby)\b/,null,'baby-gear'],[/\btoys?\b/,null,'toys'],
+  [/\b(book|novel)\b/,null,'books'],[/\b(comic|manga)\b/,null,'comics'],[/\b(vinyl|record|lp)\b/,null,'vinyl'],[/\bcd\b/,null,'cds'],
+  [/\bguitar\b/,null,'guitars'],[/\b(piano|keyboard piano)\b/,null,'keyboards-pianos'],[/\b(violin|drums?|synth|instrument)\b/,null,'musical-instruments'],
+  [/\b(pokemon|trading card|tcg)\b/,null,'trading-cards'],[/\b(coin|stamp)\b/,null,'coins-stamps'],[/\b(painting|art print|poster)\b/,null,'art'],[/\bcollectible\b/,null,'collectibles'],
+  [/\b(dumbbell|weights|barbell)\b/,null,'weights'],[/\byoga\b/,null,'yoga'],[/\bgolf\b/,null,'golf'],
+  [/\b(football|soccer)\b/,null,'football'],[/\bbasketball\b/,null,'basketball-sport'],[/\b(tennis|badminton|racket)\b/,null,'racket-sports'],
+  [/\b(camping|tent|hiking)\b/,null,'camping'],[/\b(fishing|rod|reel)\b/,null,'fishing'],
+  [/\b(bike|bicycle|cycling)\b/,null,'cycling'],[/\bskateboard\b/,null,'skateboards'],[/\b(ski|snowboard)\b/,null,'winter-sports'],
+  [/\b(car part|brake|exhaust|alloy)\b/,null,'car-parts'],[/\b(motorcycle|motorbike|helmet)\b/,null,'motorcycle'],[/\b(tire|tyre|wheel)\b/,null,'tires'],
+  [/\b(dog|cat|pet)\b/,null,'pet-supplies'],[/\b(gift card|voucher)\b/,null,'gift-cards'],[/\bticket\b/,null,'tickets'],
 ];
 function detectFromTitle(title){
   const t=' '+String(title||'').toLowerCase().replace(/[^a-z0-9\s]/g,' ')+' ';
@@ -1847,8 +1902,8 @@ const SELL_PHOTOS=[],SELL_SHIP=[...REGIONS];
 function compressImg(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>{const img=new Image();img.onload=()=>{const max=1100;let w=img.width,h=img.height;if(w>h&&w>max){h=h*max/w;w=max;}else if(h>max){w=w*max/h;h=max;}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);res(c.toDataURL('image/jpeg',0.82));};img.onerror=rej;img.src=fr.result;};fr.onerror=rej;fr.readAsDataURL(file);});}
 function openSell(){if(!AUTH)return needAuth('Sign in to sell');SELL_PHOTOS.length=0;SELL_SHIP.length=0;REGIONS.forEach(r=>SELL_SHIP.push(r));renderSell();openModal('#sellModal');}
 function renderSell(){
-  const catOpts=CAT_TREE.map(([g,cs])=>`<optgroup label="${g}">${cs.map(c=>`<option value="${c}">${CAT_NAME(c)}</option>`).join('')}</optgroup>`).join('');
-  const brandOpts=BRANDS.map(b=>`<option>${b}</option>`).join('');
+  const catOpts='<option value="" disabled selected>Choose a category…</option>'+CATALOG.map(([g,st,opts])=>`<optgroup label="${g}">${opts.map(([slug,name])=>`<option value="${slug}">${name}</option>`).join('')}</optgroup>`).join('');
+  const brandOpts='<option value="" selected>Brand — start typing the title</option>'+BRANDS.map(b=>`<option>${b}</option>`).join('');
   const regionBoxes=REGIONS.map(r=>`<label class="rgn ${SELL_SHIP.includes(r)?'on':''}" data-rgn="${r}"><i></i>${r}</label>`).join('');
   $('#sellBody').innerHTML=`<div class="cobody"><h3>List an item</h3><p class="sub">Add up to 6 photos, set your price. Buyers pay in USDT / USDC — funds are held in escrow until they confirm delivery.</p>
     <div class="photo-grid" id="photoGrid">${SELL_PHOTOS.map((p,i)=>`<div class="photo-cell"><img src="${p}">${i===0?'<span class="cover-tag">Cover</span>':''}<button class="rm" data-rm="${i}">×</button></div>`).join('')}${SELL_PHOTOS.length<6?'<label class="photo-add">+<input type="file" accept="image/*" id="photoIn" multiple hidden></label>':''}</div>
@@ -1892,6 +1947,7 @@ async function submitListing(){
   if(!SELL_PHOTOS.length)return show('Add at least one photo.');
   if(($('#slTitle').value||'').trim().length<3)return show('Add a title.');
   if(!(parseFloat($('#slPrice').value)>0))return show('Set a price.');
+  if(!$('#slCat').value)return show('Choose a category.');
   if(!SELL_SHIP.length)return show('Choose at least one region you ship to.');
   let brand=$('#slBrand').value;if(brand==='Other')brand=$('#slBrandOther').value||'';
   const body={title:$('#slTitle').value,brand,category:$('#slCat').value,size:$('#slSize').value,condition:$('#slCond').value,price:$('#slPrice').value,old:$('#slOld').value,ships:SELL_SHIP.slice(),returns:$('#slReturns').value,desc:$('#slDesc').value,photos:SELL_PHOTOS};

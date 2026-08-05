@@ -356,17 +356,17 @@ const isAdmin = (req) => ADMIN_PASSWORD && req.headers['x-admin-key'] === ADMIN_
 
 /* ---------- marketplace helpers ---------- */
 const CAT_GROUPS = {
-  shoes: ['sneakers','boots','sandals','formal-shoes','heels','flats','loafers','slippers'],
-  clothing: ['tshirts','hoodies','shirts','jackets','coats','knitwear','pants','jeans','shorts','tracksuits','dresses','skirts','activewear','suits','underwear','swimwear','socks'],
-  bags: ['backpacks','handbags','totes','duffels','crossbody','wallets','luggage','purses'],
-  accessories: ['caps','hats','watches','jewelry','sunglasses','belts','scarves','gloves','ties'],
-  electronics: ['phones','laptops','tablets','audio','headphones','gaming','cameras','wearables','tech-accessories','tv','smart-home'],
-  home: ['furniture','home-decor','kitchen','bedding','lighting','tools','garden','storage'],
-  beauty: ['makeup','skincare','fragrance','haircare','nails','grooming'],
-  kids: ['kids-clothing','kids-shoes','toys','baby-gear','baby-clothing'],
-  hobbies: ['books','music','movies','collectibles','art','sports-gear','musical-instruments','crafts'],
-  sport: ['balls','equipment','fitness','cycling','outdoor'],
-  other: ['electronics-other','vintage','pet','other'],
+  shoes: ['sneakers','running-shoes','basketball-shoes','football-boots','boots','chelsea-boots','hiking-boots','sandals','flip-flops','formal-shoes','oxfords','heels','flats','loafers','espadrilles','mules','slippers'],
+  clothing: ['tshirts','polos','shirts','hoodies','sweatshirts','knitwear','cardigans','jackets','coats','puffers','blazers','suits','vests','jeans','pants','trousers','joggers','shorts','leggings','tracksuits','dresses','skirts','jumpsuits','activewear','swimwear','underwear','lingerie','socks','sleepwear'],
+  bags: ['backpacks','handbags','shoulder-bags','totes','crossbody','clutches','duffels','messenger-bags','laptop-bags','wallets','card-holders','purses','luggage','belt-bags'],
+  accessories: ['watches','watch-straps','jewelry','rings','necklaces','bracelets','earrings','sunglasses','glasses','caps','hats','belts','scarves','gloves','ties','hair-accessories','keychains'],
+  electronics: ['phones','phone-cases','phone-accessories','tablets','e-readers','smartwatches','wearables','fitness-trackers','laptops','desktops','monitors','keyboards','mice','pc-components','graphics-cards','storage-drives','networking','printers','tech-accessories','power-banks','cables','gaming-consoles','console-games','pc-games','handheld-consoles','gaming-accessories','gaming-headsets','vr-headsets','retro-gaming','gaming','headphones','earbuds','speakers','audio','audio-hifi','microphones','turntables','cameras','camera-lenses','action-cameras','drones','camera-accessories','tv','projectors','streaming-devices','smart-home','electronics-other'],
+  home: ['furniture','chairs','tables','sofas','beds','office-furniture','home-decor','rugs','lighting','storage','bedding','bath','kitchen','cookware','tableware','small-appliances','large-appliances','coffee','tools','power-tools','garden','plants','cleaning'],
+  beauty: ['makeup','skincare','fragrance','haircare','nails','grooming','bath-body','beauty-tools','health-supplements'],
+  kids: ['kids-clothing','kids-shoes','baby-clothing','baby-gear','car-seats','nursery','feeding','school-supplies','toys','educational-toys','board-games','puzzles','building-sets','action-figures','dolls','outdoor-toys','rc-toys'],
+  hobbies: ['books','comics','magazines','movies','textbooks','music','vinyl','cds','musical-instruments','guitars','keyboards-pianos','dj-equipment','studio-gear','collectibles','trading-cards','coins-stamps','art','antiques','memorabilia','models','crafts'],
+  sport: ['fitness','weights','yoga','cardio-machines','sportswear','football','basketball-sport','racket-sports','golf','boxing','balls','equipment','sports-gear','camping','fishing','cycling','bike-parts','winter-sports','water-sports','skateboards','scooters','outdoor'],
+  other: ['car-parts','car-electronics','car-accessories','motorcycle','tires','auto-tools','pet-supplies','pet-food','pet','aquarium','pet-beds','office-supplies','industrial','tickets','gift-cards','vintage','handmade','other'],
 };
 const CATEGORIES = Object.values(CAT_GROUPS).flat();
 const CAT_OF_GROUP = {}; for (const g in CAT_GROUPS) for (const c of CAT_GROUPS[g]) CAT_OF_GROUP[c] = g;
