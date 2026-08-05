@@ -71,7 +71,6 @@
   .ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;color:var(--muted);position:relative;transition:.18s}
   .ic:hover{color:var(--ink);background:var(--surface-2)}
   .ic svg{width:20px;height:20px}
-  #cartBtn{display:none}
   .cbadge{position:absolute;top:4px;right:4px;min-width:16px;height:16px;padding:0 4px;background:var(--accent);color:#fff;border-radius:20px;font-size:10px;font-weight:700;display:grid;place-items:center;transform:scale(0);transition:transform .3s var(--ease)}
   .cbadge.show{transform:scale(1)}
   .sell-pill{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 18px;border-radius:12px;background:var(--ink);color:#fff;font-weight:600;font-size:14px;transition:.2s}
@@ -345,9 +344,10 @@
   .mx:hover{color:var(--ink)}.mx svg{width:18px;height:18px}
   .qv{display:grid;grid-template-columns:1fr 1fr}
   .qv-media{position:relative;min-height:360px;display:grid;place-items:center;background:var(--surface-2);border-right:1px solid var(--line);overflow:hidden}
-  .qv-media.photo img{width:100%;height:100%;object-fit:cover;max-height:76vh}
+  .qv-media.photo img{width:100%;height:100%;object-fit:contain;padding:6%;max-height:76vh}
   .qv-media .ph{display:grid;place-items:center;width:100%;height:100%}
-  .qv-media .ph img{width:100%;height:100%;object-fit:cover}
+  .qv-media .ph img{width:100%;height:100%;object-fit:contain;padding:8%}
+  .qv-media .ph .art{width:72%;height:auto;padding:0}
   .qv-info{padding:clamp(24px,3.5vw,38px)}
   .qv-info .cat{font-size:12px;letter-spacing:.02em;color:var(--muted);font-weight:500;display:flex;align-items:center;gap:8px}
   .cond-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:3px 8px;border-radius:7px;background:var(--surface-2);color:var(--muted)}
@@ -380,6 +380,23 @@
   .lst-report{display:block;width:100%;text-align:center;margin-top:12px;background:none;border:0;color:var(--faint);font-size:12px;text-decoration:underline;padding:6px 0}
   .lst-report:hover{color:var(--bad)}
   .stars{color:#f5a623;letter-spacing:1px}.stars .off{color:var(--line-2)}
+  /* catalog product media (contained illustration / photo) */
+  .card-media.cat-media{background:linear-gradient(160deg,#fff,var(--surface-2))}
+  .card-media.cat-media .ph{position:absolute;inset:0;display:grid;place-items:center}
+  .card-media.cat-media .ph img{width:100%;height:100%;object-fit:contain;padding:14%}
+  .card-media .ph .art{width:76%;height:auto}
+  .card-media .ph.acc .art{width:62%}
+  .sold-veil{position:absolute;inset:0;display:grid;place-items:center;background:rgba(255,255,255,.55);font-weight:700;color:var(--muted)}
+  /* quick-view size grid */
+  .szlbl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-weight:600;margin:16px 0 10px}
+  .szlbl a{color:var(--accent)}
+  .sizes{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+  .sz{min-width:46px;height:44px;padding:0 12px;border-radius:11px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:13.5px;font-weight:600;transition:.15s}
+  .sz:hover{border-color:var(--ink)}
+  .sz.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .sz.disabled{opacity:.3;text-decoration:line-through;cursor:not-allowed}
+  .qv-fav{width:50px;border:1px solid var(--line-2);border-radius:14px;display:grid;place-items:center;color:var(--muted);flex:none}
+  .qv-fav svg{width:20px;height:20px}.qv-fav.on{color:var(--bad)}.qv-fav.on svg{fill:var(--bad)}
 
   /* checkout / crypto pay */
   .co .mcard{max-width:520px}
@@ -523,8 +540,13 @@
   }
   @media(max-width:900px){
     nav.main{display:none}.ic.menu-btn{display:grid}
-    .hero-grid{grid-template-columns:1fr;gap:20px}
-    .hero-stage{max-width:360px;margin:0 auto;order:-1}
+    .hero{padding-top:24px}
+    .hero-grid{grid-template-columns:1fr;gap:18px}
+    .hero-copy{order:1}
+    /* clean, contained hero visual on phones — no floating icons overlapping text */
+    .hero-stage{order:2;max-width:280px;height:200px;aspect-ratio:auto;margin:6px auto 0;display:grid;place-items:center;overflow:visible}
+    .hero-stage .ring,.hero-stage .ring.r2,.hero-stage .glow,.hero-stage .float-obj,.hero-stage .coin{display:none}
+    .hero-stage .shield-badge{position:static;transform:none;left:auto;top:auto;width:120px;height:auto;margin:0;filter:drop-shadow(0 20px 34px rgba(91,92,255,.32))}
     .foot{grid-template-columns:1fr 1fr}
   }
   @media(max-width:680px){
@@ -1089,21 +1111,20 @@ function badgeCls(b){b=(b||'').toUpperCase();return b==='LIMITED'?'b-limited':b=
 let LISTINGS=[];
 function catalogCardHTML(p){
   const isAcc=p.type==='accessories',fav=favs.includes(p.id);
-  const bd=(p.badges||[]).map(b=>`<span class="badge ${badgeCls(b)}">${b}</span>`).join('');
-  return `<article class="card reveal ${p.featured?'glass':''}" data-id="${p.id}" data-gcat="${p.type}">
-      <button class="card-media" data-open="${p.id}">
-        <span class="badges">${bd}</span>
+  const grp=productGroup(p);
+  const badges=`<span class="badge b-escrow">Escrow</span><span class="badge b-verified">✓ Official</span>`;
+  return `<article class="card reveal" data-id="${p.id}" data-gcat="${grp}">
+      <button class="card-media cat-media" data-open="${p.id}">
+        <span class="badges">${badges}</span>
         <span class="wish ${fav?'on':''}" data-fav="${p.id}" role="button" aria-label="Wishlist">${ICON.heart}</span>
-        <span class="ph ${isAcc?'acc':''} ${p.img?'photo':''}" style="background:${mediaBg(p)}">${media(p)}</span>
-        ${p.soldOut?'<span class="sold-veil">Sold Out</span>':`<span class="quick">Quick View</span>`}
+        <span class="ph ${isAcc?'acc':''} ${p.img?'photo':''}">${media(p)}</span>
+        ${p.soldOut?'<span class="quick">Sold Out</span>':`<span class="quick">Quick view</span>`}
       </button>
       <div class="card-body">
         <div class="cat">${catLabel(p)} · ${cap(p.brand)}</div>
-        <h3 data-open="${p.id}">${p.name}</h3>
-        <div class="card-foot">
-          <span class="price">${p.old?`<s>${disp(p.old)}</s>`:''}${disp(p.price)}</span>
-          <button class="add" data-open="${p.id}" ${p.soldOut?'disabled':''} aria-label="Add">${p.soldOut?ICON.close:ICON.cart}</button>
-        </div>
+        <h3 data-open="${p.id}">${esc(p.name)}</h3>
+        <div class="card-price">${cryptoPriceHTML(p.price,p.id)}<button class="add" data-open="${p.id}" ${p.soldOut?'disabled':''} aria-label="Add">${p.soldOut?ICON.close:ICON.cart}</button></div>
+        <div class="card-seller"><span class="sav">S</span>STUFFWEKNOW <span class="vchk">✓</span> <span style="margin-left:auto"><span class="srate">Official store</span></span></div>
       </div>
     </article>`;
 }
@@ -1139,13 +1160,16 @@ const FILT={sort:'new',pmin:0,pmax:0,cond:''};
 function renderGrid(){
   const q=searchTerm,{pmin,pmax,cond,sort}=FILT;
   let lm=LISTINGS.filter(l=>(activeFilter==='all'||l.group===activeFilter)&&(!q||(l.title+' '+(l.brand||'')).toLowerCase().includes(q)));
-  if(pmin)lm=lm.filter(l=>l.price>=pmin);
-  if(pmax)lm=lm.filter(l=>l.price<=pmax);
-  if(cond)lm=lm.filter(l=>l.condition===cond);
-  if(sort==='lo')lm.sort((a,b)=>a.price-b.price);
-  else if(sort==='hi')lm.sort((a,b)=>b.price-a.price);
-  if(!lm.length){grid.innerHTML=`<div class="empty"><div data-ic="search"></div><p>No listings yet in this category. Be the first — tap “Sell an item”.</p></div>`;grid.querySelectorAll('[data-ic]').forEach(e=>e.innerHTML=ICON[e.dataset.ic]);return}
-  grid.innerHTML=lm.map(listingCardHTML).join('');
+  let pm=(typeof PRODUCTS!=='undefined'?PRODUCTS:[]).filter(p=>(activeFilter==='all'||productGroup(p)===activeFilter)&&(!q||(p.name+' '+(p.brand||'')).toLowerCase().includes(q)));
+  if(pmin){lm=lm.filter(l=>l.price>=pmin);pm=pm.filter(p=>p.price>=pmin);}
+  if(pmax){lm=lm.filter(l=>l.price<=pmax);pm=pm.filter(p=>p.price<=pmax);}
+  if(cond){lm=lm.filter(l=>l.condition===cond);if(cond!=='New')pm=[];}
+  let items=[...lm.map(o=>({k:'l',o,price:o.price,t:o.createdAt||0})),...pm.map(o=>({k:'p',o,price:o.price,t:1}))];
+  if(sort==='lo')items.sort((a,b)=>a.price-b.price);
+  else if(sort==='hi')items.sort((a,b)=>b.price-a.price);
+  else items.sort((a,b)=>b.t-a.t);
+  if(!items.length){grid.innerHTML=`<div class="empty"><div data-ic="search"></div><p>Nothing here yet. Try another category or tap “Sell an item”.</p></div>`;grid.querySelectorAll('[data-ic]').forEach(e=>e.innerHTML=ICON[e.dataset.ic]);return}
+  grid.innerHTML=items.map(it=>it.k==='l'?listingCardHTML(it.o):catalogCardHTML(it.o)).join('');
   observeReveal();
 }
 function loadListings(){return fetch('/api/listings').then(r=>r.json()).then(d=>{LISTINGS=d.listings||[];renderGrid();renderFeatured();renderSellers();renderTrades();}).catch(()=>{renderFeatured();renderSellers();renderTrades();});}
@@ -1843,7 +1867,7 @@ $('#chatClose').addEventListener('click',()=>closeModal('#chatModal'));
 $('#accModal').addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(b){mktAction(b.dataset.act,b.dataset.id);}});
 
 /* ---------- init ---------- */
-renderFilterbar();renderGrid();
+renderFilterbar();renderGrid();renderCart();bump();
 /* live online counter */
 (function(){var el=document.getElementById('onlineN');if(!el)return;function tick(){fetch('/api/online').then(function(r){return r.json()}).then(function(d){if(d&&d.online!=null)el.textContent=d.online}).catch(function(){});}tick();setInterval(tick,15000);})();
 /* thunder sound (WebAudio synth, off by default) */
@@ -1877,13 +1901,17 @@ function hideSection(el){const s=el&&el.closest('section');if(s)s.style.display=
 function showSection(el){const s=el&&el.closest('section');if(s)s.style.display='';}
 function renderFeatured(){
   const rail=$('#featuredRail');if(!rail)return;
-  const live=LISTINGS.slice().sort((a,b)=>(b.boosted-a.boosted)||(b.createdAt-a.createdAt)).slice(0,8);
-  if(!live.length){hideSection(rail);rail.innerHTML='';return;}
-  showSection(rail);rail.innerHTML=live.map(listingCardHTML).join('');observeReveal();
+  const live=LISTINGS.slice().sort((a,b)=>(b.boosted-a.boosted)||(b.createdAt-a.createdAt)).slice(0,6);
+  const cat=(typeof PRODUCTS!=='undefined'?PRODUCTS:[]).filter(p=>!p.soldOut);
+  const feat=(cat.filter(p=>p.featured).concat(cat)).slice(0,8);
+  let html=live.map(listingCardHTML).join('')+feat.slice(0,Math.max(4,8-live.length)).map(catalogCardHTML).join('');
+  if(!html){hideSection(rail);rail.innerHTML='';return;}
+  showSection(rail);rail.innerHTML=html;observeReveal();
 }
 $('#featuredRail').addEventListener('click',e=>{
   const f=e.target.closest('[data-fav]');if(f){toggleFav(f.dataset.fav);return;}
   const li=e.target.closest('[data-listing]');if(li){openListing(li.dataset.listing);return;}
+  const o=e.target.closest('[data-open]');if(o&&typeof PRODUCTS!=='undefined'){const pp=PRODUCTS.find(x=>x.id===o.dataset.open);if(pp&&!pp.soldOut)openQV(o.dataset.open);}
 });
 function sellerCardHTML(s){
   return `<div class="seller-c">
