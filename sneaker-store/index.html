@@ -331,6 +331,8 @@
   .filterbar select,.filterbar input{height:38px;padding:0 10px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:13px;outline:none}
   .filterbar .fprice input{width:76px}
   .filterbar select:focus,.filterbar input:focus{border-color:var(--accent)}
+  .load-more{grid-column:1/-1;margin:14px auto 0;height:46px;padding:0 26px;border-radius:12px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-weight:600;font-size:14px;box-shadow:var(--shadow-sm);transition:.18s}
+  .load-more:hover{border-color:var(--accent);color:var(--accent)}
   .empty{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--muted)}
   .empty div{width:48px;height:48px;margin:0 auto 14px;color:var(--faint)}
   .empty svg{width:48px;height:48px}
@@ -611,9 +613,28 @@
     .foot{grid-template-columns:1fr 1fr}
   }
   @media(max-width:680px){
-    .grid,.why,.fstrip,.sellers,.reviews,.stats{grid-template-columns:1fr 1fr}
+    .grid,.sellers,.stats{grid-template-columns:1fr 1fr}
     .cat-grid{grid-template-columns:repeat(3,1fr)}
-    .steps{grid-template-columns:1fr}
+    /* How Escrow Works — compact single row of 4 steps */
+    .steps{grid-template-columns:repeat(4,1fr);gap:8px}
+    .step{padding:14px 6px;text-align:center;border-radius:14px}
+    .step .sn{margin:0 auto 8px;width:32px;height:32px;font-size:14px}
+    .step .sic,.step .conn{display:none}
+    .step h4{font-size:11.5px;line-height:1.2;letter-spacing:-.01em}
+    .step p{display:none}
+    .escrow-timeline{padding:16px 12px}.etl .node small{font-size:10px}
+    /* Why StuffWeKnow — compact 2×2 */
+    .why{grid-template-columns:1fr 1fr;gap:10px}
+    .why-c{padding:15px}
+    .why-c .wi{width:34px;height:34px;margin-bottom:10px;border-radius:10px}
+    .why-c .wi svg{width:18px;height:18px}
+    .why-c h4{font-size:14px;margin-bottom:4px}
+    .why-c p{font-size:12px;line-height:1.45}
+    /* Payments band — compact */
+    .crypto-band{padding:20px}
+    .crypto-row{gap:10px 22px;margin-top:14px}
+    .crypto-chip{font-size:14px}
+    .crypto-band p{font-size:12px;margin-top:10px}
     .qv{grid-template-columns:1fr}
     .foot{grid-template-columns:1fr 1fr}
     .sec-head h2{font-size:26px}
@@ -680,11 +701,6 @@
         <a href="#catalog" class="btn btn-primary magnetic">Browse Deals <span data-ic="arrow"></span></a>
         <button class="btn btn-secondary magnetic" id="createDealBtn">Create Deal</button>
       </div>
-      <div class="hero-trust reveal">
-        <span><b id="onlineN">1</b> online now</span><span class="dot"></span>
-        <span><b>25K+</b> traders</span><span class="dot"></span>
-        <span><b>$120M+</b> secured</span>
-      </div>
     </div>
     <div class="hero-stage reveal" id="heroStage">
       <div class="ring"></div><div class="ring r2"></div><div class="glow"></div>
@@ -699,17 +715,6 @@
       <div class="coin sol" style="right:20%;bottom:0;width:52px;height:52px;animation-delay:-2.7s">◎</div>
       <svg class="shield-badge" viewBox="0 0 96 110" fill="none"><defs><linearGradient id="shg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a7bff"/><stop offset="1" stop-color="#5B5CFF"/></linearGradient></defs><path d="M48 4l40 18v26c0 26-18 44-40 52C26 92 8 74 8 48V22L48 4z" fill="url(#shg)"/><path d="M34 54l10 10 20-22" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </div>
-  </div>
-</section>
-
-<!-- FEATURED DEALS -->
-<section class="section" style="padding-top:clamp(30px,5vw,56px)">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <div><h2>Featured Deals</h2><p>Hand-picked, every one escrow-protected.</p></div>
-      <a href="#catalog" class="sec-link">View all <span data-ic="chevron"></span></a>
-    </div>
-    <div class="rail" id="featuredRail"></div>
   </div>
 </section>
 
@@ -813,18 +818,6 @@
       <div class="stat"><b class="si" data-count="50000" data-suffix="K+" data-div="1000">0</b><span>Deals completed</span></div>
       <div class="stat"><b class="si" data-count="120" data-prefix="$" data-suffix="M+">0</b><span>Total volume</span></div>
       <div class="stat"><b class="si" data-count="99.8" data-suffix="%" data-dec="1">0</b><span>Positive feedback</span></div>
-    </div>
-  </div>
-</section>
-
-<!-- REVIEWS -->
-<section class="section">
-  <div class="wrap">
-    <div class="sec-head reveal"><div><h2>Loved by traders</h2><p>Thousands of safe trades, every week.</p></div></div>
-    <div class="reviews reveal">
-      <div class="review-c"><div class="rstars">★★★★★</div><p>"Sold my watch for 1.2 ETH in a day. Escrow made it painless — buyer confirmed, funds hit instantly."</p><div class="rwho"><span class="rav">M</span><div><b>Marcus T.</b><span>@timepieces</span></div></div></div>
-      <div class="review-c"><div class="rstars">★★★★★</div><p>"Finally a marketplace that gets crypto. No chargebacks, no drama. Bought a camera, everything just worked."</p><div class="rwho"><span class="rav">A</span><div><b>Aria K.</b><span>@photodeals</span></div></div></div>
-      <div class="review-c"><div class="rstars">★★★★★</div><p>"The trust score system is genius. I know exactly who I'm dealing with before I send a single sat."</p><div class="rwho"><span class="rav">J</span><div><b>Jordan R.</b><span>@kickstrader</span></div></div></div>
     </div>
   </div>
 </section>
@@ -1189,7 +1182,9 @@ function listingCardHTML(l){
     </article>`;
 }
 const FILT={sort:'new',pmin:0,pmax:0,cond:''};
-function renderGrid(){
+const GRID_PAGE=20;let GRID_SHOWN=GRID_PAGE;
+function renderGrid(more){
+  if(!more)GRID_SHOWN=GRID_PAGE;
   const q=searchTerm,{pmin,pmax,cond,sort}=FILT;
   let lm=LISTINGS.filter(l=>(activeFilter==='all'||l.group===activeFilter)&&(!q||(l.title+' '+(l.brand||'')).toLowerCase().includes(q)));
   let pm=(typeof PRODUCTS!=='undefined'?PRODUCTS:[]).filter(p=>(activeFilter==='all'||productGroup(p)===activeFilter)&&(!q||(p.name+' '+(p.brand||'')).toLowerCase().includes(q)));
@@ -1199,9 +1194,12 @@ function renderGrid(){
   let items=[...lm.map(o=>({k:'l',o,price:o.price,t:o.createdAt||0})),...pm.map(o=>({k:'p',o,price:o.price,t:1}))];
   if(sort==='lo')items.sort((a,b)=>a.price-b.price);
   else if(sort==='hi')items.sort((a,b)=>b.price-a.price);
-  else items.sort((a,b)=>b.t-a.t);
+  else items.sort((a,b)=>b.t-a.t);   // newest first (latest added)
   if(!items.length){grid.innerHTML=`<div class="empty"><div data-ic="search"></div><p>Nothing here yet. Try another category or tap “Sell an item”.</p></div>`;grid.querySelectorAll('[data-ic]').forEach(e=>e.innerHTML=ICON[e.dataset.ic]);return}
-  grid.innerHTML=items.map(it=>it.k==='l'?listingCardHTML(it.o):catalogCardHTML(it.o)).join('');
+  const shown=items.slice(0,GRID_SHOWN);
+  grid.innerHTML=shown.map(it=>it.k==='l'?listingCardHTML(it.o):catalogCardHTML(it.o)).join('')
+    +(items.length>GRID_SHOWN?`<button class="load-more" id="loadMore">Load more — ${items.length-GRID_SHOWN} more</button>`:'');
+  const lm2=$('#loadMore');if(lm2)lm2.addEventListener('click',()=>{GRID_SHOWN+=GRID_PAGE;renderGrid(true);});
   observeReveal();
 }
 function loadListings(){return fetch('/api/listings').then(r=>r.json()).then(d=>{LISTINGS=d.listings||[];renderGrid();renderFeatured();renderSellers();renderTrades();}).catch(()=>{renderFeatured();renderSellers();renderTrades();});}
@@ -1962,11 +1960,11 @@ function renderFeatured(){
   if(!html){hideSection(rail);rail.innerHTML='';return;}
   showSection(rail);rail.innerHTML=html;observeReveal();
 }
-$('#featuredRail').addEventListener('click',e=>{
+(function(){const fr=$('#featuredRail');if(!fr)return;fr.addEventListener('click',e=>{
   const f=e.target.closest('[data-fav]');if(f){toggleFav(f.dataset.fav);return;}
   const li=e.target.closest('[data-listing]');if(li){openListing(li.dataset.listing);return;}
   const o=e.target.closest('[data-open]');if(o&&typeof PRODUCTS!=='undefined'){const pp=PRODUCTS.find(x=>x.id===o.dataset.open);if(pp&&!pp.soldOut)openQV(o.dataset.open);}
-});
+});})();
 function sellerCardHTML(s){
   return `<div class="seller-c">
     <div class="sc-top"><div class="sc-av">${s.avatar?`<img src="${s.avatar}">`:esc((s.handle||'?')[0].toUpperCase())}</div>
