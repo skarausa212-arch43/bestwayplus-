@@ -43,7 +43,8 @@
   .reveal.in-view{opacity:1;transform:none;filter:none}
   .reveal[data-d]{transition-delay:calc(var(--_d,0)*1ms)}
   @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;filter:none;transition:none}
-    .sell-pill::after,.btn-primary::after,.hero::before,.hero-tag i,.float-obj,.coin,.ring,.shield-badge,.hero h1 .g{animation:none!important}
+    .sell-pill::after,.btn-primary::after,.hero::before,.hero-tag i,.float-obj,.coin,.ring,.shield-badge,.spark,.glow,.hero h1 .g{animation:none!important}
+    .spark{opacity:.6}
     .hero h1 .g{-webkit-text-fill-color:var(--accent);color:var(--accent)}}
 
   /* ============ LOADER ============ */
@@ -124,10 +125,19 @@
   .hero-trust .dot{width:4px;height:4px;border-radius:50%;background:var(--line-2)}
 
   /* hero 3D floating composition */
-  .hero-stage{position:relative;aspect-ratio:1/1;max-width:520px;margin-left:auto;perspective:1200px}
+  .hero-stage{position:relative;aspect-ratio:1/1;width:100%;max-width:520px;margin-left:auto;perspective:1200px}
   .hero-stage .ring{position:absolute;inset:6%;border-radius:50%;border:1.5px dashed rgba(91,92,255,.22);animation:spin 40s linear infinite}
   .hero-stage .ring.r2{inset:20%;border-style:solid;border-color:rgba(0,0,0,.05);animation-duration:28s;animation-direction:reverse}
-  .hero-stage .glow{position:absolute;inset:14%;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(91,92,255,.16),transparent 65%);filter:blur(24px)}
+  .hero-stage .ring.r3{inset:33%;border-style:dotted;border-color:rgba(91,92,255,.18);animation-duration:20s}
+  .hero-stage .glow{position:absolute;inset:14%;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(91,92,255,.16),transparent 65%);filter:blur(24px);animation:glowpulse 6s ease-in-out infinite}
+  @keyframes glowpulse{0%,100%{opacity:.7;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
+  .hero-stage .spark{position:absolute;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle,#fff,var(--accent));box-shadow:0 0 10px 2px rgba(91,92,255,.5);opacity:0;animation:twinkle 3.4s ease-in-out infinite}
+  .hero-stage .spark.s1{left:18%;top:20%;animation-delay:-.2s}
+  .hero-stage .spark.s2{right:16%;top:40%;animation-delay:-1.1s;background:radial-gradient(circle,#fff,var(--usdt))}
+  .hero-stage .spark.s3{left:24%;bottom:24%;animation-delay:-1.9s}
+  .hero-stage .spark.s4{right:30%;top:16%;animation-delay:-2.6s;background:radial-gradient(circle,#fff,var(--eth))}
+  .hero-stage .spark.s5{left:46%;top:52%;animation-delay:-.7s;width:5px;height:5px}
+  @keyframes twinkle{0%,100%{opacity:0;transform:scale(.4)}50%{opacity:.95;transform:scale(1)}}
   .float-obj{position:absolute;display:grid;place-items:center;border-radius:22px;background:var(--surface);
     box-shadow:var(--shadow-lg);border:1px solid var(--line);font-size:34px;will-change:transform;
     animation:floaty 6s ease-in-out infinite}
@@ -138,7 +148,8 @@
   .coin.usdt{background:linear-gradient(145deg,#3fce9c,var(--usdt))}
   .coin.sol{background:linear-gradient(145deg,#19fb9b,#9945FF)}
   .shield-badge{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:96px;height:110px;z-index:3;
-    filter:drop-shadow(0 24px 40px rgba(91,92,255,.35));animation:floaty 7s ease-in-out infinite}
+    filter:drop-shadow(0 24px 40px rgba(91,92,255,.35));animation:floaty 7s ease-in-out infinite,shieldglow 4.5s ease-in-out infinite}
+  @keyframes shieldglow{0%,100%{filter:drop-shadow(0 24px 40px rgba(91,92,255,.32))}50%{filter:drop-shadow(0 26px 56px rgba(91,92,255,.62))}}
   @keyframes floaty{0%,100%{transform:translateY(0) rotate(var(--rot,0deg))}50%{transform:translateY(-16px) rotate(var(--rot,0deg))}}
   @keyframes spin{to{transform:rotate(360deg)}}
   .particle{position:absolute;width:5px;height:5px;border-radius:50%;background:var(--accent);opacity:.5;animation:floaty 4s ease-in-out infinite}
@@ -616,28 +627,36 @@
     input,textarea,select{font-size:16px!important}
     .section{padding:clamp(32px,7vw,48px) 0}
     .sec-head{margin-bottom:20px}
-    .hero{padding-top:24px}
-    .hero-grid{grid-template-columns:1fr;gap:14px}
-    .hero-copy{order:1}
-    /* contained floating composition on phones — sits below the copy, nothing overflows */
-    .hero-stage{order:2;position:relative;width:320px;max-width:92vw;height:300px;aspect-ratio:auto;margin:14px auto 0;overflow:hidden;
-      border-radius:26px;background:radial-gradient(120% 120% at 50% 30%,#fff,var(--surface-2));border:1px solid var(--line);box-shadow:var(--shadow-sm)}
-    .hero-stage .ring{inset:16%}.hero-stage .ring.r2{inset:30%}
-    .hero-stage .float-obj{width:60px!important;height:60px!important;font-size:30px!important;border-radius:16px!important;animation-duration:6s}
-    .hero-stage .float-obj.big{width:74px!important;height:86px!important;font-size:38px!important}
-    .hero-stage .coin{width:42px!important;height:42px!important;font-size:19px!important}
-    .hero-stage .shield-badge{width:78px!important;height:auto!important}
-    /* neat contained placement (overrides desktop inline styles) */
-    .hero-stage .ho{left:6%!important;top:6%!important;right:auto!important;bottom:auto!important}
-    .hero-stage .sn{left:2%!important;bottom:8%!important;top:auto!important;right:auto!important}
-    .hero-stage .hp{right:5%!important;top:10%!important;left:auto!important;bottom:auto!important}
-    .hero-stage .lp{right:3%!important;bottom:8%!important;top:auto!important;left:auto!important}
-    .hero-stage .cm{left:40%!important;bottom:3%!important;top:auto!important;right:auto!important}
-    .hero-stage .btc{left:34%!important;top:4%!important;right:auto!important;bottom:auto!important}
-    .hero-stage .eth{right:8%!important;top:44%!important;left:auto!important;bottom:auto!important}
-    .hero-stage .usdt{left:6%!important;top:44%!important;right:auto!important;bottom:auto!important}
-    .hero-stage .sol{right:34%!important;bottom:6%!important;top:auto!important;left:auto!important}
-    .hero-stage .shield-badge{left:50%!important;top:48%!important;transform:translate(-50%,-50%)!important}
+    .hero{padding-top:26px;padding-bottom:34px}
+    .hero-grid{display:block;position:relative;min-height:440px}
+    /* the whole floating composition becomes a soft background layer behind the copy */
+    .hero-copy{order:1;position:relative;z-index:2;padding:6px 2px}
+    .hero-copy::before{content:"";position:absolute;z-index:-1;inset:-40px -30px -30px;pointer-events:none;
+      background:radial-gradient(135% 95% at 26% 30%,rgba(248,248,246,.95) 0%,rgba(248,248,246,.74) 40%,rgba(248,248,246,.22) 100%)}
+    .hero-stage{order:2;position:absolute;inset:0;width:100%;height:100%;max-width:none;aspect-ratio:auto;margin:0;z-index:0;
+      background:none;border:0;box-shadow:none;overflow:visible;pointer-events:none;opacity:.92}
+    .hero-stage .ring{display:none}
+    .hero-stage .glow{inset:22% 12%;opacity:.9}
+    .hero-stage .float-obj{width:58px!important;height:58px!important;font-size:29px!important;border-radius:16px!important;animation-duration:6s}
+    .hero-stage .float-obj.big{width:66px!important;height:78px!important;font-size:34px!important}
+    .hero-stage .coin{width:40px!important;height:40px!important;font-size:18px!important}
+    .hero-stage .spark{transform:scale(.8)}
+    .hero-stage .shield-badge{width:84px!important;height:auto!important;opacity:.5}
+    /* framing placement around the copy (overrides desktop inline styles) */
+    .hero-stage .ho{left:1%!important;top:1%!important;right:auto!important;bottom:auto!important}
+    .hero-stage .bg{right:3%!important;top:1%!important;left:auto!important;bottom:auto!important}
+    .hero-stage .ph{right:30%!important;top:3%!important;left:auto!important;bottom:auto!important}
+    .hero-stage .hp{right:1%!important;top:33%!important;left:auto!important;bottom:auto!important}
+    .hero-stage .sg{left:1%!important;top:38%!important;right:auto!important;bottom:auto!important}
+    .hero-stage .sn{left:2%!important;bottom:13%!important;top:auto!important;right:auto!important}
+    .hero-stage .cm{left:39%!important;bottom:1%!important;top:auto!important;right:auto!important}
+    .hero-stage .lp{right:2%!important;bottom:12%!important;top:auto!important;left:auto!important}
+    .hero-stage .wt{right:26%!important;bottom:2%!important;left:auto!important;top:auto!important}
+    .hero-stage .btc{left:40%!important;top:0!important;right:auto!important;bottom:auto!important}
+    .hero-stage .eth{right:20%!important;top:22%!important;left:auto!important;bottom:auto!important}
+    .hero-stage .usdt{left:22%!important;top:24%!important;right:auto!important;bottom:auto!important}
+    .hero-stage .sol{right:44%!important;bottom:20%!important;top:auto!important;left:auto!important}
+    .hero-stage .shield-badge{left:50%!important;top:44%!important;transform:translate(-50%,-50%)!important}
     .foot{grid-template-columns:1fr 1fr}
   }
   @media(max-width:680px){
@@ -694,8 +713,9 @@
     .bn-badge.show{display:grid}
     body{padding-bottom:70px}
     .toasts{bottom:88px}
-    /* header is minimal on phones — bottom nav owns the actions */
-    #accBtn,#cartBtn,.sell-pill{display:none}
+    /* header is minimal on phones — bottom nav owns the actions; cart lives top-right */
+    #accBtn,.sell-pill{display:none}
+    #cartBtn{display:inline-grid}
   }
   /* compact header on phones so it never overflows sideways */
   @media(max-width:560px){
@@ -763,16 +783,21 @@
       </div>
     </div>
     <div class="hero-stage reveal" id="heroStage">
-      <div class="ring"></div><div class="ring r2"></div><div class="glow"></div>
-      <div class="float-obj big fo ho" style="left:28%;top:8%;--rot:-4deg">🧥</div>
-      <div class="float-obj fo sn" style="left:2%;top:44%;width:104px;height:104px;--rot:6deg;animation-delay:-1.2s">👟</div>
-      <div class="float-obj fo hp" style="right:2%;top:30%;width:96px;height:96px;--rot:5deg;animation-delay:-2.4s">🎧</div>
-      <div class="float-obj fo lp" style="right:6%;bottom:6%;width:110px;height:88px;--rot:-6deg;animation-delay:-1.8s">💻</div>
-      <div class="float-obj fo cm" style="left:10%;bottom:2%;width:92px;height:92px;--rot:8deg;animation-delay:-3s">📷</div>
-      <div class="coin btc" style="left:22%;top:-2%;animation-delay:-.6s">₿</div>
-      <div class="coin eth" style="right:0;top:6%;width:70px;height:70px;animation-delay:-1.5s">Ξ</div>
-      <div class="coin usdt" style="left:0;bottom:20%;width:56px;height:56px;animation-delay:-2.1s">₮</div>
-      <div class="coin sol" style="right:20%;bottom:0;width:52px;height:52px;animation-delay:-2.7s">◎</div>
+      <div class="ring"></div><div class="ring r2"></div><div class="ring r3"></div><div class="glow"></div>
+      <div class="float-obj big fo ho" style="left:28%;top:6%;--rot:-4deg">🧥</div>
+      <div class="float-obj fo sn" style="left:1%;top:42%;width:100px;height:100px;--rot:6deg;animation-delay:-1.2s">👟</div>
+      <div class="float-obj fo hp" style="right:1%;top:26%;width:92px;height:92px;--rot:5deg;animation-delay:-2.4s">🎧</div>
+      <div class="float-obj fo lp" style="right:5%;bottom:5%;width:104px;height:84px;--rot:-6deg;animation-delay:-1.8s">💻</div>
+      <div class="float-obj fo cm" style="left:7%;bottom:1%;width:86px;height:86px;--rot:8deg;animation-delay:-3s">📷</div>
+      <div class="float-obj fo bg" style="right:24%;top:-1%;width:82px;height:82px;--rot:-7deg;animation-delay:-3.6s">👜</div>
+      <div class="float-obj fo wt" style="left:34%;bottom:4%;width:74px;height:74px;--rot:9deg;animation-delay:-4.2s">⌚</div>
+      <div class="float-obj fo ph" style="left:2%;top:12%;width:70px;height:88px;--rot:4deg;animation-delay:-2.7s">📱</div>
+      <div class="float-obj fo sg" style="right:12%;bottom:30%;width:72px;height:72px;--rot:-5deg;animation-delay:-1.5s">🕶️</div>
+      <div class="coin btc" style="left:20%;top:-3%;animation-delay:-.6s">₿</div>
+      <div class="coin eth" style="right:0;top:4%;width:70px;height:70px;animation-delay:-1.5s">Ξ</div>
+      <div class="coin usdt" style="left:-1%;bottom:22%;width:56px;height:56px;animation-delay:-2.1s">₮</div>
+      <div class="coin sol" style="right:22%;bottom:-1%;width:52px;height:52px;animation-delay:-2.7s">◎</div>
+      <span class="spark s1"></span><span class="spark s2"></span><span class="spark s3"></span><span class="spark s4"></span><span class="spark s5"></span>
       <svg class="shield-badge" viewBox="0 0 96 110" fill="none"><defs><linearGradient id="shg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a7bff"/><stop offset="1" stop-color="#5B5CFF"/></linearGradient></defs><path d="M48 4l40 18v26c0 26-18 44-40 52C26 92 8 74 8 48V22L48 4z" fill="url(#shg)"/><path d="M34 54l10 10 20-22" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </div>
   </div>
@@ -925,7 +950,7 @@
   <button class="bn active" data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg><span>Home</span></button>
   <button class="bn" data-nav="browse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg><span>Browse</span></button>
   <button class="bn bn-sell" data-nav="sell"><span class="bn-sellic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></span><span>Sell</span></button>
-  <button class="bn" data-nav="cart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h2l2.4 12.2a1.5 1.5 0 0 0 1.5 1.2h8.2a1.5 1.5 0 0 0 1.5-1.2L21 8H6"/><circle cx="9.5" cy="20" r="1.2"/><circle cx="18" cy="20" r="1.2"/></svg><span class="bn-badge" id="botCart">0</span><span>Cart</span></button>
+  <button class="bn" data-nav="messages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8 8 0 0 1-11.5 7.2L4 20.5l1.4-4.7A8 8 0 1 1 21 11.5z"/></svg><span class="bn-badge" id="botMsg">0</span><span>Messages</span></button>
   <button class="bn" data-nav="account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c.6-3.6 3.4-5.4 7-5.4s6.4 1.8 7 5.4"/></svg><span>Account</span></button>
 </nav>
 
@@ -1329,7 +1354,7 @@ function bump(){const el=$('#cbadge'),n=cartQty();if(el){el.textContent=n;el.cla
   if(a==='home')window.scrollTo({top:0,behavior:'smooth'});
   else if(a==='browse'){const c=document.getElementById('catalog');if(c)c.scrollIntoView({behavior:'smooth'});}
   else if(a==='sell')openSell();
-  else if(a==='cart')openDrawer();
+  else if(a==='messages'){if(!AUTH)needAuth('Sign in to see your messages');else{renderAccount('chats');openModal('#accModal');}}
   else if(a==='account'){renderAccount();openModal('#accModal');}
 });})();
 function renderCart(){
@@ -1469,7 +1494,7 @@ function orderCard(o){
     <div class="ord-items">${items}</div>
   </div>`;
 }
-function renderAccount(){
+function renderAccount(startTab){
   const b=$('#accBody');
   if(!AUTH){
     b.innerHTML=`<div class="cobody"><h3>Account</h3><p class="sub">Sign in or create an account in seconds — track orders and check out faster.</p>
@@ -1504,7 +1529,7 @@ function renderAccount(){
       <div id="mktPanel"><p class="mkt-empty">Loading…</p></div>
       <button class="btn btn-secondary" style="margin-top:22px" id="accOut">Sign out</button></div>`;
     $('#accOut').addEventListener('click',()=>{AUTH=null;save('swk_auth',null);accDot();toast('Signed out');renderAccount()});
-    MKT_TAB='profile';loadMarket();
+    MKT_TAB=startTab||'profile';loadMarket();
   }
 }
 $('#accBtn').addEventListener('click',()=>{renderAccount();openModal('#accModal')});
