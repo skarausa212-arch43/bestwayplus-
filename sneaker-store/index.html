@@ -43,7 +43,7 @@
   .reveal.in-view{opacity:1;transform:none;filter:none}
   .reveal[data-d]{transition-delay:calc(var(--_d,0)*1ms)}
   @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;filter:none;transition:none}
-    .sell-pill::after,.btn-primary::after,.hero::before,.hero-tag i,.float-obj,.coin,.ring,.shield-badge,.spark,.glow,.hero h1 .g{animation:none!important}
+    .sell-pill::after,.btn-primary::after,.hero::before,.float-obj,.coin,.ring,.shield-badge,.spark,.glow,.globe,.hero h1 .g{animation:none!important}
     .spark{opacity:.6}
     .hero h1 .g{-webkit-text-fill-color:var(--accent);color:var(--accent)}}
 
@@ -138,6 +138,14 @@
   .hero-stage .spark.s4{right:30%;top:16%;animation-delay:-2.6s;background:radial-gradient(circle,#fff,var(--eth))}
   .hero-stage .spark.s5{left:46%;top:52%;animation-delay:-.7s;width:5px;height:5px}
   @keyframes twinkle{0%,100%{opacity:0;transform:scale(.4)}50%{opacity:.95;transform:scale(1)}}
+  /* worldwide globe behind the trust shield */
+  .hero-stage .globe{position:absolute;left:50%;top:50%;width:66%;height:66%;transform:translate(-50%,-50%);z-index:0;opacity:.9;
+    animation:globespin 60s linear infinite}
+  @keyframes globespin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+  .globe circle,.globe ellipse,.globe line{stroke:rgba(91,92,255,.2);stroke-width:1.4;fill:none;vector-effect:non-scaling-stroke}
+  .globe .gline{stroke:rgba(91,92,255,.34);stroke-width:1.4;stroke-dasharray:3 5;fill:none;vector-effect:non-scaling-stroke}
+  .globe .gp{stroke:none}
+  .globe .gp1{fill:var(--accent)}.globe .gp2{fill:var(--usdt)}.globe .gp3{fill:var(--eth)}.globe .gp4{fill:var(--accent)}
   .float-obj{position:absolute;display:grid;place-items:center;border-radius:22px;background:var(--surface);
     box-shadow:var(--shadow-lg);border:1px solid var(--line);font-size:34px;will-change:transform;
     animation:floaty 6s ease-in-out infinite}
@@ -637,6 +645,7 @@
       background:none;border:0;box-shadow:none;overflow:visible;pointer-events:none;opacity:.92}
     .hero-stage .ring{display:none}
     .hero-stage .glow{inset:22% 12%;opacity:.9}
+    .hero-stage .globe{width:72%!important;height:auto!important;top:41%!important;opacity:.6}
     .hero-stage .float-obj{width:58px!important;height:58px!important;font-size:29px!important;border-radius:16px!important;animation-duration:6s}
     .hero-stage .float-obj.big{width:66px!important;height:78px!important;font-size:34px!important}
     .hero-stage .coin{width:40px!important;height:40px!important;font-size:18px!important}
@@ -652,6 +661,9 @@
     .hero-stage .cm{left:39%!important;bottom:1%!important;top:auto!important;right:auto!important}
     .hero-stage .lp{right:2%!important;bottom:12%!important;top:auto!important;left:auto!important}
     .hero-stage .wt{right:26%!important;bottom:2%!important;left:auto!important;top:auto!important}
+    .hero-stage .gm{right:1%!important;top:55%!important;left:auto!important;bottom:auto!important}
+    .hero-stage .dr{left:1%!important;top:56%!important;right:auto!important;bottom:auto!important}
+    .hero-stage .rg{right:40%!important;bottom:24%!important;left:auto!important;top:auto!important}
     .hero-stage .btc{left:40%!important;top:0!important;right:auto!important;bottom:auto!important}
     .hero-stage .eth{right:20%!important;top:22%!important;left:auto!important;bottom:auto!important}
     .hero-stage .usdt{left:22%!important;top:24%!important;right:auto!important;bottom:auto!important}
@@ -774,7 +786,6 @@
 <section id="top" class="hero">
   <div class="wrap hero-grid">
     <div class="hero-copy">
-      <div class="hero-tag reveal"><i></i>Peer to peer · Crypto escrow · Zero bullshit</div>
       <h1 class="reveal">Trade Stuff<br>With <span class="g">Crypto</span></h1>
       <p class="lead reveal">Buy or sell anything safely using crypto. Every trade is protected by escrow — funds release only when both sides are happy.</p>
       <div class="hero-cta reveal">
@@ -784,6 +795,15 @@
     </div>
     <div class="hero-stage reveal" id="heroStage">
       <div class="ring"></div><div class="ring r2"></div><div class="ring r3"></div><div class="glow"></div>
+      <svg class="globe" viewBox="0 0 200 200" fill="none" aria-hidden="true">
+        <circle cx="100" cy="100" r="80"/>
+        <ellipse cx="100" cy="100" rx="80" ry="27"/><ellipse cx="100" cy="100" rx="80" ry="54"/>
+        <ellipse cx="100" cy="100" rx="27" ry="80"/><ellipse cx="100" cy="100" rx="54" ry="80"/>
+        <line x1="100" y1="20" x2="100" y2="180"/><line x1="20" y1="100" x2="180" y2="100"/>
+        <path class="gline" d="M60 64 Q104 28 140 120"/><path class="gline" d="M66 134 Q122 150 150 88"/>
+        <circle class="gp gp1" cx="60" cy="64" r="3.8"/><circle class="gp gp2" cx="140" cy="120" r="3.8"/>
+        <circle class="gp gp3" cx="112" cy="50" r="3.2"/><circle class="gp gp4" cx="66" cy="134" r="3.2"/><circle class="gp gp1" cx="150" cy="88" r="3"/>
+      </svg>
       <div class="float-obj big fo ho" style="left:28%;top:6%;--rot:-4deg">🧥</div>
       <div class="float-obj fo sn" style="left:1%;top:42%;width:100px;height:100px;--rot:6deg;animation-delay:-1.2s">👟</div>
       <div class="float-obj fo hp" style="right:1%;top:26%;width:92px;height:92px;--rot:5deg;animation-delay:-2.4s">🎧</div>
@@ -793,6 +813,9 @@
       <div class="float-obj fo wt" style="left:34%;bottom:4%;width:74px;height:74px;--rot:9deg;animation-delay:-4.2s">⌚</div>
       <div class="float-obj fo ph" style="left:2%;top:12%;width:70px;height:88px;--rot:4deg;animation-delay:-2.7s">📱</div>
       <div class="float-obj fo sg" style="right:12%;bottom:30%;width:72px;height:72px;--rot:-5deg;animation-delay:-1.5s">🕶️</div>
+      <div class="float-obj fo gm" style="right:2%;top:52%;width:78px;height:78px;--rot:-6deg;animation-delay:-2.1s">🎮</div>
+      <div class="float-obj fo dr" style="left:2%;top:28%;width:70px;height:84px;--rot:5deg;animation-delay:-3.9s">👗</div>
+      <div class="float-obj fo rg" style="right:36%;bottom:6%;width:60px;height:60px;--rot:7deg;animation-delay:-4.6s">💍</div>
       <div class="coin btc" style="left:20%;top:-3%;animation-delay:-.6s">₿</div>
       <div class="coin eth" style="right:0;top:4%;width:70px;height:70px;animation-delay:-1.5s">Ξ</div>
       <div class="coin usdt" style="left:-1%;bottom:22%;width:56px;height:56px;animation-delay:-2.1s">₮</div>
