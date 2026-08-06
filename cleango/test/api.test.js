@@ -355,6 +355,37 @@ async function main() {
       assert.strictEqual(acc.status, 200);
       assert.strictEqual(acc.json.booking.status, 'accepted');
     });
+    // SAFETY: the panic button. Participants only, live orders only, one alert
+    // per minute, and every admin must hear about it.
+    await ok('SOS reaches the admins and is participant-only', async () => {
+      const outsider = await req('POST', '/api/register', { body: { name: 'Outsider', email: `out${Date.now()}@x.pl`, phone: '+48500600999', password: 'Passw0rd!Long1', role: 'customer', city: 'Warsaw', acceptedTerms: true } });
+      const denied = await req('POST', `/api/bookings/${bookingId}/sos`, { token: outsider.json.token, body: {} });
+      assert.strictEqual(denied.status, 403, 'a stranger cannot raise SOS on someone else\'s order');
+
+      const before = (await req('GET', '/api/notifications', { token: await adminToken() })).json.notifications.length;
+      const raised = await req('POST', `/api/bookings/${bookingId}/sos`, { token: customerTok, body: { location: { lat: 51.1, lng: 17.03 }, note: 'test' } });
+      assert.strictEqual(raised.status, 200);
+      assert.strictEqual(raised.json.sos.status, 'open');
+      assert.ok(raised.json.sos.location, 'GPS point kept with the alert');
+
+      const after = (await req('GET', '/api/notifications', { token: await adminToken() })).json.notifications;
+      assert.ok(after.length > before, 'admin was notified');
+      assert.strictEqual(after[0].templateId, 'sos.raised_admin');
+
+      // A second press within the cooldown must not wake everyone again.
+      const again = await req('POST', `/api/bookings/${bookingId}/sos`, { token: customerTok, body: {} });
+      assert.strictEqual(again.json.repeated, true, 'repeat press deduped');
+      assert.strictEqual(again.json.sos.id, raised.json.sos.id);
+
+      const board = await req('GET', '/api/admin/sos', { token: await adminToken() });
+      assert.strictEqual(board.status, 200);
+      assert.strictEqual(board.json.openCount, 1);
+      const ack = await req('POST', `/api/admin/sos/${raised.json.sos.id}/ack`, { token: await adminToken(), body: { note: 'дозвонились' } });
+      assert.strictEqual(ack.json.sos.status, 'handled');
+      // Customers must never see the SOS board.
+      const peek = await req('GET', '/api/admin/sos', { token: customerTok });
+      assert.strictEqual(peek.status, 403);
+    });
     await ok('SECURITY: cleaner payload never exposes commission/price', async () => {
       const bk = await req('GET', `/api/bookings/${bookingId}`, { token: cleanerTok });
       assert.strictEqual(bk.json.booking.commission, undefined);

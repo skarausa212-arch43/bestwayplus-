@@ -312,6 +312,7 @@ const db = {
   walletTx: loadJSON('wallet-tx.json', {}),
   gardenReminders: loadJSON('garden-reminders.json', []),  // "Zapisz się — przypomnimy" season signups  // userId -> [{ id, ts, kind, amountMinor, currency, note, ... }] customer payments ledger
   settings: loadJSON('settings.json', {}),   // admin-editable platform settings (open cities, economy, announcement)
+  sos: loadJSON('sos.json', {}),             // id -> panic alert raised from inside a live order
 };
 const persist = {
   users: () => saveJSON('users.json', db.users),
@@ -325,6 +326,7 @@ const persist = {
   flagOverrides: () => saveJSON('flags.json', db.flagOverrides),
   disputes: () => saveJSON('disputes.json', db.disputes),
   support: () => saveJSON('support.json', db.support),
+  sos: () => saveJSON('sos.json', db.sos),
   reservations: () => saveJSON('reservations.json', db.reservations),
   devices: () => saveJSON('devices.json', db.devices),
   payments: () => saveJSON('payments.json', db.payments),
@@ -3068,6 +3070,88 @@ route('POST', '/api/bookings/:id/issue', async (req, res, params) => {
   }
   send(res, 200, { dispute: disputeView(d) });
 });
+// ─────────────────────────── SOS: panic alert from inside a live order ───────
+// Both sides can raise it — a customer who does not feel safe with the person in
+// their flat, and a provider who walked into something wrong at the address.
+// It is deliberately NOT a dispute: no accusation, no payout freeze, no
+// paperwork. It records who/where/when with a GPS point and wakes every admin.
+// Calling 112 stays the client's first action; this is what reaches LUMI.
+const SOS_LIVE_STATUSES = new Set(['accepted', 'on_the_way', 'in_progress']);
+const SOS_COOLDOWN_MS = 60000;   // one alert per person per booking per minute
+function sosView(s) {
+  const bk = db.bookings[s.bookingId];
+  const u = db.users[s.userId];
+  return {
+    id: s.id, bookingId: s.bookingId, at: s.at, status: s.status,
+    who: u ? u.name : '—', role: s.role, phone: s.phone || (u && u.phone) || null,
+    service: bk ? bk.serviceLabel : '—', address: s.address || null, city: bk ? bk.city : null,
+    location: s.location || null, note: s.note || null,
+    counterpartId: s.counterpartId || null,
+    counterpart: s.counterpartId && db.users[s.counterpartId] ? db.users[s.counterpartId].name : null,
+    ackAt: s.ackAt || null, ackBy: s.ackBy || null,
+  };
+}
+route('POST', '/api/bookings/:id/sos', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const bk = db.bookings[params.id];
+  if (!bk) return send(res, 404, { error: 'Booking not found.' });
+  const isParticipant = bk.customerId === user.id || bk.cleanerId === user.id;
+  if (!isParticipant) return send(res, 403, { error: 'Forbidden.' });
+  // Only while somebody is actually at (or on the way to) the address — an SOS
+  // on a finished or cancelled order would just be noise for the duty officer.
+  if (!SOS_LIVE_STATUSES.has(bk.status)) {
+    return send(res, 409, { error: 'SOS доступен только по активному заказу.', code: 'SOS_NOT_LIVE' });
+  }
+  // Repeat presses (panic, shaky hands) must not spam every admin — the first
+  // alert already reached them, so we acknowledge without raising a new one.
+  const recent = Object.values(db.sos).find((s) => s.bookingId === bk.id && s.userId === user.id && now() - s.at < SOS_COOLDOWN_MS);
+  if (recent) return send(res, 200, { sos: sosView(recent), repeated: true });
+
+  const b = await readBody(req);
+  const id = uid('sos_');
+  const counterpartId = bk.customerId === user.id ? (bk.cleanerId || null) : bk.customerId;
+  const s = {
+    id, bookingId: bk.id, userId: user.id, role: user.role,
+    at: now(), status: 'open',
+    phone: String(user.phone || '').slice(0, 32),
+    address: bk.address || null,
+    // The live GPS point beats the booking address: the person may have run out.
+    location: validLoc(b.location) || bk.location || null,
+    note: String(b.note || '').slice(0, 300),
+    counterpartId,
+  };
+  db.sos[id] = s;
+  persist.sos();
+  audit('sos.raised', user.id, bk.id, { sosId: id, role: user.role });
+  notify(user.id, 'sos.raised', { service: bk.serviceLabel, bookingId: bk.id });
+  const where = s.location ? `${s.address || bk.city} (${s.location.lat.toFixed(4)}, ${s.location.lng.toFixed(4)})` : (s.address || bk.city || '—');
+  for (const a of Object.values(db.users)) {
+    if (a.role === 'admin' && !a.deletedAt) {
+      notify(a.id, 'sos.raised_admin', { who: user.name, role: user.role, service: bk.serviceLabel, address: where, phone: s.phone || '—', bookingId: bk.id });
+    }
+  }
+  send(res, 200, { sos: sosView(s) });
+});
+// Admin: the SOS board — open alerts first, newest first.
+route('GET', '/api/admin/sos', async (req, res) => {
+  const admin = requireCap(req, res, 'disputes.manage'); if (!admin) return;
+  const list = Object.values(db.sos).sort((a, b) => (a.status === 'open' ? 0 : 1) - (b.status === 'open' ? 0 : 1) || b.at - a.at);
+  send(res, 200, { sos: list.slice(0, 100).map(sosView), openCount: list.filter((s) => s.status === 'open').length });
+});
+// Admin: mark an alert handled (the duty officer reached the person).
+route('POST', '/api/admin/sos/:id/ack', async (req, res, params) => {
+  const admin = requireCap(req, res, 'disputes.manage'); if (!admin) return;
+  const s = db.sos[params.id];
+  if (!s) return send(res, 404, { error: 'Not found.' });
+  const b = await readBody(req);
+  s.status = 'handled'; s.ackAt = now(); s.ackBy = admin.id;
+  s.note = [s.note, String(b.note || '').slice(0, 300)].filter(Boolean).join(' · ');
+  persist.sos();
+  audit('sos.handled', admin.id, s.bookingId, { sosId: s.id });
+  send(res, 200, { sos: sosView(s) });
+});
+
 // Read the current user's (or admin's) issues for a booking + the categories.
 route('GET', '/api/bookings/:id/issue', async (req, res, params) => {
   const user = authUser(req);
@@ -3409,6 +3493,7 @@ route('GET', '/api/admin/stats', async (req, res) => {
       customers: users.filter((u) => u.role === 'customer').length,
       cleaners: users.filter((u) => u.role === 'cleaner').length,
       pendingKyc: users.filter((u) => u.role === 'cleaner' && !u.verified).length,
+      openSos: Object.values(db.sos).filter((s) => s.status === 'open').length,
     },
     recent: bookings.sort((a, b) => b.createdAt - a.createdAt).slice(0, 20).map((b) => enrich(b, user)),
     cleaners: users.filter((u) => u.role === 'cleaner').map(publicUser),

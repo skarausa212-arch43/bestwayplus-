@@ -157,6 +157,24 @@ const T = {
     en: { title: 'New dispute', body: '{who} — {category} on “{service}”.' },
     uk: { title: 'Новий спір', body: '{who} — {category} щодо «{service}».' },
   },
+  // SOS from inside a live order. Highest priority we have: it reaches every
+  // admin channel at once, because somebody is standing in a room feeling unsafe.
+  'sos.raised_admin': {
+    category: 'operational', priority: 'high', channels: ['in_app', 'push', 'email'],
+    deepLink: 'lumi://admin/sos',
+    ru: { title: '🆘 SOS по заказу', body: '{who} ({role}) нажал SOS · «{service}» · {address}. Свяжитесь немедленно: {phone}' },
+    pl: { title: '🆘 SOS przy zleceniu', body: '{who} ({role}) nacisnął SOS · „{service}” · {address}. Skontaktuj się natychmiast: {phone}' },
+    en: { title: '🆘 SOS on a job', body: '{who} ({role}) pressed SOS · “{service}” · {address}. Contact immediately: {phone}' },
+    uk: { title: '🆘 SOS за замовленням', body: '{who} ({role}) натиснув SOS · «{service}» · {address}. Звʼяжіться негайно: {phone}' },
+  },
+  'sos.raised': {
+    category: 'operational', priority: 'high', channels: ['in_app'],
+    deepLink: 'lumi://booking/{bookingId}',
+    ru: { title: 'Сигнал принят', body: 'Дежурный LUMI уже видит ваш SOS по «{service}». Если есть угроза жизни — звоните 112.' },
+    pl: { title: 'Sygnał przyjęty', body: 'Dyżurny LUMI widzi Twój SOS przy „{service}”. Jeśli zagrożone jest życie — dzwoń 112.' },
+    en: { title: 'Alert received', body: 'The LUMI duty officer can see your SOS on “{service}”. If life is in danger, call 112.' },
+    uk: { title: 'Сигнал прийнято', body: 'Черговий LUMI бачить ваш SOS щодо «{service}». Якщо є загроза життю — телефонуйте 112.' },
+  },
   'dispute.resolved': {
     category: 'operational', priority: 'high', channels: ['in_app', 'push', 'email'],
     deepLink: 'lumi://booking/{bookingId}',

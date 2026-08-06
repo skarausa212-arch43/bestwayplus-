@@ -310,6 +310,17 @@ textarea.input{resize:vertical;min-height:80px}
 .chat-closed{display:flex;align-items:center;gap:8px;padding:14px;border-top:1px solid var(--line);background:var(--surface-2);color:var(--ink-3);font-size:13px;font-weight:600}
 .chat-closed svg{width:16px;height:16px;flex:none}
 /* «Решить проблему» issue cards + category chips */
+/* SOS — findable at a glance without shouting over the rest of the screen.
+   The slow pulse stops for anyone who asked for reduced motion. */
+.sos-btn{border:1.5px solid var(--danger);color:var(--danger);font-weight:700;letter-spacing:.01em}
+.sos-btn:hover{background:rgba(220,38,38,.07)}
+/* The frosted card is the house style, but an emergency screen has to be
+   readable at a glance over whatever list happens to be behind it. */
+.sos-sheet{background:var(--surface) !important;border-color:var(--danger) !important}
+/* .btn clips overflow, so the pulse lives inside: a slow tint, not a halo. */
+.sos-btn{animation:sosPulse 2.8s ease-in-out infinite}
+@keyframes sosPulse{0%,100%{background:transparent}50%{background:rgba(220,38,38,.09)}}
+@media (prefers-reduced-motion:reduce){.sos-btn{animation:none}}
 .issue-card{border:1.5px solid var(--warn)}
 .issue-ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;flex:none}
 .issue-ic.amber{background:#FEF3E2;color:#B25E09}
@@ -1909,6 +1920,10 @@ Object.assign(TR.uk,{"Зачтётся при оплате следующего 
 Object.assign(TR.pl,{"Далее":"Dalej","Назад":"Wstecz","Подтвердить заказ":"Potwierdź zamówienie","AI-оценка":"Wycena AI","спрос":"popyt","обычный спрос":"zwykły popyt"});
 Object.assign(TR.en,{"Далее":"Next","Назад":"Back","Подтвердить заказ":"Confirm order","AI-оценка":"AI estimate","спрос":"demand","обычный спрос":"normal demand"});
 Object.assign(TR.uk,{"Далее":"Далі","Назад":"Назад","Подтвердить заказ":"Підтвердити замовлення","AI-оценка":"AI-оцінка","спрос":"попит","обычный спрос":"звичайний попит"});
+/* SOS — panic alert inside a live order. */
+Object.assign(TR.pl,{"Мне нужна помощь":"Potrzebuję pomocy","Нужна помощь":"Potrzebuję pomocy","Если есть угроза жизни или здоровью — сначала звоните 112. Кнопка ниже поднимает дежурного LUMI и передаёт ему заказ, адрес и вашу геопозицию.":"Jeśli zagrożone jest życie lub zdrowie — najpierw dzwoń 112. Przycisk poniżej alarmuje dyżurnego LUMI i przekazuje mu zlecenie, adres i Twoją lokalizację.","Позвонить 112":"Zadzwoń 112","Сообщить в LUMI":"Powiadom LUMI","Что происходит — необязательно":"Co się dzieje — opcjonalnie","коротко, если есть время":"krótko, jeśli masz czas","Отправляем…":"Wysyłamy…","Дежурный LUMI уведомлён — оставайтесь на связи":"Dyżurny LUMI powiadomiony — pozostań w kontakcie","вторая сторона":"druga strona","Закрыть":"Zamknij"});
+Object.assign(TR.en,{"Мне нужна помощь":"I need help","Нужна помощь":"I need help","Если есть угроза жизни или здоровью — сначала звоните 112. Кнопка ниже поднимает дежурного LUMI и передаёт ему заказ, адрес и вашу геопозицию.":"If life or health is at risk, call 112 first. The button below alerts the LUMI duty officer with the order, the address and your location.","Позвонить 112":"Call 112","Сообщить в LUMI":"Alert LUMI","Что происходит — необязательно":"What is happening — optional","коротко, если есть время":"briefly, if you have time","Отправляем…":"Sending…","Дежурный LUMI уведомлён — оставайтесь на связи":"The LUMI duty officer has been alerted — stay reachable","вторая сторона":"other party","Закрыть":"Close"});
+Object.assign(TR.uk,{"Мне нужна помощь":"Мені потрібна допомога","Нужна помощь":"Потрібна допомога","Если есть угроза жизни или здоровью — сначала звоните 112. Кнопка ниже поднимает дежурного LUMI и передаёт ему заказ, адрес и вашу геопозицию.":"Якщо є загроза життю або здоровʼю — спершу телефонуйте 112. Кнопка нижче піднімає чергового LUMI й передає йому замовлення, адресу та вашу геопозицію.","Позвонить 112":"Зателефонувати 112","Сообщить в LUMI":"Повідомити LUMI","Что происходит — необязательно":"Що відбувається — необовʼязково","коротко, если есть время":"коротко, якщо є час","Отправляем…":"Надсилаємо…","Дежурный LUMI уведомлён — оставайтесь на связи":"Чергового LUMI повідомлено — залишайтеся на звʼязку","вторая сторона":"друга сторона","Закрыть":"Закрити"});
 /* Consumer withdrawal right — the express-consent checkbox shown at checkout. */
 Object.assign(TR.pl,{"Прошу начать оказание услуги до истечения 14-дневного срока на отказ от договора и понимаю, что после полного оказания услуги право на отказ утрачивается.":"Żądam rozpoczęcia usługi przed upływem 14-dniowego terminu na odstąpienie od umowy i przyjmuję do wiadomości, że po jej pełnym wykonaniu tracę prawo odstąpienia.","Подробнее":"Więcej","Отметьте согласие на начало услуги — без него заказ невозможен":"Zaznacz zgodę na rozpoczęcie usługi — bez niej nie złożysz zamówienia"});
 Object.assign(TR.en,{"Прошу начать оказание услуги до истечения 14-дневного срока на отказ от договора и понимаю, что после полного оказания услуги право на отказ утрачивается.":"I request that the service begin before the 14-day withdrawal period ends, and I understand that once it has been fully performed I lose the right of withdrawal.","Подробнее":"Details","Отметьте согласие на начало услуги — без него заказ невозможен":"Tick the consent to start the service — the order cannot be placed without it"});
@@ -4931,6 +4946,7 @@ async function renderBookingDetail(id){
 
       <div id="photoZone"></div>
       <div id="actionZone" style="margin:14px 0"></div>
+      <div id="sosZone"></div>
       <div id="issueZone"></div>
       <div id="chatZone"></div>
     `;
@@ -4940,6 +4956,7 @@ async function renderBookingDetail(id){
     renderTracking(b);
     renderPhotos(b);
     renderActions(b,{isCleaner,isCustomer,assignedToMe,canAccept});
+    renderSos(b,{isCustomer,assignedToMe});
     renderIssue(b,{isCleaner,isCustomer,assignedToMe});
     const rcb=$('#receiptBtn'); if(rcb)rcb.onclick=()=>openReceipt(b.id);
     const gal=$('#reqGallery'); if(gal)gal.querySelectorAll('img').forEach(im=>im.onclick=()=>showModal(`<div class="card pad" style="padding:8px"><img src="${im.src}" style="width:100%;border-radius:12px;display:block"></div>`));
@@ -5166,6 +5183,51 @@ async function refreshBookingDetail(){
   await renderBookingDetail(id);
   const label={accepted:'Исполнитель назначен',on_the_way:'Исполнитель в пути',in_progress:'Уборка началась',completed:'Заказ завершён',cancelled:'Заказ отменён'}[b.status];
   if(label){ toast(t(label)); try{ if(navigator.vibrate)navigator.vibrate(120); }catch{} }
+}
+/* ---------- SOS — паника внутри активного заказа ---------- */
+/* Shown to both sides while somebody is at (or heading to) the address. It is
+   not a complaint: no accusation, no forms, no payout freeze — one press wakes
+   the duty officer with a GPS point. 112 stays first and is a real tel: link,
+   so it works even when the network is too bad for our API call. */
+const SOS_LIVE=['accepted','on_the_way','in_progress'];
+function renderSos(b,ctx){
+  const z=$('#sosZone'); if(!z)return;
+  const mine=(ctx.isCustomer&&b.customerId===state.user.id)||ctx.assignedToMe;
+  if(!mine||!SOS_LIVE.includes(b.status)){z.innerHTML='';return;}
+  z.innerHTML=`<button class="btn ghost block sos-btn" id="sosBtn" style="margin:14px 0">🆘 ${t('Мне нужна помощь')}</button>`;
+  $('#sosBtn',z).onclick=()=>openSos(b.id);
+}
+function openSos(bookingId){
+  const inner=el(`<div class="card pad sos-sheet">
+    <h3 style="margin-bottom:6px">🆘 ${t('Нужна помощь')}</h3>
+    <p class="muted tiny" style="margin-bottom:16px">${t('Если есть угроза жизни или здоровью — сначала звоните 112. Кнопка ниже поднимает дежурного LUMI и передаёт ему заказ, адрес и вашу геопозицию.')}</p>
+    <a class="btn block" href="tel:112" style="background:var(--danger);margin-bottom:12px;text-align:center;text-decoration:none">📞 ${t('Позвонить 112')}</a>
+    <button class="btn block ghost" id="sosSend">${t('Сообщить в LUMI')}</button>
+    <label class="field" style="margin-top:12px"><span>${t('Что происходит — необязательно')}</span>
+      <textarea class="input" id="sosNote" rows="2" maxlength="300" placeholder="${t('коротко, если есть время')}"></textarea></label>
+    <button class="btn ghost block" id="sosX" style="margin-top:6px">${t('Закрыть')}</button>
+  </div>`);
+  showModalNode(inner);
+  $('#sosX',inner).onclick=closeModal;
+  $('#sosSend',inner).onclick=async()=>{
+    const btn=$('#sosSend',inner); btn.disabled=true; btn.textContent=t('Отправляем…');
+    // A GPS fix must never hold up the alert: give it 4 seconds, then send
+    // without it — the server falls back to the booking address.
+    const loc=await new Promise((ok)=>{
+      if(!navigator.geolocation)return ok(null);
+      let done=false;
+      const finish=(v)=>{if(!done){done=true;ok(v);}};
+      setTimeout(()=>finish(null),4000);
+      navigator.geolocation.getCurrentPosition(
+        (p)=>finish({lat:p.coords.latitude,lng:p.coords.longitude}),
+        ()=>finish(null),{enableHighAccuracy:true,timeout:4000});
+    });
+    try{
+      await api('/api/bookings/'+bookingId+'/sos','POST',{location:loc,note:$('#sosNote',inner).value});
+      closeModal();
+      toast(t('Дежурный LUMI уведомлён — оставайтесь на связи'));
+    }catch(e){ btn.disabled=false; btn.textContent=t('Сообщить в LUMI'); toast(e.message,true); }
+  };
 }
 /* ---------- «Решить проблему» — support / disputes ---------- */
 async function renderIssue(b,ctx){
@@ -5818,6 +5880,10 @@ async function viewAdmin(){
         ${kpi(I.broom,stats.cleaners,'Исполнители','var(--surface-2)','var(--ink)')}
       </div>
       <div class="grid" style="grid-template-columns:1fr;gap:20px">
+        <div class="card pad" id="sosCard" style="overflow-x:auto;display:none;border:1.5px solid var(--danger)">
+          <h4 style="margin-bottom:14px">🆘 SOS по заказам <span class="badge" id="sosCount" style="background:var(--danger);color:#fff"></span></h4>
+          <div id="sosBody"></div>
+        </div>
         <div class="card pad" id="dispCard" style="overflow-x:auto;display:none">
           <h4 style="margin-bottom:14px">Проблемы по заказам <span class="badge amber" id="dispCount"></span></h4>
           <div id="dispBody"></div>
@@ -5857,6 +5923,7 @@ async function viewAdmin(){
         </div>
       </div>`;
     loadAdminUsers(admUserQ,admUserRole);
+    loadAdminSos();
     loadAdminDisputes();
     loadAdminSupport();
     loadAdminPlatform();
@@ -6225,6 +6292,39 @@ function openAdminDispute(d){
       toast('Обращение закрыто');closeModal();viewAdmin();
     }catch(e){toast(e.message,true);}
   };
+}
+/* SOS board — the one card in the admin panel that must be impossible to miss:
+   it sits above everything else and only appears when there is something on it. */
+async function loadAdminSos(){
+  const card=$('#sosCard'),body=$('#sosBody'),count=$('#sosCount'); if(!body)return;
+  try{
+    const {sos,openCount}=await api('/api/admin/sos');
+    if(!sos.length){if(card)card.style.display='none';return;}
+    if(card)card.style.display='';
+    if(count)count.textContent=openCount?`${openCount} открытых`:'все обработаны';
+    body.innerHTML='';
+    sos.forEach(s=>{
+      const geo=s.location?`<a href="https://www.google.com/maps?q=${s.location.lat},${s.location.lng}" target="_blank" rel="noopener" style="color:var(--primary-600)">${I.pin} на карте</a>`:'';
+      const row=el(`<div class="card bk" style="margin-bottom:10px;align-items:flex-start;${s.status==='open'?'border:1.5px solid var(--danger)':''}">
+        <span class="issue-ic" style="background:${s.status==='open'?'#FEECEB':'var(--primary-050)'};color:${s.status==='open'?'var(--danger)':'var(--primary-600)'}">${s.status==='open'?'🆘':I.check}</span>
+        <div class="meta" style="min-width:0">
+          <h4>${esc(s.who)} (${ROLE_RU[s.role]||s.role}) · ${esc(s.service)}</h4>
+          <div class="tiny muted" style="margin:3px 0">${esc(s.address||s.city||'—')} · ${timeAgo(s.at)} ${geo}</div>
+          ${s.phone?`<div class="tiny"><a href="tel:${esc(s.phone)}" style="color:var(--danger);font-weight:700">📞 ${esc(s.phone)}</a>${s.counterpart?` · ${t('вторая сторона')}: ${esc(s.counterpart)}`:''}</div>`:''}
+          ${s.note?`<div class="tiny" style="color:var(--ink-2);margin-top:4px">«${esc(s.note)}»</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;flex:none">
+          ${s.status==='open'?`<button class="btn sm" data-ack="${s.id}">Обработано</button>`:'<span class="badge green">Закрыт</span>'}
+          <button class="btn sm ghost" data-bk="${s.bookingId}">Заказ</button>
+        </div></div>`);
+      body.appendChild(row);
+    });
+    body.querySelectorAll('[data-ack]').forEach(btn=>btn.onclick=async()=>{
+      try{await api('/api/admin/sos/'+btn.dataset.ack+'/ack','POST',{});toast('SOS отмечен обработанным');loadAdminSos();}
+      catch(e){toast(e.message,true);}
+    });
+    body.querySelectorAll('[data-bk]').forEach(btn=>btn.onclick=()=>openBooking(btn.dataset.bk));
+  }catch(e){ if(card)card.style.display='none'; }
 }
 async function loadAdminSupport(){
   const card=$('#supCard'),body=$('#supBody'),count=$('#supCount'); if(!body)return;
@@ -6717,6 +6817,11 @@ let modalEl=null;
 function showModal(html,wide){const n=el(`<div class="modal ${wide?'':''}" style="${wide?'max-width:560px':''}">${html}</div>`);showModalNode(n);}
 function showModalNode(node){
   closeModal();
+  // .modal-bg is a flex container, so a bare node stretches to the full screen
+  // height and skips the max-width and the enter transition. Callers pass their
+  // own card (openSos, the garden calculator, …) — give it the modal role here
+  // rather than making every call site remember.
+  if(!node.classList.contains('modal'))node.classList.add('modal');
   const bg=el(`<div class="modal-bg"></div>`);
   bg.appendChild(node);
   bg.onclick=(e)=>{if(e.target===bg)closeModal();};
