@@ -672,8 +672,13 @@
     /* iOS zooms in (and the page scrolls sideways) when a focused input is
        under 16px — keep all form fields at 16px on phones to prevent it */
     input,textarea,select{font-size:16px!important}
-    /* filter chips are selects (a native picker, never zooms) — keep them compact */
-    .fchip select{font-size:13px!important;padding:0 28px 0 13px;height:33px;line-height:33px}
+    /* filters: one compact horizontal-scroll row (contained — the page never scrolls sideways) */
+    .filterbar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:6px;margin-bottom:16px;padding-bottom:2px}
+    .filterbar::-webkit-scrollbar{display:none}
+    .fchip{flex:none}
+    .fchip select{font-size:12.5px!important;font-weight:600;padding:0 25px 0 12px;height:32px;line-height:32px}
+    .fchip::after{right:11px;width:5px;height:5px}
+    .freset{flex:none;height:32px;padding:0 10px;font-size:12px}
     .section{padding:clamp(32px,7vw,48px) 0}
     .sec-head{margin-bottom:20px}
     .hero{padding-top:26px;padding-bottom:34px}
@@ -1375,7 +1380,7 @@ const PRICE_RANGES=[['','Any price'],['0-25','Under 25'],['25-50','25 – 50'],[
 function renderFilterbar(){
   const fb=$('#filterbar');if(!fb)return;
   const opts=(arr,cur)=>arr.map(o=>{const[v,l]=Array.isArray(o)?o:[o,o];return `<option value="${v}"${v===cur?' selected':''}>${l}</option>`;}).join('');
-  fb.innerHTML=`<div class="fchip" data-f="sort"><select id="fSort">${opts([['new','Newest'],['lo','Price: low → high'],['hi','Price: high → low']],FILT.sort)}</select></div>
+  fb.innerHTML=`<div class="fchip" data-f="sort"><select id="fSort">${opts([['new','Newest'],['lo','Price ↑'],['hi','Price ↓']],FILT.sort)}</select></div>
     <div class="fchip" data-f="ship"><select id="fShip">${opts([['','All regions'],...REGIONS.map(r=>[r,r])],FILT.shipTo)}</select></div>
     <div class="fchip" data-f="cond"><select id="fCond">${opts([['','Any condition'],...['New','Like new','Very good','Good','Fair'].map(c=>[c,c])],FILT.cond)}</select></div>
     <div class="fchip" data-f="price"><select id="fPrice">${opts(PRICE_RANGES,FILT.priceRange||'')}</select></div>
