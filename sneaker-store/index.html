@@ -687,6 +687,7 @@
   .prof-card input,.prof-card .tg-in,.addr-card input,.addr-card select{transition:border-color .18s var(--ease),box-shadow .18s var(--ease)}
   .prof-card input:focus,.addr-card input:focus,.addr-card select:focus{box-shadow:0 0 0 3px var(--accent-soft)}
   .prof-card .tg-in:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .prof-card input[readonly]{opacity:.72;cursor:not-allowed;background:var(--surface-2)}
   .tg-in{display:flex;align-items:center;border:1px solid var(--line-2);border-radius:12px;background:var(--surface);overflow:hidden}
   .tg-in span{padding:0 4px 0 14px;color:var(--faint);font-size:15px}
   .tg-in input{border:0!important;background:transparent!important;padding-left:2px!important;box-shadow:none!important}
@@ -2383,6 +2384,8 @@ function paintMarket(){
   const po=$('#poSave');if(po)po.addEventListener('click',async()=>{po.disabled=true;try{await mfetch('/api/payout',{method:'POST',body:JSON.stringify({address:$('#poAddr').value})});toast('Payout address saved');loadMarket();}catch(e){toast(e.message);po.disabled=false;}});
   const pw=$('#poWithdraw');if(pw)pw.addEventListener('click',async()=>{pw.disabled=true;try{await mfetch('/api/withdraw',{method:'POST'});toast('Withdrawal requested — funds are on the way');loadMarket();}catch(e){toast(e.message);pw.disabled=false;}});
   if(t==='profile')wireProfilePanel();
+  // account actions (change password / sign out / delete) live only on the Profile tab
+  const showAcct=t==='profile';document.querySelectorAll('.acc-sec,.acc-del').forEach(el=>el.style.display=showAcct?'':'none');
 }
 async function paintWishlist(){
   const box=$('#wishGrid');if(!box)return;
@@ -2442,6 +2445,8 @@ function profilePanelHTML(){
   const initial=((nm||p.email||'?')[0]||'?').toUpperCase();
   const handle=((nm||(p.email||'').split('@')[0]||'user')).toLowerCase().replace(/[^a-z0-9_]+/g,'').slice(0,20)||'user';
   const joined=p.joined?new Date(p.joined).toLocaleDateString(undefined,{month:'short',year:'numeric'}):'';
+  const nameLockUntil=p.nameChangedAt?p.nameChangedAt+180*864e5:0;
+  const nameLocked=nameLockUntil>Date.now();
   const addrs=PROFILE_ADDR;
   const cam=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 8h3l1.4-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg>`;
   return `<div class="prof">
@@ -2460,7 +2465,8 @@ function profilePanelHTML(){
       <div class="ps"><b>${p.reviews||0}</b><span>Reviews</span></div>
     </div>
     <div class="prof-card">
-      <div class="field"><label>Display name</label><input id="pfName" maxlength="60" value="${esc(p.name||'')}" placeholder="Your name"></div>
+      <div class="field"><label>Display name</label><input id="pfName" maxlength="60" value="${esc(p.name||'')}" placeholder="Your name"${nameLocked?' readonly':''}>
+        <span class="hintline">${nameLocked?`🔒 You can change your name again on ${new Date(nameLockUntil).toLocaleDateString()}.`:'You can change your display name once every 180 days.'}</span></div>
       <div class="field"><label>Telegram — for contact</label>
         <div class="tg-in"><span>@</span><input id="pfTg" maxlength="32" placeholder="username" value="${esc(p.telegram||'')}"></div>
         <span class="hintline">So buyers and sellers can reach you on Telegram.</span></div>

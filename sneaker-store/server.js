@@ -455,7 +455,7 @@ function profileView(u) {
   return {
     email: u.email, name: u.name || '', telegram: u.telegram || '', avatar: u.avatar || '',
     addresses: Array.isArray(u.addresses) ? u.addresses : [], payout: u.payout || '', verified: !!u.verified,
-    rating: st.rating, sold: st.sold, reviews: st.reviews, joined: u.created || 0,
+    rating: st.rating, sold: st.sold, reviews: st.reviews, joined: u.created || 0, nameChangedAt: u.nameChangedAt || 0,
   };
 }
 function catGroup(c) { return CAT_OF_GROUP[c] || 'other'; }
@@ -591,7 +591,19 @@ const server = http.createServer(async (req, res) => {
       const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
       const b = await readBody(req);
       const me = users[u.email];
-      if (b.name !== undefined) me.name = String(b.name).slice(0, 60);
+      if (b.name !== undefined) {
+        const newName = String(b.name).slice(0, 60);
+        if (newName !== (me.name || '')) {
+          const NAME_COOLDOWN = 180 * 864e5; // display name can be changed once per 180 days
+          const now = Date.now();
+          if (me.nameChangedAt && now - me.nameChangedAt < NAME_COOLDOWN) {
+            const nextAt = me.nameChangedAt + NAME_COOLDOWN;
+            return send(res, 400, { error: `You can change your display name again after ${new Date(nextAt).toISOString().slice(0, 10)}.` });
+          }
+          me.name = newName;
+          me.nameChangedAt = now;
+        }
+      }
       if (b.telegram !== undefined) {
         const tg = String(b.telegram).trim().replace(/^@/, '').slice(0, 32);
         if (tg && !/^[a-zA-Z0-9_]{3,32}$/.test(tg)) return send(res, 400, { error: 'Telegram username must be 3–32 letters, digits or underscores.' });
@@ -607,7 +619,7 @@ const server = http.createServer(async (req, res) => {
         }
       }
       saveUsers();
-      return send(res, 200, { ok: true, profile: profileView(me) });
+      return send(res, 200, { ok: true, profile: profileView({ ...me, email: u.email }) });
     }
     /* ----- save home addresses (up to 3) ----- */
     if (req.method === 'POST' && p === '/api/addresses') {
