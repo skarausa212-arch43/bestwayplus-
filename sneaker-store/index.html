@@ -375,13 +375,16 @@
   .foot-btm{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);font-size:12px;color:var(--faint)}
 
   /* ============ BROWSE / FILTERS ============ */
-  .controls{display:flex;align-items:center;gap:16px;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap}
+  .controls{display:flex;align-items:center;gap:12px;margin-bottom:14px}
   .filters{display:flex;gap:7px;flex-wrap:wrap}
-  .chip{padding:9px 15px;font-size:13px;font-weight:500;border-radius:100px;border:1px solid var(--line);background:var(--surface);color:var(--muted);transition:.18s;white-space:nowrap}
+  .chip{padding:9px 15px;font-size:13px;font-weight:500;border-radius:100px;border:1px solid var(--line);background:var(--surface);color:var(--muted);transition:.18s var(--ease);white-space:nowrap}
   .chip:hover{color:var(--ink);border-color:var(--line-2);transform:translateY(-2px)}
-  .chip{transition:.18s var(--ease)}
   .chip.active{background:var(--ink);color:#fff;border-color:var(--ink)}
-  .search{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line-2);border-radius:12px;padding:0 14px;height:44px;min-width:230px;transition:.2s}
+  .search{display:flex;align-items:center;gap:10px;flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:0 15px;height:46px;box-shadow:var(--shadow-sm);transition:border-color .2s var(--ease),box-shadow .2s var(--ease)}
+  .search:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 14%,transparent)}
+  .search span{display:grid;place-items:center;flex:none}
+  .search span svg{transition:color .2s,transform .2s var(--ease)}
+  .search:focus-within span svg{color:var(--accent);transform:scale(1.08)}
   .search:focus-within{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
   .search span svg{width:18px;height:18px;color:var(--muted)}
   .search input{flex:1;border:0;background:transparent;color:var(--ink);font-size:14px;outline:none}
@@ -672,9 +675,10 @@
     /* iOS zooms in (and the page scrolls sideways) when a focused input is
        under 16px — keep all form fields at 16px on phones to prevent it */
     input,textarea,select{font-size:16px!important}
-    /* filters: neat 2×2 grid — everything visible at once, nothing scrolls */
+    /* filters: neat grid — everything visible at once, nothing scrolls */
     .filterbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
     .fchip{width:100%}
+    .fcat{grid-column:1/-1}
     .fchip select{font-size:13px!important;font-weight:600;width:100%;padding:0 26px 0 14px;height:40px;line-height:40px}
     .fchip::after{right:14px}
     .freset{display:none}
@@ -898,18 +902,6 @@
   <div class="wrap">
     <div class="sec-head reveal"><div><h2>The Marketplace</h2><p>Search live listings — filter, sort and pay in crypto.</p></div></div>
     <div class="controls reveal">
-      <div class="filters" id="filters">
-        <button class="chip active" data-filter="all">All</button>
-        <button class="chip" data-filter="shoes">Sneakers</button>
-        <button class="chip" data-filter="clothing">Fashion</button>
-        <button class="chip" data-filter="electronics">Electronics</button>
-        <button class="chip" data-filter="accessories">Watches</button>
-        <button class="chip" data-filter="hobbies">Collectibles</button>
-        <button class="chip" data-filter="home">Home</button>
-        <button class="chip" data-filter="sport">Sports</button>
-        <button class="chip" data-filter="bags">Bags</button>
-        <button class="chip" data-filter="beauty">Beauty</button>
-      </div>
       <div class="search">
         <span data-ic="search"></span>
         <input type="text" id="searchInput" placeholder="Search items, brands…" autocomplete="off">
@@ -1357,6 +1349,7 @@ function renderGrid(more){
   else if(sort==='hi')items.sort((a,b)=>b.price-a.price);
   else items.sort((a,b)=>b.t-a.t);   // newest first (latest added)
   if(!items.length){grid.innerHTML=`<div class="empty"><div data-ic="search"></div><p>Nothing here yet. Try another category or tap “Sell an item”.</p></div>`;grid.querySelectorAll('[data-ic]').forEach(e=>e.innerHTML=ICON[e.dataset.ic]);return}
+  const _cat=document.getElementById('fCat');if(_cat&&_cat.value!==activeFilter)_cat.value=activeFilter;   // keep the Category dropdown in sync when set from nav/tiles
   const shown=items.slice(0,GRID_SHOWN);
   grid.innerHTML=shown.map(it=>it.k==='l'?listingCardHTML(it.o):catalogCardHTML(it.o)).join('')
     +(items.length>GRID_SHOWN?`<button class="load-more" id="loadMore">Load more — ${items.length-GRID_SHOWN} more</button>`:'');
@@ -1372,31 +1365,34 @@ grid.addEventListener('click',e=>{
 function toggleFav(id){const i=favs.indexOf(id);if(i>-1)favs.splice(i,1);else{favs.push(id);toast('Added to wishlist')}save('swk_favs',favs);document.querySelectorAll(`[data-fav="${id}"]`).forEach(b=>b.classList.toggle('on',favs.includes(id)))}
 
 /* ---------- filters ---------- */
-document.querySelectorAll('#filters .chip').forEach(c=>c.addEventListener('click',()=>{document.querySelectorAll('#filters .chip').forEach(x=>x.classList.remove('active'));c.classList.add('active');activeFilter=c.dataset.filter;renderGrid()}));
-document.querySelectorAll('nav.main a[data-filter]').forEach(a=>a.addEventListener('click',()=>{activeFilter=a.dataset.filter;document.querySelectorAll('#filters .chip').forEach(c=>c.classList.toggle('active',c.dataset.filter===activeFilter));renderGrid()}));
+document.querySelectorAll('nav.main a[data-filter]').forEach(a=>a.addEventListener('click',()=>{activeFilter=a.dataset.filter;renderGrid();}));
 $('#searchInput').addEventListener('input',e=>{searchTerm=e.target.value.trim().toLowerCase();renderGrid()});
 $('#searchBtn').addEventListener('click',()=>{document.getElementById('catalog').scrollIntoView();setTimeout(()=>$('#searchInput').focus(),400)});
 const PRICE_RANGES=[['','Any price'],['0-25','Under 25'],['25-50','25 – 50'],['50-100','50 – 100'],['100-250','100 – 250'],['250-','250 +']];
 function renderFilterbar(){
   const fb=$('#filterbar');if(!fb)return;
   const opts=(arr,cur)=>arr.map(o=>{const[v,l]=Array.isArray(o)?o:[o,o];return `<option value="${v}"${v===cur?' selected':''}>${l}</option>`;}).join('');
-  fb.innerHTML=`<div class="fchip" data-f="sort"><select id="fSort">${opts([['new','Newest'],['lo','Price ↑'],['hi','Price ↓']],FILT.sort)}</select></div>
+  const CATS=[['all','All categories'],['shoes','Shoes'],['clothing','Fashion'],['bags','Bags'],['accessories','Accessories'],['electronics','Electronics'],['home','Home'],['beauty','Beauty'],['kids','Kids & Baby'],['hobbies','Collectibles'],['sport','Sports'],['other','Other']];
+  fb.innerHTML=`<div class="fchip fcat" data-f="cat"><select id="fCat">${opts(CATS,activeFilter)}</select></div>
+    <div class="fchip" data-f="sort"><select id="fSort">${opts([['new','Newest'],['lo','Price ↑'],['hi','Price ↓']],FILT.sort)}</select></div>
     <div class="fchip" data-f="ship"><select id="fShip">${opts([['','All regions'],...REGIONS.map(r=>[r,r])],FILT.shipTo)}</select></div>
     <div class="fchip" data-f="cond"><select id="fCond">${opts([['','Any condition'],...['New','Like new','Very good','Good','Fair'].map(c=>[c,c])],FILT.cond)}</select></div>
     <div class="fchip" data-f="price"><select id="fPrice">${opts(PRICE_RANGES,FILT.priceRange||'')}</select></div>
     <button class="freset" id="fReset" type="button">Clear</button>`;
   const paint=()=>{
+    fb.querySelector('[data-f="cat"]').classList.toggle('on',activeFilter!=='all');
     fb.querySelector('[data-f="sort"]').classList.toggle('on',FILT.sort!=='new');
     fb.querySelector('[data-f="ship"]').classList.toggle('on',!!FILT.shipTo);
     fb.querySelector('[data-f="cond"]').classList.toggle('on',!!FILT.cond);
     fb.querySelector('[data-f="price"]').classList.toggle('on',!!FILT.priceRange);
-    $('#fReset').classList.toggle('show',FILT.sort!=='new'||!!FILT.shipTo||!!FILT.cond||!!FILT.priceRange);
+    $('#fReset').classList.toggle('show',activeFilter!=='all'||FILT.sort!=='new'||!!FILT.shipTo||!!FILT.cond||!!FILT.priceRange);
   };
+  $('#fCat').addEventListener('change',e=>{activeFilter=e.target.value;renderGrid();paint();});
   $('#fSort').addEventListener('change',e=>{FILT.sort=e.target.value;renderGrid();paint();});
   $('#fShip').addEventListener('change',e=>{FILT.shipTo=e.target.value;renderGrid();paint();});
   $('#fCond').addEventListener('change',e=>{FILT.cond=e.target.value;renderGrid();paint();});
   $('#fPrice').addEventListener('change',e=>{FILT.priceRange=e.target.value;const[a,b]=e.target.value.split('-');FILT.pmin=parseFloat(a)||0;FILT.pmax=parseFloat(b)||0;renderGrid();paint();});
-  $('#fReset').addEventListener('click',()=>{FILT.sort='new';FILT.shipTo='';FILT.cond='';FILT.priceRange='';FILT.pmin=0;FILT.pmax=0;renderFilterbar();renderGrid();});
+  $('#fReset').addEventListener('click',()=>{activeFilter='all';FILT.sort='new';FILT.shipTo='';FILT.cond='';FILT.priceRange='';FILT.pmin=0;FILT.pmax=0;renderFilterbar();renderGrid();});
   paint();
 }
 
@@ -1952,8 +1948,7 @@ function renderSell(){
     <div class="field" id="slBrandOtherWrap" style="display:none"><label>Brand name</label><input id="slBrandOther" maxlength="40" placeholder="Type the brand"></div>
     <div class="frow"><div class="field" id="slSizeField"><label>Size</label><input id="slSize" maxlength="24" placeholder="42 / M / One size"></div>
       <div class="field"><label>Condition</label><select id="slCond">${['New','Like new','Very good','Good','Fair'].map(c=>`<option>${c}</option>`).join('')}</select></div></div>
-    <div class="frow"><div class="field"><label>Price (USD)</label><input id="slPrice" type="number" min="1" step="1" placeholder="80"></div>
-      <div class="field"><label>Was (optional)</label><input id="slOld" type="number" min="0" step="1" placeholder="120"></div></div>
+    <div class="field"><label>Price (USD)</label><input id="slPrice" type="number" min="1" step="1" placeholder="80"></div>
     <div class="field"><label>Ships to</label><div class="rgns" id="slShip">${regionBoxes}</div></div>
     <div class="field"><label>Returns</label><select id="slReturns">${RETURNS.map(r=>`<option>${r}</option>`).join('')}</select></div>
     <div class="field"><label>Description</label><textarea id="slDesc" rows="3" maxlength="1500" placeholder="Condition details, flaws, measurements…"></textarea></div>
@@ -1989,7 +1984,7 @@ async function submitListing(){
   if(!$('#slCat').value)return show('Choose a category.');
   if(!SELL_SHIP.length)return show('Choose at least one region you ship to.');
   let brand=$('#slBrand').value;if(brand==='Other')brand=$('#slBrandOther').value||'';
-  const body={title:$('#slTitle').value,brand,category:$('#slCat').value,size:$('#slSize').value,condition:$('#slCond').value,price:$('#slPrice').value,old:$('#slOld').value,ships:SELL_SHIP.slice(),returns:$('#slReturns').value,desc:$('#slDesc').value,photos:SELL_PHOTOS};
+  const body={title:$('#slTitle').value,brand,category:$('#slCat').value,size:$('#slSize').value,condition:$('#slCond').value,price:$('#slPrice').value,ships:SELL_SHIP.slice(),returns:$('#slReturns').value,desc:$('#slDesc').value,photos:SELL_PHOTOS};
   $('#slGo').disabled=true;
   try{await mfetch('/api/listings',{method:'POST',body:JSON.stringify(body)});toast('Listing submitted — it goes live after a quick review');closeModal('#sellModal');loadListings();if($('#accModal').classList.contains('show'))loadMarket();}
   catch(e){show(e.message);$('#slGo').disabled=false;}
