@@ -938,7 +938,25 @@ const server = http.createServer(async (req, res) => {
       const otherEmail = u.email === l.seller ? buyer : l.seller;
       const other = users[otherEmail] || {};
       const counterpart = sellerHandle(otherEmail);
-      return send(res, 200, { messages: thread, counterpart, counterpartAvatar: other.avatar || '', counterpartTelegram: other.telegram || '', listing: { id: l.id, title: l.title, cover: l.cover || '', price: l.price, seller: l.seller } });
+      const myRole = u.email === l.seller ? 'seller' : 'buyer';
+      // latest offer + order between this buyer and this listing — surfaced as in-chat events (Vinted-style)
+      const of = offers.filter(o => o.listingId === lid && o.buyer === buyer).sort((a, b) => b.createdAt - a.createdAt)[0];
+      const offerOut = of ? { id: of.id, amount: of.amount, counter: of.counter || 0, status: of.status, listPrice: l.price, at: of.createdAt } : null;
+      const ord = orders.filter(o => o.listingId === lid && o.email === buyer && o.escrow).sort((a, b) => (b.date || 0) - (a.date || 0))[0];
+      let orderOut = null;
+      if (ord) {
+        const shipBy = ord.status === 'held' ? (ord.paidAt || ord.date) + SHIP_DEADLINE_DAYS * 864e5 : 0;
+        const confirmBy = (ord.status === 'shipped' && ord.shippedAt) ? ord.shippedAt + AUTO_RELEASE_DAYS * 864e5 : 0;
+        orderOut = { id: ord.id, status: ord.status, subtotal: ord.subtotal, total: ord.total, listPrice: l.price,
+          date: ord.date, paidAt: ord.paidAt || 0, shippedAt: ord.shippedAt || 0, carrier: ord.carrier || '', tracking: ord.tracking || '',
+          shipBy, confirmBy, disputeReason: ord.disputeReason || '' };
+      }
+      const st = sellerStats(l.seller);
+      return send(res, 200, { messages: thread, counterpart, role: myRole,
+        counterpartAvatar: other.avatar || '', counterpartTelegram: other.telegram || '',
+        seller: { rating: st.rating, sold: st.sold, verified: st.verified, joined: (users[l.seller] || {}).created || 0 },
+        offer: offerOut, order: orderOut,
+        listing: { id: l.id, title: l.title, cover: l.cover || '', price: l.price, seller: l.seller, status: l.status } });
     }
     if (p === '/api/chat/send' && req.method === 'POST') {
       const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });

@@ -685,6 +685,28 @@
   .chat-in input{flex:1;min-width:0;height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font:inherit;font-size:14px;outline:none}
   .chat-in input:focus{border-color:var(--accent)}
   .chat-in button{padding:0 18px;border-radius:12px;background:var(--ink);color:#fff;font-weight:600;font-size:13px;flex:none}
+  .chat-sub{font-size:12px;color:var(--muted);margin-top:1px;font-weight:600}
+  /* chat action bar (buy / offer) */
+  .chat-acts{display:flex;gap:8px;margin:0 0 4px}
+  .ca-buy{flex:1;height:44px;border-radius:12px;background:var(--ink);color:#fff;font-weight:700;font-size:13.5px;transition:.16s var(--ease)}
+  .ca-buy:hover{background:var(--accent)}
+  .ca-offer{height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-weight:700;font-size:13.5px;transition:.16s}
+  .ca-offer:hover{border-color:var(--accent);color:var(--accent)}
+  /* offer bubble */
+  .offb{display:flex;flex-direction:column;gap:2px}
+  .offb-p b{font-size:15px;font-weight:800;letter-spacing:-.01em}
+  .offb-p s{opacity:.6;font-size:12.5px;margin-left:4px}
+  .offb-st{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;opacity:.9}
+  .cmsg.me .offb-st{color:rgba(255,255,255,.9)}
+  /* system events + action blocks */
+  .csys{align-self:center;max-width:92%;text-align:center;font-size:12.5px;font-weight:600;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:100px;padding:6px 14px}
+  .cact{align-self:stretch;background:var(--surface);border:1px solid var(--line-2);border-radius:14px;padding:13px 14px;box-shadow:var(--shadow-sm)}
+  .cact.info{background:var(--surface-2);box-shadow:none}
+  .cact-h{font-size:14px;font-weight:800;letter-spacing:-.01em;margin-bottom:3px}
+  .cact p{font-size:12.5px;color:var(--muted);line-height:1.45;margin-bottom:10px}
+  .cact.info p{margin-bottom:0}
+  .cact-ok{width:100%;height:42px;border-radius:11px;background:var(--ok,#1e8e5a);color:#fff;font-weight:700;font-size:13.5px;margin-bottom:8px}
+  .cact-no{width:100%;height:42px;border-radius:11px;border:1px solid var(--line-2);background:transparent;color:var(--ink);font-weight:700;font-size:13.5px}
 
   /* cart drawer (kept minimal, hidden trigger) */
   .drawer{position:fixed;top:0;right:0;height:100%;width:400px;max-width:92vw;background:var(--surface);z-index:210;transform:translateX(101%);transition:transform .4s var(--ease);display:flex;flex-direction:column;box-shadow:var(--shadow-lg)}
@@ -2370,20 +2392,57 @@ async function paintListingChat(){
   const L=d.listing||{};
   const av=d.counterpartAvatar||'',ini=((d.counterpart||'?')[0]||'?').toUpperCase();
   const tg=d.counterpartTelegram||'';
-  const iAmBuyer=!!(AUTH&&L.seller&&AUTH.email&&AUTH.email.toLowerCase()!==String(L.seller).toLowerCase());
+  const role=d.role||(AUTH&&L.seller&&AUTH.email&&AUTH.email.toLowerCase()!==String(L.seller).toLowerCase()?'buyer':'seller');
+  const iAmBuyer=role==='buyer';
+  const sD=d.seller||{},of=d.offer,ord=d.order;
+  const cdt=ts=>{try{return new Date(ts).toLocaleString(undefined,{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});}catch(e){return '';}};
+  const cday=ts=>{try{return new Date(ts).toLocaleDateString(undefined,{day:'2-digit',month:'short'});}catch(e){return '';}};
+  // buy price = accepted offer if any, else list price
+  const buyPrice=(of&&of.status==='accepted')?of.amount:L.price;
+  const liveOrder=ord&&['pending','held','shipped','disputed','delivered'].includes(ord.status);
+  const canAct=iAmBuyer&&L.status==='active'&&!liveOrder;
+  // ---- in-chat events: offer bubble + order lifecycle (Vinted-style) ----
+  const OS={pending:'Pending',accepted:'Accepted',declined:'Declined',countered:'Countered',superseded:'Replaced',used:'Purchased'};
+  let events='';
+  if(of){
+    const cls=of.status==='accepted'?'ok':of.status==='declined'?'no':'wait';
+    events+=`<div class="cmsg ${iAmBuyer?'me':''}"><div class="offb ${cls}"><div class="offb-p"><b>${usdtLabel(of.amount)}</b> <s>${usdtLabel(of.listPrice)}</s></div><span class="offb-st">${of.status==='countered'&&of.counter?`Countered · ${usdtLabel(of.counter)}`:(OS[of.status]||of.status)}</span></div></div>`;
+  }
+  if(ord){
+    const sys=t=>`<div class="csys">${t}</div>`;
+    if(['held','shipped','disputed','released','delivered'].includes(ord.status))events+=sys(`✓ Purchase successful · ${usdtLabel(ord.total)}`);
+    if(['shipped','released','delivered'].includes(ord.status))events+=sys(`📦 Order shipped${ord.carrier?` · ${esc(ord.carrier)} ${esc(ord.tracking||'')}`:''}`);
+    if(ord.status==='disputed')events+=sys(`⚠️ Issue reported${ord.disputeReason?` · ${esc(ord.disputeReason)}`:''}`);
+    if(ord.status==='released')events+=sys(`✅ Order completed — funds released to the seller`);
+    if(ord.status==='refunded')events+=sys(`↩️ Order refunded to the buyer`);
+    // action block for the actionable party
+    if(ord.status==='held'&&!iAmBuyer)events+=`<div class="cact"><div class="cact-h">Ship by ${cday(ord.shipBy)}</div><p>The buyer has paid — funds are held safely in escrow. Ship the item and add tracking so they can confirm.</p><button class="cact-ok" data-chat-ship="${ord.id}">Mark as shipped</button></div>`;
+    else if(ord.status==='held'&&iAmBuyer)events+=`<div class="cact info"><div class="cact-h">Waiting for shipment</div><p>You paid — funds are held in escrow. The seller should ship by ${cday(ord.shipBy)}.</p></div>`;
+    else if(ord.status==='shipped'&&iAmBuyer)events+=`<div class="cact"><div class="cact-h">Check your order by ${cday(ord.confirmBy)}</div><p>If it matches the description, confirm everything is OK. Report an issue if it never arrived or isn't what you expected.</p><button class="cact-ok" data-chat-confirm="${ord.id}">Everything is OK</button><button class="cact-no" data-chat-dispute="${ord.id}">I have an issue</button></div>`;
+    else if(ord.status==='shipped'&&!iAmBuyer)events+=`<div class="cact info"><div class="cact-h">Shipped</div><p>Waiting for the buyer to confirm. Funds auto-release on ${cday(ord.confirmBy)}.</p></div>`;
+  }
+  const acts=canAct?`<div class="chat-acts"><button class="ca-buy" data-chat-buy="${esc(L.id)}">Buy now · ${usdtLabel(payTotal(buyPrice))}</button><button class="ca-offer" data-chat-offer="${esc(L.id)}">Make an offer</button></div>`:'';
   box.innerHTML=`<div class="cobody" style="padding-bottom:8px">
     <div class="chat-who ${iAmBuyer?'clickable':''}" ${iAmBuyer?`data-open-seller="${esc(L.seller)}"`:''}>
       <div class="pa-pic" style="width:44px;height:44px;font-size:18px">${av?`<img src="${av}" alt="">`:`<span>${esc(ini)}</span>`}</div>
-      <div style="min-width:0"><h3 style="margin:0;font-size:19px">@${esc(d.counterpart)} ${iAmBuyer?'<span class="go-hint">View shop ›</span>':''}</h3>${tg?`<a class="tg-link" href="https://t.me/${esc(tg)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">✈ Telegram: @${esc(tg)}</a>`:''}</div>
+      <div style="min-width:0"><h3 style="margin:0;font-size:19px">@${esc(d.counterpart)} ${iAmBuyer?'<span class="go-hint">View shop ›</span>':''}</h3><div class="chat-sub">${iAmBuyer?(sD.rating?`★ ${sD.rating} · ${sD.sold||0} sold`:'New seller'):'Buyer'}${sD.verified?' · <span style="color:var(--ok)">✓ Verified</span>':''}</div>${tg?`<a class="tg-link" href="https://t.me/${esc(tg)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">✈ Telegram: @${esc(tg)}</a>`:''}</div>
     </div>
     <button class="chat-item" data-open-listing="${esc(L.id||'')}">
       ${L.cover?`<img src="${L.cover}" alt="">`:'<span class="ph-mini">📦</span>'}
-      <div class="ci-txt"><b>${esc(L.title||'')}</b><span>${usdtLabel(L.price||0)} · ${disp(L.price||0)}</span></div>
+      <div class="ci-txt"><b>${esc(L.title||'')}</b><span>${(of&&of.status==='accepted')?`<s style="color:var(--faint)">${usdtLabel(L.price)}</s> → <b style="color:var(--ok)">${usdtLabel(of.amount)}</b>`:usdtLabel(L.price||0)}</span></div>
       <span class="go-hint">View item ›</span>
     </button>
+    ${acts}
     <div class="chat-head"><span class="chat-tr"><i>🌐 Translate to</i>${langSel}<button class="tr-all">All</button></span></div>
-    <div class="chat-log" style="max-height:46vh">${d.messages.length?d.messages.map((m,i)=>`<div class="cmsg ${m.me?'me':''}"><span class="ctext">${esc(m.text)}</span><button class="ctr" data-tr="${i}" title="Translate">🌐</button><div class="ctrans"></div></div>`).join(''):`<p style="font-size:12px;color:var(--muted);text-align:center;padding:8px">No messages yet — say hi to @${esc(d.counterpart)}.</p>`}</div>
+    <div class="chat-log" style="max-height:42vh">${events}${d.messages.length?d.messages.map((m,i)=>`<div class="cmsg ${m.me?'me':''}"><span class="ctext">${esc(m.text)}</span><button class="ctr" data-tr="${i}" title="Translate">🌐</button><div class="ctrans"></div></div>`).join(''):(events?'':`<p style="font-size:12px;color:var(--muted);text-align:center;padding:8px">No messages yet — say hi to @${esc(d.counterpart)}.</p>`)}</div>
     <div class="chat-in"><input id="ciList" placeholder="Message @${esc(d.counterpart)}…" maxlength="1000"><button id="ciSend">Send</button></div></div>`;
+  // wire the Vinted-style action buttons
+  const chatRefresh=()=>{paintListingChat();if($('#accModal').classList.contains('show'))loadMarket();loadListings();};
+  const bBuy=box.querySelector('[data-chat-buy]');if(bBuy)bBuy.addEventListener('click',async()=>{try{const fd=await mfetch('/api/listings/'+bBuy.dataset.chatBuy);closeModal('#chatModal');buyListing(fd.listing,fd.acceptedOfferPrice||fd.listing.price);}catch(e){toast(e.message);}});
+  const bOffer=box.querySelector('[data-chat-offer]');if(bOffer)bOffer.addEventListener('click',()=>makeOffer({id:L.id,title:L.title,price:L.price}));
+  const bShip=box.querySelector('[data-chat-ship]');if(bShip)bShip.addEventListener('click',()=>{const carrier=prompt('Carrier (USPS / UPS / FedEx / DHL):','USPS');if(carrier==null)return;const tracking=prompt('Tracking number:');if(tracking==null)return;mfetch('/api/order/'+bShip.dataset.chatShip+'/ship',{method:'POST',body:JSON.stringify({carrier,tracking})}).then(()=>{toast('Marked as shipped');chatRefresh();}).catch(e=>toast(e.message));});
+  const bOk=box.querySelector('[data-chat-confirm]');if(bOk)bOk.addEventListener('click',()=>{if(!confirm('Confirm the item arrived as described? This releases the funds to the seller.'))return;mfetch('/api/order/'+bOk.dataset.chatConfirm+'/confirm',{method:'POST'}).then(()=>{toast('Receipt confirmed — funds released');chatRefresh();}).catch(e=>toast(e.message));});
+  const bNo=box.querySelector('[data-chat-dispute]');if(bNo)bNo.addEventListener('click',()=>{const r=prompt('Describe the problem:');if(r==null)return;mfetch('/api/order/'+bNo.dataset.chatDispute+'/dispute',{method:'POST',body:JSON.stringify({reason:r})}).then(()=>{toast('Issue reported — our team will help');chatRefresh();}).catch(e=>toast(e.message));});
   const msgs=d.messages;
   const curLang=()=>box.querySelector('.chat-lang').value;
   async function translateInto(i,el){el.style.display='block';el.textContent='…';const to=curLang();save('swk_chatlang',to);try{const t=await mfetch('/api/translate',{method:'POST',body:JSON.stringify({text:msgs[i].text,to})});el.textContent=t.text;}catch(e){el.textContent='(translation unavailable)';}}
