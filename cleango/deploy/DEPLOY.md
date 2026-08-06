@@ -226,6 +226,49 @@ SES, Postmark — all have free/cheap tiers).
 > on a connection the server did not upgrade to TLS. If you see *«сервер не
 > предложил STARTTLS»*, the port is wrong (use 587 or 465), not the password.
 
+## Stripe: switching from test to live
+
+The card flow is a safe no-op until `LUMI_STRIPE_SECRET_KEY` is set, and it stays
+harmless on test keys — the buttons appear and nothing is ever charged. Going live
+is four steps, and the last one is the important one.
+
+1. **Finish verification** in the Stripe Dashboard (business details, bank account).
+   Until `charges_enabled` is true no live payment goes through.
+2. **Copy the live keys** — Developers → API keys, with the *Test mode* toggle OFF:
+   `sk_live_…` and `pk_live_…`.
+3. **Create the live webhook** — Developers → Webhooks → Add endpoint (again, test
+   mode OFF), URL `https://lumi24.pl/api/payments/stripe/webhook`, subscribed to
+   exactly:
+   `checkout.session.completed`, `payment_intent.succeeded`,
+   `payment_intent.payment_failed`.
+   Copy its **Signing secret** (`whsec_…`) — a webhook created in test mode has a
+   different secret and will not verify against live traffic.
+4. **Put them on the server** and apply:
+   ```bash
+   cat >> /opt/lumi/deploy/instance.local.env <<'ENV'
+   LUMI_STRIPE_SECRET_KEY=sk_live_...
+   LUMI_STRIPE_PUBLISHABLE_KEY=pk_live_...
+   LUMI_STRIPE_WEBHOOK_SECRET=whsec_...
+   ENV
+   bash /opt/lumi/deploy/auto-update.sh
+   ```
+
+**Then verify, before a customer does it for you:**
+
+```bash
+cd /opt/lumi && node ops/stripe-check.js
+```
+
+It asks Stripe with the key the service actually uses and reports: live vs test,
+whether the account may charge and pay out, the settlement currency, whether a
+webhook points at this domain, whether it is subscribed to all three events, and
+whether the signing secret matches its mode. It creates nothing and charges
+nothing. A missing webhook event is the nastiest failure here — the customer pays,
+Stripe is happy, and the order stays "unpaid" in LUMI forever.
+
+Finish with one real order on a real card (a cheap one), then refund it from the
+admin panel — that exercises charge, webhook and refund end to end.
+
 ## Social sign-in (Google + Apple)
 The login screen shows **“Continue with Google”** and **“Continue with Apple”**
 buttons **only when the matching provider is configured** — otherwise they’re
