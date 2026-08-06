@@ -64,7 +64,7 @@ function api(pathname) {
 }
 
 const out = [];
-let fails = 0, warns = 0;
+let fails = 0, warns = 0, sandbox = false;
 const say = (mark, text, detail) => { out.push([mark, text, detail]); if (mark === 'fail') fails++; if (mark === 'warn') warns++; };
 
 (async () => {
@@ -76,8 +76,15 @@ const say = (mark, text, detail) => { out.push([mark, text, detail]); if (mark =
 
   const live = cfg.key.startsWith('sk_live_');
   if (live) say('ok', 'Секретный ключ', 'LIVE');
-  else if (cfg.key.startsWith('sk_test_')) say('fail', 'Секретный ключ ТЕСТОВЫЙ', 'реальные деньги не спишутся — возьмите sk_live_ в Stripe Dashboard');
-  else say('fail', 'Секретный ключ нераспознан', 'ожидается sk_live_… или sk_test_…');
+  else if (cfg.key.startsWith('sk_test_')) {
+    say('fail', 'Секретный ключ ТЕСТОВЫЙ (песочница)',
+      'всё, что проверено ниже, относится к тестовому аккаунту, а не к боевому — реальные деньги не спишутся');
+  } else say('fail', 'Секретный ключ нераспознан', 'ожидается sk_live_… или sk_test_…');
+  // Everything below is read through this key, so in test mode every green tick
+  // describes the sandbox. Say so on each line rather than letting a screen full
+  // of ✓ read as "готово".
+  const SB = live ? '' : ' · в песочнице';
+  sandbox = !live;
 
   // ── the account itself ──
   const acc = await api('/v1/account');
@@ -87,10 +94,10 @@ const say = (mark, text, detail) => { out.push([mark, text, detail]); if (mark =
     return report();
   }
   const a = acc.json;
-  say('ok', 'Аккаунт', `${a.business_profile && a.business_profile.name || a.id} · ${(a.country || '?')}`);
+  say('ok', 'Аккаунт', `${a.business_profile && a.business_profile.name || a.id} · ${(a.country || '?')}${SB}`);
 
-  if (a.charges_enabled) say('ok', 'Приём платежей разрешён');
-  else say('fail', 'Приём платежей ЗАПРЕЩЁН', 'Stripe ещё не завершил проверку — смотрите requirements в Dashboard');
+  if (a.charges_enabled) say('ok', 'Приём платежей разрешён' + SB);
+  else say('fail', 'Приём платежей ЗАПРЕЩЁН', live ? 'Stripe ещё не завершил проверку — смотрите requirements в Dashboard' : 'в песочнице это нормально — она никогда не принимает реальные платежи');
 
   if (a.payouts_enabled) say('ok', 'Выплаты на счёт разрешены');
   else say('warn', 'Выплаты приостановлены', 'деньги будут копиться в Stripe, но не дойдут до банка — заполните требования в Dashboard');
@@ -99,7 +106,7 @@ const say = (mark, text, detail) => { out.push([mark, text, detail]); if (mark =
   if (due.length) say('warn', `Stripe ждёт ${due.length} пункт(ов)`, due.slice(0, 6).join(', '));
 
   const cur = String(a.default_currency || '').toUpperCase();
-  if (cur === 'PLN') say('ok', 'Валюта аккаунта', 'PLN');
+  if (cur === 'PLN') say('ok', 'Валюта аккаунта', 'PLN' + SB);
   else say('warn', `Валюта аккаунта ${cur || '—'}`, 'заказы считаются в PLN — при другой валюте Stripe сконвертирует и возьмёт комиссию');
 
   // ── webhook: the half that decides whether a paid order looks paid to us ──
@@ -116,7 +123,7 @@ const say = (mark, text, detail) => { out.push([mark, text, detail]); if (mark =
     say('fail', 'Нет вебхука на этот домен',
       `есть: ${mine.map((h) => h.url).join(', ') || list.map((h) => h.url).slice(0, 3).join(', ')} — нужен ${want}`);
   } else {
-    say('ok', 'Вебхук', `${exact.url} · ${exact.status}`);
+    say('ok', 'Вебхук', `${exact.url} · ${exact.status}${SB}`);
     if (exact.status !== 'enabled') say('fail', 'Вебхук выключен', 'включите endpoint в Dashboard');
     const events = exact.enabled_events || [];
     const all = events.includes('*');
@@ -125,7 +132,7 @@ const say = (mark, text, detail) => { out.push([mark, text, detail]); if (mark =
       say('fail', 'Вебхук не подписан на нужные события',
         `нет: ${missing.join(', ')} — оплата пройдёт, но заказ останется «не оплачен»`);
     } else {
-      say('ok', 'События вебхука', all ? 'все события' : REQUIRED_EVENTS.join(', '));
+      say('ok', 'События вебхука', (all ? 'все события' : REQUIRED_EVENTS.join(', ')) + SB);
     }
   }
 
@@ -135,9 +142,9 @@ const say = (mark, text, detail) => { out.push([mark, text, detail]); if (mark =
   } else if (!/^whsec_/.test(cfg.webhookSecret)) {
     say('fail', 'Секрет подписи не похож на whsec_…', 'скопируйте Signing secret именно этого endpoint');
   } else if (live && exact && exact.livemode === false) {
-    say('fail', 'Вебхук создан в тестовом режиме', 'при live-ключе нужен endpoint из live-режима Dashboard');
+    say('fail', 'Вебхук создан в тестовом режиме', 'при live-ключе нужен endpoint из live-режима Dashboard — у него другой signing secret');
   } else {
-    say('ok', 'Секрет подписи вебхука на месте');
+    say('ok', 'Секрет подписи вебхука на месте' + SB);
   }
 
   // ── the customer-facing half ──
@@ -157,7 +164,15 @@ function report() {
     if (detail) console.log(`      ${detail}`);
   }
   console.log('─'.repeat(66));
-  if (fails) console.log(`\x1b[31m🔴 ${fails} проблем(ы) — реальный платёж не пройдёт${warns ? ` + ${warns} предупреждени(я/й)` : ''}\x1b[0m\n`);
+  if (fails) {
+    console.log(`\x1b[31m🔴 ${fails} проблем(ы) — реальный платёж не пройдёт${warns ? ` + ${warns} предупреждени(я/й)` : ''}\x1b[0m`);
+    if (sandbox) {
+      console.log('\x1b[33m   Это песочница. Переключитесь на боевой аккаунт в верхнем левом углу Dashboard,');
+      console.log('   завершите там верификацию, возьмите ключи sk_live_/pk_live_ и создайте вебхук заново —');
+      console.log('   у боевого endpoint другой signing secret.\x1b[0m');
+    }
+    console.log('');
+  }
   else if (warns) console.log(`\x1b[33m🟡 платить можно, но ${warns} предупреждени(я/й) — см. выше\x1b[0m\n`);
   else console.log('\x1b[32m🟢 Stripe готов принимать реальные платежи\x1b[0m\n');
   process.exit(fails ? 1 : 0);
