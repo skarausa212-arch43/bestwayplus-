@@ -392,7 +392,7 @@ function receiptHTML(o) {
   <div class="body">
     <div class="meta">
       <div><b>Billed to</b>${esc(o.name)}<br>${esc(o.email)}</div>
-      <div><b>Ship to</b>${esc(o.address)}<br>${esc(o.city)}, ${esc(o.zip)}</div>
+      <div><b>Ship to</b>${esc(o.address)}<br>${esc(o.city)}, ${esc(o.zip)}${o.country ? '<br>' + esc(o.country) : ''}</div>
       <div><b>Date</b>${new Date(o.date).toUTCString().slice(0, 16)}<br><b style="margin-top:8px">Payment</b>${esc(o.payment)}</div>
     </div>
     <table>
@@ -506,7 +506,7 @@ function orderView(o) {
     listingId: o.listingId || null, cover: (listings.find(x => x.id === o.listingId) || {}).cover || (o.items && o.items[0] && '') || '',
     buyerHandle: sellerHandle(o.email), sellerEmail: o.seller || null, sellerHandle: o.seller ? sellerHandle(o.seller) : 'STUFFWEKNOW',
     disputeReason: o.disputeReason || '', shippedAt: o.shippedAt || 0,
-    name: o.name || '', address: o.address || '', city: o.city || '', zip: o.zip || '',
+    name: o.name || '', address: o.address || '', city: o.city || '', zip: o.zip || '', country: o.country || '',
     items: (o.items || []).map(i => ({ name: i.name, qty: i.qty, size: i.size, price: i.price })),
   };
 }
@@ -598,6 +598,7 @@ const server = http.createServer(async (req, res) => {
         label: String(a.label || '').slice(0, 30),
         name: String(a.name || '').slice(0, 60),
         region: REGIONS.includes(a.region) ? a.region : REGIONS[0],
+        country: String(a.country || '').slice(0, 56),
         line: String(a.line || a.address || '').slice(0, 140),
         city: String(a.city || '').slice(0, 60),
         zip: String(a.zip || '').slice(0, 20),
@@ -669,7 +670,7 @@ const server = http.createServer(async (req, res) => {
       const net = pickNetwork(b.network);
       const order = {
         id, email, name: String(b.name || '').slice(0, 80), address: String(b.address || '').slice(0, 160),
-        city: String(b.city || '').slice(0, 60), zip: String(b.zip || '').slice(0, 20),
+        city: String(b.city || '').slice(0, 60), zip: String(b.zip || '').slice(0, 20), country: 'United States', // house catalog ships USA-only
         network: net, payment: NETWORKS[net].label,
         items, subtotal, ship, total,
         payAmount: assignUniqueAmount(total),   // exact stablecoin amount to send (unique cents)
@@ -739,15 +740,26 @@ const server = http.createServer(async (req, res) => {
       if (!l) return send(res, 404, { error: 'not found' });
       if (l.seller !== u.email) return send(res, 403, { error: 'Not your listing.' });
       if (req.method === 'DELETE') { l.status = 'removed'; saveListings(); return send(res, 200, { ok: true }); }
+      // only editable while it hasn't been bought / reserved / removed
+      if (!['active', 'pending', 'rejected'].includes(l.status)) return send(res, 400, { error: 'This listing can no longer be edited.' });
       const b = await readBody(req);
-      if (b.title !== undefined) l.title = String(b.title).trim().slice(0, 90);
-      if (b.price !== undefined && Number(b.price) > 0) l.price = Math.round(Number(b.price) * 100) / 100;
+      if (b.title !== undefined) { const t = String(b.title).trim().slice(0, 90); if (t.length < 3) return send(res, 400, { error: 'Title too short.' }); l.title = t; }
+      if (b.price !== undefined) { const pr = Math.round(Number(b.price) * 100) / 100; if (!(pr > 0) || pr > 100000) return send(res, 400, { error: 'Enter a valid price.' }); l.price = pr; }
+      if (b.old !== undefined) l.old = Math.max(0, Math.round(Number(b.old) * 100) / 100) || 0;
+      if (b.brand !== undefined) l.brand = String(b.brand).slice(0, 40);
       if (b.size !== undefined) l.size = String(b.size).slice(0, 24);
       if (b.desc !== undefined) l.desc = String(b.desc).slice(0, 1500);
       if (b.condition !== undefined && CONDITIONS.includes(b.condition)) l.condition = b.condition;
       if (b.category !== undefined && CATEGORIES.includes(b.category)) l.category = b.category;
       if (Array.isArray(b.ships)) l.ships = b.ships.filter(r => REGIONS.includes(r));
       if (b.returns !== undefined && RETURNS.includes(b.returns)) l.returns = b.returns;
+      if (Array.isArray(b.photos)) {
+        const photos = b.photos.filter(x => typeof x === 'string' && x.startsWith('data:image/')).slice(0, 6);
+        if (!photos.length) return send(res, 400, { error: 'Add at least one photo.' });
+        for (const ph of photos) if (ph.length > 2200000) return send(res, 400, { error: 'A photo is too large — keep under ~1.5MB.' });
+        l.photos = photos; l.cover = photos[0];
+      }
+      l.status = 'pending'; l.editedAt = Date.now();   // edits go back through moderation
       saveListings();
       return send(res, 200, { listing: listingFull(l) });
     }
@@ -846,7 +858,7 @@ const server = http.createServer(async (req, res) => {
       const net = pickNetwork(b.network);
       const order = {
         id, email: u.email, name: String(b.name || u.name || '').slice(0, 80),
-        address: String(b.address || '').slice(0, 160), city: String(b.city || '').slice(0, 60), zip: String(b.zip || '').slice(0, 20),
+        address: String(b.address || '').slice(0, 160), city: String(b.city || '').slice(0, 60), zip: String(b.zip || '').slice(0, 20), country: String(b.country || '').slice(0, 56),
         network: net, payment: NETWORKS[net].label, escrow: true, seller: l.seller, listingId: l.id,
         items: [{ id: l.id, name: l.title, price, size: l.size || '-', qty: 1 }],
         subtotal: price, ship: 0, total, fee,

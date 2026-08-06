@@ -357,6 +357,20 @@
   .faq-item.open .faq-q .fx{transform:rotate(45deg);color:var(--accent)}
   .faq-a{max-height:0;overflow:hidden;transition:max-height .35s var(--ease)}
   .faq-a p{padding:0 22px 20px;color:var(--muted);font-size:14.5px;line-height:1.6}
+  /* compact stacked home sections (desktop) */
+  .sec-tight{padding-bottom:clamp(14px,2vw,22px)!important}
+  .sec-tight .crypto-band{padding:18px 34px}
+  .sec-tight .crypto-row{margin-top:12px}
+  .sec-tight .crypto-band p{margin-top:9px}
+  .sec-tight .stats{padding:clamp(18px,2.4vw,26px) clamp(22px,3vw,34px)}
+  .sec-tight .stat b{font-size:clamp(24px,3vw,38px)}
+  .sec-tight .stat span{margin-top:5px}
+  .sec-faq{padding-bottom:clamp(24px,3vw,40px)!important}
+  .sec-faq .sec-head{margin-bottom:16px}
+  .sec-faq .sec-head h2{font-size:clamp(22px,2.6vw,32px)}
+  .sec-faq .faq{gap:8px}
+  .sec-faq .faq-q{padding:14px 20px;font-size:15px}
+  .sec-faq .faq-a p{padding:0 20px 15px;font-size:14px}
 
   /* ============ CTA BAND ============ */
 
@@ -557,6 +571,24 @@
   #mktBody{animation:panelin .3s var(--ease)}
   @keyframes panelin{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
   .mkt-empty{padding:36px 10px;text-align:center;color:var(--muted);font-size:14px}
+  /* saved / wishlist */
+  .wishgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .wcard{position:relative;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--surface);display:flex;flex-direction:column;animation:panelin .3s var(--ease) both;transition:transform .18s var(--ease),box-shadow .18s var(--ease)}
+  .wcard:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm)}
+  .wcard.gone{opacity:.72}
+  .wc-media{width:100%;aspect-ratio:1/1;background:#eef0f3;overflow:hidden;display:block}
+  .wc-media img{width:100%;height:100%;object-fit:cover;transition:transform .3s var(--ease)}
+  .wcard:hover .wc-media img{transform:scale(1.04)}
+  .wc-body{padding:10px 11px 11px;display:flex;flex-direction:column;gap:7px;flex:1}
+  .wc-x{position:absolute;top:8px;right:8px;z-index:2;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;font-size:13px;display:grid;place-items:center;backdrop-filter:blur(4px);transition:.15s var(--ease)}
+  .wc-x:hover{background:rgba(0,0,0,.8)}
+  .wc-t{font-size:13px;font-weight:600;line-height:1.25;cursor:pointer;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;letter-spacing:-.01em}
+  .wc-price{font-size:14px;font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .wc-off{font-size:10px;font-weight:800;color:var(--ok);background:rgba(38,166,91,.12);padding:2px 6px;border-radius:100px;letter-spacing:.02em}
+  .wc-buy{margin-top:auto;background:var(--ink);color:#fff;font-weight:700;font-size:12px;padding:9px 8px;border-radius:10px;transition:.16s var(--ease)}
+  .wc-buy:hover{background:var(--accent)}
+  .wc-gone{margin-top:auto;font-size:11.5px;font-weight:700;color:var(--muted);background:var(--surface-2);padding:8px;border-radius:10px;text-align:center}
+  .wc-note{margin-top:auto;font-size:11.5px;font-weight:600;color:var(--faint);text-align:center;padding:8px}
   .ord{border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;background:var(--surface)}
   .ord-top{display:flex;justify-content:space-between;gap:10px;font-size:13.5px}
   .ord-status{margin:8px 0}
@@ -747,6 +779,7 @@
     .acc-sec .btn{min-width:0;height:42px;font-size:13px}
     .acc-del{margin-top:9px;font-size:12px}
     .ord{padding:12px}
+    .wishgrid{grid-template-columns:1fr 1fr;gap:10px}
     .mkt-empty{padding:24px 10px;font-size:13px}
     .wd-box{padding:14px}
     /* How Escrow Works — compact single row of 4 steps */
@@ -981,7 +1014,7 @@
 </section>
 
 <!-- CRYPTO SUPPORTED -->
-<section class="section" style="padding-top:0">
+<section class="section sec-tight" style="padding-top:0">
   <div class="wrap">
     <div class="crypto-band reveal" style="text-align:center">
       <div class="eyebrow">Payments accepted</div>
@@ -995,7 +1028,7 @@
 </section>
 
 <!-- STATISTICS -->
-<section class="section" style="padding-top:0">
+<section class="section sec-tight" style="padding-top:0">
   <div class="wrap">
     <div class="stats reveal">
       <div class="stat"><b class="si" data-count="25000" data-suffix="K+" data-div="1000">0</b><span>Active traders</span></div>
@@ -1007,7 +1040,7 @@
 </section>
 
 <!-- FAQ -->
-<section id="faq" class="section" style="padding-top:0">
+<section id="faq" class="section sec-tight sec-faq" style="padding-top:0">
   <div class="wrap">
     <div class="sec-head reveal" style="justify-content:center;text-align:center"><div><h2>Questions, answered</h2></div></div>
     <div class="faq reveal">
@@ -1491,6 +1524,7 @@ function openCheckout(){
     <form id="orderForm">
       <div class="field"><label>Full name</label><input id="cName" required placeholder="John Smith" value="${AUTH?esc(AUTH.name||''):''}"></div>
       <div class="field"><label>Email</label><input id="cEmail" type="email" required placeholder="you@email.com" value="${AUTH?esc(AUTH.email):''}"></div>
+      <div class="field"><label>Country</label><input id="cCountry" value="United States" readonly style="opacity:.7;cursor:not-allowed"><span class="hintline">🇺🇸 STUFFWEKNOW store items ship within the USA only.</span></div>
       <div class="frow"><div class="field"><label>City</label><input id="cCity" required placeholder="New York"></div><div class="field"><label>ZIP</label><input id="cZip" required placeholder="10001"></div></div>
       <div class="field"><label>Address</label><input id="cAddr" required placeholder="123 Example St"></div>
       ${payNetFieldHTML()}
@@ -1501,7 +1535,7 @@ function openCheckout(){
   $('#orderForm').addEventListener('submit',async e=>{
     e.preventDefault();
     const btn=$('#toPayBtn');btn.disabled=true;btn.textContent='Creating order…';
-    const details={name:$('#cName').value,email:$('#cEmail').value,city:$('#cCity').value,zip:$('#cZip').value,address:$('#cAddr').value};
+    const details={name:$('#cName').value,email:$('#cEmail').value,country:'United States',city:$('#cCity').value,zip:$('#cZip').value,address:$('#cAddr').value};
     const payload={...details,network:chosenNetwork(),items:cart.map(c=>({id:c.id,size:c.size,qty:c.qty}))};
     try{
       const r=await fetch('/api/order',{method:'POST',headers:{'Content-Type':'application/json',...(AUTH?{Authorization:'Bearer '+AUTH.token}:{})},body:JSON.stringify(payload)});
@@ -1929,6 +1963,7 @@ function buyListing(li,price){
   $('#coBody').innerHTML=`<div class="cobody"><h3>Checkout</h3><p class="sub">Ship-to address for the seller. Payment is held in escrow.</p>
     <div class="field"><label>Full name</label><input id="bName" value="${esc(AUTH.name||'')}"></div>
     <div class="field"><label>Region</label><select id="bRegion">${regionList.map(r=>`<option>${esc(r)}</option>`).join('')}</select></div>
+    <div class="field"><label>Country</label><input id="bCountry" placeholder="Country" value="${esc((AUTH&&AUTH.country)||'')}"></div>
     <div class="field"><label>Address</label><input id="bAddr" placeholder="Street, house, apt"></div>
     <div class="frow"><div class="field"><label>City</label><input id="bCity"></div><div class="field"><label>ZIP</label><input id="bZip"></div></div>
     ${payNetFieldHTML()}
@@ -1938,7 +1973,7 @@ function buyListing(li,price){
     <div class="msg" id="bMsg" style="display:none;margin-top:12px"></div></div>`;
   closeModal('#lstModal');openModal('#coModal');wireNetPick();
   $('#bGo').addEventListener('click',async()=>{
-    const b={listingId:id,name:$('#bName').value,region:$('#bRegion').value,address:$('#bAddr').value,city:$('#bCity').value,zip:$('#bZip').value,network:chosenNetwork()};
+    const b={listingId:id,name:$('#bName').value,region:$('#bRegion').value,country:$('#bCountry').value,address:$('#bAddr').value,city:$('#bCity').value,zip:$('#bZip').value,network:chosenNetwork()};
     if(!b.address.trim()){$('#bMsg').style.display='block';$('#bMsg').textContent='Enter a shipping address.';return;}
     $('#bGo').disabled=true;
     try{const d=await mfetch('/api/buy',{method:'POST',body:JSON.stringify(b)});cryptoPay(d);}
@@ -1958,30 +1993,39 @@ function makeOffer(l){
 }
 
 /* --- sell flow --- */
-const SELL_PHOTOS=[],SELL_SHIP=[...REGIONS];
+const SELL_PHOTOS=[],SELL_SHIP=[...REGIONS];let SELL_EDIT=null;
 function compressImg(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>{const img=new Image();img.onload=()=>{const max=1100;let w=img.width,h=img.height;if(w>h&&w>max){h=h*max/w;w=max;}else if(h>max){w=w*max/h;h=max;}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);res(c.toDataURL('image/jpeg',0.82));};img.onerror=rej;img.src=fr.result;};fr.onerror=rej;fr.readAsDataURL(file);});}
-function openSell(){if(!AUTH)return needAuth('Sign in to sell');SELL_PHOTOS.length=0;SELL_SHIP.length=0;REGIONS.forEach(r=>SELL_SHIP.push(r));renderSell();openModal('#sellModal');}
+function openSell(edit){if(!AUTH)return needAuth('Sign in to sell');SELL_EDIT=(edit&&edit.id)?edit:null;SELL_PHOTOS.length=0;SELL_SHIP.length=0;
+  if(SELL_EDIT){(SELL_EDIT.photos||[]).forEach(p=>SELL_PHOTOS.push(p));((SELL_EDIT.ships&&SELL_EDIT.ships.length)?SELL_EDIT.ships:REGIONS).forEach(r=>SELL_SHIP.push(r));}
+  else REGIONS.forEach(r=>SELL_SHIP.push(r));
+  renderSell();openModal('#sellModal');}
 function renderSell(){
   const catOpts='<option value="" disabled selected>Choose a category…</option>'+CATALOG.map(([g,st,opts])=>`<optgroup label="${g}">${opts.map(([slug,name])=>`<option value="${slug}">${name}</option>`).join('')}</optgroup>`).join('');
   const brandOpts='<option value="" selected>Brand — start typing the title</option>'+BRANDS.map(b=>`<option>${b}</option>`).join('');
   const regionBoxes=REGIONS.map(r=>`<label class="rgn ${SELL_SHIP.includes(r)?'on':''}" data-rgn="${r}"><i></i>${r}</label>`).join('');
-  $('#sellBody').innerHTML=`<div class="cobody"><h3>List an item</h3><p class="sub">Add up to 6 photos, set your price. Buyers pay in USDT / USDC — funds are held in escrow until they confirm delivery.</p>
+  const E=SELL_EDIT||{};
+  $('#sellBody').innerHTML=`<div class="cobody"><h3>${SELL_EDIT?'Edit listing':'List an item'}</h3><p class="sub">${SELL_EDIT?'Update your item — saved changes go back through a quick review before they’re live again.':'Add up to 6 photos, set your price. Buyers pay in USDT / USDC — funds are held in escrow until they confirm delivery.'}</p>
     <div class="photo-grid" id="photoGrid">${SELL_PHOTOS.map((p,i)=>`<div class="photo-cell"><img src="${p}">${i===0?'<span class="cover-tag">Cover</span>':''}<button class="rm" data-rm="${i}">×</button></div>`).join('')}${SELL_PHOTOS.length<6?'<label class="photo-add">+<input type="file" accept="image/*" id="photoIn" multiple hidden></label>':''}</div>
-    <div class="field"><label>Title</label><input id="slTitle" maxlength="90" placeholder="e.g. adidas Samba OG — UK9"></div>
+    <div class="field"><label>Title</label><input id="slTitle" maxlength="90" placeholder="e.g. adidas Samba OG — UK9" value="${esc(E.title||'')}"></div>
     <div class="frow"><div class="field"><label>Brand</label><select id="slBrand">${brandOpts}</select></div>
       <div class="field"><label>Category</label><select id="slCat">${catOpts}</select></div></div>
     <div class="field" id="slBrandOtherWrap" style="display:none"><label>Brand name</label><input id="slBrandOther" maxlength="40" placeholder="Type the brand"></div>
-    <div class="frow"><div class="field" id="slSizeField"><label>Size</label><input id="slSize" maxlength="24" placeholder="42 / M / One size"></div>
-      <div class="field"><label>Condition</label><select id="slCond">${['New','Like new','Very good','Good','Fair'].map(c=>`<option>${c}</option>`).join('')}</select></div></div>
-    <div class="field"><label>Price (USD)</label><input id="slPrice" type="number" min="1" step="1" placeholder="80"></div>
+    <div class="frow"><div class="field" id="slSizeField"><label>Size</label><input id="slSize" maxlength="24" placeholder="42 / M / One size" value="${esc(E.size||'')}"></div>
+      <div class="field"><label>Condition</label><select id="slCond">${['New','Like new','Very good','Good','Fair'].map(c=>`<option${E.condition===c?' selected':''}>${c}</option>`).join('')}</select></div></div>
+    <div class="field"><label>Price (USD)</label><input id="slPrice" type="number" min="1" step="1" placeholder="80" value="${E.price!=null?esc(String(E.price)):''}"></div>
     <div class="field"><label>Ships to</label><div class="rgns" id="slShip">${regionBoxes}</div></div>
-    <div class="field"><label>Returns</label><select id="slReturns">${RETURNS.map(r=>`<option>${r}</option>`).join('')}</select></div>
-    <div class="field"><label>Description</label><textarea id="slDesc" rows="3" maxlength="1500" placeholder="Condition details, flaws, measurements…"></textarea></div>
-    <button class="cbtn" id="slGo">Publish listing</button>
+    <div class="field"><label>Returns</label><select id="slReturns">${RETURNS.map(r=>`<option${E.returns===r?' selected':''}>${r}</option>`).join('')}</select></div>
+    <div class="field"><label>Description</label><textarea id="slDesc" rows="3" maxlength="1500" placeholder="Condition details, flaws, measurements…">${esc(E.desc||'')}</textarea></div>
+    <button class="cbtn" id="slGo">${SELL_EDIT?'Save changes':'Publish listing'}</button>
     <div class="msg" id="slMsg" style="display:none;margin-top:12px;font-size:13px;color:#ff6b6b;font-weight:600"></div></div>`;
   const inp=$('#photoIn');if(inp)inp.addEventListener('change',async e=>{const files=[...e.target.files].slice(0,6-SELL_PHOTOS.length);for(const f of files){try{SELL_PHOTOS.push(await compressImg(f));}catch(x){}}renderSell();});
   $('#photoGrid').addEventListener('click',e=>{const b=e.target.closest('[data-rm]');if(b){SELL_PHOTOS.splice(+b.dataset.rm,1);renderSell();}});
   let brandTouched=false,catTouched=false;
+  if(SELL_EDIT){
+    const catSel=$('#slCat'),brSel=$('#slBrand');
+    if(E.category&&[...catSel.options].some(o=>o.value===E.category)){catSel.value=E.category;catTouched=true;}
+    if(E.brand){const opt=[...brSel.options].find(o=>o.value.toLowerCase()===String(E.brand).toLowerCase());if(opt){brSel.value=opt.value;}else{brSel.value='Other';$('#slBrandOtherWrap').style.display='';$('#slBrandOther').value=E.brand;}brandTouched=true;}
+  }
   $('#slBrand').addEventListener('change',e=>{brandTouched=true;$('#slBrandOtherWrap').style.display=e.target.value==='Other'?'':'none';});
   $('#slCat').addEventListener('change',()=>{catTouched=true;updateSizeVisibility();});
   const applyDetect=(val)=>{
@@ -1995,7 +2039,7 @@ function renderSell(){
     updateSizeVisibility();
   };
   $('#slTitle').addEventListener('input',e=>applyDetect(e.target.value));
-  if(($('#slTitle').value||'').length>2)applyDetect($('#slTitle').value);
+  if(!SELL_EDIT&&($('#slTitle').value||'').length>2)applyDetect($('#slTitle').value);
   updateSizeVisibility();
   $('#slShip').addEventListener('click',e=>{const l=e.target.closest('[data-rgn]');if(!l)return;const r=l.dataset.rgn,i=SELL_SHIP.indexOf(r);if(i>-1)SELL_SHIP.splice(i,1);else SELL_SHIP.push(r);l.classList.toggle('on');});
   $('#slGo').addEventListener('click',submitListing);
@@ -2009,9 +2053,12 @@ async function submitListing(){
   if(!$('#slCat').value)return show('Choose a category.');
   if(!SELL_SHIP.length)return show('Choose at least one region you ship to.');
   let brand=$('#slBrand').value;if(brand==='Other')brand=$('#slBrandOther').value||'';
-  const body={title:$('#slTitle').value,brand,category:$('#slCat').value,size:$('#slSize').value,condition:$('#slCond').value,price:$('#slPrice').value,ships:SELL_SHIP.slice(),returns:$('#slReturns').value,desc:$('#slDesc').value,photos:SELL_PHOTOS};
+  const body={title:$('#slTitle').value,brand,category:$('#slCat').value,size:$('#slSize').value,condition:$('#slCond').value,price:$('#slPrice').value,ships:SELL_SHIP.slice(),returns:$('#slReturns').value,desc:$('#slDesc').value,photos:SELL_PHOTOS.slice()};
   $('#slGo').disabled=true;
-  try{await mfetch('/api/listings',{method:'POST',body:JSON.stringify(body)});toast('Listing submitted — it goes live after a quick review');closeModal('#sellModal');loadListings();if($('#accModal').classList.contains('show'))loadMarket();}
+  try{
+    if(SELL_EDIT){await mfetch('/api/listings/'+SELL_EDIT.id,{method:'PUT',body:JSON.stringify(body)});toast('Changes saved — back in review before it goes live');}
+    else{await mfetch('/api/listings',{method:'POST',body:JSON.stringify(body)});toast('Listing submitted — it goes live after a quick review');}
+    SELL_EDIT=null;closeModal('#sellModal');loadListings();if($('#accModal').classList.contains('show'))loadMarket();}
   catch(e){show(e.message);$('#slGo').disabled=false;}
 }
 $('#sellBtn').addEventListener('click',openSell);
@@ -2065,14 +2112,15 @@ function myListingRow(l){
   return `<div class="ord"><div class="ord-top"><span><b>${esc(l.title)}</b>${l.boosted?' <span class="badge b-boost" style="margin-left:6px">★ Boosted</span>':''}</span><span><b>${fmt(l.price)}</b></span></div>
     <div class="ord-items">${esc(CAT_NAME(l.category))} · ${esc(l.condition||'')} · <span class="ord-pill s-${pillCls}">${SL[l.status]||l.status}</span></div>
     ${note}
-    <div class="ord-acts"><button data-act="lview" data-id="${l.id}">View</button>${l.status==='active'&&!l.boosted?`<button data-act="boost" data-id="${l.id}">★ Boost</button>`:''}<button class="warn" data-act="lremove" data-id="${l.id}">Remove</button></div></div>`;
+    <div class="ord-acts"><button data-act="lview" data-id="${l.id}">View</button>${['active','pending','rejected'].includes(l.status)?`<button data-act="ledit" data-id="${l.id}">Edit</button>`:''}${l.status==='active'&&!l.boosted?`<button data-act="boost" data-id="${l.id}">★ Boost</button>`:''}<button class="warn" data-act="lremove" data-id="${l.id}">Remove</button></div></div>`;
 }
 function paintMarket(){
   const t=MKT_TAB,d=MKT||{};
-  const counts={buying:(d.purchases||[]).length,selling:(d.sales||[]).length,listings:(d.listings||[]).length,offers:(d.offersReceived||[]).length+(d.offersMade||[]).length,chats:(MKT_CHATS||[]).length};
+  const counts={saved:(favs||[]).length,buying:(d.purchases||[]).length,selling:(d.sales||[]).length,listings:(d.listings||[]).length,offers:(d.offersReceived||[]).length+(d.offersMade||[]).length,chats:(MKT_CHATS||[]).length};
   const tab=(k,label)=>`<button class="mkt-tab ${t===k?'on':''}" data-tab="${k}">${label}${counts[k]?` <span class="n">${counts[k]}</span>`:''}</button>`;
   let body='';
-  if(t==='buying')body=(d.purchases&&d.purchases.length)?d.purchases.map(o=>mktOrderCard(o,'buying')).join(''):'<p class="mkt-empty">No purchases yet.</p>';
+  if(t==='saved')body='<div class="wishgrid" id="wishGrid"><p class="mkt-empty">Loading…</p></div>';
+  else if(t==='buying')body=(d.purchases&&d.purchases.length)?d.purchases.map(o=>mktOrderCard(o,'buying')).join(''):'<p class="mkt-empty">No purchases yet.</p>';
   else if(t==='selling')body=(d.sales&&d.sales.length)?d.sales.map(o=>mktOrderCard(o,'selling')).join(''):'<p class="mkt-empty">No sales yet.</p>';
   else if(t==='listings')body=(d.listings&&d.listings.length)?d.listings.map(myListingRow).join(''):'<p class="mkt-empty">You have no listings. Tap “Sell” to add one.</p>';
   else if(t==='offers')body=`${(d.offersReceived&&d.offersReceived.length)?'<h4 style="font-size:12px;color:var(--faint);text-transform:uppercase;letter-spacing:.1em;margin:0 0 8px">Received</h4>'+d.offersReceived.map(o=>offerRow(o,false)).join(''):''}${(d.offersMade&&d.offersMade.length)?'<h4 style="font-size:12px;color:var(--faint);text-transform:uppercase;letter-spacing:.1em;margin:16px 0 8px">Sent</h4>'+d.offersMade.map(o=>offerRow(o,true)).join(''):''}${(!(d.offersReceived||[]).length&&!(d.offersMade||[]).length)?'<p class="mkt-empty">No offers yet.</p>':''}`;
@@ -2091,12 +2139,41 @@ function paintMarket(){
     </div>
     ${wl?`<h4 style="font-size:12px;letter-spacing:.1em;color:var(--faint);text-transform:uppercase;margin:18px 0 8px">Withdrawals</h4>${wl}`:''}`;
   }
-  $('#mktPanel').innerHTML=`<div class="mkt-tabs">${tab('profile','Profile')}${tab('buying','Buying')}${tab('selling','Selling')}${tab('listings','Listings')}${tab('offers','Offers')}${tab('chats','Messages')}${tab('payout','Payout')}</div><div id="mktBody">${body}</div>`;
+  $('#mktPanel').innerHTML=`<div class="mkt-tabs">${tab('profile','Profile')}${tab('saved','♥ Saved')}${tab('buying','Buying')}${tab('selling','Selling')}${tab('listings','Listings')}${tab('offers','Offers')}${tab('chats','Messages')}${tab('payout','Payout')}</div><div id="mktBody">${body}</div>`;
   $('#mktPanel').querySelectorAll('.mkt-tab').forEach(b=>b.addEventListener('click',()=>{MKT_TAB=b.dataset.tab;paintMarket();if(b.dataset.tab==='chats')loadChats();}));
+  if(t==='saved')paintWishlist();
   $('#mktBody').querySelectorAll('[data-chat]').forEach(el=>el.addEventListener('click',()=>{const [lid,buyer]=el.dataset.chat.split('|');openListingChat(lid,buyer||undefined);}));
   const po=$('#poSave');if(po)po.addEventListener('click',async()=>{po.disabled=true;try{await mfetch('/api/payout',{method:'POST',body:JSON.stringify({address:$('#poAddr').value})});toast('Payout address saved');loadMarket();}catch(e){toast(e.message);po.disabled=false;}});
   const pw=$('#poWithdraw');if(pw)pw.addEventListener('click',async()=>{pw.disabled=true;try{await mfetch('/api/withdraw',{method:'POST'});toast('Withdrawal requested — funds are on the way');loadMarket();}catch(e){toast(e.message);pw.disabled=false;}});
   if(t==='profile')wireProfilePanel();
+}
+async function paintWishlist(){
+  const box=$('#wishGrid');if(!box)return;
+  const ids=[...(favs||[])];
+  if(!ids.length){box.innerHTML='<p class="mkt-empty" style="grid-column:1/-1">No saved items yet. Tap the ♥ on any item to save it here — buy it anytime at the current price.</p>';return;}
+  const listingIds=ids.filter(x=>/^L-/i.test(x)),prodIds=ids.filter(x=>!/^L-/i.test(x));
+  const results=await Promise.all(listingIds.map(id=>mfetch('/api/listings/'+id).then(d=>({id,...d})).catch(()=>({id,gone:true}))));
+  let html='';
+  results.forEach(r=>{
+    if(r.gone){html+=`<div class="wcard gone"><div class="wc-body"><button class="wc-x" data-wrm="${esc(r.id)}" title="Remove">✕</button><div class="wc-t">Item removed</div><div class="wc-gone">No longer available</div></div></div>`;return;}
+    const l=r.listing,price=r.acceptedOfferPrice||l.price,avail=l.status==='active';
+    const mine=AUTH&&AUTH.email&&l.seller&&l.seller.email&&AUTH.email.toLowerCase()===String(l.seller.email).toLowerCase();
+    html+=`<div class="wcard ${avail?'':'gone'}">
+      <button class="wc-media" data-wopen="${l.id}"><img src="${l.cover}" alt="${esc(l.title)}" loading="lazy"></button>
+      <div class="wc-body">
+        <button class="wc-x" data-wrm="${l.id}" title="Remove from saved">✕</button>
+        <div class="wc-t" data-wopen="${l.id}">${esc(l.title)}</div>
+        <div class="wc-price">${usdtLabel(price)}${r.acceptedOfferPrice?'<span class="wc-off">✓ your offer</span>':''}</div>
+        ${avail?(mine?'<div class="wc-note">Your listing</div>':`<button class="wc-buy" data-wbuy="${l.id}" data-wprice="${price}">Buy — ${usdtLabel(payTotal(price))}</button>`):`<div class="wc-gone">${(l.status==='sold'||l.status==='reserved')?'Sold — you missed it':l.status==='pending'?'In review':'Unavailable'}</div>`}
+      </div></div>`;
+  });
+  prodIds.forEach(id=>{const p=(typeof PRODUCTS!=='undefined'?PRODUCTS:[]).find(x=>x.id===id);if(!p)return;
+    html+=`<div class="wcard"><button class="wc-media" data-qv="${p.id}"><span class="ph ${p.img?'photo':''}" style="display:block;width:100%;height:100%">${media(p)}</span></button><div class="wc-body"><button class="wc-x" data-wrm="${p.id}" title="Remove">✕</button><div class="wc-t" data-qv="${p.id}">${esc(p.name)}</div><div class="wc-price">${usdtLabel(p.price)}</div>${p.soldOut?'<div class="wc-gone">Sold out</div>':`<button class="wc-buy" data-qv="${p.id}">View item</button>`}</div></div>`;});
+  box.innerHTML=html||'<p class="mkt-empty" style="grid-column:1/-1">No saved items yet.</p>';
+  box.querySelectorAll('[data-wopen]').forEach(el=>el.addEventListener('click',()=>{closeModal('#accModal');openListing(el.dataset.wopen);}));
+  box.querySelectorAll('[data-wbuy]').forEach(el=>el.addEventListener('click',()=>{const r=results.find(x=>x.listing&&x.listing.id===el.dataset.wbuy);if(!r)return;closeModal('#accModal');buyListing(r.listing,Number(el.dataset.wprice));}));
+  box.querySelectorAll('[data-qv]').forEach(el=>el.addEventListener('click',()=>{const p=PRODUCTS.find(x=>x.id===el.dataset.qv);if(!p)return;closeModal('#accModal');openQV(p.id);}));
+  box.querySelectorAll('[data-wrm]').forEach(el=>el.addEventListener('click',()=>{toggleFav(el.dataset.wrm);paintMarket();}));
 }
 let MKT_CHATS=null;
 function chatRow(c){
@@ -2119,7 +2196,7 @@ function addrCardHTML(a,i){
     <input class="ac-name" maxlength="60" placeholder="Recipient full name" value="${esc(a.name||'')}">
     <input class="ac-line" maxlength="140" placeholder="Street address, apt/house" value="${esc(a.line||'')}">
     <div class="addr-row"><input class="ac-city" maxlength="60" placeholder="City" value="${esc(a.city||'')}"><input class="ac-zip" maxlength="20" placeholder="ZIP / Postcode" value="${esc(a.zip||'')}"></div>
-    <select class="ac-region">${ropts}</select>
+    <div class="addr-row"><input class="ac-country" maxlength="56" placeholder="Country" value="${esc(a.country||'')}"><select class="ac-region">${ropts}</select></div>
   </div>`;
 }
 function profilePanelHTML(){
@@ -2157,7 +2234,7 @@ function readProfileInputs(){
     PROFILE_ADDR=[...cards].map(c=>({
       label:c.querySelector('.ac-label').value,name:c.querySelector('.ac-name').value,
       line:c.querySelector('.ac-line').value,city:c.querySelector('.ac-city').value,
-      zip:c.querySelector('.ac-zip').value,region:c.querySelector('.ac-region').value,
+      zip:c.querySelector('.ac-zip').value,country:c.querySelector('.ac-country').value,region:c.querySelector('.ac-region').value,
     }));
   }
 }
@@ -2171,7 +2248,7 @@ function wireProfilePanel(){
       MKT_PROFILE=r.profile;if(AUTH){AUTH.name=MKT_PROFILE.name;save('swk_auth',AUTH);}accDot();toast('Profile saved');}
     catch(e){toast(e.message);}pfSave.disabled=false;
   });
-  const addrAdd=$('#addrAdd');if(addrAdd)addrAdd.addEventListener('click',()=>{readProfileInputs();if(PROFILE_ADDR.length<3){PROFILE_ADDR.push({label:'',name:'',line:'',city:'',zip:'',region:REGIONS[0]});paintMarket();}});
+  const addrAdd=$('#addrAdd');if(addrAdd)addrAdd.addEventListener('click',()=>{readProfileInputs();if(PROFILE_ADDR.length<3){PROFILE_ADDR.push({label:'',name:'',line:'',city:'',zip:'',country:'',region:REGIONS[0]});paintMarket();}});
   const addrSave=$('#addrSave');if(addrSave)addrSave.addEventListener('click',async()=>{
     readProfileInputs();addrSave.disabled=true;
     const clean=PROFILE_ADDR.filter(a=>(a.line||'').trim());
@@ -2199,6 +2276,7 @@ function mktAction(act,id){
   else if(act==='boost'){const v=prompt('Boost for how many days? ($2/day)','7');if(v==null)return;const days=parseInt(v,10);if(!(days>0))return toast('Enter days');run(mfetch('/api/boost',{method:'POST',body:JSON.stringify({listingId:id,days})})).then(d=>{closeModal('#accModal');openModal('#coModal');cryptoPay(d);}).catch(e=>toast(e.message));}
   else if(act==='lremove'){if(!confirm('Remove this listing?'))return;run(mfetch('/api/listings/'+id,{method:'DELETE'})).then(()=>{toast('Listing removed');done();loadListings();}).catch(e=>toast(e.message));}
   else if(act==='lview'){closeModal('#accModal');openListing(id);}
+  else if(act==='ledit'){mfetch('/api/listings/'+id).then(d=>{closeModal('#accModal');openSell(d.listing);}).catch(e=>toast(e.message));}
   else if(act==='chat'){const box=document.getElementById('chat-'+id);if(!box)return;if(box.style.display==='none'){box.style.display='block';loadThread(id);}else box.style.display='none';}
   else if(act==='omsg'){const [lid,buyer]=id.split('|');openListingChat(lid,buyer||undefined);}
 }
