@@ -30,14 +30,11 @@ case "$sha" in ''|*[!0-9a-f]*) sha="$(curl -fsSL "$API" 2>/dev/null | sed -n 's/
 apply_instance_env() {
   local dir=/etc/systemd/system/lumi.service.d dropin
   dropin="$dir/10-instance.conf"
-  local want; want="$(printf '[Service]\n'
-    for src in "$APP_DIR/deploy/instance.env" "$APP_DIR/deploy/instance.local.env"; do
-      [ -f "$src" ] || continue
-      while IFS= read -r line || [ -n "$line" ]; do
-        case "$line" in ''|\#*) continue;; esac
-        printf 'Environment=%s\n' "$line"
-      done < "$src"
-    done)"
+  # Rendered by node, not by shell: systemd's Environment= splits on whitespace
+  # and applies its own quoting, so copying the line verbatim mangles any value
+  # with a space or a quote (a mail password, typically) and silently drops it.
+  # See deploy/render-env-dropin.js — it is covered by tests.
+  local want; want="$(node "$APP_DIR/deploy/render-env-dropin.js" "$APP_DIR/deploy")"
   if [ "$(cat "$dropin" 2>/dev/null || true)" != "$want" ]; then
     mkdir -p "$dir"; printf '%s\n' "$want" > "$dropin"
     systemctl daemon-reload

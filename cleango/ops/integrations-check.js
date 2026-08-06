@@ -32,6 +32,7 @@ function loadEnvFile(f) {
   }
 }
 const APP_DIR = process.env.LUMI_APP_DIR || '/opt/lumi';
+const DROPIN = '/etc/systemd/system/lumi.service.d/10-instance.conf';
 for (const dir of [path.join(APP_DIR, 'deploy'), path.join(ROOT, 'deploy')]) {
   loadEnvFile(path.join(dir, 'instance.local.env'));
   loadEnvFile(path.join(dir, 'instance.env'));
@@ -113,6 +114,25 @@ const CHECKS = [
     fix: 'LUMI_TRUST_PROXY=1 в deploy/instance.env',
   },
   {
+    // This script reads the env FILES; the service reads a systemd drop-in
+    // rendered from them. When the two drift, everything below says ON while
+    // the running server has nothing — the exact shape of "я всё настроил, а
+    // почта не уходит". Only meaningful on the server itself.
+    name: 'systemd drop-in актуален',
+    blocking: true,
+    skipUnless: () => fs.existsSync(DROPIN) || fs.existsSync(path.join(APP_DIR, 'deploy')),
+    on: () => {
+      try {
+        const { render } = require('../deploy/render-env-dropin');
+        const want = render(path.join(APP_DIR, 'deploy'));
+        return fs.readFileSync(DROPIN, 'utf8') === want;
+      } catch { return false; }
+    },
+    need: () => (fs.existsSync(DROPIN) ? ['drop-in отличается от deploy/*.env'] : ['нет ' + DROPIN]),
+    impact: 'сервис работает со старым окружением — правки в instance.local.env до него не дошли',
+    fix: 'sudo bash /opt/lumi/deploy/auto-update.sh  (перечитает env и перезапустит lumi)',
+  },
+  {
     name: 'Vision OCR (импорт календаря)',
     blocking: false,
     on: () => vision.isEnabled(),
@@ -135,6 +155,7 @@ console.log('─'.repeat(62));
 let blockersOff = 0;
 let warnings = 0;
 for (const c of CHECKS) {
+  if (c.skipUnless && !c.skipUnless()) continue;   // not applicable off the server
   const on = !!c.on();
   const warn = on && c.warnIf && c.warnIf();
   const mark = !on ? '\x1b[31m✗\x1b[0m' : warn ? '\x1b[33m!\x1b[0m' : '\x1b[32m✓\x1b[0m';

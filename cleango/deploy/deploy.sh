@@ -74,17 +74,11 @@ UNIT
 #   deploy/instance.env       — non-secret config, tracked in git
 #   deploy/instance.local.env — server-only secrets (SMTP password, API keys),
 #                               not in git and preserved across updates.
+# Rendered by node: systemd's Environment= splits on whitespace and applies its
+# own quoting, so a verbatim copy mangles any value containing a space or a
+# quote — see deploy/render-env-dropin.js (tested).
 mkdir -p /etc/systemd/system/lumi.service.d
-{
-  echo "[Service]"
-  for src in "$APP_DIR/deploy/instance.env" "$APP_DIR/deploy/instance.local.env"; do
-    [ -f "$src" ] || continue
-    while IFS= read -r line || [ -n "$line" ]; do
-      case "$line" in ''|\#*) continue;; esac
-      echo "Environment=$line"
-    done < "$src"
-  done
-} > /etc/systemd/system/lumi.service.d/10-instance.conf
+node "$APP_DIR/deploy/render-env-dropin.js" "$APP_DIR/deploy" > /etc/systemd/system/lumi.service.d/10-instance.conf
 
 systemctl daemon-reload
 systemctl enable --now lumi
