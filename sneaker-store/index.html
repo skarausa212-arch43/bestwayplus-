@@ -270,6 +270,17 @@
   .cc-msg{width:34px;height:34px;flex:none;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--muted);display:grid;place-items:center;transition:.16s var(--ease)}
   .cc-msg:hover{border-color:var(--accent);color:var(--accent)}
   .cc-msg svg{width:16px;height:16px}
+  /* on-card shipping chip */
+  .ship-chip{font-size:11px;font-weight:600;color:var(--muted);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ship-chip.free{color:#1a9d5e}
+  /* sell form shipping controls */
+  .segmented{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:4px}
+  .segmented button{flex:1;padding:9px 6px;border-radius:9px;font-size:12.5px;font-weight:700;color:var(--muted);background:transparent;transition:.16s var(--ease)}
+  .segmented button.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-sm)}
+  .segmented button:active{transform:scale(.97)}
+  .ship-rate{display:flex;align-items:center;gap:10px;margin-bottom:8px;animation:profIn .28s var(--ease) both}
+  .ship-rate>span{flex:1;font-size:13px;font-weight:600}
+  .ship-rate .tg-in{width:128px;flex:none}
 
   /* ============ BADGES ============ */
   .badge{font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:4px 7px;border-radius:7px;display:inline-flex;align-items:center;gap:4px;line-height:1;background:var(--surface);border:1px solid var(--line);color:var(--ink);box-shadow:var(--shadow-sm)}
@@ -1509,6 +1520,7 @@ function listingCardHTML(l){
         <div class="cat">${esc(l.condition||'Used')}${l.size?' · '+esc(l.size):''}</div>
         <h3 data-listing="${l.id}">${esc(l.title)}</h3>
         <div class="card-price">${cryptoPriceHTML(l.price,l.id)}<button class="add hb ${fav?'on':''}" data-fav="${l.id}" aria-label="Save">${ICON.heart}</button></div>
+        <div class="ship-chip ${isFreeShip(l)?'free':''}">${isFreeShip(l)?'🚚 Free shipping':esc(shipSummary(l))}</div>
         <div class="card-seller"><span class="sav">${av}</span><span class="sh">@${esc(l.seller.handle)}</span>${l.seller.verified?'<span class="vchk">✓</span>':''}${l.country?flagHTML(l.country):''}${l.seller.rating?`<span class="srate">★ ${l.seller.rating}</span>`:''}</div>
         ${cta}
       </div>
@@ -2083,7 +2095,7 @@ async function openListing(id){
       ${l.photos.length>1?`<div class="lst-strip" id="lstStrip">${l.photos.map((ph,i)=>`<img src="${ph}" data-i="${i}" class="${i===0?'on':''}">`).join('')}</div>`:''}
       ${l.desc?`<p class="desc" id="lstDesc" style="margin-top:14px">${esc(l.desc)}</p>`:''}
       ${AUTH?`<button class="lst-translate" id="lstTr">🌐 Translate to ${CHAT_LANGS.find(x=>x[0]===load('swk_chatlang','en'))?.[1]||'English'}</button>`:''}
-      <div class="ships-line">${l.country?`<b>Location:</b> ${flagHTML(l.country)} ${esc(COUNTRY_NAME[l.country]||l.country)} · `:''}<b>Ships:</b> ${(!l.ships||!l.ships.length||l.ships.length>=REGIONS.length)?'Worldwide':l.ships.map(esc).join(', ')} · <b>Returns:</b> ${esc(l.returns||'No returns')}</div>
+      <div class="ships-line">${l.country?`<b>Location:</b> ${flagHTML(l.country)} ${esc(COUNTRY_NAME[l.country]||l.country)} · `:''}<b>Ships:</b> ${(!l.ships||!l.ships.length||l.ships.length>=REGIONS.length)?'Worldwide':l.ships.map(esc).join(', ')} · <b>Shipping:</b> ${isFreeShip(l)?'<span style="color:var(--ok);font-weight:700">Free</span>':esc(shipDetail(l))} · <b>Returns:</b> ${esc(l.returns||'No returns')}</div>
       <div class="protect">${ICON.verified}<div><b>Buyer Protection</b><span>Funds held in escrow — released only when you confirm the item arrived.</span></div></div>
       <div class="seller-row">
         <div class="av">${s.avatar?`<img src="${s.avatar}" alt="">`:esc((s.handle||'?')[0].toUpperCase())}</div>
@@ -2145,11 +2157,17 @@ function buyListing(li,price){
     <div class="field"><label>Address</label><input id="bAddr" placeholder="Street, house, apt"></div>
     <div class="frow"><div class="field"><label>City</label><input id="bCity"></div><div class="field"><label>ZIP</label><input id="bZip"></div></div>
     ${payNetFieldHTML()}
-    <div class="buysum"><div class="r tot"><span>You pay</span><b>${usdtLabel(total)}</b></div></div>
+    <div class="buysum">
+      <div class="r"><span>Item</span><b>${usdtLabel(total)}</b></div>
+      <div class="r"><span>Shipping</span><b id="coShip">Free</b></div>
+      <div class="r tot"><span>You pay</span><b id="coTotal">${usdtLabel(total)}</b></div>
+    </div>
     <div class="protect">${ICON.verified}<div><b>Buyer Protection</b><span>Funds are released to the seller only after you confirm the item arrived.</span></div></div>
     <button class="cbtn" id="bGo">Continue to payment</button>
     <div class="msg" id="bMsg" style="display:none;margin-top:12px"></div></div>`;
   closeModal('#lstModal');openModal('#coModal');wireNetPick();
+  const recompute=()=>{const region=$('#bRegion')?$('#bRegion').value:regionList[0];const ship=shipForRegion(li,region);const sc=$('#coShip'),tc=$('#coTotal');if(sc){sc.textContent=ship>0?usdtLabel(ship):'Free';sc.style.color=ship>0?'':'var(--ok)';}if(tc)tc.textContent=usdtLabel(Math.round((total+ship)*100)/100);};
+  const rg=$('#bRegion');if(rg)rg.addEventListener('change',recompute);recompute();
   $('#bGo').addEventListener('click',async()=>{
     const b={listingId:id,name:$('#bName').value,region:$('#bRegion').value,country:$('#bCountry').value,address:$('#bAddr').value,city:$('#bCity').value,zip:$('#bZip').value,network:chosenNetwork()};
     if(!b.address.trim()){$('#bMsg').style.display='block';$('#bMsg').textContent='Enter a shipping address.';return;}
@@ -2172,9 +2190,17 @@ function makeOffer(l){
 
 /* --- sell flow --- */
 const SELL_PHOTOS=[],SELL_SHIP=[...REGIONS];let SELL_EDIT=null;
+let SELL_SHIP_MODE='free',SELL_SHIP_FLAT=0;const SELL_SHIP_RATES={};
+/* shipping cost of a listing for a buyer region + a short summary badge */
+function shipForRegion(l,region){const s=(l&&l.shipping)||{mode:'free'};if(s.mode==='flat')return Math.max(0,Number(s.flat)||0);if(s.mode==='regional')return Math.max(0,Number((s.rates||{})[region])||0);return 0;}
+function shipSummary(l){const s=(l&&l.shipping)||{mode:'free'};if(s.mode==='flat')return s.flat>0?`+ ${usdtLabel(s.flat)} shipping`:'Free shipping';if(s.mode==='regional'){const v=Object.values(s.rates||{}).map(Number).filter(x=>!isNaN(x));const mn=v.length?Math.min(...v):0,mx=v.length?Math.max(...v):0;if(!mn&&!mx)return 'Free shipping';return mn===mx?`+ ${usdtLabel(mn)} shipping`:`+ shipping from ${usdtLabel(mn)}`;}return 'Free shipping';}
+function isFreeShip(l){const s=(l&&l.shipping)||{mode:'free'};if(s.mode==='free')return true;if(s.mode==='flat')return !(s.flat>0);if(s.mode==='regional')return !Object.values(s.rates||{}).some(v=>Number(v)>0);return true;}
+function shipDetail(l){const s=(l&&l.shipping)||{mode:'free'};if(isFreeShip(l))return 'Free';if(s.mode==='flat')return usdtLabel(s.flat);const v=Object.values(s.rates||{}).map(Number).filter(x=>!isNaN(x)&&x>0);if(!v.length)return 'Free';const mn=Math.min(...v),mx=Math.max(...v);return mn===mx?usdtLabel(mn):`from ${usdtLabel(mn)}`;}
 function compressImg(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>{const img=new Image();img.onload=()=>{const max=1100;let w=img.width,h=img.height;if(w>h&&w>max){h=h*max/w;w=max;}else if(h>max){w=w*max/h;h=max;}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);res(c.toDataURL('image/jpeg',0.82));};img.onerror=rej;img.src=fr.result;};fr.onerror=rej;fr.readAsDataURL(file);});}
 function openSell(edit){if(!AUTH)return needAuth('Sign in to sell');SELL_EDIT=(edit&&edit.id)?edit:null;SELL_PHOTOS.length=0;SELL_SHIP.length=0;
-  if(SELL_EDIT){(SELL_EDIT.photos||[]).forEach(p=>SELL_PHOTOS.push(p));((SELL_EDIT.ships&&SELL_EDIT.ships.length)?SELL_EDIT.ships:REGIONS).forEach(r=>SELL_SHIP.push(r));}
+  Object.keys(SELL_SHIP_RATES).forEach(k=>delete SELL_SHIP_RATES[k]);SELL_SHIP_MODE='free';SELL_SHIP_FLAT=0;
+  if(SELL_EDIT){(SELL_EDIT.photos||[]).forEach(p=>SELL_PHOTOS.push(p));((SELL_EDIT.ships&&SELL_EDIT.ships.length)?SELL_EDIT.ships:REGIONS).forEach(r=>SELL_SHIP.push(r));
+    const sh=SELL_EDIT.shipping||{mode:'free'};SELL_SHIP_MODE=sh.mode||'free';SELL_SHIP_FLAT=sh.flat||0;Object.assign(SELL_SHIP_RATES,sh.rates||{});}
   else REGIONS.forEach(r=>SELL_SHIP.push(r));
   renderSell();openModal('#sellModal');}
 function renderSell(){
@@ -2193,6 +2219,16 @@ function renderSell(){
     <div class="field"><label>Price (USD) — min $10</label><input id="slPrice" type="number" min="10" step="1" placeholder="80" value="${E.price!=null?esc(String(E.price)):''}"></div>
     <div class="field"><label>Item location</label><select id="slCountry"><option value="">Select country…</option>${COUNTRIES.map(([c,n])=>`<option value="${c}"${(E.country||load('swk_country',''))===c?' selected':''}>${n}</option>`).join('')}</select></div>
     <div class="field"><label>Ships to</label><div class="rgns" id="slShip">${regionBoxes}</div></div>
+    <div class="field"><label>Shipping</label>
+      <div class="segmented" id="shipSeg">
+        <button type="button" data-sm="free">Free</button>
+        <button type="button" data-sm="flat">Flat rate</button>
+        <button type="button" data-sm="regional">By region</button>
+      </div>
+      <div id="shipFreeNote" class="hintline" style="margin-top:8px">Free shipping — delivery is included in your price.</div>
+      <div id="shipFlatWrap" style="display:none;margin-top:8px"><div class="tg-in"><span>$</span><input id="shipFlat" type="number" min="0" step="1" placeholder="Shipping cost to all regions"></div><span class="hintline">Same shipping cost for every region you ship to.</span></div>
+      <div id="shipRegionWrap" style="display:none;margin-top:8px"></div>
+    </div>
     <div class="field"><label>Returns</label><select id="slReturns">${RETURNS.map(r=>`<option${E.returns===r?' selected':''}>${r}</option>`).join('')}</select></div>
     <div class="field"><label>Description</label><textarea id="slDesc" rows="3" maxlength="1500" placeholder="Condition details, flaws, measurements…">${esc(E.desc||'')}</textarea></div>
     <button class="cbtn" id="slGo">${SELL_EDIT?'Save changes':'Publish listing'}</button>
@@ -2220,10 +2256,28 @@ function renderSell(){
   $('#slTitle').addEventListener('input',e=>applyDetect(e.target.value));
   if(!SELL_EDIT&&($('#slTitle').value||'').length>2)applyDetect($('#slTitle').value);
   updateSizeVisibility();
-  $('#slShip').addEventListener('click',e=>{const l=e.target.closest('[data-rgn]');if(!l)return;const r=l.dataset.rgn,i=SELL_SHIP.indexOf(r);if(i>-1)SELL_SHIP.splice(i,1);else SELL_SHIP.push(r);l.classList.toggle('on');});
+  $('#slShip').addEventListener('click',e=>{const l=e.target.closest('[data-rgn]');if(!l)return;const r=l.dataset.rgn,i=SELL_SHIP.indexOf(r);if(i>-1)SELL_SHIP.splice(i,1);else SELL_SHIP.push(r);l.classList.toggle('on');if(SELL_SHIP_MODE==='regional')renderShipRegions();});
+  // shipping controls
+  const shipFlatIn=$('#shipFlat');if(shipFlatIn)shipFlatIn.value=SELL_SHIP_FLAT||'';
+  $('#shipSeg').addEventListener('click',e=>{const btn=e.target.closest('[data-sm]');if(btn)applyShipMode(btn.dataset.sm);});
+  applyShipMode(SELL_SHIP_MODE);
   $('#slGo').addEventListener('click',submitListing);
 }
 function flashField(el){if(!el)return;el.classList.remove('detected');void el.offsetWidth;el.classList.add('detected');}
+function renderShipRegions(){
+  const wrap=$('#shipRegionWrap');if(!wrap)return;
+  wrap.querySelectorAll('[data-region]').forEach(inp=>{SELL_SHIP_RATES[inp.dataset.region]=Math.max(0,parseFloat(inp.value)||0);});
+  wrap.innerHTML=SELL_SHIP.length?SELL_SHIP.map(r=>`<div class="ship-rate"><span>${esc(r)}</span><div class="tg-in"><span>$</span><input type="number" min="0" step="1" data-region="${esc(r)}" value="${(SELL_SHIP_RATES[r]!=null&&SELL_SHIP_RATES[r]!=='')?SELL_SHIP_RATES[r]:''}" placeholder="0"></div></div>`).join(''):'<p class="hintline">Pick at least one region above to set its shipping cost.</p>';
+}
+function applyShipMode(m){
+  SELL_SHIP_MODE=m;
+  const seg=$('#shipSeg');if(seg)seg.querySelectorAll('[data-sm]').forEach(x=>x.classList.toggle('on',x.dataset.sm===m));
+  const fn=$('#shipFreeNote'),fw=$('#shipFlatWrap'),rw=$('#shipRegionWrap');
+  if(fn)fn.style.display=m==='free'?'':'none';
+  if(fw)fw.style.display=m==='flat'?'':'none';
+  if(rw)rw.style.display=m==='regional'?'':'none';
+  if(m==='regional')renderShipRegions();
+}
 async function submitListing(){
   const msg=$('#slMsg'),show=t=>{msg.style.display='block';msg.textContent=t;};
   if(!SELL_PHOTOS.length)return show('Add at least one photo.');
@@ -2233,7 +2287,10 @@ async function submitListing(){
   if(!SELL_SHIP.length)return show('Choose at least one region you ship to.');
   let brand=$('#slBrand').value;if(brand==='Other')brand=$('#slBrandOther').value||'';
   const country=$('#slCountry')?$('#slCountry').value:'';if(country)save('swk_country',country);
-  const body={title:$('#slTitle').value,brand,category:$('#slCat').value,size:$('#slSize').value,condition:$('#slCond').value,price:$('#slPrice').value,country,ships:SELL_SHIP.slice(),returns:$('#slReturns').value,desc:$('#slDesc').value,photos:SELL_PHOTOS.slice()};
+  let shipping={mode:SELL_SHIP_MODE};
+  if(SELL_SHIP_MODE==='flat')shipping.flat=Math.max(0,parseFloat($('#shipFlat').value)||0);
+  else if(SELL_SHIP_MODE==='regional'){shipping.rates={};document.querySelectorAll('#shipRegionWrap [data-region]').forEach(inp=>{shipping.rates[inp.dataset.region]=Math.max(0,parseFloat(inp.value)||0);});}
+  const body={title:$('#slTitle').value,brand,category:$('#slCat').value,size:$('#slSize').value,condition:$('#slCond').value,price:$('#slPrice').value,country,shipping,ships:SELL_SHIP.slice(),returns:$('#slReturns').value,desc:$('#slDesc').value,photos:SELL_PHOTOS.slice()};
   $('#slGo').disabled=true;
   try{
     if(SELL_EDIT){await mfetch('/api/listings/'+SELL_EDIT.id,{method:'PUT',body:JSON.stringify(body)});toast('Changes saved — back in review before it goes live');}

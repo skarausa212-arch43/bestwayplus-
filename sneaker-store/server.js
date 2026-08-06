@@ -434,6 +434,21 @@ const CAT_OF_GROUP = {}; for (const g in CAT_GROUPS) for (const c of CAT_GROUPS[
 const CONDITIONS = ['New', 'Like new', 'Very good', 'Good', 'Fair'];
 const REGIONS = ['North America', 'South America', 'Europe', 'Asia', 'Africa', 'Oceania'];
 const RETURNS = ['No returns', '14-day returns', '30-day returns'];
+// per-listing shipping config: free / flat / per-region rates
+function parseShipping(s, ships) {
+  s = s || {};
+  const mode = ['free', 'flat', 'regional'].includes(s.mode) ? s.mode : 'free';
+  const money = v => Math.max(0, Math.min(9999, Math.round(Number(v) * 100) / 100)) || 0;
+  if (mode === 'flat') return { mode, flat: money(s.flat) };
+  if (mode === 'regional') { const rates = {}; for (const r of (ships || [])) rates[r] = money((s.rates || {})[r]); return { mode, rates }; }
+  return { mode: 'free' };
+}
+function shipCost(l, region) {
+  const s = l.shipping || { mode: 'free' };
+  if (s.mode === 'flat') return Math.max(0, s.flat || 0);
+  if (s.mode === 'regional') return Math.max(0, (s.rates || {})[region] || 0);
+  return 0;
+}
 const MAX_ADDRESSES = 3;
 function profileView(u) {
   const st = sellerStats(u.email);
@@ -457,6 +472,7 @@ function listingCard(l) { // light — no full photos
     id: l.id, title: l.title, brand: l.brand, category: l.category, group: catGroup(l.category), price: l.price, old: l.old || 0,
     size: l.size || '', condition: l.condition || '', cover: l.cover || (l.photos && l.photos[0]) || '',
     country: l.country || '',
+    shipping: l.shipping || { mode: 'free' },
     ships: l.ships || [], returns: l.returns || 'No returns', boosted: (l.boostedUntil || 0) > Date.now(),
     status: l.status, createdAt: l.createdAt,
     seller: { handle: sellerHandle(l.seller), email: l.seller, rating: st.rating, reviews: st.reviews, sold: st.sold, verified: st.verified },
@@ -733,6 +749,7 @@ const server = http.createServer(async (req, res) => {
         size: String(b.size || '').slice(0, 24), condition: CONDITIONS.includes(b.condition) ? b.condition : 'Good',
         ships, returns: RETURNS.includes(b.returns) ? b.returns : 'No returns',
         country: /^[A-Za-z]{2}$/.test(b.country || '') ? String(b.country).toUpperCase() : '',
+        shipping: parseShipping(b.shipping, ships),
         desc: String(b.desc || '').slice(0, 1500), photos, cover: photos[0], status: 'pending', createdAt: Date.now(),
       };
       listings.push(l); saveListings();
@@ -759,6 +776,7 @@ const server = http.createServer(async (req, res) => {
       if (Array.isArray(b.ships)) l.ships = b.ships.filter(r => REGIONS.includes(r));
       if (b.returns !== undefined && RETURNS.includes(b.returns)) l.returns = b.returns;
       if (b.country !== undefined) l.country = /^[A-Za-z]{2}$/.test(b.country || '') ? String(b.country).toUpperCase() : '';
+      if (b.shipping !== undefined) l.shipping = parseShipping(b.shipping, l.ships);
       if (Array.isArray(b.photos)) {
         const photos = b.photos.filter(x => typeof x === 'string' && x.startsWith('data:image/')).slice(0, 6);
         if (!photos.length) return send(res, 400, { error: 'Add at least one photo.' });
@@ -857,17 +875,18 @@ const server = http.createServer(async (req, res) => {
       let price = l.price;
       const of = offers.find(o => o.listingId === l.id && o.buyer === u.email && o.status === 'accepted');
       if (of) price = of.amount;
-      // buyer-side fee is baked into the price shown at purchase; seller receives the full listed price
+      // buyer-side fee is baked into the price shown at purchase; seller receives the full listed price + shipping
       const fee = Math.round(price * MARKET_FEE_PCT) / 100;
-      const total = Math.round((price + fee) * 100) / 100;
+      const ship = shipCost(l, region);
+      const total = Math.round((price + fee + ship) * 100) / 100;
       const id = 'SWK-' + crypto.randomBytes(8).toString('hex').toUpperCase();
       const net = pickNetwork(b.network);
       const order = {
         id, email: u.email, name: String(b.name || u.name || '').slice(0, 80),
         address: String(b.address || '').slice(0, 160), city: String(b.city || '').slice(0, 60), zip: String(b.zip || '').slice(0, 20), country: String(b.country || '').slice(0, 56),
-        network: net, payment: NETWORKS[net].label, escrow: true, seller: l.seller, listingId: l.id,
+        region, network: net, payment: NETWORKS[net].label, escrow: true, seller: l.seller, listingId: l.id,
         items: [{ id: l.id, name: l.title, price, size: l.size || '-', qty: 1 }],
-        subtotal: price, ship: 0, total, fee,
+        subtotal: price, ship, total, fee,
         payAmount: assignUniqueAmount(total),
         status: 'pending', paidTx: null, paidAt: null, carrier: '', tracking: '', paidOut: false, date: Date.now(),
       };
