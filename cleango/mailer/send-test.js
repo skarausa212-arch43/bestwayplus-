@@ -28,6 +28,16 @@ if (!to || !to.includes('@')) {
   console.log('usage: node mailer/send-test.js you@example.com');
   process.exit(1);
 }
+// Catch the placeholder before we spend a connection on it: a domain with no
+// dot ("своя@почта", "me@localhost") is a single-label domain, which Microsoft
+// 365 rejects with 501 5.1.6 — an error about the RECIPIENT that reads like a
+// problem with our own setup.
+const domainPart = to.split('@').pop();
+if (!domainPart.includes('.') || /[А-Яа-яЁёІіЇїЄє]/.test(to)) {
+  console.log(`✗ «${to}» — это не адрес, а заполнитель из инструкции.`);
+  console.log('  Укажите настоящий ящик, например: node mailer/send-test.js you@gmail.com');
+  process.exit(1);
+}
 
 const c = mailer.config();
 console.log('smtp host     :', c.host || '(none)');
@@ -62,6 +72,11 @@ mailer.send({
       '     Изменение применяется до ~1 часа.',
       '  2. Если у аккаунта включена MFA — обычный пароль не подойдёт, нужен app password.',
       '  3. LUMI_SMTP_USER должен быть полным адресом ящика (support@lumi24.pl), не алиасом.',
+    ]],
+    [/5\.1\.6|501/, [
+      'Сервер отверг АДРЕС ПОЛУЧАТЕЛЯ, а не наши настройки.',
+      '  Аутентификация при этом прошла — до RCPT TO дело доходит только после успешного AUTH.',
+      '  Проверьте, что указали реальный ящик с доменом (you@gmail.com).',
     ]],
     [/5\.7\.60|SendAsDenied/i, [
       'Ящик не имеет права отправлять от этого адреса.',

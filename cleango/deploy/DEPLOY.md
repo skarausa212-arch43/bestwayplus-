@@ -205,7 +205,7 @@ SES, Postmark — all have free/cheap tiers).
 4. **Test the connection** — this prints the config (never the password), sends a
    real message, and turns the SMTP status code into the fix for it:
    ```bash
-   cd /opt/lumi && node mailer/send-test.js you@example.com
+   cd /opt/lumi && node mailer/send-test.js you@gmail.com   # настоящий ящик, не заполнитель
    ```
 5. **Check the DNS side.** Credentials only get the message accepted; SPF, DKIM and
    DMARC decide whether the recipient ever sees it. This reads the live records and
