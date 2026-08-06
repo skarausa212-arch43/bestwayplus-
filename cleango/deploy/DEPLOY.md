@@ -213,12 +213,11 @@ SES, Postmark — all have free/cheap tiers).
    ```bash
    cd /opt/lumi && node ops/mail-dns-check.js
    ```
-   `lumi24.pl` currently publishes `v=spf1 include:secureserver.net -all` (GoDaddy)
-   while the MX points at Microsoft 365. That is only correct if GoDaddy's own SPF
-   chains through to Outlook — verify with `dig +short TXT secureserver.net` and look
-   for `spf.protection.outlook.com`. If it is not in there, add `include:spf.protection.outlook.com`
-   to the domain's SPF record, or the mail fails SPF and DMARC `p=quarantine` puts it
-   straight into spam.
+   For `lumi24.pl` this is already settled: SPF is `v=spf1 include:secureserver.net -all`,
+   and that include chains through `spf-0.secureserver.net` to
+   `spf.protection.outlook.com`, so mail sent by Microsoft 365 passes SPF. DKIM
+   selectors are published and DMARC is `p=quarantine`. No DNS change needed —
+   the check re-verifies the chain on every run in case GoDaddy changes it.
 6. **End-to-end**: register a new account — the welcome email should arrive. Watch
    logs with `journalctl -u lumi -f` (`[mail] sent to …` vs an auth error).
 
