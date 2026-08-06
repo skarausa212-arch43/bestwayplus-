@@ -63,8 +63,7 @@ const saveReviews = () => saveJSON('reviews.json', reviews);
 const saveMessages = () => saveJSON('messages.json', messages);
 const saveReports = () => saveJSON('reports.json', reports);
 const saveWithdrawals = () => saveJSON('withdrawals.json', withdrawals);
-/* one-time recovery: publish any listings left in 'pending' from the moderation window */
-(() => { let changed = false; for (const l of listings) if (l.status === 'pending') { l.status = 'active'; changed = true; } if (changed) saveJSON('listings.json', listings); })();
+// listings are moderated: a new listing stays 'pending' until an admin approves it (see /api/admin/listing-moderate)
 const AUTO_RELEASE_DAYS = Number(process.env.AUTO_RELEASE_DAYS || 7); // buyer-protection window after shipping
 let statsDirty = false;
 setInterval(() => { if (statsDirty) { statsDirty = false; saveJSON('stats.json', stats); } }, 5000).unref();
@@ -712,7 +711,7 @@ const server = http.createServer(async (req, res) => {
         category: cat, price, old: Math.max(0, Math.round(Number(b.old) * 100) / 100) || 0,
         size: String(b.size || '').slice(0, 24), condition: CONDITIONS.includes(b.condition) ? b.condition : 'Good',
         ships, returns: RETURNS.includes(b.returns) ? b.returns : 'No returns',
-        desc: String(b.desc || '').slice(0, 1500), photos, cover: photos[0], status: 'active', createdAt: Date.now(),
+        desc: String(b.desc || '').slice(0, 1500), photos, cover: photos[0], status: 'pending', createdAt: Date.now(),
       };
       listings.push(l); saveListings();
       return send(res, 201, { listing: listingFull(l) });

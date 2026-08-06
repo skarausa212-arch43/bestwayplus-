@@ -1319,16 +1319,17 @@ function listingCardHTML(l){
       </div>
     </article>`;
 }
-const FILT={sort:'new',pmin:0,pmax:0,cond:''};
+const FILT={sort:'new',pmin:0,pmax:0,cond:'',shipTo:''};
 const GRID_PAGE=20;let GRID_SHOWN=GRID_PAGE;
 function renderGrid(more){
   if(!more)GRID_SHOWN=GRID_PAGE;
-  const q=searchTerm,{pmin,pmax,cond,sort}=FILT;
+  const q=searchTerm,{pmin,pmax,cond,sort,shipTo}=FILT;
   let lm=LISTINGS.filter(l=>(activeFilter==='all'||l.group===activeFilter)&&(!q||(l.title+' '+(l.brand||'')).toLowerCase().includes(q)));
   let pm=(typeof PRODUCTS!=='undefined'?PRODUCTS:[]).filter(p=>(activeFilter==='all'||productGroup(p)===activeFilter)&&(!q||(p.name+' '+(p.brand||'')).toLowerCase().includes(q)));
   if(pmin){lm=lm.filter(l=>l.price>=pmin);pm=pm.filter(p=>p.price>=pmin);}
   if(pmax){lm=lm.filter(l=>l.price<=pmax);pm=pm.filter(p=>p.price<=pmax);}
   if(cond){lm=lm.filter(l=>l.condition===cond);if(cond!=='New')pm=[];}
+  if(shipTo){lm=lm.filter(l=>!l.ships||!l.ships.length||l.ships.includes(shipTo));} // hide sellers who don't ship to the buyer's region
   let items=[...lm.map(o=>({k:'l',o,price:o.price,t:o.createdAt||0})),...pm.map(o=>({k:'p',o,price:o.price,t:1}))];
   if(sort==='lo')items.sort((a,b)=>a.price-b.price);
   else if(sort==='hi')items.sort((a,b)=>b.price-a.price);
@@ -1356,10 +1357,12 @@ $('#searchBtn').addEventListener('click',()=>{document.getElementById('catalog')
 function renderFilterbar(){
   const fb=$('#filterbar');if(!fb)return;
   fb.innerHTML=`<label>Sort <select id="fSort"><option value="new">Newest</option><option value="lo">Price ↑</option><option value="hi">Price ↓</option></select></label>
+    <label>Ships to <select id="fShip"><option value="">Anywhere</option>${REGIONS.map(r=>`<option>${r}</option>`).join('')}</select></label>
     <label>Condition <select id="fCond"><option value="">Any</option>${['New','Like new','Very good','Good','Fair'].map(c=>`<option>${c}</option>`).join('')}</select></label>
     <label class="fprice">Price&nbsp;$ <input type="number" id="fMin" placeholder="min" min="0"><span>–</span><input type="number" id="fMax" placeholder="max" min="0"></label>`;
-  $('#fSort').value=FILT.sort;$('#fCond').value=FILT.cond;
+  $('#fSort').value=FILT.sort;$('#fCond').value=FILT.cond;$('#fShip').value=FILT.shipTo;
   $('#fSort').addEventListener('change',e=>{FILT.sort=e.target.value;renderGrid();});
+  $('#fShip').addEventListener('change',e=>{FILT.shipTo=e.target.value;renderGrid();});
   $('#fCond').addEventListener('change',e=>{FILT.cond=e.target.value;renderGrid();});
   const apply=()=>{FILT.pmin=parseFloat($('#fMin').value)||0;FILT.pmax=parseFloat($('#fMax').value)||0;renderGrid();};
   $('#fMin').addEventListener('input',apply);$('#fMax').addEventListener('input',apply);
@@ -1956,7 +1959,7 @@ async function submitListing(){
   let brand=$('#slBrand').value;if(brand==='Other')brand=$('#slBrandOther').value||'';
   const body={title:$('#slTitle').value,brand,category:$('#slCat').value,size:$('#slSize').value,condition:$('#slCond').value,price:$('#slPrice').value,old:$('#slOld').value,ships:SELL_SHIP.slice(),returns:$('#slReturns').value,desc:$('#slDesc').value,photos:SELL_PHOTOS};
   $('#slGo').disabled=true;
-  try{await mfetch('/api/listings',{method:'POST',body:JSON.stringify(body)});toast('Listing published — it’s live now');closeModal('#sellModal');loadListings();if($('#accModal').classList.contains('show'))loadMarket();}
+  try{await mfetch('/api/listings',{method:'POST',body:JSON.stringify(body)});toast('Listing submitted — it goes live after a quick review');closeModal('#sellModal');loadListings();if($('#accModal').classList.contains('show'))loadMarket();}
   catch(e){show(e.message);$('#slGo').disabled=false;}
 }
 $('#sellBtn').addEventListener('click',openSell);
