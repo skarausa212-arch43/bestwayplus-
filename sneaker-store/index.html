@@ -257,6 +257,13 @@
   .add.hb:hover{background:#fdeaef;color:var(--bad)}
   .add.hb.on{background:#fdeaef;color:var(--bad)}
   .add.hb.on svg{fill:var(--bad);animation:heartpop .38s var(--ease)}
+  /* on-card quick actions: make offer / message seller */
+  .card-cta{display:flex;gap:6px;margin-top:10px}
+  .cc-offer{flex:1;height:34px;border-radius:10px;background:var(--ink);color:#fff;font-weight:700;font-size:12.5px;letter-spacing:-.01em;transition:.16s var(--ease)}
+  .cc-offer:hover{background:var(--accent)}
+  .cc-msg{width:34px;height:34px;flex:none;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--muted);display:grid;place-items:center;transition:.16s var(--ease)}
+  .cc-msg:hover{border-color:var(--accent);color:var(--accent)}
+  .cc-msg svg{width:16px;height:16px}
 
   /* ============ BADGES ============ */
   .badge{font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:4px 7px;border-radius:7px;display:inline-flex;align-items:center;gap:4px;line-height:1;background:var(--surface);border:1px solid var(--line);color:var(--ink);box-shadow:var(--shadow-sm)}
@@ -1452,7 +1459,11 @@ function listingCardHTML(l){
   const fav=favs.includes(l.id);
   const badges=`${l.boosted?'<span class="badge b-hot">🔥 Hot</span>':''}<span class="badge b-escrow">Escrow</span>`;
   const av=l.seller.avatar?`<img src="${l.seller.avatar}" alt="">`:esc((l.seller.handle||'?')[0].toUpperCase());
-  const rate=l.seller.rating?`<span class="srate">★ ${l.seller.rating}</span>`:'<span>New seller</span>';
+  const mine=AUTH&&AUTH.email&&l.seller&&l.seller.email&&AUTH.email.toLowerCase()===String(l.seller.email).toLowerCase();
+  const cta=mine?'':`<div class="card-cta">
+        <button class="cc-offer" data-offer="${l.id}">Make offer</button>
+        <button class="cc-msg" data-msg="${l.id}" aria-label="Message seller"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8 8 0 0 1-11.5 7.2L4 20.5l1.4-4.7A8 8 0 1 1 21 11.5z"/></svg></button>
+      </div>`;
   return `<article class="card reveal" data-listing="${l.id}" data-gcat="${l.group||'other'}">
       <button class="card-media" data-listing="${l.id}">
         <span class="badges">${badges}</span>
@@ -1464,8 +1475,17 @@ function listingCardHTML(l){
         <h3 data-listing="${l.id}">${esc(l.title)}</h3>
         <div class="card-price">${cryptoPriceHTML(l.price,l.id)}<button class="add hb ${fav?'on':''}" data-fav="${l.id}" aria-label="Save">${ICON.heart}</button></div>
         <div class="card-seller"><span class="sav">${av}</span><span class="sh">@${esc(l.seller.handle)}</span>${l.seller.verified?'<span class="vchk">✓</span>':''}${l.seller.rating?`<span class="srate">★ ${l.seller.rating}</span>`:''}</div>
+        ${cta}
       </div>
     </article>`;
+}
+// shared handler for the on-card Make offer / Message buttons
+function listingCTAClick(e){
+  const off=e.target.closest('[data-offer]');
+  if(off){if(!AUTH){needAuth('Sign in to make an offer');return true;}const l=LISTINGS.find(x=>x.id===off.dataset.offer);if(l)makeOffer(l);else openListing(off.dataset.offer);return true;}
+  const msg=e.target.closest('[data-msg]');
+  if(msg){if(!AUTH){needAuth('Sign in to message the seller');return true;}closeModal('#lstModal');openListingChat(msg.dataset.msg);return true;}
+  return false;
 }
 const FILT={sort:'new',pmin:0,pmax:0,cond:'',shipTo:'',priceRange:''};
 const GRID_PAGE=20;let GRID_SHOWN=GRID_PAGE;
@@ -1492,6 +1512,7 @@ function renderGrid(more){
 }
 function loadListings(){return fetch('/api/listings').then(r=>r.json()).then(d=>{LISTINGS=d.listings||[];renderGrid();renderFeatured();renderSellers();renderTrades();}).catch(()=>{renderFeatured();renderSellers();renderTrades();});}
 grid.addEventListener('click',e=>{
+  if(listingCTAClick(e))return;
   const f=e.target.closest('[data-fav]');if(f){toggleFav(f.dataset.fav);return}
   const li=e.target.closest('[data-listing]');if(li){openListing(li.dataset.listing);return}
   const o=e.target.closest('[data-open]');if(o){const p=PRODUCTS.find(x=>x.id===o.dataset.open);if(p&&!p.soldOut)openQV(o.dataset.open)}
@@ -2020,6 +2041,7 @@ async function openSeller(email){
     <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">${d.listings.length?d.listings.map(listingCardHTML).join(''):'<p class="mkt-empty">No active listings.</p>'}</div>
     ${d.reviews.length?`<h3 style="font-size:13px;letter-spacing:.1em;color:var(--faint);text-transform:uppercase;margin:20px 0 10px">Reviews</h3>`+d.reviews.map(r=>`<div style="padding:10px 0;border-top:1px solid var(--line)"><div>${stars(r.rating)} <b style="font-size:13px">@${esc(r.from)}</b></div>${r.text?`<p style="font-size:13px;color:var(--muted);margin-top:4px">${esc(r.text)}</p>`:''}</div>`).join(''):''}
   </div>`;
+  box.addEventListener('click',e=>{if(listingCTAClick(e))e.stopPropagation();},true);
   box.querySelectorAll('[data-fav]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();toggleFav(el.dataset.fav);}));
   box.querySelectorAll('[data-listing]').forEach(el=>el.addEventListener('click',()=>openListing(el.dataset.listing)));
 }
@@ -2502,6 +2524,7 @@ function renderFeatured(){
   showSection(rail);rail.innerHTML=html;observeReveal();
 }
 (function(){const fr=$('#featuredRail');if(!fr)return;fr.addEventListener('click',e=>{
+  if(listingCTAClick(e))return;
   const f=e.target.closest('[data-fav]');if(f){toggleFav(f.dataset.fav);return;}
   const li=e.target.closest('[data-listing]');if(li){openListing(li.dataset.listing);return;}
   const o=e.target.closest('[data-open]');if(o&&typeof PRODUCTS!=='undefined'){const pp=PRODUCTS.find(x=>x.id===o.dataset.open);if(pp&&!pp.soldOut)openQV(o.dataset.open);}
