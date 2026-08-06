@@ -248,7 +248,10 @@
   .card-seller .sav img{width:100%;height:100%;object-fit:cover}
   .card-seller .srate{color:var(--ink);font-weight:600;margin-left:auto;flex:none}
   .card-seller .vchk{color:var(--accent);flex:none}
-  .card-seller .cflag{font-size:14px;line-height:1;flex:none}
+  .flag{display:inline-block;width:20px;height:13px;border-radius:3px;overflow:hidden;box-shadow:0 0 0 1px rgba(0,0,0,.14);vertical-align:-2px;flex:none;line-height:0;background:#e9ecf1}
+  .flag svg{display:block;width:100%;height:100%}
+  .card-seller .flag{width:19px;height:12px}
+  .usa-ships .flag{width:22px;height:14px}
   .usa-ships{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:8px 11px;margin:10px 0 4px}
   .usa-ships b{color:var(--ink);font-weight:700}
   .add{width:32px;height:32px;border-radius:9px;background:var(--surface-2);color:var(--ink);display:grid;place-items:center;transition:.2s;flex:none}
@@ -1450,7 +1453,7 @@ function catalogCardHTML(p){
         <div class="cat">${catLabel(p)} · ${cap(p.brand)}</div>
         <h3 data-open="${p.id}">${esc(p.name)}</h3>
         <div class="card-price">${cryptoPriceHTML(p.price,p.id)}<button class="add hb ${fav?'on':''}" data-fav="${p.id}" aria-label="Save">${ICON.heart}</button></div>
-        <div class="card-seller"><span class="sav">S</span><span class="sh">STUFFWEKNOW</span><span class="vchk">✓</span><span class="cflag" title="United States — ships within the USA only">🇺🇸</span><span class="srate">USA</span></div>
+        <div class="card-seller"><span class="sav">S</span><span class="sh">STUFFWEKNOW</span><span class="vchk">✓</span>${flagHTML('US')}<span class="srate">USA</span></div>
       </div>
     </article>`;
 }
@@ -1477,7 +1480,7 @@ function listingCardHTML(l){
         <div class="cat">${esc(l.condition||'Used')}${l.size?' · '+esc(l.size):''}</div>
         <h3 data-listing="${l.id}">${esc(l.title)}</h3>
         <div class="card-price">${cryptoPriceHTML(l.price,l.id)}<button class="add hb ${fav?'on':''}" data-fav="${l.id}" aria-label="Save">${ICON.heart}</button></div>
-        <div class="card-seller"><span class="sav">${av}</span><span class="sh">@${esc(l.seller.handle)}</span>${l.seller.verified?'<span class="vchk">✓</span>':''}${l.country?`<span class="cflag" title="${esc(COUNTRY_NAME[l.country]||l.country)}">${flagEmoji(l.country)}</span>`:''}${l.seller.rating?`<span class="srate">★ ${l.seller.rating}</span>`:''}</div>
+        <div class="card-seller"><span class="sav">${av}</span><span class="sh">@${esc(l.seller.handle)}</span>${l.seller.verified?'<span class="vchk">✓</span>':''}${l.country?flagHTML(l.country):''}${l.seller.rating?`<span class="srate">★ ${l.seller.rating}</span>`:''}</div>
         ${cta}
       </div>
     </article>`;
@@ -1568,7 +1571,7 @@ function openQV(id){
       <h3>${p.name}</h3>
       <div class="price"><span class="cico" style="background:var(--usdt);display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;color:#fff;font-size:12px;vertical-align:-4px;margin-right:6px">₮</span>${usdtLabel(p.price)} <span style="font-size:14px;color:var(--muted);font-weight:500">≈ ${disp(p.price)}</span></div>
       <p class="desc">${p.desc}</p>
-      <div class="usa-ships">🇺🇸 <b>STUFFWEKNOW</b> · ships within the USA only</div>
+      <div class="usa-ships">${flagHTML('US')} <b>STUFFWEKNOW</b> · ships within the USA only</div>
       <div class="szlbl"><span>${label}</span><a href="#">Size Guide</a></div>
       <div class="sizes" id="qvSizes">${sizes.map(s=>{const d=!isAcc&&!p.sizes&&p.out&&p.out.includes(s);return `<button class="sz ${d?'disabled':''}" data-size="${s}" ${d?'disabled':''}>${s}</button>`}).join('')}</div>
       <div class="qv-act">
@@ -1983,7 +1986,43 @@ const RETURNS=['No returns','14-day returns','30-day returns'];
 /* item location — ISO-2 code → country name (flag rendered from the code) */
 const COUNTRIES=[['US','United States'],['GB','United Kingdom'],['DE','Germany'],['FR','France'],['IT','Italy'],['ES','Spain'],['PL','Poland'],['NL','Netherlands'],['BE','Belgium'],['PT','Portugal'],['IE','Ireland'],['AT','Austria'],['CH','Switzerland'],['SE','Sweden'],['NO','Norway'],['DK','Denmark'],['FI','Finland'],['CZ','Czechia'],['SK','Slovakia'],['HU','Hungary'],['RO','Romania'],['BG','Bulgaria'],['GR','Greece'],['HR','Croatia'],['SI','Slovenia'],['LT','Lithuania'],['LV','Latvia'],['EE','Estonia'],['UA','Ukraine'],['TR','Turkey'],['CA','Canada'],['MX','Mexico'],['BR','Brazil'],['AR','Argentina'],['AU','Australia'],['NZ','New Zealand'],['JP','Japan'],['KR','South Korea'],['CN','China'],['IN','India'],['AE','United Arab Emirates'],['SA','Saudi Arabia'],['ZA','South Africa'],['EG','Egypt'],['NG','Nigeria'],['ID','Indonesia'],['PH','Philippines'],['TH','Thailand'],['VN','Vietnam'],['MY','Malaysia'],['SG','Singapore']];
 const COUNTRY_NAME=Object.fromEntries(COUNTRIES);
-function flagEmoji(iso){iso=String(iso||'').toUpperCase();if(!/^[A-Z]{2}$/.test(iso))return '';return String.fromCodePoint(...[...iso].map(c=>127397+c.charCodeAt(0)));}
+/* real SVG flags (emoji flags don't render on Windows/some browsers) */
+function FLAG_SVG(iso){
+  const H=cs=>{const h=20/cs.length;return cs.map((c,i)=>`<rect y="${(i*h).toFixed(2)}" width="30" height="${(h+.2).toFixed(2)}" fill="${c}"/>`).join('');};
+  const V=cs=>{const w=30/cs.length;return cs.map((c,i)=>`<rect x="${(i*w).toFixed(2)}" width="${(w+.2).toFixed(2)}" height="20" fill="${c}"/>`).join('');};
+  const HB=b=>{const t=b.reduce((s,x)=>s+x[1],0);let y=0,o='';for(const[c,w]of b){const h=20*w/t;o+=`<rect y="${y.toFixed(2)}" width="30" height="${(h+.2).toFixed(2)}" fill="${c}"/>`;y+=h;}return o;};
+  const NORDIC=(bg,cr,inner)=>{let o=`<rect width="30" height="20" fill="${bg}"/>`;if(inner)o+=`<rect x="9" width="8" height="20" fill="${cr}"/><rect y="6" width="30" height="8" fill="${cr}"/><rect x="11" width="4" height="20" fill="${inner}"/><rect y="8" width="30" height="4" fill="${inner}"/>`;else o+=`<rect x="11" width="4" height="20" fill="${cr}"/><rect y="8" width="30" height="4" fill="${cr}"/>`;return o;};
+  const DISC=(bg,c)=>`<rect width="30" height="20" fill="${bg}"/><circle cx="15" cy="10" r="6" fill="${c}"/>`;
+  const m={
+    US:()=>{const h=20/13;let s='';for(let i=0;i<13;i++)s+=`<rect y="${(i*h).toFixed(2)}" width="30" height="${(h+.2).toFixed(2)}" fill="${i%2?'#fff':'#B22234'}"/>`;s+=`<rect width="12" height="${(h*7).toFixed(2)}" fill="#3C3B6E"/>`;for(let r=0;r<4;r++)for(let c=0;c<6;c++){const x=1.1+c*1.9+(r%2?.95:0);const y=1+r*2.4;if(x<11)s+=`<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="0.45" fill="#fff"/>`;}return s;},
+    GB:()=>`<rect width="30" height="20" fill="#012169"/><path d="M0,0 30,20 M30,0 0,20" stroke="#fff" stroke-width="4"/><path d="M0,0 30,20 M30,0 0,20" stroke="#C8102E" stroke-width="2"/><path d="M15,0 V20 M0,10 H30" stroke="#fff" stroke-width="6"/><path d="M15,0 V20 M0,10 H30" stroke="#C8102E" stroke-width="3.6"/>`,
+    DE:()=>H(['#000','#D00','#FFCE00']),FR:()=>V(['#002395','#fff','#ED2939']),IT:()=>V(['#009246','#fff','#CE2B37']),
+    IE:()=>V(['#169B62','#fff','#FF883E']),BE:()=>V(['#000','#FAE042','#ED2939']),RO:()=>V(['#002B7F','#FCD116','#CE1126']),
+    NG:()=>V(['#008751','#fff','#008751']),MX:()=>V(['#006847','#fff','#CE1126']),
+    NL:()=>H(['#AE1C28','#fff','#21468B']),RU:()=>H(['#fff','#0039A6','#D52B1E']),HU:()=>H(['#CD2A3E','#fff','#436F4D']),
+    BG:()=>H(['#fff','#00966E','#D62612']),AT:()=>H(['#ED2939','#fff','#ED2939']),LT:()=>H(['#FDB913','#006A44','#C1272D']),
+    EE:()=>H(['#0072CE','#000','#fff']),UA:()=>H(['#0057B7','#FFD700']),PL:()=>H(['#fff','#DC143C']),ID:()=>H(['#F00','#fff']),
+    AR:()=>H(['#75AADB','#fff','#75AADB']),IN:()=>H(['#FF9933','#fff','#138808']),SK:()=>H(['#fff','#0B4EA2','#EE1C25']),
+    HR:()=>H(['#FF0000','#fff','#171796']),SI:()=>H(['#fff','#005CE6','#FF0000']),
+    ES:()=>HB([['#AA151B',1],['#F1BF00',2],['#AA151B',1]]),LV:()=>HB([['#9E3039',2],['#fff',1],['#9E3039',2]]),
+    TH:()=>HB([['#A51931',1],['#fff',1],['#2D2A4A',2],['#fff',1],['#A51931',1]]),
+    CH:()=>`<rect width="30" height="20" fill="#D52B1E"/><rect x="13" y="5" width="4" height="10" fill="#fff"/><rect x="10" y="8" width="10" height="4" fill="#fff"/>`,
+    SE:()=>NORDIC('#006AA7','#FECC00'),DK:()=>NORDIC('#C8102E','#fff'),FI:()=>NORDIC('#fff','#003580'),NO:()=>NORDIC('#BA0C2F','#fff','#00205B'),
+    JP:()=>DISC('#fff','#BC002D'),
+    PT:()=>`<rect width="30" height="20" fill="#FF0000"/><rect width="12" height="20" fill="#046A38"/><circle cx="12" cy="10" r="2.4" fill="#FFCC4D" stroke="#fff" stroke-width="0.5"/>`,
+    CZ:()=>`<rect width="30" height="20" fill="#fff"/><rect y="10" width="30" height="10" fill="#D7141A"/><path d="M0,0 L13,10 L0,20 Z" fill="#11457E"/>`,
+    GR:()=>H(['#0D5EAF','#fff','#0D5EAF','#fff','#0D5EAF']),
+    TR:()=>`<rect width="30" height="20" fill="#E30A17"/><circle cx="12.5" cy="10" r="4.2" fill="#fff"/><circle cx="14" cy="10" r="3.3" fill="#E30A17"/><path d="M17.6,10 l3.2,-1 -2,1 2,1 z" fill="#fff"/>`,
+    CN:()=>`<rect width="30" height="20" fill="#DE2910"/><path d="M6,3.5 l1,3.1 -2.6,-1.9 3.2,0 -2.6,1.9 z" fill="#FFDE00"/>`,
+    BR:()=>`<rect width="30" height="20" fill="#009C3B"/><path d="M15,2.5 L27,10 L15,17.5 L3,10 Z" fill="#FFDF00"/><circle cx="15" cy="10" r="3.6" fill="#002776"/>`,
+    CA:()=>`<rect width="30" height="20" fill="#fff"/><rect width="7.5" height="20" fill="#FF0000"/><rect x="22.5" width="7.5" height="20" fill="#FF0000"/><path d="M15,5 l1,2.5 2.5,-1 -1,2.5 2,0.5 -2,1 1,2 -2.5,-0.8 -1,2.3 -1,-2.3 -2.5,0.8 1,-2 -2,-1 2,-0.5 -1,-2.5 2.5,1 z" fill="#FF0000"/>`,
+    KR:()=>`<rect width="30" height="20" fill="#fff"/><circle cx="15" cy="10" r="4" fill="#003478"/><path d="M15,6 A2,2 0 0,1 15,10 A2,2 0 0,0 15,14 A4,4 0 0,1 15,6 Z" fill="#C60C30"/>`,
+    AU:()=>`<rect width="30" height="20" fill="#00247D"/><path d="M0,0 15,10 M0,0 h6 M0,0 v4" stroke="#fff" stroke-width="0"/><g transform="scale(0.5)"><rect width="30" height="20" fill="#00247D"/><path d="M0,0 30,20 M30,0 0,20" stroke="#fff" stroke-width="3"/><path d="M15,0 V20 M0,10 H30" stroke="#fff" stroke-width="4"/><path d="M15,0 V20 M0,10 H30" stroke="#C8102E" stroke-width="2.4"/></g><circle cx="22" cy="14" r="0.8" fill="#fff"/><circle cx="25" cy="10" r="0.8" fill="#fff"/><circle cx="24" cy="17" r="0.8" fill="#fff"/><circle cx="20" cy="17" r="0.6" fill="#fff"/><circle cx="7.5" cy="15" r="0.9" fill="#fff"/>`,
+  };
+  if(m[iso])return `<svg viewBox="0 0 30 20" preserveAspectRatio="none">${m[iso]()}</svg>`;
+  return `<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#e9ecf1"/><text x="15" y="14.5" text-anchor="middle" font-size="11" font-weight="800" fill="#5a6472" font-family="system-ui,sans-serif">${iso}</text></svg>`;
+}
+function flagHTML(iso,extra){iso=String(iso||'').toUpperCase();if(!/^[A-Z]{2}$/.test(iso))return '';return `<span class="flag ${extra||''}" title="${esc(COUNTRY_NAME[iso]||iso)}">${FLAG_SVG(iso)}</span>`;}
 const BUYER_FEE_PCT=10; // baked into the price shown at purchase — never surfaced to the buyer as a "fee"
 const payTotal=p=>Math.round((Number(p)||0)*(1+BUYER_FEE_PCT/100)*100)/100;
 const CHAT_LANGS=[['en','English'],['ru','Русский'],['de','Deutsch'],['uk','Українська'],['pl','Polski'],['es','Español'],['fr','Français'],['it','Italiano'],['pt','Português'],['tr','Türkçe'],['nl','Nederlands'],['ro','Română'],['zh-CN','中文'],['ja','日本語'],['ar','العربية']];
@@ -2015,7 +2054,7 @@ async function openListing(id){
       ${l.photos.length>1?`<div class="lst-strip" id="lstStrip">${l.photos.map((ph,i)=>`<img src="${ph}" data-i="${i}" class="${i===0?'on':''}">`).join('')}</div>`:''}
       ${l.desc?`<p class="desc" id="lstDesc" style="margin-top:14px">${esc(l.desc)}</p>`:''}
       ${AUTH?`<button class="lst-translate" id="lstTr">🌐 Translate to ${CHAT_LANGS.find(x=>x[0]===load('swk_chatlang','en'))?.[1]||'English'}</button>`:''}
-      <div class="ships-line">${l.country?`<b>Location:</b> ${flagEmoji(l.country)} ${esc(COUNTRY_NAME[l.country]||l.country)} · `:''}<b>Ships:</b> ${(!l.ships||!l.ships.length||l.ships.length>=REGIONS.length)?'Worldwide':l.ships.map(esc).join(', ')} · <b>Returns:</b> ${esc(l.returns||'No returns')}</div>
+      <div class="ships-line">${l.country?`<b>Location:</b> ${flagHTML(l.country)} ${esc(COUNTRY_NAME[l.country]||l.country)} · `:''}<b>Ships:</b> ${(!l.ships||!l.ships.length||l.ships.length>=REGIONS.length)?'Worldwide':l.ships.map(esc).join(', ')} · <b>Returns:</b> ${esc(l.returns||'No returns')}</div>
       <div class="protect">${ICON.verified}<div><b>Buyer Protection</b><span>Funds held in escrow — released only when you confirm the item arrived.</span></div></div>
       <div class="seller-row">
         <div class="av">${s.avatar?`<img src="${s.avatar}" alt="">`:esc((s.handle||'?')[0].toUpperCase())}</div>
@@ -2123,7 +2162,7 @@ function renderSell(){
     <div class="frow"><div class="field" id="slSizeField"><label>Size</label><input id="slSize" maxlength="24" placeholder="42 / M / One size" value="${esc(E.size||'')}"></div>
       <div class="field"><label>Condition</label><select id="slCond">${['New','Like new','Very good','Good','Fair'].map(c=>`<option${E.condition===c?' selected':''}>${c}</option>`).join('')}</select></div></div>
     <div class="field"><label>Price (USD) — min $10</label><input id="slPrice" type="number" min="10" step="1" placeholder="80" value="${E.price!=null?esc(String(E.price)):''}"></div>
-    <div class="field"><label>Item location</label><select id="slCountry"><option value="">Select country…</option>${COUNTRIES.map(([c,n])=>`<option value="${c}"${(E.country||load('swk_country',''))===c?' selected':''}>${flagEmoji(c)} ${n}</option>`).join('')}</select></div>
+    <div class="field"><label>Item location</label><select id="slCountry"><option value="">Select country…</option>${COUNTRIES.map(([c,n])=>`<option value="${c}"${(E.country||load('swk_country',''))===c?' selected':''}>${n}</option>`).join('')}</select></div>
     <div class="field"><label>Ships to</label><div class="rgns" id="slShip">${regionBoxes}</div></div>
     <div class="field"><label>Returns</label><select id="slReturns">${RETURNS.map(r=>`<option${E.returns===r?' selected':''}>${r}</option>`).join('')}</select></div>
     <div class="field"><label>Description</label><textarea id="slDesc" rows="3" maxlength="1500" placeholder="Condition details, flaws, measurements…">${esc(E.desc||'')}</textarea></div>
