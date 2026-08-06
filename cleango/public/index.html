@@ -3333,7 +3333,14 @@ function openPropertyForm(){
     <div class="ptype-grid" id="ptypes">${PTYPES.map(([v,e,n])=>`<div class="ptype ${v==='apartment'?'on':''}" data-pt="${v}"><div class="pe">${e}</div><div class="pn">${n}</div></div>`).join('')}</div>
     <label class="field"><span>Название</span><input class="input" id="pl" placeholder="Квартира · Мокотув"></label>
     <label class="field"><span>Адрес</span><input class="input" id="pa" placeholder="Улица, дом, квартира"></label>
-    <label class="field"><span>Город</span><select class="input" id="pc">${cities.map(c=>`<option>${c}</option>`).join('')}</select></label>
+    <label class="field"><span>Город</span><select class="input" id="pc">${(()=>{
+      // Default to the user's own city and mark the closed ones, exactly like the
+      // sign-up form. Listing every city with Warsaw first meant a Wrocław client
+      // silently created a flat in a city where nobody can serve it.
+      const open=(state.citiesOpen&&state.citiesOpen.length)?state.citiesOpen:cities;
+      const def=(state.user&&state.user.city)||open[0]||cities[0];
+      return cities.map(c=>{const o=open.includes(c);return `<option value="${c}" ${c===def?'selected':''} ${o?'':'disabled'}>${c}${o?'':' — '+t('скоро')}</option>`;}).join('');
+    })()}</select></label>
     <div class="row" style="gap:12px">
       <label class="field" style="flex:1"><span>Комнаты</span><input class="input" id="pr" type="number" min="1" max="12" value="2"></label>
       <label class="field" style="flex:1"><span>Санузлы</span><input class="input" id="pb" type="number" min="0" max="8" value="1"></label>

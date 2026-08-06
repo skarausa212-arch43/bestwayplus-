@@ -540,7 +540,15 @@ const PROFESSIONS = {
 const providerProfessions = (u) => (Array.isArray(u.professions) && u.professions.length ? u.professions : ['cleaning']);
 // Can this provider serve this booking? Garden orders go to gardeners only;
 // everything else is the cleaning vertical.
-const providerServes = (u, bk) => providerProfessions(u).includes(bk.service === 'garden' ? 'garden' : 'cleaning');
+// Does this provider serve this booking? Profession AND city: a cleaner
+// registered in Warsaw was being offered — and could accept — a Wrocław job,
+// and the customer then waited for somebody who was never going to arrive.
+// A provider with no city on file is not filtered out (legacy accounts).
+const providerServes = (u, bk) => {
+  if (!providerProfessions(u).includes(bk.service === 'garden' ? 'garden' : 'cleaning')) return false;
+  if (u.city && bk.city && u.city !== bk.city) return false;
+  return true;
+};
 const EXTRAS_CATEGORIES = {
   kitchen:   'Кухня',
   bath:      'Санузел',
@@ -2730,10 +2738,15 @@ route('POST', '/api/bookings/:id/accept', async (req, res, params) => {
   const bk = db.bookings[params.id];
   if (!bk) return send(res, 404, { error: 'Booking not found.' });
   if (bk.status !== 'searching') return send(res, 409, { error: 'This job is no longer available.' });
-  // The board already filters by profession; enforce it here too so a direct
-  // API call cannot grab a job outside the provider's professions.
-  if (!providerServes(user, bk)) {
+  // The board already filters by profession and city; enforce both here too, so
+  // a direct API call cannot grab a job the provider would never be offered.
+  // Profession first: telling someone the city is wrong when they also lack the
+  // trade sends them to fix the wrong thing.
+  if (!providerProfessions(user).includes(bk.service === 'garden' ? 'garden' : 'cleaning')) {
     return send(res, 403, { error: 'Этот заказ доступен только исполнителям с профессией «Сад».', code: 'PROFESSION_MISMATCH' });
+  }
+  if (user.city && bk.city && user.city !== bk.city) {
+    return send(res, 403, { error: `Этот заказ в городе ${bk.city} — вы работаете в ${user.city}.`, code: 'CITY_MISMATCH' });
   }
   // Favorite-cleaner invite: reserved for the invited provider.
   if (bk.invitedCleanerId && bk.invitedCleanerId !== user.id) {
@@ -2905,42 +2918,22 @@ route('POST', '/api/bookings/:id/status', async (req, res, params) => {
     // accepted); after departure the cancellation fee is withheld and the rest
     // refunded. Any captured card charge is refunded, and any LUMI balance that
     // was redeemed for this booking is restored first.
-    if (isCustomer) {
-      const providerState = bk.status;
-      const beforeDeparture = ['searching', 'accepted'].includes(providerState);
-      // Free before the cleaner departs; a flat 40% withheld once they're on the way.
-      const feeMinor = beforeDeparture ? 0 : Math.round((bk.price || 0) * 100 * getSettings().lateCancelRate);
-      if (feeMinor > 0) {
-        ledger.record({ type: 'cancellation_fee', bookingId: bk.id, amountMinor: feeMinor, currency: bk.currency, actor: user.id, reason: 'customer_cancellation' }, `cancelfee:${bk.id}`);
-        bk.cancellationFee = pricing.toMajor(feeMinor);
-      }
-      // Refund whatever was actually captured for this booking, minus the fee.
-      if (bk.paid && !bk.refunded) {
-        const customer = db.users[bk.customerId];
-        const paidMinor = Math.round((bk.price || 0) * 100);
-        const balMinor = Math.round((bk.balanceApplied || 0) * 100);     // covered by LUMI balance
-        const refundMinor = Math.max(0, paidMinor - feeMinor);
-        // Restore the LUMI-balance portion first (cheap, instant)…
-        const restoreBal = Math.min(balMinor, refundMinor);
-        if (restoreBal > 0 && customer) {
-          customer.wallet = (customer.wallet || 0) + restoreBal / 100; persist.users();
-          walletTxAdd(customer.id, { kind: 'refund', amountMinor: restoreBal, currency: bk.currency, note: 'Возврат на баланс', bookingId: bk.id });
-        }
-        // …then refund the remaining amount to the card via Stripe.
-        const cardRefund = Math.max(0, refundMinor - restoreBal);
-        if (cardRefund > 0 && bk.stripePaymentIntentId && stripe.isEnabled()) {
-          const rf = await stripe.refund({ paymentIntentId: bk.stripePaymentIntentId, amount: cardRefund, idempotencyKey: `refund:${bk.id}` });
-          if (rf.ok && customer) {
-            walletTxAdd(customer.id, { kind: 'refund', amountMinor: cardRefund, currency: bk.currency, note: 'Возврат на карту', bookingId: bk.id, ref: rf.id });
-          }
-        }
-        bk.refunded = refundMinor / 100;
-        ledger.record({ type: 'refund', bookingId: bk.id, amountMinor: -refundMinor, currency: bk.currency, actor: user.id, reason: 'customer_cancellation' }, `refund:${bk.id}`);
-        notify(bk.customerId, 'payment.refunded', { amount: `${(refundMinor / 100).toFixed(2)} zł`, service: bk.serviceLabel });
-      }
-    }
+    // Claim the cancellation SYNCHRONOUSLY, before anything below can await.
+    // The refund path awaits Stripe for hundreds of milliseconds; without this
+    // claim a second cancel arriving during that window passed the guard above,
+    // restored the LUMI balance a second time and credited the customer twice
+    // (the card refund itself is idempotent at Stripe, the wallet was not).
+    const providerState = bk.status;
     bk.status = 'cancelled';
     bk.timeline.push({ status: 'cancelled', at: now(), by: user.id });
+    persist.bookings();
+    // Money back on EVERY cancellation, whoever pulled the trigger. The fee is
+    // the only part that depends on who cancelled: a customer who calls it off
+    // after the provider set out pays it, a provider or moderator cancelling
+    // never charges the customer for a service that will not happen.
+    const feeMinor = (isCustomer && !['searching', 'accepted'].includes(providerState))
+      ? Math.round((bk.price || 0) * 100 * getSettings().lateCancelRate) : 0;
+    await refundCancelledBooking(bk, { actorId: user.id, feeMinor, reason: isCustomer ? 'customer_cancellation' : 'provider_cancellation' });
     sysMessage(bk.id, `Booking cancelled by ${user.name}.`);
     // Notify the other party (customer cancels -> tell provider, and vice-versa).
     const other = isCustomer ? bk.cleanerId : bk.customerId;
@@ -2952,6 +2945,47 @@ route('POST', '/api/bookings/:id/status', async (req, res, params) => {
   persist.bookings();
   send(res, 200, { booking: enrich(bk, user) });
 });
+
+// Refund a cancelled booking. Called for customer, provider and moderator
+// cancellations alike — the money left the customer's card either way, and only
+// the withheld fee depends on who cancelled. Safe to call twice: the claim on
+// bk.refunded happens before the first await, and Stripe's idempotency key
+// covers the card leg.
+async function refundCancelledBooking(bk, { actorId, feeMinor = 0, reason = 'cancellation' } = {}) {
+  if (feeMinor > 0) {
+    ledger.record({ type: 'cancellation_fee', bookingId: bk.id, amountMinor: feeMinor, currency: bk.currency, actor: actorId, reason }, `cancelfee:${bk.id}`);
+    bk.cancellationFee = pricing.toMajor(feeMinor);
+  }
+  if (!bk.paid || bk.refunded) return;
+  const customer = db.users[bk.customerId];
+  const paidMinor = Math.round((bk.price || 0) * 100);
+  const balMinor = Math.round((bk.balanceApplied || 0) * 100);      // paid out of the LUMI balance
+  const refundMinor = Math.max(0, paidMinor - feeMinor);
+  // Claim before any await so a concurrent cancel cannot refund a second time.
+  bk.refunded = refundMinor / 100;
+  persist.bookings();
+  // Restore the balance portion first (instant), then the card.
+  const restoreBal = Math.min(balMinor, refundMinor);
+  if (restoreBal > 0 && customer) {
+    customer.wallet = (customer.wallet || 0) + restoreBal / 100; persist.users();
+    walletTxAdd(customer.id, { kind: 'refund', amountMinor: restoreBal, currency: bk.currency, note: 'Возврат на баланс', bookingId: bk.id });
+  }
+  const cardRefund = Math.max(0, refundMinor - restoreBal);
+  if (cardRefund > 0 && bk.stripePaymentIntentId && stripe.isEnabled()) {
+    const rf = await stripe.refund({ paymentIntentId: bk.stripePaymentIntentId, amount: cardRefund, idempotencyKey: `refund:${bk.id}` });
+    if (rf.ok && customer) {
+      walletTxAdd(customer.id, { kind: 'refund', amountMinor: cardRefund, currency: bk.currency, note: 'Возврат на карту', bookingId: bk.id, ref: rf.id });
+    } else {
+      // The customer is owed money and Stripe said no: never silent.
+      bk.refundError = String((rf && rf.error) || 'stripe refund failed');
+      persist.bookings();
+      console.error(JSON.stringify({ at: new Date().toISOString(), level: 'error', msg: 'refund failed — customer owed money', bookingId: bk.id, amountMinor: cardRefund, err: bk.refundError }));
+      for (const a of Object.values(db.users)) if (a.role === 'admin' && !a.deletedAt) notify(a.id, 'dispute.opened_admin', { who: 'система', category: 'Возврат не прошёл', service: bk.serviceLabel, bookingId: bk.id });
+    }
+  }
+  ledger.record({ type: 'refund', bookingId: bk.id, amountMinor: -refundMinor, currency: bk.currency, actor: actorId, reason }, `refund:${bk.id}`);
+  notify(bk.customerId, 'payment.refunded', { amount: `${(refundMinor / 100).toFixed(2)} zł`, service: bk.serviceLabel });
+}
 
 function settlePayment(bk) {
   // Settlement (crediting the cleaner + ledger) is guarded by its OWN flag, not
@@ -3865,6 +3899,8 @@ route('POST', '/api/admin/bookings/:id/cancel', async (req, res, params) => {
   bk.status = 'cancelled'; bk.updatedAt = now();
   bk.timeline.push({ status: 'cancelled', at: now(), by: admin.id });
   persist.bookings();
+  // A moderator cancelling is never the customer's fault: full refund, no fee.
+  await refundCancelledBooking(bk, { actorId: admin.id, feeMinor: 0, reason: 'admin_cancellation' });
   audit('booking.admin_cancelled', admin.id, bk.id, { reason: String(b.reason || '') });
   [bk.customerId, bk.cleanerId].filter(Boolean).forEach((uid) => notify(uid, 'booking.cancelled', { service: bk.serviceLabel, bookingId: bk.id }));
   send(res, 200, { booking: enrich(bk, admin) });
@@ -4303,12 +4339,17 @@ const server = http.createServer(async (req, res) => {
 // ─────────────────────────── Seed demo data ───────────────────────────
 function seed() {
   if (Object.keys(db.users).length) return;
+  // Demo accounts live in the city the platform is actually open in. Seeding
+  // them in Warsaw while only Wrocław accepts sign-ups produced a demo where no
+  // provider could ever serve a customer — invisible until dispatch started
+  // honouring the city.
+  const HOME = OPEN_CITIES[0] || 'Wrocław';
   const mk = (role, name, email, extra = {}) => {
     const id = uid('u_');
     db.users[id] = {
       id, email, name, role, password: hashPassword('cleango123'),
       createdAt: now(), wallet: 0, rating: role === 'cleaner' ? 4.9 : null,
-      jobsDone: 0, verified: role !== 'cleaner' ? true : true, city: 'Warsaw', online: role === 'cleaner',
+      jobsDone: 0, verified: role !== 'cleaner' ? true : true, city: HOME, online: role === 'cleaner',
       subscription: null,
       ...extra,
     };
@@ -4316,17 +4357,19 @@ function seed() {
   };
   mk('admin', 'LUMI Admin', 'admin@cleango.app');
   const annaId = mk('customer', 'Anna Nowak', 'anna@example.com', { subscription: 'plus', premiumSince: now() });
-  const marekId = mk('customer', 'Marek Wiśniewski', 'marek@example.com', { city: 'Kraków' });
+  const marekId = mk('customer', 'Marek Wiśniewski', 'marek@example.com');
   const piotrId = mk('cleaner', 'Piotr Kowalski', 'piotr@example.com', { jobsDone: 128, rating: 4.9, experienceYears: 5, bio: 'Аккуратная уборка квартир и офисов. Свои эко-средства, пунктуальность.' });
   const zofiaId = mk('cleaner', 'Zofia Lewandowska', 'zofia@example.com', { jobsDone: 64, rating: 4.8, experienceYears: 3, bio: 'Люблю, когда дом сияет. Генеральная уборка и окна — моя специализация.' });
   const martaId = mk('cleaner', 'Marta Nowak', 'marta@example.com', { jobsDone: 210, rating: 4.9, experienceYears: 7, bio: 'Более 200 заказов. Уборка после ремонта и переезда, работа с деликатными поверхностями.' });
-  const kamilId = mk('cleaner', 'Kamil Zieliński', 'kamil@example.com', { jobsDone: 39, rating: 4.7, experienceYears: 2, bio: 'Быстро и честно. Регулярная уборка и мытьё окон.' });
+  // Deliberately out of town: the fixture that proves a provider from another
+  // city is neither offered nor allowed a job here.
+  const kamilId = mk('cleaner', 'Kamil Zieliński', 'kamil@example.com', { jobsDone: 39, rating: 4.7, experienceYears: 2, city: CITIES.find((c) => c !== HOME), bio: 'Быстро и честно. Регулярная уборка и мытьё окон.' });
   // A demo cleaning company employing two of the cleaners (21_COMPANY_DASHBOARD).
   const coId = mk('company', 'SparkClean Sp. z o.o.', 'company@cleango.app', { staff: [piotrId, zofiaId] });
   db.users[piotrId].companyId = coId; db.users[zofiaId].companyId = coId;
   // A couple of demo properties (aged so the Smart Home dashboard has due tasks).
-  const annaHome = createProperty(db.users[annaId], { label: 'Apartment · Mokotów', address: 'ul. Puławska 12', city: 'Warsaw', type: 'apartment', rooms: 3, baths: 2, area: 74 }, now() - 40 * DAY);
-  createProperty(db.users[annaId], { label: 'Airbnb · Old Town', address: 'ul. Freta 8', city: 'Warsaw', type: 'apartment', rooms: 2, baths: 1, area: 48 }, now() - 100 * DAY);
+  const annaHome = createProperty(db.users[annaId], { label: 'Apartment · Mokotów', address: 'ul. Puławska 12', city: HOME, type: 'apartment', rooms: 3, baths: 2, area: 74 }, now() - 40 * DAY);
+  createProperty(db.users[annaId], { label: 'Airbnb · Old Town', address: 'ul. Freta 8', city: HOME, type: 'apartment', rooms: 2, baths: 1, area: 48 }, now() - 100 * DAY);
   seedBookings({ anna: annaId, marek: marekId, cleaners: [piotrId, zofiaId, martaId, kamilId], prop: annaHome });
   persist.users();
 }
