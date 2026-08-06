@@ -454,6 +454,7 @@ function listingCard(l) { // light — no full photos
   return {
     id: l.id, title: l.title, brand: l.brand, category: l.category, group: catGroup(l.category), price: l.price, old: l.old || 0,
     size: l.size || '', condition: l.condition || '', cover: l.cover || (l.photos && l.photos[0]) || '',
+    country: l.country || '',
     ships: l.ships || [], returns: l.returns || 'No returns', boosted: (l.boostedUntil || 0) > Date.now(),
     status: l.status, createdAt: l.createdAt,
     seller: { handle: sellerHandle(l.seller), email: l.seller, rating: st.rating, reviews: st.reviews, sold: st.sold, verified: st.verified },
@@ -729,6 +730,7 @@ const server = http.createServer(async (req, res) => {
         category: cat, price, old: Math.max(0, Math.round(Number(b.old) * 100) / 100) || 0,
         size: String(b.size || '').slice(0, 24), condition: CONDITIONS.includes(b.condition) ? b.condition : 'Good',
         ships, returns: RETURNS.includes(b.returns) ? b.returns : 'No returns',
+        country: /^[A-Za-z]{2}$/.test(b.country || '') ? String(b.country).toUpperCase() : '',
         desc: String(b.desc || '').slice(0, 1500), photos, cover: photos[0], status: 'pending', createdAt: Date.now(),
       };
       listings.push(l); saveListings();
@@ -754,6 +756,7 @@ const server = http.createServer(async (req, res) => {
       if (b.category !== undefined && CATEGORIES.includes(b.category)) l.category = b.category;
       if (Array.isArray(b.ships)) l.ships = b.ships.filter(r => REGIONS.includes(r));
       if (b.returns !== undefined && RETURNS.includes(b.returns)) l.returns = b.returns;
+      if (b.country !== undefined) l.country = /^[A-Za-z]{2}$/.test(b.country || '') ? String(b.country).toUpperCase() : '';
       if (Array.isArray(b.photos)) {
         const photos = b.photos.filter(x => typeof x === 'string' && x.startsWith('data:image/')).slice(0, 6);
         if (!photos.length) return send(res, 400, { error: 'Add at least one photo.' });

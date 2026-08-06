@@ -248,6 +248,7 @@
   .card-seller .sav img{width:100%;height:100%;object-fit:cover}
   .card-seller .srate{color:var(--ink);font-weight:600;margin-left:auto;flex:none}
   .card-seller .vchk{color:var(--accent);flex:none}
+  .card-seller .cflag{font-size:14px;line-height:1;flex:none}
   .add{width:32px;height:32px;border-radius:9px;background:var(--surface-2);color:var(--ink);display:grid;place-items:center;transition:.2s;flex:none}
   .add:hover{background:var(--accent);color:#fff}
   .add svg{width:16px;height:16px}
@@ -1474,7 +1475,7 @@ function listingCardHTML(l){
         <div class="cat">${esc(l.condition||'Used')}${l.size?' · '+esc(l.size):''}</div>
         <h3 data-listing="${l.id}">${esc(l.title)}</h3>
         <div class="card-price">${cryptoPriceHTML(l.price,l.id)}<button class="add hb ${fav?'on':''}" data-fav="${l.id}" aria-label="Save">${ICON.heart}</button></div>
-        <div class="card-seller"><span class="sav">${av}</span><span class="sh">@${esc(l.seller.handle)}</span>${l.seller.verified?'<span class="vchk">✓</span>':''}${l.seller.rating?`<span class="srate">★ ${l.seller.rating}</span>`:''}</div>
+        <div class="card-seller"><span class="sav">${av}</span><span class="sh">@${esc(l.seller.handle)}</span>${l.seller.verified?'<span class="vchk">✓</span>':''}${l.country?`<span class="cflag" title="${esc(COUNTRY_NAME[l.country]||l.country)}">${flagEmoji(l.country)}</span>`:''}${l.seller.rating?`<span class="srate">★ ${l.seller.rating}</span>`:''}</div>
         ${cta}
       </div>
     </article>`;
@@ -1976,6 +1977,10 @@ function detectFromTitle(title){
 }
 const REGIONS=['North America','South America','Europe','Asia','Africa','Oceania'];
 const RETURNS=['No returns','14-day returns','30-day returns'];
+/* item location — ISO-2 code → country name (flag rendered from the code) */
+const COUNTRIES=[['US','United States'],['GB','United Kingdom'],['DE','Germany'],['FR','France'],['IT','Italy'],['ES','Spain'],['PL','Poland'],['NL','Netherlands'],['BE','Belgium'],['PT','Portugal'],['IE','Ireland'],['AT','Austria'],['CH','Switzerland'],['SE','Sweden'],['NO','Norway'],['DK','Denmark'],['FI','Finland'],['CZ','Czechia'],['SK','Slovakia'],['HU','Hungary'],['RO','Romania'],['BG','Bulgaria'],['GR','Greece'],['HR','Croatia'],['SI','Slovenia'],['LT','Lithuania'],['LV','Latvia'],['EE','Estonia'],['UA','Ukraine'],['TR','Turkey'],['CA','Canada'],['MX','Mexico'],['BR','Brazil'],['AR','Argentina'],['AU','Australia'],['NZ','New Zealand'],['JP','Japan'],['KR','South Korea'],['CN','China'],['IN','India'],['AE','United Arab Emirates'],['SA','Saudi Arabia'],['ZA','South Africa'],['EG','Egypt'],['NG','Nigeria'],['ID','Indonesia'],['PH','Philippines'],['TH','Thailand'],['VN','Vietnam'],['MY','Malaysia'],['SG','Singapore']];
+const COUNTRY_NAME=Object.fromEntries(COUNTRIES);
+function flagEmoji(iso){iso=String(iso||'').toUpperCase();if(!/^[A-Z]{2}$/.test(iso))return '';return String.fromCodePoint(...[...iso].map(c=>127397+c.charCodeAt(0)));}
 const BUYER_FEE_PCT=10; // baked into the price shown at purchase — never surfaced to the buyer as a "fee"
 const payTotal=p=>Math.round((Number(p)||0)*(1+BUYER_FEE_PCT/100)*100)/100;
 const CHAT_LANGS=[['en','English'],['ru','Русский'],['de','Deutsch'],['uk','Українська'],['pl','Polski'],['es','Español'],['fr','Français'],['it','Italiano'],['pt','Português'],['tr','Türkçe'],['nl','Nederlands'],['ro','Română'],['zh-CN','中文'],['ja','日本語'],['ar','العربية']];
@@ -2007,7 +2012,7 @@ async function openListing(id){
       ${l.photos.length>1?`<div class="lst-strip" id="lstStrip">${l.photos.map((ph,i)=>`<img src="${ph}" data-i="${i}" class="${i===0?'on':''}">`).join('')}</div>`:''}
       ${l.desc?`<p class="desc" id="lstDesc" style="margin-top:14px">${esc(l.desc)}</p>`:''}
       ${AUTH?`<button class="lst-translate" id="lstTr">🌐 Translate to ${CHAT_LANGS.find(x=>x[0]===load('swk_chatlang','en'))?.[1]||'English'}</button>`:''}
-      <div class="ships-line"><b>Ships:</b> ${(!l.ships||!l.ships.length||l.ships.length>=REGIONS.length)?'Worldwide':l.ships.map(esc).join(', ')} · <b>Returns:</b> ${esc(l.returns||'No returns')}</div>
+      <div class="ships-line">${l.country?`<b>Location:</b> ${flagEmoji(l.country)} ${esc(COUNTRY_NAME[l.country]||l.country)} · `:''}<b>Ships:</b> ${(!l.ships||!l.ships.length||l.ships.length>=REGIONS.length)?'Worldwide':l.ships.map(esc).join(', ')} · <b>Returns:</b> ${esc(l.returns||'No returns')}</div>
       <div class="protect">${ICON.verified}<div><b>Buyer Protection</b><span>Funds held in escrow — released only when you confirm the item arrived.</span></div></div>
       <div class="seller-row">
         <div class="av">${s.avatar?`<img src="${s.avatar}" alt="">`:esc((s.handle||'?')[0].toUpperCase())}</div>
@@ -2115,6 +2120,7 @@ function renderSell(){
     <div class="frow"><div class="field" id="slSizeField"><label>Size</label><input id="slSize" maxlength="24" placeholder="42 / M / One size" value="${esc(E.size||'')}"></div>
       <div class="field"><label>Condition</label><select id="slCond">${['New','Like new','Very good','Good','Fair'].map(c=>`<option${E.condition===c?' selected':''}>${c}</option>`).join('')}</select></div></div>
     <div class="field"><label>Price (USD) — min $10</label><input id="slPrice" type="number" min="10" step="1" placeholder="80" value="${E.price!=null?esc(String(E.price)):''}"></div>
+    <div class="field"><label>Item location</label><select id="slCountry"><option value="">Select country…</option>${COUNTRIES.map(([c,n])=>`<option value="${c}"${(E.country||load('swk_country',''))===c?' selected':''}>${flagEmoji(c)} ${n}</option>`).join('')}</select></div>
     <div class="field"><label>Ships to</label><div class="rgns" id="slShip">${regionBoxes}</div></div>
     <div class="field"><label>Returns</label><select id="slReturns">${RETURNS.map(r=>`<option${E.returns===r?' selected':''}>${r}</option>`).join('')}</select></div>
     <div class="field"><label>Description</label><textarea id="slDesc" rows="3" maxlength="1500" placeholder="Condition details, flaws, measurements…">${esc(E.desc||'')}</textarea></div>
@@ -2155,7 +2161,8 @@ async function submitListing(){
   if(!$('#slCat').value)return show('Choose a category.');
   if(!SELL_SHIP.length)return show('Choose at least one region you ship to.');
   let brand=$('#slBrand').value;if(brand==='Other')brand=$('#slBrandOther').value||'';
-  const body={title:$('#slTitle').value,brand,category:$('#slCat').value,size:$('#slSize').value,condition:$('#slCond').value,price:$('#slPrice').value,ships:SELL_SHIP.slice(),returns:$('#slReturns').value,desc:$('#slDesc').value,photos:SELL_PHOTOS.slice()};
+  const country=$('#slCountry')?$('#slCountry').value:'';if(country)save('swk_country',country);
+  const body={title:$('#slTitle').value,brand,category:$('#slCat').value,size:$('#slSize').value,condition:$('#slCond').value,price:$('#slPrice').value,country,ships:SELL_SHIP.slice(),returns:$('#slReturns').value,desc:$('#slDesc').value,photos:SELL_PHOTOS.slice()};
   $('#slGo').disabled=true;
   try{
     if(SELL_EDIT){await mfetch('/api/listings/'+SELL_EDIT.id,{method:'PUT',body:JSON.stringify(body)});toast('Changes saved — back in review before it goes live');}
