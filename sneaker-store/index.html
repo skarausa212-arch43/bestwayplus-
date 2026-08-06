@@ -2333,11 +2333,11 @@ function chatRow(c){
     <div class="ord-items">${c.last?esc(c.last.slice(0,80)):'—'}</div></div>`;
 }
 async function loadChats(){try{const d=await mfetch('/api/my/chats');MKT_CHATS=d.chats||[];}catch(e){MKT_CHATS=[];}if(MKT_TAB==='chats')paintMarket();}
-let MKT_PROFILE=null,PROFILE_ADDR=[];
+let MKT_PROFILE=null,PROFILE_ADDR=[],ADDR_DIRTY=false;
 async function loadMarket(){
   try{MKT=await mfetch('/api/my/market');}catch(e){MKT={};}
   try{const d=await mfetch('/api/my/chats');MKT_CHATS=d.chats||[];}catch(e){MKT_CHATS=MKT_CHATS||[];}
-  try{MKT_PROFILE=await mfetch('/api/me');PROFILE_ADDR=(MKT_PROFILE.addresses||[]).map(a=>({...a}));}catch(e){MKT_PROFILE=MKT_PROFILE||{};}
+  try{MKT_PROFILE=await mfetch('/api/me');PROFILE_ADDR=(MKT_PROFILE.addresses||[]).map(a=>({...a}));ADDR_DIRTY=false;}catch(e){MKT_PROFILE=MKT_PROFILE||{};}
   paintMarket();
 }
 function addrCardHTML(a,i){
@@ -2371,7 +2371,7 @@ function profilePanelHTML(){
     <div id="addrList">${addrs.length?addrs.map(addrCardHTML).join(''):'<p class="mkt-empty" style="padding:12px 0">No addresses saved yet.</p>'}</div>
     <div style="display:flex;gap:10px;margin-top:12px">
       ${addrs.length<3?`<button class="btn btn-secondary" id="addrAdd" style="flex:1;justify-content:center">+ Add address</button>`:''}
-      <button class="cbtn" id="addrSave" style="flex:1">Save addresses</button>
+      <button class="cbtn" id="addrSave" style="flex:1;${ADDR_DIRTY?'':'display:none'}">Save addresses</button>
     </div>
   </div>`;
 }
@@ -2399,15 +2399,17 @@ function wireProfilePanel(){
       MKT_PROFILE=r.profile;if(AUTH){AUTH.name=MKT_PROFILE.name;save('swk_auth',AUTH);}accDot();toast('Profile saved');}
     catch(e){toast(e.message);}pfSave.disabled=false;
   });
-  const addrAdd=$('#addrAdd');if(addrAdd)addrAdd.addEventListener('click',()=>{readProfileInputs();if(PROFILE_ADDR.length<3){PROFILE_ADDR.push({label:'',name:'',line:'',city:'',zip:'',country:'',region:REGIONS[0]});paintMarket();}});
+  const addrAdd=$('#addrAdd');if(addrAdd)addrAdd.addEventListener('click',()=>{readProfileInputs();ADDR_DIRTY=true;if(PROFILE_ADDR.length<3){PROFILE_ADDR.push({label:'',name:'',line:'',city:'',zip:'',country:'',region:REGIONS[0]});paintMarket();}});
+  // reveal Save only once the user actually edits an address
+  const addrList=$('#addrList');if(addrList)addrList.addEventListener('input',()=>{if(!ADDR_DIRTY){ADDR_DIRTY=true;const s=$('#addrSave');if(s)s.style.display='';}});
   const addrSave=$('#addrSave');if(addrSave)addrSave.addEventListener('click',async()=>{
     readProfileInputs();addrSave.disabled=true;
     const clean=PROFILE_ADDR.filter(a=>(a.line||'').trim());
     try{const r=await mfetch('/api/addresses',{method:'POST',body:JSON.stringify({addresses:clean})});
-      PROFILE_ADDR=(r.addresses||[]).map(a=>({...a}));if(MKT_PROFILE)MKT_PROFILE.addresses=r.addresses;toast('Addresses saved');paintMarket();}
-    catch(e){toast(e.message);}addrSave.disabled=false;
+      PROFILE_ADDR=(r.addresses||[]).map(a=>({...a}));if(MKT_PROFILE)MKT_PROFILE.addresses=r.addresses;ADDR_DIRTY=false;toast('Addresses saved');paintMarket();}
+    catch(e){toast(e.message);addrSave.disabled=false;}
   });
-  document.querySelectorAll('#addrList [data-arm]').forEach(b=>b.addEventListener('click',()=>{readProfileInputs();PROFILE_ADDR.splice(+b.dataset.arm,1);paintMarket();}));
+  document.querySelectorAll('#addrList [data-arm]').forEach(b=>b.addEventListener('click',()=>{readProfileInputs();ADDR_DIRTY=true;PROFILE_ADDR.splice(+b.dataset.arm,1);paintMarket();}));
 }
 function compressAvatar(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>{const img=new Image();img.onload=()=>{const max=320;let w=img.width,h=img.height;const s=Math.min(max/w,max/h,1);w=Math.round(w*s);h=Math.round(h*s);const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);res(c.toDataURL('image/jpeg',0.85));};img.onerror=rej;img.src=fr.result;};fr.onerror=rej;fr.readAsDataURL(file);});}
 let mktBusy=false;
