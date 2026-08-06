@@ -208,7 +208,9 @@ let WALLET = settings.usdcWallet || process.env.STORE_WALLET || '0xf2541E779Ee9a
 let USDT_TRC20_WALLET = settings.usdtWallet || process.env.USDT_TRC20_WALLET || 'TFkokHojKGMCTGkBGFu4SQgtAWzUYPyj5p';
 const USDC_CONTRACT = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'; // USDC on Ethereum mainnet
 const USDC_DECIMALS = 6;
-const ETHERSCAN_KEY = process.env.ETHERSCAN_API_KEY || '';
+// API keys — editable from the admin panel too (settings.json), else env, else built-in. etherscanKey powers USDC auto-detect.
+let etherscanKey = settings.etherscanKey || process.env.ETHERSCAN_API_KEY || 'ENGRKX7ACXHKV7KWY69Y2UJQS7NJUPYTPH';
+let tronKey = settings.tronKey || process.env.TRONGRID_API_KEY || 'c07cbe1c-6046-4c28-8c3f-78437bf18c2e';
 const CONFIRMATIONS = Number(process.env.PAY_CONFIRMATIONS || 2);
 const USDT_TRC20_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // USDT-TRC20 contract
 // accepted payment networks — stablecoins only; only networks with a valid wallet are offered
@@ -1089,7 +1091,7 @@ const server = http.createServer(async (req, res) => {
           orders: orders.slice(-100).reverse(),
           users: Object.values(users).map(u => ({ email: u.email, name: u.name, created: u.created,
             orders: orders.filter(o => o.email === u.email).length })).reverse(),
-          wallets: { usdc: WALLET, usdt: USDT_TRC20_WALLET, usdcOk: isEthAddr(WALLET), usdtOk: isTronAddr(USDT_TRC20_WALLET), usdcAuto: !!ETHERSCAN_KEY },
+          wallets: { usdc: WALLET, usdt: USDT_TRC20_WALLET, usdcOk: isEthAddr(WALLET), usdtOk: isTronAddr(USDT_TRC20_WALLET), usdcAuto: !!etherscanKey, etherscanSet: !!etherscanKey, tronSet: !!tronKey },
         });
       }
       // update the receiving wallets live (no redeploy needed)
@@ -1100,8 +1102,10 @@ const server = http.createServer(async (req, res) => {
         if (usdt && !isTronAddr(usdt)) return send(res, 400, { error: 'USDT address must be a valid T… Tron address.' });
         if (b.usdc !== undefined) { WALLET = usdc; settings.usdcWallet = usdc; }
         if (b.usdt !== undefined) { USDT_TRC20_WALLET = usdt; settings.usdtWallet = usdt; }
+        if (b.etherscanKey !== undefined) { etherscanKey = String(b.etherscanKey).trim(); settings.etherscanKey = etherscanKey; }
+        if (b.tronKey !== undefined) { tronKey = String(b.tronKey).trim(); settings.tronKey = tronKey; }
         saveSettings();
-        return send(res, 200, { ok: true, wallets: { usdc: WALLET, usdt: USDT_TRC20_WALLET } });
+        return send(res, 200, { ok: true, wallets: { usdc: WALLET, usdt: USDT_TRC20_WALLET }, etherscanSet: !!etherscanKey, tronSet: !!tronKey });
       }
       if (req.method === 'POST' && p === '/api/admin/order-status') {
         const { id, status, carrier, tracking } = await readBody(req);
@@ -1210,7 +1214,7 @@ const fetchJSON = async (url, opts = {}, ms = 10000) => (await fetch(url, { ...o
 
 // USDC on Ethereum (ERC-20) via Etherscan — pages back to the oldest pending order so a burst can't bury a payment
 async function pollPayments() {
-  if (!ETHERSCAN_KEY) return;
+  if (!etherscanKey) return;
   const pending = orders.filter(o => o.status === 'pending' && o.network !== 'usdt-trc20');
   if (!pending.length) return;
   const oldest = Math.min(...pending.map(o => o.date)) - 20 * 60 * 1000;
@@ -1219,7 +1223,7 @@ async function pollPayments() {
     for (let page = 1; page <= 20; page++) {
       const url = `https://api.etherscan.io/api?module=account&action=tokentx`
         + `&contractaddress=${USDC_CONTRACT}&address=${WALLET}`
-        + `&page=${page}&offset=100&sort=desc&apikey=${ETHERSCAN_KEY}`;
+        + `&page=${page}&offset=100&sort=desc&apikey=${etherscanKey}`;
       const j = await fetchJSON(url);
       if (j.status !== '1' || !Array.isArray(j.result) || !j.result.length) break;
       let oldestOnPage = Infinity;
@@ -1245,7 +1249,7 @@ async function pollPaymentsTron() {
   if (!pending.length) return;
   try {
     const url = `https://api.trongrid.io/v1/accounts/${USDT_TRC20_WALLET}/transactions/trc20?only_to=true&limit=50&contract_address=${USDT_TRC20_CONTRACT}`;
-    const j = await fetchJSON(url, { headers: process.env.TRONGRID_API_KEY ? { 'TRON-PRO-API-KEY': process.env.TRONGRID_API_KEY } : {} });
+    const j = await fetchJSON(url, { headers: tronKey ? { "TRON-PRO-API-KEY": tronKey } : {} });
     if (!j || !Array.isArray(j.data)) return;
     let changed = false;
     for (const tx of j.data) {
@@ -1264,7 +1268,7 @@ async function pollPaymentsTron() {
 
 // self-rescheduling loop — never overlaps runs even if an upstream call is slow
 const schedule = (fn, ms) => { const tick = () => Promise.resolve(fn()).catch(() => {}).finally(() => setTimeout(tick, ms).unref()); setTimeout(tick, ms).unref(); };
-if (ETHERSCAN_KEY) schedule(pollPayments, 30000);
+schedule(pollPayments, 30000);   // always on — self-guards on the Etherscan key, survives runtime key changes
 schedule(pollPaymentsTron, 30000);   // always on — self-guards on wallet validity, survives runtime wallet changes
 
 /* ---------- housekeeping: reservations, auto-release, ship-deadline refunds ---------- */
@@ -1291,8 +1295,8 @@ server.listen(PORT, '127.0.0.1', () => {
   console.log(`[swk-store] data dir: ${DATA}`);
   console.log(`[swk-store] admin ${ADMIN_PASSWORD ? 'ENABLED' : 'DISABLED (set ADMIN_PASSWORD)'}`);
   console.log(`[swk-store] networks: ${enabledNetworks().map(k => `${NETWORKS[k].label}→${NETWORKS[k].wallet()}`).join(' | ') || 'NONE — set a wallet!'}`);
-  console.log(`[swk-store] USDC auto-detect ${ETHERSCAN_KEY ? 'ON' : 'OFF (set ETHERSCAN_API_KEY) — confirm USDC manually in admin'}`);
-  console.log(`[swk-store] USDT auto-detect ${enabledNetworks().includes('usdt-trc20') ? 'ON (TronGrid)' + (process.env.TRONGRID_API_KEY ? ' + key' : ' — set TRONGRID_API_KEY for higher limits') : 'OFF'}`);
+  console.log(`[swk-store] USDC auto-detect ${etherscanKey ? 'ON' : 'OFF — add an Etherscan key (admin or ETHERSCAN_API_KEY) to auto-detect USDC'}`);
+  console.log(`[swk-store] USDT auto-detect ${enabledNetworks().includes('usdt-trc20') ? 'ON (TronGrid)' + (tronKey ? ' + key' : ' — add a TronGrid key for higher limits') : 'OFF'}`);
 });
 
 // never let a stray rejection/exception take the whole marketplace down; log and keep serving

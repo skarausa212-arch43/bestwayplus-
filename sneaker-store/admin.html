@@ -78,6 +78,7 @@
   .wallets #wSave{background:var(--brand);color:#050505;border:0;border-radius:10px;padding:11px 16px;font-weight:800;cursor:pointer;align-self:flex-start}
   .wstat .ok{color:#2ccb7f}.wstat .warn{color:#e8b53a}.wstat .bad{color:#e2564a}.wstat{font-weight:700}
   .wmsg{font-size:13px;color:var(--faint)}
+  .wdiv{font-size:12px;color:var(--faint);border-top:1px solid var(--line);padding-top:12px;margin-top:2px}
   .thumbs{display:flex;gap:5px}
   .thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;border:1px solid var(--line)}
   @media(max-width:1000px){.cards{grid-template-columns:repeat(3,1fr)}}
@@ -116,7 +117,12 @@
         <input id="wUsdt" placeholder="T…" spellcheck="false"></label>
       <label>USDC · ERC-20 (0x…) <span class="wstat" id="wUsdcStat"></span>
         <input id="wUsdc" placeholder="0x…" spellcheck="false"></label>
-      <button class="save" id="wSave">Save wallets</button>
+      <div class="wdiv">API keys — enable automatic on-chain payment detection</div>
+      <label>Etherscan API key <span class="wstat" id="wEthStat"></span>
+        <input id="wEthKey" type="password" placeholder="paste key (leave blank to keep)" spellcheck="false" autocomplete="off"></label>
+      <label>TronGrid API key <span class="wstat" id="wTronStat"></span>
+        <input id="wTronKey" type="password" placeholder="paste key (leave blank to keep)" spellcheck="false" autocomplete="off"></label>
+      <button class="save" id="wSave">Save payment settings</button>
       <span class="wmsg" id="wMsg"></span>
     </div>
 
@@ -200,7 +206,9 @@ async function loadDash(){
   if(document.activeElement!==$('#wUsdt'))$('#wUsdt').value=w.usdt||'';
   if(document.activeElement!==$('#wUsdc'))$('#wUsdc').value=w.usdc||'';
   $('#wUsdtStat').innerHTML=w.usdtOk?'<span class="ok">● live · auto-detect on</span>':'<span class="bad">● not set / invalid</span>';
-  $('#wUsdcStat').innerHTML=w.usdcOk?(w.usdcAuto?'<span class="ok">● live · auto-detect on</span>':'<span class="warn">● live · manual (no Etherscan key)</span>'):'<span class="bad">● not set / invalid</span>';
+  $('#wUsdcStat').innerHTML=w.usdcOk?(w.usdcAuto?'<span class="ok">● live · auto-detect on</span>':'<span class="warn">● live · manual (add Etherscan key)</span>'):'<span class="bad">● not set / invalid</span>';
+  $('#wEthStat').innerHTML=w.etherscanSet?'<span class="ok">● saved</span>':'<span class="warn">● not set</span>';
+  $('#wTronStat').innerHTML=w.tronSet?'<span class="ok">● saved</span>':'<span class="warn">● optional</span>';
   // chart
   const maxV=Math.max(1,...d.days.map(x=>x.v));
   $('#bars').innerHTML=d.days.map(x=>{
@@ -303,9 +311,11 @@ $('#pw').addEventListener('keydown',e=>{if(e.key==='Enter')$('#enter').click()})
 $('#refresh').addEventListener('click',loadDash);
 $('#logout').addEventListener('click',()=>{sessionStorage.removeItem('swk_admin');location.reload()});
 $('#wSave').addEventListener('click',async()=>{
-  const usdt=$('#wUsdt').value.trim(),usdc=$('#wUsdc').value.trim();
+  const body={usdt:$('#wUsdt').value.trim(),usdc:$('#wUsdc').value.trim()};
+  const ek=$('#wEthKey').value.trim(),tk=$('#wTronKey').value.trim();
+  if(ek)body.etherscanKey=ek; if(tk)body.tronKey=tk;   // only send keys that were typed (blank = keep existing)
   const msg=$('#wMsg');msg.textContent='Saving…';$('#wSave').disabled=true;
-  try{await api('/api/admin/wallets',{method:'POST',body:JSON.stringify({usdt,usdc})});msg.textContent='✓ Saved';await loadDash();}
+  try{await api('/api/admin/wallets',{method:'POST',body:JSON.stringify(body)});$('#wEthKey').value='';$('#wTronKey').value='';msg.textContent='✓ Saved';await loadDash();}
   catch(e){msg.textContent=e&&e.message==='auth'?'Auth error':'Invalid address — check the format';}
   $('#wSave').disabled=false;setTimeout(()=>{msg.textContent='';},3000);
 });
