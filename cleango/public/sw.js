@@ -1,7 +1,7 @@
 /* LUMI service worker — offline shell + fast repeat loads.
    Strategy: never touch /api (always live); network-first for navigations with
    a cached shell fallback; cache-first for same-origin static assets. */
-const CACHE = 'lumi-v10';
+const CACHE = 'lumi-v17';
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', (e) => {

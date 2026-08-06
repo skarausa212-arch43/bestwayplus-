@@ -1900,6 +1900,10 @@ Object.assign(TR.uk,{"Приоритетная подача":"Пріоритет
 Object.assign(TR.pl,{"скоро":"wkrótce","Зачтётся при оплате следующего заказа.":"Zostanie zaliczone przy następnym zamówieniu.","Оплата с баланса":"Płatność z salda","LUMI+ активен — 5% кэшбека на каждый заказ":"LUMI+ aktywny — 5% cashbacku za każde zamówienie","Отменить заказ? Исполнитель ещё не выехал — отмена бесплатна.":"Anulować zamówienie? Wykonawca jeszcze nie wyjechał — anulowanie jest bezpłatne.","Отменить заказ? Исполнитель уже выехал — удержим 40% от суммы.":"Anulować zamówienie? Wykonawca już wyjechał — potrącimy 40% kwoty.","Заказ отменён":"Zamówienie anulowane"});
 Object.assign(TR.en,{"скоро":"soon","Зачтётся при оплате следующего заказа.":"Applied to your next order.","Оплата с баланса":"Paid from balance","LUMI+ активен — 5% кэшбека на каждый заказ":"LUMI+ active — 5% cashback on every order","Отменить заказ? Исполнитель ещё не выехал — отмена бесплатна.":"Cancel the order? The cleaner hasn’t left yet — cancellation is free.","Отменить заказ? Исполнитель уже выехал — удержим 40% от суммы.":"Cancel the order? The cleaner is already on the way — we’ll keep 40%.","Заказ отменён":"Order cancelled"});
 Object.assign(TR.uk,{"Зачтётся при оплате следующего заказа.":"Зарахується при оплаті наступного замовлення.","Оплата с баланса":"Оплата з балансу","LUMI+ активен — 5% кэшбека на каждый заказ":"LUMI+ активний — 5% кешбеку за кожне замовлення","Отменить заказ? Исполнитель ещё не выехал — отмена бесплатна.":"Скасувати замовлення? Виконавець ще не виїхав — скасування безкоштовне.","Отменить заказ? Исполнитель уже выехал — удержим 40% от суммы.":"Скасувати замовлення? Виконавець уже виїхав — утримаємо 40% суми.","Заказ отменён":"Замовлення скасовано"});
+/* Live-refresh notices (offer feed + order status), shown while push is off. */
+Object.assign(TR.pl,{"Новый заказ рядом":"Nowe zlecenie w pobliżu","Новых заказов":"Nowych zleceń","Новые заказы появятся здесь автоматически.":"Nowe zlecenia pojawią się tutaj automatycznie.","Сейчас нет открытых заказов":"Brak otwartych zleceń","Исполнитель назначен":"Wykonawca przydzielony","Исполнитель в пути":"Wykonawca w drodze","Уборка началась":"Sprzątanie się rozpoczęło","Заказ завершён":"Zamówienie zakończone"});
+Object.assign(TR.en,{"Новый заказ рядом":"New job nearby","Новых заказов":"New jobs","Новые заказы появятся здесь автоматически.":"New jobs will appear here automatically.","Сейчас нет открытых заказов":"No open jobs right now","Исполнитель назначен":"Provider assigned","Исполнитель в пути":"Provider on the way","Уборка началась":"Cleaning has started","Заказ завершён":"Order completed"});
+Object.assign(TR.uk,{"Новый заказ рядом":"Нове замовлення поруч","Новых заказов":"Нових замовлень","Новые заказы появятся здесь автоматически.":"Нові замовлення з'являться тут автоматично.","Сейчас нет открытых заказов":"Зараз немає відкритих замовлень","Исполнитель назначен":"Виконавця призначено","Исполнитель в пути":"Виконавець у дорозі","Уборка началась":"Прибирання розпочалося","Заказ завершён":"Замовлення завершено"});
 
 function t(ru,params){
   let s=ru;
@@ -2159,6 +2163,28 @@ function toast(msg,err){const n=$('#toast');
   if(state.lang!=='ru'){ const d=TR[state.lang]; if(d&&d[m]!=null)m=d[m]; else if(/[А-Яа-яЁё]/.test(m))m=unitPass(m); }
   n.textContent=m;n.className='toast show'+(err?' err':'');setTimeout(()=>n.className='toast',2600);}
 function plural(n,one,few,many){const m=n%10,h=n%100;return h>=11&&h<=14?many:m===1?one:m>=2&&m<=4?few:many;}
+
+/* Live refresh without push. The SPA has no socket, so a screen that waits for
+   someone else to act (a provider watching for offers, a customer watching for
+   a cleaner to accept) would sit stale until a manual reload. livePoll ticks a
+   fetch while its anchor element is still on screen, skips ticks when the tab
+   is hidden (no work in the background, no battery drain), and cleans itself up
+   the moment the anchor leaves the DOM. Only one poll per key is ever live.
+   Delete these calls once FCM push is configured, not before. */
+const livePolls={};
+function livePoll(key,anchorSel,tick,ms){
+  stopPoll(key);
+  livePolls[key]=setInterval(()=>{
+    if(!$(anchorSel)){stopPoll(key);return;}          // screen left → stop
+    if(document.hidden)return;                         // tab in background → skip
+    Promise.resolve(tick()).catch(()=>{});             // a failed tick must not kill the loop
+  },ms);
+}
+function stopPoll(key){ if(livePolls[key]){clearInterval(livePolls[key]);delete livePolls[key];} }
+// A phone that is face-down or locked stops firing intervals reliably; catch up
+// as soon as the user comes back rather than waiting out the remaining interval.
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&typeof pollCatchUp==='function')pollCatchUp(); });
+function pollCatchUp(){ if($('#jobsList')&&typeof refreshJobs==='function')refreshJobs(); if($('#bkDetail')&&typeof refreshBookingDetail==='function')refreshBookingDetail(); }
 
 /* ---------- Maps (Leaflet, vendored; OSM tiles — no API keys) ---------- */
 // City centroids (mirror the server) — fallback pin for bookings without GPS.
@@ -4804,7 +4830,7 @@ async function renderBookingDetail(id){
 
     const box=$('.modal .card')||$('.modal');
     box.innerHTML=`
-      <div class="row" style="margin-bottom:14px">
+      <div class="row" style="margin-bottom:14px" id="bkDetail" data-bk="${b.id}" data-st="${b.status}">
         <div class="thumb" style="width:48px;height:48px;border-radius:13px;background:var(--primary-050);color:var(--primary-600);display:grid;place-items:center">${SVC_ICON[b.service]||I.broom}</div>
         <div style="flex:1"><h3>${svcLabelRu(b.serviceLabel)}</h3><div class="muted tiny">${b.city} · ${fmtTime(b.createdAt)}</div></div>
         ${statusBadge(b.status)}
@@ -4869,6 +4895,12 @@ async function renderBookingDetail(id){
         toast(favorited?'Добавлено в избранное':'Убрано из избранного');
       }catch(e){toast(e.message,true);}
     };
+    // While the order is still moving, the other side's actions (a cleaner
+    // accepting, setting off, finishing) have to land on this screen by
+    // themselves — without push the customer would otherwise sit in front of a
+    // frozen «Ищем исполнителя». Settled orders never change again: not polled.
+    if(LIVE_STATUSES.indexOf(b.status)>=0) livePoll('bkdetail','#bkDetail',refreshBookingDetail,15000);
+    else stopPoll('bkdetail');
   }catch(err){toast(err.message,true);closeModal();}
 }
 function timelineHtml(b){
@@ -5062,6 +5094,18 @@ function renderActions(b,ctx){
   bind('reviewBtn',()=>openReview(b.id));
   const up=(id,phase)=>{const e=$('#'+id);if(e)e.onclick=()=>uploadPhoto(b.id,phase);};
   up('upBefore','before');up('upAfter','after');
+}
+const LIVE_STATUSES=['searching','accepted','on_the_way','in_progress'];
+async function refreshBookingDetail(){
+  const a=$('#bkDetail'); if(!a)return;
+  const id=a.dataset.bk, was=a.dataset.st;
+  let b;
+  // Poll failures are silent: the detail already on screen stays valid.
+  try{ ({booking:b}=await api('/api/bookings/'+id)); }catch{ return; }
+  if(b.status===was)return;                        // nothing changed → no re-render
+  await renderBookingDetail(id);
+  const label={accepted:'Исполнитель назначен',on_the_way:'Исполнитель в пути',in_progress:'Уборка началась',completed:'Заказ завершён',cancelled:'Заказ отменён'}[b.status];
+  if(label){ toast(t(label)); try{ if(navigator.vibrate)navigator.vibrate(120); }catch{} }
 }
 /* ---------- «Решить проблему» — support / disputes ---------- */
 async function renderIssue(b,ctx){
@@ -5655,25 +5699,45 @@ async function viewJobs(){
     catch(e){toast(e.message,true);}
   });
   shareCleanerLocation();   // fresh GPS → dispatch ranks this cleaner correctly
-  try{
-    const {bookings}=await api('/api/bookings');
-    const open=bookings.filter(b=>b.status==='searching')
-      .sort((a,b)=>(a.distanceKm==null?1e9:a.distanceKm)-(b.distanceKm==null?1e9:b.distanceKm));   // nearest first
-    if(!open.length){list.appendChild(emptyState('Сейчас нет открытых заказов','Новые заказы появятся здесь в реальном времени.'));return;}
-    open.forEach(b=>{
-      const row=el(`<div class="card bk">
-        <div class="thumb">${SVC_ICON[b.service]||I.broom}</div>
-        <div class="meta"><h4>${svcLabelRu(b.serviceLabel)}</h4>
-          <div class="muted tiny" style="margin:3px 0 6px">${b.city} · ${roomsWord(b.rooms)} · ~${b.durationHours} ч · ${timeAgo(b.createdAt)}</div>
-          <div class="row" style="gap:6px;flex-wrap:wrap">${b.distanceKm!=null?`<span class="badge green">${I.pin} ${b.distanceKm<1?'&lt;1':Math.round(b.distanceKm)} км</span>`:''}${b.urgency==='flash'?'<span class="badge amber">⚡ FlashClean</span>':''}${(b.requestPhotos&&b.requestPhotos.length)?`<span class="badge grey">${I.cam} ${b.requestPhotos.length} фото</span>`:''}</div>
-        </div>
-        <div class="price" style="color:var(--primary-600)">${money(b.payout)}<div class="muted tiny" style="font-weight:500">ваша выплата</div></div>
-      </div>`);
-      row.onclick=()=>openBooking(b.id);
-      list.appendChild(row);
-    });
-    stagger(list);
-  }catch(e){toast(e.message,true);}
+  jobsSeen=null;                                   // first paint announces nothing
+  await refreshJobs();
+  // Until FCM push is live this poll is the only way a provider learns about a
+  // new order without reopening the app. 15s keeps the queue feeling live at a
+  // negligible cost (one small GET per provider on screen).
+  livePoll('jobs','#jobsList',refreshJobs,15000);
+}
+let jobsSeen=null;   // ids of the offers currently on screen — null = not painted yet
+function jobRow(b){
+  const row=el(`<div class="card bk">
+    <div class="thumb">${SVC_ICON[b.service]||I.broom}</div>
+    <div class="meta"><h4>${svcLabelRu(b.serviceLabel)}</h4>
+      <div class="muted tiny" style="margin:3px 0 6px">${b.city} · ${roomsWord(b.rooms)} · ~${b.durationHours} ч · ${timeAgo(b.createdAt)}</div>
+      <div class="row" style="gap:6px;flex-wrap:wrap">${b.distanceKm!=null?`<span class="badge green">${I.pin} ${b.distanceKm<1?'&lt;1':Math.round(b.distanceKm)} км</span>`:''}${b.urgency==='flash'?'<span class="badge amber">⚡ FlashClean</span>':''}${(b.requestPhotos&&b.requestPhotos.length)?`<span class="badge grey">${I.cam} ${b.requestPhotos.length} фото</span>`:''}</div>
+    </div>
+    <div class="price" style="color:var(--primary-600)">${money(b.payout)}<div class="muted tiny" style="font-weight:500">ваша выплата</div></div>
+  </div>`);
+  row.onclick=()=>openBooking(b.id);
+  return row;
+}
+async function refreshJobs(){
+  const list=$('#jobsList'); if(!list)return;
+  let bookings;
+  // A failed poll leaves the last good list on screen — never blank the queue.
+  try{ ({bookings}=await api('/api/bookings')); }catch(e){ if(jobsSeen===null)toast(e.message,true); return; }
+  const open=bookings.filter(b=>b.status==='searching')
+    .sort((a,b)=>(a.distanceKm==null?1e9:a.distanceKm)-(b.distanceKm==null?1e9:b.distanceKm));   // nearest first
+  const ids=open.map(b=>b.id).join(',');
+  if(jobsSeen===ids)return;                        // nothing moved → leave the DOM alone
+  const fresh=jobsSeen===null?[]:open.filter(b=>jobsSeen.indexOf(b.id)<0);
+  jobsSeen=ids;
+  list.innerHTML='';
+  if(!open.length){list.appendChild(emptyState(t('Сейчас нет открытых заказов'),t('Новые заказы появятся здесь автоматически.')));return;}
+  open.forEach(b=>list.appendChild(jobRow(b)));
+  stagger(list);
+  if(fresh.length){
+    toast(fresh.length===1?t('Новый заказ рядом'):`${t('Новых заказов')}: ${fresh.length}`);
+    try{ if(navigator.vibrate)navigator.vibrate(120); }catch{}
+  }
 }
 
 /* ---------- ADMIN ---------- */

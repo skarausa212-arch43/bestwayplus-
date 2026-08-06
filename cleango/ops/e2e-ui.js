@@ -53,7 +53,10 @@ const EMAIL = `e2e${ts}@t.co`, PASS = 'Passw0rd!Long1';
       set('input[name="email"]', em);
       set('input[name="phone"]', '+48500600711');
       set('input[name="password"]', pw);
-      const city = card.querySelector('select[name="city"]'); if (city) city.value = city.options[0].value;
+      // Cities the platform has not opened yet are rendered disabled and are
+      // rejected server-side — always register in an open one.
+      const city = card.querySelector('select[name="city"]');
+      if (city) { const open = [...city.options].find((o) => !o.disabled); if (!open) throw new Error('no open city in the form'); city.value = open.value; }
       const consent = card.querySelector('#regConsent'); if (!consent) throw new Error('no consent checkbox'); consent.checked = true; consent.dispatchEvent(new Event('change', { bubbles: true }));
     }, [EMAIL, PASS]);
     await pg.evaluate(() => document.querySelector('#authCard button[type="submit"]').click());
