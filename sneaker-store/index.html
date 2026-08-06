@@ -568,6 +568,10 @@
   .mkt-tab.on{color:#fff;background:var(--ink)}
   .mkt-tab .n{background:var(--accent);color:#fff;font-size:10px;border-radius:20px;padding:1px 6px;margin-left:3px;font-weight:700}
   .mkt-tab.on .n{background:rgba(255,255,255,.28)}
+  .mkt-tab[data-tab="saved"]{color:#e8355f}
+  .mkt-tab[data-tab="saved"].on{color:#fff;background:#e8355f}
+  #wishBtn svg{color:#e8355f}
+  #wishBtn:hover svg{color:#c81e47}
   #mktBody{animation:panelin .3s var(--ease)}
   @keyframes panelin{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
   .mkt-empty{padding:36px 10px;text-align:center;color:var(--muted);font-size:14px}
@@ -603,8 +607,8 @@
   .ord-acts button{padding:9px 14px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-weight:600;font-size:12.5px}
   .ord-acts button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
   .ord-acts button.warn{border-color:rgba(255,90,90,.4);color:var(--bad)}
-  .prof-av{display:flex;align-items:center;gap:16px;margin-bottom:18px}
-  .pa-pic{width:76px;height:76px;border-radius:50%;overflow:hidden;flex:none;background:var(--surface-2);border:1px solid var(--line-2);display:grid;place-items:center;font-size:30px;font-weight:700;color:var(--muted)}
+  .prof-av{display:flex;align-items:center;gap:18px;margin-bottom:20px}
+  .pa-pic{width:112px;height:112px;border-radius:50%;overflow:hidden;flex:none;background:var(--surface-2);border:2px solid var(--line-2);display:grid;place-items:center;font-size:44px;font-weight:700;color:var(--muted);box-shadow:var(--shadow-sm)}
   .pa-pic img{width:100%;height:100%;object-fit:cover}
   .pa-btns{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
   .pa-up{cursor:pointer;padding:9px 14px;font-size:13px}
@@ -769,8 +773,8 @@
     .field label{font-size:11.5px;margin-bottom:4px}
     .field input,.field select,.field textarea{height:42px;border-radius:11px;font-size:16px!important}
     .cbtn{height:44px;font-size:14px;border-radius:12px}
-    .prof-av{gap:12px;margin-bottom:14px}
-    .pa-pic{width:56px;height:56px;font-size:22px}
+    .prof-av{gap:14px;margin-bottom:16px}
+    .pa-pic{width:92px;height:92px;font-size:36px}
     .pa-up{padding:7px 12px;font-size:12px}
     .prof-h{margin:16px 0 9px;padding-top:13px}
     .prof-h h4{font-size:12px}
@@ -851,9 +855,9 @@
     .bn-badge.show{display:grid}
     body{padding-bottom:70px}
     .toasts{bottom:88px}
-    /* header is minimal on phones — bottom nav owns the actions; cart lives top-right */
+    /* header is minimal on phones — bottom nav owns the actions; saved + cart live top-right */
     #accBtn,.sell-pill{display:none}
-    #cartBtn{display:inline-grid}
+    #cartBtn,#wishBtn{display:inline-grid}
   }
   /* compact header on phones so it never overflows sideways */
   @media(max-width:560px){
@@ -904,6 +908,7 @@
     </nav>
     <div class="tools">
       <button class="ic" id="searchBtn" aria-label="Search" data-ic="search"></button>
+      <button class="ic" id="wishBtn" aria-label="Saved items"><span data-ic="heart" style="display:grid;place-items:center"></span><span class="cbadge" id="wishBadge">0</span></button>
       <button class="ic" id="accBtn" aria-label="Account"><span data-ic="account" style="display:grid;place-items:center"></span><span class="cbadge" id="accDot" style="min-width:10px;height:10px;padding:0;background:var(--ok)"></span></button>
       <button class="ic" id="cartBtn" aria-label="Cart"><span data-ic="cart"></span><span class="cbadge" id="cbadge">0</span></button>
       <button class="sell-pill magnetic" id="sellBtn"><span class="sp-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></span><span class="sp-full">Sell an item</span><span class="sp-short">Sell</span></button>
@@ -1420,7 +1425,7 @@ grid.addEventListener('click',e=>{
   const li=e.target.closest('[data-listing]');if(li){openListing(li.dataset.listing);return}
   const o=e.target.closest('[data-open]');if(o){const p=PRODUCTS.find(x=>x.id===o.dataset.open);if(p&&!p.soldOut)openQV(o.dataset.open)}
 });
-function toggleFav(id){const i=favs.indexOf(id);if(i>-1)favs.splice(i,1);else{favs.push(id);toast('Added to wishlist')}save('swk_favs',favs);document.querySelectorAll(`[data-fav="${id}"]`).forEach(b=>b.classList.toggle('on',favs.includes(id)))}
+function toggleFav(id){const i=favs.indexOf(id);if(i>-1)favs.splice(i,1);else{favs.push(id);toast('Saved — find it in ♥ Saved')}save('swk_favs',favs);document.querySelectorAll(`[data-fav="${id}"]`).forEach(b=>b.classList.toggle('on',favs.includes(id)));updateWishBadge();}
 
 /* ---------- filters ---------- */
 document.querySelectorAll('nav.main a[data-filter]').forEach(a=>a.addEventListener('click',()=>{activeFilter=a.dataset.filter;renderGrid();}));
@@ -1615,6 +1620,7 @@ function confetti(){try{if(matchMedia('(prefers-reduced-motion:reduce)').matches
 const esc=s=>String(s??'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
 let AUTH=load('swk_auth',null);
 function accDot(){$('#accDot').classList.toggle('show',!!AUTH)}
+function updateWishBadge(){const el=$('#wishBadge');if(!el)return;const n=(favs||[]).length;el.textContent=n;el.classList.toggle('show',n>0);}
 const STATUS_META={pending:{label:'Awaiting payment',step:-1},paid:{label:'Payment confirmed',step:0},processing:{label:'Processing',step:0},shipped:{label:'Shipped',step:1},delivered:{label:'Delivered',step:2},cancelled:{label:'Cancelled',step:-2}};
 const CARRIERS={usps:'https://tools.usps.com/go/TrackConfirmAction?tLabels=',ups:'https://www.ups.com/track?tracknum=',fedex:'https://www.fedex.com/fedextrack/?trknbr=',dhl:'https://www.dhl.com/en/express/tracking.html?AWB='};
 function trackLink(carrier,tracking){const base=CARRIERS[String(carrier||'').toLowerCase().replace(/[^a-z]/g,'')];return base?base+encodeURIComponent(tracking):null}
@@ -1689,6 +1695,7 @@ async function deleteAccount(){
   try{await mfetch('/api/delete-account',{method:'POST'});AUTH=null;save('swk_auth',null);accDot();toast('Account deleted');renderAccount();}catch(e){toast(e.message);}
 }
 $('#accBtn').addEventListener('click',()=>{renderAccount();openModal('#accModal')});
+$('#wishBtn').addEventListener('click',()=>{if(!AUTH)return needAuth('Sign in to see your saved items');renderAccount('saved');openModal('#accModal');});
 $('#accClose').addEventListener('click',()=>closeModal('#accModal'));
 accDot();
 
@@ -2343,7 +2350,7 @@ $('#chatClose').addEventListener('click',()=>closeModal('#chatModal'));
 $('#accModal').addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(b){mktAction(b.dataset.act,b.dataset.id);}});
 
 /* ---------- init ---------- */
-renderFilterbar();renderGrid();renderCart();bump();loadPayConfig();
+renderFilterbar();renderGrid();renderCart();bump();updateWishBadge();loadPayConfig();
 /* live online counter */
 (function(){var el=document.getElementById('onlineN');if(!el)return;function tick(){fetch('/api/online').then(function(r){return r.json()}).then(function(d){if(d&&d.online!=null)el.textContent=d.online}).catch(function(){});}tick();setInterval(tick,15000);})();
 /* thunder sound (WebAudio synth, off by default) */
