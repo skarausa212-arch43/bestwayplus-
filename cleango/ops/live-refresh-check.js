@@ -84,7 +84,7 @@ const until = async (pg, fn, budget, label) => {
     await pgC.evaluate(() => { window.__noReload = 1; });
 
     const prop = (await api('/api/properties', 'GET', null, customer.token)).json.properties[0];
-    const made = await api('/api/bookings', 'POST', { propertyId: prop.id, service: 'deep', rooms: 3, baths: 2 }, customer.token);
+    const made = await api('/api/bookings', 'POST', { startNow: true, propertyId: prop.id, service: 'deep', rooms: 3, baths: 2 }, customer.token);
     if (!made.json.booking) throw new Error('заказ не создан: ' + JSON.stringify(made.json).slice(0, 140));
     bookingId = made.json.booking.id;
 
@@ -101,7 +101,7 @@ const until = async (pg, fn, budget, label) => {
   await step('Клиент: статус заказа обновляется сам после отклика', async () => {
     const cities = (await api('/api/cities')).json;
     const city = (cities.open && cities.open[0]) || 'Warsaw';
-    const made2 = await api('/api/bookings', 'POST', { service: 'standard', city, address: 'ul. Testowa 5', rooms: 2, baths: 1 }, plain.token);
+    const made2 = await api('/api/bookings', 'POST', { startNow: true, service: 'standard', city, address: 'ul. Testowa 5', rooms: 2, baths: 1 }, plain.token);
     if (!made2.json.booking) throw new Error('заказ не создан: ' + JSON.stringify(made2.json).slice(0, 140));
     bookingId = made2.json.booking.id;
     await pgU.evaluate((id) => { state.view = 'bookings'; render(); openBooking(id); }, bookingId);

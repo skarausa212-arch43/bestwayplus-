@@ -1217,6 +1217,10 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .main .grid>.card:nth-child(5){animation-delay:.22s}
 .main .grid>.card:nth-child(6){animation-delay:.27s}
 @keyframes cardIn{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+/* Nudge for a required box the user tried to skip past. */
+.shake{animation:shakeX .5s}
+@keyframes shakeX{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-6px)}40%,60%{transform:translateX(6px)}}
+@media (prefers-reduced-motion:reduce){.shake{animation:none;outline:2px solid var(--danger)}}
 /* phones: static aurora (keeps the look, zero per-frame work) */
 @media(max-width:640px){
   .aurora i{animation:none!important}
@@ -1900,6 +1904,15 @@ Object.assign(TR.uk,{"Приоритетная подача":"Пріоритет
 Object.assign(TR.pl,{"скоро":"wkrótce","Зачтётся при оплате следующего заказа.":"Zostanie zaliczone przy następnym zamówieniu.","Оплата с баланса":"Płatność z salda","LUMI+ активен — 5% кэшбека на каждый заказ":"LUMI+ aktywny — 5% cashbacku za każde zamówienie","Отменить заказ? Исполнитель ещё не выехал — отмена бесплатна.":"Anulować zamówienie? Wykonawca jeszcze nie wyjechał — anulowanie jest bezpłatne.","Отменить заказ? Исполнитель уже выехал — удержим 40% от суммы.":"Anulować zamówienie? Wykonawca już wyjechał — potrącimy 40% kwoty.","Заказ отменён":"Zamówienie anulowane"});
 Object.assign(TR.en,{"скоро":"soon","Зачтётся при оплате следующего заказа.":"Applied to your next order.","Оплата с баланса":"Paid from balance","LUMI+ активен — 5% кэшбека на каждый заказ":"LUMI+ active — 5% cashback on every order","Отменить заказ? Исполнитель ещё не выехал — отмена бесплатна.":"Cancel the order? The cleaner hasn’t left yet — cancellation is free.","Отменить заказ? Исполнитель уже выехал — удержим 40% от суммы.":"Cancel the order? The cleaner is already on the way — we’ll keep 40%.","Заказ отменён":"Order cancelled"});
 Object.assign(TR.uk,{"Зачтётся при оплате следующего заказа.":"Зарахується при оплаті наступного замовлення.","Оплата с баланса":"Оплата з балансу","LUMI+ активен — 5% кэшбека на каждый заказ":"LUMI+ активний — 5% кешбеку за кожне замовлення","Отменить заказ? Исполнитель ещё не выехал — отмена бесплатна.":"Скасувати замовлення? Виконавець ще не виїхав — скасування безкоштовне.","Отменить заказ? Исполнитель уже выехал — удержим 40% от суммы.":"Скасувати замовлення? Виконавець уже виїхав — утримаємо 40% суми.","Заказ отменён":"Замовлення скасовано"});
+/* Booking wizard: these are interpolated with numbers, so the DOM i18n pass
+   can never match them — they have to go through t() at build time. */
+Object.assign(TR.pl,{"Далее":"Dalej","Назад":"Wstecz","Подтвердить заказ":"Potwierdź zamówienie","AI-оценка":"Wycena AI","спрос":"popyt","обычный спрос":"zwykły popyt"});
+Object.assign(TR.en,{"Далее":"Next","Назад":"Back","Подтвердить заказ":"Confirm order","AI-оценка":"AI estimate","спрос":"demand","обычный спрос":"normal demand"});
+Object.assign(TR.uk,{"Далее":"Далі","Назад":"Назад","Подтвердить заказ":"Підтвердити замовлення","AI-оценка":"AI-оцінка","спрос":"попит","обычный спрос":"звичайний попит"});
+/* Consumer withdrawal right — the express-consent checkbox shown at checkout. */
+Object.assign(TR.pl,{"Прошу начать оказание услуги до истечения 14-дневного срока на отказ от договора и понимаю, что после полного оказания услуги право на отказ утрачивается.":"Żądam rozpoczęcia usługi przed upływem 14-dniowego terminu na odstąpienie od umowy i przyjmuję do wiadomości, że po jej pełnym wykonaniu tracę prawo odstąpienia.","Подробнее":"Więcej","Отметьте согласие на начало услуги — без него заказ невозможен":"Zaznacz zgodę na rozpoczęcie usługi — bez niej nie złożysz zamówienia"});
+Object.assign(TR.en,{"Прошу начать оказание услуги до истечения 14-дневного срока на отказ от договора и понимаю, что после полного оказания услуги право на отказ утрачивается.":"I request that the service begin before the 14-day withdrawal period ends, and I understand that once it has been fully performed I lose the right of withdrawal.","Подробнее":"Details","Отметьте согласие на начало услуги — без него заказ невозможен":"Tick the consent to start the service — the order cannot be placed without it"});
+Object.assign(TR.uk,{"Прошу начать оказание услуги до истечения 14-дневного срока на отказ от договора и понимаю, что после полного оказания услуги право на отказ утрачивается.":"Прошу розпочати надання послуги до спливу 14-денного строку на відмову від договору й розумію, що після повного виконання послуги право на відмову втрачається.","Подробнее":"Докладніше","Отметьте согласие на начало услуги — без него заказ невозможен":"Позначте згоду на початок послуги — без неї замовлення неможливе"});
 /* Live-refresh notices (offer feed + order status), shown while push is off. */
 Object.assign(TR.pl,{"Новый заказ рядом":"Nowe zlecenie w pobliżu","Новых заказов":"Nowych zleceń","Новые заказы появятся здесь автоматически.":"Nowe zlecenia pojawią się tutaj automatycznie.","Сейчас нет открытых заказов":"Brak otwartych zleceń","Исполнитель назначен":"Wykonawca przydzielony","Исполнитель в пути":"Wykonawca w drodze","Уборка началась":"Sprzątanie się rozpoczęło","Заказ завершён":"Zamówienie zakończone"});
 Object.assign(TR.en,{"Новый заказ рядом":"New job nearby","Новых заказов":"New jobs","Новые заказы появятся здесь автоматически.":"New jobs will appear here automatically.","Сейчас нет открытых заказов":"No open jobs right now","Исполнитель назначен":"Provider assigned","Исполнитель в пути":"Provider on the way","Уборка началась":"Cleaning has started","Заказ завершён":"Order completed"});
@@ -4353,6 +4366,11 @@ function openOgrodOrder(g,est){
       <label class="field"><span>${t('Пожелания садовнику')}</span><textarea class="input" id="ooNotes" rows="2" placeholder="${t('например: калитка со двора, во дворе собака…')}"></textarea></label>
       <div class="og-line" style="margin:6px 0"><span>${t('Итого')}</span><b>${est.total.toFixed(2).replace('.',',')} zł · ~${(est.durationMin/60).toFixed(1).replace('.',',')} ${t('ч')}</b></div>
       <div class="og-hint" style="margin-bottom:12px">${state.user.card?t('Оплата: карта — спишем автоматически после подбора садовника.'):t('Оплата картой после подбора — добавьте карту в Кошельке.')}</div>
+      <label class="consent-box" style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;margin-bottom:12px">
+        <input type="checkbox" id="ooConsent" style="margin-top:3px;flex:none;width:18px;height:18px;accent-color:var(--primary)">
+        <span class="tiny" style="line-height:1.5">${t('Прошу начать оказание услуги до истечения 14-дневного срока на отказ от договора и понимаю, что после полного оказания услуги право на отказ утрачивается.')}
+        <a href="/terms.html#withdrawal" target="_blank" rel="noopener" style="color:var(--primary-600)">${t('Подробнее')}</a></span>
+      </label>
       <button class="btn block" id="ooGo">${t('Заказать')}</button>
     </div>
   </div>`);
@@ -4360,10 +4378,19 @@ function openOgrodOrder(g,est){
   if(sel)sel.onchange=()=>{$('#ooAddr',m).style.display=sel.value?'none':'';};
   $('#ooX',m).onclick=closeModal;
   $('#ooGo',m).onclick=async()=>{
+    const sched=`${$('#ooDate',m).value}T${$('#ooTime',m).value}`;
+    const consent=$('#ooConsent',m);
+    if(startsInsideWithdrawalWindow({scheduledFor:sched}) && !consent.checked){
+      toast(t('Отметьте согласие на начало услуги — без него заказ невозможен'),true);
+      consent.closest('.consent-box').classList.add('shake');
+      setTimeout(()=>consent.closest('.consent-box').classList.remove('shake'),600);
+      return;
+    }
     const btn=$('#ooGo',m);btn.disabled=true;btn.textContent=t('Минутку…');
     try{
       const body={service:'garden',garden:{...g,lawnM2:+g.lawnM2||0,hedgeMb:+g.hedgeMb||0,pielenieM2:+g.pielenieM2||0},
-        scheduledFor:`${$('#ooDate',m).value}T${$('#ooTime',m).value}`,notes:$('#ooNotes',m).value.slice(0,500),city:'Wrocław'};
+        startNow:consent.checked,
+        scheduledFor:sched,notes:$('#ooNotes',m).value.slice(0,500),city:'Wrocław'};
       if(sel&&sel.value)body.propertyId=sel.value;else body.address=$('#ooAddr',m).value.trim();
       const r=await api('/api/bookings','POST',body);
       closeModal();
@@ -4587,15 +4614,17 @@ function viewBook(){
   }
   else if(d.step===3){ // AI estimate + confirm
     body.innerHTML=`<h2 style="margin-bottom:4px">AI-оценка стоимости</h2><p class="muted" style="margin-bottom:20px">Честная цена, рассчитана мгновенно.</p>
-      <div id="estBox"><div class="card pad"><div class="sk" style="height:120px"></div></div></div>`;
+      <div id="estBox"><div class="card pad"><div class="sk" style="height:120px"></div></div></div>
+      ${withdrawalConsentHtml(d)}`;
     computeEstimate(body);
+    const wd=$('#wdConsent',body); if(wd){ wd.checked=!!d.startNow; wd.onchange=()=>{d.startNow=wd.checked;}; }
   }
 
   // nav buttons
   const nav=el(`<div class="row" style="margin-top:22px;gap:12px">
-    ${d.step>0?`<button class="btn ghost" id="back">Назад</button>`:''}
+    ${d.step>0?`<button class="btn ghost" id="back">${t('Назад')}</button>`:''}
     <div class="spacer" style="flex:1"></div>
-    ${d.step<3?`<button class="btn" id="next">Далее ${I.arrow}</button>`:`<button class="btn" id="confirm">Подтвердить заказ ${I.check}</button>`}
+    ${d.step<3?`<button class="btn" id="next">${t('Далее')} ${I.arrow}</button>`:`<button class="btn" id="confirm">${t('Подтвердить заказ')} ${I.check}</button>`}
   </div>`);
   c.appendChild(nav);
   const back=$('#back',nav); if(back)back.onclick=()=>{d.step--;viewBook();};
@@ -4606,11 +4635,42 @@ function viewBook(){
     }
     d.step++;viewBook();
   };
-  const conf=$('#confirm',nav); if(conf)conf.onclick=confirmBooking;
+  const conf=$('#confirm',nav); if(conf)conf.onclick=()=>{
+    // Without the express request the server refuses the order (statutory
+    // withdrawal right) — say so here rather than letting the POST fail.
+    if(startsInsideWithdrawalWindow(d) && !d.startNow){
+      toast(t('Отметьте согласие на начало услуги — без него заказ невозможен'),true);
+      const wd=$('#wdConsent'); if(wd)wd.closest('.consent-box').classList.add('shake');
+      setTimeout(()=>{const e=$('.consent-box');if(e)e.classList.remove('shake');},600);
+      return;
+    }
+    confirmBooking();
+  };
 
   shell(c);
 }
 function urgOpt(v,t,ico,sub){const d=state.draft;return `<div class="opt ${d.urgency===v?'sel':''}" data-u="${v}"><div class="ico">${ico}</div><h4>${t}</h4><small>${sub}</small></div>`;}
+/* Consumer right of withdrawal (ustawa o prawach konsumenta, art. 15 ust. 3 /
+   art. 38 pkt 1). A service that starts inside the 14-day window may only begin
+   at the consumer's express request, and they must be told the right is lost
+   once it has been fully performed. The server refuses the booking without this
+   consent — the checkbox is what makes it a valid, recorded request. */
+const WITHDRAWAL_DAYS=14;
+function startsInsideWithdrawalWindow(d){
+  const iso=d&&d.scheduledFor?d.scheduledFor:(d&&d.date?`${d.date}T${d.time||'00:00'}`:null);
+  if(!iso)return true;                               // ASAP / FlashClean
+  const at=new Date(iso).getTime();
+  if(!at||isNaN(at))return true;
+  return at<Date.now()+WITHDRAWAL_DAYS*86400000;
+}
+function withdrawalConsentHtml(d){
+  if(!startsInsideWithdrawalWindow(d))return '';
+  return `<label class="card pad consent-box" style="margin-top:14px;display:flex;gap:10px;align-items:flex-start;cursor:pointer">
+    <input type="checkbox" id="wdConsent" style="margin-top:3px;flex:none;width:18px;height:18px;accent-color:var(--primary)">
+    <span class="tiny" style="line-height:1.5">${t('Прошу начать оказание услуги до истечения 14-дневного срока на отказ от договора и понимаю, что после полного оказания услуги право на отказ утрачивается.')}
+    <a href="/terms.html#withdrawal" target="_blank" rel="noopener" style="color:var(--primary-600)">${t('Подробнее')}</a></span>
+  </label>`;
+}
 /* request photos — customer attaches job-scope photos to the booking */
 function renderReqPhotos(scope){
   const wrap=$('#reqPhotos',scope); if(!wrap)return;
@@ -4660,8 +4720,8 @@ async function computeEstimate(body){
       <div class="card est pad" style="text-align:center;margin-bottom:16px">
         <div class="muted tiny" style="text-transform:uppercase;letter-spacing:.05em;font-weight:700">${svcLabelRu(estimate.serviceLabel)}</div>
         <div class="big" style="color:var(--primary-600);margin:6px 0"><span id="${estNum}">0</span> zł</div>
-        <div class="rng">диапазон оценки ${money(estimate.rangeLow)}–${money(estimate.rangeHigh)}</div>
-        <div class="aiband" style="margin-top:16px;justify-content:center">${I.ai}<span>AI-оценка · ~${estimate.durationHours} ч · ${b.surge>0?`+${b.surge}% спрос`:'обычный спрос'}</span></div>
+        <div class="rng">${t('диапазон оценки')} ${money(estimate.rangeLow)}–${money(estimate.rangeHigh)}</div>
+        <div class="aiband" style="margin-top:16px;justify-content:center">${I.ai}<span>${t('AI-оценка')} · ~${estimate.durationHours} ${t('ч')} · ${b.surge>0?`+${b.surge}% ${t('спрос')}`:t('обычный спрос')}</span></div>
       </div>
       <div class="card pad">
         <div class="brk"><span>${d.service==='windows'?'Выезд':'Базовая услуга'}</span><b>${money(b.base)}</b></div>

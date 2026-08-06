@@ -67,7 +67,7 @@ async function main() {
     const cl = (await req('POST', '/api/login', { body: { email: 'piotr@example.com', password: 'cleango123' } })).json.token;
 
     await ok('#3 payment gate: cleaner cannot go en route while the card is not captured', async () => {
-      const bk = (await req('POST', '/api/bookings', { token: cust, body: { service: 'standard', rooms: 2, baths: 1, address: 'A', city: 'Warsaw' } })).json.booking;
+      const bk = (await req('POST', '/api/bookings', { token: cust, body: { startNow: true, service: 'standard', rooms: 2, baths: 1, address: 'A', city: 'Warsaw' } })).json.booking;
       const acc = await req('POST', `/api/bookings/${bk.id}/accept`, { token: cl });
       assert.strictEqual(acc.json.booking.status, 'accepted');
       const blocked = await req('POST', `/api/bookings/${bk.id}/enroute`, { token: cl });
@@ -81,7 +81,7 @@ async function main() {
     });
 
     await ok('#3 start is also gated: in_progress blocked until captured', async () => {
-      const bk = (await req('POST', '/api/bookings', { token: cust, body: { service: 'standard', rooms: 1, baths: 1, address: 'C', city: 'Warsaw' } })).json.booking;
+      const bk = (await req('POST', '/api/bookings', { token: cust, body: { startNow: true, service: 'standard', rooms: 1, baths: 1, address: 'C', city: 'Warsaw' } })).json.booking;
       await req('POST', `/api/bookings/${bk.id}/accept`, { token: cl });
       await capture(bk.id);
       await req('POST', `/api/bookings/${bk.id}/enroute`, { token: cl });
@@ -92,7 +92,7 @@ async function main() {
     });
 
     await ok('#2 refund: cancelling a captured booking before departure refunds + notifies the customer', async () => {
-      const bk = (await req('POST', '/api/bookings', { token: cust, body: { service: 'standard', rooms: 2, baths: 1, address: 'B', city: 'Warsaw' } })).json.booking;
+      const bk = (await req('POST', '/api/bookings', { token: cust, body: { startNow: true, service: 'standard', rooms: 2, baths: 1, address: 'B', city: 'Warsaw' } })).json.booking;
       await req('POST', `/api/bookings/${bk.id}/accept`, { token: cl });
       await capture(bk.id);                    // paid, still 'accepted' (before departure)
       const cancel = await req('POST', `/api/bookings/${bk.id}/status`, { token: cust, body: { status: 'cancelled' } });
@@ -104,7 +104,7 @@ async function main() {
     });
 
     await ok('#2 late cancel: after departure we withhold 40% and refund 60%', async () => {
-      const bk = (await req('POST', '/api/bookings', { token: cust, body: { service: 'standard', rooms: 2, baths: 1, address: 'D', city: 'Warsaw' } })).json.booking;
+      const bk = (await req('POST', '/api/bookings', { token: cust, body: { startNow: true, service: 'standard', rooms: 2, baths: 1, address: 'D', city: 'Warsaw' } })).json.booking;
       const price = bk.price;
       await req('POST', `/api/bookings/${bk.id}/accept`, { token: cl });
       await capture(bk.id);

@@ -58,7 +58,7 @@ const ts = Date.now();
     eq(r.status, 200, 'property'); prop = r.json.property; return prop.label;
   });
   await step('Клиент создаёт заказ — цена считается на сервере', async () => {
-    const r = await api('/api/bookings', 'POST', { propertyId: prop.id, service: 'deep', rooms: 3, baths: 2 }, cust);
+    const r = await api('/api/bookings', 'POST', { startNow: true, propertyId: prop.id, service: 'deep', rooms: 3, baths: 2 }, cust);
     eq(r.status, 200, 'booking'); booking = r.json.booking; price = booking.price;
     ok(price > 0, 'price computed');
     eq(booking.status, 'searching', 'searching');
@@ -164,7 +164,7 @@ const ts = Date.now();
   await step('Клиент заказывает Сад — цена с сервера, город Wrocław', async () => {
     gTok = this_g.token; gId = this_g.user.id;
     const nextYear = new Date().getFullYear() + 1;
-    const r = await api('/api/bookings', 'POST', { service: 'garden', city: gardenCity, address: 'ul. Ogrodowa 9', garden: { koszenie: true, lawnM2: 500, mowFrequency: 'coTydzien', removeClippings: true }, scheduledFor: `${nextYear}-07-15T10:00`, price: 1 }, cust);
+    const r = await api('/api/bookings', 'POST', { startNow: true, service: 'garden', city: gardenCity, address: 'ul. Ogrodowa 9', garden: { koszenie: true, lawnM2: 500, mowFrequency: 'coTydzien', removeClippings: true }, scheduledFor: `${nextYear}-07-15T10:00`, price: 1 }, cust);
     eq(r.status, 200, 'garden booking'); gBk = r.json.booking;
     // 500 m² @ 1.00 = 500, -20% = 400, +40 wywóz = 440
     eq(gBk.price, 440, 'server price (not the tampered 1)');
@@ -198,7 +198,7 @@ const ts = Date.now();
     const sub = await api('/api/subscribe', 'POST', {}, cust);
     ok(sub.status === 200, 'subscribed to LUMI+');
     const p2 = await api('/api/properties', 'POST', { type: 'apartment', label: 'Квартира', city: CITY, rooms: 2, baths: 1 }, cust);
-    const bk2 = (await api('/api/bookings', 'POST', { propertyId: p2.json.property.id, service: 'standard' }, cust)).json.booking;
+    const bk2 = (await api('/api/bookings', 'POST', { startNow: true, propertyId: p2.json.property.id, service: 'standard' }, cust)).json.booking;
     // LUMI+ perk: the cleaner responds, then the customer picks them.
     await api(`/api/bookings/${bk2.id}/accept`, 'POST', {}, cleaner);
     const chose = await api(`/api/bookings/${bk2.id}/choose`, 'POST', { cleanerId: cleanerId }, cust);
@@ -218,7 +218,7 @@ const ts = Date.now();
   // ═════════ CANCELLATION FEE ═════════
   await step('Отмена после выезда исполнителя удерживает 40%', async () => {
     const p3 = await api('/api/properties', 'POST', { type: 'apartment', label: 'Кв2', city: CITY, rooms: 1, baths: 1 }, cust);
-    const bk3 = (await api('/api/bookings', 'POST', { propertyId: p3.json.property.id, service: 'standard' }, cust)).json.booking;
+    const bk3 = (await api('/api/bookings', 'POST', { startNow: true, propertyId: p3.json.property.id, service: 'standard' }, cust)).json.booking;
     await api(`/api/bookings/${bk3.id}/accept`, 'POST', {}, cleaner);
     await api(`/api/bookings/${bk3.id}/choose`, 'POST', { cleanerId: cleanerId }, cust);
     await api(`/api/bookings/${bk3.id}/enroute`, 'POST', {}, cleaner);   // departed → 40% applies
@@ -229,7 +229,7 @@ const ts = Date.now();
   });
   await step('Отмена до выезда — бесплатно', async () => {
     const p4 = await api('/api/properties', 'POST', { type: 'apartment', label: 'Кв3', city: CITY, rooms: 1, baths: 1 }, cust);
-    const bk4 = (await api('/api/bookings', 'POST', { propertyId: p4.json.property.id, service: 'standard' }, cust)).json.booking;
+    const bk4 = (await api('/api/bookings', 'POST', { startNow: true, propertyId: p4.json.property.id, service: 'standard' }, cust)).json.booking;
     const r = await api(`/api/bookings/${bk4.id}/status`, 'POST', { status: 'cancelled' }, cust);
     eq(r.status, 200, 'cancel while searching');
     ok(!r.json.booking.cancellationFee, 'no fee before departure');

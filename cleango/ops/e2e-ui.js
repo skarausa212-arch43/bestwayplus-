@@ -232,6 +232,11 @@ const EMAIL = `e2e${ts}@t.co`, PASS = 'Passw0rd!Long1';
     await pg.evaluate(() => document.querySelector('#next').click()); await wait(900);   // → step3 estimate
     const est = await pg.evaluate(() => !!document.querySelector('#confirm'));
     if (!est) throw new Error('no confirm button on step 3');
+    // The order starts inside the 14-day withdrawal window, so the express
+    // consent is mandatory — confirming without it must be refused.
+    await pg.evaluate(() => document.querySelector('#confirm').click()); await wait(600);
+    if (!/zgod|согласие|consent|згод/i.test(await lastToast())) throw new Error('заказ без согласия на начало услуги не был отклонён');
+    await pg.evaluate(() => { const c = document.querySelector('#wdConsent'); if (!c) throw new Error('no withdrawal consent box'); c.checked = true; c.dispatchEvent(new Event('change', { bubbles: true })); });
     await pg.evaluate(() => document.querySelector('#confirm').click()); await wait(1600);
     const tokC = await pg.evaluate(() => localStorage.getItem('cg_token'));
     const bks = await api('/api/bookings', 'GET', null, tokC);

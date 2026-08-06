@@ -50,7 +50,7 @@ async function withUser(browser, token, w, h, fn, theme, lang) {
   const cln = (await api('/api/register', 'POST', { name: 'UI Исполнитель', email: `ui-p${ts}@t.co`, password: 'averylongpassword12', phone: '+48514000002', role: 'cleaner', city: CITY, teamSize: 2, acceptedTerms: true, professions: ['cleaning', 'garden'], entityType: 'individual', avatar: IMG, idDocument: IMG, pesel: '44051401359', bankName: 'mBank', bankAccount: 'PL27114020040000300201355387', bio: 'Опыт работы пять лет, уборка и сад, своё оборудование.' })).json;
   await api('/api/admin/verify-cleaner', 'POST', { cleanerId: cln.user.id, verified: true }, admin);
   const prop = (await api('/api/properties', 'POST', { type: 'house', label: 'UI дом', city: CITY, rooms: 3, baths: 2, address: 'ul. UI 1' }, cust.token)).json.property;
-  const bk = (await api('/api/bookings', 'POST', { propertyId: prop.id, service: 'standard' }, cust.token)).json.booking;
+  const bk = (await api('/api/bookings', 'POST', { startNow: true, propertyId: prop.id, service: 'standard' }, cust.token)).json.booking;
   await api(`/api/bookings/${bk.id}/accept`, 'POST', {}, cln.token);
 
   const browser = await chromium.launch();

@@ -37,7 +37,7 @@ const ts = Date.now();
 
   // property + booking for A, taken by piotr
   const prop = (await api('/api/properties', 'POST', { type: 'apartment', label: 'Sec Flat', city: CITY, rooms: 2, baths: 1 }, cA)).json.property;
-  const bk = (await api('/api/bookings', 'POST', { propertyId: prop.id, service: 'standard' }, cA)).json.booking;
+  const bk = (await api('/api/bookings', 'POST', { startNow: true, propertyId: prop.id, service: 'standard' }, cA)).json.booking;
   await api(`/api/bookings/${bk.id}/accept`, 'POST', {}, piotr);
 
   // ===================== ACTIONS =====================
@@ -71,7 +71,7 @@ const ts = Date.now();
     eq(list.status, 200, 'admin support list');
   });
   await ok('Отмена заказа: клиент отменяет свой активный заказ', async () => {
-    const b2 = (await api('/api/bookings', 'POST', { propertyId: prop.id, service: 'standard' }, cA)).json.booking;
+    const b2 = (await api('/api/bookings', 'POST', { startNow: true, propertyId: prop.id, service: 'standard' }, cA)).json.booking;
     const r = await api(`/api/bookings/${b2.id}/status`, 'POST', { status: 'cancelled' }, cA);
     eq(r.status, 200, 'cancel'); eq(r.json.booking.status, 'cancelled');
   });
@@ -116,7 +116,7 @@ const ts = Date.now();
     const em = `del2${ts}@t.co`;
     const u = (await api('/api/register', 'POST', { email: em, password: 'Passw0rd!Long1', name: 'Busy', role: 'customer', city: CITY, phone: '+48500600811', acceptedTerms: true }, null)).json;
     const pr = (await api('/api/properties', 'POST', { type: 'apartment', label: 'x', city: 'Warsaw', rooms: 1, baths: 1 }, u.token)).json.property;
-    await api('/api/bookings', 'POST', { propertyId: pr.id, service: 'standard' }, u.token);
+    await api('/api/bookings', 'POST', { startNow: true, propertyId: pr.id, service: 'standard' }, u.token);
     const del = await api('/api/me/delete-request', 'POST', {}, u.token);
     eq(del.status, 409, 'blocked'); eq(del.json.code, 'HAS_ACTIVE_BOOKINGS');
   });

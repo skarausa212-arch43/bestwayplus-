@@ -101,7 +101,7 @@ async function main() {
       const withConsent = await req('POST', '/api/register', { body: { name: 'With Consent', email: 'withconsent@x.pl', password: 'averylongpassword', phone: '600700800', role: 'customer', city: 'Warsaw', acceptedTerms: true } });
       assert.strictEqual(withConsent.status, 200);
       const me = await req('GET', '/api/me', { token: withConsent.json.token });
-      assert.strictEqual(me.json.user.termsVersion, '1.0', 'terms version recorded on consent');
+      assert.strictEqual(me.json.user.termsVersion, '1.1', 'terms version recorded on consent');
     });
     await ok('login works and rejects bad credentials generically', async () => {
       const bad = await req('POST', '/api/login', { body: { email: 'testcust@x.pl', password: 'wrong-password!!' } });
@@ -313,7 +313,7 @@ async function main() {
     await ok('customer creates a booking', async () => {
       const props = await req('GET', '/api/properties', { token: customerTok });
       const pid = props.json.properties[0].id;
-      const bk = await req('POST', '/api/bookings', { token: customerTok, body: { propertyId: pid, service: 'standard' } });
+      const bk = await req('POST', '/api/bookings', { token: customerTok, body: { startNow: true, propertyId: pid, service: 'standard' } });
       assert.strictEqual(bk.status, 200);
       assert.strictEqual(bk.json.booking.status, 'searching');
       // SECURITY (regression): the creation response is role-shaped — the
@@ -322,6 +322,31 @@ async function main() {
       assert.strictEqual(bk.json.booking.payout, undefined, 'payout hidden on creation response');
       assert.ok(bk.json.booking.price > 0, 'customer sees the price they pay');
       bookingId = bk.json.booking.id;
+    });
+    // CONSUMER LAW (regression): a service starting inside the 14-day window
+    // needs the customer's express request to begin early (ustawa o prawach
+    // konsumenta art. 15 ust. 3) — without it the order must be refused, and
+    // with it the consent has to be stored as evidence.
+    await ok('booking inside the 14-day window requires express consent', async () => {
+      const props = await req('GET', '/api/properties', { token: customerTok });
+      const pid = props.json.properties[0].id;
+      const no = await req('POST', '/api/bookings', { token: customerTok, body: { propertyId: pid, service: 'standard' } });
+      assert.strictEqual(no.status, 400, 'order without consent refused');
+      assert.strictEqual(no.json.code, 'WITHDRAWAL_CONSENT_REQUIRED');
+      const yes = await req('POST', '/api/bookings', { token: customerTok, body: { startNow: true, propertyId: pid, service: 'standard' } });
+      assert.strictEqual(yes.status, 200);
+      const w = yes.json.booking.withdrawal;
+      assert.ok(w && w.consentAt, 'express consent stored on the booking');
+      assert.strictEqual(w.earlyStart, true);
+      assert.ok(w.until > Date.now() + 13 * 86400000, '14-day deadline recorded');
+      assert.strictEqual(w.termsVersion, '1.1', 'consent pinned to the terms version in force');
+      // Scheduled beyond the window: the statutory period runs out before the
+      // visit, so no early-start consent is needed and none is recorded.
+      const far = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 16);
+      const later = await req('POST', '/api/bookings', { token: customerTok, body: { propertyId: pid, service: 'standard', scheduledFor: far } });
+      assert.strictEqual(later.status, 200, 'far-future order needs no consent');
+      assert.strictEqual(later.json.booking.withdrawal.earlyStart, false);
+      assert.strictEqual(later.json.booking.withdrawal.consentAt, null);
     });
 
     // ── Dispatch: cleaner accepts ──
@@ -389,7 +414,7 @@ async function main() {
     // never getting paid. (Reproduces the settlePayment/autoCharge `paid` collision.)
     await ok('MONEY: cleaner is still paid when the booking was already captured (paid) on match', async () => {
       const props = await req('GET', '/api/properties', { token: customerTok });
-      const bk = await req('POST', '/api/bookings', { token: customerTok, body: { propertyId: props.json.properties[0].id, service: 'standard' } });
+      const bk = await req('POST', '/api/bookings', { token: customerTok, body: { startNow: true, propertyId: props.json.properties[0].id, service: 'standard' } });
       const bid = bk.json.booking.id;
       const acc = await req('POST', `/api/bookings/${bid}/accept`, { token: cleanerTok });
       assert.strictEqual(acc.json.booking.status, 'accepted');
@@ -446,7 +471,7 @@ async function main() {
       const co = await req('POST', '/api/login', { body: { email: 'company@cleango.app', password: 'cleango123' } });
       const props = await req('GET', '/api/properties', { token: customerTok });
       const pid = props.json.properties[0].id;
-      const bk = await req('POST', '/api/bookings', { token: customerTok, body: { propertyId: pid, service: 'deep' } });
+      const bk = await req('POST', '/api/bookings', { token: customerTok, body: { startNow: true, propertyId: pid, service: 'deep' } });
       const staff = await req('GET', '/api/company/staff', { token: co.json.token });
       const assign = await req('POST', `/api/company/bookings/${bk.json.booking.id}/assign`, { token: co.json.token, body: { cleanerId: staff.json.staff[0].id } });
       assert.strictEqual(assign.status, 200);
@@ -475,7 +500,7 @@ async function main() {
     });
     await ok('GPS: booking stores the client pin; nearest cleaner offered, out-of-radius not', async () => {
       const before = await req('GET', '/api/notifications', { token: nearTok });
-      const bk = await req('POST', '/api/bookings', { token: customerTok, body: { service: 'standard', rooms: 2, baths: 1, address: 'ul. Testowa 1', city: 'Warsaw', location: { lat: 52.30, lng: 21.10 } } });
+      const bk = await req('POST', '/api/bookings', { token: customerTok, body: { startNow: true, service: 'standard', rooms: 2, baths: 1, address: 'ul. Testowa 1', city: 'Warsaw', location: { lat: 52.30, lng: 21.10 } } });
       assert.strictEqual(bk.status, 200);
       gpsBookingId = bk.json.booking.id;
       assert.ok(bk.json.booking.location && Math.abs(bk.json.booking.location.lat - 52.30) < 1e-6, 'booking keeps the GPS pin');
@@ -502,7 +527,7 @@ async function main() {
       assert.ok(det.json.booking.location, 'pin revealed to the assigned cleaner');
     });
     await ok('GPS: booking without a pin falls back to the city centroid', async () => {
-      const bk = await req('POST', '/api/bookings', { token: customerTok, body: { service: 'standard', rooms: 1, baths: 1, address: 'ul. Bez GPS 2', city: 'Warsaw' } });
+      const bk = await req('POST', '/api/bookings', { token: customerTok, body: { startNow: true, service: 'standard', rooms: 1, baths: 1, address: 'ul. Bez GPS 2', city: 'Warsaw' } });
       assert.strictEqual(bk.json.booking.locationPrecise, false);
       assert.ok(Math.abs(bk.json.booking.location.lat - 52.2297) < 0.01, 'centroid fallback');
       // customer always sees their own address + pin
@@ -517,7 +542,7 @@ async function main() {
 
     // ── Payments (Przelewy24) — safe no-op until configured ──
     await ok('payments: pay endpoint is a clean 503 until P24 is configured', async () => {
-      const bk = await req('POST', '/api/bookings', { token: customerTok, body: { service: 'standard', rooms: 1, baths: 1, address: 'ul. Pay 1', city: 'Warsaw' } });
+      const bk = await req('POST', '/api/bookings', { token: customerTok, body: { startNow: true, service: 'standard', rooms: 1, baths: 1, address: 'ul. Pay 1', city: 'Warsaw' } });
       const id = bk.json.booking.id;
       const pay = await req('POST', `/api/bookings/${id}/pay`, { token: customerTok });
       assert.strictEqual(pay.status, 503);
@@ -657,7 +682,7 @@ async function main() {
       const adm = await adminToken();
       await req('POST', '/api/admin/settings', { token: adm, body: { maintenance: { active: true, message: 'Тех' } } });
       assert.strictEqual((await req('GET', '/api/catalog', { token: customerTok })).json.maintenance, 'Тех');
-      const blocked = await req('POST', '/api/bookings', { token: customerTok, body: { service: 'standard', rooms: 1, baths: 1, address: 'x', city: 'Warsaw' } });
+      const blocked = await req('POST', '/api/bookings', { token: customerTok, body: { startNow: true, service: 'standard', rooms: 1, baths: 1, address: 'x', city: 'Warsaw' } });
       assert.strictEqual(blocked.status, 503);
       assert.strictEqual(blocked.json.code, 'MAINTENANCE');
       // Restore so later flows work.
@@ -693,7 +718,7 @@ async function main() {
 
     // ── Disputes only on assigned/active bookings (no cleaner ⇒ nothing to dispute) ──
     await ok('issue: cannot open a dispute on a still-searching booking (409 NOT_DISPUTABLE)', async () => {
-      const bk = await req('POST', '/api/bookings', { token: customerTok, body: { service: 'standard', rooms: 1, baths: 1, address: 'ul. Spor 1', city: 'Warsaw' } });
+      const bk = await req('POST', '/api/bookings', { token: customerTok, body: { startNow: true, service: 'standard', rooms: 1, baths: 1, address: 'ul. Spor 1', city: 'Warsaw' } });
       assert.strictEqual(bk.json.booking.status, 'searching');
       const issue = await req('POST', `/api/bookings/${bk.json.booking.id}/issue`, { token: customerTok, body: { category: 'quality', description: 'nothing happened yet' } });
       assert.strictEqual(issue.status, 409);
@@ -764,11 +789,11 @@ async function main() {
     await ok('OGROD MONEY: booking price is computed server-side; client price ignored; commission hidden', async () => {
       const prop = await req('POST', '/api/properties', { token: customerTok, body: { type: 'house', label: 'Ogród dom', city: 'Wrocław', rooms: 3, baths: 1, address: 'ul. Ogrodowa 7' } });
       const gp = prop.json.property.id;
-      const bk = await req('POST', '/api/bookings', { token: customerTok, body: { service: 'garden', propertyId: gp, price: 1, payout: 9999, garden: { koszenie: true, lawnM2: 300, mowFrequency: 'coTydzien', removeClippings: true }, scheduledFor: `${GY}-07-20T10:00` } });
+      const bk = await req('POST', '/api/bookings', { token: customerTok, body: { startNow: true, service: 'garden', propertyId: gp, price: 1, payout: 9999, garden: { koszenie: true, lawnM2: 300, mowFrequency: 'coTydzien', removeClippings: true }, scheduledFor: `${GY}-07-20T10:00` } });
       assert.strictEqual(bk.status, 200);
       gardenBkId = bk.json.booking.id;
       // a past visit date is rejected
-      const past = await req('POST', '/api/bookings', { token: customerTok, body: { service: 'garden', propertyId: gp, garden: { koszenie: true, lawnM2: 300 }, scheduledFor: '2020-07-20T10:00' } });
+      const past = await req('POST', '/api/bookings', { token: customerTok, body: { startNow: true, service: 'garden', propertyId: gp, garden: { koszenie: true, lawnM2: 300 }, scheduledFor: '2020-07-20T10:00' } });
       assert.strictEqual(past.status, 400);
       assert.strictEqual(past.json.code, 'GARDEN_PAST_DATE');
       assert.strictEqual(bk.json.booking.price, 328);   // 360 − 72 + 40, not the tampered 1
@@ -778,15 +803,15 @@ async function main() {
       assert.strictEqual(bk.json.booking.payout, undefined, 'payout never reaches the customer');
       assert.ok(bk.json.booking.garden.lines.length >= 2, 'breakdown stored for the receipt');
       // out-of-season pick on the scheduled date → rejected
-      const seasonal = await req('POST', '/api/bookings', { token: customerTok, body: { service: 'garden', propertyId: gp, garden: { wertykulacja: true, lawnM2: 300 }, scheduledFor: `${GY}-07-20T10:00` } });
+      const seasonal = await req('POST', '/api/bookings', { token: customerTok, body: { startNow: true, service: 'garden', propertyId: gp, garden: { wertykulacja: true, lawnM2: 300 }, scheduledFor: `${GY}-07-20T10:00` } });
       assert.strictEqual(seasonal.status, 400);
       assert.strictEqual(seasonal.json.code, 'GARDEN_SEASON');
       // below the 120 zł minimum → rejected
-      const small = await req('POST', '/api/bookings', { token: customerTok, body: { service: 'garden', propertyId: gp, garden: { koszenie: true, lawnM2: 80 }, scheduledFor: `${GY}-07-20T10:00` } });
+      const small = await req('POST', '/api/bookings', { token: customerTok, body: { startNow: true, service: 'garden', propertyId: gp, garden: { koszenie: true, lawnM2: 80 }, scheduledFor: `${GY}-07-20T10:00` } });
       assert.strictEqual(small.status, 400);
       assert.strictEqual(small.json.code, 'GARDEN_MIN');
       // outside Wrocław → rejected (launch gating)
-      const waw = await req('POST', '/api/bookings', { token: customerTok, body: { service: 'garden', city: 'Warsaw', address: 'x 1', garden: { koszenie: true, lawnM2: 300 }, scheduledFor: `${GY}-07-20T10:00` } });
+      const waw = await req('POST', '/api/bookings', { token: customerTok, body: { startNow: true, service: 'garden', city: 'Warsaw', address: 'x 1', garden: { koszenie: true, lawnM2: 300 }, scheduledFor: `${GY}-07-20T10:00` } });
       assert.strictEqual(waw.status, 400);
       assert.strictEqual(waw.json.code, 'GARDEN_CITY');
     });
@@ -843,7 +868,7 @@ async function main() {
       await req('POST', '/api/cleaner/online', { token: provTok, body: { online: true } });
       const props = await req('GET', '/api/properties', { token: customerTok });
       const pid = props.json.properties[0].id;
-      const bk = (await req('POST', '/api/bookings', { token: customerTok, body: { propertyId: pid, service: 'standard' } })).json.booking;
+      const bk = (await req('POST', '/api/bookings', { token: customerTok, body: { startNow: true, propertyId: pid, service: 'standard' } })).json.booking;
       await req('POST', `/api/bookings/${bk.id}/accept`, { token: provTok });
       await req('POST', `/api/bookings/${bk.id}/enroute`, { token: provTok });
       await req('POST', `/api/bookings/${bk.id}/photos`, { token: provTok, body: { phase: 'before', photo: IMG } });
@@ -870,7 +895,7 @@ async function main() {
       const walletStill = (await req('GET', '/api/me', { token: provTok })).json.user.wallet;
       assert.strictEqual(Math.round(walletStill), Math.round(earned), 'money still on the platform');
       // and they cannot take new jobs while under investigation
-      const bk2 = (await req('POST', '/api/bookings', { token: customerTok, body: { propertyId: pid, service: 'standard' } })).json.booking;
+      const bk2 = (await req('POST', '/api/bookings', { token: customerTok, body: { startNow: true, propertyId: pid, service: 'standard' } })).json.booking;
       const grab = await req('POST', `/api/bookings/${bk2.id}/accept`, { token: provTok });
       assert.strictEqual(grab.status, 403);
       assert.strictEqual(grab.json.code, 'UNDER_INVESTIGATION');

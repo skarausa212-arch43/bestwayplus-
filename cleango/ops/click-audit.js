@@ -112,9 +112,9 @@ async function auditRole(browser, label, token, views, seed) {
   await api('/api/cleaner/online', 'POST', { online: true }, cln.token);
   const prop = (await api('/api/properties', 'POST', { type: 'house', label: 'Дом для клика', city: CITY, rooms: 3, baths: 2, address: 'ul. Klikowa 1' }, cust.token)).json.property;
   // one active booking (accepted) + one completed booking for both parties to see
-  const b1 = (await api('/api/bookings', 'POST', { propertyId: prop.id, service: 'standard' }, cust.token)).json.booking;
+  const b1 = (await api('/api/bookings', 'POST', { startNow: true, propertyId: prop.id, service: 'standard' }, cust.token)).json.booking;
   await api(`/api/bookings/${b1.id}/accept`, 'POST', {}, cln.token);
-  const b2 = (await api('/api/bookings', 'POST', { propertyId: prop.id, service: 'deep' }, cust.token)).json.booking;
+  const b2 = (await api('/api/bookings', 'POST', { startNow: true, propertyId: prop.id, service: 'deep' }, cust.token)).json.booking;
   await api(`/api/bookings/${b2.id}/accept`, 'POST', {}, cln.token);
   await api(`/api/bookings/${b2.id}/enroute`, 'POST', {}, cln.token);
   await api(`/api/bookings/${b2.id}/photos`, 'POST', { phase: 'before', photo: IMG }, cln.token);

@@ -127,7 +127,23 @@ const PLUS_PLAN = { priceMinor: 3900, currency: CURRENCY, cashbackRate: 0.05, pe
 const LATE_CANCEL_FEE_RATE = 0.40;
 // Current version of the legal documents users consent to at sign-up. Bump when
 // the Terms / Provider Agreement / Privacy Policy change materially.
-const TERMS_VERSION = '1.0';
+const TERMS_VERSION = '1.1';
+// Consumer right of withdrawal — ustawa o prawach konsumenta (30.05.2014).
+// A distance contract can be withdrawn from within 14 days (art. 27). A service
+// that starts inside that window needs the consumer's express request to begin
+// early (art. 15 ust. 3), and the right is lost once the service has been fully
+// performed after such a request (art. 38 pkt 1). We therefore refuse to create
+// a booking scheduled inside the window without that recorded consent, and we
+// store the consent on the booking as evidence.
+const WITHDRAWAL_DAYS = 14;
+// True when the job would start before the 14 days are up — i.e. the express
+// consent is legally required. No date (ASAP/flash) always counts as "inside".
+function needsEarlyStartConsent(scheduledFor) {
+  if (!scheduledFor) return true;
+  const at = new Date(scheduledFor).getTime();
+  if (!at || isNaN(at)) return true;
+  return at < now() + WITHDRAWAL_DAYS * DAY;
+}
 
 // ── Dynamic platform settings (admin-editable, persisted) ──
 // Every knob falls back to the launch default above; the admin panel overrides
@@ -2133,6 +2149,22 @@ route('POST', '/api/bookings', async (req, res) => {
   if (b.propertyId && (!prop || !canAccessProperty(user, prop))) {
     return send(res, 403, { error: 'Property not found.' });
   }
+  // Consumer withdrawal right: a service starting inside the 14-day window may
+  // only begin at the consumer's express request, and they must have been told
+  // they lose the right once it is fully performed. No consent → no booking.
+  const earlyStart = needsEarlyStartConsent(b.scheduledFor);
+  if (earlyStart && !b.startNow) {
+    return send(res, 400, {
+      error: 'Aby rozpocząć usługę przed upływem 14 dni, potrzebujemy Twojej wyraźnej zgody.',
+      code: 'WITHDRAWAL_CONSENT_REQUIRED',
+    });
+  }
+  const withdrawal = {
+    until: now() + WITHDRAWAL_DAYS * DAY,          // statutory deadline (art. 27)
+    earlyStart,                                    // did the job start inside the window?
+    consentAt: earlyStart ? now() : null,          // express request to begin early
+    termsVersion: TERMS_VERSION,
+  };
   // ── Ogród: its own price engine (pricing/ogrod.js), Wrocław-only launch. A
   // separate branch so the cleaning path stays untouched; the client's numbers
   // are ignored — everything money is recomputed here.
@@ -2186,7 +2218,7 @@ route('POST', '/api/bookings', async (req, res) => {
         lines: gEst.lines.filter((l) => !l.excluded).map((l) => ({ label: l.label, qty: l.qty, unit: l.unit, amount: l.amountG / 100 })),
       },
       createdAt: now(), updatedAt: now(), photosBefore: [], photosAfter: [],
-      paid: false, reviewed: false, timeline: [{ status: 'searching', at: now() }],
+      paid: false, reviewed: false, withdrawal, timeline: [{ status: 'searching', at: now() }],
     };
     db.bookings[gid] = gb;
     persist.bookings();
@@ -2259,6 +2291,7 @@ route('POST', '/api/bookings', async (req, res) => {
     photosAfter: [],
     paid: false,
     reviewed: false,
+    withdrawal,
     timeline: [{ status: 'searching', at: now() }],
   };
   // Versioned quote snapshot for history / price-lock (13 §29/§31). Customer-safe.

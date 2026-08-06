@@ -42,7 +42,7 @@ const ts = Date.now();
   };
   const A = await mkCust(1), C1 = await mkCleaner(1), C2 = await mkCleaner(2);
   const propA = (await api('/api/properties', 'POST', { type: 'apartment', label: 'RA flat', city: CITY, rooms: 2, baths: 1, address: 'ul. Audytowa 1' }, A.token)).json.property;
-  const newBooking = async () => (await api('/api/bookings', 'POST', { propertyId: propA.id, service: 'standard' }, A.token)).json.booking;
+  const newBooking = async () => (await api('/api/bookings', 'POST', { startNow: true, propertyId: propA.id, service: 'standard' }, A.token)).json.booking;
 
   // ═══════════ 1. CONCURRENCY / RACES ═══════════
   await crit('RACE: два исполнителя жмут «принять» одновременно — назначается один', async () => {
