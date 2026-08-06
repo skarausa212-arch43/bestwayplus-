@@ -2601,7 +2601,11 @@ async function autoChargeBooking(bk) {
       bk.paymentStatus = 'failed'; persist.bookings();
       notify(bk.customerId, 'payment.failed', { service: bk.serviceLabel, bookingId: bk.id });
     }
-  } catch { /* payment must never break the booking flow */ }
+  } catch (e) {
+    // A failed charge must never break the booking, but a silent failure here
+    // means the provider is on the way to a job nobody paid for.
+    console.error(JSON.stringify({ at: new Date().toISOString(), level: 'error', msg: 'card auto-charge failed', bookingId: bk && bk.id, err: String((e && e.message) || e) }));
+  }
 }
 
 // Stripe webhook — verify the signature over the RAW body, then act on events.
@@ -2633,7 +2637,12 @@ route('POST', '/api/payments/stripe/webhook', async (req, res) => {
       const bk = bid && db.bookings[bid];
       if (bk && !bk.paid) { bk.paymentStatus = 'failed'; persist.bookings(); }
     }
-  } catch { /* ack anyway so Stripe doesn't hammer retries on our bug */ }
+  } catch (e) {
+    // Ack anyway so Stripe does not hammer retries on our bug — but this must
+    // never be silent. This catch firing is the exact shape of "клиент заплатил,
+    // а заказ числится неоплаченным": Stripe sees 200, we did nothing.
+    console.error(JSON.stringify({ at: new Date().toISOString(), level: 'error', msg: 'stripe webhook handler failed', type: ev.type, eventId: ev.id, err: String((e && e.message) || e) }));
+  }
   send(res, 200, { received: true });
 });
 function markBookingPaid(bookingId, { method, ref } = {}) {
