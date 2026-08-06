@@ -18,7 +18,9 @@ const crypto = require('crypto');
 const PORT = process.env.PORT || 8090;
 const ROOT = __dirname;
 const DATA = process.env.DATA_DIR || path.join(__dirname, 'data');
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+// TEST admin access — key is '123456'. CHANGE THIS before real money flows (set ADMIN_PASSWORD env):
+// admin can move the receiving wallet and release/refund escrow, so a guessable key is dangerous in production.
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '123456';
 fs.mkdirSync(DATA, { recursive: true });
 
 /* ---------- persistence ---------- */
