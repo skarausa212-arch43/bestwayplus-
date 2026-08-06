@@ -28,6 +28,7 @@ const suites = [
   ['unit', 'mailer/test.js'],
   ['unit', 'mailer/smtp.test.js'],
   ['unit', 'deploy/render-env-dropin.test.js'],
+  ['unit', 'ops/backup.test.js'],
   ['unit', 'auth/test.js'],
   ['unit', 'str/test.js'],
   ['unit', 'push/test.js'],

@@ -25,7 +25,9 @@
     "live-refresh-check": "node ops/live-refresh-check.js",
     "mail-dns-check": "node ops/mail-dns-check.js",
     "mail-test": "node mailer/send-test.js",
-    "stripe-check": "node ops/stripe-check.js"
+    "stripe-check": "node ops/stripe-check.js",
+    "backup": "node ops/backup.js run",
+    "backup-status": "node ops/backup.js status"
   },
   "dependencies": {}
 }

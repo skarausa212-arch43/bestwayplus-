@@ -225,6 +225,66 @@ SES, Postmark — all have free/cheap tiers).
 > on a connection the server did not upgrade to TLS. If you see *«сервер не
 > предложил STARTTLS»*, the port is wrong (use 587 or 465), not the password.
 
+## Backups (nightly, encrypted, off-site)
+
+`deploy.sh` installs `lumi-backup.timer`, which runs `ops/backup.js` every night
+at 03:20. Each run snapshots the data dir, encrypts it with AES-256-GCM, uploads
+it to S3-compatible storage, **reads it back and decrypts it** to prove the copy
+is real, then prunes old generations (30 days remotely, 3 locally).
+
+Three properties are the point, and each one is a way backups usually fail:
+
+* **it leaves the machine** — a `.tgz` beside the data it protects dies with the
+  VPS;
+* **it is encrypted before it leaves** — the archive holds ID photos, PESEL and
+  bank details, so an unencrypted copy in someone else's bucket is a personal
+  data breach waiting for a wrong ACL;
+* **it is verified by restoring it** — a backup nobody has ever opened is a
+  guess.
+
+Configure it in `deploy/instance.local.env` (server-only, never in git):
+
+```bash
+LUMI_BACKUP_KEY=<a long passphrase, or 64 hex chars>
+LUMI_BACKUP_S3_ENDPOINT=s3.eu-central-003.backblazeb2.com
+LUMI_BACKUP_S3_BUCKET=lumi-backups
+LUMI_BACKUP_S3_REGION=eu-central-003
+LUMI_BACKUP_S3_KEY=...
+LUMI_BACKUP_S3_SECRET=...
+```
+
+> ⚠ **Without `LUMI_BACKUP_KEY` the archives cannot be opened — by anyone,
+> including you.** Keep a copy somewhere that is not this server (a password
+> manager). Losing the key loses every backup you ever took.
+
+Any S3-compatible provider works — Backblaze B2, Wasabi, Hetzner, Cloudflare R2,
+AWS. B2 is the cheap default: a few cents a month at this data size.
+
+Run it now instead of waiting for the timer, and check the state:
+
+```bash
+systemctl start lumi-backup && journalctl -u lumi-backup -n 30 --no-pager
+cd /opt/lumi && node ops/backup.js status     # age, size, off-site key
+node ops/backup.js list                       # what is in the bucket
+```
+
+`ops/integrations-check.js` also fails if the last backup is older than 48 hours
+or never left the server, so a dead timer shows up in the same place as a dead
+integration.
+
+**Restoring** (this is the part worth rehearsing before you need it):
+
+```bash
+cd /opt/lumi
+node ops/backup.js list                                    # pick an archive
+# fetch it from the bucket with your provider's console or CLI, then:
+node ops/backup.js decrypt lumi-2026-08-06T03-20-00.tgz.enc restore.tgz
+bash deploy/restore-data.sh restore.tgz
+```
+
+Do this once on a throwaway server **before** you need it. A restore procedure
+first executed during an outage is not a procedure.
+
 ## Stripe: switching from test to live
 
 The card flow is a safe no-op until `LUMI_STRIPE_SECRET_KEY` is set, and it stays

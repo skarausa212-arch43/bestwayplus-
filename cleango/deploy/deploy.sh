@@ -168,8 +168,14 @@ Persistent=true
 [Install]
 WantedBy=timers.target
 TIMER
+# Nightly encrypted backup. The units are tracked in git so auto-update keeps
+# them current; they read the same instance env the app does.
+install -m 0644 "$APP_DIR/deploy/lumi-backup.service" /etc/systemd/system/lumi-backup.service
+install -m 0644 "$APP_DIR/deploy/lumi-backup.timer" /etc/systemd/system/lumi-backup.timer
+install -d -m 0700 /var/backups/lumi
 systemctl daemon-reload
 systemctl enable --now lumi-update.timer
+systemctl enable --now lumi-backup.timer
 
 sleep 1
 echo ""

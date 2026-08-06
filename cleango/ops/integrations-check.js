@@ -23,6 +23,7 @@ const ROOT = path.join(__dirname, '..');
 // then the server-only secrets file, then the tracked defaults.
 const { loadInstanceEnv } = require('../deploy/render-env-dropin');
 const APP_DIR = process.env.LUMI_APP_DIR || '/opt/lumi';
+const DROPIN = '/etc/systemd/system/lumi.service.d/10-instance.conf';
 // One merge shared with the systemd drop-in renderer, so a duplicated key
 // resolves here exactly as it does for the running service.
 const loaded = loadInstanceEnv([path.join(APP_DIR, 'deploy'), path.join(ROOT, 'deploy')]);
@@ -120,6 +121,29 @@ const CHECKS = [
     need: () => (fs.existsSync(DROPIN) ? ['drop-in отличается от deploy/*.env'] : ['нет ' + DROPIN]),
     impact: 'сервис работает со старым окружением — правки в instance.local.env до него не дошли',
     fix: 'sudo bash /opt/lumi/deploy/auto-update.sh  (перечитает env и перезапустит lumi)',
+  },
+  {
+    // A backup nobody checks is a backup nobody has. This is the one line that
+    // says whether last night's copy exists and whether it left the machine.
+    name: 'Бэкап (свежий, вне сервера)',
+    blocking: true,
+    on: () => {
+      try {
+        const st = JSON.parse(fs.readFileSync(path.join(process.env.LUMI_BACKUP_DIR || '/var/backups/lumi', 'last-backup.json'), 'utf8'));
+        return (Date.now() - st.at) < 48 * 3600000 && !!st.remoteKey;
+      } catch { return false; }
+    },
+    need: () => {
+      const f = path.join(process.env.LUMI_BACKUP_DIR || '/var/backups/lumi', 'last-backup.json');
+      if (!fs.existsSync(f)) return ['бэкапов ещё не было'];
+      try {
+        const st = JSON.parse(fs.readFileSync(f, 'utf8'));
+        if (!st.remoteKey) return ['копия только на этом сервере'];
+        return [`последний ${Math.round((Date.now() - st.at) / 3600000)} ч назад`];
+      } catch { return ['last-backup.json не читается']; }
+    },
+    impact: 'умрёт диск — умрут все заказы, кошельки и KYC',
+    fix: 'LUMI_BACKUP_KEY + LUMI_BACKUP_S3_* в deploy/instance.local.env, затем: systemctl start lumi-backup',
   },
   {
     name: 'Vision OCR (импорт календаря)',

@@ -24,7 +24,14 @@ const RULES = [
   { name: 'Generic bearer token assignment', re: /(secret|token|api[_-]?key|password)\s*[:=]\s*['"][A-Za-z0-9_\-]{24,}['"]/i },
 ];
 // Known-safe demo strings (the seed password is intentionally public in docs).
-const ALLOW = [/cleango123/, /longpassword|averylongpassword/];
+// Documented non-secrets. These are AWS's OWN published SigV4 test vectors —
+// the same two strings appear in their signing documentation — and they are what
+// ops/backup.test.js checks our signer against. Treating them as credentials
+// would push a real test vector out of the repo and leave the signer unverified.
+const ALLOW = [
+  /cleango123/, /longpassword|averylongpassword/,
+  /AKIAIOSFODNN7EXAMPLE/, /wJalrXUtnFEMI\/K7MDENG\/bPxRfiCYEXAMPLEKEY/,
+];
 
 function walk(dir, out = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {

@@ -44,6 +44,24 @@ apply_instance_env() {
 }
 apply_instance_env
 
+# Keep the backup units and their env in sync on every tick, so enabling backups
+# is one edit to instance.local.env + a push — no manual step on the server.
+sync_backup_units() {
+  local svc=/etc/systemd/system/lumi-backup.service tim=/etc/systemd/system/lumi-backup.timer
+  local envf=/etc/systemd/system/lumi-backup.env changed=0
+  for pair in "$APP_DIR/deploy/lumi-backup.service:$svc" "$APP_DIR/deploy/lumi-backup.timer:$tim"; do
+    local src="${pair%%:*}" dst="${pair##*:}"
+    [ -f "$src" ] || continue
+    if ! cmp -s "$src" "$dst"; then install -m 0644 "$src" "$dst"; changed=1; fi
+  done
+  # The backup job runs outside the service, so it needs the env as a file.
+  local want; want="$(node "$APP_DIR/deploy/render-env-dropin.js" "$APP_DIR/deploy" | sed -n 's/^Environment=//p' | sed 's/^"//; s/"$//')"
+  if [ "$(cat "$envf" 2>/dev/null || true)" != "$want" ]; then printf '%s\n' "$want" > "$envf"; chmod 600 "$envf"; changed=1; fi
+  install -d -m 0700 /var/backups/lumi
+  if [ "$changed" = 1 ]; then systemctl daemon-reload; systemctl enable --now lumi-backup.timer >/dev/null 2>&1 || true; echo "update: backup units synced"; fi
+}
+sync_backup_units
+
 # Keep the reverse-proxy domains in sync with deploy/instance.env (LUMI_DOMAIN,
 # comma-separated) every run — so pointing a new domain at this box is just an
 # instance.env edit + push, no re-running the installer. Caddy then issues a
