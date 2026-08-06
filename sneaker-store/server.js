@@ -436,9 +436,11 @@ const REGIONS = ['North America', 'South America', 'Europe', 'Asia', 'Africa', '
 const RETURNS = ['No returns', '14-day returns', '30-day returns'];
 const MAX_ADDRESSES = 3;
 function profileView(u) {
+  const st = sellerStats(u.email);
   return {
     email: u.email, name: u.name || '', telegram: u.telegram || '', avatar: u.avatar || '',
     addresses: Array.isArray(u.addresses) ? u.addresses : [], payout: u.payout || '', verified: !!u.verified,
+    rating: st.rating, sold: st.sold, reviews: st.reviews, joined: u.created || 0,
   };
 }
 function catGroup(c) { return CAT_OF_GROUP[c] || 'other'; }
