@@ -361,16 +361,18 @@
   /* ============ CTA BAND ============ */
 
   /* ============ FOOTER ============ */
-  footer{border-top:1px solid var(--line);padding:20px 0 22px;margin-top:8px}
-  .foot{display:flex;align-items:center;justify-content:space-between;gap:12px 24px;flex-wrap:wrap}
-  .foot .brand{flex:none}
-  .foot-links{display:flex;flex-wrap:wrap;gap:5px 20px;justify-content:center;flex:1}
-  .foot-links a{font-size:13.5px;color:var(--muted);transition:.15s}
+  footer{border-top:1px solid var(--line);padding:22px 0 18px;margin-top:8px}
+  .foot{display:flex;flex-direction:column;gap:16px}
+  .foot-top{display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .foot-brand{display:inline-flex;align-items:center;gap:10px}
+  .foot-links{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:7px 0}
+  .foot-links a{font-size:13.5px;color:var(--muted);padding:2px 16px;position:relative;white-space:nowrap;transition:color .15s}
+  .foot-links a+a::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);width:1px;height:12px;background:var(--line-2)}
   .foot-links a:hover{color:var(--ink)}
   .foot .socials{display:flex;gap:9px;flex:none}
   .foot .socials a{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);transition:.2s}
-  .foot .socials a:hover{color:var(--ink);border-color:var(--line-2)}
-  .foot-btm{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:12px;color:var(--faint)}
+  .foot .socials a:hover{color:var(--ink);border-color:var(--line-2);transform:translateY(-1px)}
+  .foot-btm{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);font-size:12px;color:var(--faint)}
 
   /* ============ BROWSE / FILTERS ============ */
   .controls{display:flex;align-items:center;gap:16px;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap}
@@ -778,8 +780,10 @@
     .grid,.why{grid-template-columns:1fr 1fr}
     .cat-grid{grid-template-columns:1fr 1fr}
     .stats{grid-template-columns:1fr}
-    .foot{flex-direction:column;align-items:center;text-align:center;gap:12px}
-    .foot-links{gap:6px 16px}
+    .foot{gap:14px}
+    .foot-links{gap:8px 4px}
+    .foot-links a{padding:2px 12px;font-size:13px}
+    .foot-links a+a::before{display:none}
     .sell-pill{height:36px;padding:0 11px;font-size:13px}
     .ic{width:34px;height:34px}.ic svg{width:19px;height:19px}
   }
@@ -973,11 +977,13 @@
 <footer>
   <div class="wrap">
     <div class="foot">
-      <div class="brand"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 3l8 4v6c0 4-3.2 6.8-8 8-4.8-1.2-8-4-8-8V7l8-4z"/><path d="M9 12l2 2 4-4"/></svg></span><span class="wordmark">STUFFWEKNOW<span class="tm">™</span></span></div>
+      <div class="foot-top">
+        <a href="#top" class="foot-brand brand"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 3l8 4v6c0 4-3.2 6.8-8 8-4.8-1.2-8-4-8-8V7l8-4z"/><path d="M9 12l2 2 4-4"/></svg></span><span class="wordmark">STUFFWEKNOW<span class="tm">™</span></span></a>
+        <div class="socials"><a href="#" aria-label="Instagram" data-ic="instagram"></a><a href="#" aria-label="TikTok" data-ic="tiktok"></a></div>
+      </div>
       <nav class="foot-links">
         <a href="#catalog">Browse</a><a href="#" id="ftSell">Sell</a><a href="#categories">Categories</a><a href="#how">How it works</a><a href="/policies#contact">Help</a><a href="/policies#returns">Disputes</a><a href="/policies#privacy">Privacy</a>
       </nav>
-      <div class="socials"><a href="#" aria-label="Instagram" data-ic="instagram"></a><a href="#" aria-label="TikTok" data-ic="tiktok"></a></div>
     </div>
     <div class="foot-btm">
       <span>© 2026 StuffWeKnow™</span>
