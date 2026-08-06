@@ -913,6 +913,10 @@
     .site-foot{padding:34px 0 22px;border-radius:24px 24px 0 0}
     .foot-cols{gap:14px}
     .foot-tag{font-size:13px}
+    .foot-trust{flex-wrap:nowrap;gap:6px}
+    .ftr{padding:6px 9px;font-size:10.5px;gap:5px;white-space:nowrap;flex:0 0 auto}
+    .ftr svg{width:13px;height:13px}
+    .ftr .ftr-c{width:14px;height:14px;font-size:9.5px}
     .sell-pill{height:36px;padding:0 11px;font-size:13px}
     .ic{width:34px;height:34px}.ic svg{width:19px;height:19px}
   }
@@ -2066,7 +2070,7 @@ function renderSell(){
     <div class="field" id="slBrandOtherWrap" style="display:none"><label>Brand name</label><input id="slBrandOther" maxlength="40" placeholder="Type the brand"></div>
     <div class="frow"><div class="field" id="slSizeField"><label>Size</label><input id="slSize" maxlength="24" placeholder="42 / M / One size" value="${esc(E.size||'')}"></div>
       <div class="field"><label>Condition</label><select id="slCond">${['New','Like new','Very good','Good','Fair'].map(c=>`<option${E.condition===c?' selected':''}>${c}</option>`).join('')}</select></div></div>
-    <div class="field"><label>Price (USD)</label><input id="slPrice" type="number" min="1" step="1" placeholder="80" value="${E.price!=null?esc(String(E.price)):''}"></div>
+    <div class="field"><label>Price (USD) — min $10</label><input id="slPrice" type="number" min="10" step="1" placeholder="80" value="${E.price!=null?esc(String(E.price)):''}"></div>
     <div class="field"><label>Ships to</label><div class="rgns" id="slShip">${regionBoxes}</div></div>
     <div class="field"><label>Returns</label><select id="slReturns">${RETURNS.map(r=>`<option${E.returns===r?' selected':''}>${r}</option>`).join('')}</select></div>
     <div class="field"><label>Description</label><textarea id="slDesc" rows="3" maxlength="1500" placeholder="Condition details, flaws, measurements…">${esc(E.desc||'')}</textarea></div>
@@ -2103,7 +2107,7 @@ async function submitListing(){
   const msg=$('#slMsg'),show=t=>{msg.style.display='block';msg.textContent=t;};
   if(!SELL_PHOTOS.length)return show('Add at least one photo.');
   if(($('#slTitle').value||'').trim().length<3)return show('Add a title.');
-  if(!(parseFloat($('#slPrice').value)>0))return show('Set a price.');
+  if(!(parseFloat($('#slPrice').value)>=10))return show('Minimum price is $10.');
   if(!$('#slCat').value)return show('Choose a category.');
   if(!SELL_SHIP.length)return show('Choose at least one region you ship to.');
   let brand=$('#slBrand').value;if(brand==='Other')brand=$('#slBrandOther').value||'';

@@ -469,6 +469,7 @@ function payoutBalance(email) {
   return Math.round(orders.filter(o => o.seller === email && o.status === 'released' && !o.paidOut)
     .reduce((s, o) => s + (o.total - (o.fee || 0)), 0) * 100) / 100;
 }
+const MIN_PRICE = Number(process.env.MIN_PRICE || 10); // minimum listing price in USD
 const MARKET_FEE_PCT = Number(process.env.MARKET_FEE_PCT || 10); // buyer fee % (baked into the price shown at purchase; kept by the operator)
 const MAX_OFFERS_PER_DAY = Number(process.env.MAX_OFFERS_PER_DAY || 30);
 const BOOST_PRICE_PER_DAY = Number(process.env.BOOST_PRICE_PER_DAY || 2); // USDC/day to feature a listing
@@ -717,7 +718,7 @@ const server = http.createServer(async (req, res) => {
       const price = Math.round(Number(b.price) * 100) / 100;
       const photos = Array.isArray(b.photos) ? b.photos.filter(x => typeof x === 'string' && x.startsWith('data:image/')).slice(0, 6) : [];
       if (title.length < 3) return send(res, 400, { error: 'Title too short.' });
-      if (!(price > 0) || price > 100000) return send(res, 400, { error: 'Enter a valid price.' });
+      if (!(price >= MIN_PRICE) || price > 100000) return send(res, 400, { error: `Minimum price is $${MIN_PRICE}.` });
       if (!photos.length) return send(res, 400, { error: 'Add at least one photo.' });
       for (const ph of photos) if (ph.length > 2200000) return send(res, 400, { error: 'A photo is too large — keep under ~1.5MB.' });
       const cat = CATEGORIES.includes(b.category) ? b.category : 'other';
@@ -744,7 +745,7 @@ const server = http.createServer(async (req, res) => {
       if (!['active', 'pending', 'rejected'].includes(l.status)) return send(res, 400, { error: 'This listing can no longer be edited.' });
       const b = await readBody(req);
       if (b.title !== undefined) { const t = String(b.title).trim().slice(0, 90); if (t.length < 3) return send(res, 400, { error: 'Title too short.' }); l.title = t; }
-      if (b.price !== undefined) { const pr = Math.round(Number(b.price) * 100) / 100; if (!(pr > 0) || pr > 100000) return send(res, 400, { error: 'Enter a valid price.' }); l.price = pr; }
+      if (b.price !== undefined) { const pr = Math.round(Number(b.price) * 100) / 100; if (!(pr >= MIN_PRICE) || pr > 100000) return send(res, 400, { error: `Minimum price is $${MIN_PRICE}.` }); l.price = pr; }
       if (b.old !== undefined) l.old = Math.max(0, Math.round(Number(b.old) * 100) / 100) || 0;
       if (b.brand !== undefined) l.brand = String(b.brand).slice(0, 40);
       if (b.size !== undefined) l.size = String(b.size).slice(0, 24);
