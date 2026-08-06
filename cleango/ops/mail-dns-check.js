@@ -48,6 +48,28 @@ const PLATFORMS = [
   { id: 'zoho', match: /zoho\.(com|eu)$/, spf: 'zoho.com', label: 'Zoho Mail' },
 ];
 
+// Follow the SPF include: chain the way a receiving server does. An include:
+// is not a value — it is another DNS lookup, so "include:secureserver.net"
+// answers nothing until you expand it. RFC 7208 caps the chain at 10 lookups
+// and a receiver stops there too, so anything deeper would not count anyway.
+async function expandSpf(record, seen = new Set(), budget = { left: 10 }) {
+  const parts = [];
+  for (const token of String(record).split(/\s+/)) {
+    const m = token.match(/^include:(.+)$/i) || token.match(/^redirect=(.+)$/i);
+    if (!m) { parts.push(token); continue; }
+    const host = m[1].toLowerCase();
+    parts.push(token);
+    if (seen.has(host) || budget.left <= 0) continue;
+    seen.add(host); budget.left--;
+    let txt;
+    try { txt = await dns.resolveTxt(host); } catch { parts.push(`(${host}: не резолвится)`); continue; }
+    const inner = txt.map((r) => r.join('')).find((r) => /^v=spf1/i.test(r));
+    if (!inner) { parts.push(`(${host}: нет SPF)`); continue; }
+    parts.push(...(await expandSpf(inner, seen, budget)));
+  }
+  return parts;
+}
+
 const out = [];
 let fails = 0, warns = 0;
 const say = (mark, text, detail) => { out.push([mark, text, detail]); if (mark === 'fail') fails++; if (mark === 'warn') warns++; };
@@ -68,7 +90,12 @@ const q = async (fn, name, type) => { try { return await fn.call(dns, name); } c
   // ── SPF: which servers may send as this domain ──
   const txt = await q(dns.resolveTxt, domain, 'TXT');
   const spf = Array.isArray(txt) ? txt.map((r) => r.join('')).find((r) => /^v=spf1/i.test(r)) : null;
-  if (!spf) {
+  if (!Array.isArray(txt) && txt.__err !== 'ENODATA' && txt.__err !== 'ENOTFOUND') {
+    // A lookup that never answered is not the same as a record that is not
+    // there. Reporting "SPF отсутствует" on a timeout sends someone editing DNS
+    // that was fine — say what actually happened instead.
+    say('warn', 'TXT-записи не прочитались', `${txt.__err} — DNS не ответил, повторите проверку (SPF не проверен)`);
+  } else if (!spf) {
     say('fail', 'SPF отсутствует', 'без него почта уходит в спам — добавьте TXT-запись v=spf1 …');
   } else {
     const strict = /[-~]all\s*$/.test(spf);
@@ -76,13 +103,19 @@ const q = async (fn, name, type) => { try { return await fn.call(dns, name); } c
     if (!strict) say('warn', 'SPF без -all/~all', 'запись ничего не запрещает — подделать отправителя может кто угодно');
     // The check that actually matters: does the SPF mention the platform the
     // MX points at? If not, our own mail fails SPF on every hop.
-    if (platform && !spf.toLowerCase().includes(platform.spf)) {
-      const chained = /include:/.test(spf);
-      say(chained ? 'warn' : 'fail',
-        `SPF не упоминает ${platform.spf}`,
-        chained
-          ? `есть include: — проверьте вручную, раскрывается ли он в ${platform.spf} (dig +short TXT ${(spf.match(/include:([^\s]+)/) || [])[1]})`
-          : `почта от ${platform.label} провалит SPF — добавьте include:${platform.spf}`);
+    if (platform) {
+      const expanded = await expandSpf(spf);
+      const flat = expanded.join(' ').toLowerCase();
+      const unresolved = expanded.filter((p) => /не резолвится|нет SPF/.test(p));
+      if (flat.includes(platform.spf)) {
+        say('ok', `SPF разворачивается в ${platform.spf}`,
+          spf.toLowerCase().includes(platform.spf) ? 'напрямую' : `через include: — ${expanded.filter((p) => /^include:/i.test(p)).join(' → ')}`);
+      } else if (unresolved.length) {
+        say('warn', `SPF не удалось раскрыть до конца`, `не прочитались: ${unresolved.join(', ')} — повторите проверку`);
+      } else {
+        say('fail', `SPF не покрывает ${platform.label}`,
+          `ни одна include-цепочка не приводит к ${platform.spf} — письма провалят SPF; добавьте include:${platform.spf} в TXT-запись домена`);
+      }
     }
   }
 
