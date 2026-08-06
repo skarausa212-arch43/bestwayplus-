@@ -282,16 +282,57 @@ if (!fs.existsSync(secretFile)) {
 }
 const SECRET = fs.readFileSync(secretFile, 'utf8');
 
+// ── JSON store: atomic writes, and a refusal to mistake damage for emptiness ──
+// This used to be a bare writeFileSync onto the live file plus a blanket
+// try/catch on read. An interrupted write — a deploy restart, an OOM kill, the
+// VPS losing power mid-save — left a truncated file; the next start parsed it,
+// silently fell back to "{}", seeded the demo dataset over the top, answered
+// /healthz with 200, and every real account, booking and wallet was gone with
+// nothing in the log. Reproduced end to end before this change.
+function storeLog(level, msg, extra) {
+  console.error(JSON.stringify({ at: new Date().toISOString(), level, msg, ...extra }));
+}
 function loadJSON(name, fallback) {
   const file = path.join(DATA_DIR, name);
-  try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
-  } catch {
-    return fallback;
+  const bak = file + '.bak';
+  const read = (f) => JSON.parse(fs.readFileSync(f, 'utf8'));
+  if (fs.existsSync(file)) {
+    try { return read(file); } catch (e) {
+      // The file exists but will not parse. That is damage, never "no data" —
+      // returning the fallback here is what destroyed the store.
+      if (fs.existsSync(bak)) {
+        try {
+          const value = read(bak);
+          const keep = `${file}.corrupt-${Date.now()}`;
+          try { fs.copyFileSync(file, keep); } catch {}
+          storeLog('error', 'data file corrupt — recovered from .bak', { file: name, kept: path.basename(keep) });
+          return value;
+        } catch { /* the backup is unreadable too → fall through and stop */ }
+      }
+      storeLog('error', 'data file corrupt and unrecoverable — refusing to start', {
+        file: name, err: String(e.message || e),
+        hint: 'restore from a backup (deploy/restore-data.sh) — starting empty would overwrite it',
+      });
+      process.exit(1);
+    }
   }
+  // No live file. A rename interrupted mid-save leaves the previous generation.
+  if (fs.existsSync(bak)) {
+    try { const value = read(bak); storeLog('error', 'live data file missing — recovered from .bak', { file: name }); return value; } catch {}
+  }
+  return fallback;
 }
 function saveJSON(name, value) {
-  fs.writeFileSync(path.join(DATA_DIR, name), JSON.stringify(value, null, 2));
+  const file = path.join(DATA_DIR, name);
+  const tmp = file + '.tmp';
+  const data = JSON.stringify(value, null, 2);
+  // Write and flush to disk FIRST, then swap it in: a rename within a directory
+  // is atomic, so a reader (or a crash) sees either the old file or the new one,
+  // never half of either.
+  const fd = fs.openSync(tmp, 'w');
+  try { fs.writeFileSync(fd, data); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
+  try { if (fs.existsSync(file)) fs.renameSync(file, file + '.bak'); } catch {}
+  fs.renameSync(tmp, file);
 }
 
 const db = {
@@ -2123,11 +2164,20 @@ route('POST', '/api/wallet/topup', async (req, res) => {
   const amountZl = Math.round(Number(b.amount) || 0);
   if (!(amountZl >= 10 && amountZl <= 5000)) return send(res, 400, { error: 'Сумма пополнения — от 10 до 5000 zł.', code: 'BAD_AMOUNT' });
   const amountMinor = amountZl * 100;
+  // A double tap on "Пополнить" used to be two charges: the idempotency key was
+  // keyed on the millisecond, so the second request looked new to Stripe. Bucket
+  // it per user+amount per minute — a genuine second top-up of the same amount a
+  // minute later still goes through, an impatient double tap does not.
+  const bucket = Math.floor(now() / 60000);
   const r = await stripe.chargeOffSession({
     customerId: user.stripeCustomerId, pmId: user.card.pmId,
-    amount: amountMinor, description: 'LUMI doładowanie', idempotencyKey: `topup:${user.id}:${Date.now()}`,
+    amount: amountMinor, description: 'LUMI doładowanie', idempotencyKey: `topup:${user.id}:${amountMinor}:${bucket}`,
     metadata: { userId: user.id, kind: 'topup' },
   });
+  // Stripe replaying the first charge must not credit the balance twice.
+  if (r.ok && db.walletTx[user.id] && db.walletTx[user.id].some((t) => t.ref === r.id)) {
+    return send(res, 200, { balance: Math.round(user.wallet || 0), tx: walletTxList(user.id), deduped: true });
+  }
   if (!r.ok) {
     if (r.requiresAction) return send(res, 402, { error: 'Банк требует подтверждение — попробуйте другую карту.', code: 'SCA_REQUIRED' });
     return send(res, 402, { error: 'Не удалось списать с карты.', code: 'CHARGE_FAILED', declineCode: r.declineCode });
