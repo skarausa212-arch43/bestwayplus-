@@ -234,7 +234,9 @@ const usedTx = new Set();
 // give each pending order a GLOBALLY-unique amount (base + cents) so an
 // incoming transfer can be matched to exactly one order — never a collision.
 function assignUniqueAmount(base) {
-  const used = new Set(orders.filter(o => o.status === 'pending').map(o => o.payAmount));
+  // avoid amounts still in play: pending orders, and recently-cancelled ones that could still receive a late on-chain payment
+  const cutoff = Date.now() - 3 * 864e5;
+  const used = new Set(orders.filter(o => o.status === 'pending' || (o.status === 'cancelled' && (o.cancelledAt || o.date || 0) > cutoff)).map(o => o.payAmount));
   for (let i = 0; i < 100; i++) {                       // random pretty cents first
     const amt = Math.round(base * 100 + Math.floor(Math.random() * 100)) / 100;
     if (!used.has(amt)) return amt;
@@ -401,6 +403,7 @@ function receiptHTML(o) {
       <tfoot>
         <tr><td colspan="3">Subtotal</td><td class="r">$${o.subtotal}</td></tr>
         <tr><td colspan="3">Shipping</td><td class="r">${o.ship ? '$' + o.ship : 'Free'}</td></tr>
+        ${o.fee ? `<tr><td colspan="3">Buyer protection</td><td class="r">$${o.fee}</td></tr>` : ''}
         <tr class="total"><td colspan="3">Total</td><td class="r">$${o.total}</td></tr>
       </tfoot>
     </table>
@@ -559,7 +562,7 @@ const server = http.createServer(async (req, res) => {
       if (!rateLimit('reg:' + clientIp(req), 10, 3600000)) return send(res, 429, { error: 'Too many attempts — try again later.' });
       const { email, password, name } = await readBody(req);
       const em = String(email || '').trim().toLowerCase();
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return send(res, 400, { error: 'Enter a valid email.' });
+      if (!/^[^@\s|]+@[^@\s|]+\.[^@\s|]+$/.test(em)) return send(res, 400, { error: 'Enter a valid email.' });
       if (!password || password.length < 8) return send(res, 400, { error: 'Password must be 8+ characters.' });
       if (password.length > MAX_PW) return send(res, 400, { error: 'Password too long.' });
       if (users[em]) return send(res, 409, { error: 'This email is already registered — sign in instead.' });
@@ -591,19 +594,7 @@ const server = http.createServer(async (req, res) => {
       const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
       const b = await readBody(req);
       const me = users[u.email];
-      if (b.name !== undefined) {
-        const newName = String(b.name).slice(0, 60);
-        if (newName !== (me.name || '')) {
-          const NAME_COOLDOWN = 180 * 864e5; // display name can be changed once per 180 days
-          const now = Date.now();
-          if (me.nameChangedAt && now - me.nameChangedAt < NAME_COOLDOWN) {
-            const nextAt = me.nameChangedAt + NAME_COOLDOWN;
-            return send(res, 400, { error: `You can change your display name again after ${new Date(nextAt).toISOString().slice(0, 10)}.` });
-          }
-          me.name = newName;
-          me.nameChangedAt = now;
-        }
-      }
+      // apply telegram + avatar first so a blocked name change never discards them
       if (b.telegram !== undefined) {
         const tg = String(b.telegram).trim().replace(/^@/, '').slice(0, 32);
         if (tg && !/^[a-zA-Z0-9_]{3,32}$/.test(tg)) return send(res, 400, { error: 'Telegram username must be 3–32 letters, digits or underscores.' });
@@ -616,6 +607,20 @@ const server = http.createServer(async (req, res) => {
           if (!a.startsWith('data:image/')) return send(res, 400, { error: 'Avatar must be an image.' });
           if (a.length > 900000) return send(res, 400, { error: 'Avatar is too large — keep it under ~600KB.' });
           me.avatar = a;
+        }
+      }
+      if (b.name !== undefined) {
+        const newName = String(b.name).slice(0, 60);
+        if (newName !== (me.name || '')) {
+          const NAME_COOLDOWN = 180 * 864e5; // display name can be changed once per 180 days
+          const now = Date.now();
+          if (me.nameChangedAt && now - me.nameChangedAt < NAME_COOLDOWN) {
+            const nextAt = me.nameChangedAt + NAME_COOLDOWN;
+            saveUsers(); // persist the telegram/avatar changes applied above
+            return send(res, 400, { error: `You can change your display name again after ${new Date(nextAt).toISOString().slice(0, 10)}.` });
+          }
+          me.name = newName;
+          me.nameChangedAt = now;
         }
       }
       saveUsers();
@@ -682,10 +687,11 @@ const server = http.createServer(async (req, res) => {
 
     /* ----- orders ----- */
     if (req.method === 'POST' && p === '/api/order') {
+      if (!rateLimit('order:' + (req.socket.remoteAddress || 'x'), 20, 600000)) return send(res, 429, { error: 'Too many orders — slow down.' });
       const b = await readBody(req);
       const u = tokenUser(req);
       const email = (u ? u.email : String(b.email || '').trim().toLowerCase());
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return send(res, 400, { error: 'Enter a valid email.' });
+      if (!/^[^@\s|]+@[^@\s|]+\.[^@\s|]+$/.test(email)) return send(res, 400, { error: 'Enter a valid email.' });
       if (!Array.isArray(b.items) || !b.items.length) return send(res, 400, { error: 'Cart is empty.' });
       if (b.items.length > 50) return send(res, 400, { error: 'Too many items.' });
       const items = [];
@@ -877,13 +883,19 @@ const server = http.createServer(async (req, res) => {
     /* --- buy a listing (creates escrow order) --- */
     if (req.method === 'POST' && p === '/api/buy') {
       const u = tokenUser(req); if (!u) return send(res, 401, { error: 'Sign in to buy.' });
+      if (!rateLimit('buy:' + u.email, 30, 600000)) return send(res, 429, { error: 'Too many purchase attempts — slow down.' });
       const b = await readBody(req);
       // re-read the listing AFTER awaiting the body so a concurrent buy/reserve can't slip through the await window
       const l = listings.find(x => x.id === b.listingId && x.status === 'active');
       if (!l) return send(res, 409, { error: 'This item is no longer available.' });
       if (l.seller === u.email) return send(res, 400, { error: "You can't buy your own listing." });
-      const region = String(b.region || '');
-      if (l.ships && l.ships.length && region && !l.ships.includes(region)) return send(res, 400, { error: `This seller does not ship to ${region}.` });
+      const region = String(b.region || '').slice(0, 40);
+      // a valid region is required so shipping can't be zeroed by omitting/spoofing it
+      if (l.ships && l.ships.length) {
+        if (!region || !l.ships.includes(region)) return send(res, 400, { error: region ? `This seller does not ship to ${region}.` : 'Choose a valid shipping region.' });
+      } else if (region && !REGIONS.includes(region)) {
+        return send(res, 400, { error: 'Invalid shipping region.' });
+      }
       let price = l.price;
       const of = offers.find(o => o.listingId === l.id && o.buyer === u.email && o.status === 'accepted');
       if (of) price = of.amount;
@@ -1347,7 +1359,7 @@ setInterval(() => {
   const now = Date.now(); let changed = false;
   for (const o of orders) {
     // free a reservation whose buyer never paid
-    if (o.escrow && o.status === 'pending' && now - o.date > RESERVE_MS) { o.status = 'cancelled'; relistListing(o); changed = true; }
+    if (o.escrow && o.status === 'pending' && now - o.date > RESERVE_MS) { o.status = 'cancelled'; o.cancelledAt = now; relistListing(o); changed = true; }
     // auto-release to seller after the buyer-protection window
     else if (o.escrow && o.status === 'shipped' && o.shippedAt && o.shippedAt < now - AUTO_RELEASE_DAYS * 864e5) {
       if (releaseOrder(o)) { changed = true; console.log(`[swk-store] order ${o.id} auto-released after ${AUTO_RELEASE_DAYS}d`); }
