@@ -873,17 +873,19 @@
     .bn svg{width:23px;height:23px;transition:transform .18s var(--ease)}
     .bn:active svg{transform:scale(.86)}
     .bn.active{color:var(--ink)}
-    .bn svg{width:22px;height:22px}
-    .bn{font-size:10px}
+    .bn svg{width:24px;height:24px}
+    .bn.active svg{transform:translateY(-1px)}
     .bn-saved{color:#e8355f}
     .bn-saved.active{color:#e8355f}
     .bn-saved.active svg{fill:rgba(232,53,95,.2)}
     #botSaved{background:#e8355f}
-    .bn-sell{color:var(--accent)}
-    .bn-sell .bn-sellic{width:46px;height:34px;margin-top:-16px;border-radius:15px;display:grid;place-items:center;
-      background:linear-gradient(120deg,var(--accent),#9a7bff);color:#fff;box-shadow:0 8px 18px -5px rgba(91,92,255,.7);transition:transform .18s var(--ease)}
-    .bn-sell .bn-sellic svg{width:22px;height:22px}
-    .bn-sell:active .bn-sellic{transform:scale(.92) translateY(1px)}
+    /* centered Sell FAB */
+    .bn-sell{color:var(--accent);justify-content:flex-end}
+    .bn-sell .bn-sellic{width:56px;height:42px;margin-top:-22px;margin-bottom:1px;border-radius:18px;display:grid;place-items:center;
+      background:linear-gradient(135deg,#6c63ff,#9a7bff);color:#fff;
+      box-shadow:0 10px 22px -6px rgba(108,99,255,.75),0 0 0 5px color-mix(in srgb,#fff 90%,transparent);transition:transform .18s var(--ease),box-shadow .2s}
+    .bn-sell .bn-sellic svg{width:25px;height:25px}
+    .bn-sell:active .bn-sellic{transform:scale(.93) translateY(1px)}
     .bn-badge{position:absolute;top:-3px;right:calc(50% - 22px);min-width:16px;height:16px;padding:0 4px;background:var(--bad);color:#fff;border-radius:20px;font-size:9px;font-weight:700;display:none;place-items:center}
     .bn-badge.show{display:grid}
     body{padding-bottom:70px}
@@ -1123,9 +1125,8 @@
 <!-- APP BOTTOM NAV (mobile) -->
 <nav class="botnav" id="botnav">
   <button class="bn active" data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg><span>Home</span></button>
-  <button class="bn" data-nav="browse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg><span>Browse</span></button>
-  <button class="bn bn-sell" data-nav="sell"><span class="bn-sellic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></span><span>Sell</span></button>
   <button class="bn bn-saved" data-nav="saved"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20s-7-4.4-9.2-8.6C1.3 8.5 2.6 5.4 5.6 5c1.9-.25 3.4.9 4.4 2.2C11 5.9 12.5 4.75 14.4 5c3 .4 4.3 3.5 2.8 6.4C15 15.6 12 20 12 20z"/></svg><span class="bn-badge" id="botSaved">0</span><span>Saved</span></button>
+  <button class="bn bn-sell" data-nav="sell"><span class="bn-sellic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></span><span>Sell</span></button>
   <button class="bn" data-nav="messages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8 8 0 0 1-11.5 7.2L4 20.5l1.4-4.7A8 8 0 1 1 21 11.5z"/></svg><span class="bn-badge" id="botMsg">0</span><span>Messages</span></button>
   <button class="bn" data-nav="account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c.6-3.6 3.4-5.4 7-5.4s6.4 1.8 7 5.4"/></svg><span>Account</span></button>
 </nav>
