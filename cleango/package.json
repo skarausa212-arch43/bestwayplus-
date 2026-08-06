@@ -20,7 +20,8 @@
     "launch-check": "node ops/launch-check.js",
     "spa-check": "node ops/spa-syntax-check.js",
     "ui-audit": "node ops/ui-audit.js",
-    "release-audit": "node ops/release-audit.js"
+    "release-audit": "node ops/release-audit.js",
+    "integrations-check": "node ops/integrations-check.js"
   },
   "dependencies": {}
 }

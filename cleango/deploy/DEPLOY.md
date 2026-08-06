@@ -149,6 +149,21 @@ box afterwards.
 > Routine backups use the same tool: `sudo bash deploy/backup-data.sh --live`
 > on a cron/timer, and keep the `.tgz` off-box.
 
+## What is actually switched on? (one command)
+Email, push and payments are all safe no-ops until their secrets exist, so a
+running site says nothing about whether they work. Ask the server directly:
+
+```bash
+cd /opt/lumi && node ops/integrations-check.js
+```
+
+It reads the same env files the service does (`deploy/instance.local.env`, then
+`deploy/instance.env`) and prints every integration as ON/OFF with the exact
+variables that are missing. It never prints a secret — only whether a value is
+present, and for Stripe whether the key is `sk_test_` or `sk_live_`. Exit code
+is 1 while any launch-blocking integration is off, so it can gate a release
+script. Run it after every change to the env files.
+
 ## Email (welcome on sign-up + order updates)
 LUMI sends transactional email by **relaying through an SMTP server** — it does
 **not** run its own mail server. Self-hosting an MTA on a fresh VPS almost always
