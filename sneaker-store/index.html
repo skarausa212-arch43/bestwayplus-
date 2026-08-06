@@ -251,6 +251,12 @@
   .add{width:32px;height:32px;border-radius:9px;background:var(--surface-2);color:var(--ink);display:grid;place-items:center;transition:.2s;flex:none}
   .add:hover{background:var(--accent);color:#fff}
   .add svg{width:16px;height:16px}
+  /* heart-style save button (replaces the old cart button on cards) */
+  .add.hb{background:var(--surface-2);color:var(--muted)}
+  .add.hb svg{transition:transform .2s var(--ease)}
+  .add.hb:hover{background:#fdeaef;color:var(--bad)}
+  .add.hb.on{background:#fdeaef;color:var(--bad)}
+  .add.hb.on svg{fill:var(--bad);animation:heartpop .38s var(--ease)}
 
   /* ============ BADGES ============ */
   .badge{font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:4px 7px;border-radius:7px;display:inline-flex;align-items:center;gap:4px;line-height:1;background:var(--surface);border:1px solid var(--line);color:var(--ink);box-shadow:var(--shadow-sm)}
@@ -1360,14 +1366,13 @@ function catalogCardHTML(p){
   return `<article class="card reveal" data-id="${p.id}" data-gcat="${grp}">
       <button class="card-media cat-media" data-open="${p.id}">
         <span class="badges">${badges}</span>
-        <span class="wish ${fav?'on':''}" data-fav="${p.id}" role="button" aria-label="Wishlist">${ICON.heart}</span>
         <span class="ph ${isAcc?'acc':''} ${p.img?'photo':''}">${media(p)}</span>
         ${p.soldOut?'<span class="quick">Sold Out</span>':`<span class="quick">Quick view</span>`}
       </button>
       <div class="card-body">
         <div class="cat">${catLabel(p)} · ${cap(p.brand)}</div>
         <h3 data-open="${p.id}">${esc(p.name)}</h3>
-        <div class="card-price">${cryptoPriceHTML(p.price,p.id)}<button class="add" data-open="${p.id}" ${p.soldOut?'disabled':''} aria-label="Add">${p.soldOut?ICON.close:ICON.cart}</button></div>
+        <div class="card-price">${cryptoPriceHTML(p.price,p.id)}<button class="add hb ${fav?'on':''}" data-fav="${p.id}" aria-label="Save">${ICON.heart}</button></div>
         <div class="card-seller"><span class="sav">S</span><span class="sh">STUFFWEKNOW</span><span class="vchk">✓</span><span class="srate">Official</span></div>
       </div>
     </article>`;
@@ -1384,14 +1389,13 @@ function listingCardHTML(l){
   return `<article class="card reveal" data-listing="${l.id}" data-gcat="${l.group||'other'}">
       <button class="card-media" data-listing="${l.id}">
         <span class="badges">${badges}</span>
-        <span class="wish ${fav?'on':''}" data-fav="${l.id}" role="button" aria-label="Wishlist">${ICON.heart}</span>
         <span class="ph photo"><img src="${l.cover}" alt="${esc(l.title)}" loading="lazy"></span>
         <span class="quick">View item</span>
       </button>
       <div class="card-body">
         <div class="cat">${esc(l.condition||'Used')}${l.size?' · '+esc(l.size):''}</div>
         <h3 data-listing="${l.id}">${esc(l.title)}</h3>
-        <div class="card-price">${cryptoPriceHTML(l.price,l.id)}<button class="add" data-listing="${l.id}" aria-label="View">${ICON.cart}</button></div>
+        <div class="card-price">${cryptoPriceHTML(l.price,l.id)}<button class="add hb ${fav?'on':''}" data-fav="${l.id}" aria-label="Save">${ICON.heart}</button></div>
         <div class="card-seller"><span class="sav">${av}</span><span class="sh">@${esc(l.seller.handle)}</span>${l.seller.verified?'<span class="vchk">✓</span>':''}${l.seller.rating?`<span class="srate">★ ${l.seller.rating}</span>`:''}</div>
       </div>
     </article>`;
@@ -1948,6 +1952,7 @@ async function openSeller(email){
     <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">${d.listings.length?d.listings.map(listingCardHTML).join(''):'<p class="mkt-empty">No active listings.</p>'}</div>
     ${d.reviews.length?`<h3 style="font-size:13px;letter-spacing:.1em;color:var(--faint);text-transform:uppercase;margin:20px 0 10px">Reviews</h3>`+d.reviews.map(r=>`<div style="padding:10px 0;border-top:1px solid var(--line)"><div>${stars(r.rating)} <b style="font-size:13px">@${esc(r.from)}</b></div>${r.text?`<p style="font-size:13px;color:var(--muted);margin-top:4px">${esc(r.text)}</p>`:''}</div>`).join(''):''}
   </div>`;
+  box.querySelectorAll('[data-fav]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();toggleFav(el.dataset.fav);}));
   box.querySelectorAll('[data-listing]').forEach(el=>el.addEventListener('click',()=>openListing(el.dataset.listing)));
 }
 /* ---- payment networks (stablecoins only) ---- */
