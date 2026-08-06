@@ -672,13 +672,13 @@
     /* iOS zooms in (and the page scrolls sideways) when a focused input is
        under 16px — keep all form fields at 16px on phones to prevent it */
     input,textarea,select{font-size:16px!important}
-    /* filters: one compact horizontal-scroll row (contained — the page never scrolls sideways) */
-    .filterbar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:6px;margin-bottom:16px;padding-bottom:2px}
-    .filterbar::-webkit-scrollbar{display:none}
-    .fchip{flex:none}
-    .fchip select{font-size:12.5px!important;font-weight:600;padding:0 25px 0 12px;height:32px;line-height:32px}
-    .fchip::after{right:11px;width:5px;height:5px}
-    .freset{flex:none;height:32px;padding:0 10px;font-size:12px}
+    /* filters: neat 2×2 grid — everything visible at once, nothing scrolls */
+    .filterbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+    .fchip{width:100%}
+    .fchip select{font-size:13px!important;font-weight:600;width:100%;padding:0 26px 0 14px;height:40px;line-height:40px}
+    .fchip::after{right:14px}
+    .freset{display:none}
+    .freset.show{display:inline-flex;align-items:center;justify-content:center;grid-column:1/-1;justify-self:center;height:34px;padding:0 16px;opacity:1;transform:none;pointer-events:auto}
     .section{padding:clamp(32px,7vw,48px) 0}
     .sec-head{margin-bottom:20px}
     .hero{padding-top:26px;padding-bottom:34px}
