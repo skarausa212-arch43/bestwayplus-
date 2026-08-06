@@ -21,22 +21,11 @@ const ROOT = path.join(__dirname, '..');
 // ── env loading ────────────────────────────────────────────────────────────
 // Same precedence as deploy/lumi.service: the process env is authoritative,
 // then the server-only secrets file, then the tracked defaults.
-const loaded = [];
-function loadEnvFile(f) {
-  let txt;
-  try { txt = fs.readFileSync(f, 'utf8'); } catch { return; }
-  loaded.push(f);
-  for (const line of txt.split('\n')) {
-    const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
-    if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2].trim();
-  }
-}
+const { loadInstanceEnv } = require('../deploy/render-env-dropin');
 const APP_DIR = process.env.LUMI_APP_DIR || '/opt/lumi';
-const DROPIN = '/etc/systemd/system/lumi.service.d/10-instance.conf';
-for (const dir of [path.join(APP_DIR, 'deploy'), path.join(ROOT, 'deploy')]) {
-  loadEnvFile(path.join(dir, 'instance.local.env'));
-  loadEnvFile(path.join(dir, 'instance.env'));
-}
+// One merge shared with the systemd drop-in renderer, so a duplicated key
+// resolves here exactly as it does for the running service.
+const loaded = loadInstanceEnv([path.join(APP_DIR, 'deploy'), path.join(ROOT, 'deploy')]);
 
 const mailer = require('../mailer');
 const push = require('../push');

@@ -16,15 +16,10 @@ const fs = require('fs');
 const path = require('path');
 
 // Pull KEY=VALUE lines from the deploy env files (real process env wins).
-function loadEnvFile(f) {
-  try {
-    for (const line of fs.readFileSync(f, 'utf8').split('\n')) {
-      const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
-      if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2].trim();
-    }
-  } catch { /* file absent → ignore */ }
-}
-for (const f of ['/opt/lumi/deploy/instance.local.env', '/opt/lumi/deploy/instance.env']) loadEnvFile(f);
+// Same merge as the systemd drop-in renderer: a key assigned twice resolves
+// here exactly as it does for the running service.
+const { loadInstanceEnv } = require('../deploy/render-env-dropin');
+loadInstanceEnv([(process.env.LUMI_APP_DIR || '/opt/lumi') + '/deploy', require('path').join(__dirname, '..', 'deploy')]);
 
 const push = require('./index');
 

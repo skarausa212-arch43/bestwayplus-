@@ -20,19 +20,11 @@ const path = require('path');
 
 // Same env loading as the service (see ops/integrations-check.js).
 const ROOT = path.join(__dirname, '..');
-function loadEnvFile(f) {
-  try {
-    for (const line of fs.readFileSync(f, 'utf8').split('\n')) {
-      const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
-      if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2].trim();
-    }
-  } catch { /* absent → ignore */ }
-}
+const { loadInstanceEnv } = require('../deploy/render-env-dropin');
 const APP_DIR = process.env.LUMI_APP_DIR || '/opt/lumi';
-for (const dir of [path.join(APP_DIR, 'deploy'), path.join(ROOT, 'deploy')]) {
-  loadEnvFile(path.join(dir, 'instance.local.env'));
-  loadEnvFile(path.join(dir, 'instance.env'));
-}
+// One merge shared with the systemd drop-in renderer, so a duplicated key
+// resolves here exactly as it does for the running service.
+loadInstanceEnv([path.join(APP_DIR, 'deploy'), path.join(ROOT, 'deploy')]);
 
 const domain = (process.argv[2]
   || (process.env.LUMI_MAIL_FROM || '').split('@')[1]

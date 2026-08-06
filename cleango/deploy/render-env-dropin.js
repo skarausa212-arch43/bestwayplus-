@@ -58,7 +58,35 @@ function render(dir) {
   return lines.join('\n') + '\n';
 }
 
-module.exports = { render, parseEnvFile, quote };
+/**
+ * Load the instance env the way the RUNNING SERVICE sees it, for ops scripts.
+ *
+ * This has to be the same merge as render() or the checks lie: systemd keeps the
+ * LAST assignment of a key, so an env file holding both an old test key and a
+ * new live one below it hands the service the live key. A loader that stops at
+ * the first occurrence reports the test key instead — the check then insists
+ * "песочница" about a service that is already live. One merge, one answer.
+ *
+ * A real process env still wins over the files, as it does for the unit.
+ */
+function loadInstanceEnv(dirs, env = process.env) {
+  const seen = [];
+  for (const dir of [].concat(dirs)) {
+    let any = false;
+    const merged = new Map();
+    for (const f of ['instance.env', 'instance.local.env']) {
+      const p = path.join(dir, f);
+      if (!fs.existsSync(p)) continue;
+      any = true; seen.push(p);
+      for (const [k, v] of parseEnvFile(p)) merged.set(k, v);      // last assignment wins
+    }
+    if (!any) continue;
+    for (const [k, v] of merged) if (env[k] === undefined) env[k] = v;
+  }
+  return seen;
+}
+
+module.exports = { render, parseEnvFile, quote, loadInstanceEnv };
 
 if (require.main === module) {
   process.stdout.write(render(process.argv[2] || __dirname));

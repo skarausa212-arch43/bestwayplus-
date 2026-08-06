@@ -11,7 +11,7 @@ const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { render } = require('./render-env-dropin');
+const { render, loadInstanceEnv } = require('./render-env-dropin');
 
 const results = [];
 const ok = (name, fn) => { try { fn(); results.push([true, name]); } catch (e) { results.push([false, name, e.message]); } };
@@ -77,6 +77,30 @@ ok('comments, blank lines and junk never reach the unit', () => {
 ok('an empty value is preserved rather than dropped', () => {
   const d = withFiles(null, 'LUMI_MAIL_FROM_NAME=\n');
   assert.strictEqual(systemdValue(d, 'LUMI_MAIL_FROM_NAME'), '');
+});
+
+ok('a key assigned twice resolves the same for the service and for the checks', () => {
+  // The exact trap: an old test key left above a new live one. systemd keeps the
+  // LAST assignment, so the service runs live. A loader that stopped at the first
+  // occurrence reported the test key and insisted "песочница" about a live service.
+  const file = 'LUMI_STRIPE_SECRET_KEY=sk_test_old\nLUMI_STRIPE_SECRET_KEY=sk_live_new\n';
+  const d = withFiles(null, file);
+  assert.strictEqual(systemdValue(d, 'LUMI_STRIPE_SECRET_KEY'), 'sk_live_new', 'systemd sees the last one');
+  assert.strictEqual(d.match(/LUMI_STRIPE_SECRET_KEY/g).length, 1, 'emitted once, not twice');
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lumi-env-'));
+  fs.writeFileSync(path.join(dir, 'instance.local.env'), file);
+  const env = {};
+  loadInstanceEnv([dir], env);
+  assert.strictEqual(env.LUMI_STRIPE_SECRET_KEY, 'sk_live_new', 'ops checks see the same value');
+});
+
+ok('a real process env still beats the files', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lumi-env-'));
+  fs.writeFileSync(path.join(dir, 'instance.env'), 'LUMI_APP_URL=https://from-file\n');
+  const env = { LUMI_APP_URL: 'https://from-process' };
+  loadInstanceEnv([dir], env);
+  assert.strictEqual(env.LUMI_APP_URL, 'https://from-process');
 });
 
 ok('missing files render a valid, empty unit section', () => {
