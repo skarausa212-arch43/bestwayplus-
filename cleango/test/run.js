@@ -26,6 +26,7 @@ const suites = [
   ['unit', 'analytics/test.js'],
   ['unit', 'flags/test.js'],
   ['unit', 'mailer/test.js'],
+  ['unit', 'mailer/smtp.test.js'],
   ['unit', 'auth/test.js'],
   ['unit', 'str/test.js'],
   ['unit', 'push/test.js'],

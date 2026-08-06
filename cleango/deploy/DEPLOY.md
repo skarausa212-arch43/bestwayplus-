@@ -200,11 +200,31 @@ SES, Postmark — all have free/cheap tiers).
    (Microsoft 365 admin center → Users → `support@lumi24.pl` → Mail → *Manage email
    apps* → tick **Authenticated SMTP**). New tenants ship with it OFF, and sending
    fails with `535 5.7.139 … SmtpClientAuthentication is disabled` until you enable it.
-   With M365 the `From` must equal `LUMI_SMTP_USER`, and SPF/DKIM are already set for
-   the domain — no extra DNS needed. For a third-party relay instead, add its SPF
-   `include:` + DKIM records in GoDaddy DNS.
-4. **Test**: register a new account — the welcome email should arrive. Watch logs
-   with `journalctl -u lumi -f` (look for `[mail] sent to …` vs an auth error).
+   With M365 the `From` must equal `LUMI_SMTP_USER`. If the mailbox has MFA on, an
+   ordinary password will not authenticate — create an app password for it.
+4. **Test the connection** — this prints the config (never the password), sends a
+   real message, and turns the SMTP status code into the fix for it:
+   ```bash
+   cd /opt/lumi && node mailer/send-test.js you@example.com
+   ```
+5. **Check the DNS side.** Credentials only get the message accepted; SPF, DKIM and
+   DMARC decide whether the recipient ever sees it. This reads the live records and
+   says whether they match the mail host the MX points at:
+   ```bash
+   cd /opt/lumi && node ops/mail-dns-check.js
+   ```
+   `lumi24.pl` currently publishes `v=spf1 include:secureserver.net -all` (GoDaddy)
+   while the MX points at Microsoft 365. That is only correct if GoDaddy's own SPF
+   chains through to Outlook — verify with `dig +short TXT secureserver.net` and look
+   for `spf.protection.outlook.com`. If it is not in there, add `include:spf.protection.outlook.com`
+   to the domain's SPF record, or the mail fails SPF and DMARC `p=quarantine` puts it
+   straight into spam.
+6. **End-to-end**: register a new account — the welcome email should arrive. Watch
+   logs with `journalctl -u lumi -f` (`[mail] sent to …` vs an auth error).
+
+> **The password never travels in clear text.** The client refuses to authenticate
+> on a connection the server did not upgrade to TLS. If you see *«сервер не
+> предложил STARTTLS»*, the port is wrong (use 587 or 465), not the password.
 
 ## Social sign-in (Google + Apple)
 The login screen shows **“Continue with Google”** and **“Continue with Apple”**

@@ -57,7 +57,10 @@ function fakeServer() {
 
   await ok('sendMail authenticates and delivers over the wire', async () => {
     const res = await sendMail(
-      { host: '127.0.0.1', port, secure: false, user: 'smtp-user', pass: 's3cret', from: 'no-reply@lumi.pl', fromName: 'LUMI' },
+      // The stub relay speaks no TLS, so it needs the plaintext-auth escape
+      // hatch — the same one the client refuses to take on its own. STARTTLS
+      // and the refusal itself are covered in mailer/smtp.test.js.
+      { host: '127.0.0.1', port, secure: false, user: 'smtp-user', pass: 's3cret', from: 'no-reply@lumi.pl', fromName: 'LUMI', allowPlaintextAuth: true },
       { to: 'anna@example.com', subject: 'Тест', text: 'hello', html: '<b>hello</b>' },
     );
     assert.strictEqual(res.ok, true);

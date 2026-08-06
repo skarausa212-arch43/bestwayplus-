@@ -50,6 +50,39 @@ mailer.send({
   if (r && r.skipped) console.log('✗ skipped (SMTP disabled).');
   else console.log('✓ Sent. Check the inbox (and Spam) of', to);
 }).catch((e) => {
-  console.log('\n✗ SMTP error:', e && e.message);
-  console.log('  (535 = auth still blocked; wait for M365 to apply the change, or re-check Authenticated SMTP.)');
+  const m = String((e && e.message) || e);
+  console.log('\n✗ SMTP error:', m);
+  // The raw SMTP status is useless to a human at 2am. Map the failures we
+  // actually hit on Microsoft 365 to the one thing that fixes each of them.
+  const hints = [
+    [/5\.7\.139|535/, [
+      'Аутентификация отклонена. По порядку:',
+      '  1. В Microsoft 365 admin center → Пользователи → почтовый ящик → Почта →',
+      '     «Управление приложениями электронной почты» → включить Authenticated SMTP.',
+      '     Изменение применяется до ~1 часа.',
+      '  2. Если у аккаунта включена MFA — обычный пароль не подойдёт, нужен app password.',
+      '  3. LUMI_SMTP_USER должен быть полным адресом ящика (support@lumi24.pl), не алиасом.',
+    ]],
+    [/5\.7\.60|SendAsDenied/i, [
+      'Ящик не имеет права отправлять от этого адреса.',
+      '  LUMI_MAIL_FROM должен совпадать с LUMI_SMTP_USER (или иметь право Send As).',
+    ]],
+    [/STARTTLS/, [
+      'Сервер не предложил шифрование, и пароль отправлять нельзя.',
+      '  Проверьте порт: 587 (STARTTLS) или 465 (LUMI_SMTP_SECURE=1). Порт 25 у большинства провайдеров закрыт.',
+    ]],
+    [/ETIMEDOUT|ECONNREFUSED|timeout/i, [
+      'Соединение не установилось — почти всегда это блокировка исходящего порта у хостера.',
+      '  Проверьте с сервера:  nc -vz smtp.office365.com 587',
+      '  Если закрыто — попросите хостера открыть 587, либо используйте API-провайдера (Brevo/SES/Postmark).',
+    ]],
+    [/certificate|self.signed|CERT_/i, [
+      'TLS-сертификат сервера не проверился.',
+      '  Не отключайте проверку в проде — сначала убедитесь, что LUMI_SMTP_HOST написан без опечатки.',
+    ]],
+  ];
+  const hit = hints.find(([re]) => re.test(m));
+  if (hit) { console.log(''); for (const line of hit[1]) console.log('  ' + line); }
+  console.log('\n  Доставка зависит ещё и от DNS — проверьте:  node ops/mail-dns-check.js');
+  process.exit(1);
 });
