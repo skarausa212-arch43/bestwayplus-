@@ -1187,7 +1187,7 @@
       <nav class="foot-cols">
         <div class="fcol">
           <h5>Marketplace</h5>
-          <a href="#catalog">Browse</a><a href="#" id="ftSell">Sell an item</a><a href="#categories">Categories</a><a href="#how">How it works</a>
+          <a href="#catalog">Browse</a><a href="#" id="ftSell">Sell an item</a><a href="#how">How it works</a>
         </div>
         <div class="fcol">
           <h5>Support</h5>
@@ -2190,25 +2190,36 @@ function makeOffer(l){
 }
 
 /* --- sell flow --- */
-const SELL_PHOTOS=[],SELL_SHIP=[...REGIONS];let SELL_EDIT=null;
+const SELL_PHOTOS=[],SELL_SHIP=[...REGIONS];let SELL_EDIT=null,SELL_DRAFT={};
 let SELL_SHIP_MODE='free',SELL_SHIP_FLAT=0;const SELL_SHIP_RATES={};
 /* shipping cost of a listing for a buyer region + a short summary badge */
 function shipForRegion(l,region){const s=(l&&l.shipping)||{mode:'free'};if(s.mode==='flat')return Math.max(0,Number(s.flat)||0);if(s.mode==='regional')return Math.max(0,Number((s.rates||{})[region])||0);return 0;}
-function shipSummary(l){const s=(l&&l.shipping)||{mode:'free'};if(s.mode==='flat')return s.flat>0?`+ ${usdtLabel(s.flat)} shipping`:'Free shipping';if(s.mode==='regional'){const v=Object.values(s.rates||{}).map(Number).filter(x=>!isNaN(x));const mn=v.length?Math.min(...v):0,mx=v.length?Math.max(...v):0;if(!mn&&!mx)return 'Free shipping';return mn===mx?`+ ${usdtLabel(mn)} shipping`:`+ shipping from ${usdtLabel(mn)}`;}return 'Free shipping';}
+function shipSummary(l){const s=(l&&l.shipping)||{mode:'free'};if(s.mode==='flat')return s.flat>0?`+ ${usdtLabel(s.flat)} shipping`:'Free shipping';if(s.mode==='regional'){const v=Object.values(s.rates||{}).map(Number).filter(x=>!isNaN(x)&&x>0);if(!v.length)return 'Free shipping';const mn=Math.min(...v),mx=Math.max(...v);return mn===mx?`+ ${usdtLabel(mn)} shipping`:`+ shipping from ${usdtLabel(mn)}`;}return 'Free shipping';}
 function isFreeShip(l){const s=(l&&l.shipping)||{mode:'free'};if(s.mode==='free')return true;if(s.mode==='flat')return !(s.flat>0);if(s.mode==='regional')return !Object.values(s.rates||{}).some(v=>Number(v)>0);return true;}
 function shipDetail(l){const s=(l&&l.shipping)||{mode:'free'};if(isFreeShip(l))return 'Free';if(s.mode==='flat')return usdtLabel(s.flat);const v=Object.values(s.rates||{}).map(Number).filter(x=>!isNaN(x)&&x>0);if(!v.length)return 'Free';const mn=Math.min(...v),mx=Math.max(...v);return mn===mx?usdtLabel(mn):`from ${usdtLabel(mn)}`;}
 function compressImg(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>{const img=new Image();img.onload=()=>{const max=1100;let w=img.width,h=img.height;if(w>h&&w>max){h=h*max/w;w=max;}else if(h>max){w=w*max/h;h=max;}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);res(c.toDataURL('image/jpeg',0.82));};img.onerror=rej;img.src=fr.result;};fr.onerror=rej;fr.readAsDataURL(file);});}
 function openSell(edit){if(!AUTH)return needAuth('Sign in to sell');SELL_EDIT=(edit&&edit.id)?edit:null;SELL_PHOTOS.length=0;SELL_SHIP.length=0;
   Object.keys(SELL_SHIP_RATES).forEach(k=>delete SELL_SHIP_RATES[k]);SELL_SHIP_MODE='free';SELL_SHIP_FLAT=0;
   if(SELL_EDIT){(SELL_EDIT.photos||[]).forEach(p=>SELL_PHOTOS.push(p));((SELL_EDIT.ships&&SELL_EDIT.ships.length)?SELL_EDIT.ships:REGIONS).forEach(r=>SELL_SHIP.push(r));
-    const sh=SELL_EDIT.shipping||{mode:'free'};SELL_SHIP_MODE=sh.mode||'free';SELL_SHIP_FLAT=sh.flat||0;Object.assign(SELL_SHIP_RATES,sh.rates||{});}
-  else REGIONS.forEach(r=>SELL_SHIP.push(r));
+    const sh=SELL_EDIT.shipping||{mode:'free'};SELL_SHIP_MODE=sh.mode||'free';SELL_SHIP_FLAT=sh.flat||0;Object.assign(SELL_SHIP_RATES,sh.rates||{});
+    const e=SELL_EDIT;SELL_DRAFT={title:e.title,brand:e.brand,category:e.category,size:e.size,condition:e.condition,price:e.price,country:e.country,returns:e.returns,desc:e.desc};}
+  else {REGIONS.forEach(r=>SELL_SHIP.push(r));SELL_DRAFT={};}
   renderSell();openModal('#sellModal');}
+// snapshot the current form fields so a re-render (e.g. adding a photo) doesn't wipe them
+function readSellInputs(){
+  const g=id=>{const el=$(id);return el?el.value:undefined;};
+  const set=(k,v)=>{if(v!==undefined)SELL_DRAFT[k]=v;};
+  set('title',g('#slTitle'));set('size',g('#slSize'));set('condition',g('#slCond'));set('price',g('#slPrice'));
+  set('country',g('#slCountry'));set('returns',g('#slReturns'));set('desc',g('#slDesc'));set('category',g('#slCat'));
+  const brSel=$('#slBrand');if(brSel)SELL_DRAFT.brand=brSel.value==='Other'?($('#slBrandOther')?$('#slBrandOther').value:''):brSel.value;
+  if(SELL_SHIP_MODE==='flat'){const f=$('#shipFlat');if(f)SELL_SHIP_FLAT=Math.max(0,parseFloat(f.value)||0);}
+  if(SELL_SHIP_MODE==='regional')renderShipRegions();
+}
 function renderSell(){
   const catOpts='<option value="" disabled selected>Choose a category…</option>'+CATALOG.map(([g,st,opts])=>`<optgroup label="${g}">${opts.map(([slug,name])=>`<option value="${slug}">${name}</option>`).join('')}</optgroup>`).join('');
   const brandOpts='<option value="" selected>Brand — start typing the title</option>'+BRANDS.map(b=>`<option>${b}</option>`).join('');
   const regionBoxes=REGIONS.map(r=>`<label class="rgn ${SELL_SHIP.includes(r)?'on':''}" data-rgn="${r}"><i></i>${r}</label>`).join('');
-  const E=SELL_EDIT||{};
+  const E=SELL_DRAFT||{};
   $('#sellBody').innerHTML=`<div class="cobody"><h3>${SELL_EDIT?'Edit listing':'List an item'}</h3><p class="sub">${SELL_EDIT?'Update your item — saved changes go back through a quick review before they’re live again.':'Add up to 6 photos, set your price. Buyers pay in USDT / USDC — funds are held in escrow until they confirm delivery.'}</p>
     <div class="photo-grid" id="photoGrid">${SELL_PHOTOS.map((p,i)=>`<div class="photo-cell"><img src="${p}">${i===0?'<span class="cover-tag">Cover</span>':''}<button class="rm" data-rm="${i}">×</button></div>`).join('')}${SELL_PHOTOS.length<6?'<label class="photo-add">+<input type="file" accept="image/*" id="photoIn" multiple hidden></label>':''}</div>
     <div class="field"><label>Title</label><input id="slTitle" maxlength="90" placeholder="e.g. adidas Samba OG — UK9" value="${esc(E.title||'')}"></div>
@@ -2234,10 +2245,10 @@ function renderSell(){
     <div class="field"><label>Description</label><textarea id="slDesc" rows="3" maxlength="1500" placeholder="Condition details, flaws, measurements…">${esc(E.desc||'')}</textarea></div>
     <button class="cbtn" id="slGo">${SELL_EDIT?'Save changes':'Publish listing'}</button>
     <div class="msg" id="slMsg" style="display:none;margin-top:12px;font-size:13px;color:#ff6b6b;font-weight:600"></div></div>`;
-  const inp=$('#photoIn');if(inp)inp.addEventListener('change',async e=>{const files=[...e.target.files].slice(0,6-SELL_PHOTOS.length);for(const f of files){try{SELL_PHOTOS.push(await compressImg(f));}catch(x){}}renderSell();});
-  $('#photoGrid').addEventListener('click',e=>{const b=e.target.closest('[data-rm]');if(b){SELL_PHOTOS.splice(+b.dataset.rm,1);renderSell();}});
+  const inp=$('#photoIn');if(inp)inp.addEventListener('change',async e=>{const files=[...e.target.files].slice(0,6-SELL_PHOTOS.length);for(const f of files){try{SELL_PHOTOS.push(await compressImg(f));}catch(x){}}readSellInputs();renderSell();});
+  $('#photoGrid').addEventListener('click',e=>{const b=e.target.closest('[data-rm]');if(b){readSellInputs();SELL_PHOTOS.splice(+b.dataset.rm,1);renderSell();}});
   let brandTouched=false,catTouched=false;
-  if(SELL_EDIT){
+  if(E.category||E.brand){
     const catSel=$('#slCat'),brSel=$('#slBrand');
     if(E.category&&[...catSel.options].some(o=>o.value===E.category)){catSel.value=E.category;catTouched=true;}
     if(E.brand){const opt=[...brSel.options].find(o=>o.value.toLowerCase()===String(E.brand).toLowerCase());if(opt){brSel.value=opt.value;}else{brSel.value='Other';$('#slBrandOtherWrap').style.display='';$('#slBrandOther').value=E.brand;}brandTouched=true;}
