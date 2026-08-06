@@ -197,22 +197,27 @@ const CATALOG = {
 const FREE_SHIP_AT = 150, SHIP_COST = 9;
 
 /* ---------- crypto payment config ---------- */
+// USDC on Ethereum — live receiving wallet (override with STORE_WALLET).
 const WALLET = (process.env.STORE_WALLET || '0xf2541E779Ee9aCe8f0B36D42cB1DdBcA8bBDFFAE');
 const USDC_CONTRACT = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'; // USDC on Ethereum mainnet
 const USDC_DECIMALS = 6;
 const ETHERSCAN_KEY = process.env.ETHERSCAN_API_KEY || '';
 const CONFIRMATIONS = Number(process.env.PAY_CONFIRMATIONS || 2);
-// USDT on Tron (TRC-20). Set USDT_TRC20_WALLET to your Tron (T...) address to enable it.
-// Left empty on purpose — a wrong address would send buyers' USDT to a wallet you don't own.
-const USDT_TRC20_WALLET = process.env.USDT_TRC20_WALLET || '';
+// USDT on Tron (TRC-20) — live receiving wallet.
+const USDT_TRC20_WALLET = process.env.USDT_TRC20_WALLET || 'TFkokHojKGMCTGkBGFu4SQgtAWzUYPyj5p';
 const USDT_TRC20_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // USDT-TRC20 contract
-// accepted payment networks — stablecoins only
+// accepted payment networks — stablecoins only; only networks with a configured wallet are offered
 const NETWORKS = {
-  'usdc-erc20': { token: 'USDC', chain: 'ERC-20', label: 'USDC (ERC-20)', wallet: () => WALLET, enabled: () => !!WALLET },
-  'usdt-trc20': { token: 'USDT', chain: 'TRC-20', label: 'USDT (TRC-20)', wallet: () => USDT_TRC20_WALLET, enabled: () => !!USDT_TRC20_WALLET },
+  'usdt-trc20': { token: 'USDT', chain: 'TRC-20', label: 'USDT (TRC-20)', wallet: () => USDT_TRC20_WALLET, enabled: () => /^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(USDT_TRC20_WALLET) },
+  'usdc-erc20': { token: 'USDC', chain: 'ERC-20', label: 'USDC (ERC-20)', wallet: () => WALLET, enabled: () => /^0x[a-fA-F0-9]{40}$/.test(WALLET) },
 };
-function pickNetwork(n) { n = String(n || 'usdc-erc20'); return (NETWORKS[n] && NETWORKS[n].enabled()) ? n : 'usdc-erc20'; }
-function payMeta(order) { const net = NETWORKS[order.network] || NETWORKS['usdc-erc20']; return { network: order.network || 'usdc-erc20', token: net.token, chain: net.chain, wallet: net.wallet() }; }
+const enabledNetworks = () => Object.keys(NETWORKS).filter(k => NETWORKS[k].enabled());
+function pickNetwork(n) {
+  n = String(n || '');
+  if (NETWORKS[n] && NETWORKS[n].enabled()) return n;
+  return enabledNetworks()[0] || 'usdt-trc20';   // fall back to the first live network, not a hardcoded chain
+}
+function payMeta(order) { const net = NETWORKS[order.network] || NETWORKS[pickNetwork()]; return { network: order.network || pickNetwork(), token: net.token, chain: net.chain, wallet: net.wallet() }; }
 // transactions already credited (survives restart via order.paidTx)
 const usedTx = new Set();
 
@@ -1266,8 +1271,9 @@ server.listen(PORT, '127.0.0.1', () => {
   console.log(`[swk-store] listening on 127.0.0.1:${PORT}`);
   console.log(`[swk-store] data dir: ${DATA}`);
   console.log(`[swk-store] admin ${ADMIN_PASSWORD ? 'ENABLED' : 'DISABLED (set ADMIN_PASSWORD)'}`);
-  console.log(`[swk-store] wallet: ${WALLET}`);
-  console.log(`[swk-store] payment auto-check ${ETHERSCAN_KEY ? 'ENABLED (USDC ERC-20)' : 'DISABLED (set ETHERSCAN_API_KEY) — manual confirmation'}`);
+  console.log(`[swk-store] networks: ${enabledNetworks().map(k => `${NETWORKS[k].label}→${NETWORKS[k].wallet()}`).join(' | ') || 'NONE — set a wallet!'}`);
+  console.log(`[swk-store] USDC auto-detect ${ETHERSCAN_KEY ? 'ON' : 'OFF (set ETHERSCAN_API_KEY) — confirm USDC manually in admin'}`);
+  console.log(`[swk-store] USDT auto-detect ${enabledNetworks().includes('usdt-trc20') ? 'ON (TronGrid)' + (process.env.TRONGRID_API_KEY ? ' + key' : ' — set TRONGRID_API_KEY for higher limits') : 'OFF'}`);
 });
 
 // never let a stray rejection/exception take the whole marketplace down; log and keep serving
