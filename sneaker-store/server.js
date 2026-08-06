@@ -197,19 +197,24 @@ const CATALOG = {
 const FREE_SHIP_AT = 150, SHIP_COST = 9;
 
 /* ---------- crypto payment config ---------- */
-// USDC on Ethereum — live receiving wallet (override with STORE_WALLET).
-const WALLET = (process.env.STORE_WALLET || '0xf2541E779Ee9aCe8f0B36D42cB1DdBcA8bBDFFAE');
+const isEthAddr = (a) => /^0x[a-fA-F0-9]{40}$/.test(a || '');
+const isTronAddr = (a) => /^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(a || '');
+// Receiving wallets are editable from the admin panel; the value order is:
+//   admin setting (settings.json)  ->  env var  ->  built-in default.
+const settings = loadJSON('settings.json', {});
+const saveSettings = () => saveJSON('settings.json', settings);
+// let (not const) so the admin "Wallets" screen can update them live — NETWORKS/pollers read the current value.
+let WALLET = settings.usdcWallet || process.env.STORE_WALLET || '0xf2541E779Ee9aCe8f0B36D42cB1DdBcA8bBDFFAE';
+let USDT_TRC20_WALLET = settings.usdtWallet || process.env.USDT_TRC20_WALLET || 'TFkokHojKGMCTGkBGFu4SQgtAWzUYPyj5p';
 const USDC_CONTRACT = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'; // USDC on Ethereum mainnet
 const USDC_DECIMALS = 6;
 const ETHERSCAN_KEY = process.env.ETHERSCAN_API_KEY || '';
 const CONFIRMATIONS = Number(process.env.PAY_CONFIRMATIONS || 2);
-// USDT on Tron (TRC-20) — live receiving wallet.
-const USDT_TRC20_WALLET = process.env.USDT_TRC20_WALLET || 'TFkokHojKGMCTGkBGFu4SQgtAWzUYPyj5p';
 const USDT_TRC20_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // USDT-TRC20 contract
-// accepted payment networks — stablecoins only; only networks with a configured wallet are offered
+// accepted payment networks — stablecoins only; only networks with a valid wallet are offered
 const NETWORKS = {
-  'usdt-trc20': { token: 'USDT', chain: 'TRC-20', label: 'USDT (TRC-20)', wallet: () => USDT_TRC20_WALLET, enabled: () => /^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(USDT_TRC20_WALLET) },
-  'usdc-erc20': { token: 'USDC', chain: 'ERC-20', label: 'USDC (ERC-20)', wallet: () => WALLET, enabled: () => /^0x[a-fA-F0-9]{40}$/.test(WALLET) },
+  'usdt-trc20': { token: 'USDT', chain: 'TRC-20', label: 'USDT (TRC-20)', wallet: () => USDT_TRC20_WALLET, enabled: () => isTronAddr(USDT_TRC20_WALLET) },
+  'usdc-erc20': { token: 'USDC', chain: 'ERC-20', label: 'USDC (ERC-20)', wallet: () => WALLET, enabled: () => isEthAddr(WALLET) },
 };
 const enabledNetworks = () => Object.keys(NETWORKS).filter(k => NETWORKS[k].enabled());
 function pickNetwork(n) {
@@ -492,6 +497,7 @@ function orderView(o) {
   return {
     id: o.id, date: o.date, total: o.total, fee: o.fee || 0, payAmount: o.payAmount, status: o.status, escrow: !!o.escrow,
     carrier: o.carrier || '', tracking: o.tracking || '', paidTx: o.paidTx || null, paidOut: !!o.paidOut,
+    network: o.network || '', payFrom: o.payFrom || '',
     listingId: o.listingId || null, cover: (listings.find(x => x.id === o.listingId) || {}).cover || (o.items && o.items[0] && '') || '',
     buyerHandle: sellerHandle(o.email), sellerEmail: o.seller || null, sellerHandle: o.seller ? sellerHandle(o.seller) : 'STUFFWEKNOW',
     disputeReason: o.disputeReason || '', shippedAt: o.shippedAt || 0,
@@ -1083,7 +1089,19 @@ const server = http.createServer(async (req, res) => {
           orders: orders.slice(-100).reverse(),
           users: Object.values(users).map(u => ({ email: u.email, name: u.name, created: u.created,
             orders: orders.filter(o => o.email === u.email).length })).reverse(),
+          wallets: { usdc: WALLET, usdt: USDT_TRC20_WALLET, usdcOk: isEthAddr(WALLET), usdtOk: isTronAddr(USDT_TRC20_WALLET), usdcAuto: !!ETHERSCAN_KEY },
         });
+      }
+      // update the receiving wallets live (no redeploy needed)
+      if (req.method === 'POST' && p === '/api/admin/wallets') {
+        const b = await readBody(req);
+        const usdc = String(b.usdc || '').trim(), usdt = String(b.usdt || '').trim();
+        if (usdc && !isEthAddr(usdc)) return send(res, 400, { error: 'USDC address must be a valid 0x… Ethereum address.' });
+        if (usdt && !isTronAddr(usdt)) return send(res, 400, { error: 'USDT address must be a valid T… Tron address.' });
+        if (b.usdc !== undefined) { WALLET = usdc; settings.usdcWallet = usdc; }
+        if (b.usdt !== undefined) { USDT_TRC20_WALLET = usdt; settings.usdtWallet = usdt; }
+        saveSettings();
+        return send(res, 200, { ok: true, wallets: { usdc: WALLET, usdt: USDT_TRC20_WALLET } });
       }
       if (req.method === 'POST' && p === '/api/admin/order-status') {
         const { id, status, carrier, tracking } = await readBody(req);
@@ -1172,8 +1190,9 @@ const server = http.createServer(async (req, res) => {
 orders.forEach(o => { if (o.paidTx) usedTx.add(o.paidTx.toLowerCase()); });
 
 // credit a matched on-chain payment to its order (shared by both chains)
-function creditOrder(match, txHash, ts, amt, token) {
+function creditOrder(match, txHash, ts, amt, token, from) {
   match.paidTx = txHash; match.paidAt = ts;
+  if (from) match.payFrom = from;   // remember the payer's wallet so a refund can be sent back to it
   if (match.boost) {
     match.status = 'paid';
     const l = listings.find(x => x.id === match.listingId);
@@ -1211,7 +1230,7 @@ async function pollPayments() {
         if (usedTx.has(tx.hash.toLowerCase())) continue;                           // already credited
         const amt = Number(tx.value) / 10 ** USDC_DECIMALS;
         const match = pending.find(o => o.status === 'pending' && Math.abs(o.payAmount - amt) < 0.005 && ts >= o.date - 15 * 60 * 1000);
-        if (match) { creditOrder(match, tx.hash, ts, amt, 'USDC'); changed = true; }
+        if (match) { creditOrder(match, tx.hash, ts, amt, 'USDC', tx.from || ''); changed = true; }
       }
       if (j.result.length < 100 || oldestOnPage < oldest) break;                   // scanned far enough back
     }
@@ -1221,7 +1240,7 @@ async function pollPayments() {
 
 // USDT on Tron (TRC-20) via TronGrid — requires finality (tx old enough) before crediting
 async function pollPaymentsTron() {
-  if (!USDT_TRC20_WALLET) return;
+  if (!isTronAddr(USDT_TRC20_WALLET)) return;
   const pending = orders.filter(o => o.status === 'pending' && o.network === 'usdt-trc20');
   if (!pending.length) return;
   try {
@@ -1237,7 +1256,7 @@ async function pollPaymentsTron() {
       if (!ts || Date.now() - ts < 60000) continue;                                // finality gate (~19 Tron blocks ≈ 57s)
       const amt = Number(tx.value) / 10 ** 6;                                      // USDT-TRC20 is always 6 decimals
       const match = pending.find(o => o.status === 'pending' && Math.abs(o.payAmount - amt) < 0.005 && ts >= o.date - 15 * 60 * 1000);
-      if (match) { creditOrder(match, hash, ts, amt, 'USDT'); changed = true; }
+      if (match) { creditOrder(match, hash, ts, amt, 'USDT', tx.from || ''); changed = true; }
     }
     if (changed) saveOrders();
   } catch (e) { console.error('[swk-store] tron poll error:', e.message); }
@@ -1246,7 +1265,7 @@ async function pollPaymentsTron() {
 // self-rescheduling loop — never overlaps runs even if an upstream call is slow
 const schedule = (fn, ms) => { const tick = () => Promise.resolve(fn()).catch(() => {}).finally(() => setTimeout(tick, ms).unref()); setTimeout(tick, ms).unref(); };
 if (ETHERSCAN_KEY) schedule(pollPayments, 30000);
-if (USDT_TRC20_WALLET) schedule(pollPaymentsTron, 30000);
+schedule(pollPaymentsTron, 30000);   // always on — self-guards on wallet validity, survives runtime wallet changes
 
 /* ---------- housekeeping: reservations, auto-release, ship-deadline refunds ---------- */
 const RESERVE_MS = Number(process.env.RESERVE_MINUTES || 60) * 60 * 1000;
