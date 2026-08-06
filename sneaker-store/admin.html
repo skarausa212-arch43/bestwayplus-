@@ -164,6 +164,8 @@ async function api(path,opts={}){
 }
 const fmt$=n=>'$'+Number(n).toLocaleString('en-US');
 const fmtD=t=>new Date(t).toISOString().slice(0,16).replace('T',' ');
+// escape every user-controlled string before it goes into innerHTML (stored-XSS guard)
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 async function loadDash(){
   const d=await api('/api/admin/overview');
@@ -186,14 +188,14 @@ async function loadDash(){
   const ob=$('#ordersT tbody');
   ob.innerHTML=d.orders.length?d.orders.map(o=>`<tr>
     <td class="id">${o.id}</td><td>${fmtD(o.date)}</td>
-    <td class="hidem">${(o.name||'')} <div class="items">${o.email}</div></td>
-    <td>${o.items.map(i=>`${i.qty}× ${i.name} (${i.size})`).join('<br>')}</td>
+    <td class="hidem">${esc(o.name||'')} <div class="items">${esc(o.email)}</div></td>
+    <td>${o.items.map(i=>`${i.qty}× ${esc(i.name)} (${esc(i.size)})`).join('<br>')}</td>
     <td class="money">${fmt$(o.total)}${o.payAmount?`<div class="items">${Number(o.payAmount).toFixed(2)} USDC</div>`:''}</td>
-    <td><span class="pill ${o.status}">${o.status}</span>${o.paidTx?`<div class="items"><a class="rcpt" href="https://etherscan.io/tx/${o.paidTx}" target="_blank">✓ tx ↗</a></div>`:''}
+    <td><span class="pill ${esc(o.status)}">${esc(o.status)}</span>${o.paidTx?`<div class="items"><a class="rcpt" href="https://etherscan.io/tx/${encodeURIComponent(o.paidTx)}" target="_blank">✓ tx ↗</a></div>`:''}
       <div class="ship" data-id="${o.id}">
         <select class="st">${['pending','paid','held','processing','shipped','delivered','released','disputed','refunded','cancelled'].map(s=>`<option ${s===o.status?'selected':''}>${s}</option>`).join('')}</select>
-        <input class="carrier" placeholder="Carrier (DHL…)" value="${o.carrier?o.carrier.replace(/"/g,'&quot;'):''}">
-        <input class="tracking" placeholder="Tracking #" value="${o.tracking?o.tracking.replace(/"/g,'&quot;'):''}">
+        <input class="carrier" placeholder="Carrier (DHL…)" value="${esc(o.carrier||'')}">
+        <input class="tracking" placeholder="Tracking #" value="${esc(o.tracking||'')}">
         <button class="save">Save</button>
       </div></td>
     <td><a class="rcpt" href="/receipt/${o.id}" target="_blank">open</a></td>
@@ -212,7 +214,7 @@ async function loadDash(){
   loadMarketAdmin();
   // users
   $('#usersT tbody').innerHTML=d.users.length?d.users.map(u=>`<tr>
-    <td class="id">${u.email}</td><td class="hidem">${u.name||'—'}</td>
+    <td class="id">${esc(u.email)}</td><td class="hidem">${esc(u.name||'—')}</td>
     <td>${fmtD(u.created)}</td><td>${u.orders}</td></tr>`).join('')
     :'<tr><td colspan="4" class="empty">No accounts yet.</td></tr>';
 }
@@ -223,10 +225,10 @@ async function loadMarketAdmin(){
   // pending moderation
   const mb=$('#modT tbody');
   mb.innerHTML=(m.pending&&m.pending.length)?m.pending.map(l=>{
-    const thumbs=(l.photos||[]).slice(0,4).map(p=>`<img src="${p}" class="thumb">`).join('');
-    return `<tr><td class="id">${(l.title||'').replace(/</g,'&lt;')}<div class="items">${(l.desc||'').replace(/</g,'&lt;').slice(0,120)}</div></td>
-      <td class="hidem">@${(l.seller&&l.seller.handle)||''}<div class="items">${l.sellerEmail||''}</div></td>
-      <td>${l.category||''}<div class="items">${(l.brand||'')} · ${(l.condition||'')}${l.size?' · '+l.size:''}</div></td>
+    const thumbs=(l.photos||[]).slice(0,4).map(p=>/^data:image\//.test(p)?`<img src="${p}" class="thumb">`:'').join('');
+    return `<tr><td class="id">${esc(l.title||'')}<div class="items">${esc((l.desc||'').slice(0,120))}</div></td>
+      <td class="hidem">@${esc((l.seller&&l.seller.handle)||'')}<div class="items">${esc(l.sellerEmail||'')}</div></td>
+      <td>${esc(l.category||'')}<div class="items">${esc(l.brand||'')} · ${esc(l.condition||'')}${l.size?' · '+esc(l.size):''}</div></td>
       <td class="money">${fmt$(l.price)}</td>
       <td><div class="thumbs">${thumbs||'—'}</div></td>
       <td><button class="save" data-approve="${l.id}">Approve</button> <button class="save" data-reject="${l.id}" style="background:#7a1020">Reject</button></td></tr>`;
@@ -236,9 +238,9 @@ async function loadMarketAdmin(){
   const db=$('#dispT tbody');
   db.innerHTML=(m.disputes&&m.disputes.length)?m.disputes.map(o=>{
     const it=(o.items&&o.items[0])||{};
-    return `<tr><td class="id">${o.id}</td><td>${(it.name||'').replace(/</g,'&lt;')}</td>
-      <td class="hidem">@${o.buyerHandle}</td><td class="hidem">@${o.sellerHandle}</td>
-      <td class="money">${fmt$(o.total)}</td><td>${(o.disputeReason||'—').replace(/</g,'&lt;')}</td>
+    return `<tr><td class="id">${o.id}</td><td>${esc(it.name||'')}</td>
+      <td class="hidem">@${esc(o.buyerHandle)}</td><td class="hidem">@${esc(o.sellerHandle)}</td>
+      <td class="money">${fmt$(o.total)}</td><td>${esc(o.disputeReason||'—')}</td>
       <td><button class="save" data-rel="${o.id}">Release to seller</button> <button class="save" data-ref="${o.id}" style="background:#7a1020">Refund buyer</button></td></tr>`;
   }).join(''):'<tr><td colspan="7" class="empty">No open disputes.</td></tr>';
   db.querySelectorAll('[data-rel]').forEach(b=>b.addEventListener('click',()=>{if(confirm('Release funds to the seller?'))setStatus(b.dataset.rel,'released');}));
@@ -246,8 +248,8 @@ async function loadMarketAdmin(){
   const pb=$('#payT tbody');
   pb.innerHTML=(m.payouts&&m.payouts.length)?m.payouts.map(o=>{
     const owed=Math.round((o.total-(o.fee||0))*100)/100;
-    return `<tr><td class="id">${o.id}</td><td>@${o.sellerHandle}</td>
-      <td class="id">${o.payout?o.payout:'<span style="color:#b23">not set</span>'}</td>
+    return `<tr><td class="id">${o.id}</td><td>@${esc(o.sellerHandle)}</td>
+      <td class="id">${o.payout?esc(o.payout):'<span style="color:#b23">not set</span>'}</td>
       <td class="money">${fmt$(owed)}</td>
       <td><button class="save" data-paid="${o.id}" ${o.payout?'':'disabled'}>Mark paid-out</button></td></tr>`;
   }).join(''):'<tr><td colspan="5" class="empty">Nothing to pay out.</td></tr>';
@@ -255,17 +257,17 @@ async function loadMarketAdmin(){
   // reports
   const rb=$('#repT tbody');
   rb.innerHTML=(m.reports&&m.reports.length)?m.reports.map(r=>`<tr>
-    <td class="id">${(r.title||'').replace(/</g,'&lt;')}</td><td class="hidem">@${r.seller}</td>
-    <td>${(r.reason||'—').replace(/</g,'&lt;')}</td><td class="hidem">@${r.from}</td>
+    <td class="id">${esc(r.title||'')}</td><td class="hidem">@${esc(r.seller)}</td>
+    <td>${esc(r.reason||'—')}</td><td class="hidem">@${esc(r.from)}</td>
     <td><button class="save" data-rdismiss="${r.id}" style="background:#2a2a30;color:#ddd">Dismiss</button> <button class="save" data-rremove="${r.id}" style="background:#7a1020">Remove listing</button></td></tr>`).join(''):'<tr><td colspan="5" class="empty">No open reports.</td></tr>';
   rb.querySelectorAll('[data-rdismiss]').forEach(b=>b.addEventListener('click',async()=>{await api('/api/admin/report-resolve',{method:'POST',body:JSON.stringify({id:b.dataset.rdismiss,action:'dismiss'})});loadDash();}));
   rb.querySelectorAll('[data-rremove]').forEach(b=>b.addEventListener('click',async()=>{if(!confirm('Remove this listing?'))return;await api('/api/admin/report-resolve',{method:'POST',body:JSON.stringify({id:b.dataset.rremove,action:'remove'})});loadDash();}));
   // verification
   const vb=$('#verT tbody');
   vb.innerHTML=(m.verifiable&&m.verifiable.length)?m.verifiable.map(u=>`<tr>
-    <td class="id">@${u.handle} <div class="items">${u.email}</div></td><td>${u.listings}</td>
+    <td class="id">@${esc(u.handle)} <div class="items">${esc(u.email)}</div></td><td>${u.listings}</td>
     <td><span class="pill ${u.verified?'delivered':'cancelled'}">${u.verified?'verified':'no'}</span></td>
-    <td><button class="save" data-ver="${u.email}" data-on="${u.verified?0:1}" ${u.verified?'style="background:#2a2a30;color:#ddd"':''}>${u.verified?'Unverify':'Verify'}</button></td></tr>`).join(''):'<tr><td colspan="4" class="empty">No sellers yet.</td></tr>';
+    <td><button class="save" data-ver="${esc(u.email)}" data-on="${u.verified?0:1}" ${u.verified?'style="background:#2a2a30;color:#ddd"':''}>${u.verified?'Unverify':'Verify'}</button></td></tr>`).join(''):'<tr><td colspan="4" class="empty">No sellers yet.</td></tr>';
   vb.querySelectorAll('[data-ver]').forEach(b=>b.addEventListener('click',async()=>{await api('/api/admin/verify',{method:'POST',body:JSON.stringify({email:b.dataset.ver,verified:b.dataset.on==='1'})});loadDash();}));
 }
 $('#enter').addEventListener('click',async()=>{

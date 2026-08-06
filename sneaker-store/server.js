@@ -23,8 +23,25 @@ fs.mkdirSync(DATA, { recursive: true });
 
 /* ---------- persistence ---------- */
 const fileOf = (n) => path.join(DATA, n);
-const loadJSON = (n, d) => { try { return JSON.parse(fs.readFileSync(fileOf(n), 'utf8')); } catch { return d; } };
-const saveJSON = (n, v) => fs.writeFileSync(fileOf(n), JSON.stringify(v, null, 2));
+const loadJSON = (n, d) => {
+  const f = fileOf(n);
+  let raw;
+  try { raw = fs.readFileSync(f, 'utf8'); }
+  catch (e) { if (e.code === 'ENOENT') return d; throw e; }        // missing -> default; other read errors fail loud
+  try { return JSON.parse(raw); }
+  catch {
+    try { return JSON.parse(fs.readFileSync(f + '.bak', 'utf8')); } // fall back to last good backup
+    catch { throw new Error(`Refusing to start: ${n} is corrupt and has no valid .bak — fix/remove it manually (never auto-wipe the ledger).`); }
+  }
+};
+// atomic write: tmp file -> fsync -> keep .bak -> rename. A crash mid-write can never truncate the live file.
+const saveJSON = (n, v) => {
+  const f = fileOf(n), tmp = f + '.tmp';
+  const fd = fs.openSync(tmp, 'w');
+  try { fs.writeSync(fd, JSON.stringify(v, null, 2)); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
+  try { if (fs.existsSync(f)) fs.copyFileSync(f, f + '.bak'); } catch {}
+  fs.renameSync(tmp, f);
+};
 
 if (!fs.existsSync(fileOf('secret'))) fs.writeFileSync(fileOf('secret'), crypto.randomBytes(32).toString('hex'));
 const SECRET = fs.readFileSync(fileOf('secret'), 'utf8');
@@ -36,6 +53,7 @@ const offers = loadJSON('offers.json', []);        // [{id,listingId,buyer,amoun
 const reviews = loadJSON('reviews.json', []);      // [{id,orderId,from,to,role,rating,text,createdAt}]
 const messages = loadJSON('messages.json', []);    // [{id,orderId,from,text,at}]
 const reports = loadJSON('reports.json', []);      // [{id,listingId,from,reason,at,status}]
+const withdrawals = loadJSON('withdrawals.json', []); // [{id,seller,gross,fee,net,address,status,at,tx}]
 const stats = loadJSON('stats.json', { total: 0, unique: 0, daily: {} }); // daily[YYYY-MM-DD]={v,u,o}
 const saveUsers = () => saveJSON('users.json', users);
 const saveOrders = () => saveJSON('orders.json', orders);
@@ -44,6 +62,7 @@ const saveOffers = () => saveJSON('offers.json', offers);
 const saveReviews = () => saveJSON('reviews.json', reviews);
 const saveMessages = () => saveJSON('messages.json', messages);
 const saveReports = () => saveJSON('reports.json', reports);
+const saveWithdrawals = () => saveJSON('withdrawals.json', withdrawals);
 /* one-time recovery: publish any listings left in 'pending' from the moderation window */
 (() => { let changed = false; for (const l of listings) if (l.status === 'pending') { l.status = 'active'; changed = true; } if (changed) saveJSON('listings.json', listings); })();
 const AUTO_RELEASE_DAYS = Number(process.env.AUTO_RELEASE_DAYS || 7); // buyer-protection window after shipping
@@ -198,43 +217,61 @@ function payMeta(order) { const net = NETWORKS[order.network] || NETWORKS['usdc-
 // transactions already credited (survives restart via order.paidTx)
 const usedTx = new Set();
 
-// give each pending order a unique amount (base + random cents) so an
-// incoming transfer can be matched to exactly one order.
+// give each pending order a GLOBALLY-unique amount (base + cents) so an
+// incoming transfer can be matched to exactly one order — never a collision.
 function assignUniqueAmount(base) {
   const used = new Set(orders.filter(o => o.status === 'pending').map(o => o.payAmount));
-  for (let i = 0; i < 200; i++) {
-    const cents = Math.floor(Math.random() * 100);
-    const amt = Math.round(base * 100 + cents) / 100;
+  for (let i = 0; i < 100; i++) {                       // random pretty cents first
+    const amt = Math.round(base * 100 + Math.floor(Math.random() * 100)) / 100;
     if (!used.has(amt)) return amt;
   }
-  return base + 0.01;
+  for (let extra = 0; extra < 100000; extra++) {        // deterministic walk — guarantees a unique amount
+    const amt = Math.round(base * 100 + extra) / 100;
+    if (!used.has(amt)) return amt;
+  }
+  return Math.round(base * 100 + Date.now() % 100000) / 100;
 }
 
 /* ---------- crypto helpers ---------- */
+const MAX_PW = 200; // cap before hashing so a huge password can't stall the event loop
+// async scrypt so hashing never blocks the single Node thread
 function hashPassword(pw) {
   const salt = crypto.randomBytes(16).toString('hex');
-  return salt + ':' + crypto.scryptSync(pw, salt, 64).toString('hex');
+  return new Promise((resolve, reject) =>
+    crypto.scrypt(pw, salt, 64, (e, dk) => e ? reject(e) : resolve(salt + ':' + dk.toString('hex'))));
 }
 function verifyPassword(pw, stored) {
-  const [salt, hash] = String(stored).split(':');
-  if (!salt || !hash) return false;
-  const test = crypto.scryptSync(pw, salt, 64);
-  const ref = Buffer.from(hash, 'hex');
-  return test.length === ref.length && crypto.timingSafeEqual(test, ref);
+  const [salt, hash] = String(stored || '').split(':');
+  if (!salt || !hash) return Promise.resolve(false);
+  return new Promise((resolve) =>
+    crypto.scrypt(pw, salt, 64, (e, dk) => {
+      if (e) return resolve(false);
+      const ref = Buffer.from(hash, 'hex');
+      resolve(dk.length === ref.length && crypto.timingSafeEqual(dk, ref));
+    }));
 }
 const sign = (s) => crypto.createHmac('sha256', SECRET).update(s).digest('hex');
+// constant-time string compare (no early-exit timing side channel)
+function safeEq(a, b) {
+  const A = Buffer.from(String(a)), B = Buffer.from(String(b));
+  return A.length === B.length && crypto.timingSafeEqual(A, B);
+}
 function makeToken(email) {
   const exp = Date.now() + 30 * 864e5;
-  const payload = `${email}|${exp}`;
+  const tv = (users[email] && users[email].tv) || 0;           // session version — bumping it revokes old tokens
+  const payload = `${email}|${exp}|${tv}`;
   return Buffer.from(`${payload}|${sign(payload)}`).toString('base64url');
 }
 function tokenUser(req) {
   const m = /^Bearer (.+)$/.exec(req.headers.authorization || '');
   if (!m) return null;
   try {
-    const [email, exp, sig] = Buffer.from(m[1], 'base64url').toString().split('|');
-    if (sign(`${email}|${exp}`) !== sig || Number(exp) < Date.now()) return null;
-    return users[email] || null;
+    const [email, exp, tv, sig] = Buffer.from(m[1], 'base64url').toString().split('|');
+    if (!safeEq(sign(`${email}|${exp}|${tv}`), sig)) return null;
+    if (Number(exp) < Date.now()) return null;
+    const u = users[email];
+    if (!u || Number(u.tv || 0) !== Number(tv)) return null;    // revoked (logout / password change)
+    return u;
   } catch { return null; }
 }
 
@@ -253,6 +290,16 @@ function readBody(req) {
     req.on('end', () => { try { resolve(b ? JSON.parse(b) : {}); } catch { resolve({}); } });
   });
 }
+/* ---------- rate limiting (in-memory sliding buckets) ---------- */
+const rlMap = new Map(); // key -> { n, reset }
+function rateLimit(key, max, windowMs) {
+  const now = Date.now(); const e = rlMap.get(key);
+  if (!e || e.reset < now) { rlMap.set(key, { n: 1, reset: now + windowMs }); return true; }
+  if (e.n >= max) return false;
+  e.n++; return true;
+}
+setInterval(() => { const now = Date.now(); for (const [k, e] of rlMap) if (e.reset < now) rlMap.delete(k); }, 60000).unref();
+const clientIp = (req) => (String(req.headers['x-forwarded-for'] || '').split(',')[0].trim()) || req.socket.remoteAddress || 'ip';
 function serveFile(res, file, type) {
   fs.readFile(path.join(ROOT, file), (err, buf) => {
     if (err) return send(res, 404, 'Not found');
@@ -352,7 +399,7 @@ function receiptHTML(o) {
 }
 
 /* ---------- admin guard ---------- */
-const isAdmin = (req) => ADMIN_PASSWORD && req.headers['x-admin-key'] === ADMIN_PASSWORD;
+const isAdmin = (req) => !!ADMIN_PASSWORD && safeEq(req.headers['x-admin-key'] || '', ADMIN_PASSWORD);
 
 /* ---------- marketplace helpers ---------- */
 const CAT_GROUPS = {
@@ -403,19 +450,38 @@ function listingFull(l) {
   const su = users[l.seller] || {};
   return { ...c, seller: { ...c.seller, avatar: su.avatar || '', telegram: su.telegram || '' }, photos: l.photos || (l.cover ? [l.cover] : []), desc: l.desc || '' };
 }
-// funds owed to a seller that have been released but not yet paid out by the operator
+// funds owed to a seller that have been released but not yet paid out / withdrawn
 function payoutBalance(email) {
   return Math.round(orders.filter(o => o.seller === email && o.status === 'released' && !o.paidOut)
     .reduce((s, o) => s + (o.total - (o.fee || 0)), 0) * 100) / 100;
 }
-const MARKET_FEE_PCT = Number(process.env.MARKET_FEE_PCT || 10); // buyer-side platform fee % (added on top; kept by the operator)
+const MARKET_FEE_PCT = Number(process.env.MARKET_FEE_PCT || 10); // buyer fee % (baked into the price shown at purchase; kept by the operator)
 const MAX_OFFERS_PER_DAY = Number(process.env.MAX_OFFERS_PER_DAY || 30);
 const BOOST_PRICE_PER_DAY = Number(process.env.BOOST_PRICE_PER_DAY || 2); // USDC/day to feature a listing
+const WITHDRAW_FEE_PCT = Number(process.env.WITHDRAW_FEE_PCT || 1);   // seller withdrawal fee
+const WITHDRAW_FEE_MIN = Number(process.env.WITHDRAW_FEE_MIN || 2);   // ...with a $2 floor
+const SHIP_DEADLINE_DAYS = Number(process.env.SHIP_DEADLINE_DAYS || 7); // seller must ship within N days of payment or the buyer is auto-refunded
+const withdrawFee = (amount) => amount <= 0 ? 0 : Math.max(WITHDRAW_FEE_MIN, Math.round(amount * WITHDRAW_FEE_PCT) / 100);
+function relistListing(o) {
+  const l = listings.find(x => x.id === o.listingId);
+  if (!l) return;
+  if (l.reservedBy && l.reservedBy !== o.id) return;   // held by a different active order — leave it
+  if (l.status === 'reserved' || l.status === 'sold') { l.status = 'active'; delete l.reservedBy; saveListings(); }
+}
 function releaseOrder(o) {
-  if (o.status !== 'shipped' && o.status !== 'delivered' && o.status !== 'disputed') return false;
+  // buyer confirming / auto-release. Disputed orders are NOT self-releasable — only the operator resolves them.
+  if (o.status !== 'shipped' && o.status !== 'delivered') return false;
   o.status = 'released'; o.releasedAt = Date.now();
   const l = listings.find(x => x.id === o.listingId);
-  if (l && l.status !== 'sold') { l.status = 'sold'; saveListings(); }
+  if (l && l.status !== 'sold') { l.status = 'sold'; delete l.reservedBy; saveListings(); }
+  return true;
+}
+// return escrow to the buyer. Terminal-state guarded so an order can never be both released+paid AND refunded.
+function refundOrder(o) {
+  if (o.paidOut || o.status === 'released' || o.status === 'refunded' || o.status === 'cancelled') return false;
+  if (!['held', 'paid', 'processing', 'shipped', 'delivered', 'disputed'].includes(o.status)) return false;
+  o.status = 'refunded'; o.refundedAt = Date.now();
+  relistListing(o);
   return true;
 }
 function orderView(o) {
@@ -455,20 +521,29 @@ const server = http.createServer(async (req, res) => {
 
     /* ----- auth ----- */
     if (req.method === 'POST' && p === '/api/register') {
+      if (!rateLimit('reg:' + clientIp(req), 10, 3600000)) return send(res, 429, { error: 'Too many attempts — try again later.' });
       const { email, password, name } = await readBody(req);
       const em = String(email || '').trim().toLowerCase();
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return send(res, 400, { error: 'Enter a valid email.' });
       if (!password || password.length < 8) return send(res, 400, { error: 'Password must be 8+ characters.' });
+      if (password.length > MAX_PW) return send(res, 400, { error: 'Password too long.' });
       if (users[em]) return send(res, 409, { error: 'This email is already registered — sign in instead.' });
-      users[em] = { email: em, name: String(name || '').slice(0, 60), pass: hashPassword(password), created: Date.now() };
+      users[em] = { email: em, name: String(name || '').slice(0, 60), pass: await hashPassword(password), created: Date.now(), tv: 0 };
       saveUsers();
       return send(res, 201, { token: makeToken(em), email: em, name: users[em].name });
     }
     if (req.method === 'POST' && p === '/api/login') {
+      const ip = clientIp(req);
       const { email, password } = await readBody(req);
       const em = String(email || '').trim().toLowerCase();
+      // throttle per-IP and per-account so passwords can't be brute-forced
+      if (!rateLimit('login-ip:' + ip, 30, 600000) || !rateLimit('login-acc:' + em, 8, 600000))
+        return send(res, 429, { error: 'Too many attempts — wait a few minutes and try again.' });
+      if (String(password || '').length > MAX_PW) return send(res, 400, { error: 'Wrong email or password.' });
       const u = users[em];
-      if (!u || !verifyPassword(String(password || ''), u.pass)) return send(res, 401, { error: 'Wrong email or password.' });
+      // always run a hash (dummy on miss) so timing doesn't reveal whether the account exists
+      const ok = u ? await verifyPassword(String(password || ''), u.pass) : (await verifyPassword(String(password || ''), 'x:00'), false);
+      if (!u || !ok) return send(res, 401, { error: 'Wrong email or password.' });
       return send(res, 200, { token: makeToken(em), email: em, name: u.name });
     }
     if (req.method === 'GET' && p === '/api/me') {
@@ -574,7 +649,7 @@ const server = http.createServer(async (req, res) => {
       }
       const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
       const ship = subtotal >= FREE_SHIP_AT ? 0 : SHIP_COST;
-      const id = 'SWK-' + crypto.randomBytes(3).toString('hex').toUpperCase();
+      const id = 'SWK-' + crypto.randomBytes(8).toString('hex').toUpperCase();
       const total = subtotal + ship;
       const net = pickNetwork(b.network);
       const order = {
@@ -618,6 +693,9 @@ const server = http.createServer(async (req, res) => {
     /* --- create listing --- */
     if (req.method === 'POST' && p === '/api/listings') {
       const u = tokenUser(req); if (!u) return send(res, 401, { error: 'Sign in to sell.' });
+      if (!rateLimit('list:' + u.email, 40, 3600000)) return send(res, 429, { error: 'Too many listings this hour — try again later.' });
+      const activeCount = listings.filter(l => l.seller === u.email && l.status !== 'removed').length;
+      if (activeCount >= 300) return send(res, 400, { error: 'Listing limit reached.' });
       const b = await readBody(req);
       const title = String(b.title || '').trim().slice(0, 90);
       const price = Math.round(Number(b.price) * 100) / 100;
@@ -706,6 +784,7 @@ const server = http.createServer(async (req, res) => {
     /* --- report a listing --- */
     if (req.method === 'POST' && p === '/api/report') {
       const u = tokenUser(req); if (!u) return send(res, 401, { error: 'Sign in to report.' });
+      if (!rateLimit('rep:' + u.email, 20, 3600000)) return send(res, 429, { error: 'Too many reports — try later.' });
       const b = await readBody(req);
       const l = listings.find(x => x.id === b.listingId);
       if (!l) return send(res, 404, { error: 'not found' });
@@ -721,7 +800,7 @@ const server = http.createServer(async (req, res) => {
       if (!l || l.seller !== u.email) return send(res, 403, { error: 'Not your listing.' });
       const days = Math.min(30, Math.max(1, parseInt(b.days, 10) || 7));
       const total = Math.round(days * BOOST_PRICE_PER_DAY * 100) / 100;
-      const id = 'SWK-' + crypto.randomBytes(3).toString('hex').toUpperCase();
+      const id = 'SWK-' + crypto.randomBytes(8).toString('hex').toUpperCase();
       const net = pickNetwork(b.network);
       const order = {
         id, email: u.email, boost: true, listingId: l.id, boostDays: days,
@@ -736,18 +815,19 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && p === '/api/buy') {
       const u = tokenUser(req); if (!u) return send(res, 401, { error: 'Sign in to buy.' });
       const b = await readBody(req);
+      // re-read the listing AFTER awaiting the body so a concurrent buy/reserve can't slip through the await window
       const l = listings.find(x => x.id === b.listingId && x.status === 'active');
-      if (!l) return send(res, 404, { error: 'Listing not available.' });
+      if (!l) return send(res, 409, { error: 'This item is no longer available.' });
       if (l.seller === u.email) return send(res, 400, { error: "You can't buy your own listing." });
       const region = String(b.region || '');
       if (l.ships && l.ships.length && region && !l.ships.includes(region)) return send(res, 400, { error: `This seller does not ship to ${region}.` });
       let price = l.price;
       const of = offers.find(o => o.listingId === l.id && o.buyer === u.email && o.status === 'accepted');
       if (of) price = of.amount;
-      // buyer-side fee: buyer pays item price + fee%; seller receives the full price
+      // buyer-side fee is baked into the price shown at purchase; seller receives the full listed price
       const fee = Math.round(price * MARKET_FEE_PCT) / 100;
       const total = Math.round((price + fee) * 100) / 100;
-      const id = 'SWK-' + crypto.randomBytes(3).toString('hex').toUpperCase();
+      const id = 'SWK-' + crypto.randomBytes(8).toString('hex').toUpperCase();
       const net = pickNetwork(b.network);
       const order = {
         id, email: u.email, name: String(b.name || u.name || '').slice(0, 80),
@@ -758,8 +838,10 @@ const server = http.createServer(async (req, res) => {
         payAmount: assignUniqueAmount(total),
         status: 'pending', paidTx: null, paidAt: null, carrier: '', tracking: '', paidOut: false, date: Date.now(),
       };
-      orders.push(order); saveOrders();
-      if (of) { of.status = 'used'; saveOffers(); }
+      // reserve the item so it can't be sold twice; a timer frees it if the buyer never pays (see reservation sweep)
+      l.status = 'reserved'; l.reservedBy = id;
+      orders.push(order); if (of) of.status = 'used';
+      saveListings(); saveOrders(); if (of) saveOffers();
       return send(res, 201, { orderId: id, receiptUrl: `/receipt/${id}`, total, payAmount: order.payAmount, ...payMeta(order) });
     }
     /* --- seller marks shipped --- */
@@ -778,8 +860,10 @@ const server = http.createServer(async (req, res) => {
       const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
       const o = orders.find(x => x.id === p.split('/')[3]);
       if (!o || o.email !== u.email) return send(res, 403, { error: 'Not your order.' });
-      if (!['shipped', 'delivered', 'disputed'].includes(o.status)) return send(res, 400, { error: 'Nothing to confirm yet.' });
-      releaseOrder(o); saveOrders();
+      if (o.status === 'disputed') return send(res, 400, { error: 'This order is in dispute — support will resolve it.' });
+      if (!['shipped', 'delivered'].includes(o.status)) return send(res, 400, { error: 'Nothing to confirm yet.' });
+      if (!releaseOrder(o)) return send(res, 400, { error: 'Nothing to confirm yet.' });
+      saveOrders();
       return send(res, 200, { ok: true });
     }
     /* --- buyer opens dispute --- */
@@ -830,6 +914,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (p === '/api/chat/send' && req.method === 'POST') {
       const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
+      if (!rateLimit('msg:' + u.email, 60, 60000)) return send(res, 429, { error: 'Slow down — too many messages.' });
       const b = await readBody(req);
       const l = listings.find(x => x.id === b.listingId);
       if (!l) return send(res, 404, { error: 'not found' });
@@ -859,14 +944,14 @@ const server = http.createServer(async (req, res) => {
     /* --- translate a chat message (keyless) --- */
     if (req.method === 'POST' && p === '/api/translate') {
       const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
+      if (!rateLimit('tr:' + u.email, 60, 600000)) return send(res, 429, { error: 'Too many translations — slow down.' });
       const b = await readBody(req);
       const text = String(b.text || '').slice(0, 1000);
       const to = String(b.to || 'en').slice(0, 5).replace(/[^a-zA-Z-]/g, '') || 'en';
       if (!text) return send(res, 400, { error: 'Nothing to translate.' });
       try {
         const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(to)}&dt=t&q=${encodeURIComponent(text)}`;
-        const r = await fetch(url);
-        const j = await r.json();
+        const j = await fetchJSON(url, {}, 8000);
         const out = (Array.isArray(j) && Array.isArray(j[0])) ? j[0].map(x => x[0]).join('') : text;
         const src = (Array.isArray(j) && j[2]) ? j[2] : '';
         return send(res, 200, { text: out, from: src });
@@ -911,15 +996,68 @@ const server = http.createServer(async (req, res) => {
       const sales = orders.filter(o => o.escrow && o.seller === u.email).sort((a, b) => b.date - a.date).map(o => ({ ...orderView(o), reviewedByMe: reviewedByMe(o.id) }));
       const offersMade = offers.filter(o => o.buyer === u.email).sort((a, b) => b.createdAt - a.createdAt).map(offerView);
       const offersReceived = offers.filter(o => { const l = listings.find(x => x.id === o.listingId); return l && l.seller === u.email; }).sort((a, b) => b.createdAt - a.createdAt).map(offerView);
-      return send(res, 200, { payout: u.payout || '', balance: payoutBalance(u.email), listings: myListings, purchases, sales, offersMade, offersReceived });
+      const balance = payoutBalance(u.email);
+      const wfee = withdrawFee(balance);
+      const myWithdrawals = withdrawals.filter(w => w.seller === u.email).sort((a, b) => b.at - a.at).slice(0, 20);
+      return send(res, 200, {
+        payout: u.payout || '', balance, listings: myListings, purchases, sales, offersMade, offersReceived,
+        withdrawFeePct: WITHDRAW_FEE_PCT, withdrawFeeMin: WITHDRAW_FEE_MIN, withdrawFee: wfee, withdrawNet: Math.round((balance - wfee) * 100) / 100,
+        withdrawals: myWithdrawals,
+      });
     }
-    /* --- set payout address --- */
+    /* --- set payout address (USDC 0x… or USDT Tron T…) --- */
     if (req.method === 'POST' && p === '/api/payout') {
       const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
       const b = await readBody(req);
       const addr = String(b.address || '').trim();
-      if (addr && !/^0x[a-fA-F0-9]{40}$/.test(addr)) return send(res, 400, { error: 'Enter a valid 0x… address.' });
+      if (addr && !/^0x[a-fA-F0-9]{40}$/.test(addr) && !/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(addr))
+        return send(res, 400, { error: 'Enter a valid payout address (0x… for USDC or T… for USDT-TRC20).' });
       users[u.email].payout = addr; saveUsers();
+      return send(res, 200, { ok: true });
+    }
+    /* --- seller requests a withdrawal (1% fee, min $2) --- */
+    if (req.method === 'POST' && p === '/api/withdraw') {
+      const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
+      if (!u.payout) return send(res, 400, { error: 'Add a payout address first.' });
+      const gross = payoutBalance(u.email);
+      if (gross <= 0) return send(res, 400, { error: 'Nothing to withdraw yet.' });
+      const fee = withdrawFee(gross);
+      const net = Math.round((gross - fee) * 100) / 100;
+      if (net <= 0) return send(res, 400, { error: 'Balance is below the minimum withdrawal fee.' });
+      const wid = 'W-' + crypto.randomBytes(6).toString('hex').toUpperCase();
+      // lock the released orders into this withdrawal so the balance can't be withdrawn twice
+      for (const o of orders) if (o.seller === u.email && o.status === 'released' && !o.paidOut) { o.paidOut = true; o.withdrawalId = wid; }
+      saveOrders();
+      withdrawals.push({ id: wid, seller: u.email, gross, fee, net, address: u.payout, status: 'requested', at: Date.now(), tx: '' });
+      saveWithdrawals();
+      return send(res, 201, { ok: true, withdrawal: { id: wid, gross, fee, net, status: 'requested' } });
+    }
+    /* --- account: logout (revoke all tokens), change password, delete --- */
+    if (req.method === 'POST' && p === '/api/logout') {
+      const u = tokenUser(req); if (!u) return send(res, 200, { ok: true });
+      users[u.email].tv = (users[u.email].tv || 0) + 1; saveUsers();   // invalidate every existing token
+      return send(res, 200, { ok: true });
+    }
+    if (req.method === 'POST' && p === '/api/change-password') {
+      const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
+      const b = await readBody(req);
+      const cur = String(b.current || ''), next = String(b.next || '');
+      if (next.length < 8) return send(res, 400, { error: 'New password must be 8+ characters.' });
+      if (next.length > MAX_PW) return send(res, 400, { error: 'Password too long.' });
+      if (!(await verifyPassword(cur, u.pass))) return send(res, 403, { error: 'Current password is incorrect.' });
+      users[u.email].pass = await hashPassword(next);
+      users[u.email].tv = (users[u.email].tv || 0) + 1;                // log out other sessions
+      saveUsers();
+      return send(res, 200, { ok: true, token: makeToken(u.email) });
+    }
+    if (req.method === 'POST' && p === '/api/delete-account') {
+      const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
+      const owed = payoutBalance(u.email);
+      const openOrders = orders.filter(o => (o.email === u.email || o.seller === u.email) && ['pending', 'held', 'paid', 'processing', 'shipped', 'delivered', 'disputed'].includes(o.status));
+      if (owed > 0 || openOrders.length) return send(res, 400, { error: 'Finish or withdraw all open orders and balances before deleting your account.' });
+      for (const l of listings) if (l.seller === u.email && l.status === 'active') l.status = 'removed';
+      saveListings();
+      delete users[u.email]; saveUsers();
       return send(res, 200, { ok: true });
     }
 
@@ -947,8 +1085,16 @@ const server = http.createServer(async (req, res) => {
         const { id, status, carrier, tracking } = await readBody(req);
         const o = orders.find(x => x.id === id);
         if (!o || !['pending', 'paid', 'held', 'processing', 'shipped', 'delivered', 'released', 'refunded', 'disputed', 'cancelled'].includes(status)) return send(res, 400, { error: 'bad request' });
-        o.status = status;
-        if (status === 'released') { o.releasedAt = o.releasedAt || Date.now(); const l = listings.find(x => x.id === o.listingId); if (l && l.status !== 'sold') { l.status = 'sold'; saveListings(); } }
+        // terminal-state protection: a settled order (paid out to seller, or refunded) can never be flipped
+        if ((o.paidOut || o.status === 'refunded') && status !== o.status) return send(res, 400, { error: 'Order already settled — cannot change.' });
+        if (status === 'refunded') {
+          if (!refundOrder(o)) return send(res, 400, { error: 'Cannot refund this order in its current state.' });
+        } else if (status === 'released') {
+          if (o.status !== 'released') {
+            o.status = 'released'; o.releasedAt = o.releasedAt || Date.now();
+            const l = listings.find(x => x.id === o.listingId); if (l && l.status !== 'sold') { l.status = 'sold'; delete l.reservedBy; saveListings(); }
+          }
+        } else { o.status = status; }
         if (carrier !== undefined) o.carrier = String(carrier).slice(0, 60);
         if (tracking !== undefined) o.tracking = String(tracking).slice(0, 80);
         saveOrders();
@@ -959,6 +1105,17 @@ const server = http.createServer(async (req, res) => {
         const o = orders.find(x => x.id === id);
         if (!o) return send(res, 404, { error: 'not found' });
         o.paidOut = true; saveOrders();
+        return send(res, 200, { ok: true });
+      }
+      if (req.method === 'GET' && p === '/api/admin/withdrawals') {
+        return send(res, 200, { withdrawals: withdrawals.slice().sort((a, b) => b.at - a.at).slice(0, 200) });
+      }
+      if (req.method === 'POST' && p === '/api/admin/withdraw-paid') {
+        const { id, tx } = await readBody(req);
+        const w = withdrawals.find(x => x.id === id);
+        if (!w) return send(res, 404, { error: 'not found' });
+        w.status = 'paid'; w.tx = String(tx || '').slice(0, 120); w.paidAt = Date.now();
+        saveWithdrawals();
         return send(res, 200, { ok: true });
       }
       if (req.method === 'POST' && p === '/api/admin/verify') {
@@ -1025,75 +1182,86 @@ function creditOrder(match, txHash, ts, amt, token) {
   usedTx.add(String(txHash).toLowerCase());
 }
 
-// USDC on Ethereum (ERC-20) via Etherscan
+// fetch JSON with a hard timeout so a hung upstream can't pile up in-flight requests
+const fetchJSON = async (url, opts = {}, ms = 10000) => (await fetch(url, { ...opts, signal: AbortSignal.timeout(ms) })).json();
+
+// USDC on Ethereum (ERC-20) via Etherscan — pages back to the oldest pending order so a burst can't bury a payment
 async function pollPayments() {
   if (!ETHERSCAN_KEY) return;
   const pending = orders.filter(o => o.status === 'pending' && o.network !== 'usdt-trc20');
   if (!pending.length) return;
+  const oldest = Math.min(...pending.map(o => o.date)) - 20 * 60 * 1000;
   try {
-    const url = `https://api.etherscan.io/api?module=account&action=tokentx`
-      + `&contractaddress=${USDC_CONTRACT}&address=${WALLET}`
-      + `&page=1&offset=100&sort=desc&apikey=${ETHERSCAN_KEY}`;
-    const res = await fetch(url);
-    const j = await res.json();
-    if (j.status !== '1' || !Array.isArray(j.result)) return;
     let changed = false;
-    for (const tx of j.result) {
-      if (!tx.to || tx.to.toLowerCase() !== WALLET.toLowerCase()) continue;      // incoming only
-      if (Number(tx.confirmations) < CONFIRMATIONS) continue;                     // wait for confirmations
-      if (usedTx.has(tx.hash.toLowerCase())) continue;                            // already credited
-      const amt = Number(tx.value) / 10 ** USDC_DECIMALS;
-      const ts = Number(tx.timeStamp) * 1000;
-      const match = pending.find(o => o.status === 'pending' && Math.abs(o.payAmount - amt) < 0.005 && ts >= o.date - 15 * 60 * 1000);
-      if (match) { creditOrder(match, tx.hash, ts, amt, 'USDC'); changed = true; }
+    for (let page = 1; page <= 20; page++) {
+      const url = `https://api.etherscan.io/api?module=account&action=tokentx`
+        + `&contractaddress=${USDC_CONTRACT}&address=${WALLET}`
+        + `&page=${page}&offset=100&sort=desc&apikey=${ETHERSCAN_KEY}`;
+      const j = await fetchJSON(url);
+      if (j.status !== '1' || !Array.isArray(j.result) || !j.result.length) break;
+      let oldestOnPage = Infinity;
+      for (const tx of j.result) {
+        const ts = Number(tx.timeStamp) * 1000; oldestOnPage = Math.min(oldestOnPage, ts);
+        if (!tx.to || tx.to.toLowerCase() !== WALLET.toLowerCase()) continue;      // incoming only
+        if (Number(tx.confirmations) < CONFIRMATIONS) continue;                    // wait for confirmations
+        if (usedTx.has(tx.hash.toLowerCase())) continue;                           // already credited
+        const amt = Number(tx.value) / 10 ** USDC_DECIMALS;
+        const match = pending.find(o => o.status === 'pending' && Math.abs(o.payAmount - amt) < 0.005 && ts >= o.date - 15 * 60 * 1000);
+        if (match) { creditOrder(match, tx.hash, ts, amt, 'USDC'); changed = true; }
+      }
+      if (j.result.length < 100 || oldestOnPage < oldest) break;                   // scanned far enough back
     }
     if (changed) saveOrders();
-  } catch (e) {
-    console.error('[swk-store] payment poll error:', e.message);
-  }
+  } catch (e) { console.error('[swk-store] payment poll error:', e.message); }
 }
-if (ETHERSCAN_KEY) setInterval(pollPayments, 30000).unref();
 
-// USDT on Tron (TRC-20) via TronGrid
+// USDT on Tron (TRC-20) via TronGrid — requires finality (tx old enough) before crediting
 async function pollPaymentsTron() {
   if (!USDT_TRC20_WALLET) return;
   const pending = orders.filter(o => o.status === 'pending' && o.network === 'usdt-trc20');
   if (!pending.length) return;
   try {
     const url = `https://api.trongrid.io/v1/accounts/${USDT_TRC20_WALLET}/transactions/trc20?only_to=true&limit=50&contract_address=${USDT_TRC20_CONTRACT}`;
-    const res = await fetch(url, { headers: process.env.TRONGRID_API_KEY ? { 'TRON-PRO-API-KEY': process.env.TRONGRID_API_KEY } : {} });
-    const j = await res.json();
+    const j = await fetchJSON(url, { headers: process.env.TRONGRID_API_KEY ? { 'TRON-PRO-API-KEY': process.env.TRONGRID_API_KEY } : {} });
     if (!j || !Array.isArray(j.data)) return;
     let changed = false;
     for (const tx of j.data) {
       if (!tx.to || tx.to !== USDT_TRC20_WALLET) continue;                         // incoming only
       const hash = tx.transaction_id;
       if (!hash || usedTx.has(String(hash).toLowerCase())) continue;
-      const dec = (tx.token_info && tx.token_info.decimals) || 6;
-      const amt = Number(tx.value) / 10 ** dec;
-      const ts = Number(tx.block_timestamp) || Date.now();
+      const ts = Number(tx.block_timestamp) || 0;
+      if (!ts || Date.now() - ts < 60000) continue;                                // finality gate (~19 Tron blocks ≈ 57s)
+      const amt = Number(tx.value) / 10 ** 6;                                      // USDT-TRC20 is always 6 decimals
       const match = pending.find(o => o.status === 'pending' && Math.abs(o.payAmount - amt) < 0.005 && ts >= o.date - 15 * 60 * 1000);
       if (match) { creditOrder(match, hash, ts, amt, 'USDT'); changed = true; }
     }
     if (changed) saveOrders();
-  } catch (e) {
-    console.error('[swk-store] tron poll error:', e.message);
-  }
+  } catch (e) { console.error('[swk-store] tron poll error:', e.message); }
 }
-if (USDT_TRC20_WALLET) setInterval(pollPaymentsTron, 30000).unref();
 
-/* ---------- auto-release escrow after the buyer-protection window ---------- */
+// self-rescheduling loop — never overlaps runs even if an upstream call is slow
+const schedule = (fn, ms) => { const tick = () => Promise.resolve(fn()).catch(() => {}).finally(() => setTimeout(tick, ms).unref()); setTimeout(tick, ms).unref(); };
+if (ETHERSCAN_KEY) schedule(pollPayments, 30000);
+if (USDT_TRC20_WALLET) schedule(pollPaymentsTron, 30000);
+
+/* ---------- housekeeping: reservations, auto-release, ship-deadline refunds ---------- */
+const RESERVE_MS = Number(process.env.RESERVE_MINUTES || 60) * 60 * 1000;
 setInterval(() => {
-  const cutoff = Date.now() - AUTO_RELEASE_DAYS * 864e5;
-  let changed = false;
+  const now = Date.now(); let changed = false;
   for (const o of orders) {
-    if (o.escrow && o.status === 'shipped' && o.shippedAt && o.shippedAt < cutoff) {
-      releaseOrder(o); changed = true;
-      console.log(`[swk-store] order ${o.id} auto-released to seller after ${AUTO_RELEASE_DAYS}d`);
+    // free a reservation whose buyer never paid
+    if (o.escrow && o.status === 'pending' && now - o.date > RESERVE_MS) { o.status = 'cancelled'; relistListing(o); changed = true; }
+    // auto-release to seller after the buyer-protection window
+    else if (o.escrow && o.status === 'shipped' && o.shippedAt && o.shippedAt < now - AUTO_RELEASE_DAYS * 864e5) {
+      if (releaseOrder(o)) { changed = true; console.log(`[swk-store] order ${o.id} auto-released after ${AUTO_RELEASE_DAYS}d`); }
+    }
+    // auto-refund the buyer if the seller never ships within the deadline
+    else if (o.escrow && o.status === 'held' && (o.paidAt || o.date) < now - SHIP_DEADLINE_DAYS * 864e5) {
+      if (refundOrder(o)) { changed = true; console.log(`[swk-store] order ${o.id} auto-refunded — not shipped in ${SHIP_DEADLINE_DAYS}d`); }
     }
   }
   if (changed) saveOrders();
-}, 3600000).unref();
+}, 300000).unref();
 
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`[swk-store] listening on 127.0.0.1:${PORT}`);
@@ -1102,3 +1270,7 @@ server.listen(PORT, '127.0.0.1', () => {
   console.log(`[swk-store] wallet: ${WALLET}`);
   console.log(`[swk-store] payment auto-check ${ETHERSCAN_KEY ? 'ENABLED (USDC ERC-20)' : 'DISABLED (set ETHERSCAN_API_KEY) — manual confirmation'}`);
 });
+
+// never let a stray rejection/exception take the whole marketplace down; log and keep serving
+process.on('unhandledRejection', (e) => console.error('[swk-store] unhandledRejection:', e && e.message ? e.message : e));
+process.on('uncaughtException', (e) => console.error('[swk-store] uncaughtException:', e && e.stack ? e.stack : e));
