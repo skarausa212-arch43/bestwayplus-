@@ -9,6 +9,7 @@ const path = require('path');
 const { ImapFlow } = require('imapflow');
 const { simpleParser } = require('mailparser');
 const nodemailer = require('nodemailer');
+const MailComposer = require('nodemailer/lib/mail-composer');
 
 const MAIL_HOST = process.env.MAIL_HOSTNAME;
 // Домен адресов: задаётся явно, иначе выводим из hostname (mail.example.com -> example.com)
@@ -113,6 +114,29 @@ async function resolveSpecial(client, use, fallback) {
 const resolveJunk = (client) => resolveSpecial(client, '\\Junk', 'Junk');
 const resolveTrash = (client) => resolveSpecial(client, '\\Trash', 'Trash');
 const resolveSent = (client) => resolveSpecial(client, '\\Sent', 'Sent');
+
+// Отправка письма + копия в папку Sent: SMTP сам копий не сохраняет,
+// это делает клиент — то есть мы, через IMAP APPEND
+async function sendAndStore(acc, { to, subject, text, attachments }) {
+  const raw = await new Promise((resolve, reject) => {
+    new MailComposer({ from: acc.email, to, subject, text, attachments })
+      .compile().build((e, m) => (e ? reject(e) : resolve(m)));
+  });
+  const transport = nodemailer.createTransport({
+    host: acc.host, port: 465, secure: true,
+    auth: { user: acc.email, pass: acc.password },
+  });
+  await transport.sendMail({
+    envelope: { from: acc.email, to: to.split(',').map((s) => s.trim()).filter(Boolean) },
+    raw,
+  });
+  // копия в Sent — если вдруг не получится, отправку это не отменяет
+  await withImap(acc, async (client) => {
+    const sent = await resolveSent(client);
+    await client.mailboxCreate(sent).catch(() => {});
+    await client.append(sent, raw, ['\\Seen']);
+  }).catch((e) => console.error('sent-copy failed:', e.message));
+}
 
 async function boxFor(client, folder) {
   if (folder === 'spam') return resolveJunk(client);
@@ -289,9 +313,7 @@ async function handleTgUpdate(u) {
       const acc = collectChatAccounts(chatId).find((a) => a.email === ctx.email);
       if (!acc) { await say(chatId, 'That mailbox is no longer connected.'); return; }
       try {
-        await nodemailer.createTransport({ host: acc.host, port: 465, secure: true,
-          auth: { user: acc.email, pass: acc.password } })
-          .sendMail({ from: acc.email, to: ctx.replyTo, subject: 'Re: ' + ctx.subject, text });
+        await sendAndStore(acc, { to: ctx.replyTo, subject: 'Re: ' + ctx.subject, text });
         await say(chatId, `✉️ Sent to ${ctx.replyTo} from ${acc.email}`);
       } catch (e) {
         await say(chatId, '❌ Failed to send: ' + (e.response || e.message));
@@ -315,9 +337,7 @@ async function handleTgUpdate(u) {
       return;
     }
     try {
-      await nodemailer.createTransport({ host: from.host, port: 465, secure: true,
-        auth: { user: from.email, pass: from.password } })
-        .sendMail({ from: from.email, to: m[1], subject: m[2].trim(), text: m[3].trim() });
+      await sendAndStore(from, { to: m[1], subject: m[2].trim(), text: m[3].trim() });
       await say(chatId, `✉️ Sent to ${m[1]} from ${from.email}`);
     } catch (e) {
       await say(chatId, '❌ Failed to send: ' + (e.response || e.message));
@@ -1028,14 +1048,7 @@ app.post('/api/send', express.json({ limit: '25mb' }), async (req, res) => {
   const totalSize = files.reduce((n, f) => n + f.content.length, 0);
   if (totalSize > 18 * 1024 * 1024) return res.status(400).json({ error: 'Attachments are too large (18 MB max).' });
   try {
-    const transport = nodemailer.createTransport({
-      host: acc.host,
-      port: 465,
-      secure: true,
-      auth: { user: acc.email, pass: acc.password },
-    });
-    await transport.sendMail({
-      from: acc.email,
+    await sendAndStore(acc, {
       to,
       subject: String(subject || ''),
       text: String(text || ''),
