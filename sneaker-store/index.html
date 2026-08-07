@@ -593,6 +593,10 @@
   .seller-row .sname{font-weight:600;font-size:14px;display:flex;align-items:center;gap:6px}
   .seller-row .smeta{font-size:12.5px;color:var(--muted);margin-top:2px}
   .seller-row a[data-seller]{margin-left:auto;color:var(--accent);font-weight:600;font-size:13px}
+  .follow-btn{flex:none;padding:8px 16px;border-radius:100px;font-size:13px;font-weight:700;background:var(--btn);color:var(--btn-ink);border:1px solid var(--btn);transition:.16s var(--ease)}
+  .follow-btn.on{background:transparent;color:var(--ink);border-color:var(--line-2)}
+  .follow-btn:active{transform:scale(.95)}
+  .follow-btn:disabled{opacity:.6}
   .vbadge{font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-soft);padding:2px 7px;border-radius:6px}
   .qv-act{display:flex;gap:10px;margin-top:8px}
   .lst-msg{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:14px;height:48px;border-radius:14px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-weight:600;font-size:14.5px;transition:.18s}
@@ -2417,15 +2421,26 @@ function renderRecent(){
 async function openSeller(email){
   const box=$('#lstBody');box.innerHTML='<div class="cobody" style="grid-column:1/-1"><p class="sub">Loading…</p></div>';openModal('#lstModal');
   let d;try{d=await mfetch('/api/seller/'+encodeURIComponent(email))}catch(e){box.innerHTML='<div class="cobody" style="grid-column:1/-1"><h3>Not found</h3></div>';return;}
+  const followBtn=d.isMe?'':`<button class="follow-btn${d.following?' on':''}" id="followBtn" data-email="${esc(d.email)}">${d.following?'✓ Following':'+ Follow'}</button>`;
   box.innerHTML=`<div class="cobody" style="grid-column:1/-1">
-    <div class="seller-row" style="border-top:0;margin-top:0">
+    <div class="seller-row" style="border-top:0;margin-top:0;padding-right:56px">
       <div class="av">${d.avatar?`<img src="${d.avatar}" alt="">`:esc((d.handle||'?')[0].toUpperCase())}</div>
-      <div><div class="sname">@${esc(d.handle)}</div><div class="smeta">${d.rating?stars(d.rating)+' '+d.rating:'No ratings'} · ${d.sold||0} sold · ${d.reviews.length} reviews${d.telegram?` · <a href="https://t.me/${esc(d.telegram)}" target="_blank" rel="noopener" style="color:var(--accent)">✈ @${esc(d.telegram)}</a>`:''}</div></div>
+      <div style="flex:1;min-width:0"><div class="sname">@${esc(d.handle)}</div><div class="smeta">${d.rating?stars(d.rating)+' '+d.rating:'No ratings'} · ${d.sold||0} sold · <span id="followCount">${d.followers||0}</span> follower${(d.followers||0)===1?'':'s'}${d.telegram?` · <a href="https://t.me/${esc(d.telegram)}" target="_blank" rel="noopener" style="color:var(--accent)">✈ @${esc(d.telegram)}</a>`:''}</div></div>
+      ${followBtn}
     </div>
     <h3 style="font-size:13px;letter-spacing:.1em;color:var(--faint);text-transform:uppercase;margin:8px 0 10px">Listings</h3>
     <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">${d.listings.length?d.listings.map(listingCardHTML).join(''):'<p class="mkt-empty">No active listings.</p>'}</div>
     ${d.reviews.length?`<h3 style="font-size:13px;letter-spacing:.1em;color:var(--faint);text-transform:uppercase;margin:20px 0 10px">Reviews</h3>`+d.reviews.map(r=>`<div style="padding:10px 0;border-top:1px solid var(--line)"><div>${stars(r.rating)} <b style="font-size:13px">@${esc(r.from)}</b></div>${r.text?`<p style="font-size:13px;color:var(--muted);margin-top:4px">${esc(r.text)}</p>`:''}</div>`).join(''):''}
   </div>`;
+  const fb=$('#followBtn');if(fb)fb.addEventListener('click',async()=>{
+    if(!AUTH)return needAuth('Sign in to follow sellers');
+    fb.disabled=true;
+    try{const r=await mfetch('/api/follow',{method:'POST',body:JSON.stringify({email:fb.dataset.email})});
+      fb.classList.toggle('on',r.following);fb.textContent=r.following?'✓ Following':'+ Follow';
+      const fc=$('#followCount');if(fc)fc.textContent=r.followers;
+      toast(r.following?'Following — you’ll be notified of new listings':'Unfollowed');
+      refreshAlerts();}
+    catch(e){toast(e.message);}fb.disabled=false;});
   box.addEventListener('click',e=>{if(listingCTAClick(e))e.stopPropagation();},true);
   box.querySelectorAll('[data-fav]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();toggleFav(el.dataset.fav);}));
   box.querySelectorAll('[data-listing]').forEach(el=>el.addEventListener('click',()=>openListing(el.dataset.listing)));
@@ -2871,6 +2886,7 @@ function buildNotifs(){
   (d.listings||[]).forEach(l=>{if(l.status==='active')out.push({ic:'✨',t:`“${l.title}” is live`,at:l.createdAt||0,tab:'listings'});else if(l.status==='rejected')out.push({ic:'⚠️',t:`“${l.title}” was not approved`,at:l.createdAt||0,tab:'listings'});});
   (MKT_CHATS||[]).forEach(c=>{if(c.last)out.push({ic:'💬',t:`Message from @${c.counterpart}`,at:c.at||0,tab:'chats',chat:c});});
   (PRICE_DROPS||[]).forEach(p=>out.push({ic:'📉',t:`Price drop on “${p.title}” — ${fmt(p.from)} → ${fmt(p.to)}`,at:p.at||0,tab:'saved'}));
+  (d.feed||[]).forEach(f=>out.push({ic:'🆕',t:`@${f.seller} listed “${f.title}”`,at:f.createdAt||0,tab:'feed',item:f.id}));
   return out.sort((a,b)=>b.at-a.at).slice(0,40);
 }
 function unreadNotifs(){const seen=load('swk_notif_seen',0);return buildNotifs().filter(n=>n.at>seen).length;}
@@ -2881,7 +2897,7 @@ function paintMarket(){
   const counts={notifs:unreadNotifs(),saved:(favs||[]).length,buying:(d.purchases||[]).length,selling:(d.sales||[]).length,listings:(d.listings||[]).length,offers:(d.offersReceived||[]).length+(d.offersMade||[]).length,chats:(MKT_CHATS||[]).length};
   const tab=(k,label)=>`<button class="mkt-tab ${t===k?'on':''}" data-tab="${k}">${label}${counts[k]?` <span class="n">${counts[k]}</span>`:''}</button>`;
   let body='';
-  if(t==='notifs'){const ns=buildNotifs();body=ns.length?`<div class="notif-list">${ns.map(n=>`<button class="notif" data-ntab="${n.tab}"><span class="notif-ic">${n.ic}</span><span class="notif-t">${esc(n.t)}</span><span class="notif-a">${timeAgo(n.at)}</span></button>`).join('')}</div>`:'<p class="mkt-empty">🔔 No notifications yet. Offers, sales and messages show up here.</p>';}
+  if(t==='notifs'){const ns=buildNotifs();body=ns.length?`<div class="notif-list">${ns.map(n=>`<button class="notif" data-ntab="${n.tab}"${n.item?` data-item="${esc(n.item)}"`:''}><span class="notif-ic">${n.ic}</span><span class="notif-t">${esc(n.t)}</span><span class="notif-a">${timeAgo(n.at)}</span></button>`).join('')}</div>`:'<p class="mkt-empty">🔔 No notifications yet. Offers, sales and messages show up here.</p>';}
   else if(t==='saved')body='<div class="wishgrid" id="wishGrid"><p class="mkt-empty">Loading…</p></div>';
   else if(t==='buying')body=(d.purchases&&d.purchases.length)?d.purchases.map(o=>mktOrderCard(o,'buying')).join(''):'<p class="mkt-empty">No purchases yet.</p>';
   else if(t==='selling')body=(d.sales&&d.sales.length)?d.sales.map(o=>mktOrderCard(o,'selling')).join(''):'<p class="mkt-empty">No sales yet.</p>';
@@ -2905,7 +2921,7 @@ function paintMarket(){
   $('#mktPanel').innerHTML=`<div class="mkt-tabs">${tab('profile','Profile')}${tab('notifs','🔔')}${tab('saved','♥ Saved')}${tab('buying','Buying')}${tab('selling','Selling')}${tab('listings','Listings')}${tab('offers','Offers')}${tab('chats','Messages')}${tab('payout','Payout')}</div><div id="mktBody">${body}</div>`;
   $('#mktPanel').querySelectorAll('.mkt-tab').forEach(b=>b.addEventListener('click',()=>{MKT_TAB=b.dataset.tab;paintMarket();if(b.dataset.tab==='chats')loadChats();}));
   if(t==='saved')paintWishlist();
-  if(t==='notifs'){save('swk_notif_seen',Date.now());updateMsgBadge();$('#mktBody').querySelectorAll('[data-ntab]').forEach(el=>el.addEventListener('click',()=>{MKT_TAB=el.dataset.ntab;paintMarket();if(el.dataset.ntab==='chats')loadChats();}));}
+  if(t==='notifs'){save('swk_notif_seen',Date.now());updateMsgBadge();$('#mktBody').querySelectorAll('[data-ntab]').forEach(el=>el.addEventListener('click',()=>{if(el.dataset.item){closeModal('#accModal');openListing(el.dataset.item);return;}MKT_TAB=el.dataset.ntab;paintMarket();if(el.dataset.ntab==='chats')loadChats();}));}
   $('#mktBody').querySelectorAll('[data-chat]').forEach(el=>el.addEventListener('click',()=>{const [lid,buyer]=el.dataset.chat.split('|');openListingChat(lid,buyer||undefined);}));
   const po=$('#poSave');if(po)po.addEventListener('click',async()=>{po.disabled=true;try{await mfetch('/api/payout',{method:'POST',body:JSON.stringify({address:$('#poAddr').value})});toast('Payout address saved');loadMarket();}catch(e){toast(e.message);po.disabled=false;}});
   const pw=$('#poWithdraw');if(pw)pw.addEventListener('click',async()=>{pw.disabled=true;try{await mfetch('/api/withdraw',{method:'POST'});toast('Withdrawal requested — funds are on the way');loadMarket();}catch(e){toast(e.message);pw.disabled=false;}});

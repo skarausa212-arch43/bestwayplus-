@@ -57,6 +57,7 @@ const reviews = loadJSON('reviews.json', []);      // [{id,orderId,from,to,role,
 const messages = loadJSON('messages.json', []);    // [{id,orderId,from,text,at}]
 const reports = loadJSON('reports.json', []);      // [{id,listingId,from,reason,at,status}]
 const withdrawals = loadJSON('withdrawals.json', []); // [{id,seller,gross,fee,net,address,status,at,tx}]
+const follows = loadJSON('follows.json', []);      // [{follower, seller, at}]
 const stats = loadJSON('stats.json', { total: 0, unique: 0, daily: {} }); // daily[YYYY-MM-DD]={v,u,o}
 const saveUsers = () => saveJSON('users.json', users);
 const saveOrders = () => saveJSON('orders.json', orders);
@@ -66,6 +67,7 @@ const saveReviews = () => saveJSON('reviews.json', reviews);
 const saveMessages = () => saveJSON('messages.json', messages);
 const saveReports = () => saveJSON('reports.json', reports);
 const saveWithdrawals = () => saveJSON('withdrawals.json', withdrawals);
+const saveFollows = () => saveJSON('follows.json', follows);
 // listings are moderated: a new listing stays 'pending' until an admin approves it (see /api/admin/listing-moderate)
 const AUTO_RELEASE_DAYS = Number(process.env.AUTO_RELEASE_DAYS || 7); // buyer-protection window after shipping
 let statsDirty = false;
@@ -1109,7 +1111,25 @@ const server = http.createServer(async (req, res) => {
       const items = listings.filter(l => l.seller === email && l.status === 'active').map(listingCard);
       const rs = reviews.filter(r => r.to === email && r.role === 'seller').slice(-30).reverse()
         .map(r => ({ rating: r.rating, text: r.text, from: sellerHandle(r.from), createdAt: r.createdAt }));
-      return send(res, 200, { handle: sellerHandle(email), joined: (users[email].created || 0), avatar: users[email].avatar || '', telegram: users[email].telegram || '', ...st, listings: items, reviews: rs });
+      const viewer = tokenUser(req);
+      const followers = follows.filter(f => f.seller === email).length;
+      const following = viewer ? follows.some(f => f.follower === viewer.email && f.seller === email) : false;
+      const isMe = viewer && viewer.email === email;
+      return send(res, 200, { handle: sellerHandle(email), email, joined: (users[email].created || 0), avatar: users[email].avatar || '', telegram: users[email].telegram || '', ...st, listings: items, reviews: rs, followers, following, isMe });
+    }
+    /* --- follow / unfollow a seller (toggle) --- */
+    if (req.method === 'POST' && p === '/api/follow') {
+      const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
+      const b = await readBody(req);
+      const seller = String(b.email || '').toLowerCase();
+      if (!users[seller]) return send(res, 404, { error: 'Seller not found.' });
+      if (seller === u.email) return send(res, 400, { error: 'You cannot follow yourself.' });
+      const idx = follows.findIndex(f => f.follower === u.email && f.seller === seller);
+      let following;
+      if (idx >= 0) { follows.splice(idx, 1); following = false; }
+      else { follows.push({ follower: u.email, seller, at: Date.now() }); following = true; }
+      saveFollows();
+      return send(res, 200, { following, followers: follows.filter(f => f.seller === seller).length });
     }
     /* --- my marketplace dashboard --- */
     if (req.method === 'GET' && p === '/api/my/market') {
@@ -1123,10 +1143,15 @@ const server = http.createServer(async (req, res) => {
       const balance = payoutBalance(u.email);
       const wfee = withdrawFee(balance);
       const myWithdrawals = withdrawals.filter(w => w.seller === u.email).sort((a, b) => b.at - a.at).slice(0, 20);
+      const followed = new Set(follows.filter(f => f.follower === u.email).map(f => f.seller));
+      const feed = followed.size
+        ? listings.filter(l => l.status === 'active' && followed.has(l.seller)).sort((a, b) => b.createdAt - a.createdAt).slice(0, 20)
+            .map(l => ({ id: l.id, title: l.title, cover: l.cover || '', seller: sellerHandle(l.seller), createdAt: l.createdAt }))
+        : [];
       return send(res, 200, {
         payout: u.payout || '', balance, listings: myListings, purchases, sales, offersMade, offersReceived,
         withdrawFeePct: WITHDRAW_FEE_PCT, withdrawFeeMin: WITHDRAW_FEE_MIN, withdrawFee: wfee, withdrawNet: Math.round((balance - wfee) * 100) / 100,
-        withdrawals: myWithdrawals,
+        withdrawals: myWithdrawals, following: [...followed], feed,
       });
     }
     /* --- set payout address (USDC 0x… or USDT Tron T…) --- */
