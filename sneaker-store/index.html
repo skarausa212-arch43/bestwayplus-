@@ -1528,6 +1528,7 @@ const PRODUCTS=[
 
 /* ---------- state ---------- */
 let cart=load('swk_cart',[]),favs=load('swk_favs',[]),activeFilter='all',searchTerm='';
+let PRICE_DROPS=load('swk_pricedrops',[]);   // detected price drops on saved items → shown in notifications
 function load(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}}
 function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 const fmt=n=>usdtLabel(Number(n)||0),$=s=>document.querySelector(s);
@@ -1633,7 +1634,23 @@ function renderGrid(more){
   const lm2=$('#loadMore');if(lm2)lm2.addEventListener('click',()=>{GRID_SHOWN+=GRID_PAGE;renderGrid(true);});
   observeReveal();
 }
-function loadListings(){return fetch('/api/listings').then(r=>r.json()).then(d=>{LISTINGS=d.listings||[];renderFilterbar();renderGrid();renderFeatured();renderSellers();renderTrades();}).catch(()=>{renderFeatured();renderSellers();renderTrades();});}
+function loadListings(){return fetch('/api/listings').then(r=>r.json()).then(d=>{LISTINGS=d.listings||[];checkPriceDrops();renderFilterbar();renderGrid();renderFeatured();renderSellers();renderTrades();}).catch(()=>{renderFeatured();renderSellers();renderTrades();});}
+/* compare saved items against the last price we saw; surface any drops as notifications */
+function checkPriceDrops(){
+  const seen=load('swk_fav_prices',{}),next={};let changed=false;
+  (favs||[]).forEach(id=>{
+    const l=LISTINGS.find(x=>x.id===id);
+    if(!l||l.status==='sold'){if(seen[id]!=null)next[id]=seen[id];return;}
+    const price=Number(l.price)||0;next[id]=price;
+    if(seen[id]!=null&&price<seen[id]-0.001){
+      PRICE_DROPS.unshift({id,title:l.title||'',from:seen[id],to:price,at:Date.now()});
+      changed=true;
+    }
+  });
+  if(changed){PRICE_DROPS=PRICE_DROPS.slice(0,20);save('swk_pricedrops',PRICE_DROPS);}
+  save('swk_fav_prices',next);
+  if(changed&&AUTH)updateMsgBadge();
+}
 grid.addEventListener('click',e=>{
   if(listingCTAClick(e))return;
   const f=e.target.closest('[data-fav]');if(f){toggleFav(f.dataset.fav);return}
@@ -2392,6 +2409,82 @@ function makeOffer(l){
   amt.addEventListener('keydown',e=>{if(e.key==='Enter')send();});
   setTimeout(()=>{try{amt.focus();}catch(e){}},120);
 }
+/* seller counters a buyer's offer — styled modal (no native prompt) */
+function counterOfferModal(offerId){
+  const o=((MKT&&MKT.offersReceived)||[]).find(x=>x.id===offerId);
+  if(!o)return toast('Offer not found');
+  const offer=Number(o.amount)||0,price=Number(o.price)||0;
+  const mid=Math.round((offer+price)/2);
+  $('#offerBody').innerHTML=`<div class="cobody">
+    <h3>Counter offer</h3>
+    <div class="offer-item">
+      ${o.cover?`<img src="${esc(o.cover)}" alt="">`:'<span class="ph-mini">📦</span>'}
+      <div style="min-width:0"><b>${esc(o.title||'')}</b><span>Buyer offered ${usdtLabel(offer)} · asking ${usdtLabel(price)}</span></div>
+    </div>
+    <div class="field"><label>Your counter price</label><div class="offer-in"><span>₮</span><input id="cntAmt" type="number" min="${offer}" max="${price}" step="1" placeholder="${mid}" inputmode="decimal"></div></div>
+    <div class="offer-chips">
+      <button type="button" class="offer-chip" data-amt="${mid}">Meet halfway · ${usdtLabel(mid)}</button>
+      <button type="button" class="offer-chip" data-amt="${price}">Full price · ${usdtLabel(price)}</button>
+    </div>
+    <div class="offer-hint">Counter between ${usdtLabel(offer)} and ${usdtLabel(price)}. The buyer can then accept it and buy at that price.</div>
+    <button class="cbtn" id="cntGo">Send counter</button>
+    <div class="msg" id="cntMsg" style="display:none;margin-top:10px;color:#ff6b6b;font-weight:600;font-size:13px"></div>
+  </div>`;
+  openModal('#offerModal');
+  const amt=$('#cntAmt');
+  $('#offerBody').querySelectorAll('[data-amt]').forEach(b=>b.addEventListener('click',()=>{amt.value=b.dataset.amt;amt.focus();}));
+  const send=async()=>{
+    const v=parseFloat(amt.value),msg=$('#cntMsg');
+    if(!(v>0)){msg.style.display='block';msg.textContent='Enter a price.';return;}
+    if(v>price){msg.style.display='block';msg.textContent=`Counter can’t exceed the asking price (${usdtLabel(price)}).`;return;}
+    if(v<offer){msg.style.display='block';msg.textContent=`Counter should be at or above the buyer’s offer (${usdtLabel(offer)}).`;return;}
+    $('#cntGo').disabled=true;
+    try{
+      await mfetch('/api/offers/'+offerId+'/counter',{method:'POST',body:JSON.stringify({amount:v})});
+      closeModal('#offerModal');toast('Counter sent — waiting for the buyer');
+      if($('#accModal').classList.contains('show'))loadMarket();
+    }catch(e){msg.style.display='block';msg.textContent=e.message;$('#cntGo').disabled=false;}
+  };
+  $('#cntGo').addEventListener('click',send);
+  amt.addEventListener('keydown',e=>{if(e.key==='Enter')send();});
+  setTimeout(()=>{try{amt.focus();}catch(e){}},120);
+}
+/* seller marks an order shipped + adds tracking — styled modal (no native prompt) */
+function shipOrderModal(orderId,onDone){
+  const carriers=[['USPS','usps'],['UPS','ups'],['FedEx','fedex'],['DHL','dhl'],['Other','other']];
+  $('#offerBody').innerHTML=`<div class="cobody">
+    <h3>Add tracking &amp; ship</h3>
+    <div class="offer-hint" style="margin:0 0 14px">Enter the carrier and tracking number. The buyer sees a live tracking link and can confirm on arrival.</div>
+    <div class="field"><label>Carrier</label>
+      <div class="segmented" id="shipCarr">${carriers.map((c,i)=>`<button type="button" class="${i===0?'on':''}" data-carr="${c[0]}">${c[0]}</button>`).join('')}</div>
+    </div>
+    <div class="field" id="shipCarrOtherWrap" style="display:none"><label>Carrier name</label><input id="shipCarrOther" placeholder="e.g. Royal Mail" maxlength="40"></div>
+    <div class="field"><label>Tracking number</label><input id="shipTrack" placeholder="e.g. 9400 1000 0000 0000 0000 00" maxlength="80" autocomplete="off"></div>
+    <button class="cbtn" id="shipGo">Mark as shipped</button>
+    <div class="msg" id="shipMsg" style="display:none;margin-top:10px;color:#ff6b6b;font-weight:600;font-size:13px"></div>
+  </div>`;
+  openModal('#offerModal');
+  let carrier='USPS';
+  $('#shipCarr').querySelectorAll('[data-carr]').forEach(b=>b.addEventListener('click',()=>{
+    $('#shipCarr').querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');carrier=b.dataset.carr;
+    $('#shipCarrOtherWrap').style.display=carrier==='Other'?'':'none';
+  }));
+  const send=async()=>{
+    const track=$('#shipTrack').value.trim(),msg=$('#shipMsg');
+    let carr=carrier==='Other'?($('#shipCarrOther').value.trim()||'Carrier'):carrier;
+    if(!track){msg.style.display='block';msg.textContent='Enter a tracking number.';return;}
+    $('#shipGo').disabled=true;
+    try{
+      await mfetch('/api/order/'+orderId+'/ship',{method:'POST',body:JSON.stringify({carrier:carr,tracking:track})});
+      closeModal('#offerModal');toast('Marked as shipped ✓');
+      if(typeof onDone==='function')onDone();
+    }catch(e){msg.style.display='block';msg.textContent=e.message;$('#shipGo').disabled=false;}
+  };
+  $('#shipGo').addEventListener('click',send);
+  $('#shipTrack').addEventListener('keydown',e=>{if(e.key==='Enter')send();});
+  setTimeout(()=>{try{$('#shipTrack').focus();}catch(e){}},120);
+}
 
 /* --- sell flow --- */
 const SELL_PHOTOS=[],SELL_SHIP=[...REGIONS];let SELL_EDIT=null,SELL_DRAFT={};
@@ -2584,6 +2677,7 @@ function buildNotifs(){
   (d.purchases||[]).forEach(o=>{const it=(o.items&&o.items[0])||{};if(o.status==='shipped')out.push({ic:'📦',t:`“${it.name||''}” was shipped`,at:o.shippedAt||o.date||0,tab:'buying'});else if(o.status==='released')out.push({ic:'🎉',t:`Order “${it.name||''}” completed`,at:o.date||0,tab:'buying'});});
   (d.listings||[]).forEach(l=>{if(l.status==='active')out.push({ic:'✨',t:`“${l.title}” is live`,at:l.createdAt||0,tab:'listings'});else if(l.status==='rejected')out.push({ic:'⚠️',t:`“${l.title}” was not approved`,at:l.createdAt||0,tab:'listings'});});
   (MKT_CHATS||[]).forEach(c=>{if(c.last)out.push({ic:'💬',t:`Message from @${c.counterpart}`,at:c.at||0,tab:'chats',chat:c});});
+  (PRICE_DROPS||[]).forEach(p=>out.push({ic:'📉',t:`Price drop on “${p.title}” — ${fmt(p.from)} → ${fmt(p.to)}`,at:p.at||0,tab:'saved'}));
   return out.sort((a,b)=>b.at-a.at).slice(0,40);
 }
 function unreadNotifs(){const seen=load('swk_notif_seen',0);return buildNotifs().filter(n=>n.at>seen).length;}
@@ -2767,10 +2861,10 @@ function mktAction(act,id){
   const done=()=>loadMarket();
   if(act==='confirm')run(mfetch('/api/order/'+id+'/confirm',{method:'POST'})).then(()=>{toast('Receipt confirmed — funds released');done();}).catch(e=>toast(e.message));
   else if(act==='dispute'){const r=prompt('Describe the problem for the dispute:');if(r==null)return;run(mfetch('/api/order/'+id+'/dispute',{method:'POST',body:JSON.stringify({reason:r})})).then(()=>{toast('Dispute opened');done();}).catch(e=>toast(e.message));}
-  else if(act==='ship'){const carrier=prompt('Carrier (USPS / UPS / FedEx / DHL):','USPS');if(carrier==null)return;const tracking=prompt('Tracking number:');if(tracking==null)return;run(mfetch('/api/order/'+id+'/ship',{method:'POST',body:JSON.stringify({carrier,tracking})})).then(()=>{toast('Marked as shipped');done();}).catch(e=>toast(e.message));}
+  else if(act==='ship'){shipOrderModal(id,done);}
   else if(act==='review'){const rt=prompt('Rate 1–5 stars:');if(rt==null)return;const rating=parseInt(rt,10);const text=prompt('Add a short comment (optional):')||'';run(mfetch('/api/reviews',{method:'POST',body:JSON.stringify({orderId:id,rating,text})})).then(()=>{toast('Review posted');done();}).catch(e=>toast(e.message));}
   else if(act==='oaccept')run(mfetch('/api/offers/'+id+'/accept',{method:'POST'})).then(()=>{toast('Offer accepted');done();}).catch(e=>toast(e.message));
-  else if(act==='ocounter'){const v=prompt('Counter with your price (USD):');if(v==null)return;const amt=parseFloat(v);if(!(amt>0))return toast('Enter a valid amount');run(mfetch('/api/offers/'+id+'/counter',{method:'POST',body:JSON.stringify({amount:amt})})).then(()=>{toast('Counter sent');done();}).catch(e=>toast(e.message));}
+  else if(act==='ocounter'){counterOfferModal(id);}
   else if(act==='oacceptcounter')run(mfetch('/api/offers/'+id+'/accept-counter',{method:'POST'})).then(()=>{toast('Counter accepted — open the item to buy at that price');done();}).catch(e=>toast(e.message));
   else if(act==='odecline')run(mfetch('/api/offers/'+id+'/decline',{method:'POST'})).then(()=>{toast('Offer declined');done();}).catch(e=>toast(e.message));
   else if(act==='boost'){const v=prompt('Boost for how many days? ($2/day)','7');if(v==null)return;const days=parseInt(v,10);if(!(days>0))return toast('Enter days');run(mfetch('/api/boost',{method:'POST',body:JSON.stringify({listingId:id,days})})).then(d=>{closeModal('#accModal');openModal('#coModal');cryptoPay(d);}).catch(e=>toast(e.message));}
@@ -2860,7 +2954,7 @@ async function paintListingChat(){
   const chatRefresh=()=>{paintListingChat();if($('#accModal').classList.contains('show'))loadMarket();loadListings();};
   const bBuy=box.querySelector('[data-chat-buy]');if(bBuy)bBuy.addEventListener('click',async()=>{try{const fd=await mfetch('/api/listings/'+bBuy.dataset.chatBuy);closeModal('#chatModal');buyListing(fd.listing,fd.acceptedOfferPrice||fd.listing.price);}catch(e){toast(e.message);}});
   const bOffer=box.querySelector('[data-chat-offer]');if(bOffer)bOffer.addEventListener('click',()=>makeOffer({id:L.id,title:L.title,price:L.price}));
-  const bShip=box.querySelector('[data-chat-ship]');if(bShip)bShip.addEventListener('click',()=>{const carrier=prompt('Carrier (USPS / UPS / FedEx / DHL):','USPS');if(carrier==null)return;const tracking=prompt('Tracking number:');if(tracking==null)return;mfetch('/api/order/'+bShip.dataset.chatShip+'/ship',{method:'POST',body:JSON.stringify({carrier,tracking})}).then(()=>{toast('Marked as shipped');chatRefresh();}).catch(e=>toast(e.message));});
+  const bShip=box.querySelector('[data-chat-ship]');if(bShip)bShip.addEventListener('click',()=>shipOrderModal(bShip.dataset.chatShip,chatRefresh));
   const bOk=box.querySelector('[data-chat-confirm]');if(bOk)bOk.addEventListener('click',()=>{if(!confirm('Confirm the item arrived as described? This releases the funds to the seller.'))return;mfetch('/api/order/'+bOk.dataset.chatConfirm+'/confirm',{method:'POST'}).then(()=>{toast('Receipt confirmed — funds released');chatRefresh();}).catch(e=>toast(e.message));});
   const bNo=box.querySelector('[data-chat-dispute]');if(bNo)bNo.addEventListener('click',()=>{const r=prompt('Describe the problem:');if(r==null)return;mfetch('/api/order/'+bNo.dataset.chatDispute+'/dispute',{method:'POST',body:JSON.stringify({reason:r})}).then(()=>{toast('Issue reported — our team will help');chatRefresh();}).catch(e=>toast(e.message));});
   const msgs=d.messages;
