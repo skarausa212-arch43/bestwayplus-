@@ -494,6 +494,7 @@ function payoutBalance(email) {
 const MIN_PRICE = Number(process.env.MIN_PRICE || 10); // minimum listing price in USD
 const MARKET_FEE_PCT = Number(process.env.MARKET_FEE_PCT || 10); // buyer fee % (baked into the price shown at purchase; kept by the operator)
 const MAX_OFFERS_PER_DAY = Number(process.env.MAX_OFFERS_PER_DAY || 30);
+const OFFER_MAX_DISCOUNT_PCT = Number(process.env.OFFER_MAX_DISCOUNT_PCT || 45); // buyers can offer at most this % below the asking price
 const BOOST_PRICE_PER_DAY = Number(process.env.BOOST_PRICE_PER_DAY || 2); // USDC/day to feature a listing
 const WITHDRAW_FEE_PCT = Number(process.env.WITHDRAW_FEE_PCT || 1);   // seller withdrawal fee
 const WITHDRAW_FEE_MIN = Number(process.env.WITHDRAW_FEE_MIN || 2);   // ...with a $2 floor
@@ -814,6 +815,8 @@ const server = http.createServer(async (req, res) => {
       if (l.seller === u.email) return send(res, 400, { error: "You can't offer on your own listing." });
       const amount = Math.round(Number(b.amount) * 100) / 100;
       if (!(amount > 0) || amount > l.price) return send(res, 400, { error: 'Offer must be above 0 and at most the asking price.' });
+      const minOffer = Math.round(l.price * (100 - OFFER_MAX_DISCOUNT_PCT)) / 100; // lowest allowed offer
+      if (amount < minOffer) return send(res, 400, { error: `Offers can be at most ${OFFER_MAX_DISCOUNT_PCT}% below the asking price — lowest is $${minOffer}.` });
       const dayAgo = Date.now() - 864e5;
       if (offers.filter(o => o.buyer === u.email && o.createdAt > dayAgo).length >= MAX_OFFERS_PER_DAY)
         return send(res, 429, { error: `Daily limit reached — you can make up to ${MAX_OFFERS_PER_DAY} offers per day.` });
