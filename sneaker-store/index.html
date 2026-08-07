@@ -281,6 +281,21 @@
   .ship-rate{display:flex;align-items:center;gap:10px;margin-bottom:8px;animation:profIn .28s var(--ease) both}
   .ship-rate>span{flex:1;font-size:13px;font-weight:600}
   .ship-rate .tg-in{width:128px;flex:none}
+  /* make-offer modal */
+  .offer-item{display:flex;align-items:center;gap:12px;padding:11px;border:1px solid var(--line);border-radius:14px;background:var(--surface-2);margin-bottom:16px}
+  .offer-item img{width:52px;height:52px;border-radius:11px;object-fit:cover;flex:none}
+  .offer-item .ph-mini{width:52px;height:52px;border-radius:11px;display:grid;place-items:center;background:var(--surface);font-size:24px;flex:none}
+  .offer-item b{display:block;font-size:14.5px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .offer-item span{font-size:13px;color:var(--muted)}
+  .offer-in{display:flex;align-items:center;border:1px solid var(--line-2);border-radius:12px;background:var(--surface);overflow:hidden;transition:border-color .18s var(--ease),box-shadow .18s var(--ease)}
+  .offer-in:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .offer-in span{padding:0 4px 0 14px;color:var(--usdt);font-weight:800;font-size:17px}
+  .offer-in input{border:0!important;background:transparent!important;box-shadow:none!important;font-size:18px!important;font-weight:700;padding-left:2px!important}
+  .offer-chips{display:flex;gap:8px;margin-top:10px}
+  .offer-chip{flex:1;min-width:0;padding:10px 6px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-weight:700;font-size:12.5px;transition:.16s var(--ease)}
+  .offer-chip:hover{border-color:var(--accent);color:var(--accent)}
+  .offer-chip:active{transform:scale(.97)}
+  .offer-hint{font-size:12.5px;color:var(--muted);margin:13px 0 4px;line-height:1.45}
 
   /* ============ BADGES ============ */
   .badge{font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:4px 7px;border-radius:7px;display:inline-flex;align-items:center;gap:4px;line-height:1;background:var(--surface);border:1px solid var(--line);color:var(--ink);box-shadow:var(--shadow-sm)}
@@ -703,6 +718,9 @@
   .ac-rm{flex:none;width:32px;height:32px;border-radius:9px;border:1px solid var(--line-2);background:none;color:var(--muted)}
   .ac-rm:hover{color:var(--bad);border-color:var(--bad)}
   .addr-row{display:flex;gap:8px}.addr-row input{flex:1;min-width:0}
+  .ac-reg-row{display:flex;align-items:center;gap:10px}
+  .ac-reg-lbl{font-size:12px;color:var(--faint);font-weight:600;flex:none;padding-left:2px}
+  .ac-reg-row select{flex:1;min-width:0}
   .addr-card input,.addr-card select{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:13.5px;outline:none}
   .addr-card input:focus,.addr-card select:focus{border-color:var(--accent)}
   .chat-who{display:flex;align-items:center;gap:12px}
@@ -1228,6 +1246,8 @@
 <div class="modal" id="lstModal"><div class="mcard"><button class="mx" id="lstClose" data-ic="close"></button><div class="qv" id="lstBody"></div></div></div>
 <div class="modal co" id="sellModal"><div class="mcard"><button class="mx" id="sellClose" data-ic="close"></button><div id="sellBody"></div></div></div>
 <div class="modal co" id="chatModal"><div class="mcard"><button class="mx" id="chatClose" data-ic="close"></button><div id="chatBody"></div></div></div>
+
+<div class="modal co" id="offerModal"><div class="mcard"><button class="mx" id="offerClose" data-ic="close"></button><div id="offerBody"></div></div></div>
 
 <div class="toasts" id="toasts"></div>
 
@@ -2179,14 +2199,39 @@ function buyListing(li,price){
 }
 function makeOffer(l){
   if(!AUTH)return needAuth('Sign in to make an offer');
-  const v=prompt(`Your offer for “${l.title}” (max ${fmt(l.price)}), in USD:`);
-  if(v==null)return;const amt=parseFloat(v);
-  if(!(amt>0))return toast('Enter a valid amount');
-  mfetch('/api/offers',{method:'POST',body:JSON.stringify({listingId:l.id,amount:amt})}).then(async()=>{
-    toast('Offer sent — opening chat with the seller');
-    try{await mfetch('/api/chat/send',{method:'POST',body:JSON.stringify({listingId:l.id,text:`Hi! I've sent an offer of ${fmt(amt)} for “${l.title}”.`})});}catch(e){}
-    closeModal('#lstModal');openListingChat(l.id);
-  }).catch(e=>toast(e.message));
+  const price=Number(l.price)||0;
+  const chip=pc=>Math.max(1,Math.round(price*(1-pc/100)));
+  $('#offerBody').innerHTML=`<div class="cobody">
+    <h3>Make an offer</h3>
+    <div class="offer-item">
+      ${l.cover?`<img src="${esc(l.cover)}" alt="">`:'<span class="ph-mini">📦</span>'}
+      <div style="min-width:0"><b>${esc(l.title||'')}</b><span>Asking ${usdtLabel(price)}</span></div>
+    </div>
+    <div class="field"><label>Your offer</label><div class="offer-in"><span>₮</span><input id="offAmt" type="number" min="1" max="${price}" step="1" placeholder="${chip(20)}" inputmode="decimal"></div></div>
+    <div class="offer-chips">${[10,20,30].map(pc=>`<button type="button" class="offer-chip" data-amt="${chip(pc)}">−${pc}%</button>`).join('')}</div>
+    <div class="offer-hint" id="offHint">The seller can accept, decline, or counter. Buyer protection is added at checkout.</div>
+    <button class="cbtn" id="offGo">Send offer</button>
+    <div class="msg" id="offMsg" style="display:none;margin-top:10px;color:#ff6b6b;font-weight:600;font-size:13px"></div>
+  </div>`;
+  openModal('#offerModal');
+  const amt=$('#offAmt'),hint=$('#offHint');
+  const refresh=()=>{const v=parseFloat(amt.value);hint.textContent=v>0?`Buyer pays ≈ ${usdtLabel(payTotal(v))} with buyer protection.`:'The seller can accept, decline, or counter. Buyer protection is added at checkout.';};
+  amt.addEventListener('input',refresh);
+  $('#offerBody').querySelectorAll('[data-amt]').forEach(b=>b.addEventListener('click',()=>{amt.value=b.dataset.amt;refresh();amt.focus();}));
+  const send=async()=>{
+    const v=parseFloat(amt.value),msg=$('#offMsg');
+    if(!(v>0)){msg.style.display='block';msg.textContent='Enter an amount.';return;}
+    if(v>price){msg.style.display='block';msg.textContent=`Offer can’t exceed the asking price (${usdtLabel(price)}).`;return;}
+    $('#offGo').disabled=true;
+    try{
+      await mfetch('/api/offers',{method:'POST',body:JSON.stringify({listingId:l.id,amount:v})});
+      try{await mfetch('/api/chat/send',{method:'POST',body:JSON.stringify({listingId:l.id,text:`Hi! I've sent an offer of ${usdtLabel(v)} for “${l.title}”.`})});}catch(e){}
+      closeModal('#offerModal');closeModal('#lstModal');toast('Offer sent');openListingChat(l.id);
+    }catch(e){msg.style.display='block';msg.textContent=e.message;$('#offGo').disabled=false;}
+  };
+  $('#offGo').addEventListener('click',send);
+  amt.addEventListener('keydown',e=>{if(e.key==='Enter')send();});
+  setTimeout(()=>{try{amt.focus();}catch(e){}},120);
 }
 
 /* --- sell flow --- */
@@ -2447,7 +2492,8 @@ function addrCardHTML(a,i){
     <input class="ac-name" maxlength="60" placeholder="Recipient full name" value="${esc(a.name||'')}">
     <input class="ac-line" maxlength="140" placeholder="Street address, apt/house" value="${esc(a.line||'')}">
     <div class="addr-row"><input class="ac-city" maxlength="60" placeholder="City" value="${esc(a.city||'')}"><input class="ac-zip" maxlength="20" placeholder="ZIP / Postcode" value="${esc(a.zip||'')}"></div>
-    <div class="addr-row"><input class="ac-country" maxlength="56" placeholder="Country" value="${esc(a.country||'')}"><select class="ac-region">${ropts}</select></div>
+    <input class="ac-country" maxlength="56" placeholder="Country (e.g. United States)" value="${esc(a.country||'')}">
+    <div class="ac-reg-row"><span class="ac-reg-lbl">Region</span><select class="ac-region">${ropts}</select></div>
   </div>`;
 }
 function profilePanelHTML(){
@@ -2646,6 +2692,7 @@ async function paintListingChat(){
   const log=box.querySelector('.chat-log');if(log)log.scrollTop=log.scrollHeight;
 }
 $('#chatClose').addEventListener('click',()=>closeModal('#chatModal'));
+$('#offerClose').addEventListener('click',()=>closeModal('#offerModal'));
 $('#accModal').addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(b){mktAction(b.dataset.act,b.dataset.id);}});
 
 /* ---------- init ---------- */
