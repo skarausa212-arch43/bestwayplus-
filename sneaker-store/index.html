@@ -525,6 +525,18 @@
     opacity:0;transform:scale(.85);pointer-events:none;transition:.2s var(--ease)}
   .freset.show{opacity:1;transform:scale(1);pointer-events:auto}
   .freset:hover{color:var(--bad);background:var(--surface-2)}
+  .fsave{height:34px;padding:0 14px;border-radius:100px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:12.5px;font-weight:700;cursor:pointer;
+    opacity:0;transform:scale(.85);pointer-events:none;transition:.2s var(--ease)}
+  .fsave.show{opacity:1;transform:scale(1);pointer-events:auto}
+  .fsave:hover{border-color:var(--accent);color:var(--accent)}
+  /* saved searches management */
+  .ss-list{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+  .ss-row{display:flex;align-items:center;gap:10px;padding:11px 13px;border:1px solid var(--line);border-radius:13px;background:var(--surface)}
+  .ss-row .ss-b{flex:1;min-width:0;text-align:left}
+  .ss-row .ss-lbl{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ss-row .ss-sub{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .ss-row .ss-del{flex:none;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--surface-2);color:var(--muted);font-size:15px}
+  .ss-row .ss-del:hover{color:var(--bad)}
   @keyframes fpillin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
   @keyframes fdot{from{transform:scale(0)}to{transform:scale(1)}}
   .fchip:nth-child(1){animation-delay:.02s}.fchip:nth-child(2){animation-delay:.06s}.fchip:nth-child(3){animation-delay:.1s}.fchip:nth-child(4){animation-delay:.14s}
@@ -924,6 +936,8 @@
     .fchip::after{right:14px}
     .freset{display:none}
     .freset.show{display:inline-flex;align-items:center;justify-content:center;grid-column:1/-1;justify-self:center;height:34px;padding:0 16px;opacity:1;transform:none;pointer-events:auto}
+    .fsave{display:none}
+    .fsave.show{display:inline-flex;align-items:center;justify-content:center;grid-column:1/-1;justify-self:center;height:38px;padding:0 18px;opacity:1;transform:none;pointer-events:auto}
     .section{padding:clamp(32px,7vw,48px) 0}
     .sec-head{margin-bottom:20px}
     .hero{padding-top:26px;padding-bottom:34px}
@@ -1560,6 +1574,8 @@ const PRODUCTS=[
 /* ---------- state ---------- */
 let cart=load('swk_cart',[]),favs=load('swk_favs',[]),activeFilter='all',searchTerm='';
 let PRICE_DROPS=load('swk_pricedrops',[]);   // detected price drops on saved items → shown in notifications
+let SAVED_SEARCHES=load('swk_saved_searches',[]);  // [{id,q,cat,brand,cond,shipTo,pmin,pmax,at,lastSeen}]
+let SEARCH_HITS=load('swk_search_hits',[]);        // [{sid,label,id,title,at}] new listings matching a saved search
 function load(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}}
 function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 const fmt=n=>usdtLabel(Number(n)||0),$=s=>document.querySelector(s);
@@ -1665,7 +1681,7 @@ function renderGrid(more){
   const lm2=$('#loadMore');if(lm2)lm2.addEventListener('click',()=>{GRID_SHOWN+=GRID_PAGE;renderGrid(true);});
   observeReveal();
 }
-function loadListings(){return fetch('/api/listings').then(r=>r.json()).then(d=>{LISTINGS=d.listings||[];checkPriceDrops();renderFilterbar();renderGrid();renderFeatured();renderSellers();renderTrades();}).catch(()=>{renderFeatured();renderSellers();renderTrades();});}
+function loadListings(){return fetch('/api/listings').then(r=>r.json()).then(d=>{LISTINGS=d.listings||[];checkPriceDrops();checkSavedSearches();renderFilterbar();renderGrid();renderFeatured();renderSellers();renderTrades();}).catch(()=>{renderFeatured();renderSellers();renderTrades();});}
 /* compare saved items against the last price we saw; surface any drops as notifications */
 function checkPriceDrops(){
   const seen=load('swk_fav_prices',{}),next={};let changed=false;
@@ -1682,6 +1698,63 @@ function checkPriceDrops(){
   save('swk_fav_prices',next);
   if(changed&&AUTH)updateMsgBadge();
 }
+/* ---- saved searches + alerts (client-side, like price drops) ---- */
+function matchSearch(l,s){
+  if(!l||l.status&&l.status!=='active')return false;
+  const q=(s.q||'').toLowerCase();
+  if(q&&!((l.title+' '+(l.brand||'')).toLowerCase().includes(q)))return false;
+  if(s.cat&&s.cat!=='all'&&(l.group||'')!==s.cat)return false;
+  if(s.brand&&(l.brand||'').toLowerCase()!==s.brand)return false;
+  if(s.cond&&l.condition!==s.cond)return false;
+  if(s.shipTo&&!(!l.ships||!l.ships.length||l.ships.includes(s.shipTo)))return false;
+  if(s.pmin&&l.price<s.pmin)return false;
+  if(s.pmax&&l.price>s.pmax)return false;
+  return true;
+}
+function searchLabel(s){
+  const parts=[];
+  if(s.q)parts.push('“'+s.q+'”');
+  if(s.brand)parts.push(cap(s.brand));
+  if(s.cat&&s.cat!=='all')parts.push(CAT_NAME?CAT_NAME(s.cat):s.cat);
+  if(s.cond)parts.push(s.cond);
+  if(s.shipTo)parts.push('→ '+s.shipTo);
+  if(s.pmin||s.pmax)parts.push((s.pmin||0)+'–'+(s.pmax||'∞'));
+  return parts.join(' · ')||'All items';
+}
+function checkSavedSearches(){
+  if(!SAVED_SEARCHES.length)return;let changed=false;
+  SAVED_SEARCHES.forEach(s=>{
+    const since=s.lastSeen||s.at||0;
+    const hits=LISTINGS.filter(l=>(l.createdAt||0)>since&&matchSearch(l,s));
+    if(hits.length){
+      hits.slice(0,10).forEach(l=>SEARCH_HITS.unshift({sid:s.id,label:searchLabel(s),id:l.id,title:l.title||'',at:Date.now()}));
+      changed=true;
+    }
+    s.lastSeen=Date.now();
+  });
+  if(changed){SEARCH_HITS=SEARCH_HITS.slice(0,30);save('swk_search_hits',SEARCH_HITS);}
+  save('swk_saved_searches',SAVED_SEARCHES);
+  if(changed&&AUTH)updateMsgBadge();
+}
+function saveCurrentSearch(){
+  const s={id:'ss'+Date.now(),q:searchTerm||'',cat:activeFilter,brand:FILT.brand||'',cond:FILT.cond||'',shipTo:FILT.shipTo||'',pmin:FILT.pmin||0,pmax:FILT.pmax||0,at:Date.now(),lastSeen:Date.now()};
+  // avoid duplicates
+  const key=x=>[x.q,x.cat,x.brand,x.cond,x.shipTo,x.pmin,x.pmax].join('|');
+  if(SAVED_SEARCHES.some(x=>key(x)===key(s))){toast('Search already saved');return;}
+  SAVED_SEARCHES.unshift(s);SAVED_SEARCHES=SAVED_SEARCHES.slice(0,20);save('swk_saved_searches',SAVED_SEARCHES);
+  toast('🔔 Search saved — we’ll alert you to new matches');
+  renderFilterbar();
+}
+function runSavedSearch(sid){
+  const s=SAVED_SEARCHES.find(x=>x.id===sid);if(!s)return;
+  searchTerm=s.q||'';const si=$('#searchInput');if(si)si.value=s.q||'';
+  activeFilter=s.cat||'all';FILT.brand=s.brand||'';FILT.cond=s.cond||'';FILT.shipTo=s.shipTo||'';
+  FILT.pmin=s.pmin||0;FILT.pmax=s.pmax||0;FILT.priceRange=(s.pmin||s.pmax)?((s.pmin||0)+'-'+(s.pmax||'')):'';
+  if($('#accModal').classList.contains('show'))closeModal('#accModal');
+  renderFilterbar();renderGrid();
+  const cat=document.getElementById('catalog');if(cat)cat.scrollIntoView({behavior:'smooth'});
+}
+function deleteSavedSearch(sid){SAVED_SEARCHES=SAVED_SEARCHES.filter(x=>x.id!==sid);save('swk_saved_searches',SAVED_SEARCHES);if($('#accModal').classList.contains('show'))paintMarket();}
 grid.addEventListener('click',e=>{
   if(listingCTAClick(e))return;
   const f=e.target.closest('[data-fav]');if(f){toggleFav(f.dataset.fav);return}
@@ -1692,7 +1765,7 @@ function toggleFav(id){const i=favs.indexOf(id);if(i>-1)favs.splice(i,1);else{fa
 
 /* ---------- filters ---------- */
 document.querySelectorAll('nav.main a[data-filter]').forEach(a=>a.addEventListener('click',()=>{activeFilter=a.dataset.filter;renderGrid();}));
-$('#searchInput').addEventListener('input',e=>{searchTerm=e.target.value.trim().toLowerCase();renderGrid()});
+$('#searchInput').addEventListener('input',e=>{searchTerm=e.target.value.trim().toLowerCase();renderGrid();const anyCrit=activeFilter!=='all'||!!FILT.brand||!!FILT.shipTo||!!FILT.cond||!!FILT.priceRange||!!searchTerm;const fs=$('#fSave');if(fs)fs.classList.toggle('show',anyCrit);const fr=$('#fReset');if(fr)fr.classList.toggle('show',anyCrit||FILT.sort!=='new');});
 $('#searchBtn').addEventListener('click',()=>{document.getElementById('catalog').scrollIntoView();setTimeout(()=>$('#searchInput').focus(),400)});
 const PRICE_RANGES=[['','Any price'],['0-25','Under 25'],['25-50','25 – 50'],['50-100','50 – 100'],['100-250','100 – 250'],['250-','250 +']];
 function renderFilterbar(){
@@ -1712,6 +1785,7 @@ function renderFilterbar(){
     <div class="fchip" data-f="ship"><select id="fShip">${opts([['','All regions'],...REGIONS.map(r=>[r,r])],FILT.shipTo)}</select></div>
     <div class="fchip" data-f="cond"><select id="fCond">${opts([['','Any condition'],...['New','Like new','Very good','Good','Fair'].map(c=>[c,c])],FILT.cond)}</select></div>
     <div class="fchip" data-f="price"><select id="fPrice">${opts(PRICE_RANGES,FILT.priceRange||'')}</select></div>
+    <button class="fsave" id="fSave" type="button">🔔 Save search</button>
     <button class="freset" id="fReset" type="button">Clear</button>`;
   const paint=()=>{
     fb.querySelector('[data-f="cat"]').classList.toggle('on',activeFilter!=='all');
@@ -1720,7 +1794,9 @@ function renderFilterbar(){
     fb.querySelector('[data-f="ship"]').classList.toggle('on',!!FILT.shipTo);
     fb.querySelector('[data-f="cond"]').classList.toggle('on',!!FILT.cond);
     fb.querySelector('[data-f="price"]').classList.toggle('on',!!FILT.priceRange);
-    $('#fReset').classList.toggle('show',activeFilter!=='all'||FILT.sort!=='new'||!!FILT.brand||!!FILT.shipTo||!!FILT.cond||!!FILT.priceRange);
+    const anyCrit=activeFilter!=='all'||!!FILT.brand||!!FILT.shipTo||!!FILT.cond||!!FILT.priceRange||!!(searchTerm&&searchTerm.length);
+    $('#fReset').classList.toggle('show',anyCrit||FILT.sort!=='new');
+    const fs=$('#fSave');if(fs)fs.classList.toggle('show',anyCrit);
   };
   $('#fCat').addEventListener('change',e=>{activeFilter=e.target.value;FILT.brand='';renderFilterbar();renderGrid();});
   $('#fSort').addEventListener('change',e=>{FILT.sort=e.target.value;renderGrid();paint();});
@@ -1729,6 +1805,7 @@ function renderFilterbar(){
   $('#fCond').addEventListener('change',e=>{FILT.cond=e.target.value;renderGrid();paint();});
   $('#fPrice').addEventListener('change',e=>{FILT.priceRange=e.target.value;const[a,b]=e.target.value.split('-');FILT.pmin=parseFloat(a)||0;FILT.pmax=parseFloat(b)||0;renderGrid();paint();});
   $('#fReset').addEventListener('click',()=>{activeFilter='all';FILT.sort='new';FILT.brand='';FILT.shipTo='';FILT.cond='';FILT.priceRange='';FILT.pmin=0;FILT.pmax=0;renderFilterbar();renderGrid();});
+  const fsv=$('#fSave');if(fsv)fsv.addEventListener('click',saveCurrentSearch);
   paint();
 }
 
@@ -2887,6 +2964,7 @@ function buildNotifs(){
   (MKT_CHATS||[]).forEach(c=>{if(c.last)out.push({ic:'💬',t:`Message from @${c.counterpart}`,at:c.at||0,tab:'chats',chat:c});});
   (PRICE_DROPS||[]).forEach(p=>out.push({ic:'📉',t:`Price drop on “${p.title}” — ${fmt(p.from)} → ${fmt(p.to)}`,at:p.at||0,tab:'saved'}));
   (d.feed||[]).forEach(f=>out.push({ic:'🆕',t:`@${f.seller} listed “${f.title}”`,at:f.createdAt||0,tab:'feed',item:f.id}));
+  (SEARCH_HITS||[]).forEach(h=>out.push({ic:'🔔',t:`New match for ${h.label} — “${h.title}”`,at:h.at||0,tab:'feed',item:h.id}));
   return out.sort((a,b)=>b.at-a.at).slice(0,40);
 }
 function unreadNotifs(){const seen=load('swk_notif_seen',0);return buildNotifs().filter(n=>n.at>seen).length;}
@@ -2898,7 +2976,7 @@ function paintMarket(){
   const tab=(k,label)=>`<button class="mkt-tab ${t===k?'on':''}" data-tab="${k}">${label}${counts[k]?` <span class="n">${counts[k]}</span>`:''}</button>`;
   let body='';
   if(t==='notifs'){const ns=buildNotifs();body=ns.length?`<div class="notif-list">${ns.map(n=>`<button class="notif" data-ntab="${n.tab}"${n.item?` data-item="${esc(n.item)}"`:''}><span class="notif-ic">${n.ic}</span><span class="notif-t">${esc(n.t)}</span><span class="notif-a">${timeAgo(n.at)}</span></button>`).join('')}</div>`:'<p class="mkt-empty">🔔 No notifications yet. Offers, sales and messages show up here.</p>';}
-  else if(t==='saved')body='<div class="wishgrid" id="wishGrid"><p class="mkt-empty">Loading…</p></div>';
+  else if(t==='saved')body=savedSearchesHTML()+'<div class="wishgrid" id="wishGrid"><p class="mkt-empty">Loading…</p></div>';
   else if(t==='buying')body=(d.purchases&&d.purchases.length)?d.purchases.map(o=>mktOrderCard(o,'buying')).join(''):'<p class="mkt-empty">No purchases yet.</p>';
   else if(t==='selling')body=(d.sales&&d.sales.length)?d.sales.map(o=>mktOrderCard(o,'selling')).join(''):'<p class="mkt-empty">No sales yet.</p>';
   else if(t==='listings')body=(d.listings&&d.listings.length)?d.listings.map(myListingRow).join(''):'<p class="mkt-empty">You have no listings. Tap “Sell” to add one.</p>';
@@ -2920,7 +2998,7 @@ function paintMarket(){
   }
   $('#mktPanel').innerHTML=`<div class="mkt-tabs">${tab('profile','Profile')}${tab('notifs','🔔')}${tab('saved','♥ Saved')}${tab('buying','Buying')}${tab('selling','Selling')}${tab('listings','Listings')}${tab('offers','Offers')}${tab('chats','Messages')}${tab('payout','Payout')}</div><div id="mktBody">${body}</div>`;
   $('#mktPanel').querySelectorAll('.mkt-tab').forEach(b=>b.addEventListener('click',()=>{MKT_TAB=b.dataset.tab;paintMarket();if(b.dataset.tab==='chats')loadChats();}));
-  if(t==='saved')paintWishlist();
+  if(t==='saved'){paintWishlist();$('#mktBody').querySelectorAll('[data-ssrun]').forEach(el=>el.addEventListener('click',()=>runSavedSearch(el.dataset.ssrun)));$('#mktBody').querySelectorAll('[data-ssdel]').forEach(el=>el.addEventListener('click',()=>deleteSavedSearch(el.dataset.ssdel)));}
   if(t==='notifs'){save('swk_notif_seen',Date.now());updateMsgBadge();$('#mktBody').querySelectorAll('[data-ntab]').forEach(el=>el.addEventListener('click',()=>{if(el.dataset.item){closeModal('#accModal');openListing(el.dataset.item);return;}MKT_TAB=el.dataset.ntab;paintMarket();if(el.dataset.ntab==='chats')loadChats();}));}
   $('#mktBody').querySelectorAll('[data-chat]').forEach(el=>el.addEventListener('click',()=>{const [lid,buyer]=el.dataset.chat.split('|');openListingChat(lid,buyer||undefined);}));
   const po=$('#poSave');if(po)po.addEventListener('click',async()=>{po.disabled=true;try{await mfetch('/api/payout',{method:'POST',body:JSON.stringify({address:$('#poAddr').value})});toast('Payout address saved');loadMarket();}catch(e){toast(e.message);po.disabled=false;}});
@@ -2928,6 +3006,11 @@ function paintMarket(){
   if(t==='profile')wireProfilePanel();
   // account actions (change password / sign out / delete) live only on the Profile tab
   const showAcct=t==='profile';document.querySelectorAll('.acc-sec,.acc-del').forEach(el=>el.style.display=showAcct?'':'none');
+}
+function savedSearchesHTML(){
+  if(!SAVED_SEARCHES.length)return '';
+  return `<h4 style="font-size:12px;letter-spacing:.1em;color:var(--faint);text-transform:uppercase;margin:2px 0 8px">🔔 Saved searches</h4>
+    <div class="ss-list">${SAVED_SEARCHES.map(s=>`<div class="ss-row"><button class="ss-b" data-ssrun="${s.id}"><div class="ss-lbl">${esc(searchLabel(s))}</div><div class="ss-sub">Tap to run · alerts on for new matches</div></button><button class="ss-del" data-ssdel="${s.id}" aria-label="Delete">✕</button></div>`).join('')}</div>`;
 }
 async function paintWishlist(){
   const box=$('#wishGrid');if(!box)return;
