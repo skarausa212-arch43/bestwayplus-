@@ -1609,15 +1609,16 @@ function listingCTAClick(e){
   if(msg){if(!AUTH){needAuth('Sign in to message the seller');return true;}closeModal('#lstModal');openListingChat(msg.dataset.msg);return true;}
   return false;
 }
-const FILT={sort:'new',pmin:0,pmax:0,cond:'',shipTo:'',priceRange:''};
+const FILT={sort:'new',pmin:0,pmax:0,cond:'',shipTo:'',priceRange:'',brand:''};
 const GRID_PAGE=20;let GRID_SHOWN=GRID_PAGE;
 function renderGrid(more){
   if(!more)GRID_SHOWN=GRID_PAGE;
-  const q=searchTerm,{pmin,pmax,cond,sort,shipTo}=FILT;
+  const q=searchTerm,{pmin,pmax,cond,sort,shipTo,brand}=FILT;
   let lm=LISTINGS.filter(l=>(activeFilter==='all'||l.group===activeFilter)&&(!q||(l.title+' '+(l.brand||'')).toLowerCase().includes(q)));
   let pm=(typeof PRODUCTS!=='undefined'?PRODUCTS:[]).filter(p=>(activeFilter==='all'||productGroup(p)===activeFilter)&&(!q||(p.name+' '+(p.brand||'')).toLowerCase().includes(q)));
   if(pmin){lm=lm.filter(l=>l.price>=pmin);pm=pm.filter(p=>p.price>=pmin);}
   if(pmax){lm=lm.filter(l=>l.price<=pmax);pm=pm.filter(p=>p.price<=pmax);}
+  if(brand){lm=lm.filter(l=>(l.brand||'').toLowerCase()===brand);pm=pm.filter(p=>(p.brand||'').toLowerCase()===brand);}
   if(cond){lm=lm.filter(l=>l.condition===cond);if(cond!=='New')pm=[];}
   if(shipTo){lm=lm.filter(l=>!l.ships||!l.ships.length||l.ships.includes(shipTo));} // hide sellers who don't ship to the buyer's region
   let items=[...lm.map(o=>({k:'l',o,price:o.price,t:o.createdAt||0})),...pm.map(o=>({k:'p',o,price:o.price,t:1}))];
@@ -1632,7 +1633,7 @@ function renderGrid(more){
   const lm2=$('#loadMore');if(lm2)lm2.addEventListener('click',()=>{GRID_SHOWN+=GRID_PAGE;renderGrid(true);});
   observeReveal();
 }
-function loadListings(){return fetch('/api/listings').then(r=>r.json()).then(d=>{LISTINGS=d.listings||[];renderGrid();renderFeatured();renderSellers();renderTrades();}).catch(()=>{renderFeatured();renderSellers();renderTrades();});}
+function loadListings(){return fetch('/api/listings').then(r=>r.json()).then(d=>{LISTINGS=d.listings||[];renderFilterbar();renderGrid();renderFeatured();renderSellers();renderTrades();}).catch(()=>{renderFeatured();renderSellers();renderTrades();});}
 grid.addEventListener('click',e=>{
   if(listingCTAClick(e))return;
   const f=e.target.closest('[data-fav]');if(f){toggleFav(f.dataset.fav);return}
@@ -1650,8 +1651,16 @@ function renderFilterbar(){
   const fb=$('#filterbar');if(!fb)return;
   const opts=(arr,cur)=>arr.map(o=>{const[v,l]=Array.isArray(o)?o:[o,o];return `<option value="${v}"${v===cur?' selected':''}>${l}</option>`;}).join('');
   const CATS=[['all','All categories'],['shoes','Shoes'],['clothing','Fashion'],['bags','Bags'],['accessories','Accessories'],['electronics','Electronics'],['home','Home'],['beauty','Beauty'],['kids','Kids & Baby'],['hobbies','Collectibles'],['sport','Sports'],['other','Other']];
+  // distinct brands present in the live catalogue (respecting the active category), for the Brand filter
+  const inCat=o=>activeFilter==='all'||(o.group||productGroup(o))===activeFilter;
+  const brandMap=new Map();
+  [...LISTINGS.filter(l=>inCat(l)),...(typeof PRODUCTS!=='undefined'?PRODUCTS:[]).filter(p=>inCat(p))]
+    .forEach(o=>{const b=(o.brand||'').trim();if(b)brandMap.set(b.toLowerCase(),cap(b));});
+  const brandOpts=[['','All brands'],...[...brandMap.entries()].sort((a,b)=>a[1].localeCompare(b[1]))];
+  if(FILT.brand&&!brandMap.has(FILT.brand))FILT.brand='';   // clear if the selected brand isn't in this category
   fb.innerHTML=`<div class="fchip fcat" data-f="cat"><select id="fCat">${opts(CATS,activeFilter)}</select></div>
     <div class="fchip" data-f="sort"><select id="fSort">${opts([['new','Newest'],['lo','Price ↑'],['hi','Price ↓']],FILT.sort)}</select></div>
+    <div class="fchip" data-f="brand"${brandOpts.length<2?' style="display:none"':''}><select id="fBrand">${opts(brandOpts,FILT.brand||'')}</select></div>
     <div class="fchip" data-f="ship"><select id="fShip">${opts([['','All regions'],...REGIONS.map(r=>[r,r])],FILT.shipTo)}</select></div>
     <div class="fchip" data-f="cond"><select id="fCond">${opts([['','Any condition'],...['New','Like new','Very good','Good','Fair'].map(c=>[c,c])],FILT.cond)}</select></div>
     <div class="fchip" data-f="price"><select id="fPrice">${opts(PRICE_RANGES,FILT.priceRange||'')}</select></div>
@@ -1659,17 +1668,19 @@ function renderFilterbar(){
   const paint=()=>{
     fb.querySelector('[data-f="cat"]').classList.toggle('on',activeFilter!=='all');
     fb.querySelector('[data-f="sort"]').classList.toggle('on',FILT.sort!=='new');
+    const bch=fb.querySelector('[data-f="brand"]');if(bch)bch.classList.toggle('on',!!FILT.brand);
     fb.querySelector('[data-f="ship"]').classList.toggle('on',!!FILT.shipTo);
     fb.querySelector('[data-f="cond"]').classList.toggle('on',!!FILT.cond);
     fb.querySelector('[data-f="price"]').classList.toggle('on',!!FILT.priceRange);
-    $('#fReset').classList.toggle('show',activeFilter!=='all'||FILT.sort!=='new'||!!FILT.shipTo||!!FILT.cond||!!FILT.priceRange);
+    $('#fReset').classList.toggle('show',activeFilter!=='all'||FILT.sort!=='new'||!!FILT.brand||!!FILT.shipTo||!!FILT.cond||!!FILT.priceRange);
   };
-  $('#fCat').addEventListener('change',e=>{activeFilter=e.target.value;renderGrid();paint();});
+  $('#fCat').addEventListener('change',e=>{activeFilter=e.target.value;FILT.brand='';renderFilterbar();renderGrid();});
   $('#fSort').addEventListener('change',e=>{FILT.sort=e.target.value;renderGrid();paint();});
+  const _fb=$('#fBrand');if(_fb)_fb.addEventListener('change',e=>{FILT.brand=e.target.value;renderGrid();paint();});
   $('#fShip').addEventListener('change',e=>{FILT.shipTo=e.target.value;renderGrid();paint();});
   $('#fCond').addEventListener('change',e=>{FILT.cond=e.target.value;renderGrid();paint();});
   $('#fPrice').addEventListener('change',e=>{FILT.priceRange=e.target.value;const[a,b]=e.target.value.split('-');FILT.pmin=parseFloat(a)||0;FILT.pmax=parseFloat(b)||0;renderGrid();paint();});
-  $('#fReset').addEventListener('click',()=>{activeFilter='all';FILT.sort='new';FILT.shipTo='';FILT.cond='';FILT.priceRange='';FILT.pmin=0;FILT.pmax=0;renderFilterbar();renderGrid();});
+  $('#fReset').addEventListener('click',()=>{activeFilter='all';FILT.sort='new';FILT.brand='';FILT.shipTo='';FILT.cond='';FILT.priceRange='';FILT.pmin=0;FILT.pmax=0;renderFilterbar();renderGrid();});
   paint();
 }
 
