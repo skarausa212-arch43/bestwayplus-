@@ -320,6 +320,13 @@
   .offer-chip:hover{border-color:var(--accent);color:var(--accent)}
   .offer-chip:active{transform:scale(.97)}
   .offer-hint{font-size:12.5px;color:var(--muted);margin:13px 0 4px;line-height:1.45}
+  .rv-stars{display:flex;gap:6px;margin:2px 0 16px;justify-content:center}
+  .rv-star{font-size:38px;line-height:1;color:var(--line-2);background:none;border:0;padding:2px;cursor:pointer;transition:transform .12s var(--ease),color .12s}
+  .rv-star.on{color:#f5b301}
+  .rv-star:active{transform:scale(.85)}
+  .rp-reasons{display:flex;flex-wrap:wrap;gap:8px}
+  .rp-reason{padding:9px 13px;border-radius:100px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:12.5px;font-weight:600;transition:.16s var(--ease)}
+  .rp-reason.on{background:var(--btn);color:var(--btn-ink);border-color:var(--btn)}
   /* share / report links + more-from-seller + recently viewed */
   .lst-linkrow{display:flex;gap:8px;margin:12px 0 4px}
   .lst-linkbtn{flex:1;padding:9px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--muted);font-weight:600;font-size:12.5px;transition:.15s var(--ease)}
@@ -1984,11 +1991,29 @@ function renderAccount(startTab){
     MKT_TAB=startTab||'profile';loadMarket();
   }
 }
-async function changePassword(){
-  const cur=prompt('Current password:');if(cur==null)return;
-  const next=prompt('New password (8+ characters):');if(next==null)return;
-  if(next.length<8)return toast('New password must be 8+ characters');
-  try{const d=await mfetch('/api/change-password',{method:'POST',body:JSON.stringify({current:cur,next})});if(d&&d.token){AUTH={...AUTH,token:d.token};save('swk_auth',AUTH);}toast('Password changed — other sessions signed out');}catch(e){toast(e.message);}
+function changePassword(){
+  $('#offerBody').innerHTML=`<div class="cobody">
+    <h3>Change password</h3>
+    <div class="offer-hint" style="margin:0 0 12px">For your security, other signed-in sessions will be logged out.</div>
+    <div class="field"><label>Current password</label><input id="pwCur" type="password" autocomplete="current-password"></div>
+    <div class="field"><label>New password</label><input id="pwNew" type="password" autocomplete="new-password" placeholder="At least 8 characters"></div>
+    <button class="cbtn" id="pwGo">Update password</button>
+    <div class="msg" id="pwMsg" style="display:none;margin-top:10px;color:#ff6b6b;font-weight:600;font-size:13px"></div>
+  </div>`;
+  openModal('#offerModal');
+  const go=async()=>{
+    const cur=$('#pwCur').value,next=$('#pwNew').value,m=$('#pwMsg');
+    if(!cur){m.style.display='block';m.textContent='Enter your current password.';return;}
+    if(next.length<8){m.style.display='block';m.textContent='New password must be 8+ characters.';return;}
+    $('#pwGo').disabled=true;
+    try{const d=await mfetch('/api/change-password',{method:'POST',body:JSON.stringify({current:cur,next})});
+      if(d&&d.token){AUTH={...AUTH,token:d.token};save('swk_auth',AUTH);}
+      closeModal('#offerModal');toast('Password changed — other sessions signed out');}
+    catch(e){m.style.display='block';m.textContent=e.message;$('#pwGo').disabled=false;}
+  };
+  $('#pwGo').addEventListener('click',go);
+  $('#pwNew').addEventListener('keydown',e=>{if(e.key==='Enter')go();});
+  setTimeout(()=>{try{$('#pwCur').focus();}catch(e){}},120);
 }
 async function deleteAccount(){
   if(!confirm('Delete your account permanently? Finish any open orders and withdraw your balance first. This cannot be undone.'))return;
@@ -2277,7 +2302,7 @@ async function openListing(id){
   const lm=$('#lstMsg');if(lm)lm.addEventListener('click',()=>{if(!AUTH)return needAuth('Sign in to message');closeModal('#lstModal');openListingChat(l.id);});
   const sl=box.querySelector('[data-seller]');if(sl)sl.addEventListener('click',ev=>{ev.preventDefault();openSeller(sl.dataset.seller);});
   const tr=$('#lstTr');if(tr)tr.addEventListener('click',async()=>{const to=load('swk_chatlang','en');tr.textContent='…';try{const parts=await Promise.all([mfetch('/api/translate',{method:'POST',body:JSON.stringify({text:l.title,to})}),l.desc?mfetch('/api/translate',{method:'POST',body:JSON.stringify({text:l.desc,to})}):Promise.resolve({text:''})]);$('#lstTitle').textContent=parts[0].text;if(l.desc&&$('#lstDesc'))$('#lstDesc').textContent=parts[1].text;tr.textContent='🌐 Translated';}catch(e){tr.textContent='(translation unavailable)';}});
-  const rp=box.querySelector('[data-report]');if(rp)rp.addEventListener('click',()=>{if(!AUTH)return needAuth('Sign in to report');const reason=prompt('Why are you reporting this listing?');if(reason==null)return;mfetch('/api/report',{method:'POST',body:JSON.stringify({listingId:l.id,reason})}).then(()=>toast('Thanks — reported to moderators')).catch(e=>toast(e.message));});
+  const rp=box.querySelector('[data-report]');if(rp)rp.addEventListener('click',()=>{if(!AUTH)return needAuth('Sign in to report');reportModal(l.id);});
   const shb=box.querySelector('[data-share]');if(shb)shb.addEventListener('click',()=>shareListing(l));
   renderMoreFrom(l);
 }
@@ -2484,6 +2509,91 @@ function shipOrderModal(orderId,onDone){
   $('#shipGo').addEventListener('click',send);
   $('#shipTrack').addEventListener('keydown',e=>{if(e.key==='Enter')send();});
   setTimeout(()=>{try{$('#shipTrack').focus();}catch(e){}},120);
+}
+/* leave a review — clickable star rating (no native prompt) */
+function reviewModal(orderId,onDone){
+  let rating=5;
+  $('#offerBody').innerHTML=`<div class="cobody">
+    <h3>Leave a review</h3>
+    <div class="offer-hint" style="margin:0 0 12px">How was the trade? Your rating builds trust for the whole community.</div>
+    <div class="rv-stars" id="rvStars"></div>
+    <div class="field"><label>Comment (optional)</label><textarea id="rvText" rows="3" maxlength="500" placeholder="Smooth trade, fast and friendly…"></textarea></div>
+    <button class="cbtn" id="rvGo">Post review</button>
+    <div class="msg" id="rvMsg" style="display:none;margin-top:10px;color:#ff6b6b;font-weight:600;font-size:13px"></div>
+  </div>`;
+  openModal('#offerModal');
+  const paint=()=>{$('#rvStars').innerHTML=[1,2,3,4,5].map(i=>`<button type="button" class="rv-star${i<=rating?' on':''}" data-star="${i}" aria-label="${i} star${i>1?'s':''}">★</button>`).join('');
+    $('#rvStars').querySelectorAll('[data-star]').forEach(b=>b.addEventListener('click',()=>{rating=+b.dataset.star;paint();}));};
+  paint();
+  $('#rvGo').addEventListener('click',async()=>{
+    $('#rvGo').disabled=true;
+    try{await mfetch('/api/reviews',{method:'POST',body:JSON.stringify({orderId,rating,text:$('#rvText').value.trim()})});
+      closeModal('#offerModal');toast('Review posted ✓');if(typeof onDone==='function')onDone();}
+    catch(e){const m=$('#rvMsg');m.style.display='block';m.textContent=e.message;$('#rvGo').disabled=false;}
+  });
+}
+/* open a dispute — styled reason box (no native prompt) */
+function disputeModal(orderId,onDone){
+  $('#offerBody').innerHTML=`<div class="cobody">
+    <h3>Report a problem</h3>
+    <div class="offer-hint" style="margin:0 0 12px">Tell us what went wrong. Your funds stay safely in escrow while our team helps resolve it.</div>
+    <div class="field"><label>What happened?</label><textarea id="dsText" rows="4" maxlength="600" placeholder="e.g. Item not as described — the box arrived damaged…"></textarea></div>
+    <button class="cbtn" id="dsGo">Open dispute</button>
+    <div class="msg" id="dsMsg" style="display:none;margin-top:10px;color:#ff6b6b;font-weight:600;font-size:13px"></div>
+  </div>`;
+  openModal('#offerModal');
+  $('#dsGo').addEventListener('click',async()=>{
+    const reason=$('#dsText').value.trim(),m=$('#dsMsg');
+    if(!reason){m.style.display='block';m.textContent='Please describe the problem.';return;}
+    $('#dsGo').disabled=true;
+    try{await mfetch('/api/order/'+orderId+'/dispute',{method:'POST',body:JSON.stringify({reason})});
+      closeModal('#offerModal');toast('Issue reported — our team will help');if(typeof onDone==='function')onDone();}
+    catch(e){m.style.display='block';m.textContent=e.message;$('#dsGo').disabled=false;}
+  });
+  setTimeout(()=>{try{$('#dsText').focus();}catch(e){}},120);
+}
+/* report a listing — reason picker (no native prompt) */
+function reportModal(listingId){
+  const reasons=['Counterfeit or fake','Prohibited item','Wrong or misleading info','Spam or scam','Offensive content','Other'];
+  let picked=reasons[0];
+  $('#offerBody').innerHTML=`<div class="cobody">
+    <h3>Report listing</h3>
+    <div class="offer-hint" style="margin:0 0 12px">Reports are private and reviewed by our moderators.</div>
+    <div class="field"><label>Reason</label><div class="rp-reasons" id="rpReasons">${reasons.map((r,i)=>`<button type="button" class="rp-reason${i===0?' on':''}" data-r="${esc(r)}">${esc(r)}</button>`).join('')}</div></div>
+    <div class="field"><label>Details (optional)</label><textarea id="rpText" rows="3" maxlength="500" placeholder="Add anything that helps us review…"></textarea></div>
+    <button class="cbtn" id="rpGo">Submit report</button>
+    <div class="msg" id="rpMsg" style="display:none;margin-top:10px;color:#ff6b6b;font-weight:600;font-size:13px"></div>
+  </div>`;
+  openModal('#offerModal');
+  $('#rpReasons').querySelectorAll('[data-r]').forEach(b=>b.addEventListener('click',()=>{$('#rpReasons').querySelectorAll('.rp-reason').forEach(x=>x.classList.remove('on'));b.classList.add('on');picked=b.dataset.r;}));
+  $('#rpGo').addEventListener('click',async()=>{
+    const extra=$('#rpText').value.trim(),reason=extra?`${picked} — ${extra}`:picked;
+    $('#rpGo').disabled=true;
+    try{await mfetch('/api/report',{method:'POST',body:JSON.stringify({listingId,reason})});
+      closeModal('#offerModal');toast('Thanks — reported to moderators');}
+    catch(e){const m=$('#rpMsg');m.style.display='block';m.textContent=e.message;$('#rpGo').disabled=false;}
+  });
+}
+/* boost a listing — day picker with live price (no native prompt) */
+function boostModal(listingId){
+  let days=7;const rate=2;
+  $('#offerBody').innerHTML=`<div class="cobody">
+    <h3>★ Boost listing</h3>
+    <div class="offer-hint" style="margin:0 0 14px">Boosted listings appear at the top of the marketplace and in featured spots. ${usdtLabel(rate)}/day.</div>
+    <div class="field"><label>Duration</label><div class="segmented" id="bstSeg">${[3,7,14,30].map(d=>`<button type="button" class="${d===7?'on':''}" data-d="${d}">${d} days</button>`).join('')}</div></div>
+    <div class="wd-box"><div class="wd-row tot"><span>Total</span><b id="bstTotal">${usdtLabel(days*rate)}</b></div></div>
+    <button class="cbtn" id="bstGo" style="margin-top:14px">Boost for <span id="bstBtnAmt">${usdtLabel(days*rate)}</span></button>
+    <div class="msg" id="bstMsg" style="display:none;margin-top:10px;color:#ff6b6b;font-weight:600;font-size:13px"></div>
+  </div>`;
+  openModal('#offerModal');
+  const refresh=()=>{const t=usdtLabel(days*rate);$('#bstTotal').textContent=t;$('#bstBtnAmt').textContent=t;};
+  $('#bstSeg').querySelectorAll('[data-d]').forEach(b=>b.addEventListener('click',()=>{$('#bstSeg').querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');days=+b.dataset.d;refresh();}));
+  $('#bstGo').addEventListener('click',async()=>{
+    $('#bstGo').disabled=true;
+    try{const d=await mfetch('/api/boost',{method:'POST',body:JSON.stringify({listingId,days})});
+      closeModal('#offerModal');closeModal('#accModal');openModal('#coModal');cryptoPay(d);}
+    catch(e){const m=$('#bstMsg');m.style.display='block';m.textContent=e.message;$('#bstGo').disabled=false;}
+  });
 }
 
 /* --- sell flow --- */
@@ -2860,14 +2970,14 @@ function mktAction(act,id){
   const run=(pr)=>{mktBusy=true;return pr.finally(()=>{mktBusy=false;});};
   const done=()=>loadMarket();
   if(act==='confirm')run(mfetch('/api/order/'+id+'/confirm',{method:'POST'})).then(()=>{toast('Receipt confirmed — funds released');done();}).catch(e=>toast(e.message));
-  else if(act==='dispute'){const r=prompt('Describe the problem for the dispute:');if(r==null)return;run(mfetch('/api/order/'+id+'/dispute',{method:'POST',body:JSON.stringify({reason:r})})).then(()=>{toast('Dispute opened');done();}).catch(e=>toast(e.message));}
+  else if(act==='dispute'){disputeModal(id,done);}
   else if(act==='ship'){shipOrderModal(id,done);}
-  else if(act==='review'){const rt=prompt('Rate 1–5 stars:');if(rt==null)return;const rating=parseInt(rt,10);const text=prompt('Add a short comment (optional):')||'';run(mfetch('/api/reviews',{method:'POST',body:JSON.stringify({orderId:id,rating,text})})).then(()=>{toast('Review posted');done();}).catch(e=>toast(e.message));}
+  else if(act==='review'){reviewModal(id,done);}
   else if(act==='oaccept')run(mfetch('/api/offers/'+id+'/accept',{method:'POST'})).then(()=>{toast('Offer accepted');done();}).catch(e=>toast(e.message));
   else if(act==='ocounter'){counterOfferModal(id);}
   else if(act==='oacceptcounter')run(mfetch('/api/offers/'+id+'/accept-counter',{method:'POST'})).then(()=>{toast('Counter accepted — open the item to buy at that price');done();}).catch(e=>toast(e.message));
   else if(act==='odecline')run(mfetch('/api/offers/'+id+'/decline',{method:'POST'})).then(()=>{toast('Offer declined');done();}).catch(e=>toast(e.message));
-  else if(act==='boost'){const v=prompt('Boost for how many days? ($2/day)','7');if(v==null)return;const days=parseInt(v,10);if(!(days>0))return toast('Enter days');run(mfetch('/api/boost',{method:'POST',body:JSON.stringify({listingId:id,days})})).then(d=>{closeModal('#accModal');openModal('#coModal');cryptoPay(d);}).catch(e=>toast(e.message));}
+  else if(act==='boost'){boostModal(id);}
   else if(act==='lremove'){if(!confirm('Remove this listing?'))return;run(mfetch('/api/listings/'+id,{method:'DELETE'})).then(()=>{toast('Listing removed');done();loadListings();}).catch(e=>toast(e.message));}
   else if(act==='lview'){closeModal('#accModal');openListing(id);}
   else if(act==='ledit'){mfetch('/api/listings/'+id).then(d=>{closeModal('#accModal');const os=d.offerSettings||{};openSell(Object.assign({},d.listing,{autoAccept:os.autoAccept||0,autoDecline:os.autoDecline||0}));}).catch(e=>toast(e.message));}
@@ -2956,7 +3066,7 @@ async function paintListingChat(){
   const bOffer=box.querySelector('[data-chat-offer]');if(bOffer)bOffer.addEventListener('click',()=>makeOffer({id:L.id,title:L.title,price:L.price}));
   const bShip=box.querySelector('[data-chat-ship]');if(bShip)bShip.addEventListener('click',()=>shipOrderModal(bShip.dataset.chatShip,chatRefresh));
   const bOk=box.querySelector('[data-chat-confirm]');if(bOk)bOk.addEventListener('click',()=>{if(!confirm('Confirm the item arrived as described? This releases the funds to the seller.'))return;mfetch('/api/order/'+bOk.dataset.chatConfirm+'/confirm',{method:'POST'}).then(()=>{toast('Receipt confirmed — funds released');chatRefresh();}).catch(e=>toast(e.message));});
-  const bNo=box.querySelector('[data-chat-dispute]');if(bNo)bNo.addEventListener('click',()=>{const r=prompt('Describe the problem:');if(r==null)return;mfetch('/api/order/'+bNo.dataset.chatDispute+'/dispute',{method:'POST',body:JSON.stringify({reason:r})}).then(()=>{toast('Issue reported — our team will help');chatRefresh();}).catch(e=>toast(e.message));});
+  const bNo=box.querySelector('[data-chat-dispute]');if(bNo)bNo.addEventListener('click',()=>disputeModal(bNo.dataset.chatDispute,chatRefresh));
   const msgs=d.messages;
   const curLang=()=>box.querySelector('.chat-lang').value;
   async function translateInto(i,el){el.style.display='block';el.textContent='…';const to=curLang();save('swk_chatlang',to);try{const t=await mfetch('/api/translate',{method:'POST',body:JSON.stringify({text:msgs[i].text,to})});el.textContent=t.text;}catch(e){el.textContent='(translation unavailable)';}}
