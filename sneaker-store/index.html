@@ -2337,9 +2337,13 @@ function makeOffer(l){
     if(v<minOffer){msg.style.display='block';msg.textContent=`Lowest offer is ${usdtLabel(minOffer)} (max ${MAXOFF}% off).`;return;}
     $('#offGo').disabled=true;
     try{
-      await mfetch('/api/offers',{method:'POST',body:JSON.stringify({listingId:l.id,amount:v})});
+      const r=await mfetch('/api/offers',{method:'POST',body:JSON.stringify({listingId:l.id,amount:v})});
       try{await mfetch('/api/chat/send',{method:'POST',body:JSON.stringify({listingId:l.id,text:`Hi! I've sent an offer of ${usdtLabel(v)} for “${l.title}”.`})});}catch(e){}
-      closeModal('#offerModal');closeModal('#lstModal');toast('Offer sent');openListingChat(l.id);
+      closeModal('#offerModal');closeModal('#lstModal');
+      if(r.auto==='accepted')toast('🎉 Offer accepted instantly — open the item to buy at your price');
+      else if(r.auto==='declined')toast('Offer auto-declined — try a higher amount');
+      else toast('Offer sent');
+      openListingChat(l.id);
     }catch(e){msg.style.display='block';msg.textContent=e.message;$('#offGo').disabled=false;}
   };
   $('#offGo').addEventListener('click',send);
@@ -2360,7 +2364,7 @@ function openSell(edit){if(!AUTH)return needAuth('Sign in to sell');SELL_EDIT=(e
   Object.keys(SELL_SHIP_RATES).forEach(k=>delete SELL_SHIP_RATES[k]);SELL_SHIP_MODE='free';SELL_SHIP_FLAT=0;
   if(SELL_EDIT){(SELL_EDIT.photos||[]).forEach(p=>SELL_PHOTOS.push(p));((SELL_EDIT.ships&&SELL_EDIT.ships.length)?SELL_EDIT.ships:REGIONS).forEach(r=>SELL_SHIP.push(r));
     const sh=SELL_EDIT.shipping||{mode:'free'};SELL_SHIP_MODE=sh.mode||'free';SELL_SHIP_FLAT=sh.flat||0;Object.assign(SELL_SHIP_RATES,sh.rates||{});
-    const e=SELL_EDIT;SELL_DRAFT={title:e.title,brand:e.brand,category:e.category,size:e.size,condition:e.condition,price:e.price,country:e.country,returns:e.returns,desc:e.desc};}
+    const e=SELL_EDIT;SELL_DRAFT={title:e.title,brand:e.brand,category:e.category,size:e.size,condition:e.condition,price:e.price,country:e.country,returns:e.returns,desc:e.desc,autoAccept:e.autoAccept,autoDecline:e.autoDecline};}
   else {REGIONS.forEach(r=>SELL_SHIP.push(r));SELL_DRAFT={};}
   renderSell();openModal('#sellModal');}
 // snapshot the current form fields so a re-render (e.g. adding a photo) doesn't wipe them
@@ -2369,6 +2373,7 @@ function readSellInputs(){
   const set=(k,v)=>{if(v!==undefined)SELL_DRAFT[k]=v;};
   set('title',g('#slTitle'));set('size',g('#slSize'));set('condition',g('#slCond'));set('price',g('#slPrice'));
   set('country',g('#slCountry'));set('returns',g('#slReturns'));set('desc',g('#slDesc'));set('category',g('#slCat'));
+  set('autoAccept',g('#slAutoAcc'));set('autoDecline',g('#slAutoDec'));
   const brSel=$('#slBrand');if(brSel)SELL_DRAFT.brand=brSel.value==='Other'?($('#slBrandOther')?$('#slBrandOther').value:''):brSel.value;
   if(SELL_SHIP_MODE==='flat'){const f=$('#shipFlat');if(f)SELL_SHIP_FLAT=Math.max(0,parseFloat(f.value)||0);}
   if(SELL_SHIP_MODE==='regional')renderShipRegions();
@@ -2399,6 +2404,12 @@ function renderSell(){
       <div id="shipFlatWrap" style="display:none;margin-top:8px"><div class="tg-in"><span>$</span><input id="shipFlat" type="number" min="0" step="1" placeholder="Shipping cost to all regions"></div><span class="hintline">Same shipping cost for every region you ship to.</span></div>
       <div id="shipRegionWrap" style="display:none;margin-top:8px"></div>
     </div>
+    <div class="field"><label>Offers <span style="color:var(--faint);font-weight:500;text-transform:none;letter-spacing:0">— optional automation</span></label>
+      <div class="frow">
+        <div class="tg-in" title="Instantly accept offers at or above this amount"><span>≥$</span><input id="slAutoAcc" type="number" min="0" step="1" placeholder="Auto-accept" value="${E.autoAccept?esc(String(E.autoAccept)):''}"></div>
+        <div class="tg-in" title="Instantly decline offers below this amount"><span>&lt;$</span><input id="slAutoDec" type="number" min="0" step="1" placeholder="Auto-decline" value="${E.autoDecline?esc(String(E.autoDecline)):''}"></div>
+      </div>
+      <span class="hintline">Leave blank to review every offer yourself.</span></div>
     <div class="field"><label>Returns</label><select id="slReturns">${RETURNS.map(r=>`<option${E.returns===r?' selected':''}>${r}</option>`).join('')}</select></div>
     <div class="field"><label>Description</label><textarea id="slDesc" rows="3" maxlength="1500" placeholder="Condition details, flaws, measurements…">${esc(E.desc||'')}</textarea></div>
     <button class="cbtn" id="slGo">${SELL_EDIT?'Save changes':'Publish listing'}</button>
@@ -2460,7 +2471,7 @@ async function submitListing(){
   let shipping={mode:SELL_SHIP_MODE};
   if(SELL_SHIP_MODE==='flat')shipping.flat=Math.max(0,parseFloat($('#shipFlat').value)||0);
   else if(SELL_SHIP_MODE==='regional'){shipping.rates={};document.querySelectorAll('#shipRegionWrap [data-region]').forEach(inp=>{shipping.rates[inp.dataset.region]=Math.max(0,parseFloat(inp.value)||0);});}
-  const body={title:$('#slTitle').value,brand,category:$('#slCat').value,size:$('#slSize').value,condition:$('#slCond').value,price:$('#slPrice').value,country,shipping,ships:SELL_SHIP.slice(),returns:$('#slReturns').value,desc:$('#slDesc').value,photos:SELL_PHOTOS.slice()};
+  const body={title:$('#slTitle').value,brand,category:$('#slCat').value,size:$('#slSize').value,condition:$('#slCond').value,price:$('#slPrice').value,country,shipping,autoAccept:parseFloat($('#slAutoAcc').value)||0,autoDecline:parseFloat($('#slAutoDec').value)||0,ships:SELL_SHIP.slice(),returns:$('#slReturns').value,desc:$('#slDesc').value,photos:SELL_PHOTOS.slice()};
   $('#slGo').disabled=true;
   try{
     if(SELL_EDIT){await mfetch('/api/listings/'+SELL_EDIT.id,{method:'PUT',body:JSON.stringify(body)});toast('Changes saved — back in review before it goes live');}
@@ -2704,7 +2715,7 @@ function mktAction(act,id){
   else if(act==='boost'){const v=prompt('Boost for how many days? ($2/day)','7');if(v==null)return;const days=parseInt(v,10);if(!(days>0))return toast('Enter days');run(mfetch('/api/boost',{method:'POST',body:JSON.stringify({listingId:id,days})})).then(d=>{closeModal('#accModal');openModal('#coModal');cryptoPay(d);}).catch(e=>toast(e.message));}
   else if(act==='lremove'){if(!confirm('Remove this listing?'))return;run(mfetch('/api/listings/'+id,{method:'DELETE'})).then(()=>{toast('Listing removed');done();loadListings();}).catch(e=>toast(e.message));}
   else if(act==='lview'){closeModal('#accModal');openListing(id);}
-  else if(act==='ledit'){mfetch('/api/listings/'+id).then(d=>{closeModal('#accModal');openSell(d.listing);}).catch(e=>toast(e.message));}
+  else if(act==='ledit'){mfetch('/api/listings/'+id).then(d=>{closeModal('#accModal');const os=d.offerSettings||{};openSell(Object.assign({},d.listing,{autoAccept:os.autoAccept||0,autoDecline:os.autoDecline||0}));}).catch(e=>toast(e.message));}
   else if(act==='chat'){const box=document.getElementById('chat-'+id);if(!box)return;if(box.style.display==='none'){box.style.display='block';loadThread(id);}else box.style.display='none';}
   else if(act==='omsg'){const [lid,buyer]=id.split('|');openListingChat(lid,buyer||undefined);}
 }

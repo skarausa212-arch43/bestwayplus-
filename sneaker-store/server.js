@@ -762,7 +762,8 @@ const server = http.createServer(async (req, res) => {
       const u = tokenUser(req);
       let acceptedOfferPrice = null;
       if (u) { const of = offers.find(o => o.listingId === l.id && o.buyer === u.email && o.status === 'accepted'); if (of) acceptedOfferPrice = of.amount; }
-      return send(res, 200, { listing: listingFull(l), acceptedOfferPrice });
+      const mine = u && u.email === l.seller;
+      return send(res, 200, { listing: listingFull(l), acceptedOfferPrice, offerSettings: mine ? { autoAccept: l.autoAccept || 0, autoDecline: l.autoDecline || 0 } : undefined });
     }
     /* --- create listing --- */
     if (req.method === 'POST' && p === '/api/listings') {
@@ -788,6 +789,8 @@ const server = http.createServer(async (req, res) => {
         ships, returns: RETURNS.includes(b.returns) ? b.returns : 'No returns',
         country: /^[A-Za-z]{2}$/.test(b.country || '') ? String(b.country).toUpperCase() : '',
         shipping: parseShipping(b.shipping, ships),
+        autoAccept: Math.max(0, Math.min(price, Math.round(Number(b.autoAccept) * 100) / 100)) || 0,
+        autoDecline: Math.max(0, Math.min(price, Math.round(Number(b.autoDecline) * 100) / 100)) || 0,
         desc: String(b.desc || '').slice(0, 1500), photos, cover: photos[0], status: 'pending', createdAt: Date.now(),
       };
       listings.push(l); saveListings();
@@ -815,6 +818,8 @@ const server = http.createServer(async (req, res) => {
       if (b.returns !== undefined && RETURNS.includes(b.returns)) l.returns = b.returns;
       if (b.country !== undefined) l.country = /^[A-Za-z]{2}$/.test(b.country || '') ? String(b.country).toUpperCase() : '';
       if (b.shipping !== undefined) l.shipping = parseShipping(b.shipping, l.ships);
+      if (b.autoAccept !== undefined) l.autoAccept = Math.max(0, Math.min(l.price, Math.round(Number(b.autoAccept) * 100) / 100)) || 0;
+      if (b.autoDecline !== undefined) l.autoDecline = Math.max(0, Math.min(l.price, Math.round(Number(b.autoDecline) * 100) / 100)) || 0;
       if (Array.isArray(b.photos)) {
         const photos = b.photos.filter(x => typeof x === 'string' && x.startsWith('data:image/')).slice(0, 6);
         if (!photos.length) return send(res, 400, { error: 'Add at least one photo.' });
@@ -841,8 +846,11 @@ const server = http.createServer(async (req, res) => {
         return send(res, 429, { error: `Daily limit reached — you can make up to ${MAX_OFFERS_PER_DAY} offers per day.` });
       offers.filter(o => o.listingId === l.id && o.buyer === u.email && o.status === 'pending').forEach(o => o.status = 'superseded');
       const of = { id: 'O-' + crypto.randomBytes(3).toString('hex').toUpperCase(), listingId: l.id, buyer: u.email, amount, status: 'pending', createdAt: Date.now() };
+      // seller auto-accept / auto-decline thresholds
+      if (l.autoAccept > 0 && amount >= l.autoAccept) { of.status = 'accepted'; of.auto = true; }
+      else if (l.autoDecline > 0 && amount <= l.autoDecline) { of.status = 'declined'; of.auto = true; }
       offers.push(of); saveOffers();
-      return send(res, 201, { offer: of });
+      return send(res, 201, { offer: of, auto: of.status !== 'pending' ? of.status : null });
     }
     /* --- accept / decline / counter offer (seller) --- */
     if (req.method === 'POST' && /^\/api\/offers\/[A-Za-z0-9-]+\/(accept|decline|counter)$/.test(p)) {
