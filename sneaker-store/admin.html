@@ -222,11 +222,12 @@ async function loadDash(){
     <td class="hidem">${esc(o.name||'')} <div class="items">${esc(o.email)}</div></td>
     <td>${o.items.map(i=>`${i.qty}× ${esc(i.name)} (${esc(i.size)})`).join('<br>')}</td>
     <td class="money">${fmt$(o.total)}${o.payAmount?`<div class="items">${Number(o.payAmount).toFixed(2)} USDC</div>`:''}</td>
-    <td><span class="pill ${esc(o.status)}">${esc(o.status)}</span>${o.paidTx?`<div class="items"><a class="rcpt" href="https://etherscan.io/tx/${encodeURIComponent(o.paidTx)}" target="_blank">✓ tx ↗</a></div>`:''}
+    <td><span class="pill ${esc(o.status)}">${esc(o.status)}</span>${o.paidTx?`<div class="items"><a class="rcpt" href="${o.network==='usdt-trc20'?'https://tronscan.org/#/transaction/':'https://etherscan.io/tx/'}${encodeURIComponent(o.paidTx)}" target="_blank">✓ tx ↗</a></div>`:''}
       <div class="ship" data-id="${o.id}">
         <select class="st">${['pending','paid','held','processing','shipped','delivered','released','disputed','refunded','cancelled'].map(s=>`<option ${s===o.status?'selected':''}>${s}</option>`).join('')}</select>
         <input class="carrier" placeholder="Carrier (DHL…)" value="${esc(o.carrier||'')}">
         <input class="tracking" placeholder="Tracking #" value="${esc(o.tracking||'')}">
+        <input class="tx" placeholder="Payment tx hash" value="${esc(o.paidTx||'')}">
         <button class="save">Save</button>
       </div></td>
     <td><a class="rcpt" href="/receipt/${o.id}" target="_blank">open</a></td>
@@ -236,7 +237,8 @@ async function loadDash(){
     const doSave=async()=>{
       await api('/api/admin/order-status',{method:'POST',body:JSON.stringify({
         id,status:row.querySelector('.st').value,
-        carrier:row.querySelector('.carrier').value,tracking:row.querySelector('.tracking').value})});
+        carrier:row.querySelector('.carrier').value,tracking:row.querySelector('.tracking').value,
+        tx:row.querySelector('.tx').value})});
       loadDash();
     };
     row.querySelector('.save').addEventListener('click',doSave);

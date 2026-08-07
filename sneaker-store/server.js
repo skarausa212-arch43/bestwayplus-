@@ -371,7 +371,15 @@ function onlineCount() {
 }
 
 /* ---------- receipt ---------- */
+function txExplorer(network, hash) {
+  if (!hash) return '';
+  if (network === 'usdt-trc20') return 'https://tronscan.org/#/transaction/' + encodeURIComponent(hash);
+  if (network === 'usdc-erc20') return 'https://etherscan.io/tx/' + encodeURIComponent(hash);
+  return '';
+}
 function receiptHTML(o) {
+  const paid = !!o.paidTx || ['held', 'shipped', 'released', 'delivered', 'disputed'].includes(o.status);
+  const txUrl = txExplorer(o.network, o.paidTx);
   const rows = o.items.map(it =>
     `<tr><td>${esc(it.name)}<span class="m"> · size ${esc(it.size)}</span></td>
      <td class="c">${it.qty}</td><td class="r">$${it.price}</td><td class="r">$${it.price * it.qty}</td></tr>`).join('');
@@ -399,6 +407,12 @@ function receiptHTML(o) {
   tfoot tr.total td{font-size:17px;font-weight:800;border-top:2px solid #111;padding-top:14px}
   .paid{display:inline-block;margin-top:22px;padding:7px 14px;border:2px solid #16a34a;color:#16a34a;
     border-radius:8px;font-weight:800;font-size:12px;letter-spacing:.14em;transform:rotate(-3deg)}
+  .paid.pending{border-color:#d97706;color:#d97706}
+  .tx{margin-top:20px;padding:14px 16px;background:#fafafa;border:1px solid #ececef;border-radius:12px}
+  .tx b{display:block;color:#111;font-weight:600;margin-bottom:5px;font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+  .tx a,.tx .hash{font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:#4f46e5;word-break:break-all;text-decoration:none}
+  .tx a:hover{text-decoration:underline}
+  .tx .await{font-size:12.5px;color:#a1a1aa}
   .foot{padding:20px 30px 26px;border-top:1px dashed #d4d4d8;font-size:12px;color:#71717a;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
   .print{position:fixed;right:22px;bottom:22px;background:#111;color:#fff;border:0;border-radius:12px;
     padding:14px 22px;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 12px 30px -10px rgba(0,0,0,.5)}
@@ -425,7 +439,13 @@ function receiptHTML(o) {
         <tr class="total"><td colspan="3">Total</td><td class="r">$${o.total}</td></tr>
       </tfoot>
     </table>
-    <span class="paid">CONFIRMED</span>
+    <div class="tx">
+      <b>Transaction hash</b>
+      ${o.paidTx
+        ? (txUrl ? `<a href="${esc(txUrl)}" target="_blank" rel="noopener">${esc(o.paidTx)} ↗</a>` : `<span class="hash">${esc(o.paidTx)}</span>`)
+        : `<span class="await">Awaiting on-chain confirmation — this updates automatically once the ${esc((NETWORKS[o.network] || {}).token || 'crypto')} payment is detected.</span>`}
+    </div>
+    <span class="paid${paid ? '' : ' pending'}">${paid ? 'CONFIRMED' : 'AWAITING PAYMENT'}</span>
   </div>
   <div class="foot"><span>stuffweknow.com — wear what you know</span><span>Questions? Reply to your confirmation or see /policies</span></div>
 </div>
@@ -1245,7 +1265,7 @@ const server = http.createServer(async (req, res) => {
         return send(res, 200, { ok: true, wallets: { usdc: WALLET, usdt: USDT_TRC20_WALLET }, etherscanSet: !!etherscanKey, tronSet: !!tronKey });
       }
       if (req.method === 'POST' && p === '/api/admin/order-status') {
-        const { id, status, carrier, tracking } = await readBody(req);
+        const { id, status, carrier, tracking, tx } = await readBody(req);
         const o = orders.find(x => x.id === id);
         if (!o || !['pending', 'paid', 'held', 'processing', 'shipped', 'delivered', 'released', 'refunded', 'disputed', 'cancelled'].includes(status)) return send(res, 400, { error: 'bad request' });
         // terminal-state protection: a settled order (paid out to seller, or refunded) can never be flipped
@@ -1260,6 +1280,7 @@ const server = http.createServer(async (req, res) => {
         } else { o.status = status; }
         if (carrier !== undefined) o.carrier = String(carrier).slice(0, 60);
         if (tracking !== undefined) o.tracking = String(tracking).slice(0, 80);
+        if (tx !== undefined) o.paidTx = String(tx).trim().slice(0, 120) || null;
         saveOrders();
         return send(res, 200, { ok: true });
       }
