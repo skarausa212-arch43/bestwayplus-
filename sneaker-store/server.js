@@ -323,6 +323,22 @@ function serveFile(res, file, type) {
     res.end(buf);
   });
 }
+/* ---------- PWA (installable app) ---------- */
+const PWA_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#111113"/><path d="M256 92l116 50v92c0 82-54 138-116 158-62-20-116-76-116-158v-92l116-50z" fill="none" stroke="#6c63ff" stroke-width="28" stroke-linejoin="round"/><path d="M210 252l34 34 66-66" fill="none" stroke="#8f86ff" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const PWA_MANIFEST = JSON.stringify({
+  name: 'STUFFWEKNOW', short_name: 'STUFFWEKNOW',
+  description: 'Buy & sell anything, safely, with crypto escrow.',
+  start_url: '/', scope: '/', display: 'standalone', orientation: 'portrait',
+  background_color: '#f7f7f5', theme_color: '#111113',
+  icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }],
+});
+const PWA_SW = `const C='swk-shell-v1';
+self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(['/','/manifest.webmanifest','/icon.svg']).catch(()=>{})).then(()=>self.skipWaiting()));});
+self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
+self.addEventListener('fetch',e=>{const req=e.request;if(req.method!=='GET')return;const u=new URL(req.url);if(u.origin!==location.origin)return;
+  if(u.pathname.startsWith('/api/')||u.pathname.startsWith('/receipt/')||u.pathname==='/sw.js')return;
+  if(req.mode==='navigate'){e.respondWith(fetch(req).catch(()=>caches.match('/')));return;}
+  e.respondWith(caches.open(C).then(c=>c.match(req).then(hit=>hit||fetch(req).then(r=>{try{c.put(req,r.clone());}catch(_){}return r;}))));});`;
 
 /* ---------- visit counting ---------- */
 const today = () => new Date().toISOString().slice(0, 10);
@@ -551,6 +567,9 @@ const server = http.createServer(async (req, res) => {
   try {
     /* ----- pages ----- */
     if (req.method === 'GET' && (p === '/' || p === '/index.html')) { countVisit(req, res); return serveFile(res, 'index.html', 'text/html; charset=utf-8'); }
+    if (req.method === 'GET' && p === '/manifest.webmanifest') { res.writeHead(200, { 'Content-Type': 'application/manifest+json', 'Cache-Control': 'no-cache' }); return res.end(PWA_MANIFEST); }
+    if (req.method === 'GET' && p === '/sw.js') { res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-cache' }); return res.end(PWA_SW); }
+    if (req.method === 'GET' && p === '/icon.svg') { res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=604800' }); return res.end(PWA_ICON); }
     if (req.method === 'GET' && p === '/policies') return serveFile(res, 'policies.html', 'text/html; charset=utf-8');
     if (req.method === 'GET' && p === '/admin') return serveFile(res, 'admin.html', 'text/html; charset=utf-8');
     if (req.method === 'GET' && /^\/receipt\/SWK-[A-Z0-9-]+$/.test(p)) {
