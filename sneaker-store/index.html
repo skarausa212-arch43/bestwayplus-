@@ -664,6 +664,13 @@
   #mktBody{animation:panelin .3s var(--ease)}
   @keyframes panelin{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
   .mkt-empty{padding:36px 10px;text-align:center;color:var(--muted);font-size:14px}
+  /* notifications */
+  .notif-list{display:flex;flex-direction:column;gap:2px}
+  .notif{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:13px 12px;border-radius:12px;transition:background .15s var(--ease);animation:profIn .3s var(--ease) both}
+  .notif:hover{background:var(--surface-2)}
+  .notif-ic{flex:none;width:38px;height:38px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font-size:18px}
+  .notif-t{flex:1;min-width:0;font-size:13.5px;font-weight:600;line-height:1.35}
+  .notif-a{flex:none;font-size:11.5px;color:var(--faint);font-weight:600}
   /* saved / wishlist */
   .wishgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
   .wcard{position:relative;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--surface);display:flex;flex-direction:column;animation:panelin .3s var(--ease) both;transition:transform .18s var(--ease),box-shadow .18s var(--ease)}
@@ -2532,12 +2539,28 @@ function myListingRow(l){
     ${note}
     <div class="ord-acts"><button data-act="lview" data-id="${l.id}">View</button>${['active','pending','rejected'].includes(l.status)?`<button data-act="ledit" data-id="${l.id}">Edit</button>`:''}${l.status==='active'&&!l.boosted?`<button data-act="boost" data-id="${l.id}">★ Boost</button>`:''}<button class="warn" data-act="lremove" data-id="${l.id}">Remove</button></div></div>`;
 }
+/* ---- in-app notifications (derived from market data) ---- */
+function timeAgo(ts){if(!ts)return '';const s=Math.floor((Date.now()-ts)/1000);if(s<60)return 'just now';const m=Math.floor(s/60);if(m<60)return m+'m ago';const h=Math.floor(m/60);if(h<24)return h+'h ago';const dd=Math.floor(h/24);return dd+'d ago';}
+function buildNotifs(){
+  const d=MKT||{},out=[];
+  (d.offersReceived||[]).forEach(o=>{if(o.status==='pending')out.push({ic:'💸',t:`New offer ${fmt(o.amount)} on “${o.title}”`,at:o.createdAt||0,tab:'offers'});});
+  (d.offersMade||[]).forEach(o=>{if(o.status==='accepted')out.push({ic:'✅',t:`Your offer on “${o.title}” was accepted`,at:o.createdAt||0,tab:'offers'});else if(o.status==='declined')out.push({ic:'❌',t:`Your offer on “${o.title}” was declined`,at:o.createdAt||0,tab:'offers'});else if(o.status==='countered')out.push({ic:'↩️',t:`Seller countered ${fmt(o.counter)} on “${o.title}”`,at:o.createdAt||0,tab:'offers'});});
+  (d.sales||[]).forEach(o=>{const it=(o.items&&o.items[0])||{};if(o.status==='held')out.push({ic:'🛍️',t:`You sold “${it.name||''}” — ship it`,at:o.date||0,tab:'selling'});});
+  (d.purchases||[]).forEach(o=>{const it=(o.items&&o.items[0])||{};if(o.status==='shipped')out.push({ic:'📦',t:`“${it.name||''}” was shipped`,at:o.shippedAt||o.date||0,tab:'buying'});else if(o.status==='released')out.push({ic:'🎉',t:`Order “${it.name||''}” completed`,at:o.date||0,tab:'buying'});});
+  (d.listings||[]).forEach(l=>{if(l.status==='active')out.push({ic:'✨',t:`“${l.title}” is live`,at:l.createdAt||0,tab:'listings'});else if(l.status==='rejected')out.push({ic:'⚠️',t:`“${l.title}” was not approved`,at:l.createdAt||0,tab:'listings'});});
+  (MKT_CHATS||[]).forEach(c=>{if(c.last)out.push({ic:'💬',t:`Message from @${c.counterpart}`,at:c.at||0,tab:'chats',chat:c});});
+  return out.sort((a,b)=>b.at-a.at).slice(0,40);
+}
+function unreadNotifs(){const seen=load('swk_notif_seen',0);return buildNotifs().filter(n=>n.at>seen).length;}
+function updateMsgBadge(){const n=unreadNotifs();const el=$('#botMsg');if(el){el.textContent=n;el.classList.toggle('show',n>0);}}
+async function refreshAlerts(){if(!AUTH)return;try{MKT=await mfetch('/api/my/market');}catch(e){}try{const d=await mfetch('/api/my/chats');MKT_CHATS=d.chats||[];}catch(e){}updateMsgBadge();}
 function paintMarket(){
   const t=MKT_TAB,d=MKT||{};
-  const counts={saved:(favs||[]).length,buying:(d.purchases||[]).length,selling:(d.sales||[]).length,listings:(d.listings||[]).length,offers:(d.offersReceived||[]).length+(d.offersMade||[]).length,chats:(MKT_CHATS||[]).length};
+  const counts={notifs:unreadNotifs(),saved:(favs||[]).length,buying:(d.purchases||[]).length,selling:(d.sales||[]).length,listings:(d.listings||[]).length,offers:(d.offersReceived||[]).length+(d.offersMade||[]).length,chats:(MKT_CHATS||[]).length};
   const tab=(k,label)=>`<button class="mkt-tab ${t===k?'on':''}" data-tab="${k}">${label}${counts[k]?` <span class="n">${counts[k]}</span>`:''}</button>`;
   let body='';
-  if(t==='saved')body='<div class="wishgrid" id="wishGrid"><p class="mkt-empty">Loading…</p></div>';
+  if(t==='notifs'){const ns=buildNotifs();body=ns.length?`<div class="notif-list">${ns.map(n=>`<button class="notif" data-ntab="${n.tab}"><span class="notif-ic">${n.ic}</span><span class="notif-t">${esc(n.t)}</span><span class="notif-a">${timeAgo(n.at)}</span></button>`).join('')}</div>`:'<p class="mkt-empty">🔔 No notifications yet. Offers, sales and messages show up here.</p>';}
+  else if(t==='saved')body='<div class="wishgrid" id="wishGrid"><p class="mkt-empty">Loading…</p></div>';
   else if(t==='buying')body=(d.purchases&&d.purchases.length)?d.purchases.map(o=>mktOrderCard(o,'buying')).join(''):'<p class="mkt-empty">No purchases yet.</p>';
   else if(t==='selling')body=(d.sales&&d.sales.length)?d.sales.map(o=>mktOrderCard(o,'selling')).join(''):'<p class="mkt-empty">No sales yet.</p>';
   else if(t==='listings')body=(d.listings&&d.listings.length)?d.listings.map(myListingRow).join(''):'<p class="mkt-empty">You have no listings. Tap “Sell” to add one.</p>';
@@ -2557,9 +2580,10 @@ function paintMarket(){
     </div>
     ${wl?`<h4 style="font-size:12px;letter-spacing:.1em;color:var(--faint);text-transform:uppercase;margin:18px 0 8px">Withdrawals</h4>${wl}`:''}`;
   }
-  $('#mktPanel').innerHTML=`<div class="mkt-tabs">${tab('profile','Profile')}${tab('saved','♥ Saved')}${tab('buying','Buying')}${tab('selling','Selling')}${tab('listings','Listings')}${tab('offers','Offers')}${tab('chats','Messages')}${tab('payout','Payout')}</div><div id="mktBody">${body}</div>`;
+  $('#mktPanel').innerHTML=`<div class="mkt-tabs">${tab('profile','Profile')}${tab('notifs','🔔')}${tab('saved','♥ Saved')}${tab('buying','Buying')}${tab('selling','Selling')}${tab('listings','Listings')}${tab('offers','Offers')}${tab('chats','Messages')}${tab('payout','Payout')}</div><div id="mktBody">${body}</div>`;
   $('#mktPanel').querySelectorAll('.mkt-tab').forEach(b=>b.addEventListener('click',()=>{MKT_TAB=b.dataset.tab;paintMarket();if(b.dataset.tab==='chats')loadChats();}));
   if(t==='saved')paintWishlist();
+  if(t==='notifs'){save('swk_notif_seen',Date.now());updateMsgBadge();$('#mktBody').querySelectorAll('[data-ntab]').forEach(el=>el.addEventListener('click',()=>{MKT_TAB=el.dataset.ntab;paintMarket();if(el.dataset.ntab==='chats')loadChats();}));}
   $('#mktBody').querySelectorAll('[data-chat]').forEach(el=>el.addEventListener('click',()=>{const [lid,buyer]=el.dataset.chat.split('|');openListingChat(lid,buyer||undefined);}));
   const po=$('#poSave');if(po)po.addEventListener('click',async()=>{po.disabled=true;try{await mfetch('/api/payout',{method:'POST',body:JSON.stringify({address:$('#poAddr').value})});toast('Payout address saved');loadMarket();}catch(e){toast(e.message);po.disabled=false;}});
   const pw=$('#poWithdraw');if(pw)pw.addEventListener('click',async()=>{pw.disabled=true;try{await mfetch('/api/withdraw',{method:'POST'});toast('Withdrawal requested — funds are on the way');loadMarket();}catch(e){toast(e.message);pw.disabled=false;}});
@@ -2607,7 +2631,7 @@ async function loadMarket(){
   try{MKT=await mfetch('/api/my/market');}catch(e){MKT={};}
   try{const d=await mfetch('/api/my/chats');MKT_CHATS=d.chats||[];}catch(e){MKT_CHATS=MKT_CHATS||[];}
   try{MKT_PROFILE=await mfetch('/api/me');PROFILE_ADDR=(MKT_PROFILE.addresses||[]).map(a=>({...a}));ADDR_DIRTY=false;}catch(e){MKT_PROFILE=MKT_PROFILE||{};}
-  paintMarket();
+  updateMsgBadge();paintMarket();
 }
 function addrCardHTML(a,i){
   const ropts=REGIONS.map(r=>`<option ${a.region===r?'selected':''}>${r}</option>`).join('');
@@ -2823,6 +2847,8 @@ $('#accModal').addEventListener('click',e=>{const b=e.target.closest('[data-act]
 renderFilterbar();renderGrid();renderCart();bump();updateWishBadge();loadPayConfig();
 /* PWA: register service worker (installable app + offline shell) */
 if('serviceWorker'in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{});});}
+/* refresh the alerts badge on load for signed-in users */
+if(AUTH)setTimeout(refreshAlerts,800);
 /* live online counter */
 (function(){var el=document.getElementById('onlineN');if(!el)return;function tick(){fetch('/api/online').then(function(r){return r.json()}).then(function(d){if(d&&d.online!=null)el.textContent=d.online}).catch(function(){});}tick();setInterval(tick,15000);})();
 /* thunder sound (WebAudio synth, off by default) */
