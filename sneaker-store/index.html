@@ -296,6 +296,20 @@
   .offer-chip:hover{border-color:var(--accent);color:var(--accent)}
   .offer-chip:active{transform:scale(.97)}
   .offer-hint{font-size:12.5px;color:var(--muted);margin:13px 0 4px;line-height:1.45}
+  /* share / report links + more-from-seller + recently viewed */
+  .lst-linkrow{display:flex;gap:8px;margin:12px 0 4px}
+  .lst-linkbtn{flex:1;padding:9px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--muted);font-weight:600;font-size:12.5px;transition:.15s var(--ease)}
+  .lst-linkbtn:hover{color:var(--ink);border-color:var(--line-2)}
+  .more-h{font-size:13px;font-weight:700;letter-spacing:-.01em;margin:18px 0 10px}
+  .more-row{display:flex;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none}
+  .more-row::-webkit-scrollbar{display:none}
+  .more-c{flex:none;width:96px;text-align:left}
+  .more-img{display:block;width:96px;height:96px;border-radius:12px;overflow:hidden;background:#eef0f3;border:1px solid var(--line)}
+  .more-img img{width:100%;height:100%;object-fit:cover}
+  .more-c:hover .more-img{border-color:var(--accent)}
+  .more-p{display:block;font-size:12.5px;font-weight:800;letter-spacing:-.02em;margin-top:6px}
+  .recent-row{margin:0 0 18px}
+  @media(min-width:768px){.recent-row{margin-bottom:24px}}
 
   /* ============ BADGES ============ */
   .badge{font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:4px 7px;border-radius:7px;display:inline-flex;align-items:center;gap:4px;line-height:1;background:var(--surface);border:1px solid var(--line);color:var(--ink);box-shadow:var(--shadow-sm)}
@@ -1106,6 +1120,7 @@
       </div>
     </div>
     <div class="filterbar reveal" id="filterbar"></div>
+    <div class="recent-row" id="recentRow" style="display:none"></div>
     <div class="grid" id="grid"></div>
   </div>
 </section>
@@ -2183,12 +2198,14 @@ async function openListing(id){
         <a href="#" data-seller="${esc(s.email)}">View shop</a>
       </div>
       ${(AUTH&&AUTH.email&&AUTH.email.toLowerCase()!==(s.email||'').toLowerCase())?`<button class="lst-msg" id="lstMsg"><span>✉</span> Write seller</button>`:''}
-      <button class="lst-report" data-report="${l.id}">Report this listing</button>
+      <div class="lst-linkrow"><button class="lst-linkbtn" data-share="${l.id}">🔗 Share</button><button class="lst-linkbtn" data-report="${l.id}">⚑ Report</button></div>
       <div class="qv-act">
         <button class="btn btn-primary" style="flex:1;justify-content:center" id="lstBuy">Buy now — ${usdtLabel(payTotal(price))}</button>
         <button class="btn btn-secondary" id="lstOffer" style="padding:0 16px">Make offer</button>
       </div>
+      <div id="moreFrom"></div>
     </div>`;
+  pushRecent(l);
   const strip=$('#lstStrip');if(strip)strip.addEventListener('click',ev=>{const im=ev.target.closest('img[data-i]');if(!im)return;$('#lstMain').src=l.photos[im.dataset.i];strip.querySelectorAll('img').forEach(x=>x.classList.remove('on'));im.classList.add('on');});
   $('#lstBuy').addEventListener('click',()=>buyListing(l,price));
   $('#lstOffer').addEventListener('click',()=>makeOffer(l));
@@ -2196,6 +2213,33 @@ async function openListing(id){
   const sl=box.querySelector('[data-seller]');if(sl)sl.addEventListener('click',ev=>{ev.preventDefault();openSeller(sl.dataset.seller);});
   const tr=$('#lstTr');if(tr)tr.addEventListener('click',async()=>{const to=load('swk_chatlang','en');tr.textContent='…';try{const parts=await Promise.all([mfetch('/api/translate',{method:'POST',body:JSON.stringify({text:l.title,to})}),l.desc?mfetch('/api/translate',{method:'POST',body:JSON.stringify({text:l.desc,to})}):Promise.resolve({text:''})]);$('#lstTitle').textContent=parts[0].text;if(l.desc&&$('#lstDesc'))$('#lstDesc').textContent=parts[1].text;tr.textContent='🌐 Translated';}catch(e){tr.textContent='(translation unavailable)';}});
   const rp=box.querySelector('[data-report]');if(rp)rp.addEventListener('click',()=>{if(!AUTH)return needAuth('Sign in to report');const reason=prompt('Why are you reporting this listing?');if(reason==null)return;mfetch('/api/report',{method:'POST',body:JSON.stringify({listingId:l.id,reason})}).then(()=>toast('Thanks — reported to moderators')).catch(e=>toast(e.message));});
+  const shb=box.querySelector('[data-share]');if(shb)shb.addEventListener('click',()=>shareListing(l));
+  renderMoreFrom(l);
+}
+function shareListing(l){
+  const url=location.origin+location.pathname+'?item='+encodeURIComponent(l.id);
+  const data={title:l.title,text:`${l.title} — ${usdtLabel(l.price)} on STUFFWEKNOW`,url};
+  if(navigator.share){navigator.share(data).catch(()=>{});}
+  else{try{navigator.clipboard.writeText(url);toast('Link copied');}catch(e){prompt('Copy this link:',url);}}
+}
+function renderMoreFrom(l){
+  const box=$('#moreFrom');if(!box)return;
+  const more=LISTINGS.filter(x=>x.id!==l.id&&x.seller&&l.seller&&x.seller.email&&x.seller.email===l.seller.email).slice(0,6);
+  if(!more.length){box.innerHTML='';return;}
+  box.innerHTML=`<div class="more-h">More from @${esc(l.seller.handle)}</div><div class="more-row">${more.map(x=>`<button class="more-c" data-more="${x.id}"><span class="more-img"><img src="${x.cover}" alt="${esc(x.title)}" loading="lazy"></span><span class="more-p">${usdtLabel(x.price)}</span></button>`).join('')}</div>`;
+  box.querySelectorAll('[data-more]').forEach(b=>b.addEventListener('click',()=>openListing(b.dataset.more)));
+}
+/* recently viewed (client-side) */
+let RECENT=load('swk_recent',[]);
+function pushRecent(l){
+  try{RECENT=RECENT.filter(x=>x.id!==l.id);RECENT.unshift({id:l.id,title:l.title,cover:l.cover||l.photos&&l.photos[0]||'',price:l.price});RECENT=RECENT.slice(0,12);save('swk_recent',RECENT);renderRecent();}catch(e){}
+}
+function renderRecent(){
+  const box=$('#recentRow');if(!box)return;
+  if(!RECENT.length){box.innerHTML='';box.style.display='none';return;}
+  box.style.display='';
+  box.innerHTML=`<div class="more-h" style="padding:0 2px">Recently viewed</div><div class="more-row">${RECENT.map(x=>`<button class="more-c" data-more="${x.id}"><span class="more-img"><img src="${x.cover}" alt="${esc(x.title)}" loading="lazy"></span><span class="more-p">${usdtLabel(x.price)}</span></button>`).join('')}</div>`;
+  box.querySelectorAll('[data-more]').forEach(b=>b.addEventListener('click',()=>openListing(b.dataset.more)));
 }
 async function openSeller(email){
   const box=$('#lstBody');box.innerHTML='<div class="cobody" style="grid-column:1/-1"><p class="sub">Loading…</p></div>';openModal('#lstModal');
@@ -2871,7 +2915,11 @@ function animCount(el){
 }
 // data + homepage build (after all definitions are initialized)
 buildHomepage();
-loadListings();
+renderRecent();
+loadListings().then(()=>{
+  // deep-link: /?item=<id> opens that listing directly (shareable links)
+  try{const it=new URLSearchParams(location.search).get('item');if(it)setTimeout(()=>openListing(it),300);}catch(e){}
+});
 loadFX().then(()=>{if(CUR!=='USD'){renderGrid();renderFeatured();renderSellers();renderTrades();}});
 // stagger the hero on load, then reveal
 window.addEventListener('load',()=>{
