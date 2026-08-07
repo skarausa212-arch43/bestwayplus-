@@ -112,6 +112,9 @@ echo "  certificate ready: /etc/letsencrypt/live/$HOST"
 
 echo "== [6/9] postmaster account BEFORE first start =="
 mkdir -p docker-data/dms/config
+# IPv6 из docker-сети наружу не маршрутизируется — не тратим время на попытки
+grep -q inet_protocols docker-data/dms/config/postfix-main.cf 2>/dev/null || \
+  echo 'inet_protocols = ipv4' >> docker-data/dms/config/postfix-main.cf
 if [ ! -s docker-data/dms/config/postfix-accounts.cf ]; then
   PM_PASS="$(openssl rand -base64 16)"
   echo "postmaster@$DOMAIN|{SHA512-CRYPT}$(openssl passwd -6 "$PM_PASS")" \
