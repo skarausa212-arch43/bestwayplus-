@@ -597,6 +597,9 @@
   .net-badge{display:block;width:fit-content;margin:0 auto 18px;padding:7px 15px;border-radius:100px;border:1px solid var(--accent-soft);background:var(--accent-soft);color:var(--accent);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
   .qr{width:200px;height:200px;margin:0 auto 18px;background:#fff;border-radius:16px;padding:12px;box-shadow:var(--shadow);border:1px solid var(--line)}
   .qr svg{width:100%;height:100%}
+  .pay-qr{width:172px;height:172px;margin:2px auto 8px;padding:10px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm)}
+  .pay-qr svg{display:block;width:100%;height:100%}
+  .pay-qr-hint{text-align:center;font-size:12px;color:var(--muted);margin-bottom:16px}
   .addr-lbl{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:8px;text-align:center}
   .addr{display:flex;gap:8px;align-items:center;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:8px 8px 8px 14px;margin-bottom:14px}
   .addr code{flex:1;min-width:0;font-family:ui-monospace,Menlo,monospace;font-size:12px;word-break:break-all;color:var(--ink)}
@@ -1732,6 +1735,59 @@ async function walletPay(d){
     toast('Payment sent from your wallet');
   }catch(e){toast(e&&e.message?e.message.slice(0,80):'Wallet payment cancelled');}
 }
+/* ---- self-contained QR encoder (byte mode, ECC level M, versions 1-10, mask 0) ---- */
+const QR=(function(){
+  const EXP=new Array(512),LOG=new Array(256);
+  for(let i=0,x=1;i<255;i++){EXP[i]=x;LOG[x]=i;x<<=1;if(x&0x100)x^=0x11d;}
+  for(let i=255;i<512;i++)EXP[i]=EXP[i-255];
+  const gmul=(a,b)=>(a===0||b===0)?0:EXP[LOG[a]+LOG[b]];
+  function rsGen(deg){let poly=[1];for(let i=0;i<deg;i++){const np=new Array(poly.length+1).fill(0);for(let j=0;j<poly.length;j++){np[j]^=gmul(poly[j],1);np[j+1]^=gmul(poly[j],EXP[i]);}poly=np;}return poly;}
+  function rsEnc(data,ecLen){const gen=rsGen(ecLen);const res=data.concat(new Array(ecLen).fill(0));for(let i=0;i<data.length;i++){const c=res[i];if(c!==0)for(let j=0;j<gen.length;j++)res[i+j]^=gmul(gen[j],c);}return res.slice(data.length);}
+  // ECC level M: [ecPerBlock, [[numBlocks,dataPerBlock],...]]
+  const VER=[null,[10,[[1,16]]],[16,[[1,28]]],[26,[[1,44]]],[18,[[2,32]]],[24,[[2,43]]],[16,[[4,27]]],[18,[[4,31]]],[22,[[2,38],[2,39]]],[22,[[3,36],[2,37]]],[26,[[4,43],[1,44]]]];
+  const ALIGN=[null,[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50]];
+  function cap(v){const g=VER[v][1];let d=0;for(const[nb,dp]of g)d+=nb*dp;return Math.floor((d*8-4-(v<10?8:16))/8);}
+  function utf8(str){const o=[];for(let i=0;i<str.length;i++){let c=str.charCodeAt(i);if(c<0x80)o.push(c);else if(c<0x800)o.push(0xc0|c>>6,0x80|c&0x3f);else o.push(0xe0|c>>12,0x80|(c>>6)&0x3f,0x80|c&0x3f);}return o;}
+  function build(str){
+    const data=utf8(str);let v=1;while(v<=10&&data.length>cap(v))v++;if(v>10)throw new Error('too long');
+    const[ecLen,groups]=VER[v],cb=v<10?8:16;let bits=[];const put=(val,len)=>{for(let i=len-1;i>=0;i--)bits.push((val>>i)&1);};
+    put(0b0100,4);put(data.length,cb);for(const b of data)put(b,8);
+    let totalData=0;for(const[nb,dp]of groups)totalData+=nb*dp;
+    const capBits=totalData*8;put(0,Math.min(4,capBits-bits.length));while(bits.length%8)bits.push(0);
+    const dcw=[];for(let i=0;i<bits.length;i+=8){let b=0;for(let j=0;j<8;j++)b=(b<<1)|bits[i+j];dcw.push(b);}
+    let t=0;while(dcw.length<totalData){dcw.push(t%2===0?0xec:0x11);t++;}
+    const blocks=[];let idx=0;for(const[nb,dp]of groups)for(let i=0;i<nb;i++){const dd=dcw.slice(idx,idx+dp);idx+=dp;blocks.push({d:dd,e:rsEnc(dd,ecLen)});}
+    const maxD=Math.max(...blocks.map(b=>b.d.length)),fin=[];
+    for(let i=0;i<maxD;i++)for(const b of blocks)if(i<b.d.length)fin.push(b.d[i]);
+    for(let i=0;i<ecLen;i++)for(const b of blocks)fin.push(b.e[i]);
+    // matrix
+    const size=17+v*4,m=Array.from({length:size},()=>new Array(size).fill(0)),res=Array.from({length:size},()=>new Array(size).fill(false));
+    const S=(r,c,val)=>{m[r][c]=val?1:0;res[r][c]=true;};
+    const finder=(r,c)=>{for(let i=-1;i<=7;i++)for(let j=-1;j<=7;j++){const rr=r+i,cc=c+j;if(rr<0||rr>=size||cc<0||cc>=size)continue;const on=(i>=0&&i<=6&&(j===0||j===6))||(j>=0&&j<=6&&(i===0||i===6))||(i>=2&&i<=4&&j>=2&&j<=4);S(rr,cc,on);}};
+    finder(0,0);finder(0,size-7);finder(size-7,0);
+    for(let i=8;i<size-8;i++){S(6,i,i%2===0);S(i,6,i%2===0);}
+    S(size-8,8,true);
+    const ap=ALIGN[v];for(const r of ap)for(const c of ap){if((r<=7&&c<=7)||(r<=7&&c>=size-8)||(r>=size-8&&c<=7))continue;for(let i=-2;i<=2;i++)for(let j=-2;j<=2;j++)S(r+i,c+j,Math.max(Math.abs(i),Math.abs(j))!==1);}
+    // reserve format areas
+    for(let i=0;i<=8;i++){if(i!==6){res[8][i]=true;res[i][8]=true;}}
+    for(let i=0;i<8;i++){res[8][size-1-i]=true;res[size-1-i][8]=true;}
+    // data placement (zigzag), mask 0
+    let dir=-1,row=size-1,bi=0;const dbits=[];for(const b of fin)for(let k=7;k>=0;k--)dbits.push((b>>k)&1);
+    for(let col=size-1;col>0;col-=2){if(col===6)col--;while(true){for(let c=0;c<2;c++){const cc=col-c;if(!res[row][cc]){let bit=bi<dbits.length?dbits[bi]:0;bi++;if((row+cc)%2===0)bit^=1;m[row][cc]=bit;}}row+=dir;if(row<0||row>=size){row-=dir;dir=-dir;break;}}}
+    // format info: EC level M + mask 0 -> 0x5412
+    const fmt=0x5412,fb=i=>(fmt>>i)&1;
+    for(let i=0;i<6;i++)m[8][i]=fb(i);m[8][7]=fb(6);m[8][8]=fb(7);m[7][8]=fb(8);for(let i=9;i<15;i++)m[14-i][8]=fb(i);
+    for(let i=0;i<7;i++)m[size-1-i][8]=fb(i);for(let i=7;i<15;i++)m[8][size-15+i]=fb(i);
+    return {m,size};
+  }
+  function svg(str){const{m,size}=build(str);const q=4,dim=size+q*2;let path='';for(let r=0;r<size;r++)for(let c=0;c<size;c++)if(m[r][c])path+=`M${c+q} ${r+q}h1v1h-1z`;return `<svg viewBox="0 0 ${dim} ${dim}" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect width="${dim}" height="${dim}" fill="#fff"/><path d="${path}" fill="#111"/></svg>`;}
+  return {svg};
+})();
+function payQRData(d){
+  const wallet=d.wallet||WALLET;
+  if((d.network||'usdc-erc20')==='usdc-erc20'){const units=Math.round(Number(d.payAmount)*1e6);return `ethereum:0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48@1/transfer?address=${wallet}&uint256=${units}`;}
+  return String(wallet); // Tron: plain address (universally scannable)
+}
 function cryptoPay(d,clearCart){
   if(payPoll){clearInterval(payPoll);payPoll=null;}
   const amt=Number(d.payAmount).toFixed(2);
@@ -1744,13 +1800,16 @@ function cryptoPay(d,clearCart){
     <div class="net-badge">${token} · ${chain} · ${chainName}</div>
     ${isErc?`<button class="btn btn-primary" id="wpay" style="width:100%;justify-content:center;margin:4px 0 14px">⚡ Pay with wallet (MetaMask)</button>`
       :`<div class="warn" style="border-color:rgba(38,161,123,.3);background:rgba(38,161,123,.07)">Open your Tron wallet (e.g. <b>TronLink</b>, Trust Wallet or an exchange) and send the exact amount below on the <b>TRC-20</b> network.</div>`}
-    <div class="addr-lbl">Send ${token} (${chain}) to this address</div>
+    <div class="pay-qr" id="payQR"></div>
+    <div class="pay-qr-hint">Scan with your ${isErc?'Ethereum':'Tron'} wallet${isErc?' — amount is prefilled':' — then enter the exact amount'}</div>
+    <div class="addr-lbl">Or send ${token} (${chain}) to this address</div>
     <div class="addr"><code id="wAddr">${esc(wallet)}</code><button type="button" id="copyW" class="pay-copy">Copy</button></div>
     <div class="pay-status" id="payStatus"><span class="spin"></span> Waiting for payment on-chain…</div>
     <div class="warn">⚠ Send only <b>${token} on ${chainName} (${chain})</b>, and the <b>exact amount ${amt}</b> — the unique cents let us match your payment automatically. Sending a different coin or network will be lost.</div>
     ${d.receiptUrl?`<a class="btn btn-secondary" style="width:100%;justify-content:center" href="${d.receiptUrl}" target="_blank" rel="noopener">View order / receipt</a>`:''}
     <button class="btn btn-secondary" style="margin-top:10px;width:100%;justify-content:center" onclick="document.getElementById('coModal').classList.remove('show')">Close — I'll pay from my wallet</button>
   </div>`;
+  try{const q=$('#payQR');if(q)q.innerHTML=QR.svg(payQRData(d));}catch(e){const q=$('#payQR');if(q)q.style.display='none';}
   $('#copyW').addEventListener('click',()=>{try{navigator.clipboard.writeText(wallet)}catch(e){}toast('Address copied')});
   const wp=$('#wpay');if(wp)wp.addEventListener('click',()=>walletPay(d));
   // only the catalog cart-checkout clears the cart — a marketplace buy or boost must not touch it
