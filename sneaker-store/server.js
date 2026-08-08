@@ -821,11 +821,14 @@ const server = http.createServer(async (req, res) => {
         while (resets.length > 5000) resets.shift();
         saveResets();
         const link = `${SITE_URL}/?reset=${token}`;
-        const r = await sendEmail(em, 'Восстановление пароля — STUFFWEKNOW',
-          `<div style="font-family:Arial,sans-serif;max-width:480px;margin:auto"><h2>Сброс пароля</h2>
-           <p>Мы получили запрос на восстановление пароля для вашего аккаунта на STUFFWEKNOW.</p>
-           <p><a href="${link}" style="display:inline-block;background:#111113;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:700">Задать новый пароль</a></p>
-           <p style="color:#666;font-size:13px">Ссылка действует 1 час. Если вы не запрашивали сброс — просто игнорируйте это письмо.</p></div>`);
+        const r = await sendEmail(em, 'Reset your password — STUFFWEKNOW',
+          `<div style="font-family:Arial,Helvetica,sans-serif;max-width:480px;margin:auto;color:#111113">
+             <h2 style="margin:0 0 12px">Reset your password</h2>
+             <p style="margin:0 0 16px;line-height:1.5">We received a request to reset the password for your STUFFWEKNOW account. Click the button below to choose a new one.</p>
+             <p style="margin:0 0 18px"><a href="${link}" style="display:inline-block;background:#111113;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:700">Set a new password</a></p>
+             <p style="color:#666;font-size:13px;line-height:1.5;margin:0">This link is valid for 1 hour. If you didn’t request a password reset, you can safely ignore this email — your password won’t change.</p>
+             <p style="color:#999;font-size:12px;margin:16px 0 0">If the button doesn’t work, copy and paste this link into your browser:<br><span style="color:#3A7BFF;word-break:break-all">${link}</span></p>
+           </div>`);
         if (r.ok) { const rec = resets[resets.length - 1]; if (rec) { rec.emailed = true; saveResets(); } }
       }
       return send(res, 200, { ok: true, emailed: mailConfigured() });

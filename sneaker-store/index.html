@@ -2132,7 +2132,7 @@ function renderAccount(startTab){
           const d=await r.json();
           if(!r.ok){m.style.display='block';m.textContent=d.error||'Failed';go.disabled=false;return}
           ok.style.display='block';
-          ok.textContent=d.emailed?'If that email is registered, a reset link is on its way. Check your inbox.':'Request received. Contact support if you don’t hear back — email delivery isn’t configured yet.';
+          ok.innerHTML=d.emailed?'If that email is registered, a reset link is on its way. Check your inbox — and your <b>spam / junk folder</b>, as it can sometimes land there.':'Request received. Contact support if you don’t hear back — email delivery isn’t configured yet.';
           go.disabled=false;
         }catch{m.style.display='block';m.textContent='Service unavailable right now.';go.disabled=false}
         return;
