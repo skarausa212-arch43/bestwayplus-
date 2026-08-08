@@ -60,6 +60,8 @@ const reports = loadJSON('reports.json', []);      // [{id,listingId,from,reason
 const withdrawals = loadJSON('withdrawals.json', []); // [{id,seller,gross,fee,net,address,status,at,tx}]
 const follows = loadJSON('follows.json', []);      // [{follower, seller, at}]
 const pushSubs = loadJSON('push-subs.json', []);   // [{email, endpoint, keys:{p256dh,auth}, at}] web-push subscriptions
+const resets = loadJSON('resets.json', []);        // [{email, hash, exp, at, used, emailed}] password-reset tokens
+const contacts = loadJSON('contacts.json', []);    // [{id, name, email, subject, message, at, status, userEmail}] support messages
 const stats = loadJSON('stats.json', { total: 0, unique: 0, daily: {} }); // daily[YYYY-MM-DD]={v,u,o}
 const saveUsers = () => saveJSON('users.json', users);
 const saveOrders = () => saveJSON('orders.json', orders);
@@ -69,6 +71,8 @@ const saveReviews = () => saveJSON('reviews.json', reviews);
 const saveMessages = () => saveJSON('messages.json', messages);
 const saveReports = () => saveJSON('reports.json', reports);
 const savePushSubs = () => saveJSON('push-subs.json', pushSubs);
+const saveResets = () => saveJSON('resets.json', resets);
+const saveContacts = () => saveJSON('contacts.json', contacts);
 const saveWithdrawals = () => saveJSON('withdrawals.json', withdrawals);
 const saveFollows = () => saveJSON('follows.json', follows);
 // listings are moderated: a new listing stays 'pending' until an admin approves it (see /api/admin/listing-moderate)
@@ -233,6 +237,17 @@ async function sendPush(email, payload) {
     if (r.gone) { const i = pushSubs.indexOf(s); if (i >= 0) { pushSubs.splice(i, 1); changed = true; } }
   }));
   if (changed) savePushSubs();
+}
+/* ---------- email (optional SMTP; configured from the admin panel) ---------- */
+const mailer = require('./mailer');
+const SITE_URL = process.env.SITE_URL || settings.siteUrl || 'https://stuffweknow.com';
+const mailConfigured = () => !!(settings.smtp && settings.smtp.host && settings.smtp.user && settings.smtp.pass);
+async function sendEmail(to, subject, html) {
+  if (!mailConfigured()) return { ok: false, reason: 'not-configured' };
+  try {
+    await mailer.sendMail({ ...settings.smtp, fromName: settings.smtp.fromName || 'STUFFWEKNOW' }, { to, subject, html });
+    return { ok: true };
+  } catch (e) { console.error('[swk-store] email error:', e.message); return { ok: false, reason: e.message }; }
 }
 // let (not const) so the admin "Wallets" screen can update them live — NETWORKS/pollers read the current value.
 let WALLET = settings.usdcWallet || process.env.STORE_WALLET || '0xf2541E779Ee9aCe8f0B36D42cB1DdBcA8bBDFFAE';
@@ -419,16 +434,48 @@ function countVisit(req, res) {
     if (cfCountry && /^[A-Z]{2}$/.test(cfCountry)) { stats.countries = stats.countries || {}; stats.countries[cfCountry] = (stats.countries[cfCountry] || 0) + 1; }
     else lookupCountry(ip);
   }
-  // traffic source (external referrer host)
+  // device + browser breakdown (from UA)
+  const dev = deviceType(ua), br = browserFamily(ua);
+  stats.devices = stats.devices || {}; stats.devices[dev] = (stats.devices[dev] || 0) + 1;
+  stats.browsers = stats.browsers || {}; stats.browsers[br] = (stats.browsers[br] || 0) + 1;
+  // hour-of-day histogram (UTC) — shows peak traffic times
+  stats.hours = stats.hours || new Array(24).fill(0);
+  stats.hours[new Date().getUTCHours()] = (stats.hours[new Date().getUTCHours()] || 0) + 1;
+  // traffic source (external referrer host) + channel classification
+  stats.channels = stats.channels || { direct: 0, search: 0, social: 0, referral: 0 };
   const ref = req.headers.referer || req.headers.referrer || '';
+  let channel = 'direct';
   if (ref) {
     try {
       const h = new URL(ref).hostname.replace(/^www\./, '');
       const selfHost = String(req.headers.host || '').replace(/^www\./, '').replace(/:\d+$/, '');
-      if (h && h !== selfHost) { stats.sources = stats.sources || {}; stats.sources[h] = (stats.sources[h] || 0) + 1; }
+      if (h && h !== selfHost) {
+        stats.sources = stats.sources || {}; stats.sources[h] = (stats.sources[h] || 0) + 1;
+        channel = refChannel(h);
+      } else { channel = 'direct'; }   // internal referrer = direct/returning
     } catch (e) {}
   }
+  stats.channels[channel] = (stats.channels[channel] || 0) + 1;
   statsDirty = true;
+}
+function deviceType(ua) {
+  if (/iPad|Tablet|PlayBook|Silk|(Android(?!.*Mobile))/i.test(ua)) return 'tablet';
+  if (/Mobi|Android|iPhone|iPod|Windows Phone|BlackBerry|Opera Mini|IEMobile/i.test(ua)) return 'mobile';
+  return 'desktop';
+}
+function browserFamily(ua) {
+  if (/Edg\//i.test(ua)) return 'Edge';
+  if (/OPR\/|Opera/i.test(ua)) return 'Opera';
+  if (/SamsungBrowser/i.test(ua)) return 'Samsung';
+  if (/Firefox\//i.test(ua)) return 'Firefox';
+  if (/Chrome\//i.test(ua)) return 'Chrome';
+  if (/Version\/.*Safari/i.test(ua)) return 'Safari';
+  return 'Other';
+}
+function refChannel(host) {
+  if (/google\.|bing\.|yahoo\.|duckduckgo\.|yandex\.|baidu\.|ecosia\./i.test(host)) return 'search';
+  if (/facebook\.|fb\.|instagram\.|t\.co|twitter\.|x\.com|tiktok\.|reddit\.|youtube\.|pinterest\.|linkedin\.|vk\.com|telegram\.|t\.me|snapchat\./i.test(host)) return 'social';
+  return 'referral';
 }
 
 /* ---------- live presence (in-memory heartbeats) ---------- */
@@ -691,6 +738,23 @@ const server = http.createServer(async (req, res) => {
   try {
     /* ----- pages ----- */
     if (req.method === 'GET' && (p === '/' || p === '/index.html')) { countVisit(req, res); return serveFile(res, 'index.html', 'text/html; charset=utf-8'); }
+    if (req.method === 'GET' && p === '/robots.txt') {
+      res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=86400' });
+      return res.end(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nDisallow: /receipt/\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
+    }
+    if (req.method === 'GET' && p === '/sitemap.xml') {
+      const esc2 = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const iso = (t) => new Date(t || Date.now()).toISOString();
+      const urls = [
+        `<url><loc>${SITE_URL}/</loc><changefreq>hourly</changefreq><priority>1.0</priority></url>`,
+        `<url><loc>${SITE_URL}/policies</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>`,
+      ];
+      for (const l of listings.filter(x => x.status === 'active').slice(-2000)) {
+        urls.push(`<url><loc>${esc2(SITE_URL + '/?item=' + l.id)}</loc><lastmod>${iso(l.editedAt || l.createdAt)}</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>`);
+      }
+      res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' });
+      return res.end(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>`);
+    }
     if (req.method === 'GET' && p === '/manifest.webmanifest') { res.writeHead(200, { 'Content-Type': 'application/manifest+json', 'Cache-Control': 'no-cache' }); return res.end(PWA_MANIFEST); }
     if (req.method === 'GET' && p === '/sw.js') { res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-cache' }); return res.end(PWA_SW); }
     if (req.method === 'GET' && p === '/icon.svg') { res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=604800' }); return res.end(PWA_ICON); }
@@ -740,6 +804,68 @@ const server = http.createServer(async (req, res) => {
       if (!u || !ok) return send(res, 401, { error: 'Wrong email or password.' });
       if (u.banned) return send(res, 403, { error: 'This account has been suspended.' });
       return send(res, 200, { token: makeToken(em), email: em, name: u.name, admin: isAdminUser(u) });
+    }
+    /* --- forgot password: create a reset token (emailed if SMTP is set, else surfaced in the admin panel) --- */
+    if (req.method === 'POST' && p === '/api/forgot') {
+      const ip = clientIp(req);
+      if (!rateLimit('forgot-ip:' + ip, 10, 600000)) return send(res, 429, { error: 'Too many requests — try again later.' });
+      const b = await readBody(req);
+      const em = String(b.email || '').trim().toLowerCase();
+      // always respond the same way so we don't reveal which emails exist
+      if (users[em] && !users[em].banned) {
+        if (!rateLimit('forgot-acc:' + em, 5, 3600000)) return send(res, 200, { ok: true, emailed: mailConfigured() });
+        const token = crypto.randomBytes(24).toString('base64url');
+        const hash = crypto.createHash('sha256').update(token).digest('hex');
+        resets.push({ email: em, hash, exp: Date.now() + 3600000, at: Date.now(), used: false, emailed: false });
+        // keep the list tidy
+        while (resets.length > 5000) resets.shift();
+        saveResets();
+        const link = `${SITE_URL}/?reset=${token}`;
+        const r = await sendEmail(em, 'Восстановление пароля — STUFFWEKNOW',
+          `<div style="font-family:Arial,sans-serif;max-width:480px;margin:auto"><h2>Сброс пароля</h2>
+           <p>Мы получили запрос на восстановление пароля для вашего аккаунта на STUFFWEKNOW.</p>
+           <p><a href="${link}" style="display:inline-block;background:#111113;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:700">Задать новый пароль</a></p>
+           <p style="color:#666;font-size:13px">Ссылка действует 1 час. Если вы не запрашивали сброс — просто игнорируйте это письмо.</p></div>`);
+        if (r.ok) { const rec = resets[resets.length - 1]; if (rec) { rec.emailed = true; saveResets(); } }
+      }
+      return send(res, 200, { ok: true, emailed: mailConfigured() });
+    }
+    /* --- reset password with a token --- */
+    if (req.method === 'POST' && p === '/api/reset') {
+      if (!rateLimit('reset-ip:' + clientIp(req), 20, 600000)) return send(res, 429, { error: 'Too many attempts — try again later.' });
+      const b = await readBody(req);
+      const token = String(b.token || '');
+      const next = String(b.password || '');
+      if (next.length < 8) return send(res, 400, { error: 'New password must be 8+ characters.' });
+      if (next.length > MAX_PW) return send(res, 400, { error: 'Password too long.' });
+      const hash = crypto.createHash('sha256').update(token).digest('hex');
+      const rec = resets.find(r => r.hash === hash && !r.used && r.exp > Date.now());
+      if (!rec) return send(res, 400, { error: 'This reset link is invalid or has expired.' });
+      const u = users[rec.email];
+      if (!u) return send(res, 400, { error: 'Account not found.' });
+      u.pass = await hashPassword(next);
+      u.tv = (u.tv || 0) + 1;   // invalidate all existing sessions
+      rec.used = true;
+      // consume any other outstanding tokens for this account
+      resets.forEach(r => { if (r.email === rec.email) r.used = true; });
+      saveUsers(); saveResets();
+      return send(res, 200, { ok: true, token: makeToken(rec.email), email: rec.email, name: u.name, admin: isAdminUser(u) });
+    }
+    /* --- contact / support message --- */
+    if (req.method === 'POST' && p === '/api/contact') {
+      if (!rateLimit('contact-ip:' + clientIp(req), 8, 600000)) return send(res, 429, { error: 'Too many messages — try again later.' });
+      const b = await readBody(req);
+      const u = tokenUser(req);
+      const email = String(b.email || (u && u.email) || '').trim().toLowerCase().slice(0, 120);
+      const name = String(b.name || (u && u.name) || '').trim().slice(0, 80);
+      const subject = String(b.subject || '').trim().slice(0, 120) || '(без темы)';
+      const message = String(b.message || '').trim().slice(0, 4000);
+      if (!/^[^@\s|]+@[^@\s|]+\.[^@\s|]+$/.test(email)) return send(res, 400, { error: 'Введите корректный email.' });
+      if (message.length < 5) return send(res, 400, { error: 'Напишите сообщение (минимум 5 символов).' });
+      contacts.push({ id: 'C-' + crypto.randomBytes(4).toString('hex').toUpperCase(), name, email, subject, message, at: Date.now(), status: 'open', userEmail: u ? u.email : '' });
+      while (contacts.length > 5000) contacts.shift();
+      saveContacts();
+      return send(res, 201, { ok: true });
     }
     if (req.method === 'GET' && p === '/api/me') {
       const u = tokenUser(req);
@@ -1426,7 +1552,7 @@ const server = http.createServer(async (req, res) => {
         }
         const payoutOrders = orders.filter(o => o.status === 'released' && !o.paidOut);
         return send(res, 200, {
-          visits: { total: stats.total, unique: stats.unique, today: (stats.daily[today()] || {}).v || 0 },
+          visits: { total: stats.total, unique: stats.unique, today: (stats.daily[today()] || {}).v || 0, online: onlineCount() },
           revenue: orders.reduce((s, o) => s + (o.status !== 'cancelled' ? o.total : 0), 0),
           fees: Math.round(orders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + (o.fee || 0), 0) * 100) / 100,
           ordersCount: orders.length,
@@ -1443,6 +1569,10 @@ const server = http.createServer(async (req, res) => {
           countries: Object.entries(stats.countries || {}).sort((a, b) => b[1] - a[1]).slice(0, 20).map(([code, n]) => ({ code, n })),
           sources: Object.entries(stats.sources || {}).sort((a, b) => b[1] - a[1]).slice(0, 20).map(([host, n]) => ({ host, n })),
           searches: Object.entries(stats.searches || {}).sort((a, b) => b[1] - a[1]).slice(0, 30).map(([q, n]) => ({ q, n })),
+          devices: Object.entries(stats.devices || {}).sort((a, b) => b[1] - a[1]).map(([k, n]) => ({ k, n })),
+          browsers: Object.entries(stats.browsers || {}).sort((a, b) => b[1] - a[1]).map(([k, n]) => ({ k, n })),
+          channels: stats.channels || { direct: 0, search: 0, social: 0, referral: 0 },
+          hours: stats.hours || new Array(24).fill(0),
           orders: orders.slice(-150).reverse(),
           users: Object.values(users).map(u => {
             const st = sellerStats(u.email);
@@ -1454,7 +1584,9 @@ const server = http.createServer(async (req, res) => {
               balance: payoutBalance(u.email), banned: !!u.banned, admin: isAdminUser(u),
             };
           }).sort((a, b) => b.created - a.created),
-          wallets: { usdc: WALLET, usdt: USDT_TRC20_WALLET, usdcOk: isEthAddr(WALLET), usdtOk: isTronAddr(USDT_TRC20_WALLET), usdcAuto: !!etherscanKey, etherscanSet: !!etherscanKey, tronSet: !!tronKey, twaFingerprints: (settings.twaFingerprints || []).join('\n') },
+          wallets: { usdc: WALLET, usdt: USDT_TRC20_WALLET, usdcOk: isEthAddr(WALLET), usdtOk: isTronAddr(USDT_TRC20_WALLET), usdcAuto: !!etherscanKey, etherscanSet: !!etherscanKey, tronSet: !!tronKey, twaFingerprints: (settings.twaFingerprints || []).join('\n'),
+            smtp: { host: (settings.smtp || {}).host || '', port: (settings.smtp || {}).port || 465, user: (settings.smtp || {}).user || '', from: (settings.smtp || {}).from || '', configured: mailConfigured() } },
+          support: { openContacts: contacts.filter(c => c.status === 'open').length, pendingResets: resets.filter(r => !r.used && r.exp > Date.now()).length },
         });
       }
       // suspend / restore a user account
@@ -1477,6 +1609,52 @@ const server = http.createServer(async (req, res) => {
         saveUsers();
         return send(res, 200, { ok: true });
       }
+      // support inbox + pending password-reset requests
+      if (req.method === 'GET' && p === '/api/admin/support') {
+        const now = Date.now();
+        return send(res, 200, {
+          mailConfigured: mailConfigured(),
+          contacts: contacts.slice().sort((a, b) => (a.status === b.status ? b.at - a.at : a.status === 'open' ? -1 : 1)).slice(0, 300),
+          resets: resets.filter(r => !r.used && r.exp > now).sort((a, b) => b.at - a.at).slice(0, 100)
+            .map(r => ({ email: r.email, at: r.at, emailed: r.emailed })),
+        });
+      }
+      if (req.method === 'POST' && p === '/api/admin/contact-resolve') {
+        const b = await readBody(req);
+        const c = contacts.find(x => x.id === b.id);
+        if (!c) return send(res, 404, { error: 'not found' });
+        c.status = b.reopen ? 'open' : 'resolved'; saveContacts();
+        return send(res, 200, { ok: true });
+      }
+      // send a test email to verify SMTP settings
+      if (req.method === 'POST' && p === '/api/admin/mail-test') {
+        const b = await readBody(req);
+        const to = String(b.to || (settings.smtp || {}).from || (settings.smtp || {}).user || '').trim();
+        if (!to) return send(res, 400, { error: 'No recipient — set a From address or pass one.' });
+        const r = await sendEmail(to, 'Тест почты — STUFFWEKNOW', '<p>Если вы это читаете — SMTP настроен правильно ✅</p>');
+        return send(res, r.ok ? 200 : 502, r.ok ? { ok: true } : { error: r.reason || 'send failed' });
+      }
+      // generate a fresh reset link for a user (admin relays it via email/telegram)
+      if (req.method === 'POST' && p === '/api/admin/reset-link') {
+        const b = await readBody(req);
+        const em = String(b.email || '').toLowerCase();
+        if (!users[em]) return send(res, 404, { error: 'not found' });
+        const token = crypto.randomBytes(24).toString('base64url');
+        resets.push({ email: em, hash: crypto.createHash('sha256').update(token).digest('hex'), exp: Date.now() + 3600000, at: Date.now(), used: false, emailed: false });
+        saveResets();
+        return send(res, 200, { ok: true, link: `${SITE_URL}/?reset=${token}` });
+      }
+      // set a temporary password for a user (admin relays it)
+      if (req.method === 'POST' && p === '/api/admin/set-password') {
+        const b = await readBody(req);
+        const em = String(b.email || '').toLowerCase();
+        if (!users[em]) return send(res, 404, { error: 'not found' });
+        const temp = 'swk-' + crypto.randomBytes(4).toString('hex');
+        users[em].pass = await hashPassword(temp);
+        users[em].tv = (users[em].tv || 0) + 1;
+        saveUsers();
+        return send(res, 200, { ok: true, password: temp });
+      }
       // update the receiving wallets live (no redeploy needed)
       if (req.method === 'POST' && p === '/api/admin/wallets') {
         const b = await readBody(req);
@@ -1488,6 +1666,15 @@ const server = http.createServer(async (req, res) => {
         if (b.etherscanKey !== undefined) { etherscanKey = String(b.etherscanKey).trim(); settings.etherscanKey = etherscanKey; }
         if (b.tronKey !== undefined) { tronKey = String(b.tronKey).trim(); settings.tronKey = tronKey; }
         if (b.twaFingerprints !== undefined) settings.twaFingerprints = String(b.twaFingerprints).split(/[\s,]+/).map(s => s.trim().toUpperCase()).filter(s => /^[0-9A-F:]{50,}$/.test(s));
+        if (b.smtp !== undefined && b.smtp) {
+          const s = b.smtp; settings.smtp = settings.smtp || {};
+          if (s.host !== undefined) settings.smtp.host = String(s.host).trim();
+          if (s.port !== undefined) settings.smtp.port = Number(s.port) || 465;
+          if (s.user !== undefined) settings.smtp.user = String(s.user).trim();
+          if (s.pass) settings.smtp.pass = String(s.pass);   // only overwrite when a new pass is typed
+          if (s.from !== undefined) settings.smtp.from = String(s.from).trim();
+          if (s.secure !== undefined) settings.smtp.secure = !!s.secure;
+        }
         saveSettings();
         return send(res, 200, { ok: true, wallets: { usdc: WALLET, usdt: USDT_TRC20_WALLET }, etherscanSet: !!etherscanKey, tronSet: !!tronKey, twaFingerprints: settings.twaFingerprints || [] });
       }
@@ -1516,6 +1703,20 @@ const server = http.createServer(async (req, res) => {
         const o = orders.find(x => x.id === id);
         if (!o) return send(res, 404, { error: 'not found' });
         o.paidOut = true; saveOrders();
+        return send(res, 200, { ok: true });
+      }
+      // permanently delete an order record (admin cleanup — e.g. test/spam/abandoned orders)
+      if (req.method === 'POST' && p === '/api/admin/order-delete') {
+        const b = await readBody(req);
+        const idx = orders.findIndex(x => x.id === b.id);
+        if (idx < 0) return send(res, 404, { error: 'not found' });
+        const o = orders[idx];
+        // free any listing this order was holding so it can be sold again
+        if (o.listingId) {
+          const l = listings.find(x => x.id === o.listingId);
+          if (l && l.reservedBy && l.status !== 'sold') { delete l.reservedBy; if (l.status === 'removed') l.status = 'active'; saveListings(); }
+        }
+        orders.splice(idx, 1); saveOrders();
         return send(res, 200, { ok: true });
       }
       if (req.method === 'GET' && p === '/api/admin/withdrawals') {

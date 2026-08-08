@@ -143,6 +143,7 @@
       <button data-t="users">Пользователи</button>
       <button data-t="orders">Заказы</button>
       <button data-t="market">Маркетплейс<span class="tcount" id="tcMarket" style="display:none">0</span></button>
+      <button data-t="support">Поддержка<span class="tcount" id="tcSupport" style="display:none">0</span></button>
       <button data-t="settings">Настройки</button>
     </nav>
 
@@ -177,26 +178,62 @@
 
     <!-- TRAFFIC -->
     <section data-sec="traffic">
-      <h2>Визиты и заказы — 14 дней</h2>
+      <h2>Сводка</h2>
+      <div class="cards" id="trafKpis">
+        <div class="stat hl"><b id="tOnline">—</b><span>🟢 Сейчас на сайте</span></div>
+        <div class="stat"><b id="tToday">—</b><span>Сегодня</span></div>
+        <div class="stat"><b id="tYest">—</b><span>Вчера</span></div>
+        <div class="stat"><b id="tWeek">—</b><span>7 дней <em id="tWeekTrend" style="font-style:normal"></em></span></div>
+        <div class="stat"><b id="tMonth">—</b><span>30 дней</span></div>
+        <div class="stat"><b id="tUniqueM">—</b><span>Уник. за 30д</span></div>
+        <div class="stat"><b id="tConv">—</b><span>Конверсия (заказы/уник.)</span></div>
+        <div class="stat"><b id="tPeak">—</b><span>Пиковый день</span></div>
+      </div>
+      <div class="toolbar" style="margin-top:14px">
+        <div class="filterchips" id="rangeChips">
+          <button data-r="7">7 дней</button>
+          <button data-r="14" class="on">14 дней</button>
+          <button data-r="30">30 дней</button>
+        </div>
+        <button class="btn ghost sm" id="csvExport" style="margin-left:auto">⬇ Экспорт CSV</button>
+      </div>
       <div class="chart">
         <div class="bars" id="bars"></div>
-        <div class="legend"><span><i style="background:var(--accent)"></i>Визиты</span><span><i style="background:var(--brand)"></i>Заказы</span></div>
+        <div class="legend"><span><i style="background:var(--accent)"></i>Визиты</span><span><i style="background:var(--brand)"></i>Заказы (маркер)</span></div>
       </div>
+
+      <h2>Каналы трафика</h2>
+      <div class="grid2">
+        <div id="channelBox" class="chart" style="padding:16px"></div>
+        <div id="deviceBox" class="chart" style="padding:16px"></div>
+      </div>
+
+      <h2>⏰ Активность по часам (UTC)</h2>
+      <div class="chart"><div class="bars" id="hourBars" style="height:110px"></div></div>
+
       <div class="grid2">
         <div>
           <h2>🌍 Топ стран</h2>
-          <div style="overflow-x:auto"><table id="ctryT"><thead><tr><th>Страна</th><th class="num">Посетители</th></tr></thead><tbody></tbody></table></div>
+          <div style="overflow-x:auto"><table id="ctryT"><thead><tr><th>Страна</th><th class="num">Посетители</th><th class="num">%</th></tr></thead><tbody></tbody></table></div>
         </div>
         <div>
           <h2>🔗 Источники трафика</h2>
           <div style="overflow-x:auto"><table id="srcT"><thead><tr><th>Источник</th><th class="num">Визиты</th></tr></thead><tbody></tbody></table></div>
         </div>
       </div>
-      <h2>🔎 Топ запросов (что ищут)</h2>
-      <div style="overflow-x:auto"><table id="srchT"><thead><tr><th>Запрос</th><th class="num">Кол-во</th></tr></thead><tbody></tbody></table></div>
+      <div class="grid2">
+        <div>
+          <h2>🔎 Топ запросов (что ищут)</h2>
+          <div style="overflow-x:auto"><table id="srchT"><thead><tr><th>Запрос</th><th class="num">Кол-во</th></tr></thead><tbody></tbody></table></div>
+        </div>
+        <div>
+          <h2>🧭 Браузеры</h2>
+          <div style="overflow-x:auto"><table id="browT"><thead><tr><th>Браузер</th><th class="num">Визиты</th><th class="num">%</th></tr></thead><tbody></tbody></table></div>
+        </div>
+      </div>
       <h2>По дням — 30 дней</h2>
       <div style="overflow-x:auto"><table id="dailyT">
-        <thead><tr><th>Дата</th><th class="num">Визиты</th><th class="num">Уник.</th><th class="num">Заказы</th></tr></thead>
+        <thead><tr><th>Дата</th><th class="num">Визиты</th><th class="num">Уник.</th><th class="num">Заказы</th><th class="num">Конв.</th></tr></thead>
         <tbody></tbody>
       </table></div>
     </section>
@@ -266,6 +303,21 @@
       </table></div>
     </section>
 
+    <!-- SUPPORT -->
+    <section data-sec="support">
+      <h2>Запросы на восстановление пароля</h2>
+      <div style="overflow-x:auto"><table id="resetT">
+        <thead><tr><th>Email</th><th>Запрошен</th><th>Письмо</th><th>Действия</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+      <div class="wmsg" id="resetLinkOut" style="margin:8px 2px 0;word-break:break-all"></div>
+      <h2>Сообщения от пользователей</h2>
+      <div style="overflow-x:auto"><table id="contactT">
+        <thead><tr><th>От кого</th><th>Тема</th><th>Сообщение</th><th>Когда</th><th>Статус</th><th>Действие</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </section>
+
     <!-- SETTINGS -->
     <section data-sec="settings">
       <h2>Кошельки приёма и оплата</h2>
@@ -279,6 +331,13 @@
           <input id="wEthKey" type="password" placeholder="paste key (leave blank to keep)" spellcheck="false" autocomplete="off"></label>
         <label>TronGrid API key <span class="wstat" id="wTronStat"></span>
           <input id="wTronKey" type="password" placeholder="paste key (leave blank to keep)" spellcheck="false" autocomplete="off"></label>
+        <div class="wdiv">Почта (SMTP) — для писем восстановления пароля <span class="wstat" id="wSmtpStat"></span></div>
+        <label>SMTP host <input id="wSmtpHost" placeholder="smtp.gmail.com" spellcheck="false" autocomplete="off"></label>
+        <label>SMTP порт <input id="wSmtpPort" placeholder="465" spellcheck="false" autocomplete="off"></label>
+        <label>SMTP логин (email) <input id="wSmtpUser" placeholder="you@gmail.com" spellcheck="false" autocomplete="off"></label>
+        <label>SMTP пароль <input id="wSmtpPass" type="password" placeholder="app-password (пусто = не менять)" spellcheck="false" autocomplete="off"></label>
+        <label>Адрес отправителя (From) <input id="wSmtpFrom" placeholder="no-reply@stuffweknow.com" spellcheck="false" autocomplete="off"></label>
+        <div style="display:flex;gap:8px;align-items:center"><button class="btn ghost sm" id="wMailTest" type="button">Отправить тест-письмо</button><span class="wmsg" id="wMailMsg"></span></div>
         <div class="wdiv">Android-приложение (TWA) — вставь SHA-256 отпечаток(и) подписи (по одному в строке)</div>
         <label>Отпечатки приложения (assetlinks.json)
           <input id="wTwa" placeholder="AB:CD:EF:… (из keystore)" spellcheck="false" autocomplete="off"></label>
@@ -351,37 +410,140 @@ async function loadDash(){
   $('#wEthStat').innerHTML=w.etherscanSet?'<span class="ok">● сохранён</span>':'<span class="warn">● не задан</span>';
   $('#wTronStat').innerHTML=w.tronSet?'<span class="ok">● сохранён</span>':'<span class="warn">● опционально</span>';
   if(document.activeElement!==$('#wTwa'))$('#wTwa').value=w.twaFingerprints||'';
-  renderChart(last14);
-  renderDaily(d.days);
-  renderAnalytics(d);
+  // smtp
+  const sm=w.smtp||{};
+  const ael=document.activeElement;
+  if(ael!==$('#wSmtpHost'))$('#wSmtpHost').value=sm.host||'';
+  if(ael!==$('#wSmtpPort'))$('#wSmtpPort').value=sm.port||'';
+  if(ael!==$('#wSmtpUser'))$('#wSmtpUser').value=sm.user||'';
+  if(ael!==$('#wSmtpFrom'))$('#wSmtpFrom').value=sm.from||'';
+  $('#wSmtpStat').innerHTML=sm.configured?'<span class="ok">● настроено</span>':'<span class="warn">● не настроено (письма не отправляются)</span>';
+  // support badge
+  const sup=d.support||{};
+  const supN=(sup.openContacts||0)+(sup.pendingResets||0);
+  const tcs=$('#tcSupport');if(tcs){tcs.textContent=supN;tcs.style.display=supN?'inline-block':'none';}
+  renderTraffic(d);
   renderUsers();
   renderOrders();
   loadMarketAdmin();
+  loadSupport();
+}
+async function loadSupport(){
+  let s;try{s=await api('/api/admin/support');}catch(e){return;}
+  // resets
+  const rt=$('#resetT tbody');
+  rt.innerHTML=(s.resets&&s.resets.length)?s.resets.map(r=>`<tr data-email="${esc(r.email)}">
+    <td class="id">${esc(r.email)}</td><td>${fmtD(r.at)}</td>
+    <td><span class="pill ${r.emailed?'yes':'no'}">${r.emailed?'отправлено':'не отправлено'}</span></td>
+    <td><div class="actcell"><button class="btn sm reset-link">Ссылка сброса</button><button class="btn sm ghost reset-pass">Врем. пароль</button></div></td></tr>`).join('')
+    :'<tr><td colspan="4" class="empty">Нет активных запросов.</td></tr>';
+  rt.querySelectorAll('tr[data-email]').forEach(row=>{
+    const em=row.dataset.email,out=$('#resetLinkOut');
+    row.querySelector('.reset-link').addEventListener('click',async()=>{
+      const d=await api('/api/admin/reset-link',{method:'POST',body:JSON.stringify({email:em})});
+      if(d&&d.link){out.innerHTML=`Ссылка для <b>${esc(em)}</b> (1 час): <span style="user-select:all;color:var(--accent)">${esc(d.link)}</span>`;try{navigator.clipboard.writeText(d.link);}catch(e){}}
+    });
+    row.querySelector('.reset-pass').addEventListener('click',async()=>{
+      if(!confirm('Задать временный пароль для '+em+'? Текущий пароль перестанет работать.'))return;
+      const d=await api('/api/admin/set-password',{method:'POST',body:JSON.stringify({email:em})});
+      if(d&&d.password){out.innerHTML=`Временный пароль для <b>${esc(em)}</b>: <span style="user-select:all;color:var(--brand)">${esc(d.password)}</span> — передай пользователю, пусть сменит его после входа.`;try{navigator.clipboard.writeText(d.password);}catch(e){}}
+    });
+  });
+  // contacts
+  const ct=$('#contactT tbody');
+  ct.innerHTML=(s.contacts&&s.contacts.length)?s.contacts.map(c=>`<tr data-id="${esc(c.id)}">
+    <td class="id">${esc(c.name||'—')}<div class="items">${esc(c.email)}</div></td>
+    <td>${esc(c.subject||'—')}</td>
+    <td style="max-width:340px;white-space:pre-wrap;color:var(--ink)">${esc(c.message||'')}</td>
+    <td>${fmtD(c.at)}</td>
+    <td><span class="pill ${c.status==='open'?'pending':'done'}">${c.status==='open'?'открыто':'закрыто'}</span></td>
+    <td><div class="actcell"><a class="btn sm" href="mailto:${esc(c.email)}?subject=Re: ${encodeURIComponent(c.subject||'')}">Ответить</a>${c.status==='open'?`<button class="btn sm ghost ct-resolve">Закрыть</button>`:`<button class="btn sm ghost ct-reopen">Открыть</button>`}</div></td></tr>`).join('')
+    :'<tr><td colspan="6" class="empty">Пока нет сообщений.</td></tr>';
+  ct.querySelectorAll('tr[data-id]').forEach(row=>{
+    const id=row.dataset.id;
+    const rs=row.querySelector('.ct-resolve'),ro=row.querySelector('.ct-reopen');
+    if(rs)rs.addEventListener('click',async()=>{await api('/api/admin/contact-resolve',{method:'POST',body:JSON.stringify({id})});loadDash();});
+    if(ro)ro.addEventListener('click',async()=>{await api('/api/admin/contact-resolve',{method:'POST',body:JSON.stringify({id,reopen:true})});loadDash();});
+  });
 }
 
-function renderChart(days){
-  const maxV=Math.max(1,...days.map(x=>x.v));
-  $('#bars').innerHTML=days.map(x=>{
-    const vh=x.v?Math.max(2,Math.round(x.v/maxV*86)):0;
-    // orders drawn as a small marker segment on top of the visits bar (kept within the same column)
-    const oh=x.o?Math.min(22,Math.max(4,Math.round(x.o/maxV*86))):0;
-    return `<div class="bar"><b>${esc(x.d.slice(5))} · ${x.v} visits · ${x.u} unique · ${x.o} orders</b><u style="height:${oh}px"></u><i style="height:${vh}%"></i><span>${esc(x.d.slice(5))}</span></div>`;
-  }).join('');
-}
-function renderDaily(days){
-  const rows=days.slice().reverse();
-  $('#dailyT tbody').innerHTML=rows.map(x=>`<tr>
-    <td class="id">${esc(x.d)}</td><td class="num">${fmtN(x.v)}</td><td class="num">${fmtN(x.u)}</td><td class="num">${fmtN(x.o)}</td></tr>`).join('');
-}
+let RANGE=14;
 const flagEmoji=cc=>/^[A-Za-z]{2}$/.test(cc)?cc.toUpperCase().replace(/./g,c=>String.fromCodePoint(127397+c.charCodeAt(0))):'';
-function renderAnalytics(d){
-  $('#ctryT tbody').innerHTML=(d.countries&&d.countries.length)?d.countries.map(c=>`<tr><td class="id">${flagEmoji(c.code)} ${esc(c.code)}</td><td class="num">${fmtN(c.n)}</td></tr>`).join('')
-    :'<tr><td colspan="2" class="empty">Пока нет данных.</td></tr>';
+const sum=(a,f)=>a.reduce((s,x)=>s+(f?f(x):x),0);
+function pct(n,t){return t?Math.round(n/t*1000)/10:0;}
+function renderTraffic(d){
+  const days=d.days||[];
+  // ---- KPI cards ----
+  const last=days.slice(-1)[0]||{v:0,u:0,o:0};
+  const yest=days.slice(-2,-1)[0]||{v:0,u:0,o:0};
+  const w=days.slice(-7),pw=days.slice(-14,-7);
+  const wV=sum(w,x=>x.v),pwV=sum(pw,x=>x.v);
+  const mV=sum(days,x=>x.v),mU=sum(days,x=>x.u),mO=sum(days,x=>x.o);
+  $('#tOnline').textContent=fmtN((d.visits&&d.visits.online)||0);
+  $('#tToday').textContent=fmtN(last.v);
+  $('#tYest').textContent=fmtN(yest.v);
+  $('#tWeek').textContent=fmtN(wV);
+  const trend=pwV?Math.round((wV-pwV)/pwV*100):0;
+  const te=$('#tWeekTrend');
+  te.textContent=pwV?(trend>=0?'▲ +'+trend+'%':'▼ '+trend+'%'):'';
+  te.style.color=trend>=0?'var(--ok)':'var(--bad)';
+  $('#tMonth').textContent=fmtN(mV);
+  $('#tUniqueM').textContent=fmtN(mU);
+  $('#tConv').textContent=(pct(mO,mU))+'%';
+  const peak=days.slice().sort((a,b)=>b.v-a.v)[0];
+  $('#tPeak').textContent=peak&&peak.v?peak.d.slice(5)+' · '+fmtN(peak.v):'—';
+  // ---- main chart (range-aware) ----
+  const shown=days.slice(-RANGE);
+  const maxV=Math.max(1,...shown.map(x=>x.v));
+  $('#bars').innerHTML=shown.map(x=>{
+    const vh=x.v?Math.max(2,Math.round(x.v/maxV*86)):0;
+    const oh=x.o?Math.min(22,Math.max(4,Math.round(x.o/maxV*86))):0;
+    return `<div class="bar"><b>${esc(x.d.slice(5))} · ${x.v} визитов · ${x.u} уник. · ${x.o} заказов</b><u style="height:${oh}px"></u><i style="height:${vh}%"></i><span>${esc(x.d.slice(5))}</span></div>`;
+  }).join('');
+  // ---- channels ----
+  const ch=d.channels||{direct:0,search:0,social:0,referral:0};
+  const chLabels={direct:'Прямые',search:'Поиск',social:'Соцсети',referral:'Ссылки'};
+  const chTot=sum(Object.values(ch));
+  $('#channelBox').innerHTML='<div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:10px">Каналы</div>'+
+    (chTot?Object.entries(ch).map(([k,n])=>barRow(chLabels[k]||k,n,chTot,'var(--accent)')).join(''):'<div class="empty">Пока нет данных.</div>');
+  // ---- devices ----
+  const dv=d.devices||[];const dvTot=sum(dv,x=>x.n);
+  const dvLabels={mobile:'📱 Мобильные',desktop:'💻 Десктоп',tablet:'📲 Планшеты'};
+  $('#deviceBox').innerHTML='<div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:10px">Устройства</div>'+
+    (dvTot?dv.map(x=>barRow(dvLabels[x.k]||x.k,x.n,dvTot,'var(--brand)')).join(''):'<div class="empty">Пока нет данных.</div>');
+  // ---- hourly histogram ----
+  const hrs=d.hours||new Array(24).fill(0);const maxH=Math.max(1,...hrs);
+  $('#hourBars').innerHTML=hrs.map((n,h)=>{
+    const hh=n?Math.max(2,Math.round(n/maxH*90)):0;
+    return `<div class="bar"><b>${String(h).padStart(2,'0')}:00 · ${n} визитов</b><i style="height:${hh}%"></i><span>${h%3===0?String(h).padStart(2,'0'):''}</span></div>`;
+  }).join('');
+  // ---- tables ----
+  const cTot=sum((d.countries||[]),x=>x.n);
+  $('#ctryT tbody').innerHTML=(d.countries&&d.countries.length)?d.countries.map(c=>`<tr><td class="id">${flagEmoji(c.code)} ${esc(c.code)}</td><td class="num">${fmtN(c.n)}</td><td class="num">${pct(c.n,cTot)}%</td></tr>`).join('')
+    :'<tr><td colspan="3" class="empty">Пока нет данных.</td></tr>';
   $('#srcT tbody').innerHTML=(d.sources&&d.sources.length)?d.sources.map(s=>`<tr><td class="id">${esc(s.host)}</td><td class="num">${fmtN(s.n)}</td></tr>`).join('')
     :'<tr><td colspan="2" class="empty">Пока нет внешних источников.</td></tr>';
   $('#srchT tbody').innerHTML=(d.searches&&d.searches.length)?d.searches.map(s=>`<tr><td class="id">${esc(s.q)}</td><td class="num">${fmtN(s.n)}</td></tr>`).join('')
     :'<tr><td colspan="2" class="empty">Пока нет запросов.</td></tr>';
+  const bTot=sum((d.browsers||[]),x=>x.n);
+  $('#browT tbody').innerHTML=(d.browsers&&d.browsers.length)?d.browsers.map(b=>`<tr><td class="id">${esc(b.k)}</td><td class="num">${fmtN(b.n)}</td><td class="num">${pct(b.n,bTot)}%</td></tr>`).join('')
+    :'<tr><td colspan="3" class="empty">Пока нет данных.</td></tr>';
+  // ---- daily table ----
+  $('#dailyT tbody').innerHTML=days.slice().reverse().map(x=>`<tr>
+    <td class="id">${esc(x.d)}</td><td class="num">${fmtN(x.v)}</td><td class="num">${fmtN(x.u)}</td><td class="num">${fmtN(x.o)}</td><td class="num">${pct(x.o,x.u)}%</td></tr>`).join('');
 }
+function barRow(label,n,tot,color){
+  const p=pct(n,tot);
+  return `<div style="margin-bottom:9px"><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px"><span style="color:var(--ink)">${esc(label)}</span><span style="color:var(--muted)">${fmtN(n)} · ${p}%</span></div>
+    <div style="height:8px;background:var(--card2);border-radius:100px;overflow:hidden"><div style="height:100%;width:${p}%;background:${color};border-radius:100px"></div></div></div>`;
+}
+$('#rangeChips')&&$('#rangeChips').addEventListener('click',e=>{const b=e.target.closest('[data-r]');if(!b)return;RANGE=+b.dataset.r;document.querySelectorAll('#rangeChips button').forEach(x=>x.classList.toggle('on',x===b));if(DATA)renderTraffic(DATA);});
+$('#csvExport')&&$('#csvExport').addEventListener('click',()=>{
+  if(!DATA)return;
+  const rows=[['date','visits','unique','orders']].concat((DATA.days||[]).map(x=>[x.d,x.v,x.u,x.o]));
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='stuffweknow-traffic.csv';a.click();
+});
 function renderAllListings(){
   const q=($('#lstSearch').value||'').trim().toLowerCase();
   const list=MKT_LISTINGS.filter(l=>!q||((l.title+' '+(l.brand||'')+' '+((l.seller&&l.seller.handle)||'')+' '+((l.seller&&l.seller.email)||'')).toLowerCase().includes(q)));
@@ -471,7 +633,7 @@ function renderOrders(){
         <input class="carrier" placeholder="Перевозчик (DHL…)" value="${esc(o.carrier||'')}">
         <input class="tracking" placeholder="Трек-номер" value="${esc(o.tracking||'')}">
         <input class="tx" placeholder="Хэш транзакции" value="${esc(o.paidTx||'')}">
-        <button class="btn sm save">Сохранить</button>
+        <div class="actcell"><button class="btn sm save">Сохранить</button><button class="btn sm danger del">Удалить</button></div>
       </div></td>
     <td><a class="rcpt" href="/receipt/${esc(o.id)}" target="_blank">открыть</a></td>
   </tr>`).join(''):'<tr><td colspan="7" class="empty">Нет заказов.</td></tr>';
@@ -486,6 +648,10 @@ function renderOrders(){
     };
     row.querySelector('.save').addEventListener('click',doSave);
     row.querySelector('.st').addEventListener('change',doSave);
+    row.querySelector('.del').addEventListener('click',async()=>{
+      if(!confirm('Удалить заказ '+id+' навсегда? Это действие нельзя отменить. Если по заказу были средства в эскроу — сначала оформи возврат или выдачу.'))return;
+      await api('/api/admin/order-delete',{method:'POST',body:JSON.stringify({id})});loadDash();
+    });
   });
 }
 $('#orderSearch').addEventListener('input',renderOrders);
@@ -560,10 +726,21 @@ $('#wSave').addEventListener('click',async()=>{
   const body={usdt:$('#wUsdt').value.trim(),usdc:$('#wUsdc').value.trim(),twaFingerprints:$('#wTwa').value};
   const ek=$('#wEthKey').value.trim(),tk=$('#wTronKey').value.trim();
   if(ek)body.etherscanKey=ek; if(tk)body.tronKey=tk;
+  const smtp={host:$('#wSmtpHost').value.trim(),port:$('#wSmtpPort').value.trim(),user:$('#wSmtpUser').value.trim(),from:$('#wSmtpFrom').value.trim()};
+  const sp=$('#wSmtpPass').value;if(sp)smtp.pass=sp;
+  body.smtp=smtp;
   const msg=$('#wMsg');msg.textContent='Сохранение…';$('#wSave').disabled=true;
-  try{await api('/api/admin/wallets',{method:'POST',body:JSON.stringify(body)});$('#wEthKey').value='';$('#wTronKey').value='';msg.textContent='✓ Сохранено';await loadDash();}
+  try{await api('/api/admin/wallets',{method:'POST',body:JSON.stringify(body)});$('#wEthKey').value='';$('#wTronKey').value='';$('#wSmtpPass').value='';msg.textContent='✓ Сохранено';await loadDash();}
   catch(e){msg.textContent=e&&e.message==='auth'?'Ошибка авторизации':'Неверный адрес — проверь формат';}
   $('#wSave').disabled=false;setTimeout(()=>{msg.textContent='';},3000);
+});
+$('#wMailTest').addEventListener('click',async()=>{
+  const msg=$('#wMailMsg');const to=$('#wSmtpFrom').value.trim()||$('#wSmtpUser').value.trim();
+  msg.textContent='Отправка…';$('#wMailTest').disabled=true;
+  try{const r=await fetch('/api/admin/mail-test',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Key':KEY},body:JSON.stringify({to})});
+    const d=await r.json();msg.innerHTML=r.ok?'<span class="ok">✓ Письмо отправлено — проверь почту</span>':'<span class="bad">✗ '+esc(d.error||'ошибка')+'</span>';}
+  catch(e){msg.innerHTML='<span class="bad">✗ сеть недоступна</span>';}
+  $('#wMailTest').disabled=false;setTimeout(()=>{msg.textContent='';},6000);
 });
 if(KEY)loadDash().catch(()=>{sessionStorage.removeItem('swk_admin')});
 setInterval(()=>{if($('#dash').style.display==='block')loadDash().catch(()=>{})},60000);
