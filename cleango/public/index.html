@@ -5538,6 +5538,21 @@ async function openCardModal(){
   // third-party widget dropped into the page.
   const cs=getComputedStyle(document.documentElement);
   const tok=(name,fallback)=>((cs.getPropertyValue(name)||'').trim()||fallback);
+  // Stripe parses these strings itself and drops a rule it cannot read, so
+  // everything handed over has to be a plain, long-supported CSS value —
+  // color-mix() and var() are exactly the kind of thing that gets rejected,
+  // silently taking the whole look back to Stripe's default.
+  const rgba=(color,alpha)=>{
+    let h=String(color).trim();
+    if(h[0]==='#'){
+      if(h.length===4)h='#'+h[1]+h[1]+h[2]+h[2]+h[3]+h[3];
+      const n=parseInt(h.slice(1,7),16);
+      if(!isNaN(n))return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${alpha})`;
+    }
+    const m=h.match(/(\d+)[\s,]+(\d+)[\s,]+(\d+)/);          // rgb()/rgba() form
+    if(m)return `rgba(${m[1]},${m[2]},${m[3]},${alpha})`;
+    return `rgba(20,200,113,${alpha})`;                       // brand green
+  };
   const appearance={
     theme:dark?'night':'stripe',
     variables:{
@@ -5555,7 +5570,7 @@ async function openCardModal(){
     rules:{
       '.Input':{border:`1px solid ${tok('--line','#E6EBEA')}`,boxShadow:'none',padding:'12px 14px'},
       '.Input:focus':{border:`1px solid ${tok('--primary','#14C871')}`,
-        boxShadow:`0 0 0 3px color-mix(in srgb, ${tok('--primary','#14C871')} 22%, transparent)`},
+        boxShadow:`0 0 0 3px ${rgba(tok('--primary','#14C871'),0.22)}`},
       '.Input--invalid':{border:`1px solid ${tok('--danger','#E5484D')}`,boxShadow:'none'},
       '.Label':{fontWeight:'600',fontSize:'13px',marginBottom:'6px'},
       '.Tab':{border:`1px solid ${tok('--line','#E6EBEA')}`,boxShadow:'none'},
