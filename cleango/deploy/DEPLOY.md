@@ -242,16 +242,21 @@ Three properties are the point, and each one is a way backups usually fail:
 * **it is verified by restoring it** — a backup nobody has ever opened is a
   guess.
 
-Configure it in `deploy/instance.local.env` (server-only, never in git):
+Set it up with the wizard rather than an editor — it generates the encryption
+key itself, refuses anything still left over from these instructions, writes the
+file with 0600, applies the env and runs a real backup to prove it works:
 
 ```bash
-LUMI_BACKUP_KEY=<a long passphrase, or 64 hex chars>
-LUMI_BACKUP_S3_ENDPOINT=s3.eu-central-003.backblazeb2.com
-LUMI_BACKUP_S3_BUCKET=lumi-backups
-LUMI_BACKUP_S3_REGION=eu-central-003
-LUMI_BACKUP_S3_KEY=...
-LUMI_BACKUP_S3_SECRET=...
+cd /opt/lumi && node ops/backup-setup.js
 ```
+
+It asks for four things you get from the bucket (Backblaze B2 → *Buckets* and
+*Application Keys*): endpoint, bucket name, keyID, applicationKey. The region is
+read out of the endpoint. Nothing is written unless every answer is a real value.
+
+Editing `deploy/instance.local.env` by hand works too — the same six variables —
+but that is where a value lands in the wrong line and the timer fails a month
+later.
 
 > ⚠ **Without `LUMI_BACKUP_KEY` the archives cannot be opened — by anyone,
 > including you.** Keep a copy somewhere that is not this server (a password

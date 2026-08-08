@@ -90,6 +90,34 @@ ok('a file that is not a LUMI archive is refused by name, not by crash', () => {
   assert.throws(() => decryptFile(f, f + '.out'), /не архив LUMI/);
 });
 
+
+// ── the setup wizard: it must never write half a configuration ──
+const setup = require('./backup-setup');
+
+ok('leftovers from the instructions are refused as values', () => {
+  for (const v of ['твой_keyID', 'вставь_сюда_64_символа', '<длинная фраза>', '', 'your-key-here', '...']) {
+    assert.strictEqual(setup.looksLikePlaceholder(v), true, `должно быть отвергнуто: ${v}`);
+  }
+  for (const v of ['s3.eu-central-003.backblazeb2.com', '005a1b2c3d4e5f60000000001', 'K005AbCdEf/12345+xyz', 'a'.repeat(64)]) {
+    assert.strictEqual(setup.looksLikePlaceholder(v), false, `должно быть принято: ${v}`);
+  }
+});
+
+ok('writing the config keeps the other secrets and locks the file down', () => {
+  const f = tmp('instance.local.env');
+  fs.writeFileSync(f, 'LUMI_SMTP_PASS=my p@ss word\nLUMI_BACKUP_S3_BUCKET=old-bucket\n');
+  setup.writeEnv(f, {
+    LUMI_BACKUP_KEY: 'f'.repeat(64), LUMI_BACKUP_S3_ENDPOINT: 's3.example.com',
+    LUMI_BACKUP_S3_BUCKET: 'new-bucket', LUMI_BACKUP_S3_REGION: 'eu-1',
+    LUMI_BACKUP_S3_KEY: 'kid', LUMI_BACKUP_S3_SECRET: 'sec',
+  });
+  const out = fs.readFileSync(f, 'utf8');
+  assert.ok(out.includes('LUMI_SMTP_PASS=my p@ss word'), 'unrelated secrets survive');
+  assert.strictEqual((out.match(/LUMI_BACKUP_S3_BUCKET=/g) || []).length, 1, 'the old value is replaced, not duplicated');
+  assert.ok(out.includes('LUMI_BACKUP_S3_BUCKET=new-bucket'));
+  assert.strictEqual(fs.statSync(f).mode & 0o777, 0o600, 'file is not world-readable');
+});
+
 const failed = results.filter((r) => !r[0]);
 for (const [pass, name, err] of results) console.log(`  ${pass ? 'ok' : 'FAIL'} - ${name}${err ? ' → ' + err : ''}`);
 console.log(`\n${results.length - failed.length}/${results.length} backup checks passed.`);

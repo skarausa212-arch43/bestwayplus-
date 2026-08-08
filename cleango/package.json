@@ -27,7 +27,8 @@
     "mail-test": "node mailer/send-test.js",
     "stripe-check": "node ops/stripe-check.js",
     "backup": "node ops/backup.js run",
-    "backup-status": "node ops/backup.js status"
+    "backup-status": "node ops/backup.js status",
+    "backup-setup": "node ops/backup-setup.js"
   },
   "dependencies": {}
 }
