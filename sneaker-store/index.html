@@ -620,6 +620,16 @@
   :root[data-theme="dark"] .tier-3{color:#ffcf5a}
   .card-seller .tier{font-size:9.5px;padding:1px 6px;margin-left:0}
   .qv-act{display:flex;gap:10px;margin-top:8px}
+  .admin-box{margin-top:16px;padding:15px;border:1px solid var(--accent);border-radius:16px;background:var(--accent-soft)}
+  .admin-h{font-size:13px;font-weight:800;color:var(--accent);margin-bottom:12px;letter-spacing:-.01em}
+  .admin-box .field{margin-bottom:10px}
+  .admin-box label{font-size:11.5px}
+  .admin-acts{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap}
+  .admin-acts .btn{height:44px;white-space:nowrap}
+  .admin-acts #admSave{flex:1 1 100%}
+  .admin-acts #admFull{flex:1 1 auto}
+  .admin-del{background:var(--bad);color:#fff;padding:0 18px;flex:0 0 auto}
+  .admin-meta{font-size:11px;color:var(--muted);margin-top:10px;word-break:break-all}
   .lst-msg{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:14px;height:48px;border-radius:14px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-weight:600;font-size:14.5px;transition:.18s}
   .lst-msg span{font-size:16px;line-height:1}
   .lst-msg:hover{border-color:var(--accent);color:var(--accent)}
@@ -2045,6 +2055,8 @@ function confetti(){try{if(matchMedia('(prefers-reduced-motion:reduce)').matches
 /* ---------- account ---------- */
 const esc=s=>String(s??'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
 let AUTH=load('swk_auth',null);
+let IS_ADMIN=false;   // owner mode: full edit/delete on any listing from the live site
+function refreshAdminFlag(){if(!AUTH){IS_ADMIN=false;return Promise.resolve();}return mfetch('/api/me').then(d=>{IS_ADMIN=!!d.admin;document.body.classList.toggle('is-admin',IS_ADMIN);}).catch(()=>{});}
 function accDot(){$('#accDot').classList.toggle('show',!!AUTH)}
 function updateWishBadge(){const n=(favs||[]).length;const el=$('#wishBadge');if(el){el.textContent=n;el.classList.toggle('show',n>0);}const bs=$('#botSaved');if(bs){bs.textContent=n;bs.classList.toggle('show',n>0);}}
 const STATUS_META={pending:{label:'Awaiting payment',step:-1},paid:{label:'Payment confirmed',step:0},processing:{label:'Processing',step:0},shipped:{label:'Shipped',step:1},delivered:{label:'Delivered',step:2},cancelled:{label:'Cancelled',step:-2}};
@@ -2096,6 +2108,7 @@ function renderAccount(startTab){
         const d=await r.json();
         if(!r.ok){const m=$('#accMsg');m.style.display='block';m.textContent=d.error||'Failed';go.disabled=false;return}
         AUTH={token:d.token,email:d.email,name:d.name};save('swk_auth',AUTH);accDot();
+        IS_ADMIN=!!d.admin;document.body.classList.toggle('is-admin',IS_ADMIN);
         toast(mode==='up'?'Account created':'Signed in');renderAccount();enablePush();
       }catch{const m=$('#accMsg');m.style.display='block';m.textContent='Accounts are unavailable right now.';go.disabled=false}
     });
@@ -2432,12 +2445,25 @@ async function openListing(id){
         <button class="btn btn-primary" style="flex:1;justify-content:center" id="lstBuy">Buy now — ${usdtLabel(payTotal(price))}</button>
         <button class="btn btn-secondary" id="lstOffer" style="padding:0 16px">Make offer</button>
       </div>
+      ${IS_ADMIN?`<div class="admin-box" id="admBox">
+        <div class="admin-h">🛠 Владелец · управление товаром</div>
+        <div class="field"><label>Название</label><input id="admTitle" value="${esc(l.title||'')}" maxlength="90"></div>
+        <div class="frow"><div class="field"><label>Цена (USD)</label><input id="admPrice" type="number" value="${l.price}"></div>
+          <div class="field"><label>Статус</label><select id="admStatus">${['active','pending','rejected','sold','removed'].map(s=>`<option value="${s}"${s===l.status?' selected':''}>${({active:'Активен',pending:'На модерации',rejected:'Отклонён',sold:'Продан',removed:'Удалён'})[s]}</option>`).join('')}</select></div></div>
+        <div class="admin-acts">
+          <button class="btn btn-primary" id="admSave" style="flex:1;justify-content:center">Сохранить</button>
+          <button class="btn btn-secondary" id="admFull">Полный редактор</button>
+          <button class="btn admin-del" id="admDel">Удалить</button>
+        </div>
+        <div class="admin-meta">ID: ${esc(l.id)} · продавец: @${esc(s.handle||'')}</div>
+      </div>`:''}
       <div id="moreFrom"></div>
     </div>`;
   pushRecent(l);
   initGallery(l.photos&&l.photos.length?l.photos:[l.cover].filter(Boolean));
   $('#lstBuy').addEventListener('click',()=>buyListing(l,price));
   $('#lstOffer').addEventListener('click',()=>makeOffer(l));
+  if(IS_ADMIN)wireAdminBox(l);
   const lm=$('#lstMsg');if(lm)lm.addEventListener('click',()=>{if(!AUTH)return needAuth('Sign in to message');closeModal('#lstModal');openListingChat(l.id);});
   const sl=box.querySelector('[data-seller]');if(sl)sl.addEventListener('click',ev=>{ev.preventDefault();openSeller(sl.dataset.seller);});
   const tr=$('#lstTr');if(tr)tr.addEventListener('click',async()=>{const to=load('swk_chatlang','en');tr.textContent='…';try{const parts=await Promise.all([mfetch('/api/translate',{method:'POST',body:JSON.stringify({text:l.title,to})}),l.desc?mfetch('/api/translate',{method:'POST',body:JSON.stringify({text:l.desc,to})}):Promise.resolve({text:''})]);$('#lstTitle').textContent=parts[0].text;if(l.desc&&$('#lstDesc'))$('#lstDesc').textContent=parts[1].text;tr.textContent='🌐 Translated';}catch(e){tr.textContent='(translation unavailable)';}});
@@ -2457,6 +2483,24 @@ function renderMoreFrom(l){
   if(!more.length){box.innerHTML='';return;}
   box.innerHTML=`<div class="more-h">More from @${esc(l.seller.handle)}</div><div class="more-row">${more.map(x=>`<button class="more-c" data-more="${x.id}"><span class="more-img"><img src="${x.cover}" alt="${esc(x.title)}" loading="lazy"></span><span class="more-p">${usdtLabel(x.price)}</span></button>`).join('')}</div>`;
   box.querySelectorAll('[data-more]').forEach(b=>b.addEventListener('click',()=>openListing(b.dataset.more)));
+}
+/* owner mode: edit / delete any listing straight from its page */
+function wireAdminBox(l){
+  const save=$('#admSave');if(save)save.addEventListener('click',async()=>{
+    save.disabled=true;
+    try{await mfetch('/api/admin/listing-edit',{method:'POST',body:JSON.stringify({id:l.id,title:$('#admTitle').value,price:$('#admPrice').value,status:$('#admStatus').value})});
+      toast('Сохранено ✓');loadListings();openListing(l.id);}
+    catch(e){toast(e.message);save.disabled=false;}
+  });
+  const full=$('#admFull');if(full)full.addEventListener('click',async()=>{
+    try{const d=await mfetch('/api/listings/'+l.id);const os=d.offerSettings||{};closeModal('#lstModal');openSell(Object.assign({},d.listing,{autoAccept:os.autoAccept||0,autoDecline:os.autoDecline||0}));}
+    catch(e){closeModal('#lstModal');openSell(l);}
+  });
+  const del=$('#admDel');if(del)del.addEventListener('click',async()=>{
+    if(!confirm('Удалить этот товар из магазина?'))return;
+    try{await mfetch('/api/admin/listing-delete',{method:'POST',body:JSON.stringify({id:l.id})});toast('Товар удалён');closeModal('#lstModal');loadListings();}
+    catch(e){toast(e.message);}
+  });
 }
 /* recently viewed (client-side) */
 let RECENT=load('swk_recent',[]);
@@ -3315,6 +3359,7 @@ $('#accModal').addEventListener('click',e=>{const b=e.target.closest('[data-act]
 
 /* ---------- init ---------- */
 renderFilterbar();renderGrid();renderCart();bump();updateWishBadge();loadPayConfig();
+if(AUTH)refreshAdminFlag();   // restore owner mode on reload
 /* PWA: register service worker (installable app + offline shell) */
 if('serviceWorker'in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').then(()=>{if(AUTH)enablePush();}).catch(()=>{});});}
 /* ---- web push: subscribe the logged-in user so they get offers/messages/sales as notifications ---- */

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin — STUFFWEKNOW</title>
+<title>Админка — STUFFWEKNOW</title>
 <meta name="robots" content="noindex,nofollow">
 <style>
   :root{--bg:#050505;--surface:#0e0e10;--card:#131316;--card2:#17171b;--ink:#F4F4F4;--muted:#9a9aa4;--faint:#5a5a61;
@@ -123,80 +123,80 @@
 </head>
 <body>
 <header><div class="wrap hd">
-  <div class="brand">STUFFWEKNOW <i>▲</i> ADMIN</div>
-  <div class="r"><span id="upd"></span><button id="refresh" style="display:none">Refresh</button><button id="logout" style="display:none">Log out</button></div>
+  <div class="brand">STUFFWEKNOW <i>▲</i> АДМИН</div>
+  <div class="r"><span id="upd"></span><button id="refresh" style="display:none">Обновить</button><button id="logout" style="display:none">Выйти</button></div>
 </div></header>
 
 <div class="wrap">
   <div class="login" id="login">
-    <h1>Admin access</h1>
-    <p>Enter the admin key (test key: <code>123456</code>, or the one in <code>/root/swk-admin.txt</code>).</p>
-    <input type="password" id="pw" placeholder="Admin password" autocomplete="current-password">
-    <button id="enter">Enter dashboard</button>
-    <div class="err" id="lerr">Wrong password.</div>
+    <h1>Вход в админку</h1>
+    <p>Введите пароль администратора.</p>
+    <input type="password" id="pw" placeholder="Пароль администратора" autocomplete="current-password">
+    <button id="enter">Войти</button>
+    <div class="err" id="lerr">Неверный пароль.</div>
   </div>
 
   <div class="dash" id="dash">
     <nav class="tabs" id="tabs">
-      <button data-t="overview" class="on">Overview</button>
-      <button data-t="traffic">Traffic</button>
-      <button data-t="users">Users</button>
-      <button data-t="orders">Orders</button>
-      <button data-t="market">Marketplace<span class="tcount" id="tcMarket" style="display:none">0</span></button>
-      <button data-t="settings">Settings</button>
+      <button data-t="overview" class="on">Обзор</button>
+      <button data-t="traffic">Трафик</button>
+      <button data-t="users">Пользователи</button>
+      <button data-t="orders">Заказы</button>
+      <button data-t="market">Маркетплейс<span class="tcount" id="tcMarket" style="display:none">0</span></button>
+      <button data-t="settings">Настройки</button>
     </nav>
 
     <!-- OVERVIEW -->
     <section data-sec="overview" class="on">
-      <h2>Business</h2>
+      <h2>Бизнес</h2>
       <div class="cards">
-        <div class="stat hl"><b id="sRev">—</b><span>Revenue (gross)</span></div>
-        <div class="stat"><b id="sFees">—</b><span>Fees collected</span></div>
-        <div class="stat act" data-goto="orders"><b id="sOrders">—</b><span>Orders</span></div>
-        <div class="stat act" data-goto="users"><b id="sUsers">—</b><span>Accounts</span></div>
+        <div class="stat hl"><b id="sRev">—</b><span>Выручка (общая)</span></div>
+        <div class="stat"><b id="sFees">—</b><span>Комиссии</span></div>
+        <div class="stat act" data-goto="orders"><b id="sOrders">—</b><span>Заказы</span></div>
+        <div class="stat act" data-goto="users"><b id="sUsers">—</b><span>Аккаунты</span></div>
       </div>
-      <h2>Visitors</h2>
+      <h2>Посетители</h2>
       <div class="cards">
-        <div class="stat"><b id="sToday">—</b><span>Visits today</span></div>
-        <div class="stat"><b id="sTotal">—</b><span>Total visits</span></div>
-        <div class="stat"><b id="sUnique">—</b><span>Unique visitors</span></div>
-        <div class="stat act" data-goto="traffic"><b id="sAvg">—</b><span>Avg / day (14d)</span></div>
+        <div class="stat"><b id="sToday">—</b><span>Визиты сегодня</span></div>
+        <div class="stat"><b id="sTotal">—</b><span>Всего визитов</span></div>
+        <div class="stat"><b id="sUnique">—</b><span>Уник. посетители</span></div>
+        <div class="stat act" data-goto="traffic"><b id="sAvg">—</b><span>Средн./день (14д)</span></div>
       </div>
-      <h2>Needs attention</h2>
+      <h2>Требует внимания</h2>
       <div class="cards">
-        <div class="stat act warn" data-goto="market"><b id="kPending">—</b><span>Pending listings</span></div>
-        <div class="stat act warn" data-goto="market"><b id="kDisputes">—</b><span>Open disputes</span></div>
-        <div class="stat act warn" data-goto="market"><b id="kReports">—</b><span>Open reports</span></div>
-        <div class="stat act" data-goto="market"><b id="kPayouts">—</b><span>Payouts owed</span></div>
+        <div class="stat act warn" data-goto="market"><b id="kPending">—</b><span>На модерации</span></div>
+        <div class="stat act warn" data-goto="market"><b id="kDisputes">—</b><span>Открытые споры</span></div>
+        <div class="stat act warn" data-goto="market"><b id="kReports">—</b><span>Жалобы</span></div>
+        <div class="stat act" data-goto="market"><b id="kPayouts">—</b><span>К выплате</span></div>
       </div>
-      <h2>Active listings</h2>
+      <h2>Активные товары</h2>
       <div class="cards">
-        <div class="stat"><b id="kActive">—</b><span>Live listings</span></div>
+        <div class="stat"><b id="kActive">—</b><span>Активных товаров</span></div>
       </div>
     </section>
 
     <!-- TRAFFIC -->
     <section data-sec="traffic">
-      <h2>Visits &amp; orders — last 14 days</h2>
+      <h2>Визиты и заказы — 14 дней</h2>
       <div class="chart">
         <div class="bars" id="bars"></div>
-        <div class="legend"><span><i style="background:var(--accent)"></i>Visits</span><span><i style="background:var(--brand)"></i>Orders</span></div>
+        <div class="legend"><span><i style="background:var(--accent)"></i>Визиты</span><span><i style="background:var(--brand)"></i>Заказы</span></div>
       </div>
       <div class="grid2">
         <div>
-          <h2>🌍 Top countries</h2>
-          <div style="overflow-x:auto"><table id="ctryT"><thead><tr><th>Country</th><th class="num">Visitors</th></tr></thead><tbody></tbody></table></div>
+          <h2>🌍 Топ стран</h2>
+          <div style="overflow-x:auto"><table id="ctryT"><thead><tr><th>Страна</th><th class="num">Посетители</th></tr></thead><tbody></tbody></table></div>
         </div>
         <div>
-          <h2>🔗 Traffic sources</h2>
-          <div style="overflow-x:auto"><table id="srcT"><thead><tr><th>Referrer</th><th class="num">Visits</th></tr></thead><tbody></tbody></table></div>
+          <h2>🔗 Источники трафика</h2>
+          <div style="overflow-x:auto"><table id="srcT"><thead><tr><th>Источник</th><th class="num">Визиты</th></tr></thead><tbody></tbody></table></div>
         </div>
       </div>
-      <h2>🔎 Top searches (what people look for)</h2>
-      <div style="overflow-x:auto"><table id="srchT"><thead><tr><th>Search term</th><th class="num">Count</th></tr></thead><tbody></tbody></table></div>
-      <h2>Daily breakdown — last 30 days</h2>
+      <h2>🔎 Топ запросов (что ищут)</h2>
+      <div style="overflow-x:auto"><table id="srchT"><thead><tr><th>Запрос</th><th class="num">Кол-во</th></tr></thead><tbody></tbody></table></div>
+      <h2>По дням — 30 дней</h2>
       <div style="overflow-x:auto"><table id="dailyT">
-        <thead><tr><th>Date</th><th class="num">Visits</th><th class="num">Unique</th><th class="num">Orders</th></tr></thead>
+        <thead><tr><th>Дата</th><th class="num">Визиты</th><th class="num">Уник.</th><th class="num">Заказы</th></tr></thead>
         <tbody></tbody>
       </table></div>
     </section>
@@ -204,17 +204,17 @@
     <!-- USERS -->
     <section data-sec="users">
       <div class="toolbar">
-        <input class="search" id="userSearch" placeholder="Search by email, name or @telegram…">
+        <input class="search" id="userSearch" placeholder="Поиск: email, имя или @telegram…">
         <div class="filterchips" id="userFilter">
-          <button data-f="all" class="on">All</button>
-          <button data-f="sellers">Sellers</button>
-          <button data-f="verified">Verified</button>
-          <button data-f="banned">Banned</button>
+          <button data-f="all" class="on">Все</button>
+          <button data-f="sellers">Продавцы</button>
+          <button data-f="verified">Верифиц.</button>
+          <button data-f="banned">Забанены</button>
         </div>
         <span class="count" id="userCount"></span>
       </div>
       <div style="overflow-x:auto"><table id="usersT">
-        <thead><tr><th>User</th><th class="hidem">Telegram</th><th>Registered</th><th>Trust</th><th class="num">Listings</th><th class="num">Sold</th><th class="num">Bought</th><th class="num">Balance</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Пользователь</th><th class="hidem">Telegram</th><th>Регистрация</th><th>Доверие</th><th class="num">Товары</th><th class="num">Продано</th><th class="num">Куплено</th><th class="num">Баланс</th><th>Действия</th></tr></thead>
         <tbody></tbody>
       </table></div>
     </section>
@@ -222,67 +222,67 @@
     <!-- ORDERS -->
     <section data-sec="orders">
       <div class="toolbar">
-        <input class="search" id="orderSearch" placeholder="Search by order id, customer, email…">
+        <input class="search" id="orderSearch" placeholder="Поиск: № заказа, покупатель, email…">
         <span class="count" id="orderCount"></span>
       </div>
       <div style="overflow-x:auto"><table id="ordersT">
-        <thead><tr><th>Order</th><th>Date</th><th class="hidem">Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Receipt</th></tr></thead>
+        <thead><tr><th>Заказ</th><th>Дата</th><th class="hidem">Покупатель</th><th>Товары</th><th>Сумма</th><th>Статус</th><th>Чек</th></tr></thead>
         <tbody></tbody>
       </table></div>
     </section>
 
     <!-- MARKETPLACE -->
     <section data-sec="market">
-      <h2>Pending listings (moderation)</h2>
+      <h2>Товары на модерации</h2>
       <div style="overflow-x:auto"><table id="modT">
-        <thead><tr><th>Item</th><th class="hidem">Seller</th><th>Category</th><th>Price</th><th>Preview</th><th>Decision</th></tr></thead>
+        <thead><tr><th>Товар</th><th class="hidem">Продавец</th><th>Категория</th><th>Цена</th><th>Фото</th><th>Решение</th></tr></thead>
         <tbody></tbody>
       </table></div>
-      <h2>All listings · edit / delete</h2>
-      <div class="toolbar"><input class="search" id="lstSearch" placeholder="Search listings by title, brand, seller…"><span class="count" id="lstCount"></span></div>
+      <h2>Все товары · правка / удаление</h2>
+      <div class="toolbar"><input class="search" id="lstSearch" placeholder="Поиск по названию, бренду, продавцу…"><span class="count" id="lstCount"></span></div>
       <div style="overflow-x:auto"><table id="allT">
-        <thead><tr><th>Item</th><th class="hidem">Seller</th><th>Price (USD)</th><th>Status</th><th>Edit</th></tr></thead>
+        <thead><tr><th>Товар</th><th class="hidem">Продавец</th><th>Цена (USD)</th><th>Статус</th><th>Действия</th></tr></thead>
         <tbody></tbody>
       </table></div>
-      <h2>Disputes</h2>
+      <h2>Споры</h2>
       <div style="overflow-x:auto"><table id="dispT">
-        <thead><tr><th>Order</th><th>Item</th><th class="hidem">Buyer</th><th class="hidem">Seller</th><th>Total</th><th>Reason</th><th>Resolve</th></tr></thead>
+        <thead><tr><th>Заказ</th><th>Товар</th><th class="hidem">Покупатель</th><th class="hidem">Продавец</th><th>Сумма</th><th>Причина</th><th>Решение</th></tr></thead>
         <tbody></tbody>
       </table></div>
-      <h2>Payouts owed to sellers</h2>
+      <h2>Выплаты продавцам</h2>
       <div style="overflow-x:auto"><table id="payT">
-        <thead><tr><th>Order</th><th>Seller</th><th>Payout address</th><th>Owed</th><th></th></tr></thead>
+        <thead><tr><th>Заказ</th><th>Продавец</th><th>Адрес выплаты</th><th>К выплате</th><th></th></tr></thead>
         <tbody></tbody>
       </table></div>
-      <h2>Reported listings</h2>
+      <h2>Жалобы на товары</h2>
       <div style="overflow-x:auto"><table id="repT">
-        <thead><tr><th>Listing</th><th class="hidem">Seller</th><th>Reason</th><th class="hidem">By</th><th>Action</th></tr></thead>
+        <thead><tr><th>Товар</th><th class="hidem">Продавец</th><th>Причина</th><th class="hidem">От кого</th><th>Действие</th></tr></thead>
         <tbody></tbody>
       </table></div>
-      <h2>Sellers · manual verification</h2>
+      <h2>Продавцы · верификация</h2>
       <div style="overflow-x:auto"><table id="verT">
-        <thead><tr><th>Seller</th><th>Listings</th><th>Verified</th><th></th></tr></thead>
+        <thead><tr><th>Продавец</th><th>Товары</th><th>Верифиц.</th><th></th></tr></thead>
         <tbody></tbody>
       </table></div>
     </section>
 
     <!-- SETTINGS -->
     <section data-sec="settings">
-      <h2>Receiving wallets &amp; payment detection</h2>
+      <h2>Кошельки приёма и оплата</h2>
       <div class="wallets" id="walletBox">
         <label>USDT · TRC-20 (T…) <span class="wstat" id="wUsdtStat"></span>
           <input id="wUsdt" placeholder="T…" spellcheck="false"></label>
         <label>USDC · ERC-20 (0x…) <span class="wstat" id="wUsdcStat"></span>
           <input id="wUsdc" placeholder="0x…" spellcheck="false"></label>
-        <div class="wdiv">API keys — enable automatic on-chain payment detection</div>
+        <div class="wdiv">API-ключи — автодетект оплаты в блокчейне</div>
         <label>Etherscan API key <span class="wstat" id="wEthStat"></span>
           <input id="wEthKey" type="password" placeholder="paste key (leave blank to keep)" spellcheck="false" autocomplete="off"></label>
         <label>TronGrid API key <span class="wstat" id="wTronStat"></span>
           <input id="wTronKey" type="password" placeholder="paste key (leave blank to keep)" spellcheck="false" autocomplete="off"></label>
-        <div class="wdiv">Android app (TWA) — paste the signing SHA-256 fingerprint(s) to verify the app owns this domain (one per line)</div>
-        <label>App fingerprints (assetlinks.json)
-          <input id="wTwa" placeholder="AB:CD:EF:… (from your keystore)" spellcheck="false" autocomplete="off"></label>
-        <button class="save" id="wSave">Save payment settings</button>
+        <div class="wdiv">Android-приложение (TWA) — вставь SHA-256 отпечаток(и) подписи (по одному в строке)</div>
+        <label>Отпечатки приложения (assetlinks.json)
+          <input id="wTwa" placeholder="AB:CD:EF:… (из keystore)" spellcheck="false" autocomplete="off"></label>
+        <button class="save" id="wSave">Сохранить настройки</button>
         <span class="wmsg" id="wMsg"></span>
       </div>
     </section>
@@ -304,6 +304,8 @@ const fmtN=n=>Number(n||0).toLocaleString('en-US');
 const fmtD=t=>t?new Date(t).toISOString().slice(0,16).replace('T',' '):'—';
 const fmtDay=t=>t?new Date(t).toISOString().slice(0,10):'—';
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ST={pending:'ожидает оплаты',paid:'оплачен',held:'в эскроу',processing:'в обработке',shipped:'отправлен',delivered:'доставлен',released:'выдан продавцу',disputed:'спор',refunded:'возврат',cancelled:'отменён',active:'активен',rejected:'отклонён',sold:'продан',removed:'удалён'};
+const st=s=>ST[s]||s;
 
 /* ---- tab navigation ---- */
 function showTab(t){
@@ -339,15 +341,15 @@ async function loadDash(){
   $('#kActive').textContent=fmtN(k.activeListings);
   const attn=(k.pendingListings||0)+(k.openDisputes||0)+(k.openReports||0);
   const tc=$('#tcMarket');if(tc){tc.textContent=attn;tc.style.display=attn?'inline-block':'none';}
-  $('#upd').textContent='Updated '+new Date().toLocaleTimeString();
+  $('#upd').textContent='Обновлено '+new Date().toLocaleTimeString();
   // wallets
   const w=d.wallets||{};
   if(document.activeElement!==$('#wUsdt'))$('#wUsdt').value=w.usdt||'';
   if(document.activeElement!==$('#wUsdc'))$('#wUsdc').value=w.usdc||'';
-  $('#wUsdtStat').innerHTML=w.usdtOk?'<span class="ok">● live · auto-detect on</span>':'<span class="bad">● not set / invalid</span>';
-  $('#wUsdcStat').innerHTML=w.usdcOk?(w.usdcAuto?'<span class="ok">● live · auto-detect on</span>':'<span class="warn">● live · manual (add Etherscan key)</span>'):'<span class="bad">● not set / invalid</span>';
-  $('#wEthStat').innerHTML=w.etherscanSet?'<span class="ok">● saved</span>':'<span class="warn">● not set</span>';
-  $('#wTronStat').innerHTML=w.tronSet?'<span class="ok">● saved</span>':'<span class="warn">● optional</span>';
+  $('#wUsdtStat').innerHTML=w.usdtOk?'<span class="ok">● активно · автодетект вкл</span>':'<span class="bad">● не задан / неверный</span>';
+  $('#wUsdcStat').innerHTML=w.usdcOk?(w.usdcAuto?'<span class="ok">● активно · автодетект вкл</span>':'<span class="warn">● активно · вручную (добавь Etherscan-ключ)</span>'):'<span class="bad">● не задан / неверный</span>';
+  $('#wEthStat').innerHTML=w.etherscanSet?'<span class="ok">● сохранён</span>':'<span class="warn">● не задан</span>';
+  $('#wTronStat').innerHTML=w.tronSet?'<span class="ok">● сохранён</span>':'<span class="warn">● опционально</span>';
   if(document.activeElement!==$('#wTwa'))$('#wTwa').value=w.twaFingerprints||'';
   renderChart(last14);
   renderDaily(d.days);
@@ -374,24 +376,24 @@ function renderDaily(days){
 const flagEmoji=cc=>/^[A-Za-z]{2}$/.test(cc)?cc.toUpperCase().replace(/./g,c=>String.fromCodePoint(127397+c.charCodeAt(0))):'';
 function renderAnalytics(d){
   $('#ctryT tbody').innerHTML=(d.countries&&d.countries.length)?d.countries.map(c=>`<tr><td class="id">${flagEmoji(c.code)} ${esc(c.code)}</td><td class="num">${fmtN(c.n)}</td></tr>`).join('')
-    :'<tr><td colspan="2" class="empty">No data yet.</td></tr>';
+    :'<tr><td colspan="2" class="empty">Пока нет данных.</td></tr>';
   $('#srcT tbody').innerHTML=(d.sources&&d.sources.length)?d.sources.map(s=>`<tr><td class="id">${esc(s.host)}</td><td class="num">${fmtN(s.n)}</td></tr>`).join('')
-    :'<tr><td colspan="2" class="empty">No external referrers yet.</td></tr>';
+    :'<tr><td colspan="2" class="empty">Пока нет внешних источников.</td></tr>';
   $('#srchT tbody').innerHTML=(d.searches&&d.searches.length)?d.searches.map(s=>`<tr><td class="id">${esc(s.q)}</td><td class="num">${fmtN(s.n)}</td></tr>`).join('')
-    :'<tr><td colspan="2" class="empty">No searches tracked yet.</td></tr>';
+    :'<tr><td colspan="2" class="empty">Пока нет запросов.</td></tr>';
 }
 function renderAllListings(){
   const q=($('#lstSearch').value||'').trim().toLowerCase();
   const list=MKT_LISTINGS.filter(l=>!q||((l.title+' '+(l.brand||'')+' '+((l.seller&&l.seller.handle)||'')+' '+((l.seller&&l.seller.email)||'')).toLowerCase().includes(q)));
-  $('#lstCount').textContent=list.length+' / '+MKT_LISTINGS.length+' listings';
+  $('#lstCount').textContent=list.length+' / '+MKT_LISTINGS.length+' товаров';
   const tb=$('#allT tbody');
   tb.innerHTML=list.length?list.map(l=>`<tr data-id="${esc(l.id)}">
     <td class="id"><input class="ed-title" value="${esc(l.title||'')}" style="width:200px"><div class="items">${esc(l.brand||'')} · ${esc(l.category||'')} · ${esc(l.id)}</div></td>
     <td class="hidem">@${esc((l.seller&&l.seller.handle)||'')}<div class="items">${esc((l.seller&&l.seller.email)||'')}</div></td>
     <td><input class="ed-price" type="number" value="${l.price}" style="width:90px"></td>
-    <td><select class="ed-status">${['active','pending','rejected','sold','removed'].map(s=>`<option ${s===l.status?'selected':''}>${s}</option>`).join('')}</select></td>
-    <td><div class="actcell"><button class="btn sm ed-save">Save</button><button class="btn sm danger ed-del">Delete</button></div></td></tr>`).join('')
-    :'<tr><td colspan="5" class="empty">No listings.</td></tr>';
+    <td><select class="ed-status">${['active','pending','rejected','sold','removed'].map(s=>`<option value="${s}" ${s===l.status?'selected':''}>${st(s)}</option>`).join('')}</select></td>
+    <td><div class="actcell"><button class="btn sm ed-save">Сохранить</button><button class="btn sm danger ed-del">Удалить</button></div></td></tr>`).join('')
+    :'<tr><td colspan="5" class="empty">Нет товаров.</td></tr>';
   tb.querySelectorAll('tr[data-id]').forEach(row=>{
     const id=row.dataset.id;
     row.querySelector('.ed-save').addEventListener('click',async()=>{
@@ -399,7 +401,7 @@ function renderAllListings(){
       loadDash();
     });
     row.querySelector('.ed-del').addEventListener('click',async()=>{
-      if(!confirm('Delete this listing? It will be removed from the store.'))return;
+      if(!confirm('Удалить этот товар? Он исчезнет из магазина.'))return;
       await api('/api/admin/listing-delete',{method:'POST',body:JSON.stringify({id})});loadDash();
     });
   });
@@ -417,12 +419,12 @@ function renderUsers(){
     if(q&&!((u.email+' '+(u.name||'')+' '+(u.telegram||'')).toLowerCase().includes(q)))return false;
     return true;
   });
-  $('#userCount').textContent=list.length+' / '+DATA.users.length+' accounts';
+  $('#userCount').textContent=list.length+' / '+DATA.users.length+' аккаунтов';
   const tb=$('#usersT tbody');
   tb.innerHTML=list.length?list.map(u=>{
     const trust=[u.verified?'<span class="pill yes">✓ Verified</span>':'',u.tier?`<span class="pill tier">${esc(u.tier.icon)} ${esc(u.tier.label)}</span>`:''].filter(Boolean).join(' ')||'—';
     return `<tr class="${u.banned?'':''}">
-      <td class="id">${esc(u.name||'—')}${u.banned?' <span class="pill banned">banned</span>':''}<div class="items">${esc(u.email)}</div></td>
+      <td class="id">${esc(u.name||'—')}${u.admin?' <span class="pill paid">админ</span>':''}${u.banned?' <span class="pill banned">бан</span>':''}<div class="items">${esc(u.email)}</div></td>
       <td class="hidem">${u.telegram?'@'+esc(u.telegram):'—'}</td>
       <td>${fmtDay(u.created)}</td>
       <td>${trust}${u.rating?`<div class="items">★ ${u.rating}</div>`:''}</td>
@@ -431,14 +433,20 @@ function renderUsers(){
       <td class="num">${fmtN(u.bought)}</td>
       <td class="num money">${u.balance?fmt$(u.balance):'—'}</td>
       <td><div class="actcell">
-        <button class="btn sm ${u.verified?'ghost':''}" data-ver="${esc(u.email)}" data-on="${u.verified?0:1}">${u.verified?'Unverify':'Verify'}</button>
-        <button class="btn sm ${u.banned?'ghost':'danger'}" data-ban="${esc(u.email)}" data-on="${u.banned?0:1}">${u.banned?'Unban':'Ban'}</button>
+        <button class="btn sm ${u.verified?'ghost':''}" data-ver="${esc(u.email)}" data-on="${u.verified?0:1}">${u.verified?'Снять верифик.':'Верифиц.'}</button>
+        <button class="btn sm ${u.admin?'ghost':''}" data-role="${esc(u.email)}" data-on="${u.admin?0:1}">${u.admin?'Снять админа':'Сделать админом'}</button>
+        <button class="btn sm ${u.banned?'ghost':'danger'}" data-ban="${esc(u.email)}" data-on="${u.banned?0:1}">${u.banned?'Разбан':'Бан'}</button>
       </div></td></tr>`;
-  }).join(''):'<tr><td colspan="9" class="empty">No accounts match.</td></tr>';
+  }).join(''):'<tr><td colspan="9" class="empty">Нет совпадений.</td></tr>';
   tb.querySelectorAll('[data-ver]').forEach(b=>b.addEventListener('click',async()=>{await api('/api/admin/verify',{method:'POST',body:JSON.stringify({email:b.dataset.ver,verified:b.dataset.on==='1'})});loadDash();}));
+  tb.querySelectorAll('[data-role]').forEach(b=>b.addEventListener('click',async()=>{
+    const on=b.dataset.on==='1';
+    if(on&&!confirm('Выдать админ-права аккаунту '+b.dataset.role+'? Он сможет править и удалять любые товары прямо на сайте.'))return;
+    await api('/api/admin/set-role',{method:'POST',body:JSON.stringify({email:b.dataset.role,admin:on})});loadDash();
+  }));
   tb.querySelectorAll('[data-ban]').forEach(b=>b.addEventListener('click',async()=>{
     const on=b.dataset.on==='1';
-    if(on&&!confirm('Suspend '+b.dataset.ban+'? They will be logged out and blocked from signing in.'))return;
+    if(on&&!confirm('Забанить '+b.dataset.ban+'? Аккаунт выйдет из сессии и не сможет войти.'))return;
     await api('/api/admin/ban',{method:'POST',body:JSON.stringify({email:b.dataset.ban,banned:on})});loadDash();
   }));
 }
@@ -450,23 +458,23 @@ function renderOrders(){
   if(!DATA)return;
   const q=($('#orderSearch').value||'').trim().toLowerCase();
   const list=DATA.orders.filter(o=>!q||((o.id+' '+(o.name||'')+' '+(o.email||'')).toLowerCase().includes(q)));
-  $('#orderCount').textContent=list.length+' / '+DATA.orders.length+' orders';
+  $('#orderCount').textContent=list.length+' / '+DATA.orders.length+' заказов';
   const ob=$('#ordersT tbody');
   ob.innerHTML=list.length?list.map(o=>`<tr>
     <td class="id">${esc(o.id)}</td><td>${fmtD(o.date)}</td>
     <td class="hidem">${esc(o.name||'')} <div class="items">${esc(o.email)}</div></td>
     <td>${(o.items||[]).map(i=>`${i.qty}× ${esc(i.name)} (${esc(i.size)})`).join('<br>')}</td>
     <td class="money">${fmt$(o.total)}${o.payAmount?`<div class="items">${Number(o.payAmount).toFixed(2)} ${esc((o.network||'').includes('usdt')?'USDT':'USDC')}</div>`:''}</td>
-    <td><span class="pill ${esc(o.status)}">${esc(o.status)}</span>${o.paidTx?`<div class="items"><a class="rcpt" href="${o.network==='usdt-trc20'?'https://tronscan.org/#/transaction/':'https://etherscan.io/tx/'}${encodeURIComponent(o.paidTx)}" target="_blank">✓ tx ↗</a></div>`:''}
+    <td><span class="pill ${esc(o.status)}">${esc(st(o.status))}</span>${o.paidTx?`<div class="items"><a class="rcpt" href="${o.network==='usdt-trc20'?'https://tronscan.org/#/transaction/':'https://etherscan.io/tx/'}${encodeURIComponent(o.paidTx)}" target="_blank">✓ tx ↗</a></div>`:''}
       <div class="ship" data-id="${esc(o.id)}">
-        <select class="st">${['pending','paid','held','processing','shipped','delivered','released','disputed','refunded','cancelled'].map(s=>`<option ${s===o.status?'selected':''}>${s}</option>`).join('')}</select>
-        <input class="carrier" placeholder="Carrier (DHL…)" value="${esc(o.carrier||'')}">
-        <input class="tracking" placeholder="Tracking #" value="${esc(o.tracking||'')}">
-        <input class="tx" placeholder="Payment tx hash" value="${esc(o.paidTx||'')}">
-        <button class="btn sm save">Save</button>
+        <select class="st">${['pending','paid','held','processing','shipped','delivered','released','disputed','refunded','cancelled'].map(s=>`<option value="${s}" ${s===o.status?'selected':''}>${st(s)}</option>`).join('')}</select>
+        <input class="carrier" placeholder="Перевозчик (DHL…)" value="${esc(o.carrier||'')}">
+        <input class="tracking" placeholder="Трек-номер" value="${esc(o.tracking||'')}">
+        <input class="tx" placeholder="Хэш транзакции" value="${esc(o.paidTx||'')}">
+        <button class="btn sm save">Сохранить</button>
       </div></td>
-    <td><a class="rcpt" href="/receipt/${esc(o.id)}" target="_blank">open</a></td>
-  </tr>`).join(''):'<tr><td colspan="7" class="empty">No orders match.</td></tr>';
+    <td><a class="rcpt" href="/receipt/${esc(o.id)}" target="_blank">открыть</a></td>
+  </tr>`).join(''):'<tr><td colspan="7" class="empty">Нет заказов.</td></tr>';
   ob.querySelectorAll('.ship').forEach(row=>{
     const id=row.dataset.id;
     const doSave=async()=>{
@@ -497,46 +505,46 @@ async function loadMarketAdmin(){
       <td>${esc(l.category||'')}<div class="items">${esc(l.brand||'')} · ${esc(l.condition||'')}${l.size?' · '+esc(l.size):''}</div></td>
       <td class="money">${fmt$(l.price)}</td>
       <td><div class="thumbs">${thumbs||'—'}</div></td>
-      <td><button class="btn sm" data-approve="${l.id}">Approve</button> <button class="btn sm danger" data-reject="${l.id}">Reject</button></td></tr>`;
-  }).join(''):'<tr><td colspan="6" class="empty">Nothing awaiting review.</td></tr>';
+      <td><button class="btn sm" data-approve="${l.id}">Одобрить</button> <button class="btn sm danger" data-reject="${l.id}">Отклонить</button></td></tr>`;
+  }).join(''):'<tr><td colspan="6" class="empty">Нет товаров на модерации.</td></tr>';
   mb.querySelectorAll('[data-approve]').forEach(b=>b.addEventListener('click',async()=>{await api('/api/admin/listing-moderate',{method:'POST',body:JSON.stringify({id:b.dataset.approve,action:'approve'})});loadDash();}));
-  mb.querySelectorAll('[data-reject]').forEach(b=>b.addEventListener('click',async()=>{if(!confirm('Reject this listing?'))return;await api('/api/admin/listing-moderate',{method:'POST',body:JSON.stringify({id:b.dataset.reject,action:'reject'})});loadDash();}));
+  mb.querySelectorAll('[data-reject]').forEach(b=>b.addEventListener('click',async()=>{if(!confirm('Отклонить этот товар?'))return;await api('/api/admin/listing-moderate',{method:'POST',body:JSON.stringify({id:b.dataset.reject,action:'reject'})});loadDash();}));
   // disputes
   const db=$('#dispT tbody');
   db.innerHTML=(m.disputes&&m.disputes.length)?m.disputes.map(o=>{
     const it=(o.items&&o.items[0])||{};
-    const refundTo=o.payFrom?`<div class="items">refund → <span class="id" style="user-select:all">${esc(o.payFrom)}</span> (${esc(o.network||'')})</div>`:'<div class="items" style="color:#b23">refund address unknown (paid before tracking / manual)</div>';
+    const refundTo=o.payFrom?`<div class="items">возврат → <span class="id" style="user-select:all">${esc(o.payFrom)}</span> (${esc(o.network||'')})</div>`:'<div class="items" style="color:#b23">адрес возврата неизвестен (оплачено вручную)</div>';
     return `<tr><td class="id">${esc(o.id)}</td><td>${esc(it.name||'')}${refundTo}</td>
       <td class="hidem">@${esc(o.buyerHandle)}</td><td class="hidem">@${esc(o.sellerHandle)}</td>
       <td class="money">${fmt$(o.total)}</td><td>${esc(o.disputeReason||'—')}</td>
-      <td><button class="btn sm" data-rel="${o.id}">Release to seller</button> <button class="btn sm danger" data-ref="${o.id}">Refund buyer</button></td></tr>`;
-  }).join(''):'<tr><td colspan="7" class="empty">No open disputes.</td></tr>';
-  db.querySelectorAll('[data-rel]').forEach(b=>b.addEventListener('click',()=>{if(confirm('Release funds to the seller?'))setStatus(b.dataset.rel,'released');}));
-  db.querySelectorAll('[data-ref]').forEach(b=>b.addEventListener('click',()=>{if(confirm('Refund the buyer? Send the crypto to the refund address shown, then confirm.'))setStatus(b.dataset.ref,'refunded');}));
+      <td><button class="btn sm" data-rel="${o.id}">Продавцу</button> <button class="btn sm danger" data-ref="${o.id}">Вернуть покупателю</button></td></tr>`;
+  }).join(''):'<tr><td colspan="7" class="empty">Нет открытых споров.</td></tr>';
+  db.querySelectorAll('[data-rel]').forEach(b=>b.addEventListener('click',()=>{if(confirm('Выдать средства продавцу?'))setStatus(b.dataset.rel,'released');}));
+  db.querySelectorAll('[data-ref]').forEach(b=>b.addEventListener('click',()=>{if(confirm('Вернуть деньги покупателю? Отправь крипту на показанный адрес возврата, затем подтверди.'))setStatus(b.dataset.ref,'refunded');}));
   // payouts
   const pb=$('#payT tbody');
   pb.innerHTML=(m.payouts&&m.payouts.length)?m.payouts.map(o=>{
     const owed=Math.round((o.total-(o.fee||0))*100)/100;
     return `<tr><td class="id">${esc(o.id)}</td><td>@${esc(o.sellerHandle)}</td>
-      <td class="id">${o.payout?esc(o.payout):'<span style="color:#b23">not set</span>'}</td>
+      <td class="id">${o.payout?esc(o.payout):'<span style="color:#b23">не задан</span>'}</td>
       <td class="money">${fmt$(owed)}</td>
-      <td><button class="btn sm" data-paid="${o.id}" ${o.payout?'':'disabled'}>Mark paid-out</button></td></tr>`;
-  }).join(''):'<tr><td colspan="5" class="empty">Nothing to pay out.</td></tr>';
+      <td><button class="btn sm" data-paid="${o.id}" ${o.payout?'':'disabled'}>Отмечено выплачено</button></td></tr>`;
+  }).join(''):'<tr><td colspan="5" class="empty">Нет выплат.</td></tr>';
   pb.querySelectorAll('[data-paid]').forEach(b=>b.addEventListener('click',async()=>{await api('/api/admin/payout-done',{method:'POST',body:JSON.stringify({id:b.dataset.paid})});loadDash();}));
   // reports
   const rb=$('#repT tbody');
   rb.innerHTML=(m.reports&&m.reports.length)?m.reports.map(r=>`<tr>
     <td class="id">${esc(r.title||'')}</td><td class="hidem">@${esc(r.seller)}</td>
     <td>${esc(r.reason||'—')}</td><td class="hidem">@${esc(r.from)}</td>
-    <td><button class="btn sm ghost" data-rdismiss="${r.id}">Dismiss</button> <button class="btn sm danger" data-rremove="${r.id}">Remove listing</button></td></tr>`).join(''):'<tr><td colspan="5" class="empty">No open reports.</td></tr>';
+    <td><button class="btn sm ghost" data-rdismiss="${r.id}">Отклонить</button> <button class="btn sm danger" data-rremove="${r.id}">Удалить товар</button></td></tr>`).join(''):'<tr><td colspan="5" class="empty">Нет жалоб.</td></tr>';
   rb.querySelectorAll('[data-rdismiss]').forEach(b=>b.addEventListener('click',async()=>{await api('/api/admin/report-resolve',{method:'POST',body:JSON.stringify({id:b.dataset.rdismiss,action:'dismiss'})});loadDash();}));
-  rb.querySelectorAll('[data-rremove]').forEach(b=>b.addEventListener('click',async()=>{if(!confirm('Remove this listing?'))return;await api('/api/admin/report-resolve',{method:'POST',body:JSON.stringify({id:b.dataset.rremove,action:'remove'})});loadDash();}));
+  rb.querySelectorAll('[data-rremove]').forEach(b=>b.addEventListener('click',async()=>{if(!confirm('Удалить этот товар?'))return;await api('/api/admin/report-resolve',{method:'POST',body:JSON.stringify({id:b.dataset.rremove,action:'remove'})});loadDash();}));
   // verification
   const vb=$('#verT tbody');
   vb.innerHTML=(m.verifiable&&m.verifiable.length)?m.verifiable.map(u=>`<tr>
     <td class="id">@${esc(u.handle)} <div class="items">${esc(u.email)}</div></td><td>${u.listings}</td>
-    <td><span class="pill ${u.verified?'yes':'no'}">${u.verified?'verified':'no'}</span></td>
-    <td><button class="btn sm ${u.verified?'ghost':''}" data-ver="${esc(u.email)}" data-on="${u.verified?0:1}">${u.verified?'Unverify':'Verify'}</button></td></tr>`).join(''):'<tr><td colspan="4" class="empty">No sellers yet.</td></tr>';
+    <td><span class="pill ${u.verified?'yes':'no'}">${u.verified?'верифиц.':'нет'}</span></td>
+    <td><button class="btn sm ${u.verified?'ghost':''}" data-ver="${esc(u.email)}" data-on="${u.verified?0:1}">${u.verified?'Снять':'Верифиц.'}</button></td></tr>`).join(''):'<tr><td colspan="4" class="empty">Пока нет продавцов.</td></tr>';
   vb.querySelectorAll('[data-ver]').forEach(b=>b.addEventListener('click',async()=>{await api('/api/admin/verify',{method:'POST',body:JSON.stringify({email:b.dataset.ver,verified:b.dataset.on==='1'})});loadDash();}));
 }
 
@@ -552,9 +560,9 @@ $('#wSave').addEventListener('click',async()=>{
   const body={usdt:$('#wUsdt').value.trim(),usdc:$('#wUsdc').value.trim(),twaFingerprints:$('#wTwa').value};
   const ek=$('#wEthKey').value.trim(),tk=$('#wTronKey').value.trim();
   if(ek)body.etherscanKey=ek; if(tk)body.tronKey=tk;
-  const msg=$('#wMsg');msg.textContent='Saving…';$('#wSave').disabled=true;
-  try{await api('/api/admin/wallets',{method:'POST',body:JSON.stringify(body)});$('#wEthKey').value='';$('#wTronKey').value='';msg.textContent='✓ Saved';await loadDash();}
-  catch(e){msg.textContent=e&&e.message==='auth'?'Auth error':'Invalid address — check the format';}
+  const msg=$('#wMsg');msg.textContent='Сохранение…';$('#wSave').disabled=true;
+  try{await api('/api/admin/wallets',{method:'POST',body:JSON.stringify(body)});$('#wEthKey').value='';$('#wTronKey').value='';msg.textContent='✓ Сохранено';await loadDash();}
+  catch(e){msg.textContent=e&&e.message==='auth'?'Ошибка авторизации':'Неверный адрес — проверь формат';}
   $('#wSave').disabled=false;setTimeout(()=>{msg.textContent='';},3000);
 });
 if(KEY)loadDash().catch(()=>{sessionStorage.removeItem('swk_admin')});

@@ -529,7 +529,14 @@ function receiptHTML(o) {
 }
 
 /* ---------- admin guard ---------- */
-const isAdmin = (req) => { const k = req.headers['x-admin-key'] || ''; return (!!ADMIN_PASSWORD && safeEq(k, ADMIN_PASSWORD)) || (!!TEST_ADMIN_KEY && safeEq(k, TEST_ADMIN_KEY)); };
+// admin users: emails in ADMIN_EMAILS env, or accounts flagged users[email].admin=true (granted from the admin panel)
+const ADMIN_EMAILS = new Set(String(process.env.ADMIN_EMAILS || '').toLowerCase().split(',').map(s => s.trim()).filter(Boolean));
+const isAdminUser = (u) => !!u && (u.admin === true || ADMIN_EMAILS.has(u.email));
+const isAdmin = (req) => {
+  const k = req.headers['x-admin-key'] || '';
+  if ((!!ADMIN_PASSWORD && safeEq(k, ADMIN_PASSWORD)) || (!!TEST_ADMIN_KEY && safeEq(k, TEST_ADMIN_KEY))) return true;
+  return isAdminUser(tokenUser(req));   // an admin user's own Bearer token also grants admin (on-site owner mode)
+};
 
 /* ---------- marketplace helpers ---------- */
 const CAT_GROUPS = {
@@ -572,6 +579,7 @@ function profileView(u) {
     email: u.email, name: u.name || '', telegram: u.telegram || '', avatar: u.avatar || '',
     addresses: Array.isArray(u.addresses) ? u.addresses : [], payout: u.payout || '', verified: st.verified,
     rating: st.rating, sold: st.sold, reviews: st.reviews, tier: st.tier, joined: u.created || 0, nameChangedAt: u.nameChangedAt || 0,
+    admin: isAdminUser(u),
   };
 }
 function catGroup(c) { return CAT_OF_GROUP[c] || 'other'; }
@@ -716,7 +724,7 @@ const server = http.createServer(async (req, res) => {
       if (users[em]) return send(res, 409, { error: 'This email is already registered — sign in instead.' });
       users[em] = { email: em, name: String(name || '').slice(0, 60), pass: await hashPassword(password), created: Date.now(), tv: 0 };
       saveUsers();
-      return send(res, 201, { token: makeToken(em), email: em, name: users[em].name });
+      return send(res, 201, { token: makeToken(em), email: em, name: users[em].name, admin: isAdminUser(users[em]) });
     }
     if (req.method === 'POST' && p === '/api/login') {
       const ip = clientIp(req);
@@ -731,7 +739,7 @@ const server = http.createServer(async (req, res) => {
       const ok = u ? await verifyPassword(String(password || ''), u.pass) : (await verifyPassword(String(password || ''), 'x:00'), false);
       if (!u || !ok) return send(res, 401, { error: 'Wrong email or password.' });
       if (u.banned) return send(res, 403, { error: 'This account has been suspended.' });
-      return send(res, 200, { token: makeToken(em), email: em, name: u.name });
+      return send(res, 200, { token: makeToken(em), email: em, name: u.name, admin: isAdminUser(u) });
     }
     if (req.method === 'GET' && p === '/api/me') {
       const u = tokenUser(req);
@@ -989,10 +997,11 @@ const server = http.createServer(async (req, res) => {
       const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
       const l = listings.find(x => x.id === p.split('/')[3]);
       if (!l) return send(res, 404, { error: 'not found' });
-      if (l.seller !== u.email) return send(res, 403, { error: 'Not your listing.' });
+      const admin = isAdminUser(u);
+      if (l.seller !== u.email && !admin) return send(res, 403, { error: 'Not your listing.' });
       if (req.method === 'DELETE') { l.status = 'removed'; saveListings(); return send(res, 200, { ok: true }); }
-      // only editable while it hasn't been bought / reserved / removed
-      if (!['active', 'pending', 'rejected'].includes(l.status)) return send(res, 400, { error: 'This listing can no longer be edited.' });
+      // only editable while it hasn't been bought / reserved / removed (admins can edit any state)
+      if (!admin && !['active', 'pending', 'rejected'].includes(l.status)) return send(res, 400, { error: 'This listing can no longer be edited.' });
       const b = await readBody(req);
       if (b.title !== undefined) { const t = String(b.title).trim().slice(0, 90); if (t.length < 3) return send(res, 400, { error: 'Title too short.' }); l.title = t; }
       if (b.price !== undefined) { const pr = Math.round(Number(b.price) * 100) / 100; if (!(pr >= MIN_PRICE) || pr > 100000) return send(res, 400, { error: `Minimum price is $${MIN_PRICE}.` }); l.price = pr; }
@@ -1014,7 +1023,8 @@ const server = http.createServer(async (req, res) => {
         for (const ph of photos) if (ph.length > 2200000) return send(res, 400, { error: 'A photo is too large — keep under ~1.5MB.' });
         l.photos = photos; l.cover = photos[0];
       }
-      l.status = 'pending'; l.editedAt = Date.now();   // edits go back through moderation
+      if (!admin) l.status = 'pending';   // seller edits go back through moderation; admin edits stay live
+      l.editedAt = Date.now();
       saveListings();
       return send(res, 200, { listing: listingFull(l) });
     }
@@ -1441,7 +1451,7 @@ const server = http.createServer(async (req, res) => {
               bought: orders.filter(o => o.email === u.email).length,
               listings: listings.filter(l => l.seller === u.email && l.status !== 'removed').length,
               sold: st.sold, rating: st.rating, tier: st.tier, verified: st.verified,
-              balance: payoutBalance(u.email), banned: !!u.banned,
+              balance: payoutBalance(u.email), banned: !!u.banned, admin: isAdminUser(u),
             };
           }).sort((a, b) => b.created - a.created),
           wallets: { usdc: WALLET, usdt: USDT_TRC20_WALLET, usdcOk: isEthAddr(WALLET), usdtOk: isTronAddr(USDT_TRC20_WALLET), usdcAuto: !!etherscanKey, etherscanSet: !!etherscanKey, tronSet: !!tronKey, twaFingerprints: (settings.twaFingerprints || []).join('\n') },
@@ -1454,6 +1464,16 @@ const server = http.createServer(async (req, res) => {
         if (!users[em]) return send(res, 404, { error: 'not found' });
         users[em].banned = !!banned;
         users[em].tv = (users[em].tv || 0) + 1;   // revoke any active sessions immediately
+        saveUsers();
+        return send(res, 200, { ok: true });
+      }
+      // grant / revoke admin rights on an account (so the owner can manage the store from the live site)
+      if (req.method === 'POST' && p === '/api/admin/set-role') {
+        const { email, admin } = await readBody(req);
+        const em = String(email || '').toLowerCase();
+        if (!users[em]) return send(res, 404, { error: 'not found' });
+        if (ADMIN_EMAILS.has(em) && !admin) return send(res, 400, { error: 'This account is admin via ADMIN_EMAILS and cannot be demoted here.' });
+        users[em].admin = !!admin;
         saveUsers();
         return send(res, 200, { ok: true });
       }
