@@ -1301,6 +1301,16 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 /* ═══════════ Ogród (garden calculator) ═══════════ */
 .og{max-width:560px}
 .og .og-body{max-height:min(62vh,640px);overflow:auto;padding:0 20px}
+/* Inline in the booking flow the inner scroll is wrong: the page already
+   scrolls, and a scroll box inside a scrolling page traps the gesture. */
+.og.inline{max-width:none;margin-bottom:18px}
+.og.inline .og-body{max-height:none;overflow:visible}
+/* The running total stays pinned while the long form scrolls — but inline it
+   sticks to the viewport, not to a modal, so it has to clear the tab bar or it
+   parks the order button underneath it. */
+@media(max-width:960px){
+  .og.inline .og-total{bottom:calc(64px + env(safe-area-inset-bottom))}
+}
 .og-sec{border-top:1px solid var(--line);padding:14px 0}
 .og-sec h4{font-size:14.5px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
 .og-sec h4 svg{width:18px;height:18px;flex:none}
@@ -2285,8 +2295,7 @@ const catLabel=(cat)=>CAT_LABEL_RU[cat.key]||cat.label;
 // calculator because it prices by area and season, not by rooms.
 function openVertical(cat){
   if(!catActive(cat)){ toast(`${t(catLabel(cat))} — ${t('скоро в вашем городе')}`); return; }
-  if(cat.key==='garden')return openOgrodCalc();
-  startBooking(cat.key==='windows'?'windows':'standard');
+  startBooking(cat.key==='garden'?'garden':(cat.key==='windows'?'windows':'standard'));
 }
 
 /* ---------- Animation helpers ---------- */
@@ -4352,7 +4361,19 @@ function ogLineLabel(l,g){
   if(l.key==='zywoplot'&&OG_H[g.hedgeHeight])s+=' · '+t(OG_H[g.hedgeHeight]);
   return s;
 }
-async function openOgrodCalc(){
+/**
+ * The garden intake. It never shared the four-step cleaning flow because it
+ * prices by square metre, running metre and season rather than by rooms — so it
+ * was built as its own calculator, and as a modal, back when the home screen
+ * was the only way in.
+ *
+ * From the Order tab a modal is the wrong shape: you pick a service in the
+ * strip and the flow should continue, not open a window on top of itself. So
+ * the same node renders inline there (opts.mount), and the modal path stays for
+ * anywhere that still wants to pop it open.
+ */
+async function openOgrodCalc(opts){
+  opts=opts||{};
   if(!_ogCfg){ try{_ogCfg=await api('/api/ogrod/config');}catch(e){toast(e.message,true);return;} }
   const C=_ogCfg, av=C.availability;
   const g={lawnM2:'',koszenie:true,mowFrequency:'jednorazowo',highGrass:false,removeClippings:false,
@@ -4368,11 +4389,12 @@ async function openOgrodCalc(){
   };
   const chk=(k,label,pr)=>`<label><input type="checkbox" data-g="${k}" ${g[k]?'checked':''}><span>${label}</span></label><span class="pr">${pr||''}</span>`;
   const zlM2=(n)=>`${n} zł/${t('м²')}`;
-  const m=el(`<div class="modal card og" data-noi18n>
+  const inline=!!opts.mount;
+  const m=el(`<div class="${inline?'card og inline':'modal card og'}" data-noi18n>
     <div class="pad" style="padding-bottom:10px">
       <div class="row" style="justify-content:space-between">
         <h2 style="font-size:20px">🌿 ${t('Сад')} · Wrocław</h2>
-        <button class="iconbtn" id="ogX">${I.x||'✕'}</button>
+        ${inline?'':`<button class="iconbtn" id="ogX">${I.x||'✕'}</button>`}
       </div>
       <div class="og-hint">${t('Сезон: апрель–октябрь')} · ${t('выезд по Вроцлаву 0 zł')} · ${t('мин. заказ')} ${C.minOrder} zł</div>
     </div>
@@ -4475,20 +4497,23 @@ async function openOgrodCalc(){
       toast(t('Отправлено — подготовим расчёт и ответим на почту.'));
     }catch(e){toast(e.message,true);}
   };
-  $('#ogX',m).onclick=closeModal;
-  $('#ogOrder',m).onclick=()=>openOgrodOrder(g,est);
-  showModalNode(m);
+  const x=$('#ogX',m); if(x)x.onclick=closeModal;
+  $('#ogOrder',m).onclick=()=>(opts.onOrder||openOgrodOrder)(g,est);
+  if(inline)opts.mount(m); else showModalNode(m);
   recalc();
+  return m;
 }
 /* Order step — same fields as cleaning: date, address, phone, notes, payment. */
-function openOgrodOrder(g,est){
+function openOgrodOrder(g,est,opts){
+  opts=opts||{};
+  const inline=!!opts.mount;
   const props=(state.properties||[]).filter(p=>p.city==='Wrocław');
   const today=new Date();today.setDate(today.getDate()+1);
   const dmin=today.toISOString().slice(0,10);
-  const m=el(`<div class="modal card og" data-noi18n>
+  const m=el(`<div class="${inline?'card og inline':'modal card og'}" data-noi18n>
     <div class="pad">
       <div class="row" style="justify-content:space-between"><h2 style="font-size:20px">🌿 ${t('Заказ')} · ${t('Сад')}</h2>
-        <button class="iconbtn" id="ooX">${I.x||'✕'}</button></div>
+        <button class="iconbtn" id="ooX" aria-label="${inline?t('Назад'):t('Закрыть')}">${inline?'←':(I.x||'✕')}</button></div>
       <label class="field" style="margin-top:12px"><span>${t('Адрес')}</span>
         ${props.length?`<select class="input" id="ooProp">${props.map(p=>`<option value="${p.id}">${esc(p.label)} · ${esc(p.address||'Wrocław')}</option>`).join('')}<option value="">${t('Другой адрес…')}</option></select>`:''}
         <input class="input" id="ooAddr" placeholder="${t('улица, дом — Вроцлав')}" style="${props.length?'display:none;':''}margin-top:8px"></label>
@@ -4510,7 +4535,7 @@ function openOgrodOrder(g,est){
   </div>`);
   const sel=$('#ooProp',m);
   if(sel)sel.onchange=()=>{$('#ooAddr',m).style.display=sel.value?'none':'';};
-  $('#ooX',m).onclick=closeModal;
+  $('#ooX',m).onclick=inline?()=>opts.onBack&&opts.onBack():closeModal;
   $('#ooGo',m).onclick=async()=>{
     const sched=`${$('#ooDate',m).value}T${$('#ooTime',m).value}`;
     const consent=$('#ooConsent',m);
@@ -4527,12 +4552,14 @@ function openOgrodOrder(g,est){
         scheduledFor:sched,notes:$('#ooNotes',m).value.slice(0,500),city:'Wrocław'};
       if(sel&&sel.value)body.propertyId=sel.value;else body.address=$('#ooAddr',m).value.trim();
       const r=await api('/api/bookings','POST',body);
-      closeModal();
+      if(!inline)closeModal();
       toast(t('Заказ принят — ищем садовника 🌿'));
+      state.draft=null;                 // the garden draft is spent
       state.view='bookings';render();
     }catch(e){toast(e.message,true);btn.disabled=false;btn.textContent=t('Заказать');}
   };
-  showModalNode(m);
+  if(inline)opts.mount(m); else showModalNode(m);
+  return m;
 }
 function startBooking(service,propertyId,overrides){
   state.draft=Object.assign(newDraft(service,propertyId),overrides||{});
@@ -4596,7 +4623,10 @@ function viewBook(){
   if(!state.draft) state.draft=newDraft('standard');
   const d=state.draft;
   const c=el(`<div style="max-width:640px;margin:0 auto"></div>`);
-  const steps=4;
+  // The garden has two stages (price it, then order it), cleaning and windows
+  // have four — the progress bar must not promise steps that do not exist.
+  const isGarden=d.service==='garden';
+  const steps=isGarden?2:4;
   c.appendChild(el(`<div class="steps">${Array.from({length:steps}).map((_,i)=>`<div class="s ${i<=d.step?'done':''}"></div>`).join('')}</div>`));
 
   // Which vertical are we ordering? Only on the first step — past it the user
@@ -4608,7 +4638,7 @@ function viewBook(){
     const cats=(state.categories||[]).filter(cat=>catActive(cat)||CAT_LABEL_RU[cat.key]);
     if(cats.length>1){
       const strip=el(`<div class="vert-strip" role="tablist" aria-label="${t('Услуга')}"></div>`);
-      const currentKey=d.service==='windows'?'windows':'cleaning';
+      const currentKey=isGarden?'garden':(d.service==='windows'?'windows':'cleaning');
       cats.forEach(cat=>{
         const active=catActive(cat), on=active&&cat.key===currentKey;
         const b=el(`<button type="button" class="vert ${on?'on':''} ${active?'':'soon'}"
@@ -4626,6 +4656,21 @@ function viewBook(){
 
   const body=el(`<div></div>`);
   c.appendChild(body);
+
+  // Garden: its own two-stage intake, rendered in the page like every other
+  // step. Mounting is async (the price table is fetched), so the shell goes up
+  // first and the calculator drops into `body` when it is ready.
+  if(isGarden){
+    const mount=(node)=>{ body.innerHTML=''; body.appendChild(node); };
+    const showCalc=()=>{ d.step=0; openOgrodCalc({ mount, onOrder:(g,est)=>{
+      d.step=1;
+      openOgrodOrder(g,est,{ mount, onBack:()=>{ viewBook(); } });
+    }}); };
+    body.appendChild(el(`<div class="sk" style="height:220px"></div>`));
+    shell(c);
+    showCalc();
+    return;
+  }
 
   if(d.step===0){ // property + service + size
     const cat=state.catalog?.services||{};
