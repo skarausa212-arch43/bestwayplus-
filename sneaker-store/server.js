@@ -402,15 +402,36 @@ const geoCache = loadJSON('geo.json', {}); // ip -> ISO country code ('' = unkno
 let geoDirty = false;
 setInterval(() => { if (geoDirty) { geoDirty = false; saveJSON('geo.json', geoCache); } }, 15000).unref();
 let ipsDay = today(); let ipsToday = new Set();   // distinct IPs seen today (bot-resistant daily unique)
-// resolve a country for a fresh IP (one lookup per IP, cached); counts toward stats.countries
-function lookupCountry(ip) {
-  if (!ip || ip === 'ip' || geoCache[ip] !== undefined) return;
-  // header set by nginx/Cloudflare GeoIP if present — use it and skip the network call
+const netCache = {}; // ip -> network/ISP label (in-memory)
+const recentVisits = []; // live feed: newest last, capped
+// known hosting/cloud networks — traffic from these is almost always a bot/scanner, not a human
+const DC_RE = /amazon|aws|\bec2\b|google|goog\b|microsoft|azure|digitalocean|hetzner|\bovh\b|linode|vultr|scaleway|contabo|oracle|alibaba|aliyun|tencent|cloudflare|choopa|leaseweb|datacamp|\bm247\b|colocrossing|hostwinds|ovhcloud|gcore|constant|quadranet|censys|shodan|palo alto|internet-census|driftnet|stretchoid|binaryedge|host europe|as-choopa|datacenter|hosting|servers?\b|cloud|vps|colo\b/i;
+const isDatacenter = (net) => !!net && DC_RE.test(net);
+function cleanNet(org, asn) {
+  let s = String(org || '').trim();
+  if (!s && asn) s = String(asn).replace(/^AS\d+\s*/i, '').trim();   // "AS16509 Amazon.com" -> "Amazon.com"
+  return s.replace(/,?\s*(inc\.?|llc|ltd\.?|limited|corp\.?|technologies|technology|s\.?a\.?s?\.?|gmbh|b\.?v\.?)\.?$/i, '').trim().slice(0, 40);
+}
+// resolve country + network for a fresh IP (one lookup per IP, cached); backfills a live-feed record if given
+function lookupGeo(ip, rec) {
+  if (!ip || ip === 'ip') return;
+  if (geoCache[ip] !== undefined) { if (rec) { rec.cc = geoCache[ip] || ''; rec.net = netCache[ip] || ''; } return; }
   geoCache[ip] = '';
-  const done = (cc) => { geoCache[ip] = cc || ''; geoDirty = true; if (cc) { stats.countries = stats.countries || {}; stats.countries[cc] = (stats.countries[cc] || 0) + 1; statsDirty = true; } };
+  const done = (cc, org, asn) => {
+    geoCache[ip] = cc || ''; geoDirty = true;
+    if (cc) { stats.countries = stats.countries || {}; stats.countries[cc] = (stats.countries[cc] || 0) + 1; }
+    const net = cleanNet(org, asn);
+    if (net) {
+      netCache[ip] = net;
+      stats.networks = stats.networks || {}; stats.networks[net] = (stats.networks[net] || 0) + 1;
+      if (isDatacenter(net)) { stats.dcHits = (stats.dcHits || 0) + 1; }
+    }
+    statsDirty = true;
+    if (rec) { rec.cc = cc || ''; rec.net = net || ''; }
+  };
   try {
-    const r = http.get('http://ip-api.com/json/' + encodeURIComponent(ip) + '?fields=countryCode', (resp) => {
-      let s = ''; resp.on('data', c => s += c); resp.on('end', () => { try { done((JSON.parse(s) || {}).countryCode); } catch (e) { done(''); } });
+    const r = http.get('http://ip-api.com/json/' + encodeURIComponent(ip) + '?fields=countryCode,org,as', (resp) => {
+      let s = ''; resp.on('data', c => s += c); resp.on('end', () => { try { const j = JSON.parse(s) || {}; done(j.countryCode, j.org, j.as); } catch (e) { done(''); } });
     });
     r.on('error', () => {}); r.setTimeout(4000, () => r.destroy());
   } catch (e) {}
@@ -427,13 +448,6 @@ function countVisit(req, res) {
     stats.unique++;   // all-time unique devices (cookie-based, now bot-free)
     res.setHeader('Set-Cookie', `swk_sid=${crypto.randomUUID()}; Path=/; Max-Age=31536000; SameSite=Lax`);
   }
-  const ip = clientIp(req);
-  if (ip && !ipsToday.has(ip)) {               // distinct IP per day = daily unique
-    ipsToday.add(ip); stats.daily[day].u++;
-    const cfCountry = String(req.headers['cf-ipcountry'] || req.headers['x-geo-country'] || '').toUpperCase();
-    if (cfCountry && /^[A-Z]{2}$/.test(cfCountry)) { stats.countries = stats.countries || {}; stats.countries[cfCountry] = (stats.countries[cfCountry] || 0) + 1; }
-    else lookupCountry(ip);
-  }
   // device + browser breakdown (from UA)
   const dev = deviceType(ua), br = browserFamily(ua);
   stats.devices = stats.devices || {}; stats.devices[dev] = (stats.devices[dev] || 0) + 1;
@@ -444,18 +458,31 @@ function countVisit(req, res) {
   // traffic source (external referrer host) + channel classification
   stats.channels = stats.channels || { direct: 0, search: 0, social: 0, referral: 0 };
   const ref = req.headers.referer || req.headers.referrer || '';
-  let channel = 'direct';
+  let channel = 'direct', refHost = '';
   if (ref) {
     try {
       const h = new URL(ref).hostname.replace(/^www\./, '');
       const selfHost = String(req.headers.host || '').replace(/^www\./, '').replace(/:\d+$/, '');
       if (h && h !== selfHost) {
+        refHost = h;
         stats.sources = stats.sources || {}; stats.sources[h] = (stats.sources[h] || 0) + 1;
         channel = refChannel(h);
       } else { channel = 'direct'; }   // internal referrer = direct/returning
     } catch (e) {}
   }
   stats.channels[channel] = (stats.channels[channel] || 0) + 1;
+  // live-feed record (so admin can eyeball exactly who's hitting the site)
+  const ip = clientIp(req);
+  const rec = { t: Date.now(), ip: (ip || '').replace(/\d+$/, 'x'), cc: geoCache[ip] || '', net: netCache[ip] || '', ch: channel, dev, br, ref: refHost, ua: ua.slice(0, 90) };
+  recentVisits.push(rec); if (recentVisits.length > 100) recentVisits.shift();
+  if (ip && !ipsToday.has(ip)) {               // distinct IP per day = daily unique
+    ipsToday.add(ip); stats.daily[day].u++;
+    const cfCountry = String(req.headers['cf-ipcountry'] || req.headers['x-geo-country'] || '').toUpperCase();
+    if (cfCountry && /^[A-Z]{2}$/.test(cfCountry) && geoCache[ip] === undefined) {
+      stats.countries = stats.countries || {}; stats.countries[cfCountry] = (stats.countries[cfCountry] || 0) + 1;
+      geoCache[ip] = cfCountry; geoDirty = true; rec.cc = cfCountry;   // country from edge header; network stays unknown
+    } else lookupGeo(ip, rec);   // no edge header: one API call resolves both country + network
+  } else if (ip) { lookupGeo(ip, rec); }   // repeat IP: fill cc/net from cache
   statsDirty = true;
 }
 function deviceType(ua) {
@@ -1576,6 +1603,9 @@ const server = http.createServer(async (req, res) => {
           browsers: Object.entries(stats.browsers || {}).sort((a, b) => b[1] - a[1]).map(([k, n]) => ({ k, n })),
           channels: stats.channels || { direct: 0, search: 0, social: 0, referral: 0 },
           hours: stats.hours || new Array(24).fill(0),
+          networks: Object.entries(stats.networks || {}).sort((a, b) => b[1] - a[1]).slice(0, 20).map(([name, n]) => ({ name, n, dc: isDatacenter(name) })),
+          dcHits: stats.dcHits || 0,
+          recent: recentVisits.slice(-60).reverse().map(r => ({ ...r, dc: isDatacenter(r.net) })),
           orders: orders.slice(-150).reverse(),
           users: Object.values(users).map(u => {
             const st = sellerStats(u.email);

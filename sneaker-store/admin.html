@@ -197,6 +197,7 @@
         </div>
         <button class="btn ghost sm" id="csvExport" style="margin-left:auto">⬇ Экспорт CSV</button>
       </div>
+      <div id="botBanner" style="display:none;background:rgba(232,181,58,.1);border:1px solid rgba(232,181,58,.35);color:#e8c46a;border-radius:12px;padding:12px 16px;font-size:13px;line-height:1.5;margin-bottom:4px"></div>
       <div class="chart">
         <div class="bars" id="bars"></div>
         <div class="legend"><span><i style="background:var(--accent)"></i>Визиты</span><span><i style="background:var(--brand)"></i>Заказы (маркер)</span></div>
@@ -231,6 +232,13 @@
           <div style="overflow-x:auto"><table id="browT"><thead><tr><th>Браузер</th><th class="num">Визиты</th><th class="num">%</th></tr></thead><tbody></tbody></table></div>
         </div>
       </div>
+      <h2>🖥 Сети / провайдеры <span style="color:var(--faint);text-transform:none;letter-spacing:0;font-weight:400">— «датацентр» = почти наверняка бот</span></h2>
+      <div style="overflow-x:auto"><table id="netT"><thead><tr><th>Сеть / ISP</th><th>Тип</th><th class="num">Визиты</th></tr></thead><tbody></tbody></table></div>
+      <h2>👀 Последние визиты <span style="color:var(--faint);text-transform:none;letter-spacing:0;font-weight:400">— живая лента, кто заходит прямо сейчас</span></h2>
+      <div style="overflow-x:auto"><table id="recentT">
+        <thead><tr><th>Время</th><th>Страна</th><th>Сеть / ISP</th><th>Канал</th><th>Устр.</th><th>Браузер</th><th>Откуда (referrer)</th><th>User-Agent</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
       <h2>По дням — 30 дней</h2>
       <div style="overflow-x:auto"><table id="dailyT">
         <thead><tr><th>Дата</th><th class="num">Визиты</th><th class="num">Уник.</th><th class="num">Заказы</th><th class="num">Конв.</th></tr></thead>
@@ -528,6 +536,31 @@ function renderTraffic(d){
   const bTot=sum((d.browsers||[]),x=>x.n);
   $('#browT tbody').innerHTML=(d.browsers&&d.browsers.length)?d.browsers.map(b=>`<tr><td class="id">${esc(b.k)}</td><td class="num">${fmtN(b.n)}</td><td class="num">${pct(b.n,bTot)}%</td></tr>`).join('')
     :'<tr><td colspan="3" class="empty">Пока нет данных.</td></tr>';
+  // ---- networks / ISPs ----
+  $('#netT tbody').innerHTML=(d.networks&&d.networks.length)?d.networks.map(n=>`<tr>
+    <td class="id">${esc(n.name)}</td>
+    <td>${n.dc?'<span class="pill banned">🤖 датацентр (бот)</span>':'<span class="pill yes">🏠 провайдер (люди)</span>'}</td>
+    <td class="num">${fmtN(n.n)}</td></tr>`).join('')
+    :'<tr><td colspan="3" class="empty">Пока определяем сети… обнови через минуту.</td></tr>';
+  // ---- bot banner ----
+  const dc=d.dcHits||0, tot=(d.visits&&d.visits.total)||0;
+  const bb=$('#botBanner');
+  if(dc>0&&tot>0){
+    const share=Math.round(dc/tot*100);
+    bb.style.display='block';
+    bb.innerHTML=`⚠️ <b>Похоже на ботов:</b> минимум <b>${fmtN(dc)}</b> визитов (~${share}%) пришли из дата-центров (Amazon, DigitalOcean, сканеры и т.п.) — это не живые посетители, а автоматические сканеры. Для нового домена это нормально. Реальные люди — строки с пометкой «🏠 провайдер» ниже.`;
+  } else bb.style.display='none';
+  // ---- recent visits feed ----
+  $('#recentT tbody').innerHTML=(d.recent&&d.recent.length)?d.recent.map(r=>`<tr>
+    <td>${new Date(r.t).toLocaleTimeString()}</td>
+    <td class="id">${r.cc?flagEmoji(r.cc)+' '+esc(r.cc):'—'}</td>
+    <td>${r.net?esc(r.net):'—'} ${r.dc?'<span class="pill banned" style="margin-left:4px">бот</span>':''}</td>
+    <td>${esc({direct:'прямой',search:'поиск',social:'соцсети',referral:'ссылка'}[r.ch]||r.ch)}</td>
+    <td>${esc({mobile:'📱',desktop:'💻',tablet:'📲'}[r.dev]||r.dev)}</td>
+    <td>${esc(r.br)}</td>
+    <td>${r.ref?esc(r.ref):'<span style="color:var(--faint)">прямой заход</span>'}</td>
+    <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--faint)" title="${esc(r.ua)}">${esc(r.ua)}</td></tr>`).join('')
+    :'<tr><td colspan="8" class="empty">Пока нет визитов.</td></tr>';
   // ---- daily table ----
   $('#dailyT tbody').innerHTML=days.slice().reverse().map(x=>`<tr>
     <td class="id">${esc(x.d)}</td><td class="num">${fmtN(x.v)}</td><td class="num">${fmtN(x.u)}</td><td class="num">${fmtN(x.o)}</td><td class="num">${pct(x.o,x.u)}%</td></tr>`).join('');
