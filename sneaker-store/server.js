@@ -19,9 +19,10 @@ const PORT = process.env.PORT || 8090;
 const ROOT = __dirname;
 const DATA = process.env.DATA_DIR || path.join(__dirname, 'data');
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '123456';
-// TEMP test backdoor: the key '123456' also works, even when a real ADMIN_PASSWORD is set on the server.
-// ⚠ Disable before real money flows: set DISABLE_TEST_ADMIN=1 (admin can move the wallet & release/refund escrow).
-const TEST_ADMIN_KEY = process.env.DISABLE_TEST_ADMIN ? '' : '123456';
+const ADMIN_PASSWORD_IS_DEFAULT = !process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD === '123456';
+// Dev test key '123456'. It is auto-DISABLED the moment a real ADMIN_PASSWORD is configured (production),
+// and can be force-disabled with DISABLE_TEST_ADMIN=1. This admin can move the wallet & release/refund escrow.
+const TEST_ADMIN_KEY = (process.env.DISABLE_TEST_ADMIN || !ADMIN_PASSWORD_IS_DEFAULT) ? '' : '123456';
 fs.mkdirSync(DATA, { recursive: true });
 
 /* ---------- persistence ---------- */
@@ -307,7 +308,7 @@ function send(res, code, obj, headers = {}) {
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let b = '';
-    req.on('data', (c) => { b += c; if (b.length > 9e6) { reject(new Error('too big')); req.destroy(); } });
+    req.on('data', (c) => { b += c; if (b.length > 15e6) { reject(new Error('too big')); req.destroy(); } });   // fits a 6-photo listing (6×2.2MB) + JSON overhead
     req.on('end', () => { try { resolve(b ? JSON.parse(b) : {}); } catch { resolve({}); } });
   });
 }
@@ -599,6 +600,15 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   const p = url.pathname;
 
+  // security headers on every response (self-contained app: inline JS/CSS + data: images, same-origin fetch only)
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=(), payment=()');
+  res.setHeader('Content-Security-Policy',
+    "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://open.er-api.com; font-src 'self' data:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'");
+  if (p.startsWith('/receipt/') || p === '/admin') res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+
   try {
     /* ----- pages ----- */
     if (req.method === 'GET' && (p === '/' || p === '/index.html')) { countVisit(req, res); return serveFile(res, 'index.html', 'text/html; charset=utf-8'); }
@@ -629,9 +639,9 @@ const server = http.createServer(async (req, res) => {
       const ip = clientIp(req);
       const { email, password } = await readBody(req);
       const em = String(email || '').trim().toLowerCase();
-      // throttle per-IP and per-account so passwords can't be brute-forced
-      if (!rateLimit('login-ip:' + ip, 30, 600000) || !rateLimit('login-acc:' + em, 8, 600000))
-        return send(res, 429, { error: 'Too many attempts — wait a few minutes and try again.' });
+      // per-IP hard cap bounds brute-force from any single source; a correct password is NEVER
+      // blocked (so a third party can't lock a victim out by spamming wrong passwords for their email)
+      if (!rateLimit('login-ip:' + ip, 30, 600000)) return send(res, 429, { error: 'Too many attempts — wait a few minutes and try again.' });
       if (String(password || '').length > MAX_PW) return send(res, 400, { error: 'Wrong email or password.' });
       const u = users[em];
       // always run a hash (dummy on miss) so timing doesn't reveal whether the account exists
@@ -743,7 +753,7 @@ const server = http.createServer(async (req, res) => {
 
     /* ----- orders ----- */
     if (req.method === 'POST' && p === '/api/order') {
-      if (!rateLimit('order:' + (req.socket.remoteAddress || 'x'), 20, 600000)) return send(res, 429, { error: 'Too many orders — slow down.' });
+      if (!rateLimit('order:' + clientIp(req), 20, 600000)) return send(res, 429, { error: 'Too many orders — slow down.' });
       const b = await readBody(req);
       const u = tokenUser(req);
       const email = (u ? u.email : String(b.email || '').trim().toLowerCase());
@@ -805,6 +815,7 @@ const server = http.createServer(async (req, res) => {
     /* --- watch / unwatch a listing (mirrors the client-side heart, for the public watcher count) --- */
     if (req.method === 'POST' && /^\/api\/listings\/[A-Za-z0-9-]+\/watch$/.test(p)) {
       const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
+      if (!rateLimit('watch:' + u.email, 120, 600000)) return send(res, 429, { error: 'Slow down.' });
       const l = listings.find(x => x.id === p.split('/')[3]);
       if (!l) return send(res, 404, { error: 'not found' });
       const b = await readBody(req);
@@ -909,6 +920,7 @@ const server = http.createServer(async (req, res) => {
       if (!of) return send(res, 404, { error: 'not found' });
       const l = listings.find(x => x.id === of.listingId);
       if (!l || l.seller !== u.email) return send(res, 403, { error: 'Not your listing.' });
+      if (l.status !== 'active') return send(res, 400, { error: 'This item is no longer available.' });
       if (of.status !== 'pending') return send(res, 400, { error: 'Offer already handled.' });
       if (action === 'counter') {
         const b = await readBody(req);
@@ -1168,6 +1180,7 @@ const server = http.createServer(async (req, res) => {
     /* --- follow / unfollow a seller (toggle) --- */
     if (req.method === 'POST' && p === '/api/follow') {
       const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
+      if (!rateLimit('follow:' + u.email, 120, 600000)) return send(res, 429, { error: 'Slow down.' });
       const b = await readBody(req);
       const seller = String(b.email || '').toLowerCase();
       if (!users[seller]) return send(res, 404, { error: 'Seller not found.' });
@@ -1508,6 +1521,9 @@ server.listen(PORT, '127.0.0.1', () => {
   console.log(`[swk-store] listening on 127.0.0.1:${PORT}`);
   console.log(`[swk-store] data dir: ${DATA}`);
   console.log(`[swk-store] admin ${ADMIN_PASSWORD ? 'ENABLED' : 'DISABLED (set ADMIN_PASSWORD)'}`);
+  if (ADMIN_PASSWORD_IS_DEFAULT) console.log('[swk-store] ⚠ SECURITY: admin password is the default and the "123456" test key is ACTIVE. Set a strong ADMIN_PASSWORD before going live (this admin can move the wallet & release/refund escrow).');
+  else if (TEST_ADMIN_KEY) console.log('[swk-store] ⚠ test admin key still active — set DISABLE_TEST_ADMIN=1 to be safe.');
+  else console.log('[swk-store] admin test key disabled ✓');
   console.log(`[swk-store] networks: ${enabledNetworks().map(k => `${NETWORKS[k].label}→${NETWORKS[k].wallet()}`).join(' | ') || 'NONE — set a wallet!'}`);
   console.log(`[swk-store] USDC auto-detect ${etherscanKey ? 'ON' : 'OFF — add an Etherscan key (admin or ETHERSCAN_API_KEY) to auto-detect USDC'}`);
   console.log(`[swk-store] USDT auto-detect ${enabledNetworks().includes('usdt-trc20') ? 'ON (TronGrid)' + (tronKey ? ' + key' : ' — add a TronGrid key for higher limits') : 'OFF'}`);
