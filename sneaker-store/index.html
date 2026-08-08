@@ -614,6 +614,11 @@
   .follow-btn:active{transform:scale(.95)}
   .follow-btn:disabled{opacity:.6}
   .vbadge{font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-soft);padding:2px 7px;border-radius:6px}
+  .tier{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;background:var(--surface-2);color:var(--muted);white-space:nowrap;vertical-align:middle;margin-left:2px}
+  .tier-2{background:rgba(139,139,255,.15);color:var(--accent)}
+  .tier-3{background:linear-gradient(135deg,rgba(245,179,1,.2),rgba(255,122,59,.18));color:#c47f00}
+  :root[data-theme="dark"] .tier-3{color:#ffcf5a}
+  .card-seller .tier{font-size:9.5px;padding:1px 6px;margin-left:0}
   .qv-act{display:flex;gap:10px;margin-top:8px}
   .lst-msg{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:14px;height:48px;border-radius:14px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-weight:600;font-size:14.5px;transition:.18s}
   .lst-msg span{font-size:16px;line-height:1}
@@ -787,6 +792,9 @@
   .prof-vb{width:19px;height:19px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;display:inline-grid;place-items:center;font-weight:800;flex:none}
   .prof-handle{font-size:13px;color:var(--muted);margin-top:4px}
   .prof-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0 2px}
+  .tier-card{margin-top:12px;padding:13px 15px;border:1px solid var(--line);border-radius:14px;background:var(--surface-2)}
+  .tier-card-h{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .tier-card-p{font-size:12.5px;color:var(--muted);line-height:1.4}
   .ps{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:13px 6px;text-align:center;transition:transform .18s var(--ease),border-color .18s,box-shadow .18s}
   .ps:hover{transform:translateY(-2px);border-color:var(--line-2);box-shadow:var(--shadow-sm)}
   .ps b{display:block;font-size:20px;font-weight:800;letter-spacing:-.02em}
@@ -1649,7 +1657,7 @@ function listingCardHTML(l){
         <div class="card-price">${cryptoPriceHTML(l.price,l.id)}<button class="add hb ${fav?'on':''}" data-fav="${l.id}" aria-label="Save">${ICON.heart}</button></div>
         <div class="ship-chip ${isFreeShip(l)?'free':''}">${isFreeShip(l)?'🚚 Free shipping':esc(shipSummary(l))}</div>
         ${(l.views||l.watchers)?`<div class="card-stats">${l.views?`<span>👁 ${l.views}</span>`:''}${l.watchers?`<span class="cs-watch">♥ ${l.watchers} watching</span>`:''}</div>`:''}
-        <div class="card-seller"><span class="sav">${av}</span><span class="sh">@${esc(l.seller.handle)}</span>${l.seller.verified?'<span class="vchk">✓</span>':''}${l.country?flagHTML(l.country):''}${l.seller.rating?`<span class="srate">★ ${l.seller.rating}</span>`:''}</div>
+        <div class="card-seller"><span class="sav">${av}</span><span class="sh">@${esc(l.seller.handle)}</span>${sellerTrust(l.seller)}${l.country?flagHTML(l.country):''}${l.seller.rating?`<span class="srate">★ ${l.seller.rating}</span>`:''}</div>
         ${cta}
       </div>
     </article>`;
@@ -2370,6 +2378,21 @@ function loadFX(){return fetch('https://open.er-api.com/v6/latest/USD').then(r=>
 function authHdr(){return AUTH?{Authorization:'Bearer '+AUTH.token}:{}}
 async function mfetch(url,opts){opts=opts||{};opts.headers=Object.assign({'Content-Type':'application/json'},authHdr(),opts.headers||{});const r=await fetch(url,opts);let d={};try{d=await r.json()}catch(e){}if(!r.ok)throw new Error(d.error||'Request failed');return d;}
 function stars(n){n=Math.round(n||0);let s='';for(let i=1;i<=5;i++)s+=`<span class="${i<=n?'':'off'}">★</span>`;return `<span class="stars">${s}</span>`;}
+// trust badge for a seller: tier chip (Trusted/Pro/Rising) or a plain ✓ for manually-verified
+function tierChip(t){return t&&t.level>=1?`<span class="tier tier-${t.level}">${t.icon} ${esc(t.label)}</span>`:'';}
+function sellerTrust(s){
+  if(!s)return '';const t=s.tier;
+  if(t&&t.level>=2)return tierChip(t);
+  if(s.verified)return '<span class="vchk">✓</span>';
+  return tierChip(t);
+}
+function tierProgress(p){
+  const sold=p.sold||0,lvl=p.tier?p.tier.level:0;
+  if(lvl>=3)return 'Top tier reached — you’re a Pro Seller ⭐';
+  if(lvl>=2)return `${Math.max(0,20-sold)} more sales${(p.rating||0)>=4.5?'':' and a 4.5★ rating'} to reach Pro Seller ⭐`;
+  if(lvl>=1)return `${Math.max(0,5-sold)} more sales to reach Trusted 🛡️ and earn the Verified badge`;
+  return 'Make your first sale to become a Rising seller 📈';
+}
 function needAuth(msg){toast(msg);renderAccount();openModal('#accModal');}
 function setTheme(t){t=t==='dark'?'dark':'light';document.documentElement.dataset.theme=t;try{localStorage.setItem('swk_theme',t);}catch(e){}const m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',t==='dark'?'#0c0c0f':'#F5F6F8');document.querySelectorAll('#themeSeg [data-th]').forEach(b=>b.classList.toggle('on',b.dataset.th===t));}
 
@@ -2397,7 +2420,7 @@ async function openListing(id){
       <div class="protect">${ICON.verified}<div><b>Buyer Protection</b><span>Funds held in escrow — released only when you confirm the item arrived.</span></div></div>
       <div class="seller-row">
         <div class="av">${s.avatar?`<img src="${s.avatar}" alt="">`:esc((s.handle||'?')[0].toUpperCase())}</div>
-        <div><div class="sname">@${esc(s.handle)}${s.verified?' <span class="vbadge">✓ Verified</span>':''}</div><div class="smeta">${s.rating?stars(s.rating)+' '+s.rating:'No ratings yet'} · ${s.sold||0} sold${s.telegram?` · <a href="https://t.me/${esc(s.telegram)}" target="_blank" rel="noopener" style="color:var(--accent)">✈ @${esc(s.telegram)}</a>`:''}</div></div>
+        <div><div class="sname">@${esc(s.handle)}${s.verified?' <span class="vbadge">✓ Verified</span>':''}${tierChip(s.tier)}</div><div class="smeta">${s.rating?stars(s.rating)+' '+s.rating:'No ratings yet'} · ${s.sold||0} sold${s.telegram?` · <a href="https://t.me/${esc(s.telegram)}" target="_blank" rel="noopener" style="color:var(--accent)">✈ @${esc(s.telegram)}</a>`:''}</div></div>
         <a href="#" data-seller="${esc(s.email)}">View shop</a>
       </div>
       ${(AUTH&&AUTH.email&&AUTH.email.toLowerCase()!==(s.email||'').toLowerCase())?`<button class="lst-msg" id="lstMsg"><span>✉</span> Write seller</button>`:''}
@@ -2510,7 +2533,7 @@ async function openSeller(email){
   box.innerHTML=`<div class="cobody" style="grid-column:1/-1">
     <div class="seller-row" style="border-top:0;margin-top:0;padding-right:56px">
       <div class="av">${d.avatar?`<img src="${d.avatar}" alt="">`:esc((d.handle||'?')[0].toUpperCase())}</div>
-      <div style="flex:1;min-width:0"><div class="sname">@${esc(d.handle)}</div><div class="smeta">${d.rating?stars(d.rating)+' '+d.rating:'No ratings'} · ${d.sold||0} sold · <span id="followCount">${d.followers||0}</span> follower${(d.followers||0)===1?'':'s'}${d.telegram?` · <a href="https://t.me/${esc(d.telegram)}" target="_blank" rel="noopener" style="color:var(--accent)">✈ @${esc(d.telegram)}</a>`:''}</div></div>
+      <div style="flex:1;min-width:0"><div class="sname">@${esc(d.handle)}${d.verified?' <span class="vbadge">✓ Verified</span>':''}${tierChip(d.tier)}</div><div class="smeta">${d.rating?stars(d.rating)+' '+d.rating:'No ratings'} · ${d.sold||0} sold · <span id="followCount">${d.followers||0}</span> follower${(d.followers||0)===1?'':'s'}${d.telegram?` · <a href="https://t.me/${esc(d.telegram)}" target="_blank" rel="noopener" style="color:var(--accent)">✈ @${esc(d.telegram)}</a>`:''}</div></div>
       ${followBtn}
     </div>
     <h3 style="font-size:13px;letter-spacing:.1em;color:var(--faint);text-transform:uppercase;margin:8px 0 10px">Listings</h3>
@@ -3098,6 +3121,10 @@ function profilePanelHTML(){
       <div class="ps"><b>${p.sold||0}</b><span>Sold</span></div>
       <div class="ps"><b>${p.reviews||0}</b><span>Reviews</span></div>
     </div>
+    ${p.tier?`<div class="tier-card">
+      <div class="tier-card-h"><span class="tier tier-${p.tier.level}">${p.tier.icon} ${esc(p.tier.label)}</span>${p.verified?'<span class="vbadge">✓ Verified</span>':''}</div>
+      <div class="tier-card-p">${esc(tierProgress(p))}</div>
+    </div>`:''}
     <div class="theme-row"><span>Appearance</span><div class="segmented theme-seg" id="themeSeg"><button type="button" data-th="light">☀︎ Light</button><button type="button" data-th="dark">☾ Dark</button></div></div>
     <div class="prof-card">
       <div class="field"><label>Display name</label><input id="pfName" maxlength="60" value="${esc(p.name||'')}" placeholder="Your name"${nameLocked?' readonly':''}>

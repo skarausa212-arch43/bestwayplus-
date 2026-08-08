@@ -497,16 +497,25 @@ function profileView(u) {
   const st = sellerStats(u.email);
   return {
     email: u.email, name: u.name || '', telegram: u.telegram || '', avatar: u.avatar || '',
-    addresses: Array.isArray(u.addresses) ? u.addresses : [], payout: u.payout || '', verified: !!u.verified,
-    rating: st.rating, sold: st.sold, reviews: st.reviews, joined: u.created || 0, nameChangedAt: u.nameChangedAt || 0,
+    addresses: Array.isArray(u.addresses) ? u.addresses : [], payout: u.payout || '', verified: st.verified,
+    rating: st.rating, sold: st.sold, reviews: st.reviews, tier: st.tier, joined: u.created || 0, nameChangedAt: u.nameChangedAt || 0,
   };
 }
 function catGroup(c) { return CAT_OF_GROUP[c] || 'other'; }
+function sellerTier(sold, rating, reviews) {
+  if (sold >= 20 && rating >= 4.5) return { level: 3, label: 'Pro Seller', icon: '⭐' };
+  if (sold >= 5 && (rating >= 4 || reviews === 0)) return { level: 2, label: 'Trusted', icon: '🛡️' };
+  if (sold >= 1) return { level: 1, label: 'Rising', icon: '📈' };
+  return { level: 0, label: 'New seller', icon: '🌱' };
+}
 function sellerStats(email) {
   const rs = reviews.filter(r => r.to === email && r.role === 'seller');
   const rating = rs.length ? Math.round((rs.reduce((s, r) => s + r.rating, 0) / rs.length) * 10) / 10 : 0;
   const sold = orders.filter(o => o.seller === email && ['released', 'delivered'].includes(o.status)).length;
-  return { rating, reviews: rs.length, sold, verified: !!(users[email] && users[email].verified) };
+  const tier = sellerTier(sold, rating, rs.length);
+  // "Verified" is earned automatically at the Trusted tier, or granted manually by an admin
+  const verified = !!(users[email] && users[email].verified) || tier.level >= 2;
+  return { rating, reviews: rs.length, sold, verified, tier };
 }
 function sellerHandle(email) { const u = users[email]; return (u && u.name) || (email ? email.split('@')[0] : 'seller'); }
 function listingCard(l) { // light — no full photos
@@ -519,7 +528,7 @@ function listingCard(l) { // light — no full photos
     ships: l.ships || [], returns: l.returns || 'No returns', boosted: (l.boostedUntil || 0) > Date.now(),
     status: l.status, createdAt: l.createdAt,
     views: l.views || 0, watchers: (l.watchedBy || []).length,
-    seller: { handle: sellerHandle(l.seller), email: l.seller, rating: st.rating, reviews: st.reviews, sold: st.sold, verified: st.verified },
+    seller: { handle: sellerHandle(l.seller), email: l.seller, rating: st.rating, reviews: st.reviews, sold: st.sold, verified: st.verified, tier: st.tier },
   };
 }
 function listingFull(l) {
