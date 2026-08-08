@@ -543,12 +543,11 @@ function renderTraffic(d){
     <td class="num">${fmtN(n.n)}</td></tr>`).join('')
     :'<tr><td colspan="3" class="empty">Пока определяем сети… обнови через минуту.</td></tr>';
   // ---- bot banner ----
-  const dc=d.dcHits||0, tot=(d.visits&&d.visits.total)||0;
+  const bots=d.botHits||0;
   const bb=$('#botBanner');
-  if(dc>0&&tot>0){
-    const share=Math.round(dc/tot*100);
+  if(bots>0){
     bb.style.display='block';
-    bb.innerHTML=`⚠️ <b>Похоже на ботов:</b> минимум <b>${fmtN(dc)}</b> визитов (~${share}%) пришли из дата-центров (Amazon, DigitalOcean, сканеры и т.п.) — это не живые посетители, а автоматические сканеры. Для нового домена это нормально. Реальные люди — строки с пометкой «🏠 провайдер» ниже.`;
+    bb.innerHTML=`🛡 <b>Боты отфильтрованы:</b> <b>${fmtN(bots)}</b> визитов из дата-центров (Amazon, DigitalOcean, сканеры Censys/Shodan и т.п.) <b>исключены</b> из счётчика — «Визиты» и «Уникальные» теперь показывают только живых людей. Для нового домена такой бот-трафик — норма. Отфильтрованных ботов видно ниже в «Сети» и «Последних визитах» с пометкой 🤖.`;
   } else bb.style.display='none';
   // ---- recent visits feed ----
   $('#recentT tbody').innerHTML=(d.recent&&d.recent.length)?d.recent.map(r=>`<tr>

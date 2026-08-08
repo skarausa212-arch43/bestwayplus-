@@ -412,22 +412,42 @@ function cleanNet(org, asn) {
   if (!s && asn) s = String(asn).replace(/^AS\d+\s*/i, '').trim();   // "AS16509 Amazon.com" -> "Amazon.com"
   return s.replace(/,?\s*(inc\.?|llc|ltd\.?|limited|corp\.?|technologies|technology|s\.?a\.?s?\.?|gmbh|b\.?v\.?)\.?$/i, '').trim().slice(0, 40);
 }
-// resolve country + network for a fresh IP (one lookup per IP, cached); backfills a live-feed record if given
-function lookupGeo(ip, rec) {
+const dcIps = new Set();   // IPs classified as datacenter/bot — skipped from the human counter on sight
+const maskIp = (ip) => String(ip || '').replace(/\.\d+$/, '.x').replace(/:[0-9a-f]+$/i, ':x');
+const pushRecent = (rec) => { recentVisits.push(rec); if (recentVisits.length > 100) recentVisits.shift(); return rec; };
+const decr = (obj, key) => { if (obj && obj[key] > 0) obj[key]--; };
+// undo the (provisional) human counts made for a visit once its IP turns out to be a bot
+function reverseVisit(c) {
+  if (stats.total > 0) stats.total--;
+  if (stats.daily[c.day] && stats.daily[c.day].v > 0) stats.daily[c.day].v--;
+  if (c.uniq && stats.unique > 0) stats.unique--;
+  if (c.newIp && stats.daily[c.day] && stats.daily[c.day].u > 0) stats.daily[c.day].u--;
+  decr(stats.devices, c.dev); decr(stats.browsers, c.br); decr(stats.channels, c.channel);
+  if (stats.hours && stats.hours[c.hour] > 0) stats.hours[c.hour]--;
+  if (c.refHost) decr(stats.sources, c.refHost);
+  if (c.cc) decr(stats.countries, c.cc);
+  statsDirty = true;
+}
+// resolve country + network for a fresh IP (one lookup per IP, cached); reverses the visit if it's a datacenter/bot
+function lookupGeo(ip, rec, counted, knownCC) {
   if (!ip || ip === 'ip') return;
-  if (geoCache[ip] !== undefined) { if (rec) { rec.cc = geoCache[ip] || ''; rec.net = netCache[ip] || ''; } return; }
-  geoCache[ip] = '';
+  if (geoCache[ip] !== undefined) { if (rec) { rec.cc = geoCache[ip] || ''; rec.net = netCache[ip] || ''; rec.dc = dcIps.has(ip); } return; }
+  geoCache[ip] = '';   // mark in-flight so concurrent hits don't re-fetch
   const done = (cc, org, asn) => {
-    geoCache[ip] = cc || ''; geoDirty = true;
-    if (cc) { stats.countries = stats.countries || {}; stats.countries[cc] = (stats.countries[cc] || 0) + 1; }
+    const finalCC = knownCC || cc || '';
+    geoCache[ip] = finalCC; geoDirty = true;
     const net = cleanNet(org, asn);
-    if (net) {
-      netCache[ip] = net;
-      stats.networks = stats.networks || {}; stats.networks[net] = (stats.networks[net] || 0) + 1;
-      if (isDatacenter(net)) { stats.dcHits = (stats.dcHits || 0) + 1; }
+    if (net) { netCache[ip] = net; stats.networks = stats.networks || {}; stats.networks[net] = (stats.networks[net] || 0) + 1; }
+    if (net && isDatacenter(net)) {
+      dcIps.add(ip);
+      stats.botHits = (stats.botHits || 0) + 1;
+      if (counted) reverseVisit(counted);            // this hit was a bot → un-count it
+      if (rec) { rec.net = net; rec.dc = true; }
+    } else {
+      if (!knownCC && finalCC) { stats.countries = stats.countries || {}; stats.countries[finalCC] = (stats.countries[finalCC] || 0) + 1; }
+      if (rec) { rec.cc = finalCC; rec.net = net || ''; }
     }
     statsDirty = true;
-    if (rec) { rec.cc = cc || ''; rec.net = net || ''; }
   };
   try {
     const r = http.get('http://ip-api.com/json/' + encodeURIComponent(ip) + '?fields=countryCode,org,as', (resp) => {
@@ -438,51 +458,55 @@ function lookupGeo(ip, rec) {
 }
 function countVisit(req, res) {
   const ua = req.headers['user-agent'] || '';
-  if (isBot(ua)) return;                       // skip bots entirely — they inflated the old counter
+  if (isBot(ua)) return;                       // obvious bots (by UA) — skip entirely
   const day = today();
   if (day !== ipsDay) { ipsDay = day; ipsToday = new Set(); }
   stats.daily[day] = stats.daily[day] || { v: 0, u: 0, o: 0 };
-  stats.total++; stats.daily[day].v++;
-  const cookies = Object.fromEntries((req.headers.cookie || '').split(';').map(s => s.trim().split('=')));
-  if (!cookies.swk_sid) {
-    stats.unique++;   // all-time unique devices (cookie-based, now bot-free)
-    res.setHeader('Set-Cookie', `swk_sid=${crypto.randomUUID()}; Path=/; Max-Age=31536000; SameSite=Lax`);
-  }
-  // device + browser breakdown (from UA)
+  const ip = clientIp(req);
+  const hour = new Date().getUTCHours();
   const dev = deviceType(ua), br = browserFamily(ua);
-  stats.devices = stats.devices || {}; stats.devices[dev] = (stats.devices[dev] || 0) + 1;
-  stats.browsers = stats.browsers || {}; stats.browsers[br] = (stats.browsers[br] || 0) + 1;
-  // hour-of-day histogram (UTC) — shows peak traffic times
-  stats.hours = stats.hours || new Array(24).fill(0);
-  stats.hours[new Date().getUTCHours()] = (stats.hours[new Date().getUTCHours()] || 0) + 1;
-  // traffic source (external referrer host) + channel classification
-  stats.channels = stats.channels || { direct: 0, search: 0, social: 0, referral: 0 };
+  // referrer / channel
   const ref = req.headers.referer || req.headers.referrer || '';
   let channel = 'direct', refHost = '';
   if (ref) {
     try {
       const h = new URL(ref).hostname.replace(/^www\./, '');
       const selfHost = String(req.headers.host || '').replace(/^www\./, '').replace(/:\d+$/, '');
-      if (h && h !== selfHost) {
-        refHost = h;
-        stats.sources = stats.sources || {}; stats.sources[h] = (stats.sources[h] || 0) + 1;
-        channel = refChannel(h);
-      } else { channel = 'direct'; }   // internal referrer = direct/returning
+      if (h && h !== selfHost) { refHost = h; channel = refChannel(h); }
     } catch (e) {}
   }
-  stats.channels[channel] = (stats.channels[channel] || 0) + 1;
-  // live-feed record (so admin can eyeball exactly who's hitting the site)
-  const ip = clientIp(req);
-  const rec = { t: Date.now(), ip: (ip || '').replace(/\d+$/, 'x'), cc: geoCache[ip] || '', net: netCache[ip] || '', ch: channel, dev, br, ref: refHost, ua: ua.slice(0, 90) };
-  recentVisits.push(rec); if (recentVisits.length > 100) recentVisits.shift();
+  // ---- known datacenter/bot IP: log for the diagnostics feed, but DO NOT count as a human visit ----
+  if (ip && dcIps.has(ip)) {
+    stats.botHits = (stats.botHits || 0) + 1;
+    const net = netCache[ip] || '';
+    if (net) { stats.networks = stats.networks || {}; stats.networks[net] = (stats.networks[net] || 0) + 1; }
+    pushRecent({ t: Date.now(), ip: maskIp(ip), cc: geoCache[ip] || '', net, ch: channel, dev, br, ref: refHost, ua: ua.slice(0, 90), dc: true });
+    statsDirty = true;
+    return;
+  }
+  // ---- count as a (provisional) human visit; reversed later if the IP resolves to a datacenter ----
+  stats.total++; stats.daily[day].v++;
+  const counted = { day, hour, dev, br, channel, refHost, cc: '', uniq: false, newIp: false };
+  const cookies = Object.fromEntries((req.headers.cookie || '').split(';').map(s => s.trim().split('=')));
+  if (!cookies.swk_sid) {
+    stats.unique++; counted.uniq = true;
+    res.setHeader('Set-Cookie', `swk_sid=${crypto.randomUUID()}; Path=/; Max-Age=31536000; SameSite=Lax`);
+  }
+  stats.devices = stats.devices || {}; stats.devices[dev] = (stats.devices[dev] || 0) + 1;
+  stats.browsers = stats.browsers || {}; stats.browsers[br] = (stats.browsers[br] || 0) + 1;
+  stats.hours = stats.hours || new Array(24).fill(0); stats.hours[hour] = (stats.hours[hour] || 0) + 1;
+  stats.channels = stats.channels || { direct: 0, search: 0, social: 0, referral: 0 }; stats.channels[channel] = (stats.channels[channel] || 0) + 1;
+  if (refHost) { stats.sources = stats.sources || {}; stats.sources[refHost] = (stats.sources[refHost] || 0) + 1; }
+  const rec = pushRecent({ t: Date.now(), ip: maskIp(ip), cc: geoCache[ip] || '', net: netCache[ip] || '', ch: channel, dev, br, ref: refHost, ua: ua.slice(0, 90), dc: false });
   if (ip && !ipsToday.has(ip)) {               // distinct IP per day = daily unique
-    ipsToday.add(ip); stats.daily[day].u++;
+    ipsToday.add(ip); stats.daily[day].u++; counted.newIp = true;
     const cfCountry = String(req.headers['cf-ipcountry'] || req.headers['x-geo-country'] || '').toUpperCase();
     if (cfCountry && /^[A-Z]{2}$/.test(cfCountry) && geoCache[ip] === undefined) {
       stats.countries = stats.countries || {}; stats.countries[cfCountry] = (stats.countries[cfCountry] || 0) + 1;
-      geoCache[ip] = cfCountry; geoDirty = true; rec.cc = cfCountry;   // country from edge header; network stays unknown
-    } else lookupGeo(ip, rec);   // no edge header: one API call resolves both country + network
-  } else if (ip) { lookupGeo(ip, rec); }   // repeat IP: fill cc/net from cache
+      counted.cc = cfCountry; rec.cc = cfCountry;                 // country from edge header (reversed if bot)
+      lookupGeo(ip, rec, counted, cfCountry);                     // still fetch network to detect datacenter
+    } else lookupGeo(ip, rec, counted, '');                       // one API call resolves country + network
+  } else if (ip) { lookupGeo(ip, rec, null, ''); }               // repeat IP: fill cc/net from cache
   statsDirty = true;
 }
 function deviceType(ua) {
@@ -1604,8 +1628,8 @@ const server = http.createServer(async (req, res) => {
           channels: stats.channels || { direct: 0, search: 0, social: 0, referral: 0 },
           hours: stats.hours || new Array(24).fill(0),
           networks: Object.entries(stats.networks || {}).sort((a, b) => b[1] - a[1]).slice(0, 20).map(([name, n]) => ({ name, n, dc: isDatacenter(name) })),
-          dcHits: stats.dcHits || 0,
-          recent: recentVisits.slice(-60).reverse().map(r => ({ ...r, dc: isDatacenter(r.net) })),
+          botHits: stats.botHits || 0,
+          recent: recentVisits.slice(-60).reverse().map(r => ({ ...r, dc: r.dc || isDatacenter(r.net) })),
           orders: orders.slice(-150).reverse(),
           users: Object.values(users).map(u => {
             const st = sellerStats(u.email);
