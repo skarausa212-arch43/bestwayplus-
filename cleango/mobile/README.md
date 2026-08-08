@@ -197,6 +197,18 @@ project is on it rather than on a hand-bumped older version.
 `minSdk 24` is Capacitor 8's floor. It drops Android 5.x–6.0, which is a
 fraction of a percent of Polish devices and below Play's own support horizon.
 
+**Gradle JDK must be 21.** Gradle refuses to run on a JVM newer than it
+supports, and recent Android Studio ships JDK 25 — so the first sync of a fresh
+install fails with *"The project's Gradle version 8.14.3 is incompatible with
+the Gradle JVM version 25"*. The banner's **Apply compatible Gradle JDK
+configuration and sync** fixes it; failing that, *Settings → Build, Execution,
+Deployment → Build Tools → Gradle → Gradle JDK* → **21** (the dropdown can
+download one).
+
+Change the JDK, never the Gradle version: Capacitor 8 builds on AGP 8.13, which
+Gradle 9 does not support, so "upgrade Gradle until the JVM matches" trades this
+error for a worse one.
+
 ## Versioning
 
 `android/app/build.gradle` → `versionCode` (integer, +1 every upload) and
