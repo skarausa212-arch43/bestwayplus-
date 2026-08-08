@@ -4751,14 +4751,12 @@ function viewBook(){
     if(isWin){
       body.querySelectorAll('#winSide .opt').forEach(o=>o.onclick=()=>{d.windowSide=o.dataset.side;if(d.windowSide==='inside')d.windowAccess='normal';viewBook();});
       body.querySelectorAll('.stepper[data-k="windows"] button').forEach(btn=>btn.onclick=()=>{d.windows=Math.max(1,Math.min(60,d.windows+Number(btn.dataset.d)));viewBook();});
-      // The floor changes the price (a high one needs a climber), so it has to
-      // recompute like every other control here — it used to update the draft
-      // and nothing else, leaving the figure stuck on the previous floor.
-      let wfT=null;
-      const wf=$('#winFloor',body); if(wf)wf.oninput=()=>{
-        d.floor=Math.max(1,Math.min(60,Number(wf.value)||1));
-        clearTimeout(wfT); wfT=setTimeout(refreshWinPrice,250);
-      };
+      // The floor is recorded for the provider, not for the price: only the
+      // access checkbox below carries the rope-access surcharge, and the server
+      // never reads floor. So it deliberately does NOT recompute — dimming the
+      // figure and returning the same number would imply the input moved it.
+      // If floor ever becomes a pricing input, refreshWinPrice() belongs here.
+      const wf=$('#winFloor',body); if(wf)wf.oninput=()=>{d.floor=Math.max(1,Math.min(60,Number(wf.value)||1));};
       const wn=$('#winNormal',body); if(wn)wn.onchange=()=>{d.windowAccess=wn.checked?'normal':'climber';viewBook();};
       setTimeout(refreshWinPrice,0);   // run after shell() mounts the view into the DOM
     }else{
