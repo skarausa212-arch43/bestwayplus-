@@ -93,6 +93,14 @@ if (fs.existsSync(ANDROID)) {
   cap('add', 'android');
 }
 
+// `cap add` scaffolds the platform complete with Capacitor's own placeholder
+// launcher icons, overwriting whatever was generated into res/ before. So the
+// icons have to be laid down *after* the platform step, every time — otherwise
+// deleting android/ and rebuilding silently ships the blue Capacitor logo, and
+// the only place that is visible is a phone's home screen.
+step('иконки и заставки из assets/');
+node('gen-assets.js');
+
 step('конфигурация Firebase (если файл на месте)');
 node('place-firebase.js');
 
