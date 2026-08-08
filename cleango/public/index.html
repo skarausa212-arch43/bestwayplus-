@@ -176,6 +176,25 @@ textarea.input{resize:vertical;min-height:80px}
 .hero p{opacity:.92;margin-top:10px;max-width:460px;font-size:15px}
 .hero .sparkle{position:absolute;right:-30px;top:-30px;width:220px;height:220px;opacity:.28}
 .svc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+/* Vertical switcher on the booking screen. A scrolling strip, because the list
+   grows with every service that ships and a wrapping grid would push the form
+   itself below the fold on a phone. */
+.vert-strip{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+  scrollbar-width:none;margin:0 0 18px;padding:2px 0 6px}
+.vert-strip::-webkit-scrollbar{display:none}
+.vert{flex:none;display:flex;flex-direction:column;align-items:center;gap:6px;width:82px;padding:10px 6px;
+  border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);cursor:pointer;
+  transition:border-color var(--dur-fast) var(--ease),transform var(--dur-fast) var(--ease)}
+.vert .vi{width:34px;height:34px;border-radius:11px;display:grid;place-items:center}
+.vert .vi svg{width:19px;height:19px}
+.vert .vl{font-size:11.5px;font-weight:600;color:var(--ink-2);line-height:1.2;text-align:center}
+.vert.on{border-color:var(--primary);background:var(--primary-050)}
+.vert.on .vl{color:var(--primary-600)}
+.vert:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.vert.soon{opacity:.55}
+.vert .vsoon{font-size:9.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--ink-3)}
+@media(hover:hover){.vert:not(.on):hover{border-color:var(--line-strong);transform:translateY(-1px)}}
+@media(prefers-reduced-motion:reduce){.vert{transition:none}.vert:hover{transform:none}}
 .svc{padding:18px;cursor:pointer;transition:.15s;border:1.5px solid var(--line)}
 .svc:hover{border-color:var(--primary);transform:translateY(-3px);box-shadow:var(--shadow-lg)}
 .svc .ico{width:46px;height:46px;border-radius:13px;background:var(--primary-050);display:grid;place-items:center;color:var(--primary-600);margin-bottom:12px}
@@ -2216,6 +2235,60 @@ const svcLabelRu=(l)=>SVC_LABEL_RU[l]||l;
 const CAT_LABEL_RU={cleaning:'Уборка',handyman:'Мастер',electrical:'Электрик',plumbing:'Сантехник',garden:'Сад',laundry:'Стирка',drycleaning:'Химчистка',assembly:'Сборка мебели',windows:'Окна'};
 const CAT_DESC_RU={cleaning:'Дома, офисы, переезды',handyman:'Ремонт и мелкие работы',electrical:'Проводка, розетки, свет',plumbing:'Течи, краны, засоры',garden:'Газон, кусты, уход',laundry:'Стирка, сушка, глажка',drycleaning:'Диваны, ковры, шторы',assembly:'Мебель и монтаж',windows:'Окна снаружи и внутри'};
 
+/* The service catalogue was never translated — on a Polish phone the whole
+   grid read in Russian, names and descriptions alike. Kept next to the tables
+   above so a new vertical gets its wording in the same edit as its key. */
+Object.assign(TR.pl,{
+  "Уборка":"Sprzątanie","Окна":"Okna","Сад":"Ogród","Мастер":"Złota rączka","Электрик":"Elektryk",
+  "Сантехник":"Hydraulik","Стирка":"Pranie","Химчистка":"Pralnia chemiczna","Сборка мебели":"Montaż mebli",
+  "Дома, офисы, переезды":"Domy, biura, przeprowadzki","Окна снаружи и внутри":"Okna z zewnątrz i od środka",
+  "Газон, кусты, уход":"Trawnik, żywopłot, pielęgnacja","Проводка, розетки, свет":"Instalacja, gniazdka, oświetlenie",
+  "Течи, краны, засоры":"Przecieki, krany, zatory","Ремонт и мелкие работы":"Naprawy i drobne prace",
+  "Диваны, ковры, шторы":"Kanapy, dywany, zasłony","Мебель и монтаж":"Meble i montaż",
+  "Стирка, сушка, глажка":"Pranie, suszenie, prasowanie",
+  "скоро в вашем городе":"wkrótce w Twoim mieście","Услуга":"Usługa",
+});
+Object.assign(TR.en,{
+  "Уборка":"Cleaning","Окна":"Windows","Сад":"Garden","Мастер":"Handyman","Электрик":"Electrician",
+  "Сантехник":"Plumber","Стирка":"Laundry","Химчистка":"Dry cleaning","Сборка мебели":"Furniture assembly",
+  "Дома, офисы, переезды":"Homes, offices, move-outs","Окна снаружи и внутри":"Windows inside and out",
+  "Газон, кусты, уход":"Lawn, hedges, care","Проводка, розетки, свет":"Wiring, sockets, lighting",
+  "Течи, краны, засоры":"Leaks, taps, drains","Ремонт и мелкие работы":"Repairs and odd jobs",
+  "Диваны, ковры, шторы":"Sofas, carpets, curtains","Мебель и монтаж":"Furniture and mounting",
+  "Стирка, сушка, глажка":"Washing, drying, ironing",
+  "скоро в вашем городе":"coming soon in your city","Услуга":"Service",
+});
+Object.assign(TR.uk,{
+  "Уборка":"Прибирання","Окна":"Вікна","Сад":"Сад","Мастер":"Майстер","Электрик":"Електрик",
+  "Сантехник":"Сантехнік","Стирка":"Прання","Химчистка":"Хімчистка","Сборка мебели":"Збирання меблів",
+  "Дома, офисы, переезды":"Оселі, офіси, переїзди","Окна снаружи и внутри":"Вікна зовні та зсередини",
+  "Газон, кусты, уход":"Газон, кущі, догляд","Проводка, розетки, свет":"Проводка, розетки, світло",
+  "Течи, краны, засоры":"Протікання, крани, засмічення","Ремонт и мелкие работы":"Ремонт і дрібні роботи",
+  "Диваны, ковры, шторы":"Дивани, килими, штори","Мебель и монтаж":"Меблі та монтаж",
+  "Стирка, сушка, глажка":"Прання, сушіння, прасування",
+  "скоро в вашем городе":"скоро у вашому місті","Услуга":"Послуга",
+});
+
+/* ---------- Verticals ----------
+   Which services are bookable, and what tapping one does. Two screens offer
+   them — the home grid and the switcher on the booking screen — so the rule
+   lives here once: a category drifting between the two would mean a service
+   that is orderable from one screen and "coming soon" on the other. */
+const FLAG_FOR_CAT={handyman:'service_handyman',electrical:'service_electrical',plumbing:'service_plumbing',garden:'service_gardening'};
+// Roadmap verticals go live via feature flags (26_ROADMAP_V2) — a flag flip,
+// not a deploy.
+const catFlagOn=(key)=>!!(FLAG_FOR_CAT[key] && state.flags && state.flags[FLAG_FOR_CAT[key]]);
+const catActive=(cat)=>!!(cat && (cat.active || catFlagOn(cat.key)));
+const catLabel=(cat)=>CAT_LABEL_RU[cat.key]||cat.label;
+// Each vertical has its own intake: cleaning and windows share the 4-step
+// booking flow (windows branches inside step 0), the garden has its own
+// calculator because it prices by area and season, not by rooms.
+function openVertical(cat){
+  if(!catActive(cat)){ toast(`${t(catLabel(cat))} — ${t('скоро в вашем городе')}`); return; }
+  if(cat.key==='garden')return openOgrodCalc();
+  startBooking(cat.key==='windows'?'windows':'standard');
+}
+
 /* ---------- Animation helpers ---------- */
 function stagger(container){ if(!container)return; container.querySelectorAll(':scope > *').forEach((el,i)=>{el.classList.add('reveal');el.style.setProperty('--i',i);}); }
 function rippleFx(e){ const b=e.currentTarget; const r=document.createElement('span'); const d=Math.max(b.offsetWidth,b.offsetHeight); const rect=b.getBoundingClientRect(); r.className='ripple'; r.style.width=r.style.height=d+'px'; r.style.left=(e.clientX-rect.left-d/2)+'px'; r.style.top=(e.clientY-rect.top-d/2)+'px'; b.appendChild(r); setTimeout(()=>r.remove(),600); }
@@ -3036,21 +3109,16 @@ function viewHome(){
   // категории услуг (уборка/окна активны, остальные — скоро)
   const catWrap=el(`<div><div class="section-title">Что нужно сделать?</div><div class="svc-grid" id="catGrid"></div></div>`);
   const cg=$('#catGrid',catWrap);
-  // Roadmap verticals go live via feature flags (26_ROADMAP_V2) — a flag flip,
-  // not a deploy. A gated category becomes bookable the moment its flag is on.
-  const FLAG_FOR_CAT={handyman:'service_handyman',electrical:'service_electrical',plumbing:'service_plumbing',garden:'service_gardening'};
   (state.categories||[]).forEach(cat=>{
-    const label=CAT_LABEL_RU[cat.key]||cat.label;
-    const flagOn=FLAG_FOR_CAT[cat.key] && state.flags && state.flags[FLAG_FOR_CAT[cat.key]];
-    const active=cat.active || !!flagOn;
+    const active=catActive(cat), flagOn=catFlagOn(cat.key);
     const card=el(`<div class="card svc" style="${active?'':'opacity:.7'}">
       <div class="ico ${CAT_COLOR[cat.key]||'c-cleaning'}">${CAT_ICON[cat.key]||I.broom}</div>
-      <h4>${label}</h4>
+      <h4>${catLabel(cat)}</h4>
       <div class="from">${active?(CAT_DESC_RU[cat.key]||cat.desc):'Скоро'}</div>
       ${active?(flagOn?`<span class="badge green" style="position:absolute;top:12px;right:12px">${t('Новинка')}</span>`:''):`<span class="badge grey" style="position:absolute;top:12px;right:12px">${t('Скоро')}</span>`}
     </div>`);
     card.style.position='relative';
-    card.onclick=()=>{ active?(cat.key==='garden'?openOgrodCalc():startBooking(cat.key==='windows'?'windows':'standard')):toast(`${label} — скоро в вашем городе`); };
+    card.onclick=()=>openVertical(cat);
     cg.appendChild(card);
   });
   mainCol.appendChild(catWrap);
@@ -4530,6 +4598,31 @@ function viewBook(){
   const c=el(`<div style="max-width:640px;margin:0 auto"></div>`);
   const steps=4;
   c.appendChild(el(`<div class="steps">${Array.from({length:steps}).map((_,i)=>`<div class="s ${i<=d.step?'done':''}"></div>`).join('')}</div>`));
+
+  // Which vertical are we ordering? Only on the first step — past it the user
+  // is deep in one intake and switching would throw the draft away silently.
+  // A strip rather than a step of its own: cleaning is the overwhelming case
+  // and must not cost an extra tap, while everything else stops being reachable
+  // only from the home screen.
+  if(d.step===0){
+    const cats=(state.categories||[]).filter(cat=>catActive(cat)||CAT_LABEL_RU[cat.key]);
+    if(cats.length>1){
+      const strip=el(`<div class="vert-strip" role="tablist" aria-label="${t('Услуга')}"></div>`);
+      const currentKey=d.service==='windows'?'windows':'cleaning';
+      cats.forEach(cat=>{
+        const active=catActive(cat), on=active&&cat.key===currentKey;
+        const b=el(`<button type="button" class="vert ${on?'on':''} ${active?'':'soon'}"
+          role="tab" aria-selected="${on?'true':'false'}">
+          <span class="vi ${CAT_COLOR[cat.key]||'c-cleaning'}">${CAT_ICON[cat.key]||I.broom}</span>
+          <span class="vl">${t(catLabel(cat))}</span>
+          ${active?'':`<span class="vsoon">${t('Скоро')}</span>`}
+        </button>`);
+        b.onclick=()=>{ if(on)return; openVertical(cat); };
+        strip.appendChild(b);
+      });
+      c.appendChild(strip);
+    }
+  }
 
   const body=el(`<div></div>`);
   c.appendChild(body);
