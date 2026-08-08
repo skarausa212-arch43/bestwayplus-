@@ -1346,8 +1346,11 @@ const API = (function () {
   if (typeof window !== 'undefined' && window.LUMI_API_BASE) return String(window.LUMI_API_BASE).replace(/\/$/, '');
   const p = (typeof location !== 'undefined' && location.protocol) || 'https:';
   if (p === 'capacitor:' || p === 'ionic:' || p === 'file:') return 'https://lumi24.pl';
-  // Capacitor Android serves from http(s)://localhost — treat bare localhost app shell as native too.
-  if ((p === 'http:' || p === 'https:') && typeof window !== 'undefined' && window.Capacitor) return 'https://lumi24.pl';
+  // The native shell loads the live site (server.url), so the page is already on
+  // the real origin — same-origin calls are correct there and keep working if the
+  // domain ever changes. Only a locally-served shell needs the absolute backend.
+  if ((p === 'http:' || p === 'https:') && typeof window !== 'undefined' && window.Capacitor
+      && /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return 'https://lumi24.pl';
   return '';
 })();
 let state = {
@@ -6885,7 +6888,65 @@ async function handleCardReturn(){
 }
 boot();
 
+/* ---------- Native shell (Android/iOS via Capacitor) ----------
+   The app is a thin shell that loads THIS site, so everything below ships from
+   the server: changing push handling or deep links never needs a new APK.
+   No-op in a normal browser. */
+function nativeBootstrap(){
+  const Cap=window.Capacitor;
+  if(!Cap||!Cap.isNativePlatform||!Cap.isNativePlatform())return;
+  document.documentElement.classList.add('native');
+  const Push=Cap.Plugins&&Cap.Plugins.PushNotifications;
+  const AppPlugin=Cap.Plugins&&Cap.Plugins.App;
+  const platform=(Cap.getPlatform&&Cap.getPlatform())||'android';
+  let fcmToken=null,lastSent=null;
+
+  // The device token arrives before login, and the login can happen much later —
+  // so pair token+session and (re)send whenever either changes.
+  const sendToken=()=>{
+    const jwt=state.token; if(!fcmToken||!jwt)return;
+    const pair=jwt.slice(0,12)+':'+fcmToken.slice(0,12);
+    if(pair===lastSent)return;
+    api('/api/devices/register','POST',{token:fcmToken,platform})
+      .then(()=>{lastSent=pair;}).catch(()=>{});
+  };
+  const openDeepLink=(link)=>{
+    // Notifications carry lumi://booking/<id> — route it inside the SPA.
+    const m=/^lumi:\/\/([^/]+)(?:\/(.+))?$/.exec(String(link||''));
+    if(!m)return;
+    const [,what,arg]=m;
+    if(what==='booking'&&arg){ state.view='bookings'; render(); openBooking(arg); return; }
+    if(what==='admin'){ state.view='admin'; render(); return; }
+    state.view='home'; render();
+  };
+
+  if(Push){
+    Push.addListener('registration',(t)=>{ fcmToken=t&&t.value; sendToken(); });
+    Push.addListener('registrationError',()=>{});      // silent; retried next launch
+    Push.addListener('pushNotificationActionPerformed',(ev)=>{
+      openDeepLink(((ev||{}).notification||{}).data&&ev.notification.data.deepLink);
+    });
+    Push.checkPermissions()
+      .then((perm)=>perm.receive==='granted'?Push.register()
+        :Push.requestPermissions().then((r)=>{ if(r.receive==='granted')return Push.register(); }))
+      .catch(()=>{});
+  }
+  setInterval(sendToken,4000);
+  if(AppPlugin&&AppPlugin.addListener){
+    AppPlugin.addListener('appStateChange',(st)=>{ if(st&&st.isActive)sendToken(); });
+    // Android back button: close what is open before leaving the app.
+    AppPlugin.addListener('backButton',()=>{
+      if($('.modal-bg')){ closeModal(); return; }
+      if(state.view!=='home'){ state.view='home'; render(); return; }
+      AppPlugin.exitApp&&AppPlugin.exitApp();
+    });
+  }
+}
+nativeBootstrap();
+
 /* ---------- PWA: service worker + install prompt ---------- */
+// Inside the shell the same service worker is what makes the app survive a dead
+// network: it caches the shell on first run, so a later launch offline still opens.
 if('serviceWorker' in navigator){ addEventListener('load',()=>{ navigator.serviceWorker.register('/sw.js').catch(()=>{}); }); }
 let _installPrompt=null;
 addEventListener('beforeinstallprompt',(e)=>{ e.preventDefault(); _installPrompt=e; showInstallBanner(); });

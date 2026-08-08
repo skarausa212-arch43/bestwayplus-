@@ -4356,6 +4356,20 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=3600', ...SECURITY_HEADERS });
       return res.end(buildRobots());
     }
+    // Android App Links. Android fetches this and compares the fingerprint with
+    // the certificate the installed APK is signed with; only then do lumi24.pl
+    // links open in the app instead of the browser. Empty until the release
+    // signing fingerprint is configured — an empty list is a valid answer that
+    // simply means "no app claims these links yet".
+    if (bare === '/.well-known/assetlinks.json') {
+      const fp = String(process.env.LUMI_ANDROID_CERT_SHA256 || '').trim().toUpperCase();
+      const body = fp ? [{
+        relation: ['delegate_permission/common.handle_all_urls'],
+        target: { namespace: 'android_app', package_name: process.env.LUMI_ANDROID_PACKAGE || 'pl.lumi24.app', sha256_cert_fingerprints: [fp] },
+      }] : [];
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=3600', ...SECURITY_HEADERS });
+      return res.end(JSON.stringify(body, null, 2));
+    }
     if (bare === '/sitemap.xml') {
       res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600', ...SECURITY_HEADERS });
       return res.end(buildSitemap());

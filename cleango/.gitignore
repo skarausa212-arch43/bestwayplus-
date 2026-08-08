@@ -4,3 +4,11 @@ node_modules/
 deploy/instance.local.env
 deploy/fcm-service-account.json
 deploy/*service-account*.json
+
+# The Android project is generated (mobile/.gitignore keeps android/ out): it is
+# fully described by capacitor.config.json + mobile/scripts, so `npm run android`
+# rebuilds it identically instead of a generated tree drifting in git.
+mobile/www/
+# Signing keys never belong in a repo — losing control of one loses the app.
+*.keystore
+*.jks

@@ -4,16 +4,13 @@
   "private": true,
   "description": "LUMI native shell (Capacitor) — bundles the web app for instant load, pulls data + auth from lumi24.pl, adds native push.",
   "scripts": {
+    "android": "node scripts/prepare-android.js",
     "sync-web": "node scripts/sync-web.js",
     "place-firebase": "node scripts/place-firebase.js",
     "assets": "node scripts/gen-assets.js",
-    "build": "npm run sync-web && npm run place-firebase && npx cap sync",
-    "open:ios": "npx cap open ios",
     "open:android": "npx cap open android",
-    "add:ios": "npx cap add ios && npm run place-firebase",
-    "fix-gradle": "node scripts/patch-gradle.js",
-    "fix-manifest": "node scripts/patch-manifest.js",
-    "add:android": "npx cap add android && npm run place-firebase && node scripts/patch-gradle.js && node scripts/patch-manifest.js"
+    "open:ios": "npx cap open ios",
+    "add:ios": "npx cap add ios && npm run place-firebase"
   },
   "dependencies": {
     "@capacitor/core": "^6.1.0",
