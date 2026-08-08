@@ -57,4 +57,4 @@ if (added) {
   fs.writeFileSync(manifest, s);
   console.log(`✓ AndroidManifest: ${added} правк(а/и) применены.`);
 }
-else console.log('✓ AndroidManifest already has location permissions — no change.');
+else console.log('✓ AndroidManifest: разрешения и App Links уже на месте — без изменений.');
