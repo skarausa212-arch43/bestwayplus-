@@ -10,7 +10,8 @@
     "assets": "node scripts/gen-assets.js",
     "open:android": "npx cap open android",
     "open:ios": "npx cap open ios",
-    "add:ios": "npx cap add ios && npm run place-firebase"
+    "add:ios": "npx cap add ios && npm run place-firebase",
+    "brand": "node scripts/make-brand-assets.js"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.0",
@@ -22,6 +23,7 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.0",
-    "@capacitor/assets": "^3.0.5"
+    "@capacitor/assets": "^3.0.5",
+    "sharp": "^0.32.6"
   }
 }

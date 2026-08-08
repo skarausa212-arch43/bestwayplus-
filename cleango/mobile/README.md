@@ -87,28 +87,42 @@ without it, editing `appName` later changes nothing.) The name in the Play
 listing is separate and set in the Play Console; they don't have to match, but
 users notice when they don't.
 
-**Icon and splash** — replace the PNGs in `assets/` and run:
+**Icon and splash** — the mark is a dark house with one window lit, because
+*lumi* is light, and because a home screen has enough green houses on it
+already. It is drawn as vector source in `scripts/make-brand-assets.js`, not
+kept as five exported PNGs nobody can edit: change a colour or the geometry
+there, then
 
 ```bash
-npm run assets
+npm run brand      # redraws the five sources in assets/
+npm run assets     # rasterises every Android density from them
 ```
 
-Every Android density is generated from them, including the adaptive icon.
+The five sources, and what each is for:
 
 | File | What it is | Size |
 | --- | --- | --- |
-| `icon.png` | legacy square icon, full artwork | 1024×1024 |
-| `icon-foreground.png` | adaptive icon, the mark only | 1024×1024 |
-| `icon-background.png` | adaptive icon, flat ground behind it | 1024×1024 |
+| `icon.png` | legacy square icon, full bleed | 1024×1024 |
+| `icon-foreground.png` | adaptive icon: the mark + its glow, transparent | 1024×1024 |
+| `icon-background.png` | adaptive icon: the ground the mark sits on | 1024×1024 |
 | `splash.png` | launch screen, light | 2732×2732 |
 | `splash-dark.png` | launch screen, dark | 2732×2732 |
 
-Two rules the adaptive icon actually enforces: Android crops the foreground to a
-circle, squircle or rounded square depending on the launcher, so keep the mark
-inside the **middle 66%** — roughly a 660 px circle — and leave the rest
-transparent. The splash is centred and cropped hard on every aspect ratio, so
-keep the logo in the middle third and let the background colour carry the edges
-(`#F4F8F5` light / `#0C100E` dark, set in `scripts/gen-assets.js`).
+Three constraints Android imposes, all handled in the script:
+
+* the adaptive icon is cropped to a circle, squircle or rounded square depending
+  on the launcher, and only the central **~61%** is guaranteed to survive. The
+  script asserts the mark's furthest corner against that radius and **fails the
+  build** rather than shipping a roof that gets clipped on phones we don't own;
+* the two adaptive layers move independently (parallax), so the glow lives in
+  the *foreground* with the window it comes from — split across layers it would
+  visibly drift away from its own light source;
+* the splash is centre-cropped at every aspect ratio, so the mark sits in the
+  middle third and the flat ground carries the edges (`#F4F8F5` light /
+  `#0C100E` dark, set in `scripts/gen-assets.js`).
+
+Replacing the artwork wholesale is still fine — drop your own PNGs into
+`assets/` at the sizes above and run `npm run assets` alone, skipping `brand`.
 
 **Package name** (`appId`, `pl.lumi24.app`) is not a branding field — it is the
 app's identity in Play forever. It cannot be renamed in place; a different one
