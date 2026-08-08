@@ -14,8 +14,22 @@ const MailComposer = require('nodemailer/lib/mail-composer');
 const MAIL_HOST = process.env.MAIL_HOSTNAME;
 // Домен адресов: задаётся явно, иначе выводим из hostname (mail.example.com -> example.com)
 const MAIL_DOMAIN = process.env.MAIL_DOMAIN || (MAIL_HOST || '').replace(/^mail\./, '');
-// Админ сервиса: сессия/чат с этим ящиком получает статистику и мониторинг
+// Админ сервиса: сессия/чат с этим ящиком получает статистику и мониторинг.
+// Админ-права даёт и вход в комбо-аккаунт с именем ADMIN_BUNDLE.
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || `romanby@${MAIL_DOMAIN}`).toLowerCase();
+const ADMIN_BUNDLE = (process.env.ADMIN_BUNDLE || 'romanby').toLowerCase();
+
+function isAdminSession(s) {
+  return s.bundle === ADMIN_BUNDLE || s.accounts.some((a) => a.email === ADMIN_EMAIL);
+}
+
+// Чат админа: подключён ящик админа или любой ящик из админской сборки
+function chatIsAdmin(chatId) {
+  const accs = collectChatAccounts(chatId);
+  if (accs.some((a) => a.email === ADMIN_EMAIL)) return true;
+  const b = bundles[ADMIN_BUNDLE];
+  return !!b && accs.some((a) => b.accounts.some((x) => x.email === a.email));
+}
 // Конфиг DMS смонтирован read-only — для админ-статистики
 const DMS_CONFIG_DIR = process.env.DMS_CONFIG_DIR || '/dmsconfig';
 const PORT = process.env.PORT || 8082;
@@ -235,7 +249,10 @@ function tgPrefs(key) {
 }
 // Чат админа — для мониторинга с хоста (скрипт читает файл)
 function noteAdminChat(chatId, accs) {
-  if (!accs.some((a) => a.email === ADMIN_EMAIL)) return;
+  const adminBundle = bundles[ADMIN_BUNDLE];
+  const viaBundle = !!adminBundle &&
+    accs.some((a) => adminBundle.accounts.some((x) => x.email === a.email));
+  if (!viaBundle && !accs.some((a) => a.email === ADMIN_EMAIL)) return;
   try {
     fs.mkdirSync(path.dirname(TG_USERS_FILE), { recursive: true });
     fs.writeFileSync(path.join(path.dirname(TG_USERS_FILE), 'admin-chat.json'),
@@ -364,7 +381,7 @@ async function handleTgUpdate(u) {
 
   // Статистика сервиса — только для админа
   if (cmd === '/stats') {
-    if (!collectChatAccounts(chatId).some((a) => a.email === ADMIN_EMAIL)) {
+    if (!chatIsAdmin(chatId)) {
       await say(chatId, 'This command is for the service admin.');
       return;
     }
@@ -620,7 +637,7 @@ app.get('/api/info', (req, res) => {
     host: MAIL_HOST,
     maxAccounts: MAX_ACCOUNTS,
     accounts: s.accounts.map((a) => ({ id: a.id, email: a.email })),
-    isAdmin: s.accounts.some((a) => a.email === ADMIN_EMAIL),
+    isAdmin: isAdminSession(s),
     bundle: s.bundle || null,
   });
 });
@@ -628,7 +645,7 @@ app.get('/api/info', (req, res) => {
 // Статистика сервиса — только для сессии, в которую добавлен ящик админа
 app.get('/api/admin/stats', (req, res) => {
   const s = getSession(req, res);
-  if (!s.accounts.some((a) => a.email === ADMIN_EMAIL)) {
+  if (!isAdminSession(s)) {
     return res.status(403).json({ error: 'Admins only.' });
   }
   res.json(adminStats());
