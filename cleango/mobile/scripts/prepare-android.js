@@ -20,15 +20,27 @@ const { spawnSync } = require('child_process');
 const HERE = path.join(__dirname, '..');
 const ANDROID = path.join(HERE, 'android');
 const step = (title) => console.log(`\n▶ ${title}`);
-// npx is a .cmd shim on Windows, which spawnSync cannot execute directly —
-// name the shim rather than turning on `shell`, which concatenates arguments
-// without escaping them (Node 22 warns about exactly that: DEP0190).
-const run = (cmd, args) => {
-  const exe = process.platform === 'win32' && cmd === 'npx' ? 'npx.cmd' : cmd;
-  const r = spawnSync(exe, args, { cwd: HERE, stdio: 'inherit' });
-  if (r.status !== 0) { console.error(`\n✗ ${cmd} ${args.join(' ')} — прервано`); process.exit(1); }
+// Everything is spawned as `node <script>` — never through npx and never with
+// `shell: true`. On Windows npx is a .cmd shim, and Node 20.12+ refuses to
+// spawn .bat/.cmd without a shell (CVE-2024-27980), while turning the shell on
+// concatenates arguments without escaping them (DEP0190). Running the CLI's own
+// JS entry point through this node binary sidesteps both, on every platform.
+const run = (args, label) => {
+  const r = spawnSync(process.execPath, args, { cwd: HERE, stdio: 'inherit' });
+  if (r.error || r.status !== 0) {
+    console.error(`\n✗ ${label} — прервано${r.error ? `: ${r.error.message}` : ''}`);
+    process.exit(1);
+  }
 };
-const node = (script) => run(process.execPath, [path.join('scripts', script)]);
+const node = (script) => run([path.join('scripts', script)], `scripts/${script}`);
+
+/** Absolute path to the @capacitor/cli executable, resolved from its manifest. */
+const capBin = () => {
+  const pkg = require('@capacitor/cli/package.json');
+  const rel = typeof pkg.bin === 'string' ? pkg.bin : pkg.bin.cap || pkg.bin.capacitor;
+  return require.resolve(path.posix.join('@capacitor/cli', rel));
+};
+const cap = (...args) => run([capBin(), ...args], `cap ${args.join(' ')}`);
 
 /**
  * `cap sync` refreshes the web assets and the plugin list — and nothing else.
@@ -75,10 +87,10 @@ node('sync-web.js');
 if (fs.existsSync(ANDROID)) {
   assertPlatformIsCurrent();
   step('обновление существующего проекта');
-  run('npx', ['cap', 'sync', 'android']);
+  cap('sync', 'android');
 } else {
   step('создание проекта Android');
-  run('npx', ['cap', 'add', 'android']);
+  cap('add', 'android');
 }
 
 step('конфигурация Firebase (если файл на месте)');
