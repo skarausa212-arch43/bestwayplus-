@@ -51,11 +51,15 @@ node('patch-gradle.js');
 step('манифест: разрешения и App Links');
 node('patch-manifest.js');
 
+step('название приложения из capacitor.config.json');
+node('patch-strings.js');
+
 console.log(`
 🟢 Проект готов: ${ANDROID}
 
   Открыть в Android Studio:   npx cap open android
   Собрать релиз:              Build → Generate Signed Bundle / APK → Android App Bundle
+  Иконка и заставка:          положить PNG в assets/ и выполнить  npm run assets
 
 Приложение загружает https://lumi24.pl, поэтому правки интерфейса попадают к
 пользователям сразу после деплоя сайта — пересобирать APK для этого не нужно.
