@@ -21,7 +21,11 @@ const HERE = path.join(__dirname, '..');
 const ANDROID = path.join(HERE, 'android');
 const step = (title) => console.log(`\n▶ ${title}`);
 const run = (cmd, args) => {
-  const r = spawnSync(cmd, args, { cwd: HERE, stdio: 'inherit', shell: process.platform === 'win32' });
+  const r = spawnSync(cmd, args, {
+    cwd: HERE,
+    stdio: 'inherit',
+    shell: process.platform === 'win32' && cmd === 'npx',
+  });
   if (r.status !== 0) { console.error(`\n✗ ${cmd} ${args.join(' ')} — прервано`); process.exit(1); }
 };
 const node = (script) => run(process.execPath, [path.join('scripts', script)]);

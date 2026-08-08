@@ -45,7 +45,7 @@ for (const p of PERMS) {
     `$1${p}$1$2`);
   added++;
 }
-if (added) { if (!s.includes('android:host="lumi24.pl"')) {
+if (!s.includes('android:host="lumi24.pl"')) {
   // Anchor on the launcher intent-filter of MainActivity and add ours after it.
   s = s.replace(/(<intent-filter>\s*<action android:name="android\.intent\.action\.MAIN"[\s\S]*?<\/intent-filter>)/,
     `$1\n${APP_LINKS}`);
@@ -53,5 +53,8 @@ if (added) { if (!s.includes('android:host="lumi24.pl"')) {
   console.log('✓ AndroidManifest: added App Links for lumi24.pl.');
 }
 
-fs.writeFileSync(manifest, s); console.log(`✓ AndroidManifest: ${added} правк(а/и) применены.`); }
+if (added) {
+  fs.writeFileSync(manifest, s);
+  console.log(`✓ AndroidManifest: ${added} правк(а/и) применены.`);
+}
 else console.log('✓ AndroidManifest already has location permissions — no change.');
