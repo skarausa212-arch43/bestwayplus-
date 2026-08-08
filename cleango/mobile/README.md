@@ -168,6 +168,21 @@ default, nothing breaks.
 > around "our website in an app". If a reviewer pushes back, the answer is the
 > native functionality, and it is real.
 
+## Toolchain and the API level Play demands
+
+Capacitor 8 · `targetSdk`/`compileSdk` **36** (Android 16) · `minSdk` **24**
+(Android 7.0) · AGP 8.13 · Gradle 8.14.3 · JDK 21 (the one Android Studio
+bundles).
+
+The target API level is not a preference — Play enforces it at upload. New apps
+must target **API 36 from 31 Aug 2026**, and API 35 before that; an app built
+against 34 is rejected at the door, before any review. Capacitor 8 ships the
+whole tested set (AGP, Gradle, AndroidX, target 36) together, which is why the
+project is on it rather than on a hand-bumped older version.
+
+`minSdk 24` is Capacitor 8's floor. It drops Android 5.x–6.0, which is a
+fraction of a percent of Polish devices and below Play's own support horizon.
+
 ## Versioning
 
 `android/app/build.gradle` → `versionCode` (integer, +1 every upload) and
