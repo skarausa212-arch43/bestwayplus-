@@ -296,6 +296,10 @@
   .cc-msg svg{width:16px;height:16px}
   /* on-card shipping chip */
   .ship-chip{font-size:11px;font-weight:600;color:var(--muted);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card-stats{display:flex;gap:10px;font-size:10.5px;color:var(--faint);margin-top:5px;font-weight:600}
+  .card-stats .cs-watch{color:var(--accent)}
+  .lst-stats{display:flex;gap:14px;font-size:12.5px;color:var(--muted);margin-top:9px;font-weight:600}
+  .lst-stats .cs-watch{color:var(--accent)}
   .ship-chip.free{color:#1a9d5e}
   /* sell form shipping controls */
   .segmented{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:4px}
@@ -1644,6 +1648,7 @@ function listingCardHTML(l){
         <h3 data-listing="${l.id}">${esc(l.title)}</h3>
         <div class="card-price">${cryptoPriceHTML(l.price,l.id)}<button class="add hb ${fav?'on':''}" data-fav="${l.id}" aria-label="Save">${ICON.heart}</button></div>
         <div class="ship-chip ${isFreeShip(l)?'free':''}">${isFreeShip(l)?'🚚 Free shipping':esc(shipSummary(l))}</div>
+        ${(l.views||l.watchers)?`<div class="card-stats">${l.views?`<span>👁 ${l.views}</span>`:''}${l.watchers?`<span class="cs-watch">♥ ${l.watchers} watching</span>`:''}</div>`:''}
         <div class="card-seller"><span class="sav">${av}</span><span class="sh">@${esc(l.seller.handle)}</span>${l.seller.verified?'<span class="vchk">✓</span>':''}${l.country?flagHTML(l.country):''}${l.seller.rating?`<span class="srate">★ ${l.seller.rating}</span>`:''}</div>
         ${cta}
       </div>
@@ -1761,7 +1766,9 @@ grid.addEventListener('click',e=>{
   const li=e.target.closest('[data-listing]');if(li){openListing(li.dataset.listing);return}
   const o=e.target.closest('[data-open]');if(o){const p=PRODUCTS.find(x=>x.id===o.dataset.open);if(p&&!p.soldOut)openQV(o.dataset.open)}
 });
-function toggleFav(id){const i=favs.indexOf(id);if(i>-1)favs.splice(i,1);else{favs.push(id);toast('Saved — find it in ♥ Saved')}save('swk_favs',favs);document.querySelectorAll(`[data-fav="${id}"]`).forEach(b=>b.classList.toggle('on',favs.includes(id)));updateWishBadge();}
+function toggleFav(id){const i=favs.indexOf(id);const on=i<0;if(i>-1)favs.splice(i,1);else{favs.push(id);toast('Saved — find it in ♥ Saved')}save('swk_favs',favs);document.querySelectorAll(`[data-fav="${id}"]`).forEach(b=>b.classList.toggle('on',favs.includes(id)));updateWishBadge();
+  if(AUTH&&/^L-/i.test(id))mfetch('/api/listings/'+id+'/watch',{method:'POST',body:JSON.stringify({on})}).catch(()=>{});   // mirror to the public watcher count
+}
 
 /* ---------- filters ---------- */
 document.querySelectorAll('nav.main a[data-filter]').forEach(a=>a.addEventListener('click',()=>{activeFilter=a.dataset.filter;renderGrid();}));
@@ -2382,6 +2389,7 @@ async function openListing(id){
       <h3 id="lstTitle">${esc(l.title)}</h3>
       <div class="price"><span class="cico" style="background:var(--usdt);display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;color:#fff;font-size:12px;vertical-align:-4px;margin-right:6px">₮</span>${usdtLabel(price)} <span style="font-size:14px;color:var(--muted);font-weight:500">≈ ${disp(price)}</span>${d.acceptedOfferPrice?' <span style="font-size:12px;color:var(--ok);font-weight:700">offer accepted</span>':''}</div>
       ${l.size?`<div style="font-size:13px;color:var(--muted);margin-top:3px">Size ${esc(l.size)}</div>`:''}
+      ${(l.views||l.watchers)?`<div class="lst-stats">${l.views?`<span>👁 ${l.views} view${l.views===1?'':'s'}</span>`:''}${l.watchers?`<span class="cs-watch">🔥 ${l.watchers} watching</span>`:''}</div>`:''}
       ${l.photos.length>1?`<div class="lst-strip" id="lstStrip">${l.photos.map((ph,i)=>`<img src="${ph}" data-i="${i}" class="${i===0?'on':''}">`).join('')}</div>`:''}
       ${l.desc?`<p class="desc" id="lstDesc" style="margin-top:14px">${esc(l.desc)}</p>`:''}
       ${AUTH?`<button class="lst-translate" id="lstTr">🌐 Translate to ${CHAT_LANGS.find(x=>x[0]===load('swk_chatlang','en'))?.[1]||'English'}</button>`:''}

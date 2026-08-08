@@ -72,6 +72,8 @@ const saveFollows = () => saveJSON('follows.json', follows);
 const AUTO_RELEASE_DAYS = Number(process.env.AUTO_RELEASE_DAYS || 7); // buyer-protection window after shipping
 let statsDirty = false;
 setInterval(() => { if (statsDirty) { statsDirty = false; saveJSON('stats.json', stats); } }, 5000).unref();
+let listingsDirty = false;   // view counts flush on a timer instead of writing on every page view
+setInterval(() => { if (listingsDirty) { listingsDirty = false; saveJSON('listings.json', listings); } }, 8000).unref();
 
 /* ---------- catalog (source of truth for prices) ---------- */
 const CATALOG = {
@@ -516,6 +518,7 @@ function listingCard(l) { // light — no full photos
     shipping: l.shipping || { mode: 'free' },
     ships: l.ships || [], returns: l.returns || 'No returns', boosted: (l.boostedUntil || 0) > Date.now(),
     status: l.status, createdAt: l.createdAt,
+    views: l.views || 0, watchers: (l.watchedBy || []).length,
     seller: { handle: sellerHandle(l.seller), email: l.seller, rating: st.rating, reviews: st.reviews, sold: st.sold, verified: st.verified },
   };
 }
@@ -785,7 +788,21 @@ const server = http.createServer(async (req, res) => {
       let acceptedOfferPrice = null;
       if (u) { const of = offers.find(o => o.listingId === l.id && o.buyer === u.email && o.status === 'accepted'); if (of) acceptedOfferPrice = of.amount; }
       const mine = u && u.email === l.seller;
+      if (!mine && l.status === 'active') { l.views = (l.views || 0) + 1; listingsDirty = true; }   // count a view (not the owner's)
       return send(res, 200, { listing: listingFull(l), acceptedOfferPrice, offerSettings: mine ? { autoAccept: l.autoAccept || 0, autoDecline: l.autoDecline || 0 } : undefined });
+    }
+    /* --- watch / unwatch a listing (mirrors the client-side heart, for the public watcher count) --- */
+    if (req.method === 'POST' && /^\/api\/listings\/[A-Za-z0-9-]+\/watch$/.test(p)) {
+      const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
+      const l = listings.find(x => x.id === p.split('/')[3]);
+      if (!l) return send(res, 404, { error: 'not found' });
+      const b = await readBody(req);
+      l.watchedBy = Array.isArray(l.watchedBy) ? l.watchedBy : [];
+      const has = l.watchedBy.includes(u.email);
+      if (b.on && !has) l.watchedBy.push(u.email);
+      else if (!b.on && has) l.watchedBy = l.watchedBy.filter(e => e !== u.email);
+      saveListings();
+      return send(res, 200, { watchers: l.watchedBy.length });
     }
     /* --- create listing --- */
     if (req.method === 'POST' && p === '/api/listings') {
