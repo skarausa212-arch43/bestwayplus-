@@ -1780,7 +1780,10 @@ function toggleFav(id){const i=favs.indexOf(id);const on=i<0;if(i>-1)favs.splice
 
 /* ---------- filters ---------- */
 document.querySelectorAll('nav.main a[data-filter]').forEach(a=>a.addEventListener('click',()=>{activeFilter=a.dataset.filter;renderGrid();}));
-$('#searchInput').addEventListener('input',e=>{searchTerm=e.target.value.trim().toLowerCase();renderGrid();const anyCrit=activeFilter!=='all'||!!FILT.brand||!!FILT.shipTo||!!FILT.cond||!!FILT.priceRange||!!searchTerm;const fs=$('#fSave');if(fs)fs.classList.toggle('show',anyCrit);const fr=$('#fReset');if(fr)fr.classList.toggle('show',anyCrit||FILT.sort!=='new');});
+$('#searchInput').addEventListener('input',e=>{searchTerm=e.target.value.trim().toLowerCase();renderGrid();const anyCrit=activeFilter!=='all'||!!FILT.brand||!!FILT.shipTo||!!FILT.cond||!!FILT.priceRange||!!searchTerm;const fs=$('#fSave');if(fs)fs.classList.toggle('show',anyCrit);const fr=$('#fReset');if(fr)fr.classList.toggle('show',anyCrit||FILT.sort!=='new');trackSearch(searchTerm);});
+// send a completed search term once (debounced) so the admin can see what people look for
+let _trkTimer=null,_trkLast='';
+function trackSearch(q){clearTimeout(_trkTimer);q=(q||'').trim();if(q.length<2)return;_trkTimer=setTimeout(()=>{if(q===_trkLast)return;_trkLast=q;try{fetch('/api/track/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q})}).catch(()=>{});}catch(e){}},1400);}
 $('#searchBtn').addEventListener('click',()=>{document.getElementById('catalog').scrollIntoView();setTimeout(()=>$('#searchInput').focus(),400)});
 const PRICE_RANGES=[['','Any price'],['0-25','Under 25'],['25-50','25 – 50'],['50-100','50 – 100'],['100-250','100 – 250'],['250-','250 +']];
 function renderFilterbar(){

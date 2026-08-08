@@ -378,16 +378,55 @@ self.addEventListener('push',e=>{let d={};try{d=e.data?e.data.json():{};}catch(_
 self.addEventListener('notificationclick',e=>{e.notification.close();const url=(e.notification.data&&e.notification.data.url)||'/';
   e.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(cs=>{for(const c of cs){if('focus'in c){c.navigate&&c.navigate(url);return c.focus();}}return clients.openWindow(url);}));});`;
 
-/* ---------- visit counting ---------- */
+/* ---------- visit counting (bot-filtered, with country + referrer analytics) ---------- */
 const today = () => new Date().toISOString().slice(0, 10);
+// bots / crawlers / monitors / scripts — not real visitors
+const BOT_RE = /bot\b|crawl|spider|slurp|mediapartners|facebookexternalhit|whatsapp|telegrambot|bytespider|petalbot|semrush|ahrefs|mj12|dotbot|dataforseo|uptime|pingdom|statuscake|monitor|headlesschrome|lighthouse|phantomjs|puppeteer|playwright|scrapy|curl\/|wget\/|python-requests|python-urllib|go-http-client|okhttp|java\/|node-fetch|axios\/|libwww|httpclient/i;
+const isBot = (ua) => !ua || BOT_RE.test(ua);
+const geoCache = loadJSON('geo.json', {}); // ip -> ISO country code ('' = unknown/in-flight)
+let geoDirty = false;
+setInterval(() => { if (geoDirty) { geoDirty = false; saveJSON('geo.json', geoCache); } }, 15000).unref();
+let ipsDay = today(); let ipsToday = new Set();   // distinct IPs seen today (bot-resistant daily unique)
+// resolve a country for a fresh IP (one lookup per IP, cached); counts toward stats.countries
+function lookupCountry(ip) {
+  if (!ip || ip === 'ip' || geoCache[ip] !== undefined) return;
+  // header set by nginx/Cloudflare GeoIP if present — use it and skip the network call
+  geoCache[ip] = '';
+  const done = (cc) => { geoCache[ip] = cc || ''; geoDirty = true; if (cc) { stats.countries = stats.countries || {}; stats.countries[cc] = (stats.countries[cc] || 0) + 1; statsDirty = true; } };
+  try {
+    const r = http.get('http://ip-api.com/json/' + encodeURIComponent(ip) + '?fields=countryCode', (resp) => {
+      let s = ''; resp.on('data', c => s += c); resp.on('end', () => { try { done((JSON.parse(s) || {}).countryCode); } catch (e) { done(''); } });
+    });
+    r.on('error', () => {}); r.setTimeout(4000, () => r.destroy());
+  } catch (e) {}
+}
 function countVisit(req, res) {
+  const ua = req.headers['user-agent'] || '';
+  if (isBot(ua)) return;                       // skip bots entirely — they inflated the old counter
   const day = today();
+  if (day !== ipsDay) { ipsDay = day; ipsToday = new Set(); }
   stats.daily[day] = stats.daily[day] || { v: 0, u: 0, o: 0 };
   stats.total++; stats.daily[day].v++;
   const cookies = Object.fromEntries((req.headers.cookie || '').split(';').map(s => s.trim().split('=')));
   if (!cookies.swk_sid) {
-    stats.unique++; stats.daily[day].u++;
+    stats.unique++;   // all-time unique devices (cookie-based, now bot-free)
     res.setHeader('Set-Cookie', `swk_sid=${crypto.randomUUID()}; Path=/; Max-Age=31536000; SameSite=Lax`);
+  }
+  const ip = clientIp(req);
+  if (ip && !ipsToday.has(ip)) {               // distinct IP per day = daily unique
+    ipsToday.add(ip); stats.daily[day].u++;
+    const cfCountry = String(req.headers['cf-ipcountry'] || req.headers['x-geo-country'] || '').toUpperCase();
+    if (cfCountry && /^[A-Z]{2}$/.test(cfCountry)) { stats.countries = stats.countries || {}; stats.countries[cfCountry] = (stats.countries[cfCountry] || 0) + 1; }
+    else lookupCountry(ip);
+  }
+  // traffic source (external referrer host)
+  const ref = req.headers.referer || req.headers.referrer || '';
+  if (ref) {
+    try {
+      const h = new URL(ref).hostname.replace(/^www\./, '');
+      const selfHost = String(req.headers.host || '').replace(/^www\./, '').replace(/:\d+$/, '');
+      if (h && h !== selfHost) { stats.sources = stats.sources || {}; stats.sources[h] = (stats.sources[h] || 0) + 1; }
+    } catch (e) {}
   }
   statsDirty = true;
 }
@@ -698,6 +737,21 @@ const server = http.createServer(async (req, res) => {
       const u = tokenUser(req);
       if (!u) return send(res, 401, { error: 'unauthorized' });
       return send(res, 200, profileView(u));
+    }
+    /* ----- track internal search keywords (for admin analytics) ----- */
+    if (req.method === 'POST' && p === '/api/track/search') {
+      if (isBot(req.headers['user-agent'])) return send(res, 200, { ok: true });
+      if (!rateLimit('trk:' + clientIp(req), 40, 60000)) return send(res, 200, { ok: true });
+      const b = await readBody(req);
+      const q = String(b.q || '').trim().toLowerCase().replace(/\s+/g, ' ').slice(0, 40);
+      if (q.length >= 2) {
+        stats.searches = stats.searches || {};
+        stats.searches[q] = (stats.searches[q] || 0) + 1;
+        const keys = Object.keys(stats.searches);
+        if (keys.length > 800) { const kept = {}; keys.sort((a, c) => stats.searches[c] - stats.searches[a]).slice(0, 400).forEach(k => kept[k] = stats.searches[k]); stats.searches = kept; }
+        statsDirty = true;
+      }
+      return send(res, 200, { ok: true });
     }
     /* ----- web push subscription ----- */
     if (req.method === 'GET' && p === '/api/push/vapid') {
@@ -1376,6 +1430,9 @@ const server = http.createServer(async (req, res) => {
             payoutsCount: payoutOrders.length,
           },
           days,
+          countries: Object.entries(stats.countries || {}).sort((a, b) => b[1] - a[1]).slice(0, 20).map(([code, n]) => ({ code, n })),
+          sources: Object.entries(stats.sources || {}).sort((a, b) => b[1] - a[1]).slice(0, 20).map(([host, n]) => ({ host, n })),
+          searches: Object.entries(stats.searches || {}).sort((a, b) => b[1] - a[1]).slice(0, 30).map(([q, n]) => ({ q, n })),
           orders: orders.slice(-150).reverse(),
           users: Object.values(users).map(u => {
             const st = sellerStats(u.email);
@@ -1473,6 +1530,25 @@ const server = http.createServer(async (req, res) => {
           const handle = sellerHandle(l.seller);
           follows.filter(f => f.seller === l.seller).forEach(f => sendPush(f.follower, { title: '🆕 New from @' + handle, body: l.title, url: '/?item=' + l.id }));
         }
+        return send(res, 200, { ok: true });
+      }
+      // admin edit any listing (title / price / status)
+      if (req.method === 'POST' && p === '/api/admin/listing-edit') {
+        const b = await readBody(req);
+        const l = listings.find(x => x.id === b.id);
+        if (!l) return send(res, 404, { error: 'not found' });
+        if (b.title !== undefined) { const t = String(b.title).trim().slice(0, 90); if (t.length >= 3) l.title = t; }
+        if (b.price !== undefined) { const pr = Math.round(Number(b.price) * 100) / 100; if (!(pr >= MIN_PRICE && pr <= 100000)) return send(res, 400, { error: `Price must be $${MIN_PRICE}–100000.` }); l.price = pr; }
+        if (b.status !== undefined) { if (!['active', 'pending', 'rejected', 'removed', 'sold'].includes(b.status)) return send(res, 400, { error: 'bad status' }); l.status = b.status; }
+        l.editedAt = Date.now(); saveListings();
+        return send(res, 200, { ok: true, listing: listingCard(l) });
+      }
+      // admin delete (soft-remove) any listing
+      if (req.method === 'POST' && p === '/api/admin/listing-delete') {
+        const b = await readBody(req);
+        const l = listings.find(x => x.id === b.id);
+        if (!l) return send(res, 404, { error: 'not found' });
+        l.status = 'removed'; saveListings();
         return send(res, 200, { ok: true });
       }
       if (req.method === 'POST' && p === '/api/admin/report-resolve') {

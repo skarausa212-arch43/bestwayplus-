@@ -113,7 +113,11 @@
   .filterchips button.on{background:var(--ink);color:#050505;border-color:var(--ink)}
   .count{font-size:12px;color:var(--faint);margin-left:auto}
   .actcell{display:flex;gap:6px;flex-wrap:wrap}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .ed-title,.ed-price,.ed-status{background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px;outline:none}
+  .ed-title:focus,.ed-price:focus{border-color:var(--accent)}
   @media(max-width:1000px){.cards{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
   @media(max-width:640px){.cards{grid-template-columns:repeat(2,1fr)}.hidem{display:none}}
 </style>
 </head>
@@ -178,6 +182,18 @@
         <div class="bars" id="bars"></div>
         <div class="legend"><span><i style="background:var(--accent)"></i>Visits</span><span><i style="background:var(--brand)"></i>Orders</span></div>
       </div>
+      <div class="grid2">
+        <div>
+          <h2>🌍 Top countries</h2>
+          <div style="overflow-x:auto"><table id="ctryT"><thead><tr><th>Country</th><th class="num">Visitors</th></tr></thead><tbody></tbody></table></div>
+        </div>
+        <div>
+          <h2>🔗 Traffic sources</h2>
+          <div style="overflow-x:auto"><table id="srcT"><thead><tr><th>Referrer</th><th class="num">Visits</th></tr></thead><tbody></tbody></table></div>
+        </div>
+      </div>
+      <h2>🔎 Top searches (what people look for)</h2>
+      <div style="overflow-x:auto"><table id="srchT"><thead><tr><th>Search term</th><th class="num">Count</th></tr></thead><tbody></tbody></table></div>
       <h2>Daily breakdown — last 30 days</h2>
       <div style="overflow-x:auto"><table id="dailyT">
         <thead><tr><th>Date</th><th class="num">Visits</th><th class="num">Unique</th><th class="num">Orders</th></tr></thead>
@@ -220,6 +236,12 @@
       <h2>Pending listings (moderation)</h2>
       <div style="overflow-x:auto"><table id="modT">
         <thead><tr><th>Item</th><th class="hidem">Seller</th><th>Category</th><th>Price</th><th>Preview</th><th>Decision</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+      <h2>All listings · edit / delete</h2>
+      <div class="toolbar"><input class="search" id="lstSearch" placeholder="Search listings by title, brand, seller…"><span class="count" id="lstCount"></span></div>
+      <div style="overflow-x:auto"><table id="allT">
+        <thead><tr><th>Item</th><th class="hidem">Seller</th><th>Price (USD)</th><th>Status</th><th>Edit</th></tr></thead>
         <tbody></tbody>
       </table></div>
       <h2>Disputes</h2>
@@ -329,6 +351,7 @@ async function loadDash(){
   if(document.activeElement!==$('#wTwa'))$('#wTwa').value=w.twaFingerprints||'';
   renderChart(last14);
   renderDaily(d.days);
+  renderAnalytics(d);
   renderUsers();
   renderOrders();
   loadMarketAdmin();
@@ -348,6 +371,40 @@ function renderDaily(days){
   $('#dailyT tbody').innerHTML=rows.map(x=>`<tr>
     <td class="id">${esc(x.d)}</td><td class="num">${fmtN(x.v)}</td><td class="num">${fmtN(x.u)}</td><td class="num">${fmtN(x.o)}</td></tr>`).join('');
 }
+const flagEmoji=cc=>/^[A-Za-z]{2}$/.test(cc)?cc.toUpperCase().replace(/./g,c=>String.fromCodePoint(127397+c.charCodeAt(0))):'';
+function renderAnalytics(d){
+  $('#ctryT tbody').innerHTML=(d.countries&&d.countries.length)?d.countries.map(c=>`<tr><td class="id">${flagEmoji(c.code)} ${esc(c.code)}</td><td class="num">${fmtN(c.n)}</td></tr>`).join('')
+    :'<tr><td colspan="2" class="empty">No data yet.</td></tr>';
+  $('#srcT tbody').innerHTML=(d.sources&&d.sources.length)?d.sources.map(s=>`<tr><td class="id">${esc(s.host)}</td><td class="num">${fmtN(s.n)}</td></tr>`).join('')
+    :'<tr><td colspan="2" class="empty">No external referrers yet.</td></tr>';
+  $('#srchT tbody').innerHTML=(d.searches&&d.searches.length)?d.searches.map(s=>`<tr><td class="id">${esc(s.q)}</td><td class="num">${fmtN(s.n)}</td></tr>`).join('')
+    :'<tr><td colspan="2" class="empty">No searches tracked yet.</td></tr>';
+}
+function renderAllListings(){
+  const q=($('#lstSearch').value||'').trim().toLowerCase();
+  const list=MKT_LISTINGS.filter(l=>!q||((l.title+' '+(l.brand||'')+' '+((l.seller&&l.seller.handle)||'')+' '+((l.seller&&l.seller.email)||'')).toLowerCase().includes(q)));
+  $('#lstCount').textContent=list.length+' / '+MKT_LISTINGS.length+' listings';
+  const tb=$('#allT tbody');
+  tb.innerHTML=list.length?list.map(l=>`<tr data-id="${esc(l.id)}">
+    <td class="id"><input class="ed-title" value="${esc(l.title||'')}" style="width:200px"><div class="items">${esc(l.brand||'')} · ${esc(l.category||'')} · ${esc(l.id)}</div></td>
+    <td class="hidem">@${esc((l.seller&&l.seller.handle)||'')}<div class="items">${esc((l.seller&&l.seller.email)||'')}</div></td>
+    <td><input class="ed-price" type="number" value="${l.price}" style="width:90px"></td>
+    <td><select class="ed-status">${['active','pending','rejected','sold','removed'].map(s=>`<option ${s===l.status?'selected':''}>${s}</option>`).join('')}</select></td>
+    <td><div class="actcell"><button class="btn sm ed-save">Save</button><button class="btn sm danger ed-del">Delete</button></div></td></tr>`).join('')
+    :'<tr><td colspan="5" class="empty">No listings.</td></tr>';
+  tb.querySelectorAll('tr[data-id]').forEach(row=>{
+    const id=row.dataset.id;
+    row.querySelector('.ed-save').addEventListener('click',async()=>{
+      await api('/api/admin/listing-edit',{method:'POST',body:JSON.stringify({id,title:row.querySelector('.ed-title').value,price:row.querySelector('.ed-price').value,status:row.querySelector('.ed-status').value})});
+      loadDash();
+    });
+    row.querySelector('.ed-del').addEventListener('click',async()=>{
+      if(!confirm('Delete this listing? It will be removed from the store.'))return;
+      await api('/api/admin/listing-delete',{method:'POST',body:JSON.stringify({id})});loadDash();
+    });
+  });
+}
+document.addEventListener('input',e=>{if(e.target&&e.target.id==='lstSearch')renderAllListings();});
 
 /* ---- users ---- */
 function renderUsers(){
@@ -425,8 +482,11 @@ function renderOrders(){
 }
 $('#orderSearch').addEventListener('input',renderOrders);
 
+let MKT_LISTINGS=[];
 async function loadMarketAdmin(){
   let m;try{m=await api('/api/admin/market');}catch(e){return;}
+  MKT_LISTINGS=m.listings||[];
+  renderAllListings();
   const setStatus=async(id,status)=>{await api('/api/admin/order-status',{method:'POST',body:JSON.stringify({id,status})});loadDash();};
   // pending moderation
   const mb=$('#modT tbody');
