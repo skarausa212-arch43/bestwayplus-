@@ -291,6 +291,7 @@ function tokenUser(req) {
     if (Number(exp) < Date.now()) return null;
     const u = users[email];
     if (!u || Number(u.tv || 0) !== Number(tv)) return null;    // revoked (logout / password change)
+    if (u.banned) return null;                                  // suspended by an admin
     return u;
   } catch { return null; }
 }
@@ -636,6 +637,7 @@ const server = http.createServer(async (req, res) => {
       // always run a hash (dummy on miss) so timing doesn't reveal whether the account exists
       const ok = u ? await verifyPassword(String(password || ''), u.pass) : (await verifyPassword(String(password || ''), 'x:00'), false);
       if (!u || !ok) return send(res, 401, { error: 'Wrong email or password.' });
+      if (u.banned) return send(res, 403, { error: 'This account has been suspended.' });
       return send(res, 200, { token: makeToken(em), email: em, name: u.name });
     }
     if (req.method === 'GET' && p === '/api/me') {
@@ -1261,21 +1263,49 @@ const server = http.createServer(async (req, res) => {
       if (!isAdmin(req)) return send(res, 401, { error: 'unauthorized' });
       if (req.method === 'GET' && p === '/api/admin/overview') {
         const days = [];
-        for (let i = 13; i >= 0; i--) {
+        for (let i = 29; i >= 0; i--) {
           const d = new Date(Date.now() - i * 864e5).toISOString().slice(0, 10);
           days.push({ d, ...(stats.daily[d] || { v: 0, u: 0, o: 0 }) });
         }
+        const payoutOrders = orders.filter(o => o.status === 'released' && !o.paidOut);
         return send(res, 200, {
           visits: { total: stats.total, unique: stats.unique, today: (stats.daily[today()] || {}).v || 0 },
           revenue: orders.reduce((s, o) => s + (o.status !== 'cancelled' ? o.total : 0), 0),
+          fees: Math.round(orders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + (o.fee || 0), 0) * 100) / 100,
           ordersCount: orders.length,
           usersCount: Object.keys(users).length,
+          kpis: {
+            activeListings: listings.filter(l => l.status === 'active').length,
+            pendingListings: listings.filter(l => l.status === 'pending').length,
+            openDisputes: orders.filter(o => o.status === 'disputed').length,
+            openReports: reports.filter(r => r.status === 'open').length,
+            payoutsOwed: Math.round(payoutOrders.reduce((s, o) => s + (o.total - (o.fee || 0)), 0) * 100) / 100,
+            payoutsCount: payoutOrders.length,
+          },
           days,
-          orders: orders.slice(-100).reverse(),
-          users: Object.values(users).map(u => ({ email: u.email, name: u.name, created: u.created,
-            orders: orders.filter(o => o.email === u.email).length })).reverse(),
+          orders: orders.slice(-150).reverse(),
+          users: Object.values(users).map(u => {
+            const st = sellerStats(u.email);
+            return {
+              email: u.email, name: u.name || '', telegram: u.telegram || '', created: u.created || 0,
+              bought: orders.filter(o => o.email === u.email).length,
+              listings: listings.filter(l => l.seller === u.email && l.status !== 'removed').length,
+              sold: st.sold, rating: st.rating, tier: st.tier, verified: st.verified,
+              balance: payoutBalance(u.email), banned: !!u.banned,
+            };
+          }).sort((a, b) => b.created - a.created),
           wallets: { usdc: WALLET, usdt: USDT_TRC20_WALLET, usdcOk: isEthAddr(WALLET), usdtOk: isTronAddr(USDT_TRC20_WALLET), usdcAuto: !!etherscanKey, etherscanSet: !!etherscanKey, tronSet: !!tronKey },
         });
+      }
+      // suspend / restore a user account
+      if (req.method === 'POST' && p === '/api/admin/ban') {
+        const { email, banned } = await readBody(req);
+        const em = String(email || '').toLowerCase();
+        if (!users[em]) return send(res, 404, { error: 'not found' });
+        users[em].banned = !!banned;
+        users[em].tv = (users[em].tv || 0) + 1;   // revoke any active sessions immediately
+        saveUsers();
+        return send(res, 200, { ok: true });
       }
       // update the receiving wallets live (no redeploy needed)
       if (req.method === 'POST' && p === '/api/admin/wallets') {

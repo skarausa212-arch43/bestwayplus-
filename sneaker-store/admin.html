@@ -6,14 +6,14 @@
 <title>Admin — STUFFWEKNOW</title>
 <meta name="robots" content="noindex,nofollow">
 <style>
-  :root{--bg:#050505;--surface:#0e0e10;--card:#131316;--ink:#F4F4F4;--muted:#9a9aa4;--faint:#5a5a61;
-    --line:rgba(244,244,244,.09);--line2:rgba(244,244,244,.16);--brand:#e7ff3a;--accent:#3A7BFF;--ok:#37d67a;--bad:#ff5a5a;
+  :root{--bg:#050505;--surface:#0e0e10;--card:#131316;--card2:#17171b;--ink:#F4F4F4;--muted:#9a9aa4;--faint:#5a5a61;
+    --line:rgba(244,244,244,.09);--line2:rgba(244,244,244,.16);--brand:#e7ff3a;--accent:#3A7BFF;--ok:#37d67a;--bad:#ff5a5a;--warn:#e8b53a;
     --font:'Helvetica Neue','Inter',system-ui,sans-serif}
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.5}
   button,input,select{font-family:inherit}
-  .wrap{max-width:1240px;margin:0 auto;padding:0 22px}
-  header{height:62px;display:flex;align-items:center;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(5,5,5,.85);backdrop-filter:blur(16px);z-index:5}
+  .wrap{max-width:1300px;margin:0 auto;padding:0 22px}
+  header{height:62px;display:flex;align-items:center;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(5,5,5,.9);backdrop-filter:blur(16px);z-index:20}
   .hd{display:flex;align-items:center;justify-content:space-between;width:100%}
   .brand{font-weight:800;letter-spacing:-.02em;text-transform:uppercase;font-size:15px}
   .brand i{font-style:normal;color:var(--brand)}
@@ -30,45 +30,69 @@
   .login button{width:100%;margin-top:14px;padding:13px;border:0;border-radius:11px;background:var(--brand);color:#050505;font-weight:800;font-size:14px;cursor:pointer}
   .login .err{color:var(--bad);font-size:13px;margin-top:10px;display:none}
 
-  /* dashboard */
-  .dash{display:none;padding:28px 0 60px}
+  /* nav tabs */
+  .dash{display:none;padding:0 0 70px}
+  nav.tabs{display:flex;gap:4px;flex-wrap:wrap;position:sticky;top:62px;background:rgba(5,5,5,.9);backdrop-filter:blur(16px);z-index:15;padding:14px 0 12px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  nav.tabs button{background:none;border:0;color:var(--muted);font-size:13px;font-weight:700;padding:8px 15px;border-radius:100px;cursor:pointer;transition:.15s}
+  nav.tabs button:hover{color:var(--ink);background:var(--card)}
+  nav.tabs button.on{background:var(--ink);color:#050505}
+  nav.tabs .tcount{display:inline-block;min-width:17px;padding:0 5px;margin-left:5px;font-size:10px;font-weight:800;background:var(--bad);color:#fff;border-radius:100px;line-height:16px;text-align:center;vertical-align:1px}
+  nav.tabs button.on .tcount{background:#050505;color:var(--brand)}
+
+  section[data-sec]{display:none;padding-top:14px}
+  section[data-sec].on{display:block;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
   h2{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);font-weight:700;margin:30px 0 14px}
-  .cards{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
-  .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
-  .stat b{display:block;font-size:26px;font-weight:800;letter-spacing:-.02em}
-  .stat span{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:600}
+  h2:first-child{margin-top:6px}
+
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;position:relative}
+  .stat b{display:block;font-size:25px;font-weight:800;letter-spacing:-.02em}
+  .stat span{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:600}
   .stat.hl b{color:var(--brand)}
+  .stat.act{cursor:pointer}.stat.act:hover{border-color:var(--line2)}
+  .stat.warn b{color:var(--warn)}
+  .stat .flag{position:absolute;top:14px;right:14px;font-size:10px;font-weight:800;color:var(--bad)}
+
   /* chart */
-  .chart{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 20px 12px}
-  .bars{display:flex;align-items:flex-end;gap:6px;height:120px}
-  .bar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;position:relative}
-  .bar i{display:block;border-radius:4px 4px 0 0;background:var(--accent);opacity:.85;min-height:2px}
-  .bar u{display:block;border-radius:0;background:var(--brand);min-height:0;text-decoration:none}
-  .bar b{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--muted);font-weight:600;opacity:0}
+  .chart{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 20px 12px}
+  .bars{display:flex;align-items:stretch;gap:5px;height:150px}
+  .bar{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;position:relative;cursor:default}
+  .bar i{display:block;border-radius:4px 4px 0 0;background:var(--accent);opacity:.8;min-height:2px;transition:opacity .15s}
+  .bar u{display:block;background:var(--brand);min-height:0;text-decoration:none}
+  .bar:hover i{opacity:1}
+  .bar b{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--ink);font-weight:700;opacity:0;white-space:nowrap;background:var(--card2);border:1px solid var(--line);padding:3px 7px;border-radius:6px;pointer-events:none;z-index:2}
   .bar:hover b{opacity:1}
-  .bar span{font-size:9px;color:var(--faint);text-align:center;margin-top:6px}
-  .legend{display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--muted)}
+  .bar span{font-size:9px;color:var(--faint);text-align:center;margin-top:6px;white-space:nowrap}
+  .legend{display:flex;gap:16px;margin-top:12px;font-size:11px;color:var(--muted)}
   .legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px}
 
   table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;font-size:13px}
-  th{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);text-align:left;padding:13px 14px;border-bottom:1px solid var(--line)}
-  td{padding:12px 14px;border-bottom:1px solid var(--line);color:var(--muted);vertical-align:top}
+  th{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:11px 14px;border-bottom:1px solid var(--line);color:var(--muted);vertical-align:top}
   tr:last-child td{border-bottom:none}
+  tbody tr:hover td{background:var(--card2)}
   td.id{color:var(--ink);font-weight:700;white-space:nowrap}
   td .items{font-size:12px;color:var(--faint)}
   .money{color:var(--ink);font-weight:700;white-space:nowrap}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
   select.st{background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px}
-  .pill{display:inline-block;padding:3px 9px;border-radius:100px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
-  .pill.pending{background:rgba(255,180,60,.14);color:#ffcf8a}
-  .pill.new,.pill.paid,.pill.processing{background:rgba(58,123,255,.15);color:#9db9ff}
+  .pill{display:inline-block;padding:3px 9px;border-radius:100px;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+  .pill.pending,.pill.processing{background:rgba(255,180,60,.14);color:#ffcf8a}
+  .pill.paid,.pill.held{background:rgba(58,123,255,.15);color:#9db9ff}
   .pill.shipped{background:rgba(231,255,58,.12);color:var(--brand)}
-  .pill.delivered,.pill.done{background:rgba(55,214,122,.14);color:var(--ok)}
-  .pill.cancelled{background:rgba(255,90,90,.12);color:var(--bad)}
+  .pill.delivered,.pill.released,.pill.done,.pill.yes{background:rgba(55,214,122,.14);color:var(--ok)}
+  .pill.cancelled,.pill.refunded,.pill.disputed,.pill.no,.pill.banned{background:rgba(255,90,90,.12);color:var(--bad)}
+  .pill.tier{background:var(--card2);color:var(--muted)}
   .ship{display:flex;flex-direction:column;gap:6px;margin-top:8px}
-  .ship input{background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px;width:150px}
+  .ship input{background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px;width:160px}
   .ship input:focus{border-color:var(--accent);outline:none}
-  .ship .save{background:var(--brand);color:#050505;border:0;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:800;cursor:pointer;width:150px}
-  .ship .save:hover{filter:brightness(1.05)}
+  .btn{border:0;border-radius:8px;padding:6px 11px;font-size:11px;font-weight:800;cursor:pointer;background:var(--brand);color:#050505}
+  .btn:hover{filter:brightness(1.06)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn.ghost{background:#2a2a30;color:#ddd}
+  .btn.danger{background:#7a1020;color:#fff}
+  .btn.sm{padding:5px 9px}
   .rcpt{color:var(--accent);font-weight:600}
   .empty{color:var(--faint);text-align:center;padding:26px}
   .wallets{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px;max-width:640px}
@@ -81,6 +105,14 @@
   .wdiv{font-size:12px;color:var(--faint);border-top:1px solid var(--line);padding-top:12px;margin-top:2px}
   .thumbs{display:flex;gap:5px}
   .thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;border:1px solid var(--line)}
+  .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+  .search{flex:1;min-width:200px;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:10px 14px;color:var(--ink);font-size:14px;outline:none}
+  .search:focus{border-color:var(--accent)}
+  .filterchips{display:flex;gap:6px}
+  .filterchips button{background:var(--card);border:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:700;padding:7px 12px;border-radius:100px;cursor:pointer}
+  .filterchips button.on{background:var(--ink);color:#050505;border-color:var(--ink)}
+  .count{font-size:12px;color:var(--faint);margin-left:auto}
+  .actcell{display:flex;gap:6px;flex-wrap:wrap}
   @media(max-width:1000px){.cards{grid-template-columns:repeat(3,1fr)}}
   @media(max-width:640px){.cards{grid-template-columns:repeat(2,1fr)}.hidem{display:none}}
 </style>
@@ -101,105 +133,187 @@
   </div>
 
   <div class="dash" id="dash">
-    <h2>Overview</h2>
-    <div class="cards">
-      <div class="stat hl"><b id="sRev">—</b><span>Revenue</span></div>
-      <div class="stat"><b id="sOrders">—</b><span>Orders</span></div>
-      <div class="stat"><b id="sUsers">—</b><span>Accounts</span></div>
-      <div class="stat"><b id="sTotal">—</b><span>Total visits</span></div>
-      <div class="stat"><b id="sUnique">—</b><span>Unique visitors</span></div>
-      <div class="stat"><b id="sToday">—</b><span>Visits today</span></div>
-    </div>
+    <nav class="tabs" id="tabs">
+      <button data-t="overview" class="on">Overview</button>
+      <button data-t="traffic">Traffic</button>
+      <button data-t="users">Users</button>
+      <button data-t="orders">Orders</button>
+      <button data-t="market">Marketplace<span class="tcount" id="tcMarket" style="display:none">0</span></button>
+      <button data-t="settings">Settings</button>
+    </nav>
 
-    <h2>Receiving wallets</h2>
-    <div class="wallets" id="walletBox">
-      <label>USDT · TRC-20 (T…) <span class="wstat" id="wUsdtStat"></span>
-        <input id="wUsdt" placeholder="T…" spellcheck="false"></label>
-      <label>USDC · ERC-20 (0x…) <span class="wstat" id="wUsdcStat"></span>
-        <input id="wUsdc" placeholder="0x…" spellcheck="false"></label>
-      <div class="wdiv">API keys — enable automatic on-chain payment detection</div>
-      <label>Etherscan API key <span class="wstat" id="wEthStat"></span>
-        <input id="wEthKey" type="password" placeholder="paste key (leave blank to keep)" spellcheck="false" autocomplete="off"></label>
-      <label>TronGrid API key <span class="wstat" id="wTronStat"></span>
-        <input id="wTronKey" type="password" placeholder="paste key (leave blank to keep)" spellcheck="false" autocomplete="off"></label>
-      <button class="save" id="wSave">Save payment settings</button>
-      <span class="wmsg" id="wMsg"></span>
-    </div>
+    <!-- OVERVIEW -->
+    <section data-sec="overview" class="on">
+      <h2>Business</h2>
+      <div class="cards">
+        <div class="stat hl"><b id="sRev">—</b><span>Revenue (gross)</span></div>
+        <div class="stat"><b id="sFees">—</b><span>Fees collected</span></div>
+        <div class="stat act" data-goto="orders"><b id="sOrders">—</b><span>Orders</span></div>
+        <div class="stat act" data-goto="users"><b id="sUsers">—</b><span>Accounts</span></div>
+      </div>
+      <h2>Visitors</h2>
+      <div class="cards">
+        <div class="stat"><b id="sToday">—</b><span>Visits today</span></div>
+        <div class="stat"><b id="sTotal">—</b><span>Total visits</span></div>
+        <div class="stat"><b id="sUnique">—</b><span>Unique visitors</span></div>
+        <div class="stat act" data-goto="traffic"><b id="sAvg">—</b><span>Avg / day (14d)</span></div>
+      </div>
+      <h2>Needs attention</h2>
+      <div class="cards">
+        <div class="stat act warn" data-goto="market"><b id="kPending">—</b><span>Pending listings</span></div>
+        <div class="stat act warn" data-goto="market"><b id="kDisputes">—</b><span>Open disputes</span></div>
+        <div class="stat act warn" data-goto="market"><b id="kReports">—</b><span>Open reports</span></div>
+        <div class="stat act" data-goto="market"><b id="kPayouts">—</b><span>Payouts owed</span></div>
+      </div>
+      <h2>Active listings</h2>
+      <div class="cards">
+        <div class="stat"><b id="kActive">—</b><span>Live listings</span></div>
+      </div>
+    </section>
 
-    <h2>Traffic & orders — last 14 days</h2>
-    <div class="chart">
-      <div class="bars" id="bars"></div>
-      <div class="legend"><span><i style="background:var(--accent)"></i>Visits</span><span><i style="background:var(--brand)"></i>Orders</span></div>
-    </div>
+    <!-- TRAFFIC -->
+    <section data-sec="traffic">
+      <h2>Visits &amp; orders — last 14 days</h2>
+      <div class="chart">
+        <div class="bars" id="bars"></div>
+        <div class="legend"><span><i style="background:var(--accent)"></i>Visits</span><span><i style="background:var(--brand)"></i>Orders</span></div>
+      </div>
+      <h2>Daily breakdown — last 30 days</h2>
+      <div style="overflow-x:auto"><table id="dailyT">
+        <thead><tr><th>Date</th><th class="num">Visits</th><th class="num">Unique</th><th class="num">Orders</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </section>
 
-    <h2>Orders</h2>
-    <div style="overflow-x:auto"><table id="ordersT">
-      <thead><tr><th>Order</th><th>Date</th><th class="hidem">Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Receipt</th></tr></thead>
-      <tbody></tbody>
-    </table></div>
+    <!-- USERS -->
+    <section data-sec="users">
+      <div class="toolbar">
+        <input class="search" id="userSearch" placeholder="Search by email, name or @telegram…">
+        <div class="filterchips" id="userFilter">
+          <button data-f="all" class="on">All</button>
+          <button data-f="sellers">Sellers</button>
+          <button data-f="verified">Verified</button>
+          <button data-f="banned">Banned</button>
+        </div>
+        <span class="count" id="userCount"></span>
+      </div>
+      <div style="overflow-x:auto"><table id="usersT">
+        <thead><tr><th>User</th><th class="hidem">Telegram</th><th>Registered</th><th>Trust</th><th class="num">Listings</th><th class="num">Sold</th><th class="num">Bought</th><th class="num">Balance</th><th>Actions</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </section>
 
-    <h2>Marketplace · Pending listings (moderation)</h2>
-    <div style="overflow-x:auto"><table id="modT">
-      <thead><tr><th>Item</th><th class="hidem">Seller</th><th>Category</th><th>Price</th><th>Preview</th><th>Decision</th></tr></thead>
-      <tbody></tbody>
-    </table></div>
+    <!-- ORDERS -->
+    <section data-sec="orders">
+      <div class="toolbar">
+        <input class="search" id="orderSearch" placeholder="Search by order id, customer, email…">
+        <span class="count" id="orderCount"></span>
+      </div>
+      <div style="overflow-x:auto"><table id="ordersT">
+        <thead><tr><th>Order</th><th>Date</th><th class="hidem">Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Receipt</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </section>
 
-    <h2>Marketplace · Disputes</h2>
-    <div style="overflow-x:auto"><table id="dispT">
-      <thead><tr><th>Order</th><th>Item</th><th class="hidem">Buyer</th><th class="hidem">Seller</th><th>Total</th><th>Reason</th><th>Resolve</th></tr></thead>
-      <tbody></tbody>
-    </table></div>
+    <!-- MARKETPLACE -->
+    <section data-sec="market">
+      <h2>Pending listings (moderation)</h2>
+      <div style="overflow-x:auto"><table id="modT">
+        <thead><tr><th>Item</th><th class="hidem">Seller</th><th>Category</th><th>Price</th><th>Preview</th><th>Decision</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+      <h2>Disputes</h2>
+      <div style="overflow-x:auto"><table id="dispT">
+        <thead><tr><th>Order</th><th>Item</th><th class="hidem">Buyer</th><th class="hidem">Seller</th><th>Total</th><th>Reason</th><th>Resolve</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+      <h2>Payouts owed to sellers</h2>
+      <div style="overflow-x:auto"><table id="payT">
+        <thead><tr><th>Order</th><th>Seller</th><th>Payout address</th><th>Owed</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+      <h2>Reported listings</h2>
+      <div style="overflow-x:auto"><table id="repT">
+        <thead><tr><th>Listing</th><th class="hidem">Seller</th><th>Reason</th><th class="hidem">By</th><th>Action</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+      <h2>Sellers · manual verification</h2>
+      <div style="overflow-x:auto"><table id="verT">
+        <thead><tr><th>Seller</th><th>Listings</th><th>Verified</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </section>
 
-    <h2>Marketplace · Payouts owed to sellers</h2>
-    <div style="overflow-x:auto"><table id="payT">
-      <thead><tr><th>Order</th><th>Seller</th><th>Payout address</th><th>Owed</th><th></th></tr></thead>
-      <tbody></tbody>
-    </table></div>
-
-    <h2>Marketplace · Reported listings</h2>
-    <div style="overflow-x:auto"><table id="repT">
-      <thead><tr><th>Listing</th><th class="hidem">Seller</th><th>Reason</th><th class="hidem">By</th><th>Action</th></tr></thead>
-      <tbody></tbody>
-    </table></div>
-
-    <h2>Marketplace · Sellers (verification)</h2>
-    <div style="overflow-x:auto"><table id="verT">
-      <thead><tr><th>Seller</th><th>Listings</th><th>Verified</th><th></th></tr></thead>
-      <tbody></tbody>
-    </table></div>
-
-    <h2>Accounts</h2>
-    <div style="overflow-x:auto"><table id="usersT">
-      <thead><tr><th>Email</th><th class="hidem">Name</th><th>Registered</th><th>Orders</th></tr></thead>
-      <tbody></tbody>
-    </table></div>
+    <!-- SETTINGS -->
+    <section data-sec="settings">
+      <h2>Receiving wallets &amp; payment detection</h2>
+      <div class="wallets" id="walletBox">
+        <label>USDT · TRC-20 (T…) <span class="wstat" id="wUsdtStat"></span>
+          <input id="wUsdt" placeholder="T…" spellcheck="false"></label>
+        <label>USDC · ERC-20 (0x…) <span class="wstat" id="wUsdcStat"></span>
+          <input id="wUsdc" placeholder="0x…" spellcheck="false"></label>
+        <div class="wdiv">API keys — enable automatic on-chain payment detection</div>
+        <label>Etherscan API key <span class="wstat" id="wEthStat"></span>
+          <input id="wEthKey" type="password" placeholder="paste key (leave blank to keep)" spellcheck="false" autocomplete="off"></label>
+        <label>TronGrid API key <span class="wstat" id="wTronStat"></span>
+          <input id="wTronKey" type="password" placeholder="paste key (leave blank to keep)" spellcheck="false" autocomplete="off"></label>
+        <button class="save" id="wSave">Save payment settings</button>
+        <span class="wmsg" id="wMsg"></span>
+      </div>
+    </section>
   </div>
 </div>
 
 <script>
 const $=s=>document.querySelector(s);
 let KEY=sessionStorage.getItem('swk_admin')||'';
+let DATA=null, USER_FILTER='all';
 
 async function api(path,opts={}){
   const r=await fetch(path,{...opts,headers:{'Content-Type':'application/json','X-Admin-Key':KEY,...(opts.headers||{})}});
   if(r.status===401)throw new Error('auth');
   return r.json();
 }
-const fmt$=n=>'$'+Number(n).toLocaleString('en-US');
-const fmtD=t=>new Date(t).toISOString().slice(0,16).replace('T',' ');
-// escape every user-controlled string before it goes into innerHTML (stored-XSS guard)
+const fmt$=n=>'$'+Number(n||0).toLocaleString('en-US');
+const fmtN=n=>Number(n||0).toLocaleString('en-US');
+const fmtD=t=>t?new Date(t).toISOString().slice(0,16).replace('T',' '):'—';
+const fmtDay=t=>t?new Date(t).toISOString().slice(0,10):'—';
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+/* ---- tab navigation ---- */
+function showTab(t){
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  document.querySelectorAll('section[data-sec]').forEach(s=>s.classList.toggle('on',s.dataset.sec===t));
+  window.scrollTo(0,0);
+}
+$('#tabs').addEventListener('click',e=>{const b=e.target.closest('[data-t]');if(b)showTab(b.dataset.t);});
+document.addEventListener('click',e=>{const g=e.target.closest('[data-goto]');if(g)showTab(g.dataset.goto);});
+
 async function loadDash(){
-  const d=await api('/api/admin/overview');
+  const d=await api('/api/admin/overview');DATA=d;
   $('#login').style.display='none';$('#dash').style.display='block';
   $('#refresh').style.display=$('#logout').style.display='inline-block';
+  // business
   $('#sRev').textContent=fmt$(d.revenue);
-  $('#sOrders').textContent=d.ordersCount;
-  $('#sUsers').textContent=d.usersCount;
-  $('#sTotal').textContent=d.visits.total.toLocaleString();
-  $('#sUnique').textContent=d.visits.unique.toLocaleString();
-  $('#sToday').textContent=d.visits.today.toLocaleString();
+  $('#sFees').textContent=fmt$(d.fees);
+  $('#sOrders').textContent=fmtN(d.ordersCount);
+  $('#sUsers').textContent=fmtN(d.usersCount);
+  // visitors
+  $('#sToday').textContent=fmtN(d.visits.today);
+  $('#sTotal').textContent=fmtN(d.visits.total);
+  $('#sUnique').textContent=fmtN(d.visits.unique);
+  const last14=d.days.slice(-14);
+  const avg=Math.round(last14.reduce((s,x)=>s+x.v,0)/Math.max(1,last14.length));
+  $('#sAvg').textContent=fmtN(avg);
+  // attention
+  const k=d.kpis||{};
+  $('#kPending').textContent=fmtN(k.pendingListings);
+  $('#kDisputes').textContent=fmtN(k.openDisputes);
+  $('#kReports').textContent=fmtN(k.openReports);
+  $('#kPayouts').textContent=fmt$(k.payoutsOwed)+(k.payoutsCount?` · ${k.payoutsCount}`:'');
+  $('#kActive').textContent=fmtN(k.activeListings);
+  const attn=(k.pendingListings||0)+(k.openDisputes||0)+(k.openReports||0);
+  const tc=$('#tcMarket');if(tc){tc.textContent=attn;tc.style.display=attn?'inline-block':'none';}
   $('#upd').textContent='Updated '+new Date().toLocaleTimeString();
   // wallets
   const w=d.wallets||{};
@@ -209,29 +323,89 @@ async function loadDash(){
   $('#wUsdcStat').innerHTML=w.usdcOk?(w.usdcAuto?'<span class="ok">● live · auto-detect on</span>':'<span class="warn">● live · manual (add Etherscan key)</span>'):'<span class="bad">● not set / invalid</span>';
   $('#wEthStat').innerHTML=w.etherscanSet?'<span class="ok">● saved</span>':'<span class="warn">● not set</span>';
   $('#wTronStat').innerHTML=w.tronSet?'<span class="ok">● saved</span>':'<span class="warn">● optional</span>';
-  // chart
-  const maxV=Math.max(1,...d.days.map(x=>x.v));
-  $('#bars').innerHTML=d.days.map(x=>{
-    const vh=Math.round(x.v/maxV*100), oh=x.o?Math.max(6,Math.round(x.o/maxV*100)):0;
-    return `<div class="bar"><b>${x.v}v/${x.o}o</b><u style="height:${oh}%"></u><i style="height:${vh}%"></i><span>${x.d.slice(5)}</span></div>`;
+  renderChart(last14);
+  renderDaily(d.days);
+  renderUsers();
+  renderOrders();
+  loadMarketAdmin();
+}
+
+function renderChart(days){
+  const maxV=Math.max(1,...days.map(x=>x.v));
+  $('#bars').innerHTML=days.map(x=>{
+    const vh=x.v?Math.max(2,Math.round(x.v/maxV*86)):0;
+    // orders drawn as a small marker segment on top of the visits bar (kept within the same column)
+    const oh=x.o?Math.min(22,Math.max(4,Math.round(x.o/maxV*86))):0;
+    return `<div class="bar"><b>${esc(x.d.slice(5))} · ${x.v} visits · ${x.u} unique · ${x.o} orders</b><u style="height:${oh}px"></u><i style="height:${vh}%"></i><span>${esc(x.d.slice(5))}</span></div>`;
   }).join('');
-  // orders
+}
+function renderDaily(days){
+  const rows=days.slice().reverse();
+  $('#dailyT tbody').innerHTML=rows.map(x=>`<tr>
+    <td class="id">${esc(x.d)}</td><td class="num">${fmtN(x.v)}</td><td class="num">${fmtN(x.u)}</td><td class="num">${fmtN(x.o)}</td></tr>`).join('');
+}
+
+/* ---- users ---- */
+function renderUsers(){
+  if(!DATA)return;
+  const q=($('#userSearch').value||'').trim().toLowerCase();
+  let list=DATA.users.filter(u=>{
+    if(USER_FILTER==='sellers'&&!u.listings)return false;
+    if(USER_FILTER==='verified'&&!u.verified)return false;
+    if(USER_FILTER==='banned'&&!u.banned)return false;
+    if(q&&!((u.email+' '+(u.name||'')+' '+(u.telegram||'')).toLowerCase().includes(q)))return false;
+    return true;
+  });
+  $('#userCount').textContent=list.length+' / '+DATA.users.length+' accounts';
+  const tb=$('#usersT tbody');
+  tb.innerHTML=list.length?list.map(u=>{
+    const trust=[u.verified?'<span class="pill yes">✓ Verified</span>':'',u.tier?`<span class="pill tier">${esc(u.tier.icon)} ${esc(u.tier.label)}</span>`:''].filter(Boolean).join(' ')||'—';
+    return `<tr class="${u.banned?'':''}">
+      <td class="id">${esc(u.name||'—')}${u.banned?' <span class="pill banned">banned</span>':''}<div class="items">${esc(u.email)}</div></td>
+      <td class="hidem">${u.telegram?'@'+esc(u.telegram):'—'}</td>
+      <td>${fmtDay(u.created)}</td>
+      <td>${trust}${u.rating?`<div class="items">★ ${u.rating}</div>`:''}</td>
+      <td class="num">${fmtN(u.listings)}</td>
+      <td class="num">${fmtN(u.sold)}</td>
+      <td class="num">${fmtN(u.bought)}</td>
+      <td class="num money">${u.balance?fmt$(u.balance):'—'}</td>
+      <td><div class="actcell">
+        <button class="btn sm ${u.verified?'ghost':''}" data-ver="${esc(u.email)}" data-on="${u.verified?0:1}">${u.verified?'Unverify':'Verify'}</button>
+        <button class="btn sm ${u.banned?'ghost':'danger'}" data-ban="${esc(u.email)}" data-on="${u.banned?0:1}">${u.banned?'Unban':'Ban'}</button>
+      </div></td></tr>`;
+  }).join(''):'<tr><td colspan="9" class="empty">No accounts match.</td></tr>';
+  tb.querySelectorAll('[data-ver]').forEach(b=>b.addEventListener('click',async()=>{await api('/api/admin/verify',{method:'POST',body:JSON.stringify({email:b.dataset.ver,verified:b.dataset.on==='1'})});loadDash();}));
+  tb.querySelectorAll('[data-ban]').forEach(b=>b.addEventListener('click',async()=>{
+    const on=b.dataset.on==='1';
+    if(on&&!confirm('Suspend '+b.dataset.ban+'? They will be logged out and blocked from signing in.'))return;
+    await api('/api/admin/ban',{method:'POST',body:JSON.stringify({email:b.dataset.ban,banned:on})});loadDash();
+  }));
+}
+$('#userSearch').addEventListener('input',renderUsers);
+$('#userFilter').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(!b)return;USER_FILTER=b.dataset.f;document.querySelectorAll('#userFilter button').forEach(x=>x.classList.toggle('on',x===b));renderUsers();});
+
+/* ---- orders ---- */
+function renderOrders(){
+  if(!DATA)return;
+  const q=($('#orderSearch').value||'').trim().toLowerCase();
+  const list=DATA.orders.filter(o=>!q||((o.id+' '+(o.name||'')+' '+(o.email||'')).toLowerCase().includes(q)));
+  $('#orderCount').textContent=list.length+' / '+DATA.orders.length+' orders';
   const ob=$('#ordersT tbody');
-  ob.innerHTML=d.orders.length?d.orders.map(o=>`<tr>
-    <td class="id">${o.id}</td><td>${fmtD(o.date)}</td>
+  ob.innerHTML=list.length?list.map(o=>`<tr>
+    <td class="id">${esc(o.id)}</td><td>${fmtD(o.date)}</td>
     <td class="hidem">${esc(o.name||'')} <div class="items">${esc(o.email)}</div></td>
-    <td>${o.items.map(i=>`${i.qty}× ${esc(i.name)} (${esc(i.size)})`).join('<br>')}</td>
-    <td class="money">${fmt$(o.total)}${o.payAmount?`<div class="items">${Number(o.payAmount).toFixed(2)} USDC</div>`:''}</td>
+    <td>${(o.items||[]).map(i=>`${i.qty}× ${esc(i.name)} (${esc(i.size)})`).join('<br>')}</td>
+    <td class="money">${fmt$(o.total)}${o.payAmount?`<div class="items">${Number(o.payAmount).toFixed(2)} ${esc((o.network||'').includes('usdt')?'USDT':'USDC')}</div>`:''}</td>
     <td><span class="pill ${esc(o.status)}">${esc(o.status)}</span>${o.paidTx?`<div class="items"><a class="rcpt" href="${o.network==='usdt-trc20'?'https://tronscan.org/#/transaction/':'https://etherscan.io/tx/'}${encodeURIComponent(o.paidTx)}" target="_blank">✓ tx ↗</a></div>`:''}
-      <div class="ship" data-id="${o.id}">
+      <div class="ship" data-id="${esc(o.id)}">
         <select class="st">${['pending','paid','held','processing','shipped','delivered','released','disputed','refunded','cancelled'].map(s=>`<option ${s===o.status?'selected':''}>${s}</option>`).join('')}</select>
         <input class="carrier" placeholder="Carrier (DHL…)" value="${esc(o.carrier||'')}">
         <input class="tracking" placeholder="Tracking #" value="${esc(o.tracking||'')}">
         <input class="tx" placeholder="Payment tx hash" value="${esc(o.paidTx||'')}">
-        <button class="save">Save</button>
+        <button class="btn sm save">Save</button>
       </div></td>
-    <td><a class="rcpt" href="/receipt/${o.id}" target="_blank">open</a></td>
-  </tr>`).join(''):'<tr><td colspan="7" class="empty">No orders yet.</td></tr>';
+    <td><a class="rcpt" href="/receipt/${esc(o.id)}" target="_blank">open</a></td>
+  </tr>`).join(''):'<tr><td colspan="7" class="empty">No orders match.</td></tr>';
   ob.querySelectorAll('.ship').forEach(row=>{
     const id=row.dataset.id;
     const doSave=async()=>{
@@ -244,13 +418,8 @@ async function loadDash(){
     row.querySelector('.save').addEventListener('click',doSave);
     row.querySelector('.st').addEventListener('change',doSave);
   });
-  loadMarketAdmin();
-  // users
-  $('#usersT tbody').innerHTML=d.users.length?d.users.map(u=>`<tr>
-    <td class="id">${esc(u.email)}</td><td class="hidem">${esc(u.name||'—')}</td>
-    <td>${fmtD(u.created)}</td><td>${u.orders}</td></tr>`).join('')
-    :'<tr><td colspan="4" class="empty">No accounts yet.</td></tr>';
 }
+$('#orderSearch').addEventListener('input',renderOrders);
 
 async function loadMarketAdmin(){
   let m;try{m=await api('/api/admin/market');}catch(e){return;}
@@ -264,28 +433,30 @@ async function loadMarketAdmin(){
       <td>${esc(l.category||'')}<div class="items">${esc(l.brand||'')} · ${esc(l.condition||'')}${l.size?' · '+esc(l.size):''}</div></td>
       <td class="money">${fmt$(l.price)}</td>
       <td><div class="thumbs">${thumbs||'—'}</div></td>
-      <td><button class="save" data-approve="${l.id}">Approve</button> <button class="save" data-reject="${l.id}" style="background:#7a1020">Reject</button></td></tr>`;
+      <td><button class="btn sm" data-approve="${l.id}">Approve</button> <button class="btn sm danger" data-reject="${l.id}">Reject</button></td></tr>`;
   }).join(''):'<tr><td colspan="6" class="empty">Nothing awaiting review.</td></tr>';
   mb.querySelectorAll('[data-approve]').forEach(b=>b.addEventListener('click',async()=>{await api('/api/admin/listing-moderate',{method:'POST',body:JSON.stringify({id:b.dataset.approve,action:'approve'})});loadDash();}));
   mb.querySelectorAll('[data-reject]').forEach(b=>b.addEventListener('click',async()=>{if(!confirm('Reject this listing?'))return;await api('/api/admin/listing-moderate',{method:'POST',body:JSON.stringify({id:b.dataset.reject,action:'reject'})});loadDash();}));
+  // disputes
   const db=$('#dispT tbody');
   db.innerHTML=(m.disputes&&m.disputes.length)?m.disputes.map(o=>{
     const it=(o.items&&o.items[0])||{};
     const refundTo=o.payFrom?`<div class="items">refund → <span class="id" style="user-select:all">${esc(o.payFrom)}</span> (${esc(o.network||'')})</div>`:'<div class="items" style="color:#b23">refund address unknown (paid before tracking / manual)</div>';
-    return `<tr><td class="id">${o.id}</td><td>${esc(it.name||'')}${refundTo}</td>
+    return `<tr><td class="id">${esc(o.id)}</td><td>${esc(it.name||'')}${refundTo}</td>
       <td class="hidem">@${esc(o.buyerHandle)}</td><td class="hidem">@${esc(o.sellerHandle)}</td>
       <td class="money">${fmt$(o.total)}</td><td>${esc(o.disputeReason||'—')}</td>
-      <td><button class="save" data-rel="${o.id}">Release to seller</button> <button class="save" data-ref="${o.id}" style="background:#7a1020">Refund buyer</button></td></tr>`;
+      <td><button class="btn sm" data-rel="${o.id}">Release to seller</button> <button class="btn sm danger" data-ref="${o.id}">Refund buyer</button></td></tr>`;
   }).join(''):'<tr><td colspan="7" class="empty">No open disputes.</td></tr>';
   db.querySelectorAll('[data-rel]').forEach(b=>b.addEventListener('click',()=>{if(confirm('Release funds to the seller?'))setStatus(b.dataset.rel,'released');}));
   db.querySelectorAll('[data-ref]').forEach(b=>b.addEventListener('click',()=>{if(confirm('Refund the buyer? Send the crypto to the refund address shown, then confirm.'))setStatus(b.dataset.ref,'refunded');}));
+  // payouts
   const pb=$('#payT tbody');
   pb.innerHTML=(m.payouts&&m.payouts.length)?m.payouts.map(o=>{
     const owed=Math.round((o.total-(o.fee||0))*100)/100;
-    return `<tr><td class="id">${o.id}</td><td>@${esc(o.sellerHandle)}</td>
+    return `<tr><td class="id">${esc(o.id)}</td><td>@${esc(o.sellerHandle)}</td>
       <td class="id">${o.payout?esc(o.payout):'<span style="color:#b23">not set</span>'}</td>
       <td class="money">${fmt$(owed)}</td>
-      <td><button class="save" data-paid="${o.id}" ${o.payout?'':'disabled'}>Mark paid-out</button></td></tr>`;
+      <td><button class="btn sm" data-paid="${o.id}" ${o.payout?'':'disabled'}>Mark paid-out</button></td></tr>`;
   }).join(''):'<tr><td colspan="5" class="empty">Nothing to pay out.</td></tr>';
   pb.querySelectorAll('[data-paid]').forEach(b=>b.addEventListener('click',async()=>{await api('/api/admin/payout-done',{method:'POST',body:JSON.stringify({id:b.dataset.paid})});loadDash();}));
   // reports
@@ -293,17 +464,18 @@ async function loadMarketAdmin(){
   rb.innerHTML=(m.reports&&m.reports.length)?m.reports.map(r=>`<tr>
     <td class="id">${esc(r.title||'')}</td><td class="hidem">@${esc(r.seller)}</td>
     <td>${esc(r.reason||'—')}</td><td class="hidem">@${esc(r.from)}</td>
-    <td><button class="save" data-rdismiss="${r.id}" style="background:#2a2a30;color:#ddd">Dismiss</button> <button class="save" data-rremove="${r.id}" style="background:#7a1020">Remove listing</button></td></tr>`).join(''):'<tr><td colspan="5" class="empty">No open reports.</td></tr>';
+    <td><button class="btn sm ghost" data-rdismiss="${r.id}">Dismiss</button> <button class="btn sm danger" data-rremove="${r.id}">Remove listing</button></td></tr>`).join(''):'<tr><td colspan="5" class="empty">No open reports.</td></tr>';
   rb.querySelectorAll('[data-rdismiss]').forEach(b=>b.addEventListener('click',async()=>{await api('/api/admin/report-resolve',{method:'POST',body:JSON.stringify({id:b.dataset.rdismiss,action:'dismiss'})});loadDash();}));
   rb.querySelectorAll('[data-rremove]').forEach(b=>b.addEventListener('click',async()=>{if(!confirm('Remove this listing?'))return;await api('/api/admin/report-resolve',{method:'POST',body:JSON.stringify({id:b.dataset.rremove,action:'remove'})});loadDash();}));
   // verification
   const vb=$('#verT tbody');
   vb.innerHTML=(m.verifiable&&m.verifiable.length)?m.verifiable.map(u=>`<tr>
     <td class="id">@${esc(u.handle)} <div class="items">${esc(u.email)}</div></td><td>${u.listings}</td>
-    <td><span class="pill ${u.verified?'delivered':'cancelled'}">${u.verified?'verified':'no'}</span></td>
-    <td><button class="save" data-ver="${esc(u.email)}" data-on="${u.verified?0:1}" ${u.verified?'style="background:#2a2a30;color:#ddd"':''}>${u.verified?'Unverify':'Verify'}</button></td></tr>`).join(''):'<tr><td colspan="4" class="empty">No sellers yet.</td></tr>';
+    <td><span class="pill ${u.verified?'yes':'no'}">${u.verified?'verified':'no'}</span></td>
+    <td><button class="btn sm ${u.verified?'ghost':''}" data-ver="${esc(u.email)}" data-on="${u.verified?0:1}">${u.verified?'Unverify':'Verify'}</button></td></tr>`).join(''):'<tr><td colspan="4" class="empty">No sellers yet.</td></tr>';
   vb.querySelectorAll('[data-ver]').forEach(b=>b.addEventListener('click',async()=>{await api('/api/admin/verify',{method:'POST',body:JSON.stringify({email:b.dataset.ver,verified:b.dataset.on==='1'})});loadDash();}));
 }
+
 $('#enter').addEventListener('click',async()=>{
   KEY=$('#pw').value.trim();
   try{await loadDash();sessionStorage.setItem('swk_admin',KEY);}
@@ -315,7 +487,7 @@ $('#logout').addEventListener('click',()=>{sessionStorage.removeItem('swk_admin'
 $('#wSave').addEventListener('click',async()=>{
   const body={usdt:$('#wUsdt').value.trim(),usdc:$('#wUsdc').value.trim()};
   const ek=$('#wEthKey').value.trim(),tk=$('#wTronKey').value.trim();
-  if(ek)body.etherscanKey=ek; if(tk)body.tronKey=tk;   // only send keys that were typed (blank = keep existing)
+  if(ek)body.etherscanKey=ek; if(tk)body.tronKey=tk;
   const msg=$('#wMsg');msg.textContent='Saving…';$('#wSave').disabled=true;
   try{await api('/api/admin/wallets',{method:'POST',body:JSON.stringify(body)});$('#wEthKey').value='';$('#wTronKey').value='';msg.textContent='✓ Saved';await loadDash();}
   catch(e){msg.textContent=e&&e.message==='auth'?'Auth error':'Invalid address — check the format';}
