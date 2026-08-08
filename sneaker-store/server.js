@@ -359,7 +359,11 @@ const PWA_MANIFEST = JSON.stringify({
   description: 'Buy & sell anything, safely, with crypto escrow.',
   start_url: '/', scope: '/', display: 'standalone', orientation: 'portrait',
   background_color: '#f7f7f5', theme_color: '#111113',
-  icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }],
+  icons: [
+    { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+    { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+    { src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+  ],
 });
 const PWA_SW = `const C='swk-shell-v2';
 self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(['/','/manifest.webmanifest','/icon.svg']).catch(()=>{})).then(()=>self.skipWaiting()));});
@@ -643,6 +647,18 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && p === '/manifest.webmanifest') { res.writeHead(200, { 'Content-Type': 'application/manifest+json', 'Cache-Control': 'no-cache' }); return res.end(PWA_MANIFEST); }
     if (req.method === 'GET' && p === '/sw.js') { res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-cache' }); return res.end(PWA_SW); }
     if (req.method === 'GET' && p === '/icon.svg') { res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=604800' }); return res.end(PWA_ICON); }
+    if (req.method === 'GET' && p === '/icon-512.png') return serveFile(res, 'icon-512.png', 'image/png');
+    if (req.method === 'GET' && p === '/icon-192.png') return serveFile(res, 'icon-192.png', 'image/png');
+    // Digital Asset Links — verifies the Android TWA owns this domain (removes the URL bar).
+    // Set the app's signing SHA-256 in the admin panel (settings.twaFingerprints) or env TWA_FINGERPRINTS (comma-separated).
+    if (req.method === 'GET' && p === '/.well-known/assetlinks.json') {
+      const fps = (settings.twaFingerprints && settings.twaFingerprints.length ? settings.twaFingerprints
+        : String(process.env.TWA_FINGERPRINTS || '').split(',').map(s => s.trim()).filter(Boolean));
+      const pkg = process.env.TWA_PACKAGE || settings.twaPackage || 'com.stuffweknow.app';
+      const doc = fps.length ? [{ relation: ['delegate_permission/common.handle_all_urls'], target: { namespace: 'android_app', package_name: pkg, sha256_cert_fingerprints: fps } }] : [];
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
+      return res.end(JSON.stringify(doc));
+    }
     if (req.method === 'GET' && p === '/policies') return serveFile(res, 'policies.html', 'text/html; charset=utf-8');
     if (req.method === 'GET' && p === '/admin') return serveFile(res, 'admin.html', 'text/html; charset=utf-8');
     if (req.method === 'GET' && /^\/receipt\/SWK-[A-Z0-9-]+$/.test(p)) {
@@ -1371,7 +1387,7 @@ const server = http.createServer(async (req, res) => {
               balance: payoutBalance(u.email), banned: !!u.banned,
             };
           }).sort((a, b) => b.created - a.created),
-          wallets: { usdc: WALLET, usdt: USDT_TRC20_WALLET, usdcOk: isEthAddr(WALLET), usdtOk: isTronAddr(USDT_TRC20_WALLET), usdcAuto: !!etherscanKey, etherscanSet: !!etherscanKey, tronSet: !!tronKey },
+          wallets: { usdc: WALLET, usdt: USDT_TRC20_WALLET, usdcOk: isEthAddr(WALLET), usdtOk: isTronAddr(USDT_TRC20_WALLET), usdcAuto: !!etherscanKey, etherscanSet: !!etherscanKey, tronSet: !!tronKey, twaFingerprints: (settings.twaFingerprints || []).join('\n') },
         });
       }
       // suspend / restore a user account
@@ -1394,8 +1410,9 @@ const server = http.createServer(async (req, res) => {
         if (b.usdt !== undefined) { USDT_TRC20_WALLET = usdt; settings.usdtWallet = usdt; }
         if (b.etherscanKey !== undefined) { etherscanKey = String(b.etherscanKey).trim(); settings.etherscanKey = etherscanKey; }
         if (b.tronKey !== undefined) { tronKey = String(b.tronKey).trim(); settings.tronKey = tronKey; }
+        if (b.twaFingerprints !== undefined) settings.twaFingerprints = String(b.twaFingerprints).split(/[\s,]+/).map(s => s.trim().toUpperCase()).filter(s => /^[0-9A-F:]{50,}$/.test(s));
         saveSettings();
-        return send(res, 200, { ok: true, wallets: { usdc: WALLET, usdt: USDT_TRC20_WALLET }, etherscanSet: !!etherscanKey, tronSet: !!tronKey });
+        return send(res, 200, { ok: true, wallets: { usdc: WALLET, usdt: USDT_TRC20_WALLET }, etherscanSet: !!etherscanKey, tronSet: !!tronKey, twaFingerprints: settings.twaFingerprints || [] });
       }
       if (req.method === 'POST' && p === '/api/admin/order-status') {
         const { id, status, carrier, tracking, tx } = await readBody(req);

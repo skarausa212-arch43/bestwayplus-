@@ -257,6 +257,9 @@
           <input id="wEthKey" type="password" placeholder="paste key (leave blank to keep)" spellcheck="false" autocomplete="off"></label>
         <label>TronGrid API key <span class="wstat" id="wTronStat"></span>
           <input id="wTronKey" type="password" placeholder="paste key (leave blank to keep)" spellcheck="false" autocomplete="off"></label>
+        <div class="wdiv">Android app (TWA) — paste the signing SHA-256 fingerprint(s) to verify the app owns this domain (one per line)</div>
+        <label>App fingerprints (assetlinks.json)
+          <input id="wTwa" placeholder="AB:CD:EF:… (from your keystore)" spellcheck="false" autocomplete="off"></label>
         <button class="save" id="wSave">Save payment settings</button>
         <span class="wmsg" id="wMsg"></span>
       </div>
@@ -323,6 +326,7 @@ async function loadDash(){
   $('#wUsdcStat').innerHTML=w.usdcOk?(w.usdcAuto?'<span class="ok">● live · auto-detect on</span>':'<span class="warn">● live · manual (add Etherscan key)</span>'):'<span class="bad">● not set / invalid</span>';
   $('#wEthStat').innerHTML=w.etherscanSet?'<span class="ok">● saved</span>':'<span class="warn">● not set</span>';
   $('#wTronStat').innerHTML=w.tronSet?'<span class="ok">● saved</span>':'<span class="warn">● optional</span>';
+  if(document.activeElement!==$('#wTwa'))$('#wTwa').value=w.twaFingerprints||'';
   renderChart(last14);
   renderDaily(d.days);
   renderUsers();
@@ -485,7 +489,7 @@ $('#pw').addEventListener('keydown',e=>{if(e.key==='Enter')$('#enter').click()})
 $('#refresh').addEventListener('click',loadDash);
 $('#logout').addEventListener('click',()=>{sessionStorage.removeItem('swk_admin');location.reload()});
 $('#wSave').addEventListener('click',async()=>{
-  const body={usdt:$('#wUsdt').value.trim(),usdc:$('#wUsdc').value.trim()};
+  const body={usdt:$('#wUsdt').value.trim(),usdc:$('#wUsdc').value.trim(),twaFingerprints:$('#wTwa').value};
   const ek=$('#wEthKey').value.trim(),tk=$('#wTronKey').value.trim();
   if(ek)body.etherscanKey=ek; if(tk)body.tronKey=tk;
   const msg=$('#wMsg');msg.textContent='Saving…';$('#wSave').disabled=true;
