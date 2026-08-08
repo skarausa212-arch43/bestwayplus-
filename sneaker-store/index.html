@@ -2093,7 +2093,7 @@ function renderAccount(startTab){
         const d=await r.json();
         if(!r.ok){const m=$('#accMsg');m.style.display='block';m.textContent=d.error||'Failed';go.disabled=false;return}
         AUTH={token:d.token,email:d.email,name:d.name};save('swk_auth',AUTH);accDot();
-        toast(mode==='up'?'Account created':'Signed in');renderAccount();
+        toast(mode==='up'?'Account created':'Signed in');renderAccount();enablePush();
       }catch{const m=$('#accMsg');m.style.display='block';m.textContent='Accounts are unavailable right now.';go.disabled=false}
     });
   }else{
@@ -3126,6 +3126,7 @@ function profilePanelHTML(){
       <div class="tier-card-p">${esc(tierProgress(p))}</div>
     </div>`:''}
     <div class="theme-row"><span>Appearance</span><div class="segmented theme-seg" id="themeSeg"><button type="button" data-th="light">☀︎ Light</button><button type="button" data-th="dark">☾ Dark</button></div></div>
+    <div class="theme-row" id="notifRow" style="display:none"><span>🔔 Notifications</span><button type="button" class="cbtn" id="notifBtn" style="width:auto;height:40px;padding:0 18px;font-size:13px">Enable</button></div>
     <div class="prof-card">
       <div class="field"><label>Display name</label><input id="pfName" maxlength="60" value="${esc(p.name||'')}" placeholder="Your name"${nameLocked?' readonly':''}>
         <span class="hintline">${nameLocked?`🔒 You can change your name again on ${new Date(nameLockUntil).toLocaleDateString()}.`:'You can change your display name once every 180 days.'}</span></div>
@@ -3158,6 +3159,14 @@ function readProfileInputs(){
 }
 function wireProfilePanel(){
   const ts=$('#themeSeg');if(ts){setTheme(document.documentElement.dataset.theme||'light');ts.addEventListener('click',e=>{const b=e.target.closest('[data-th]');if(b)setTheme(b.dataset.th);});}
+  // notifications toggle — shown only when the browser/app supports push
+  const nrow=$('#notifRow'),nbtn=$('#notifBtn');
+  if(nrow&&nbtn&&('Notification'in window)&&('PushManager'in window)){
+    nrow.style.display='';
+    const paintN=()=>{const p=Notification.permission;if(p==='granted'){nbtn.textContent='On ✓';nbtn.disabled=true;}else if(p==='denied'){nbtn.textContent='Blocked in settings';nbtn.disabled=true;}else{nbtn.textContent='Enable';nbtn.disabled=false;}};
+    paintN();
+    nbtn.addEventListener('click',async()=>{nbtn.disabled=true;nbtn.textContent='…';await enablePush();paintN();if(Notification.permission==='granted'){try{await mfetch('/api/push/test',{method:'POST'});}catch(e){}toast('Notifications enabled 🔔');}});
+  }
   const avIn=$('#avIn');
   if(avIn)avIn.addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const dataUrl=await compressAvatar(f);readProfileInputs();MKT_PROFILE.avatar=dataUrl;paintMarket();}catch(x){toast('Could not read image');}});
   const avRm=$('#avRm');if(avRm)avRm.addEventListener('click',()=>{readProfileInputs();MKT_PROFILE.avatar='';paintMarket();});
@@ -3304,7 +3313,28 @@ $('#accModal').addEventListener('click',e=>{const b=e.target.closest('[data-act]
 /* ---------- init ---------- */
 renderFilterbar();renderGrid();renderCart();bump();updateWishBadge();loadPayConfig();
 /* PWA: register service worker (installable app + offline shell) */
-if('serviceWorker'in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{});});}
+if('serviceWorker'in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').then(()=>{if(AUTH)enablePush();}).catch(()=>{});});}
+/* ---- web push: subscribe the logged-in user so they get offers/messages/sales as notifications ---- */
+function urlB64ToU8(b64){const pad='='.repeat((4-b64.length%4)%4);const s=(b64+pad).replace(/-/g,'+').replace(/_/g,'/');const raw=atob(s);const a=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)a[i]=raw.charCodeAt(i);return a;}
+let PUSH_TRYING=false;
+async function enablePush(){
+  try{
+    if(!AUTH||!('serviceWorker'in navigator)||!('PushManager'in window)||!('Notification'in window))return;
+    if(Notification.permission==='denied'||PUSH_TRYING)return;
+    PUSH_TRYING=true;
+    if(Notification.permission==='default'){const perm=await Notification.requestPermission();if(perm!=='granted'){PUSH_TRYING=false;return;}}
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub){
+      const {publicKey}=await mfetch('/api/push/vapid');
+      sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlB64ToU8(publicKey)});
+    }
+    const j=sub.toJSON();
+    await mfetch('/api/push/subscribe',{method:'POST',body:JSON.stringify({endpoint:sub.endpoint,keys:j.keys})});
+    save('swk_push','on');
+  }catch(e){}
+  PUSH_TRYING=false;
+}
 /* refresh the alerts badge on load for signed-in users */
 if(AUTH)setTimeout(refreshAlerts,800);
 /* live online counter */

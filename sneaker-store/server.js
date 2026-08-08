@@ -59,6 +59,7 @@ const messages = loadJSON('messages.json', []);    // [{id,orderId,from,text,at}
 const reports = loadJSON('reports.json', []);      // [{id,listingId,from,reason,at,status}]
 const withdrawals = loadJSON('withdrawals.json', []); // [{id,seller,gross,fee,net,address,status,at,tx}]
 const follows = loadJSON('follows.json', []);      // [{follower, seller, at}]
+const pushSubs = loadJSON('push-subs.json', []);   // [{email, endpoint, keys:{p256dh,auth}, at}] web-push subscriptions
 const stats = loadJSON('stats.json', { total: 0, unique: 0, daily: {} }); // daily[YYYY-MM-DD]={v,u,o}
 const saveUsers = () => saveJSON('users.json', users);
 const saveOrders = () => saveJSON('orders.json', orders);
@@ -67,6 +68,7 @@ const saveOffers = () => saveJSON('offers.json', offers);
 const saveReviews = () => saveJSON('reviews.json', reviews);
 const saveMessages = () => saveJSON('messages.json', messages);
 const saveReports = () => saveJSON('reports.json', reports);
+const savePushSubs = () => saveJSON('push-subs.json', pushSubs);
 const saveWithdrawals = () => saveJSON('withdrawals.json', withdrawals);
 const saveFollows = () => saveJSON('follows.json', follows);
 // listings are moderated: a new listing stays 'pending' until an admin approves it (see /api/admin/listing-moderate)
@@ -211,6 +213,27 @@ const isTronAddr = (a) => /^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(a || '');
 //   admin setting (settings.json)  ->  env var  ->  built-in default.
 const settings = loadJSON('settings.json', {});
 const saveSettings = () => saveJSON('settings.json', settings);
+
+/* ---------- web push (VAPID keys persist in settings) ---------- */
+const webpush = require('./webpush');
+if (!settings.vapidPublic || !settings.vapidPrivate) {
+  const k = webpush.generateVapidKeys();
+  settings.vapidPublic = k.publicKey; settings.vapidPrivate = k.privateKey;
+  saveSettings();
+}
+const VAPID = { publicKey: settings.vapidPublic, privateKey: settings.vapidPrivate };
+const VAPID_SUBJECT = process.env.PUSH_SUBJECT || 'mailto:admin@stuffweknow.com';
+// send a push to every device a user has registered; prune subscriptions the push service reports gone
+async function sendPush(email, payload) {
+  const subs = pushSubs.filter(s => s.email === email);
+  if (!subs.length) return;
+  let changed = false;
+  await Promise.all(subs.map(async (s) => {
+    const r = await webpush.sendNotification(s, payload, VAPID, VAPID_SUBJECT).catch(() => ({ gone: false }));
+    if (r.gone) { const i = pushSubs.indexOf(s); if (i >= 0) { pushSubs.splice(i, 1); changed = true; } }
+  }));
+  if (changed) savePushSubs();
+}
 // let (not const) so the admin "Wallets" screen can update them live — NETWORKS/pollers read the current value.
 let WALLET = settings.usdcWallet || process.env.STORE_WALLET || '0xf2541E779Ee9aCe8f0B36D42cB1DdBcA8bBDFFAE';
 let USDT_TRC20_WALLET = settings.usdtWallet || process.env.USDT_TRC20_WALLET || 'TFkokHojKGMCTGkBGFu4SQgtAWzUYPyj5p';
@@ -338,13 +361,18 @@ const PWA_MANIFEST = JSON.stringify({
   background_color: '#f7f7f5', theme_color: '#111113',
   icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }],
 });
-const PWA_SW = `const C='swk-shell-v1';
+const PWA_SW = `const C='swk-shell-v2';
 self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(['/','/manifest.webmanifest','/icon.svg']).catch(()=>{})).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
 self.addEventListener('fetch',e=>{const req=e.request;if(req.method!=='GET')return;const u=new URL(req.url);if(u.origin!==location.origin)return;
   if(u.pathname.startsWith('/api/')||u.pathname.startsWith('/receipt/')||u.pathname==='/sw.js')return;
   if(req.mode==='navigate'){e.respondWith(fetch(req).catch(()=>caches.match('/')));return;}
-  e.respondWith(caches.open(C).then(c=>c.match(req).then(hit=>hit||fetch(req).then(r=>{try{c.put(req,r.clone());}catch(_){}return r;}))));});`;
+  e.respondWith(caches.open(C).then(c=>c.match(req).then(hit=>hit||fetch(req).then(r=>{try{c.put(req,r.clone());}catch(_){}return r;}))));});
+self.addEventListener('push',e=>{let d={};try{d=e.data?e.data.json():{};}catch(_){d={body:e.data&&e.data.text()};}
+  const title=d.title||'STUFFWEKNOW';
+  e.waitUntil(self.registration.showNotification(title,{body:d.body||'',icon:'/icon.svg',badge:'/icon.svg',data:{url:d.url||'/'},tag:d.tag||undefined,renotify:!!d.tag}));});
+self.addEventListener('notificationclick',e=>{e.notification.close();const url=(e.notification.data&&e.notification.data.url)||'/';
+  e.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(cs=>{for(const c of cs){if('focus'in c){c.navigate&&c.navigate(url);return c.focus();}}return clients.openWindow(url);}));});`;
 
 /* ---------- visit counting ---------- */
 const today = () => new Date().toISOString().slice(0, 10);
@@ -655,6 +683,35 @@ const server = http.createServer(async (req, res) => {
       if (!u) return send(res, 401, { error: 'unauthorized' });
       return send(res, 200, profileView(u));
     }
+    /* ----- web push subscription ----- */
+    if (req.method === 'GET' && p === '/api/push/vapid') {
+      return send(res, 200, { publicKey: VAPID.publicKey });
+    }
+    if (req.method === 'POST' && p === '/api/push/subscribe') {
+      const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
+      const b = await readBody(req);
+      const endpoint = String(b.endpoint || '');
+      const p256dh = String((b.keys || {}).p256dh || ''); const auth = String((b.keys || {}).auth || '');
+      if (!/^https:\/\//.test(endpoint) || !p256dh || !auth) return send(res, 400, { error: 'bad subscription' });
+      const existing = pushSubs.find(s => s.endpoint === endpoint);
+      if (existing) { existing.email = u.email; existing.keys = { p256dh, auth }; }
+      else { if (pushSubs.length > 20000) pushSubs.shift(); pushSubs.push({ email: u.email, endpoint, keys: { p256dh, auth }, at: Date.now() }); }
+      savePushSubs();
+      return send(res, 200, { ok: true });
+    }
+    if (req.method === 'POST' && p === '/api/push/unsubscribe') {
+      const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
+      const b = await readBody(req);
+      const before = pushSubs.length;
+      for (let i = pushSubs.length - 1; i >= 0; i--) if (pushSubs[i].endpoint === b.endpoint && pushSubs[i].email === u.email) pushSubs.splice(i, 1);
+      if (pushSubs.length !== before) savePushSubs();
+      return send(res, 200, { ok: true });
+    }
+    if (req.method === 'POST' && p === '/api/push/test') {
+      const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
+      sendPush(u.email, { title: 'STUFFWEKNOW', body: 'Push notifications are on ✓', url: '/' });
+      return send(res, 200, { ok: true });
+    }
     /* ----- update profile (name / telegram / avatar) ----- */
     if (req.method === 'POST' && p === '/api/profile') {
       const u = tokenUser(req); if (!u) return send(res, 401, { error: 'unauthorized' });
@@ -911,6 +968,7 @@ const server = http.createServer(async (req, res) => {
       if (l.autoAccept > 0 && amount >= l.autoAccept) { of.status = 'accepted'; of.auto = true; }
       else if (l.autoDecline > 0 && amount <= l.autoDecline) { of.status = 'declined'; of.auto = true; }
       offers.push(of); saveOffers();
+      if (of.status === 'pending') sendPush(l.seller, { title: '💸 New offer', body: `${amount} USDT on “${l.title}”`, url: '/?item=' + l.id });
       return send(res, 201, { offer: of, auto: of.status !== 'pending' ? of.status : null });
     }
     /* --- accept / decline / counter offer (seller) --- */
@@ -927,10 +985,12 @@ const server = http.createServer(async (req, res) => {
         const c = Math.round(Number(b.amount) * 100) / 100;
         if (!(c > 0) || c > l.price) return send(res, 400, { error: 'Counter must be above 0 and at most the asking price.' });
         of.counter = c; of.status = 'countered'; saveOffers();
+        sendPush(of.buyer, { title: '↩️ Counter offer', body: `Seller countered ${c} USDT on “${l.title}”`, url: '/?item=' + l.id });
         return send(res, 200, { ok: true, status: of.status });
       }
       of.status = action === 'accept' ? 'accepted' : 'declined';
       saveOffers();
+      if (of.status === 'accepted') sendPush(of.buyer, { title: '✅ Offer accepted', body: `Your ${of.amount} USDT offer on “${l.title}” was accepted — buy it now`, url: '/?item=' + l.id });
       return send(res, 200, { ok: true, status: of.status });
     }
     /* --- buyer accepts the seller's counter --- */
@@ -1062,6 +1122,8 @@ const server = http.createServer(async (req, res) => {
         if (!o.seller) return send(res, 400, { error: 'Messaging is only for marketplace orders.' });
         messages.push({ id: 'M-' + crypto.randomBytes(4).toString('hex'), orderId: o.id, from: u.email, text, at: Date.now() });
         saveMessages();
+        const other = u.email === o.email ? o.seller : o.email;
+        if (other) sendPush(other, { title: '💬 Order ' + o.id, body: text.slice(0, 120), url: '/' });
         return send(res, 201, { ok: true });
       }
     }
@@ -1111,6 +1173,8 @@ const server = http.createServer(async (req, res) => {
       if (!text) return send(res, 400, { error: 'Empty message.' });
       messages.push({ id: 'M-' + crypto.randomBytes(4).toString('hex'), thread: l.id + '|' + buyer, from: u.email, text, at: Date.now() });
       saveMessages();
+      const recipient = u.email === l.seller ? buyer : l.seller;
+      sendPush(recipient, { title: '💬 @' + sellerHandle(u.email), body: text.slice(0, 120), url: '/?item=' + l.id });
       return send(res, 201, { ok: true });
     }
     if (p === '/api/my/chats' && req.method === 'GET') {
@@ -1382,10 +1446,16 @@ const server = http.createServer(async (req, res) => {
         const { id, action } = await readBody(req);
         const l = listings.find(x => x.id === id);
         if (!l) return send(res, 404, { error: 'not found' });
+        const wasApproved = l.status === 'active';
         if (action === 'approve') l.status = 'active';
         else if (action === 'reject') l.status = 'rejected';
         else return send(res, 400, { error: 'bad action' });
         saveListings();
+        // first time a listing goes live: ping the seller's followers
+        if (action === 'approve' && !wasApproved) {
+          const handle = sellerHandle(l.seller);
+          follows.filter(f => f.seller === l.seller).forEach(f => sendPush(f.follower, { title: '🆕 New from @' + handle, body: l.title, url: '/?item=' + l.id }));
+        }
         return send(res, 200, { ok: true });
       }
       if (req.method === 'POST' && p === '/api/admin/report-resolve') {
@@ -1432,6 +1502,9 @@ function creditOrder(match, txHash, ts, amt, token, from) {
   } else {
     match.status = match.escrow ? 'held' : 'paid';
     console.log(`[swk-store] order ${match.id} ${match.escrow ? 'HELD in escrow' : 'PAID'} (${amt} ${token}) tx ${txHash}`);
+    const it = (match.items && match.items[0]) || {};
+    if (match.seller) sendPush(match.seller, { title: '🛍️ Item sold!', body: `“${it.name || 'Your item'}” is paid — ship it now`, url: '/' });
+    sendPush(match.email, { title: '✅ Payment confirmed', body: `Your order ${match.id} is paid and protected in escrow`, url: '/receipt/' + match.id });
   }
   usedTx.add(String(txHash).toLowerCase());
 }
