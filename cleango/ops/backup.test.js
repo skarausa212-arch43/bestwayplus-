@@ -118,6 +118,23 @@ ok('writing the config keeps the other secrets and locks the file down', () => {
   assert.strictEqual(fs.statSync(f).mode & 0o777, 0o600, 'file is not world-readable');
 });
 
+
+ok('a pasted command or config line is refused at the prompt, not at the end', () => {
+  const F = setup.FIELD;
+  // Exactly what landed in the prompts when the clipboard still held the
+  // instructions: a whole assignment, and the command that started the wizard.
+  assert.strictEqual(F.endpoint.ok('LUMI_BACKUP_S3_KEY=abc123'), false);
+  assert.strictEqual(F.bucket.ok('cd /opt/lumi && bash deploy/auto-update.sh'), false);
+  assert.strictEqual(F.keyID.ok('LUMI_BACKUP_S3_KEY=005abc'), false);
+  assert.strictEqual(F.appKey.ok('two words'), false);
+  // …while the real values pass.
+  assert.strictEqual(F.endpoint.ok('s3.eu-central-003.backblazeb2.com'), true);
+  assert.strictEqual(F.bucket.ok('lumi-backups'), true);
+  assert.strictEqual(F.region.ok('eu-central-003'), true);
+  assert.strictEqual(F.keyID.ok('005a1b2c3d4e5f60000000001'), true);
+  assert.strictEqual(F.appKey.ok('K005AbCdEf/12345+xyz'), true);
+});
+
 const failed = results.filter((r) => !r[0]);
 for (const [pass, name, err] of results) console.log(`  ${pass ? 'ok' : 'FAIL'} - ${name}${err ? ' → ' + err : ''}`);
 console.log(`\n${results.length - failed.length}/${results.length} backup checks passed.`);

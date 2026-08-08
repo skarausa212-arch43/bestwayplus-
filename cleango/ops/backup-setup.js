@@ -35,6 +35,45 @@ const looksLikePlaceholder = (v) => !v
   || /[А-Яа-яЁё]/.test(v)                    // "твой_keyID", "вставь_сюда_…"
   || /^(тво[йяё]|вставь|your|paste|xxx|\.\.\.)/i.test(v);
 
+// Per-answer shape checks. Without these a stray clipboard paste — the whole
+// config block, or the command that started this wizard — is accepted at the
+// prompt and only rejected at the very end, after every question. Each rule
+// says what a good answer looks like, and the question is asked again.
+const FIELD = {
+  endpoint: {
+    ok: (v) => /^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/i.test(v) && !/[=\s/]/.test(v),
+    hint: 'ожидается имя хоста, например s3.eu-central-003.backblazeb2.com',
+  },
+  bucket: {
+    ok: (v) => /^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/i.test(v) && !/[=\s/]/.test(v),
+    hint: 'имя бакета: латиница, цифры и дефисы, например lumi-backups',
+  },
+  region: {
+    ok: (v) => /^[a-z0-9-]{2,40}$/i.test(v),
+    hint: 'средняя часть эндпоинта, например eu-central-003',
+  },
+  keyID: {
+    ok: (v) => v.length >= 8 && !/[=\s]/.test(v),
+    hint: 'keyID из B2 — одна строка без пробелов и знака =',
+  },
+  appKey: {
+    ok: (v) => v.length >= 8 && !/\s/.test(v),
+    hint: 'applicationKey из B2 — одна строка без пробелов',
+  },
+};
+// Ask until the answer is a plausible value, rather than collecting rubbish and
+// failing at the end.
+async function askField(name, question, def) {
+  for (let i = 0; i < 5; i++) {
+    const v = (await ask(question, def)).replace(/^https?:\/\//, '').replace(/\/+$/, '');
+    if (looksLikePlaceholder(v)) { console.log(`    ✗ это текст из инструкции, а не значение — ${FIELD[name].hint}`); continue; }
+    if (!FIELD[name].ok(v)) { console.log(`    ✗ не похоже на ${name}: ${FIELD[name].hint}`); continue; }
+    return v;
+  }
+  console.error(`\n✗ ${name} так и не введён — ничего не записано. Заведите бакет в B2 и запустите ещё раз.`);
+  process.exit(1);
+}
+
 function readEnv(file) {
   const lines = [];
   try { for (const l of fs.readFileSync(file, 'utf8').split('\n')) lines.push(l.replace(/\r$/, '')); } catch {}
@@ -54,7 +93,7 @@ function writeEnv(file, values) {
 
 // Exported for tests: the placeholder guard and the file rewrite are the two
 // pieces that decide whether a wrong value silently reaches the timer.
-module.exports = { looksLikePlaceholder, readEnv, writeEnv, KEYS };
+module.exports = { looksLikePlaceholder, readEnv, writeEnv, KEYS, FIELD };
 
 if (require.main === module) (async () => {
   rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -82,12 +121,13 @@ if (require.main === module) (async () => {
   }
 
   console.log('Данные бакета (Backblaze B2 → Buckets и Application Keys):');
-  const endpoint = (await ask('  Endpoint (s3.eu-central-003.backblazeb2.com)', existing.LUMI_BACKUP_S3_ENDPOINT)).replace(/^https?:\/\//, '').replace(/\/+$/, '');
-  const bucket = await ask('  Bucket', existing.LUMI_BACKUP_S3_BUCKET || 'lumi-backups');
+  console.log('  (по одному значению на вопрос — не вставляйте сюда команды или целые блоки)');
+  const endpoint = await askField('endpoint', '  Endpoint (s3.eu-central-003.backblazeb2.com)', existing.LUMI_BACKUP_S3_ENDPOINT);
+  const bucket = await askField('bucket', '  Bucket', existing.LUMI_BACKUP_S3_BUCKET || 'lumi-backups');
   const guessedRegion = (endpoint.match(/^s3\.([a-z0-9-]+)\./) || [])[1] || existing.LUMI_BACKUP_S3_REGION || '';
-  const region = await ask('  Region', guessedRegion);
-  const s3key = await ask('  keyID', existing.LUMI_BACKUP_S3_KEY);
-  const s3secret = await ask('  applicationKey', existing.LUMI_BACKUP_S3_SECRET);
+  const region = await askField('region', '  Region', guessedRegion);
+  const s3key = await askField('keyID', '  keyID', existing.LUMI_BACKUP_S3_KEY);
+  const s3secret = await askField('appKey', '  applicationKey', existing.LUMI_BACKUP_S3_SECRET);
   rl.close();
 
   const values = {
