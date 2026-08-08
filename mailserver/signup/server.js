@@ -136,8 +136,43 @@ function enqueue(task) {
   return run;
 }
 
+// ===== Счётчик уникальных посетителей за день (IP хэшируется, храним 14 дней) =====
+const VISITORS_FILE = process.env.VISITORS_FILE || '/config/visitors.json';
+let visitors = {};
+try { visitors = JSON.parse(fs.readFileSync(VISITORS_FILE, 'utf8')); } catch {}
+let visTimer = null;
+function persistVisitors() {
+  clearTimeout(visTimer);
+  visTimer = setTimeout(() => {
+    try { fs.writeFileSync(VISITORS_FILE, JSON.stringify(visitors), { mode: 0o600 }); }
+    catch (e) { console.error('visitors persist failed:', e.message); }
+  }, 1000);
+  visTimer.unref?.();
+}
+const today = () => new Date().toISOString().slice(0, 10);
+
 const app = express();
 app.use(express.json({ limit: '4kb' }));
+
+app.use((req, res, next) => {
+  if (req.method === 'GET' && (req.path === '/' || req.path === '/index.html')) {
+    const day = today();
+    if (!visitors[day]) {
+      visitors[day] = {};
+      const cutoff = new Date(Date.now() - 14 * 86400_000).toISOString().slice(0, 10);
+      for (const d of Object.keys(visitors)) if (d < cutoff) delete visitors[d];
+    }
+    const h = require('crypto').createHash('sha256')
+      .update(clientIp(req) + day).digest('hex').slice(0, 12);
+    if (!visitors[day][h]) { visitors[day][h] = 1; persistVisitors(); }
+  }
+  next();
+});
+
+app.get('/api/stats/visitors', (_req, res) => {
+  res.json({ today: Object.keys(visitors[today()] || {}).length });
+});
+
 app.use(express.static(path.join(__dirname, 'public'), {
   // HTML всегда перепроверяется браузером — иначе телефоны показывают старый кэш
   setHeaders: (res, p) => { if (p.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache, must-revalidate'); },

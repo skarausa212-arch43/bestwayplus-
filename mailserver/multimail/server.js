@@ -255,11 +255,17 @@ function adminStats() {
     const entries = Object.entries(profiles).sort((a, b) => (b[1].createdAt || '').localeCompare(a[1].createdAt || ''));
     for (const [email, p] of entries.slice(0, 5)) recent.push(`${email} (${(p.createdAt || '').slice(0, 10)})`);
   } catch {}
+  let visitorsToday = 0;
+  try {
+    const vis = JSON.parse(fs.readFileSync(path.join(DMS_CONFIG_DIR, 'visitors.json'), 'utf8'));
+    visitorsToday = Object.keys(vis[new Date().toISOString().slice(0, 10)] || {}).length;
+  } catch {}
   return {
     mailboxes,
     sessions: sessions.size,
     bundles: Object.keys(bundles).length,
     telegramChats: tgUsers.size,
+    visitorsToday,
     recentSignups: recent,
   };
 }
@@ -363,7 +369,7 @@ async function handleTgUpdate(u) {
       return;
     }
     const st = adminStats();
-    await say(chatId, `👑 EmailInc stats\n\nMailboxes: ${st.mailboxes}\nActive sessions: ${st.sessions}\nCombo accounts: ${st.bundles}\nTelegram chats: ${st.telegramChats}\n\nRecent signups:\n${st.recentSignups.join('\n') || '—'}`);
+    await say(chatId, `👑 EmailInc stats\n\nVisitors today: ${st.visitorsToday}\nMailboxes: ${st.mailboxes}\nActive sessions: ${st.sessions}\nCombo accounts: ${st.bundles}\nTelegram chats: ${st.telegramChats}\n\nRecent signups:\n${st.recentSignups.join('\n') || '—'}`);
     return;
   }
 

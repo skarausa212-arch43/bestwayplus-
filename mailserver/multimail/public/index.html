@@ -1193,6 +1193,7 @@ $('adminBtn').addEventListener('click', async () => {
   try {
     const st = await api('api/admin/stats');
     $('adminBody').innerHTML = `
+      Visitors today: <b>${st.visitorsToday ?? 0}</b><br>
       Mailboxes: <b>${st.mailboxes}</b><br>
       Active sessions: <b>${st.sessions}</b><br>
       Combo accounts: <b>${st.bundles}</b><br>

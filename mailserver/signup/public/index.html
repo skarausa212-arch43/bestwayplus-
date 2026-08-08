@@ -379,6 +379,7 @@
 
   <footer class="foot">
     <span><b>emailinc</b> — secure email for modern life.</span>
+    <span id="visToday" style="display:none">👁 <b id="visN">0</b> visitors today</span>
     <span>emailinc.info</span>
   </footer>
 </div>
@@ -398,6 +399,14 @@
 /* ===== registration ===== */
 const f = document.getElementById('card'), msg = document.getElementById('msg'),
       btn = document.getElementById('btn'), card = document.getElementById('card');
+
+/* счётчик посетителей за сегодня — в подвале */
+fetch('api/stats/visitors').then((r) => r.json()).then((v) => {
+  if (typeof v.today === 'number') {
+    document.getElementById('visN').textContent = v.today;
+    document.getElementById('visToday').style.display = '';
+  }
+}).catch(() => {});
 
 fetch('api/info').then(r => r.json()).then(i => {
   document.getElementById('dom').textContent = '@' + i.domain;
