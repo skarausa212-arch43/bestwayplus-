@@ -399,7 +399,7 @@
 
 const MAKES = ["Toyota","Honda","Ford","Chevrolet","Tesla","BMW","Mercedes-Benz","Audi","Nissan","Hyundai","Kia","Jeep","Subaru","Volkswagen","Lexus","Mazda","Dodge","Ram","GMC","Porsche"];
 const STATES = ["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"];
-const BODIES = ["All","Sedan","SUV","Truck","Coupe","Hatchback","Electric"];
+const BODIES = ["All","Coupe","Sedan","SUV","Truck","Electric"];
 
 /* ---------- tiny store ---------- */
 const store = {
@@ -445,24 +445,34 @@ function carArt(kind, hue, hue2){
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
 }
 
+/* Real car photos are hot-loaded from the Unsplash CDN (free-to-use license).
+   If a photo fails to load (offline / URL gone), the card falls back to the
+   built-in SVG illustration via pfb(). */
+const U = id => `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=1100&q=80`;
 const DEMO = [
-  {make:"Toyota",model:"Camry SE",year:2021,miles:34200,price:21900,body:"Sedan",trans:"Automatic",fuel:"Gasoline",city:"Austin",state:"TX",kind:"sedan",hue:210,desc:"One owner, clean title. Dealer-serviced with full records. New tires this spring, cold AC, Apple CarPlay. Non-smoker car, garage kept."},
-  {make:"Honda",model:"CR-V EX-L",year:2020,miles:41800,price:24500,body:"SUV",trans:"Automatic",fuel:"Gasoline",kind:"suv",hue:355,city:"Denver",state:"CO",desc:"Loaded EX-L: leather, sunroof, heated seats, Honda Sensing. Clean Carfax, no accidents. Just passed emissions."},
-  {make:"Ford",model:"F-150 XLT",year:2019,miles:62500,price:28900,body:"Truck",trans:"Automatic",fuel:"Gasoline",kind:"truck",hue:215,city:"Nashville",state:"TN",desc:"5.0 V8, 4x4, tow package with brake controller. Bed liner and tonneau cover included. Well maintained fleet truck."},
-  {make:"Tesla",model:"Model 3 Long Range",year:2022,miles:18900,price:31500,body:"Sedan",trans:"Automatic",fuel:"Electric",kind:"sedan",hue:0,city:"San Jose",state:"CA",desc:"Long Range AWD, white interior, FSD-capable hardware. 310+ mi range, free supercharging miles transfer. Garage kept, no accidents."},
-  {make:"BMW",model:"330i M Sport",year:2021,miles:27600,price:33900,body:"Sedan",trans:"Automatic",fuel:"Gasoline",kind:"coupe",hue:230,city:"Miami",state:"FL",desc:"M Sport package, premium sound, live cockpit pro. Under factory warranty until 2027. Immaculate condition."},
-  {make:"Jeep",model:"Wrangler Sahara",year:2018,miles:54300,price:27500,body:"SUV",trans:"Automatic",fuel:"Gasoline",kind:"suv",hue:140,city:"Phoenix",state:"AZ",desc:"4-door Sahara, hard top + soft top included. Never off-roaded, highway miles. New brakes and battery."},
-  {make:"Chevrolet",model:"Silverado LT",year:2020,miles:48100,price:31900,body:"Truck",trans:"Automatic",fuel:"Gasoline",kind:"truck",hue:20,city:"Dallas",state:"TX",desc:"Crew cab, 2.7T, trailering package. One owner, all services at Chevy dealer. Spray-in bedliner."},
-  {make:"Hyundai",model:"Elantra SEL",year:2022,miles:15400,price:17900,body:"Sedan",trans:"Automatic",fuel:"Gasoline",kind:"sedan",hue:265,city:"Columbus",state:"OH",desc:"Like new, still under full factory warranty. Blind spot monitoring, lane keep, wireless CarPlay. 37 mpg highway."},
-  {make:"Porsche",model:"911 Carrera",year:2017,miles:31200,price:79500,body:"Coupe",trans:"Automatic",fuel:"Gasoline",kind:"coupe",hue:48,city:"Seattle",state:"WA",desc:"991.2 Carrera, PDK, sport chrono. Full PPF wrap, always garaged, enthusiast owned. All records since new."},
-  {make:"Subaru",model:"Outback Premium",year:2019,miles:58700,price:19800,body:"SUV",trans:"Automatic",fuel:"Gasoline",kind:"suv",hue:200,city:"Portland",state:"OR",desc:"EyeSight safety suite, roof rails, heated seats. Timing chain engine, fresh oil change. Great in snow."},
-  {make:"Kia",model:"Telluride SX",year:2021,miles:36900,price:35900,body:"SUV",trans:"Automatic",fuel:"Gasoline",kind:"suv",hue:290,city:"Atlanta",state:"GA",desc:"SX trim: nappa leather, dual sunroofs, 360 camera. Seats 7. Clean title, no accidents, non-smoker."},
-  {make:"Nissan",model:"Altima SV",year:2020,miles:44600,price:16400,body:"Sedan",trans:"Automatic",fuel:"Gasoline",kind:"sedan",hue:170,city:"Charlotte",state:"NC",desc:"ProPilot assist, remote start, new tires. Commuter car with all highway miles. Priced to sell this week."}
+  {make:"Tesla",model:"Model 3 Long Range",year:2021,miles:22400,price:30900,body:"Sedan",trans:"Automatic",fuel:"Electric",kind:"sedan",hue:0,city:"San Jose",state:"CA",img:U('1560958089-b8a1929cea89'),desc:"Long Range AWD in red multi-coat. 310+ mi range, autopilot, one owner, garage kept. Clean title, no accidents."},
+  {make:"Ford",model:"Mustang GT",year:2018,miles:38900,price:31500,body:"Coupe",trans:"Manual",fuel:"Gasoline",kind:"coupe",hue:0,city:"Nashville",state:"TN",img:U('1494976388531-d1058494cdd8'),desc:"5.0 V8, 6-speed manual, performance package. Adult owned, never tracked, all stock. Sounds amazing, runs perfect."},
+  {make:"BMW",model:"M4 Coupe",year:2020,miles:26700,price:52900,body:"Coupe",trans:"Automatic",fuel:"Gasoline",kind:"coupe",hue:230,city:"Miami",state:"FL",img:U('1555215695-3004980ad54e'),desc:"Competition package, carbon roof, harman/kardon sound. Full service history at BMW dealer. Immaculate inside and out."},
+  {make:"Chevrolet",model:"Camaro SS",year:2019,miles:31200,price:33800,body:"Coupe",trans:"Automatic",fuel:"Gasoline",kind:"coupe",hue:215,city:"Dallas",state:"TX",img:U('1552519507-da3b142c6e3d'),desc:"6.2 V8, 10-speed auto, magnetic ride. Clean Carfax, garage queen, summer driven only. New Michelins."},
+  {make:"Porsche",model:"911 Carrera S",year:2019,miles:18400,price:94500,body:"Coupe",trans:"Automatic",fuel:"Gasoline",kind:"coupe",hue:48,city:"Seattle",state:"WA",img:U('1503376780353-7e6692767b70'),desc:"992 Carrera S, PDK, sport chrono, sport exhaust. Full PPF wrap, always garaged, enthusiast owned. All records since new."},
+  {make:"Nissan",model:"GT-R Premium",year:2017,miles:24100,price:82900,body:"Coupe",trans:"Automatic",fuel:"Gasoline",kind:"coupe",hue:200,city:"Los Angeles",state:"CA",img:U('1525609004556-c46c7d6cf023'),desc:"Pearl white, bone stock, never launched. Dealer serviced, fresh transmission service. Adult owned and pampered."},
+  {make:"Jeep",model:"Wrangler Rubicon",year:2019,miles:41300,price:35500,body:"SUV",trans:"Automatic",fuel:"Gasoline",kind:"suv",hue:140,city:"Phoenix",state:"AZ",img:U('1568605117036-5fe5e7bab0b7'),desc:"4-door Rubicon, hard top + soft top included. Light trail use, no rock damage. New brakes and battery."},
+  {make:"Mercedes-Benz",model:"AMG GT",year:2018,miles:19800,price:89900,body:"Coupe",trans:"Automatic",fuel:"Gasoline",kind:"coupe",hue:290,city:"Atlanta",state:"GA",img:U('1583121274602-3e2820c69888'),desc:"Handcrafted AMG 4.0 biturbo V8. Burmester sound, exclusive interior. Concours condition, all keys and books."},
+  {make:"Ford",model:"Ranger Lariat 4x4",year:2020,miles:46500,price:29800,body:"Truck",trans:"Automatic",fuel:"Gasoline",kind:"truck",hue:215,city:"Denver",state:"CO",img:U('1590362891991-f776e747a588'),desc:"2.3 EcoBoost, FX4 off-road package, tow package. One owner, all services at Ford dealer. Bed liner included."},
+  {make:"Toyota",model:"GR Supra 3.0",year:2021,miles:15900,price:46500,body:"Coupe",trans:"Automatic",fuel:"Gasoline",kind:"coupe",hue:355,city:"Austin",state:"TX",img:U('1603584173870-7f23fdae1b7a'),desc:"3.0 turbo inline-6, premium package. Stock, no mods, garage kept. Under factory warranty."},
+  {make:"Lamborghini",model:"Huracán LP 610-4",year:2016,miles:12600,price:189900,body:"Coupe",trans:"Automatic",fuel:"Gasoline",kind:"coupe",hue:48,city:"Las Vegas",state:"NV",img:U('1544636331-e26879cd4d9b'),desc:"Giallo Midas over black, front lift, clear bra. Fresh annual service, no stories. Serious inquiries only."}
 ].map((c,i)=>({
   id:'demo'+i, sellerEmail:'demo@driveway.example', sellerName:'Driveway Seller',
-  photos:[carArt(c.kind,c.hue,(c.hue+150)%360), carArt(c.kind,c.hue,(c.hue+40)%360), carArt(c.kind,(c.hue+15)%360,(c.hue+200)%360)],
+  photos:[c.img],
+  fb: carArt(c.kind,c.hue,(c.hue+150)%360),
   created: Date.now()-(i+1)*36e5*7, demo:true, ...c
 }));
+
+/* photo fallback: swap a broken external photo for the built-in illustration */
+function pfb(el, id){
+  const c = carById(id);
+  if(c && c.fb){ el.onerror = null; el.src = c.fb; }
+}
 
 const allCars = ()=> [...userCars].reverse().concat(DEMO);
 const carById = id => allCars().find(c=>c.id===id);
@@ -566,7 +576,7 @@ function renderGrid(){
     return `
     <div class="car-card" onclick="openDetail('${c.id}')">
       <div class="car-photo">
-        <img src="${c.photos[0]}" alt="${c.make} ${c.model}" loading="lazy">
+        <img src="${c.photos[0]}" alt="${c.make} ${c.model}" loading="lazy" onerror="pfb(this,'${c.id}')">
         ${isNew?'<span class="badge new">NEW</span>':(c.demo?'':'<span class="badge">Private seller</span>')}
         <button class="fav-btn" onclick="event.stopPropagation();toggleFav('${c.id}')" title="Save">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="${hearted?'#ef4444':'none'}" stroke="${hearted?'#ef4444':'#64748b'}" stroke-width="2"><path d="M12 21C7 16.5 3 13.3 3 9.3 3 6.4 5.2 4 8 4c1.6 0 3.1.8 4 2 0.9-1.2 2.4-2 4-2 2.8 0 5 2.4 5 5.3 0 4-4 7.2-9 11.7z"/></svg>
@@ -607,11 +617,11 @@ function openDetail(id){
   el.innerHTML = `
     <button class="modal-x" onclick="closeModal('detailModal')" style="background:rgba(255,255,255,.9)">✕</button>
     <div class="detail-gallery">
-      <div class="main"><img id="galMain" src="${c.photos[0]}" alt="${c.make} ${c.model}"></div>
+      <div class="main"><img id="galMain" src="${c.photos[0]}" alt="${c.make} ${c.model}" onerror="pfb(this,'${c.id}')"></div>
       ${c.photos.length>1?`
         <button class="gal-nav gal-prev" onclick="galStep(-1)">‹</button>
         <button class="gal-nav gal-next" onclick="galStep(1)">›</button>
-        <div class="thumbs" id="galThumbs">${c.photos.map((p,i)=>`<img src="${p}" class="${i===0?'on':''}" onclick="galTo(${i})">`).join('')}</div>`:''}
+        <div class="thumbs" id="galThumbs">${c.photos.map((p,i)=>`<img src="${p}" class="${i===0?'on':''}" onclick="galTo(${i})" onerror="pfb(this,'${c.id}')">`).join('')}</div>`:''}
     </div>
     <div class="detail-body">
       <div>
@@ -814,7 +824,7 @@ function dashTab(tab){
     el.innerHTML = mine.length? mine.map(c=>{
       const carOffers=offers.filter(o=>o.carId===c.id);
       return `<div class="dash-item">
-        <img class="thumb" src="${c.photos[0]}">
+        <img class="thumb" src="${c.photos[0]}" onerror="pfb(this,'${c.id}')">
         <div class="info"><b>${c.year} ${c.make} ${c.model}</b><span>${fmt$(c.price)} · ${fmtMi(c.miles)} · ${c.city}, ${c.state}</span>
           <span>${carOffers.length} offer${carOffers.length===1?'':'s'} received</span></div>
         <div class="actions">
@@ -829,7 +839,7 @@ function dashTab(tab){
     const list=offers.filter(o=>o.sellerEmail===u.email).sort((a,b)=>b.created-a.created);
     el.innerHTML = list.length? list.map(o=>`
       <div class="dash-item">
-        <img class="thumb" src="${o.carPhoto}">
+        <img class="thumb" src="${o.carPhoto}" onerror="pfb(this,'${o.carId}')">
         <div class="info"><b>${fmt$(o.amount)} <span style="color:var(--muted);font-weight:500;font-size:13px">for ${o.carTitle} (asking ${fmt$(o.asking)})</span></b>
           <span>from ${esc(o.buyerName)}${o.status==='accepted'&&o.buyerPhone?' · 📞 '+esc(o.buyerPhone):''} · ${timeAgo(o.created)}</span></div>
         ${o.status==='pending'
@@ -846,7 +856,7 @@ function dashTab(tab){
     const list=offers.filter(o=>o.buyerEmail===u.email).sort((a,b)=>b.created-a.created);
     el.innerHTML = list.length? list.map(o=>`
       <div class="dash-item">
-        <img class="thumb" src="${o.carPhoto}">
+        <img class="thumb" src="${o.carPhoto}" onerror="pfb(this,'${o.carId}')">
         <div class="info"><b>${o.carTitle}</b><span>your offer: ${fmt$(o.amount)} (asking ${fmt$(o.asking)}) · ${timeAgo(o.created)}</span></div>
         <span class="pill ${o.status==='accepted'?'green':o.status==='declined'?'red':'amber'}">${o.status}</span>
       </div>`).join('') : `<div class="empty"><div class="big">💸</div>You haven't made any offers yet.<br>Find a car you like and hit “Make Offer”.</div>`;
@@ -857,7 +867,7 @@ function dashTab(tab){
     const cars=ids.map(carById).filter(Boolean);
     el.innerHTML = cars.length? cars.map(c=>`
       <div class="dash-item">
-        <img class="thumb" src="${c.photos[0]}">
+        <img class="thumb" src="${c.photos[0]}" onerror="pfb(this,'${c.id}')">
         <div class="info"><b>${c.year} ${c.make} ${c.model}</b><span>${fmt$(c.price)} · ${c.city}, ${c.state}</span></div>
         <div class="actions">
           <button class="btn btn-outline btn-sm" onclick="openDetail('${c.id}')">View</button>
