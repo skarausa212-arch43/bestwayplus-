@@ -1345,11 +1345,15 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .og-hint{font-size:12px;color:var(--ink-3);margin-top:2px}
 
 /* ═══ provider sign-up: profession picker + equipment groups ═══ */
-.prof-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:6px}
-.prof{display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:14px;font-weight:700;font-size:13.5px;color:var(--ink);
+.prof-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px;margin-bottom:6px}
+.prof{display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:14px;font-weight:700;font-size:13.5px;color:var(--ink);min-width:0;
   background:color-mix(in srgb,var(--surface-2) 72%,transparent);text-align:left;
   box-shadow:inset 2px 2px 6px rgba(12,70,52,.12),inset -2px -2px 6px rgba(255,255,255,.55);transition:transform .12s var(--ease)}
 .prof:active{transform:scale(.97)}
+.prof .pl{flex:1;min-width:0;line-height:1.25}
+/* Phones: icon + Polish profession name + «wkrótce» badge don't share 160px —
+   two columns force letter-per-line wrapping, one column reads like a list. */
+@media(max-width:480px){.prof-grid{grid-template-columns:minmax(0,1fr)}}
 .prof .pi{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;flex:none;background:var(--surface);color:var(--ink-2);box-shadow:0 3px 8px rgba(16,60,42,.12)}
 .prof .pi svg{width:17px;height:17px}
 .prof .pc{margin-left:auto;width:20px;height:20px;color:var(--primary-600)}
@@ -2743,7 +2747,7 @@ function renderAuth(){
           <div class="prof-grid" id="regProf">${Object.entries(state.catalog?.professions||{}).map(([k,p])=>`
             <button type="button" class="prof ${p.active?(reg.professions.includes(k)?'on':''):'soon'}" data-prof="${k}">
               <span class="pi">${{cleaning:I.broom,garden:I.leaf,handyman:I.wrench,electrical:I.bolt,plumbing:I.drop}[k]||I.broom}</span>
-              <span>${p.label}</span>
+              <span class="pl">${p.label}</span>
               ${p.active?`<span class="pc">${reg.professions.includes(k)?I.check:''}</span>`:'<span class="badge grey">Скоро</span>'}
             </button>`).join('')}</div>
           <div class="kyc-title" style="margin-top:12px">Оборудование</div>
