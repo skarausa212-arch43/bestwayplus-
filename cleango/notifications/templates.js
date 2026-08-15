@@ -250,6 +250,14 @@ const T = {
   // Renewal messages. A recurring charge that arrives unannounced is the most
   // common reason a subscription becomes a chargeback, so the renewal is told,
   // the failure is told loudly, and the ending is told.
+  'chat.message': {
+    category: 'chat', priority: 'high', channels: ['in_app', 'push'],
+    deepLink: 'lumi://booking/{bookingId}',
+    ru: { title: 'Сообщение от {who}', body: '{preview}' },
+    pl: { title: 'Wiadomość od {who}', body: '{preview}' },
+    en: { title: 'Message from {who}', body: '{preview}' },
+    uk: { title: 'Повідомлення від {who}', body: '{preview}' },
+  },
   'subscription.renewed': {
     category: 'account', priority: 'normal', channels: ['in_app', 'email'],
     deepLink: 'lumi://premium',

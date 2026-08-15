@@ -151,7 +151,86 @@ const SKIP_SEL = '[data-noi18n]';
     await go(() => { state.view = 'messages'; render(); });
     await harvest('messages');
 
+    // ── customer modals: completed order → receipt button, issue flow,
+    //    provider profile, support. The receipt itself is deliberately Polish
+    //    for every viewer (a document, not UI) and carries data-noi18n. ──
+    const doneId = await page.evaluate(async () => {
+      try { const r = await api('/api/bookings'); const d = (r.bookings || []).find((b) => b.status === 'completed'); return d ? d.id : null; }
+      catch { return null; }
+    });
+    if (doneId) {
+      await page.evaluate((id) => renderBookingDetail(id), doneId);
+      await harvest('booking-completed');
+      await page.evaluate((id) => openIssue(id), doneId);
+      await harvest('issue-modal');
+      await closeAnyModal();
+    }
+    const clnId = await page.evaluate(async () => {
+      try { const r = await api('/api/cleaners/recommended'); return (r.cleaners && r.cleaners[0] && r.cleaners[0].id) || null; }
+      catch { return null; }
+    });
+    if (clnId) {
+      await page.evaluate((id) => openCleanerProfile(id), clnId);
+      await harvest('cleaner-profile');
+      await closeAnyModal();
+    }
+    await page.evaluate(() => openSupport());
+    await harvest('support-modal');
+    await closeAnyModal();
+
     await ctx.close();
+
+    // ── the provider's side of the app, same detector ──
+    const cctx = await browser.newContext({ viewport: { width: 800, height: 1280 } });
+    const cpage = await cctx.newPage();
+    cpage.on('pageerror', (e) => add(lang, 'PAGE ERROR (cleaner)', e.message.slice(0, 120)));
+    await cpage.goto(BASE, { waitUntil: 'networkidle' });
+    await cpage.evaluate(async () => {
+      const r = await fetch('/api/login', { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'piotr@example.com', password: 'cleango123' }) });
+      const j = await r.json(); localStorage.setItem('cg_token', j.token);
+    });
+    await cpage.evaluate((l) => localStorage.setItem('lumi_lang', l), lang);
+    await cpage.reload({ waitUntil: 'networkidle' });
+    const charvest = async (screen) => {
+      await cpage.waitForTimeout(450);
+      const texts = await cpage.evaluate((skipSel) => {
+        const out = [];
+        const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, { acceptNode(n) {
+          const p = n.parentElement; if (!p) return NodeFilter.FILTER_REJECT;
+          if (['SCRIPT', 'STYLE', 'TEXTAREA', 'NOSCRIPT'].includes(p.nodeName)) return NodeFilter.FILTER_REJECT;
+          if (p.closest(skipSel)) return NodeFilter.FILTER_REJECT;
+          const st = getComputedStyle(p);
+          if (st.display === 'none' || st.visibility === 'hidden') return NodeFilter.FILTER_REJECT;
+          return n.nodeValue.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+        } });
+        let n; while ((n = w.nextNode())) out.push(n.nodeValue.trim());
+        document.querySelectorAll('[placeholder],[title],[aria-label]').forEach((e) => {
+          if (e.closest(skipSel)) return;
+          ['placeholder', 'title', 'aria-label'].forEach((a) => {
+            const v = e.getAttribute(a); if (v && v.trim()) out.push('[attr] ' + v.trim());
+          });
+        });
+        return out;
+      }, SKIP_SEL);
+      const re = LEAK_RE[lang];
+      for (const txt of texts) if (re.test(txt)) add(lang, 'cleaner:' + screen, txt.slice(0, 90));
+    };
+    await charvest('jobs');
+    for (const v of ['bookings', 'earnings', 'wallet', 'messages']) {
+      await cpage.evaluate((vv) => { state.view = vv; render(); }, v);
+      await charvest(v);
+    }
+    // the provider's own first job, when the seed has one
+    const jobId = await cpage.evaluate(async () => {
+      try { const r = await api('/api/bookings'); return (r.bookings && r.bookings[0] && r.bookings[0].id) || null; }
+      catch { return null; }
+    });
+    if (jobId) {
+      await cpage.evaluate((id) => renderBookingDetail(id), jobId);
+      await charvest('job-detail');
+    }
+    await cctx.close();
   }
   await browser.close();
 

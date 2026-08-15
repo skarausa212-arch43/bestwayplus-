@@ -413,6 +413,21 @@ async function main() {
       const get = await req('GET', `/api/bookings/${bookingId}/messages`, { token: cleanerTok });
       assert.ok(get.json.messages.some((m) => m.text === 'привет'));
     });
+    await ok('a chat message notifies the other participant', async () => {
+      const n = await req('GET', '/api/notifications', { token: cleanerTok });
+      assert.ok(n.json.notifications.some((x) => x.templateId === 'chat.message'),
+        'the cleaner has a chat.message notification after the customer wrote');
+      // and the author does not notify themselves
+      const mine = await req('GET', '/api/notifications', { token: customerTok });
+      const own = mine.json.notifications.filter((x) => x.templateId === 'chat.message');
+      assert.strictEqual(own.length, 0, 'the author is not notified about their own message');
+    });
+    await ok('system chat lines carry a key so each reader translates them', async () => {
+      const get = await req('GET', `/api/bookings/${bookingId}/messages`, { token: customerTok });
+      const sys = get.json.messages.filter((m) => m.type === 'system');
+      assert.ok(sys.length > 0, 'there is at least one system line (accept)');
+      assert.ok(sys.every((m) => m.sysKey), 'every system line has sysKey');
+    });
 
     // ── Completion + payout, money determinism/idempotency ──
     await ok('cleaner marks en route before starting', async () => {

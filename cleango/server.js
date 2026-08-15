@@ -3005,7 +3005,7 @@ route('POST', '/api/bookings/:id/accept', async (req, res, params) => {
     persist.bookings();
     autoChargeBooking(bk);   // "Uber" flow: charge the saved card now (background, off-session)
     if (bk.urgency === 'flash') notify(bk.customerId, 'flash.deadline', { bookingId: bk.id });
-    sysMessage(bk.id, `${user.name} принял заказ и скоро приедет.`);
+    sysMessage(bk.id, 'accepted', { name: user.name });
     notify(bk.customerId, 'booking.accepted', { provider: user.name, service: bk.serviceLabel, bookingId: bk.id });
     return send(res, 200, { booking: enrich(bk, user), assigned: true });
   }
@@ -3036,7 +3036,7 @@ route('POST', '/api/bookings/:id/choose', async (req, res, params) => {
   bk.timeline.push({ status: 'accepted', at: now(), by: user.id });
   persist.bookings();
   autoChargeBooking(bk);   // charge the saved card the moment the cleaner is chosen
-  sysMessage(bk.id, `${user.name} выбрал(а) исполнителя: ${chosen.name}.`);
+  sysMessage(bk.id, 'chosen', { name: user.name, cleaner: chosen.name });
   notify(chosen.id, 'provider.chosen', { service: bk.serviceLabel, bookingId: bk.id });
   (bk.responders || []).filter((id) => id !== chosen.id).forEach((id) => notify(id, 'provider.not_chosen', { service: bk.serviceLabel, bookingId: bk.id }));
   send(res, 200, { booking: enrich(bk, user) });
@@ -3102,7 +3102,7 @@ route('POST', '/api/bookings/:id/enroute', async (req, res, params) => {
   bk.timeline.push({ status: 'on_the_way', at: now(), by: user.id });
   bk.updatedAt = now();
   persist.bookings();
-  sysMessage(bk.id, `${user.name} выехал(а) к вам. В пути ~${t.eta} мин.`);
+  sysMessage(bk.id, 'enroute', { name: user.name, eta: t.eta });
   notify(bk.customerId, 'provider.on_the_way', { provider: user.name, eta: t.eta, bookingId: bk.id });
   send(res, 200, { booking: enrich(bk, user) });
 });
@@ -3128,7 +3128,7 @@ route('POST', '/api/bookings/:id/status', async (req, res, params) => {
     if (stripe.isEnabled() && !bk.paid) return send(res, 409, { error: 'Оплата клиента ещё не прошла — заказ нельзя начать.', code: 'PAYMENT_REQUIRED' });
     bk.status = 'in_progress';
     bk.timeline.push({ status: 'in_progress', at: now() });
-    sysMessage(bk.id, 'Cleaning started.');
+    sysMessage(bk.id, 'started');
     notify(bk.customerId, 'booking.in_progress', { provider: user.name, bookingId: bk.id });
   } else if (target === 'completed') {
     if (!isCleaner) return send(res, 403, { error: 'Only the assigned cleaner can complete.' });
@@ -3145,7 +3145,7 @@ route('POST', '/api/bookings/:id/status', async (req, res, params) => {
     bk.status = 'completed';
     bk.timeline.push({ status: 'completed', at: now() });
     settlePayment(bk);
-    sysMessage(bk.id, 'Job completed. Payment released. Please leave a review!');
+    sysMessage(bk.id, 'completed');
     notify(bk.customerId, 'booking.completed', { service: bk.serviceLabel, bookingId: bk.id });
     notify(bk.customerId, 'payment.captured', { amount: `${bk.price} zł`, service: bk.serviceLabel });
   } else if (target === 'cancelled') {
@@ -3171,7 +3171,7 @@ route('POST', '/api/bookings/:id/status', async (req, res, params) => {
     const feeMinor = (isCustomer && !['searching', 'accepted'].includes(providerState))
       ? Math.round((bk.price || 0) * 100 * getSettings().lateCancelRate) : 0;
     await refundCancelledBooking(bk, { actorId: user.id, feeMinor, reason: isCustomer ? 'customer_cancellation' : 'provider_cancellation' });
-    sysMessage(bk.id, `Booking cancelled by ${user.name}.`);
+    sysMessage(bk.id, 'cancelled', { name: user.name });
     // Notify the other party (customer cancels -> tell provider, and vice-versa).
     const other = isCustomer ? bk.cleanerId : bk.customerId;
     if (other) notify(other, 'booking.cancelled', { service: bk.serviceLabel, bookingId: bk.id });
@@ -3530,27 +3530,39 @@ function buildReceipt(bk, viewer) {
       return { label: def.label, qty, unit: def.unit || null, type: def.type,
         amount: def.type === 'percent' ? null : def.price * qty, percent: def.percent || null };
     });
+  // The receipt is a Polish commercial document: it always carries the seller's
+  // requisites, and the VAT split is shown to the CUSTOMER too — «w tym VAT» is
+  // what a Polish receipt is expected to say. The split is informational and
+  // reveals nothing about the commission.
+  const netExVat = Math.round(bk.price / 1.23);
   const base = {
     receiptNo: 'LUMI-' + String(bk.id).replace(/^b_/, '').slice(0, 8).toUpperCase(),
     bookingId: bk.id, issuedAt: completedAt, paidAt: completedAt,
+    orderedAt: bk.createdAt,
     service: bk.serviceLabel, city: bk.city, address: bk.address,
     rooms: bk.rooms, baths: bk.baths, area: bk.area,
     currency: bk.currency, plus: !!bk.plusDiscount,
+    paidVia: bk.paidVia || (bk.paid ? 'card' : null),
     customerName: (db.users[bk.customerId] || {}).name || null,
     cleanerName: bk.cleanerId ? (db.users[bk.cleanerId] || {}).name : null,
+    seller: {
+      name: 'BESTWAY PLUS Sp. z o.o.',
+      address: 'ul. Zajączkowska 44, 51-180 Wrocław, Polska',
+      nip: '8952277581', krs: '0001125792', regon: '529604122',
+      email: SUPPORT_EMAIL, site: 'lumi24.pl',
+    },
   };
   if (viewer.role === 'cleaner') {
     // Provider receipt — services done (no per-line customer prices), payout only.
     return { ...base, kind: 'provider', items: items.map((i) => ({ label: i.label, qty: i.qty, unit: i.unit, type: i.type })), payout: bk.payout };
   }
   if (viewer.role === 'admin') {
-    const netExVat = Math.round(bk.price / 1.23);   // informational VAT split (§42)
     return { ...base, kind: 'admin', items, total: bk.price, payout: bk.payout,
       commission: bk.commission, platformRevenue: bk.commission, netExVat, vat: bk.price - netExVat,
       commissionRate: Math.round(getSettings().commissionRate * 100) };
   }
   // Customer receipt — itemized, total paid, NO commission/payout.
-  return { ...base, kind: 'customer', items, total: bk.price };
+  return { ...base, kind: 'customer', items, total: bk.price, netExVat, vat: bk.price - netExVat };
 }
 route('GET', '/api/bookings/:id/receipt', async (req, res, params) => {
   const user = authUser(req);
@@ -3601,8 +3613,31 @@ function pushMessage(bookingId, sender, input) {
   persist.messages();
   return msg;
 }
-function sysMessage(bookingId, text) {
-  return pushMessage(bookingId, { id: 'system', role: 'system', name: 'LUMI' }, { type: 'system', body: text });
+/**
+ * System chat lines are stored as a KEY + params, with the Russian prose kept
+ * as the body for backward compatibility. Prose baked at write time can never
+ * be translated later — the reader's language isn't known when the event
+ * happens, and customer and cleaner may read the same line in different
+ * languages. The client maps sysKey through its dictionaries per viewer.
+ */
+const SYS_TPL = {
+  accepted:   '{name} принял заказ и скоро приедет.',
+  chosen:     '{name} выбрал(а) исполнителя: {cleaner}.',
+  enroute:    '{name} выехал(а) к вам. В пути ~{eta} мин.',
+  started:    'Уборка началась.',
+  completed:  'Заказ завершён. Оплата проведена. Оставьте, пожалуйста, отзыв!',
+  cancelled:  'Заказ отменён ({name}).',
+  redispatched: 'Заказ переназначен оператором — ищем нового исполнителя.',
+  companyAssigned: '{cleaner} назначен(а) на заказ компанией {name}.',
+  replaced:   'Исполнитель заменён на {cleaner}.',
+};
+function sysMessage(bookingId, key, params) {
+  const tpl = SYS_TPL[key] || String(key);
+  const body = tpl.replace(/\{(\w+)\}/g, (m, k) => (params && params[k] != null ? params[k] : m));
+  const msg = pushMessage(bookingId, { id: 'system', role: 'system', name: 'LUMI' }, { type: 'system', body });
+  msg.sysKey = SYS_TPL[key] ? key : null; msg.sysParams = params || null;
+  persist.messages();
+  return msg;
 }
 // Attach per-viewer read receipts + typing state to a message list (§6/§7/§8).
 function chatState(bk, user) {
@@ -3663,6 +3698,13 @@ route('POST', '/api/bookings/:id/messages', async (req, res, params) => {
   bk.reads = bk.reads || {};
   bk.reads[user.id] = { at: msg.createdAt, lastReadId: msg.id };
   persist.bookings();
+  // The other side of the conversation hears about it — until this, chat
+  // messages produced no notification at all, so an unopened app meant an
+  // unread conversation nobody knew existed. An admin writing into the thread
+  // notifies both participants.
+  const others = [bk.customerId, bk.cleanerId].filter((id) => id && id !== user.id);
+  const preview = type === 'image' ? '📷' : text.slice(0, 80);
+  for (const rid of others) notify(rid, 'chat.message', { who: user.name, preview, service: bk.serviceLabel, bookingId: bk.id });
   send(res, 200, { message: { ...msg, delivery: 'sent' } });
 });
 // §7 mark the conversation read up to now for this participant.
@@ -4123,7 +4165,7 @@ route('POST', '/api/admin/bookings/:id/redispatch', async (req, res, params) => 
   bk.timeline.push({ status: 'searching', at: now(), by: admin.id });
   persist.bookings();
   audit('booking.redispatched', admin.id, bk.id, { previousProvider: prev });
-  sysMessage(bk.id, 'Заказ переназначен оператором — ищем нового исполнителя.');
+  sysMessage(bk.id, 'redispatched');
   send(res, 200, { booking: enrich(bk, admin) });
 });
 // §6 admin-forced cancellation (audited).
@@ -4246,14 +4288,14 @@ route('POST', '/api/company/bookings/:id/assign', async (req, res, params) => {
     bk.timeline.push({ status: 'accepted', at: now(), by: user.id });
     autoChargeBooking(bk);   // charge the customer's saved card on assignment
     audit('company.booking_assigned', user.id, bk.id, { cleaner: cleaner.id, previous: prev || null });
-    sysMessage(bk.id, `${cleaner.name} назначен(а) на заказ компанией ${user.name}.`);
+    sysMessage(bk.id, 'companyAssigned', { cleaner: cleaner.name, name: user.name });
     notify(bk.customerId, 'booking.accepted', { provider: cleaner.name, service: bk.serviceLabel, bookingId: bk.id });
   } else if (bk.status === 'accepted' && staffIds.has(bk.cleanerId)) {
     const prev = bk.cleanerId;
     bk.cleanerId = cleaner.id; bk.updatedAt = now();
     bk.timeline.push({ status: 'reassigned', at: now(), by: user.id });
     audit('company.booking_reassigned', user.id, bk.id, { cleaner: cleaner.id, previous: prev });
-    sysMessage(bk.id, `Исполнитель заменён на ${cleaner.name}.`);
+    sysMessage(bk.id, 'replaced', { cleaner: cleaner.name });
   } else {
     return send(res, 409, { error: 'This booking cannot be (re)assigned now.' });
   }

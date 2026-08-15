@@ -348,7 +348,20 @@ textarea.input{resize:vertical;min-height:80px}
 .issue-cats .chip{cursor:pointer;border:1.5px solid var(--line);background:var(--surface)}
 .issue-cats .chip.sel{border-color:var(--primary);background:var(--primary-050);color:var(--primary-600)}
 /* receipt / чек */
-.rc{max-width:420px;margin:0 auto}
+.rc{max-width:420px;margin:0 auto;overflow:hidden}
+/* The document's letterhead: dark brand band with the LUMI logo — the same
+   identity in the modal and in the printed PDF, so the receipt is recognisably
+   one document in both. */
+.rc-hero{background:linear-gradient(135deg,#0C2A1B,#0E3A2C);color:#fff;padding:20px 20px 16px}
+.rc-hero .rc-brand{color:#fff;margin-bottom:10px}
+.rc-hero .rc-title{color:#fff;font-size:15px;font-weight:600;opacity:.92;margin-bottom:2px}
+.rc-hero .rc-no{color:rgba(255,255,255,.65)}
+.rc-h span{font-weight:800;color:var(--ink);font-size:11.5px;letter-spacing:.05em;text-transform:uppercase}
+.rc-total{font-size:19px;font-weight:800}
+.rc-total span:last-child{color:var(--primary-600)}
+.rc-sub{font-size:12px;color:var(--ink-3)}
+.rc-sub span{color:var(--ink-3)}
+.rc-seller{margin-top:14px;font-size:11px;color:var(--ink-3);line-height:1.55}
 .rc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .rc-brand{display:flex;align-items:center;gap:8px;font-weight:850;font-size:18px}
 .rc-brand svg.logo{width:30px;height:30px}
@@ -1984,9 +1997,9 @@ Object.assign(TR.pl,{"Не удалось получить подтверждё�
 Object.assign(TR.en,{"Не удалось получить подтверждённый email от провайдера.":"Couldn’t get a verified email from the provider.","Этот аккаунт заблокирован.":"This account is blocked.","Не удалось выполнить вход через провайдера. Попробуйте ещё раз.":"Provider sign-in failed. Please try again."});
 Object.assign(TR.uk,{"Не удалось получить подтверждённый email от провайдера.":"Не вдалося отримати підтверджений email від провайдера.","Этот аккаунт заблокирован.":"Цей акаунт заблоковано.","Не удалось выполнить вход через провайдера. Попробуйте ещё раз.":"Не вдалося увійти через провайдера. Спробуйте ще раз."});
 // Payments · cards · wallet · LUMI+ · payouts
-Object.assign(TR.pl,{"Не удалось загрузить список профессий — проверьте интернет.":"Nie udało się załadować listy zawodów — sprawdź internet.","Повторить":"Ponów","кэшбек":"cashback","Отменить":"Anuluj","Лифт":"Winda","Есть":"Jest","Код от подъезда, где ключи, парковка…":"Kod do klatki, gdzie są klucze, parking…","Что важно знать об объекте":"Co warto wiedzieć o obiekcie","минут":"minut","минут, напр. 150":"minut, np. 150","Сколько окон":"Ile okien","Что помыть":"Co umyć","Ориентировочно":"Orientacyjnie","Балконное остекление и уборку балкона можно добавить на следующем шаге.":"Przeszklenie balkonu i sprzątanie balkonu można dodać w następnym kroku.","~{n} ч":"~{n} godz.","до {n} ч":"do {n} godz.","Редактировать объект":"Edytuj obiekt","Изменения сохранены":"Zapisano zmiany","Редактировать":"Edytuj","39 zł спишутся с карты сейчас и затем каждый месяц. Отменить можно в любой момент.":"39 zł pobierzemy teraz, a potem co miesiąc. Możesz anulować w każdej chwili.","Следующее списание":"Następne pobranie","Продление отключено":"Odnawianie wyłączone","Возобновить продление":"Wznów odnawianie","Отключить продление":"Wyłącz odnawianie","Продление возобновлено":"Odnawianie wznowione","LUMI+ действует до":"LUMI+ działa do","После этой даты списаний не будет.":"Po tej dacie nie pobierzemy nic więcej.","Не удалось списать оплату":"Nie udało się pobrać płatności","Попробуем ещё раз завтра. Обновите карту в Кошельке, чтобы не потерять LUMI+.":"Spróbujemy ponownie jutro. Zaktualizuj kartę w Portfelu, aby nie stracić LUMI+.","Не удалось посчитать":"Nie udało się policzyć","Сейчас ничего не спишется. Сохраняя карту, вы разрешаете списывать с неё оплату заказов — номер хранит Stripe, не мы.":"Teraz nic nie pobierzemy. Zapisując kartę, zgadzasz się na pobieranie z niej płatności za zamówienia — numer przechowuje Stripe, nie my.","5% кэшбек на каждый заказ":"5% cashbacku za każde zamówienie","Возвращаем 5% от суммы каждого заказа на баланс LUMI.":"Zwracamy 5% kwoty każdego zamówienia na saldo LUMI.","39 zł спишутся с привязанной карты сразу при оформлении.":"39 zł zostanie pobrane z podpiętej karty od razu przy aktywacji.","Стать участником LUMI+":"Zostań członkiem LUMI+","Отменить подписку":"Anuluj subskrypcję","Сначала добавьте карту в Кошельке":"Najpierw dodaj kartę w Portfelu","Подписка отменена":"Subskrypcja anulowana","Добро пожаловать в LUMI+!":"Witamy w LUMI+!","Не удалось загрузить форму оплаты":"Nie udało się załadować formularza płatności","Не удалось открыть форму карты":"Nie udało się otworzyć formularza karty","Привязать карту":"Dodaj kartę","Закрыть":"Zamknij","Сохранить карту":"Zapisz kartę","Данные карты защищены Stripe. Мы не храним номер карты.":"Dane karty chroni Stripe. Nie przechowujemy numeru karty.","Сохраняем…":"Zapisujemy…","Не удалось сохранить карту":"Nie udało się zapisać karty","Карта сохранена":"Karta zapisana","Доступный баланс":"Dostępne saldo","Пополнить":"Doładuj","Вывод денег":"Wypłata środków","каждый вторник":"w każdy wtorek","Выплаты приходят на ваш банковский счёт каждый вторник.":"Wypłaty trafiają na Twoje konto bankowe w każdy wtorek.","Ближайшая выплата":"Najbliższa wypłata","К выплате":"Do wypłaty","Добавьте номер счёта в профиле, чтобы получать выплаты.":"Dodaj numer konta w profilu, aby otrzymywać wypłaty.","История начислений":"Historia naliczeń","Бухгалтерия платежей":"Księgowość płatności","Здесь появятся пополнения, списания и кэшбек.":"Tu pojawią się doładowania, obciążenia i cashback.","Здесь появятся завершённые заказы.":"Tu pojawią się zakończone zamówienia.","Пока нет операций":"Brak operacji","Пополнение":"Doładowanie","Кэшбек LUMI+":"Cashback LUMI+","LUMI+ подписка":"Subskrypcja LUMI+","Оплата заказа":"Płatność za zamówienie","Возврат":"Zwrot","Оплата картой пока не подключена":"Płatność kartą nie jest jeszcze podłączona","Сначала добавьте карту":"Najpierw dodaj kartę","Пополнить баланс":"Doładuj saldo","Своя сумма, zł":"Własna kwota, zł","Спишем с карты":"Pobierzemy z karty","Сумма от 10 до 5000 zł":"Kwota od 10 do 5000 zł","Списываем…":"Pobieramy…","Баланс пополнен":"Saldo doładowane","Нет исполнителей с балансом к выплате.":"Brak wykonawców z saldem do wypłaty.","исполнителей":"wykonawców","итого":"razem","файл скачан":"plik pobrany","Отметить эти выплаты выполненными? Балансы исполнителей обнулятся.":"Oznaczyć te wypłaty jako wykonane? Salda wykonawców zostaną wyzerowane.","Выплачено":"Wypłacono","Способ оплаты":"Sposób płatności","Добавить карту":"Dodaj kartę","Заменить карту":"Zmień kartę","Удалить":"Usuń","Привяжите карту — оплата спишется автоматически, как только найдётся исполнитель.":"Podepnij kartę — płatność pobierzemy automatycznie, gdy znajdzie się wykonawca.","Удалить сохранённую карту?":"Usunąć zapisaną kartę?","Карта удалена":"Karta usunięta"});
-Object.assign(TR.en,{"Не удалось загрузить список профессий — проверьте интернет.":"Couldn’t load the professions list — check your connection.","Повторить":"Retry","кэшбек":"cashback","Отменить":"Cancel","Лифт":"Elevator","Есть":"Yes","Код от подъезда, где ключи, парковка…":"Entry code, where the keys are, parking…","Что важно знать об объекте":"What matters about this property","минут":"minutes","минут, напр. 150":"minutes, e.g. 150","Сколько окон":"How many windows","Что помыть":"What to wash","Ориентировочно":"Estimate","Балконное остекление и уборку балкона можно добавить на следующем шаге.":"Balcony glazing and balcony cleaning can be added at the next step.","~{n} ч":"~{n} h","до {n} ч":"up to {n} h","Редактировать объект":"Edit property","Изменения сохранены":"Changes saved","Редактировать":"Edit","39 zł спишутся с карты сейчас и затем каждый месяц. Отменить можно в любой момент.":"39 zł is charged now and every month after. Cancel any time.","Следующее списание":"Next charge","Продление отключено":"Renewal is off","Возобновить продление":"Resume renewal","Отключить продление":"Turn off renewal","Продление возобновлено":"Renewal resumed","LUMI+ действует до":"LUMI+ runs until","После этой даты списаний не будет.":"Nothing is charged after that date.","Не удалось списать оплату":"We couldn’t take the payment","Попробуем ещё раз завтра. Обновите карту в Кошельке, чтобы не потерять LUMI+.":"We’ll try again tomorrow. Update your card in the Wallet to keep LUMI+.","Не удалось посчитать":"Couldn’t calculate","Сейчас ничего не спишется. Сохраняя карту, вы разрешаете списывать с неё оплату заказов — номер хранит Stripe, не мы.":"Nothing is charged now. Saving the card lets us charge it for your orders — Stripe stores the number, not us.","5% кэшбек на каждый заказ":"5% cashback on every order","Возвращаем 5% от суммы каждого заказа на баланс LUMI.":"We return 5% of every order to your LUMI balance.","39 zł спишутся с привязанной карты сразу при оформлении.":"39 zł will be charged from your saved card right away.","Стать участником LUMI+":"Become a LUMI+ member","Отменить подписку":"Cancel subscription","Сначала добавьте карту в Кошельке":"Add a card in your Wallet first","Подписка отменена":"Subscription cancelled","Добро пожаловать в LUMI+!":"Welcome to LUMI+!","Не удалось загрузить форму оплаты":"Couldn’t load the payment form","Не удалось открыть форму карты":"Couldn’t open the card form","Привязать карту":"Add a card","Закрыть":"Close","Сохранить карту":"Save card","Данные карты защищены Stripe. Мы не храним номер карты.":"Card data is protected by Stripe. We never store your card number.","Сохраняем…":"Saving…","Не удалось сохранить карту":"Couldn’t save the card","Карта сохранена":"Card saved","Доступный баланс":"Available balance","Пополнить":"Top up","Вывод денег":"Withdraw","каждый вторник":"every Tuesday","Выплаты приходят на ваш банковский счёт каждый вторник.":"Payouts arrive to your bank account every Tuesday.","Ближайшая выплата":"Next payout","К выплате":"To be paid","Добавьте номер счёта в профиле, чтобы получать выплаты.":"Add your account number in the profile to receive payouts.","История начислений":"Earnings history","Бухгалтерия платежей":"Payments ledger","Здесь появятся пополнения, списания и кэшбек.":"Top-ups, charges and cashback will appear here.","Здесь появятся завершённые заказы.":"Completed orders will appear here.","Пока нет операций":"No transactions yet","Пополнение":"Top-up","Кэшбек LUMI+":"LUMI+ cashback","LUMI+ подписка":"LUMI+ subscription","Оплата заказа":"Order payment","Возврат":"Refund","Оплата картой пока не подключена":"Card payments aren’t connected yet","Сначала добавьте карту":"Add a card first","Пополнить баланс":"Top up balance","Своя сумма, zł":"Custom amount, zł","Спишем с карты":"We’ll charge the card","Сумма от 10 до 5000 zł":"Amount from 10 to 5000 zł","Списываем…":"Charging…","Баланс пополнен":"Balance topped up","Нет исполнителей с балансом к выплате.":"No cleaners with a balance to pay out.","исполнителей":"cleaners","итого":"total","файл скачан":"file downloaded","Отметить эти выплаты выполненными? Балансы исполнителей обнулятся.":"Mark these payouts as done? Cleaners’ balances will be reset to zero.","Выплачено":"Paid out","Способ оплаты":"Payment method","Добавить карту":"Add card","Заменить карту":"Replace card","Удалить":"Remove","Привяжите карту — оплата спишется автоматически, как только найдётся исполнитель.":"Add a card — we’ll charge it automatically as soon as a cleaner is found.","Удалить сохранённую карту?":"Remove the saved card?","Карта удалена":"Card removed"});
-Object.assign(TR.uk,{"Не удалось загрузить список профессий — проверьте интернет.":"Не вдалося завантажити список професій — перевірте інтернет.","Повторить":"Повторити","кэшбек":"кешбек","Отменить":"Скасувати","Лифт":"Ліфт","Есть":"Є","Код от подъезда, где ключи, парковка…":"Код під’їзду, де ключі, парковка…","Что важно знать об объекте":"Що важливо знати про об’єкт","минут":"хвилин","минут, напр. 150":"хвилин, напр. 150","Сколько окон":"Скільки вікон","Что помыть":"Що помити","Ориентировочно":"Орієнтовно","Балконное остекление и уборку балкона можно добавить на следующем шаге.":"Скління балкона та прибирання балкона можна додати на наступному кроці.","~{n} ч":"~{n} год","до {n} ч":"до {n} год","Редактировать объект":"Редагувати об’єкт","Изменения сохранены":"Зміни збережено","Редактировать":"Редагувати","39 zł спишутся с карты сейчас и затем каждый месяц. Отменить можно в любой момент.":"39 zł спишемо зараз і потім щомісяця. Скасувати можна будь-коли.","Следующее списание":"Наступне списання","Продление отключено":"Продовження вимкнено","Возобновить продление":"Відновити продовження","Отключить продление":"Вимкнути продовження","Продление возобновлено":"Продовження відновлено","LUMI+ действует до":"LUMI+ діє до","После этой даты списаний не будет.":"Після цієї дати списань не буде.","Не удалось списать оплату":"Не вдалося списати оплату","Попробуем ещё раз завтра. Обновите карту в Кошельке, чтобы не потерять LUMI+.":"Спробуємо ще раз завтра. Оновіть картку в Гаманці, щоб не втратити LUMI+.","Не удалось посчитать":"Не вдалося порахувати","Сейчас ничего не спишется. Сохраняя карту, вы разрешаете списывать с неё оплату заказов — номер хранит Stripe, не мы.":"Зараз нічого не спишеться. Зберігаючи картку, ви дозволяєте списувати з неї оплату замовлень — номер зберігає Stripe, не ми.","5% кэшбек на каждый заказ":"5% кешбек за кожне замовлення","Возвращаем 5% от суммы каждого заказа на баланс LUMI.":"Повертаємо 5% від суми кожного замовлення на баланс LUMI.","39 zł спишутся с привязанной карты сразу при оформлении.":"39 zł спишуться з прив’язаної картки одразу під час оформлення.","Стать участником LUMI+":"Стати учасником LUMI+","Отменить подписку":"Скасувати підписку","Сначала добавьте карту в Кошельке":"Спочатку додайте картку в Гаманці","Подписка отменена":"Підписку скасовано","Добро пожаловать в LUMI+!":"Ласкаво просимо до LUMI+!","Не удалось загрузить форму оплаты":"Не вдалося завантажити форму оплати","Не удалось открыть форму карты":"Не вдалося відкрити форму картки","Привязать карту":"Прив’язати картку","Закрыть":"Закрити","Сохранить карту":"Зберегти картку","Данные карты защищены Stripe. Мы не храним номер карты.":"Дані картки захищені Stripe. Ми не зберігаємо номер картки.","Сохраняем…":"Зберігаємо…","Не удалось сохранить карту":"Не вдалося зберегти картку","Карта сохранена":"Картку збережено","Доступный баланс":"Доступний баланс","Пополнить":"Поповнити","Вывод денег":"Виведення коштів","каждый вторник":"щовівторка","Выплаты приходят на ваш банковский счёт каждый вторник.":"Виплати надходять на ваш банківський рахунок щовівторка.","Ближайшая выплата":"Найближча виплата","К выплате":"До виплати","Добавьте номер счёта в профиле, чтобы получать выплаты.":"Додайте номер рахунку в профілі, щоб отримувати виплати.","История начислений":"Історія нарахувань","Бухгалтерия платежей":"Бухгалтерія платежів","Здесь появятся пополнения, списания и кэшбек.":"Тут з’являться поповнення, списання та кешбек.","Здесь появятся завершённые заказы.":"Тут з’являться завершені замовлення.","Пока нет операций":"Поки немає операцій","Пополнение":"Поповнення","Кэшбек LUMI+":"Кешбек LUMI+","LUMI+ подписка":"LUMI+ підписка","Оплата заказа":"Оплата замовлення","Возврат":"Повернення","Оплата картой пока не подключена":"Оплата карткою поки не підключена","Сначала добавьте карту":"Спочатку додайте картку","Пополнить баланс":"Поповнити баланс","Своя сумма, zł":"Власна сума, zł","Спишем с карты":"Спишемо з картки","Сумма от 10 до 5000 zł":"Сума від 10 до 5000 zł","Списываем…":"Списуємо…","Баланс пополнен":"Баланс поповнено","Нет исполнителей с балансом к выплате.":"Немає виконавців із балансом до виплати.","исполнителей":"виконавців","итого":"разом","файл скачан":"файл завантажено","Отметить эти выплаты выполненными? Балансы исполнителей обнулятся.":"Позначити ці виплати виконаними? Баланси виконавців обнуляться.","Выплачено":"Виплачено","Способ оплаты":"Спосіб оплати","Добавить карту":"Додати картку","Заменить карту":"Замінити картку","Удалить":"Видалити","Привяжите карту — оплата спишется автоматически, как только найдётся исполнитель.":"Прив’яжіть картку — оплата спишеться автоматично, щойно знайдеться виконавець.","Удалить сохранённую карту?":"Видалити збережену картку?","Карта удалена":"Картку видалено"});
+Object.assign(TR.pl,{"Плохо убрано / качество":"Źle posprzątane / jakość","Исполнитель не пришёл":"Wykonawca nie przyszedł","Опоздание":"Spóźnienie","Кража / пропажа вещей":"Kradzież / zaginięcie rzeczy","Повреждение имущества":"Uszkodzenie mienia","Угроза безопасности / недопустимое поведение":"Zagrożenie bezpieczeństwa / niedopuszczalne zachowanie","Спор по оплате":"Spór o płatność","Поведение / общение":"Zachowanie / komunikacja","Другое":"Inne","Напишите нам — ответим на {email} в течение 24 часов.":"Napisz do nas — odpowiemy na {email} w ciągu 24 godzin.","{name} принял заказ и скоро приедет.":"{name} przyjął(-ęła) zamówienie i wkrótce przyjedzie.","{name} выбрал(а) исполнителя: {cleaner}.":"{name} wybrał(a) wykonawcę: {cleaner}.","{name} выехал(а) к вам. В пути ~{eta} мин.":"{name} jest w drodze. Dojazd ~{eta} min.","Уборка началась.":"Sprzątanie się rozpoczęło.","Заказ завершён. Оплата проведена. Оставьте, пожалуйста, отзыв!":"Zamówienie zakończone. Płatność rozliczona. Zostaw opinię!","Заказ отменён ({name}).":"Zamówienie anulowane ({name}).","Заказ переназначен оператором — ищем нового исполнителя.":"Zamówienie przekazane przez operatora — szukamy nowego wykonawcy.","{cleaner} назначен(а) на заказ компанией {name}.":"{cleaner} przydzielony(-a) do zamówienia przez firmę {name}.","Исполнитель заменён на {cleaner}.":"Wykonawca zmieniony na {cleaner}.","Показать чек":"Pokaż paragon","Чек скопирован":"Paragon skopiowany","Не удалось скопировать":"Nie udało się skopiować","Печать недоступна в этом браузере":"Drukowanie niedostępne w tej przeglądarce","Решить проблему по заказу":"Rozwiąż problem z zamówieniem","Решить проблему":"Rozwiąż problem","Пригласить на уборку":"Zaproś do sprzątania","Выбрать этого исполнителя":"Wybierz tego wykonawcę","Не удалось загрузить список профессий — проверьте интернет.":"Nie udało się załadować listy zawodów — sprawdź internet.","Повторить":"Ponów","кэшбек":"cashback","Отменить":"Anuluj","Лифт":"Winda","Есть":"Jest","Код от подъезда, где ключи, парковка…":"Kod do klatki, gdzie są klucze, parking…","Что важно знать об объекте":"Co warto wiedzieć o obiekcie","минут":"minut","минут, напр. 150":"minut, np. 150","Сколько окон":"Ile okien","Что помыть":"Co umyć","Ориентировочно":"Orientacyjnie","Балконное остекление и уборку балкона можно добавить на следующем шаге.":"Przeszklenie balkonu i sprzątanie balkonu można dodać w następnym kroku.","~{n} ч":"~{n} godz.","до {n} ч":"do {n} godz.","Редактировать объект":"Edytuj obiekt","Изменения сохранены":"Zapisano zmiany","Редактировать":"Edytuj","39 zł спишутся с карты сейчас и затем каждый месяц. Отменить можно в любой момент.":"39 zł pobierzemy teraz, a potem co miesiąc. Możesz anulować w każdej chwili.","Следующее списание":"Następne pobranie","Продление отключено":"Odnawianie wyłączone","Возобновить продление":"Wznów odnawianie","Отключить продление":"Wyłącz odnawianie","Продление возобновлено":"Odnawianie wznowione","LUMI+ действует до":"LUMI+ działa do","После этой даты списаний не будет.":"Po tej dacie nie pobierzemy nic więcej.","Не удалось списать оплату":"Nie udało się pobrać płatności","Попробуем ещё раз завтра. Обновите карту в Кошельке, чтобы не потерять LUMI+.":"Spróbujemy ponownie jutro. Zaktualizuj kartę w Portfelu, aby nie stracić LUMI+.","Не удалось посчитать":"Nie udało się policzyć","Сейчас ничего не спишется. Сохраняя карту, вы разрешаете списывать с неё оплату заказов — номер хранит Stripe, не мы.":"Teraz nic nie pobierzemy. Zapisując kartę, zgadzasz się na pobieranie z niej płatności za zamówienia — numer przechowuje Stripe, nie my.","5% кэшбек на каждый заказ":"5% cashbacku za każde zamówienie","Возвращаем 5% от суммы каждого заказа на баланс LUMI.":"Zwracamy 5% kwoty każdego zamówienia na saldo LUMI.","39 zł спишутся с привязанной карты сразу при оформлении.":"39 zł zostanie pobrane z podpiętej karty od razu przy aktywacji.","Стать участником LUMI+":"Zostań członkiem LUMI+","Отменить подписку":"Anuluj subskrypcję","Сначала добавьте карту в Кошельке":"Najpierw dodaj kartę w Portfelu","Подписка отменена":"Subskrypcja anulowana","Добро пожаловать в LUMI+!":"Witamy w LUMI+!","Не удалось загрузить форму оплаты":"Nie udało się załadować formularza płatności","Не удалось открыть форму карты":"Nie udało się otworzyć formularza karty","Привязать карту":"Dodaj kartę","Закрыть":"Zamknij","Сохранить карту":"Zapisz kartę","Данные карты защищены Stripe. Мы не храним номер карты.":"Dane karty chroni Stripe. Nie przechowujemy numeru karty.","Сохраняем…":"Zapisujemy…","Не удалось сохранить карту":"Nie udało się zapisać karty","Карта сохранена":"Karta zapisana","Доступный баланс":"Dostępne saldo","Пополнить":"Doładuj","Вывод денег":"Wypłata środków","каждый вторник":"w każdy wtorek","Выплаты приходят на ваш банковский счёт каждый вторник.":"Wypłaty trafiają na Twoje konto bankowe w każdy wtorek.","Ближайшая выплата":"Najbliższa wypłata","К выплате":"Do wypłaty","Добавьте номер счёта в профиле, чтобы получать выплаты.":"Dodaj numer konta w profilu, aby otrzymywać wypłaty.","История начислений":"Historia naliczeń","Бухгалтерия платежей":"Księgowość płatności","Здесь появятся пополнения, списания и кэшбек.":"Tu pojawią się doładowania, obciążenia i cashback.","Здесь появятся завершённые заказы.":"Tu pojawią się zakończone zamówienia.","Пока нет операций":"Brak operacji","Пополнение":"Doładowanie","Кэшбек LUMI+":"Cashback LUMI+","LUMI+ подписка":"Subskrypcja LUMI+","Оплата заказа":"Płatność za zamówienie","Возврат":"Zwrot","Оплата картой пока не подключена":"Płatność kartą nie jest jeszcze podłączona","Сначала добавьте карту":"Najpierw dodaj kartę","Пополнить баланс":"Doładuj saldo","Своя сумма, zł":"Własna kwota, zł","Спишем с карты":"Pobierzemy z karty","Сумма от 10 до 5000 zł":"Kwota od 10 do 5000 zł","Списываем…":"Pobieramy…","Баланс пополнен":"Saldo doładowane","Нет исполнителей с балансом к выплате.":"Brak wykonawców z saldem do wypłaty.","исполнителей":"wykonawców","итого":"razem","файл скачан":"plik pobrany","Отметить эти выплаты выполненными? Балансы исполнителей обнулятся.":"Oznaczyć te wypłaty jako wykonane? Salda wykonawców zostaną wyzerowane.","Выплачено":"Wypłacono","Способ оплаты":"Sposób płatności","Добавить карту":"Dodaj kartę","Заменить карту":"Zmień kartę","Удалить":"Usuń","Привяжите карту — оплата спишется автоматически, как только найдётся исполнитель.":"Podepnij kartę — płatność pobierzemy automatycznie, gdy znajdzie się wykonawca.","Удалить сохранённую карту?":"Usunąć zapisaną kartę?","Карта удалена":"Karta usunięta"});
+Object.assign(TR.en,{"Плохо убрано / качество":"Poor cleaning / quality","Исполнитель не пришёл":"The provider did not show up","Опоздание":"Late arrival","Кража / пропажа вещей":"Theft / missing items","Повреждение имущества":"Property damage","Угроза безопасности / недопустимое поведение":"Safety threat / unacceptable behaviour","Спор по оплате":"Payment dispute","Поведение / общение":"Behaviour / communication","Другое":"Other","Напишите нам — ответим на {email} в течение 24 часов.":"Write to us — we reply to {email} within 24 hours.","{name} принял заказ и скоро приедет.":"{name} accepted the order and will arrive soon.","{name} выбрал(а) исполнителя: {cleaner}.":"{name} chose a provider: {cleaner}.","{name} выехал(а) к вам. В пути ~{eta} мин.":"{name} is on the way. ~{eta} min out.","Уборка началась.":"The cleaning has started.","Заказ завершён. Оплата проведена. Оставьте, пожалуйста, отзыв!":"Order completed. Payment settled. Please leave a review!","Заказ отменён ({name}).":"Order cancelled ({name}).","Заказ переназначен оператором — ищем нового исполнителя.":"The order was reassigned by an operator — finding a new provider.","{cleaner} назначен(а) на заказ компанией {name}.":"{cleaner} was assigned to the order by {name}.","Исполнитель заменён на {cleaner}.":"The provider was replaced with {cleaner}.","Показать чек":"Show receipt","Чек скопирован":"Receipt copied","Не удалось скопировать":"Couldn’t copy","Печать недоступна в этом браузере":"Printing is unavailable in this browser","Решить проблему по заказу":"Resolve an issue with this order","Решить проблему":"Resolve an issue","Пригласить на уборку":"Invite to clean","Выбрать этого исполнителя":"Choose this provider","Не удалось загрузить список профессий — проверьте интернет.":"Couldn’t load the professions list — check your connection.","Повторить":"Retry","кэшбек":"cashback","Отменить":"Cancel","Лифт":"Elevator","Есть":"Yes","Код от подъезда, где ключи, парковка…":"Entry code, where the keys are, parking…","Что важно знать об объекте":"What matters about this property","минут":"minutes","минут, напр. 150":"minutes, e.g. 150","Сколько окон":"How many windows","Что помыть":"What to wash","Ориентировочно":"Estimate","Балконное остекление и уборку балкона можно добавить на следующем шаге.":"Balcony glazing and balcony cleaning can be added at the next step.","~{n} ч":"~{n} h","до {n} ч":"up to {n} h","Редактировать объект":"Edit property","Изменения сохранены":"Changes saved","Редактировать":"Edit","39 zł спишутся с карты сейчас и затем каждый месяц. Отменить можно в любой момент.":"39 zł is charged now and every month after. Cancel any time.","Следующее списание":"Next charge","Продление отключено":"Renewal is off","Возобновить продление":"Resume renewal","Отключить продление":"Turn off renewal","Продление возобновлено":"Renewal resumed","LUMI+ действует до":"LUMI+ runs until","После этой даты списаний не будет.":"Nothing is charged after that date.","Не удалось списать оплату":"We couldn’t take the payment","Попробуем ещё раз завтра. Обновите карту в Кошельке, чтобы не потерять LUMI+.":"We’ll try again tomorrow. Update your card in the Wallet to keep LUMI+.","Не удалось посчитать":"Couldn’t calculate","Сейчас ничего не спишется. Сохраняя карту, вы разрешаете списывать с неё оплату заказов — номер хранит Stripe, не мы.":"Nothing is charged now. Saving the card lets us charge it for your orders — Stripe stores the number, not us.","5% кэшбек на каждый заказ":"5% cashback on every order","Возвращаем 5% от суммы каждого заказа на баланс LUMI.":"We return 5% of every order to your LUMI balance.","39 zł спишутся с привязанной карты сразу при оформлении.":"39 zł will be charged from your saved card right away.","Стать участником LUMI+":"Become a LUMI+ member","Отменить подписку":"Cancel subscription","Сначала добавьте карту в Кошельке":"Add a card in your Wallet first","Подписка отменена":"Subscription cancelled","Добро пожаловать в LUMI+!":"Welcome to LUMI+!","Не удалось загрузить форму оплаты":"Couldn’t load the payment form","Не удалось открыть форму карты":"Couldn’t open the card form","Привязать карту":"Add a card","Закрыть":"Close","Сохранить карту":"Save card","Данные карты защищены Stripe. Мы не храним номер карты.":"Card data is protected by Stripe. We never store your card number.","Сохраняем…":"Saving…","Не удалось сохранить карту":"Couldn’t save the card","Карта сохранена":"Card saved","Доступный баланс":"Available balance","Пополнить":"Top up","Вывод денег":"Withdraw","каждый вторник":"every Tuesday","Выплаты приходят на ваш банковский счёт каждый вторник.":"Payouts arrive to your bank account every Tuesday.","Ближайшая выплата":"Next payout","К выплате":"To be paid","Добавьте номер счёта в профиле, чтобы получать выплаты.":"Add your account number in the profile to receive payouts.","История начислений":"Earnings history","Бухгалтерия платежей":"Payments ledger","Здесь появятся пополнения, списания и кэшбек.":"Top-ups, charges and cashback will appear here.","Здесь появятся завершённые заказы.":"Completed orders will appear here.","Пока нет операций":"No transactions yet","Пополнение":"Top-up","Кэшбек LUMI+":"LUMI+ cashback","LUMI+ подписка":"LUMI+ subscription","Оплата заказа":"Order payment","Возврат":"Refund","Оплата картой пока не подключена":"Card payments aren’t connected yet","Сначала добавьте карту":"Add a card first","Пополнить баланс":"Top up balance","Своя сумма, zł":"Custom amount, zł","Спишем с карты":"We’ll charge the card","Сумма от 10 до 5000 zł":"Amount from 10 to 5000 zł","Списываем…":"Charging…","Баланс пополнен":"Balance topped up","Нет исполнителей с балансом к выплате.":"No cleaners with a balance to pay out.","исполнителей":"cleaners","итого":"total","файл скачан":"file downloaded","Отметить эти выплаты выполненными? Балансы исполнителей обнулятся.":"Mark these payouts as done? Cleaners’ balances will be reset to zero.","Выплачено":"Paid out","Способ оплаты":"Payment method","Добавить карту":"Add card","Заменить карту":"Replace card","Удалить":"Remove","Привяжите карту — оплата спишется автоматически, как только найдётся исполнитель.":"Add a card — we’ll charge it automatically as soon as a cleaner is found.","Удалить сохранённую карту?":"Remove the saved card?","Карта удалена":"Card removed"});
+Object.assign(TR.uk,{"Плохо убрано / качество":"Погано прибрано / якість","Исполнитель не пришёл":"Виконавець не прийшов","Опоздание":"Запізнення","Кража / пропажа вещей":"Крадіжка / зникнення речей","Повреждение имущества":"Пошкодження майна","Угроза безопасности / недопустимое поведение":"Загроза безпеці / неприпустима поведінка","Спор по оплате":"Спір щодо оплати","Поведение / общение":"Поведінка / спілкування","Другое":"Інше","Напишите нам — ответим на {email} в течение 24 часов.":"Напишіть нам — відповімо на {email} протягом 24 годин.","{name} принял заказ и скоро приедет.":"{name} прийняв(-ла) замовлення і скоро приїде.","{name} выбрал(а) исполнителя: {cleaner}.":"{name} обрав(-ла) виконавця: {cleaner}.","{name} выехал(а) к вам. В пути ~{eta} мин.":"{name} виїхав(-ла) до вас. У дорозі ~{eta} хв.","Уборка началась.":"Прибирання почалося.","Заказ завершён. Оплата проведена. Оставьте, пожалуйста, отзыв!":"Замовлення завершено. Оплату проведено. Залиште відгук!","Заказ отменён ({name}).":"Замовлення скасовано ({name}).","Заказ переназначен оператором — ищем нового исполнителя.":"Замовлення переназначено оператором — шукаємо нового виконавця.","{cleaner} назначен(а) на заказ компанией {name}.":"{cleaner} призначений(-а) на замовлення компанією {name}.","Исполнитель заменён на {cleaner}.":"Виконавця замінено на {cleaner}.","Показать чек":"Показати чек","Чек скопирован":"Чек скопійовано","Не удалось скопировать":"Не вдалося скопіювати","Печать недоступна в этом браузере":"Друк недоступний у цьому браузері","Решить проблему по заказу":"Вирішити проблему із замовленням","Решить проблему":"Вирішити проблему","Пригласить на уборку":"Запросити на прибирання","Выбрать этого исполнителя":"Обрати цього виконавця","Не удалось загрузить список профессий — проверьте интернет.":"Не вдалося завантажити список професій — перевірте інтернет.","Повторить":"Повторити","кэшбек":"кешбек","Отменить":"Скасувати","Лифт":"Ліфт","Есть":"Є","Код от подъезда, где ключи, парковка…":"Код під’їзду, де ключі, парковка…","Что важно знать об объекте":"Що важливо знати про об’єкт","минут":"хвилин","минут, напр. 150":"хвилин, напр. 150","Сколько окон":"Скільки вікон","Что помыть":"Що помити","Ориентировочно":"Орієнтовно","Балконное остекление и уборку балкона можно добавить на следующем шаге.":"Скління балкона та прибирання балкона можна додати на наступному кроці.","~{n} ч":"~{n} год","до {n} ч":"до {n} год","Редактировать объект":"Редагувати об’єкт","Изменения сохранены":"Зміни збережено","Редактировать":"Редагувати","39 zł спишутся с карты сейчас и затем каждый месяц. Отменить можно в любой момент.":"39 zł спишемо зараз і потім щомісяця. Скасувати можна будь-коли.","Следующее списание":"Наступне списання","Продление отключено":"Продовження вимкнено","Возобновить продление":"Відновити продовження","Отключить продление":"Вимкнути продовження","Продление возобновлено":"Продовження відновлено","LUMI+ действует до":"LUMI+ діє до","После этой даты списаний не будет.":"Після цієї дати списань не буде.","Не удалось списать оплату":"Не вдалося списати оплату","Попробуем ещё раз завтра. Обновите карту в Кошельке, чтобы не потерять LUMI+.":"Спробуємо ще раз завтра. Оновіть картку в Гаманці, щоб не втратити LUMI+.","Не удалось посчитать":"Не вдалося порахувати","Сейчас ничего не спишется. Сохраняя карту, вы разрешаете списывать с неё оплату заказов — номер хранит Stripe, не мы.":"Зараз нічого не спишеться. Зберігаючи картку, ви дозволяєте списувати з неї оплату замовлень — номер зберігає Stripe, не ми.","5% кэшбек на каждый заказ":"5% кешбек за кожне замовлення","Возвращаем 5% от суммы каждого заказа на баланс LUMI.":"Повертаємо 5% від суми кожного замовлення на баланс LUMI.","39 zł спишутся с привязанной карты сразу при оформлении.":"39 zł спишуться з прив’язаної картки одразу під час оформлення.","Стать участником LUMI+":"Стати учасником LUMI+","Отменить подписку":"Скасувати підписку","Сначала добавьте карту в Кошельке":"Спочатку додайте картку в Гаманці","Подписка отменена":"Підписку скасовано","Добро пожаловать в LUMI+!":"Ласкаво просимо до LUMI+!","Не удалось загрузить форму оплаты":"Не вдалося завантажити форму оплати","Не удалось открыть форму карты":"Не вдалося відкрити форму картки","Привязать карту":"Прив’язати картку","Закрыть":"Закрити","Сохранить карту":"Зберегти картку","Данные карты защищены Stripe. Мы не храним номер карты.":"Дані картки захищені Stripe. Ми не зберігаємо номер картки.","Сохраняем…":"Зберігаємо…","Не удалось сохранить карту":"Не вдалося зберегти картку","Карта сохранена":"Картку збережено","Доступный баланс":"Доступний баланс","Пополнить":"Поповнити","Вывод денег":"Виведення коштів","каждый вторник":"щовівторка","Выплаты приходят на ваш банковский счёт каждый вторник.":"Виплати надходять на ваш банківський рахунок щовівторка.","Ближайшая выплата":"Найближча виплата","К выплате":"До виплати","Добавьте номер счёта в профиле, чтобы получать выплаты.":"Додайте номер рахунку в профілі, щоб отримувати виплати.","История начислений":"Історія нарахувань","Бухгалтерия платежей":"Бухгалтерія платежів","Здесь появятся пополнения, списания и кэшбек.":"Тут з’являться поповнення, списання та кешбек.","Здесь появятся завершённые заказы.":"Тут з’являться завершені замовлення.","Пока нет операций":"Поки немає операцій","Пополнение":"Поповнення","Кэшбек LUMI+":"Кешбек LUMI+","LUMI+ подписка":"LUMI+ підписка","Оплата заказа":"Оплата замовлення","Возврат":"Повернення","Оплата картой пока не подключена":"Оплата карткою поки не підключена","Сначала добавьте карту":"Спочатку додайте картку","Пополнить баланс":"Поповнити баланс","Своя сумма, zł":"Власна сума, zł","Спишем с карты":"Спишемо з картки","Сумма от 10 до 5000 zł":"Сума від 10 до 5000 zł","Списываем…":"Списуємо…","Баланс пополнен":"Баланс поповнено","Нет исполнителей с балансом к выплате.":"Немає виконавців із балансом до виплати.","исполнителей":"виконавців","итого":"разом","файл скачан":"файл завантажено","Отметить эти выплаты выполненными? Балансы исполнителей обнулятся.":"Позначити ці виплати виконаними? Баланси виконавців обнуляться.","Выплачено":"Виплачено","Способ оплаты":"Спосіб оплати","Добавить карту":"Додати картку","Заменить карту":"Замінити картку","Удалить":"Видалити","Привяжите карту — оплата спишется автоматически, как только найдётся исполнитель.":"Прив’яжіть картку — оплата спишеться автоматично, щойно знайдеться виконавець.","Удалить сохранённую карту?":"Видалити збережену картку?","Карта удалена":"Картку видалено"});
 Object.assign(TR.pl,{"Приоритетная подача":"Priorytetowa wysyłka","Любимый исполнитель":"Ulubiony wykonawca","Заказывайте того же исполнителя по расписанию.":"Zamawiaj tego samego wykonawcę według harmonogramu.","AI сам заказывает регулярное обслуживание.":"AI samo zamawia regularną obsługę.","Подписка, которая берёт дом на себя.":"Subskrypcja, która bierze dom na siebie.","Вы участник LUMI+":"Jesteś członkiem LUMI+","На главную":"Na stronę główną"});
 Object.assign(TR.en,{"Приоритетная подача":"Priority dispatch","Любимый исполнитель":"Favorite cleaner","Заказывайте того же исполнителя по расписанию.":"Book the same cleaner on a schedule.","AI сам заказывает регулярное обслуживание.":"AI books regular upkeep for you.","Подписка, которая берёт дом на себя.":"A subscription that takes the home off your hands.","Вы участник LUMI+":"You’re a LUMI+ member","На главную":"Home"});
 Object.assign(TR.pl,{"Сколько человек в команде *":"Ile osób w zespole *"});
@@ -2509,9 +2522,9 @@ async function openCleanerProfile(id,bookingId){
           <div class="tiny muted" style="margin-top:3px">⭐ ${p.rating||'—'} · ${p.jobsDone} ${plural(p.jobsDone,'заказ','заказа','заказов')}${p.experienceYears?` · ${p.experienceYears} ${plural(p.experienceYears,'год','года','лет')} опыта`:''}${p.city?` · ${p.city}`:''}</div>
         </div>
       </div>
-      ${p.bio?`<p class="muted" style="font-size:14.5px;line-height:1.5;margin-bottom:14px">${esc(p.bio)}</p>`:''}
+      ${p.bio?`<p class="muted" data-noi18n style="font-size:14.5px;line-height:1.5;margin-bottom:14px">${esc(p.bio)}</p>`:''}
       ${equipmentBlock(p)}
-      ${p.reviews.length?`<div class="section-title" style="font-size:16px;margin-bottom:10px">Отзывы</div>${p.reviews.map(r=>`<div class="card pad" style="background:var(--surface-2);margin-bottom:8px"><div class="row" style="justify-content:space-between"><b>${'★'.repeat(Math.round(r.stars))}<span class="muted tiny" style="margin-left:6px">${r.stars}</span></b><span class="tiny muted">${timeAgo(r.at)}</span></div>${r.text?`<p class="tiny" style="margin-top:6px;line-height:1.5">${esc(r.text)}</p>`:''}</div>`).join('')}`:'<p class="tiny muted">Пока нет отзывов.</p>'}
+      ${p.reviews.length?`<div class="section-title" style="font-size:16px;margin-bottom:10px">Отзывы</div>${p.reviews.map(r=>`<div class="card pad" style="background:var(--surface-2);margin-bottom:8px"><div class="row" style="justify-content:space-between"><b>${'★'.repeat(Math.round(r.stars))}<span class="muted tiny" style="margin-left:6px">${r.stars}</span></b><span class="tiny muted">${timeAgo(r.at)}</span></div>${r.text?`<p class="tiny" data-noi18n style="margin-top:6px;line-height:1.5">${esc(r.text)}</p>`:''}</div>`).join('')}`:'<p class="tiny muted">Пока нет отзывов.</p>'}
       ${bookingId?`<button class="btn block" id="chooseFromProfile" style="margin-top:14px">Выбрать этого исполнителя ${I.check}</button>`
         :(state.user.role==='customer'?`<button class="btn block" id="inviteCleaner" style="margin-top:14px">${I.crown} Пригласить на уборку</button>
           <button class="btn ghost block" id="favCleaner" style="margin-top:10px">${I.heart} В избранное</button>`:'')}`;
@@ -5527,7 +5540,7 @@ async function renderIssue(b,ctx){
     if(open){
       z.innerHTML=`<div class="card pad issue-card" style="margin:14px 0">
         <div class="row" style="gap:10px"><span class="issue-ic amber">${I.bell}</span>
-          <div style="flex:1"><b>Обращение на рассмотрении</b><div class="tiny muted" style="margin-top:2px">${esc(open.categoryLabel)} · ${timeAgo(open.createdAt)}</div>
+          <div style="flex:1"><b>Обращение на рассмотрении</b><div class="tiny muted" style="margin-top:2px">${esc(t(open.categoryLabel))} · ${timeAgo(open.createdAt)}</div>
           <div class="tiny" style="margin-top:6px;color:var(--ink-2)">«${esc(open.description)}»</div></div></div></div>`;
       return;
     }
@@ -5544,7 +5557,7 @@ async function openIssue(bookingId){
     <h3 style="margin-bottom:4px">Решить проблему</h3>
     <p class="muted tiny" style="margin-bottom:16px">Опишите, что пошло не так — модератор LUMI разберётся и свяжется с вами.</p>
     <label class="field"><span>Что случилось?</span></label>
-    <div class="issue-cats" id="issueCats" style="margin-bottom:14px">${Object.entries(cats).map(([k,v])=>`<button type="button" class="chip ${k==='quality'?'sel':''}" data-cat="${k}">${v}</button>`).join('')}</div>
+    <div class="issue-cats" id="issueCats" style="margin-bottom:14px">${Object.entries(cats).map(([k,v])=>`<button type="button" class="chip ${k==='quality'?'sel':''}" data-cat="${k}">${t(v)}</button>`).join('')}</div>
     <div class="severe-note" id="issueSevere" style="display:none">
       <b>${t('Что происходит сразу после обращения')}</b>
       <ul>
@@ -5582,7 +5595,7 @@ async function openSupport(){
   const sel={topic:'general'};
   const inner=el(`<div class="card pad">
     <div class="row" style="gap:12px;margin-bottom:14px"><span class="issue-ic" style="background:var(--primary-050);color:var(--primary-600)">${I.chat}</span>
-      <div><h3 style="margin-bottom:2px">Поддержка 24/7</h3><p class="muted tiny">Напишите нам — ответим на ${esc(meta.email)} в течение 24 часов.</p></div></div>
+      <div><h3 style="margin-bottom:2px">Поддержка 24/7</h3><p class="muted tiny">${t('Напишите нам — ответим на {email} в течение 24 часов.',{email:esc(meta.email)})}</p></div></div>
     <label class="field"><span>Тема</span></label>
     <div class="issue-cats" id="supTopics" style="margin-bottom:14px">${Object.entries(meta.topics).map(([k,v])=>`<button type="button" class="chip ${k==='general'?'sel':''}" data-t="${k}">${v}</button>`).join('')}</div>
     <label class="field"><span>Ваш email для ответа</span><input class="input" id="supEmail" type="email" value="${esc(state.user.email||'')}" placeholder="you@example.com"></label>
@@ -5600,127 +5613,157 @@ async function openSupport(){
     }catch(e){toast(e.message,true);}
   };
 }
-/* ---------- receipt / чек after completion ---------- */
+/* ---------- receipt / чек after completion ----------
+   The receipt is a Polish commercial document and renders in Polish for every
+   viewer regardless of the app language: it is the thing a customer forwards
+   to accounting or attaches to a complaint, and a document that changes
+   language with a UI toggle is not a document. UI chrome around it (buttons,
+   toasts) stays translated like the rest of the app. */
+const RC_PL={
+  customerTitle:'Potwierdzenie płatności', providerTitle:'Specyfikacja usługi — wypłata',
+  adminTitle:'Rozliczenie zamówienia (wewnętrzne)',
+  no:'Nr', service:'Usługa', orderDate:'Data zamówienia', doneDate:'Data wykonania',
+  address:'Adres', client:'Klient', provider:'Wykonawca', payMethod:'Forma płatności',
+  card:'Karta płatnicza', balance:'Saldo LUMI',
+  itemsHead:'Wykonane usługi', base:'Usługa podstawowa',
+  total:'Razem zapłacono', inclVat:'w tym VAT 23%', net:'Netto',
+  payout:'Do wypłaty', paidByClient:'Zapłacono przez klienta', commission:'Prowizja platformy',
+  plusNote:'LUMI+: 5% wartości zamówienia wraca na saldo LUMI.',
+  notFiscal:'Dokument nie jest paragonem fiskalnym.',
+  thanks:'Dziękujemy, że wybierasz LUMI', seller:'Sprzedawca',
+};
+function svcLabelPl(l){
+  // Keys are the SHORT names svcLabelRu() returns, plus the full labels as a
+  // fallback for anything that skipped the shortener.
+  const M={'Обычная':'Sprzątanie standardowe','Генеральная':'Sprzątanie generalne',
+    'После ремонта':'Sprzątanie po remoncie','Офис':'Sprzątanie biura',
+    'Обычная уборка':'Sprzątanie standardowe','Генеральная уборка':'Sprzątanie generalne',
+    'Уборка после ремонта':'Sprzątanie po remoncie','Офисная уборка':'Sprzątanie biura',
+    'Мойка окон':'Mycie okien','Сад':'Ogród','Уход за садом':'Pielęgnacja ogrodu'};
+  return M[l]||l;
+}
+// A Polish document carries Polish dates, whatever language the app is in.
+const rcDate=(ts)=>new Date(ts).toLocaleDateString('pl-PL',{day:'numeric',month:'long',year:'numeric'});
+const rcTime=(ts)=>new Date(ts).toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'});
+/** One data shape for both renderers — the modal and the print document. */
+function rcData(r){
+  const items=(r.items||[]).map(i=>({
+    name:`${i.label}${i.qty>1&&i.type==='qty'?` ×${i.qty}`:''}`,
+    amt:i.type==='percent'?'+40%':(i.amount!=null?money(i.amount):''),
+  }));
+  const meta=[
+    [RC_PL.service, svcLabelPl(svcLabelRu(r.service))],
+    [RC_PL.orderDate, r.orderedAt?`${rcDate(r.orderedAt)} · ${rcTime(r.orderedAt)}`:null],
+    [RC_PL.doneDate, `${rcDate(r.issuedAt)} · ${rcTime(r.issuedAt)}`],
+    [RC_PL.address, r.address?`${r.address}, ${r.city||''}`:null],
+    [RC_PL.client, r.kind!=='customer'?r.customerName:null],
+    [RC_PL.provider, r.kind!=='provider'?r.cleanerName:null],
+    [RC_PL.payMethod, r.kind==='customer'?(r.paidVia==='balance'?RC_PL.balance:RC_PL.card):null],
+  ].filter(([,v])=>v);
+  let totals=[],note='';
+  if(r.kind==='customer'){
+    totals=[[RC_PL.total,money(r.total),'total'],[RC_PL.inclVat,money(r.vat),'sub'],[RC_PL.net,money(r.netExVat),'sub']];
+    note=r.plus?RC_PL.plusNote:'';
+  }else if(r.kind==='provider'){
+    totals=[[RC_PL.payout,money(r.payout),'total']];
+  }else{
+    totals=[[RC_PL.paidByClient,money(r.total),'total'],[RC_PL.payout,money(r.payout),''],
+      [`${RC_PL.commission} (${r.commissionRate}%)`,money(r.commission),''],
+      [RC_PL.net,money(r.netExVat),'sub'],[RC_PL.inclVat,money(r.vat),'sub']];
+    note='Prowizja jest widoczna wyłącznie w rozliczeniu administratora.';
+  }
+  const title=r.kind==='admin'?RC_PL.adminTitle:r.kind==='provider'?RC_PL.providerTitle:RC_PL.customerTitle;
+  return {items,meta,totals,note,title,seller:r.seller||{}};
+}
 async function openReceipt(bookingId){
   showModal(`<div class="card pad"><div class="sk" style="height:320px"></div></div>`);
   try{
     const {receipt:r}=await api('/api/bookings/'+bookingId+'/receipt');
-    const line=(label,val,strong)=>`<div class="rc-line"><span>${label}</span><span class="${strong?'rc-strong':''}">${val}</span></div>`;
-    const items=(r.items||[]).map(i=>{
-      const name=`${esc(i.label)}${i.qty>1&&i.type==='qty'?` ×${i.qty}`:''}`;
-      const amt=i.type==='percent'?'+40%':(i.amount!=null?money(i.amount):'');
-      return `<div class="rc-line"><span>${name}</span><span>${amt}</span></div>`;
-    }).join('');
-    let totalBlock='',note='';
-    if(r.kind==='customer'){
-      totalBlock=line('Итого оплачено',money(r.total),true);
-      note=r.plus?'LUMI+: кэшбек 5% на баланс.':'';
-    }else if(r.kind==='provider'){
-      totalBlock=line('Ваша выплата',money(r.payout),true);
-      note='Комиссия платформы вас не касается — вы получаете указанную сумму.';
-    }else{ // admin
-      totalBlock=`${line('Оплачено клиентом',money(r.total),true)}
-        ${line('Выплата исполнителю',money(r.payout))}
-        ${line('Комиссия платформы ('+r.commissionRate+'%)','<b style="color:var(--primary-600)">'+money(r.commission)+'</b>')}
-        <div class="rc-sep"></div>
-        ${line('Без НДС',money(r.netExVat))}
-        ${line('НДС 23%',money(r.vat))}`;
-      note='Комиссия видна только администратору и скрыта в чеках клиента и исполнителя.';
-    }
-    const inner=el(`<div class="card pad rc" id="rcRoot">
-      <div class="rc-head">
+    const d=rcData(r);
+    const inner=el(`<div class="card rc" id="rcRoot" data-noi18n>
+      <div class="rc-hero">
         <div class="rc-brand">${I.logo}<b>LUMI</b></div>
-        <div class="rc-no">Чек № ${r.receiptNo}</div>
+        <div class="rc-title">${d.title}</div>
+        <div class="rc-no">${RC_PL.no} ${r.receiptNo}</div>
       </div>
-      <div class="rc-title">${r.kind==='admin'?'Чек (админ)':r.kind==='provider'?'Чек исполнителя':'Чек об оплате'}</div>
-      <div class="rc-meta">
-        <div>${svcLabelRu(r.service)}</div>
-        <div class="muted tiny">${fmtDate(r.issuedAt)} · ${fmtTime(r.issuedAt)}</div>
-        ${r.address?`<div class="muted tiny">${esc(r.address)}, ${esc(r.city||'')}</div>`:''}
-        <div class="muted tiny">${roomsWord(r.rooms)} · ${bathsWord(r.baths)}${r.area?` · ${r.area} м²`:''}</div>
-        ${r.customerName&&r.kind!=='customer'?`<div class="muted tiny">Клиент: ${esc(r.customerName)}</div>`:''}
-        ${r.cleanerName&&r.kind!=='provider'?`<div class="muted tiny">Исполнитель: ${esc(r.cleanerName)}</div>`:''}
-      </div>
-      <div class="rc-sep"></div>
-      ${items?`<div class="rc-items">${line('Уборка «'+svcLabelRu(r.service)+'»','')}${items}</div><div class="rc-sep"></div>`:''}
-      ${totalBlock}
-      ${note?`<div class="rc-note">${I.lock} ${note}</div>`:''}
-      <div class="rc-foot">Спасибо, что выбираете LUMI · lumi24.pl</div>
-      <div class="row" style="gap:10px;margin-top:14px">
-        <button class="btn block" id="rcPdf">${I.receipt} Скачать PDF</button>
-        <button class="btn ghost sm" id="rcShare" style="flex:none">${I.share||''}</button>
+      <div class="pad" style="padding-top:14px">
+        <div class="rc-meta">${d.meta.map(([k,v])=>`<div class="rc-line"><span>${k}</span><span>${esc(v)}</span></div>`).join('')}</div>
+        ${d.items.length?`<div class="rc-sep"></div><div class="rc-items">
+          <div class="rc-line rc-h"><span>${RC_PL.itemsHead}</span><span></span></div>
+          ${d.items.map(i=>`<div class="rc-line"><span>${esc(i.name)}</span><span>${i.amt}</span></div>`).join('')}
+        </div>`:''}
+        <div class="rc-sep"></div>
+        ${d.totals.map(([k,v,cls])=>`<div class="rc-line ${cls==='total'?'rc-total':cls==='sub'?'rc-sub':''}"><span>${k}</span><span>${v}</span></div>`).join('')}
+        ${d.note?`<div class="rc-note">${d.note}</div>`:''}
+        <div class="rc-seller">${RC_PL.seller}: ${esc(d.seller.name||'')} · NIP ${esc(d.seller.nip||'')}<br>${esc(d.seller.address||'')}</div>
+        <div class="rc-foot">${RC_PL.notFiscal}<br>${RC_PL.thanks} · ${esc(d.seller.site||'lumi24.pl')} · ${esc(d.seller.email||'')}</div>
+        <div class="row" style="gap:10px;margin-top:14px">
+          <button class="btn block" id="rcPdf">${I.receipt} PDF</button>
+          <button class="btn ghost sm" id="rcShare" style="flex:none">${I.share||''}</button>
+        </div>
       </div>
     </div>`);
     showModalNode(inner);
     const pb=$('#rcPdf',inner); if(pb)pb.onclick=()=>downloadReceiptPdf(r);
     const sb=$('#rcShare',inner); if(sb)sb.onclick=()=>{
-      const txt=`LUMI · Чек № ${r.receiptNo}\n${svcLabelRu(r.service)} · ${fmtDate(r.issuedAt)}\n`+
-        (r.kind==='provider'?`Ваша выплата: ${money(r.payout)}`:r.kind==='admin'?`Оплачено: ${money(r.total)} · Выплата: ${money(r.payout)} · Комиссия: ${money(r.commission)}`:`Итого оплачено: ${money(r.total)}`);
-      (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast('Чек скопирован')).catch(()=>toast('Не удалось скопировать',true));
+      const txt=`LUMI · ${d.title} ${RC_PL.no} ${r.receiptNo}\n`+d.meta.map(([k,v])=>`${k}: ${v}`).join('\n')+'\n'+
+        d.totals.filter(([,,c])=>c!=='sub').map(([k,v])=>`${k}: ${v}`).join('\n');
+      (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast(t('Чек скопирован'))).catch(()=>toast(t('Не удалось скопировать'),true));
     };
   }catch(e){toast(e.message,true);closeModal();}
 }
 // Build a self-contained printable receipt and open the browser print dialog
 // (users pick "Save as PDF"). Rendered in a same-origin iframe — CSP-safe.
 function downloadReceiptPdf(r){
-  const rows=(r.items||[]).map(i=>{
-    const name=`${escHtml(i.label)}${i.qty>1&&i.type==='qty'?` ×${i.qty}`:''}`;
-    const amt=i.type==='percent'?'+40%':(i.amount!=null?money(i.amount):'—');
-    return `<tr><td>${name}</td><td class="amt">${amt}</td></tr>`;
-  }).join('');
-  let totals='';
-  if(r.kind==='customer') totals=`<tr class="total"><td>Итого оплачено</td><td class="amt">${money(r.total)}</td></tr>`;
-  else if(r.kind==='provider') totals=`<tr class="total"><td>Ваша выплата</td><td class="amt">${money(r.payout)}</td></tr>`;
-  else totals=`<tr class="total"><td>Оплачено клиентом</td><td class="amt">${money(r.total)}</td></tr>
-      <tr><td>Выплата исполнителю</td><td class="amt">${money(r.payout)}</td></tr>
-      <tr><td>Комиссия платформы (${r.commissionRate}%)</td><td class="amt">${money(r.commission)}</td></tr>
-      <tr class="sub"><td>Без НДС</td><td class="amt">${money(r.netExVat)}</td></tr>
-      <tr class="sub"><td>НДС 23%</td><td class="amt">${money(r.vat)}</td></tr>`;
-  const title=r.kind==='admin'?'Чек (администратор)':r.kind==='provider'?'Чек исполнителя':'Чек об оплате';
-  const meta=[svcLabelRu(r.service),`${fmtDate(r.issuedAt)} · ${fmtTime(r.issuedAt)}`,
-    r.address?`${escHtml(r.address)}, ${escHtml(r.city||'')}`:'',
-    `${roomsWord(r.rooms)} · ${bathsWord(r.baths)}${r.area?` · ${r.area} м²`:''}`,
-    r.customerName&&r.kind!=='customer'?`Клиент: ${escHtml(r.customerName)}`:'',
-    r.cleanerName&&r.kind!=='provider'?`Исполнитель: ${escHtml(r.cleanerName)}`:''].filter(Boolean);
-  const html=`<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Чек ${r.receiptNo}</title>
+  const d=rcData(r);
+  const rows=d.items.map(i=>`<tr><td>${escHtml(i.name)}</td><td class="amt">${i.amt||'—'}</td></tr>`).join('');
+  const totals=d.totals.map(([k,v,cls])=>`<tr class="${cls==='total'?'total':cls==='sub'?'sub':''}"><td>${k}</td><td class="amt">${v}</td></tr>`).join('');
+  const html=`<!doctype html><html lang="pl"><head><meta charset="utf-8"><title>LUMI ${r.receiptNo}</title>
     <style>
       *{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif}
       body{margin:0;color:#0F172A}
-      .wrap{max-width:480px;margin:32px auto;padding:0 24px}
-      .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
-      .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:22px}
-      .brand svg{width:34px;height:34px}
-      .no{font-size:12px;color:#64748B;font-weight:700}
-      h1{font-size:22px;margin:0 0 10px}
-      .meta div{color:#475569;font-size:13px;line-height:1.55}
-      .meta div:first-child{color:#0F172A;font-weight:700;font-size:15px}
-      hr{border:none;border-top:1.5px dashed #CBD5E1;margin:14px 0}
+      .band{background:linear-gradient(135deg,#0C2A1B,#0E3A2C);color:#fff;padding:26px 28px 20px}
+      .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:24px;letter-spacing:-.02em}
+      .brand svg{width:38px;height:38px}
+      .band h1{font-size:15px;margin:12px 0 2px;font-weight:600;opacity:.92}
+      .band .no{font-size:12px;opacity:.7;font-weight:700}
+      .wrap{max-width:520px;margin:0 auto}
+      .body{padding:20px 28px}
       table{width:100%;border-collapse:collapse}
-      td{padding:5px 0;font-size:14px;color:#475569;vertical-align:top}
+      td{padding:5px 0;font-size:13.5px;color:#475569;vertical-align:top}
       td.amt{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
-      tr.total td{font-size:20px;font-weight:800;color:#059669;padding-top:10px}
+      .meta td:first-child{color:#94A3B8;width:44%}
+      .meta td:last-child{text-align:right;color:#0F172A;font-weight:600}
+      .h td{font-weight:800;color:#0F172A;padding-top:10px;font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+      tr.total td{font-size:20px;font-weight:800;color:#059669;padding-top:12px}
       tr.sub td{color:#94A3B8;font-size:12px}
-      .note{margin-top:16px;font-size:11px;color:#64748B;background:#F3F4F6;padding:10px 12px;border-radius:8px}
-      .foot{text-align:center;color:#94A3B8;font-size:11px;margin-top:16px}
-      @media print{.wrap{margin:0 auto}}
+      hr{border:none;border-top:1.5px dashed #CBD5E1;margin:14px 0}
+      .note{margin-top:14px;font-size:11.5px;color:#64748B;background:#F3F4F6;padding:10px 12px;border-radius:8px}
+      .seller{margin-top:16px;font-size:11px;color:#64748B;line-height:1.55}
+      .foot{text-align:center;color:#94A3B8;font-size:10.5px;margin-top:14px;line-height:1.6}
+      @media print{.band{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
     </style></head>
-    <body><div class="wrap">
-      <div class="head"><div class="brand">${I.logo}<span>LUMI</span></div><div class="no">Чек № ${r.receiptNo}</div></div>
-      <h1>${title}</h1>
-      <div class="meta">${meta.map(m=>`<div>${m}</div>`).join('')}</div>
-      <hr>
-      ${rows?`<table><tr><td style="font-weight:700;color:#0F172A">Уборка «${svcLabelRu(r.service)}»</td><td></td></tr>${rows}</table><hr>`:''}
-      <table>${totals}</table>
-      ${r.kind==='admin'?'<div class="note">Комиссия платформы указана только в администраторском чеке и скрыта в чеках клиента и исполнителя.</div>':(r.plus?'<div class="note">LUMI+: кэшбек 5% на баланс.</div>':'')}
-      <div class="foot">Спасибо, что выбираете LUMI · lumi24.pl</div>
-    </div></body></html>`;
+    <body>
+      <div class="band"><div class="wrap">
+        <div class="brand">${I.logo}<span>LUMI</span></div>
+        <h1>${d.title}</h1><div class="no">${RC_PL.no} ${r.receiptNo}</div>
+      </div></div>
+      <div class="wrap"><div class="body">
+        <table class="meta">${d.meta.map(([k,v])=>`<tr><td>${k}</td><td>${escHtml(v)}</td></tr>`).join('')}</table>
+        ${rows?`<hr><table><tr class="h"><td>${RC_PL.itemsHead}</td><td></td></tr>${rows}</table>`:''}
+        <hr><table>${totals}</table>
+        ${d.note?`<div class="note">${d.note}</div>`:''}
+        <div class="seller"><b>${RC_PL.seller}:</b> ${escHtml(d.seller.name||'')}<br>${escHtml(d.seller.address||'')}<br>NIP ${escHtml(d.seller.nip||'')} · KRS ${escHtml(d.seller.krs||'')} · REGON ${escHtml(d.seller.regon||'')}</div>
+        <div class="foot">${RC_PL.notFiscal}<br>${RC_PL.thanks} · ${escHtml(d.seller.site||'lumi24.pl')} · ${escHtml(d.seller.email||'')}</div>
+      </div></div>
+    </body></html>`;
   const ifr=document.createElement('iframe');
   ifr.setAttribute('aria-hidden','true');
   ifr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0';
   document.body.appendChild(ifr);
   const doc=ifr.contentWindow.document;
   doc.open();doc.write(html);doc.close();
-  const go=()=>{ try{ ifr.contentWindow.focus(); ifr.contentWindow.print(); }catch(e){ toast('Печать недоступна в этом браузере',true); }
+  const go=()=>{ try{ ifr.contentWindow.focus(); ifr.contentWindow.print(); }catch(e){ toast(t('Печать недоступна в этом браузере'),true); }
     setTimeout(()=>ifr.remove(),1500); };
   if(ifr.contentWindow.document.readyState==='complete') setTimeout(go,300); else ifr.onload=()=>setTimeout(go,300);
 }
@@ -6039,7 +6082,18 @@ async function loadMessages(id){
     const lb=$('#locBar');
     if(lb)lb.innerHTML=location?`<div class="locbar">${I.pin}<span>Исполнитель в пути</span><span class="eta">~${location.etaMinutes} мин</span></div>`:'';
     box.innerHTML=messages.map(m=>{
-      if(m.from==='system'||m.type==='system')return `<div class="msg sys">${esc(m.text)}</div>`;
+      if(m.from==='system'||m.type==='system'){
+        // Keyed system lines translate for the reader — the server stores the
+        // event, not the prose, because customer and cleaner may read the same
+        // line in different languages. Old messages without a key show as-is.
+        const SYS_TPL={accepted:'{name} принял заказ и скоро приедет.',chosen:'{name} выбрал(а) исполнителя: {cleaner}.',
+          enroute:'{name} выехал(а) к вам. В пути ~{eta} мин.',started:'Уборка началась.',
+          completed:'Заказ завершён. Оплата проведена. Оставьте, пожалуйста, отзыв!',cancelled:'Заказ отменён ({name}).',
+          redispatched:'Заказ переназначен оператором — ищем нового исполнителя.',
+          companyAssigned:'{cleaner} назначен(а) на заказ компанией {name}.',replaced:'Исполнитель заменён на {cleaner}.'};
+        const txt=m.sysKey&&SYS_TPL[m.sysKey]?t(SYS_TPL[m.sysKey],m.sysParams||{}):m.text;
+        return `<div class="msg sys">${esc(txt)}</div>`;
+      }
       const me=m.from===state.user.id;
       const img=(m.type==='image'&&m.attachments&&m.attachments[0])?`<img src="${m.attachments[0]}">`:'';
       const body=m.text?esc(m.text):'';
@@ -6048,7 +6102,7 @@ async function loadMessages(id){
       // §11 translation (never overwrites original) — offered on the other party's messages.
       const tr=m.translatedBody?`<div class="tr">${esc(m.translatedBody)}</div>`:'';
       const trBtn=(!me&&m.text&&!m.translatedBody)?`<span class="trbtn" data-tr="${m.id}">Перевести</span>`:'';
-      return `<div class="msg ${me?'me':'them'}">${me?'':`<div class="who">${esc(m.name)}</div>`}${body}${img}${tick}${tr}${trBtn}</div>`;
+      return `<div class="msg ${me?'me':'them'}" data-noi18n>${me?'':`<div class="who">${esc(m.name)}</div>`}${body}${img}${tick}${tr}${trBtn}</div>`;
     }).join('') + ((typing&&typing.length)?`<div class="typing">${esc(typing[0].name)} печатает<span class="dot"></span><span class="dot"></span><span class="dot"></span></div>`:'');
     box.scrollTop=box.scrollHeight;
     box.querySelectorAll('.trbtn').forEach(btn=>btn.onclick=async()=>{
@@ -6866,7 +6920,7 @@ async function viewEarnings(){
       <div class="card pad" style="background:linear-gradient(135deg,#17C9C0,#0AA49E);color:#fff;margin-bottom:18px">
         <div style="opacity:.85;font-size:14px">Доступно к выводу</div>
         <div style="font-size:38px;font-weight:800;margin:4px 0">${money(E.balance)}</div>
-        <div class="tiny" style="opacity:.85">Комиссия платформы вас не касается — вы видите только свою выплату.</div>
+
       </div>
       <div class="grid" style="grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
         ${per(E.today,'Сегодня')}${per(E.week,'Неделя')}${per(E.month,'Месяц')}${per(E.year,'Год')}
