@@ -1558,19 +1558,29 @@ function memberRole(user, prop) {
   return m ? m.role : null;
 }
 const PROPERTY_TYPES = ['apartment', 'house', 'office', 'other', 'short_term_rental'];
+// One set of clamps for the editable property fields, shared by create and
+// edit — the same field must never have two validation rules.
+const PROP_CLAMP = {
+  label: (v) => String(v || 'Home').slice(0, 60),
+  address: (v) => String(v || '').slice(0, 200),
+  rooms: (v) => Math.max(1, Math.min(12, Number(v) || 2)),
+  baths: (v) => Math.max(0, Math.min(8, Number(v) || 1)),
+  area: (v) => Math.max(0, Math.min(600, Number(v) || 0)),
+  floor: (v) => (v == null || v === '' ? null : Math.max(-5, Math.min(200, Number(v) || 0))),
+};
 function createProperty(owner, data, createdAt) {
   const id = uid('p_');
   const type = PROPERTY_TYPES.includes(data.type) ? data.type : 'apartment';
   const p = {
     id, ownerId: owner.id,
-    label: String(data.label || 'Home').slice(0, 60),
-    address: String(data.address || '').slice(0, 200),
+    label: PROP_CLAMP.label(data.label),
+    address: PROP_CLAMP.address(data.address),
     city: CITIES.includes(data.city) ? data.city : (owner.city || 'Warsaw'),
     type,
-    rooms: Math.max(1, Math.min(12, Number(data.rooms) || 2)),
-    baths: Math.max(0, Math.min(8, Number(data.baths) || 1)),
-    area: Math.max(0, Math.min(600, Number(data.area) || 0)),
-    floor: data.floor == null || data.floor === '' ? null : Math.max(-5, Math.min(200, Number(data.floor) || 0)),
+    rooms: PROP_CLAMP.rooms(data.rooms),
+    baths: PROP_CLAMP.baths(data.baths),
+    area: PROP_CLAMP.area(data.area),
+    floor: PROP_CLAMP.floor(data.floor),
     location: validLoc(data.location),   // optional GPS pin of the saved address
     members: [],
     createdAt: createdAt || now(),
@@ -1632,6 +1642,34 @@ route('POST', '/api/properties', async (req, res) => {
   const b = await readBody(req);
   const p = createProperty(user, b);
   send(res, 200, { property: { ...propertyView(p), myRole: 'owner' } });
+});
+// Edit a home. Owner-only, and only the fields a home can honestly change:
+// the type is deliberately immutable — it decides the pricing shape and (for a
+// short-term rental) the whole turnover model, so "my flat became a rental" is
+// a new property, not an edit. Existing bookings keep the address they were
+// made with; a property edit never rewrites history.
+route('PATCH', '/api/properties/:id', async (req, res, params) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  const p = db.properties[params.id];
+  if (!p) return send(res, 404, { error: 'Not found.' });
+  if (p.ownerId !== user.id) return send(res, 403, { error: 'Only the owner can edit a property.' });
+  const b = await readBody(req);
+  for (const k of Object.keys(PROP_CLAMP)) if (b[k] !== undefined) p[k] = PROP_CLAMP[k](b[k]);
+  // The city gates dispatch, so only an open/known one is accepted — same rule
+  // as at creation; an unknown value silently keeps the old city.
+  if (b.city !== undefined && CITIES.includes(b.city)) p.city = b.city;
+  if (b.location !== undefined) p.location = validLoc(b.location);
+  if (p.type === 'short_term_rental') {
+    if (b.bedrooms !== undefined) p.bedrooms = Math.max(0, Math.min(12, Number(b.bedrooms) || 0));
+    if (b.hasElevator !== undefined) p.hasElevator = !!b.hasElevator;
+    if (b.accessInstructions !== undefined) p.accessInstructions = String(b.accessInstructions || '').slice(0, 1000);
+    if (b.features !== undefined) p.features = String(b.features || '').slice(0, 1000);
+    if (b.strSettings !== undefined) p.strSettings = str.normalizeSettings(b.strSettings, p);
+  }
+  persist.properties();
+  audit('property.updated', user.id, p.id, { fields: Object.keys(b) });
+  send(res, 200, { property: { ...propertyView(p), myRole: memberRole(user, p) } });
 });
 route('DELETE', '/api/properties/:id', async (req, res, params) => {
   const user = authUser(req);

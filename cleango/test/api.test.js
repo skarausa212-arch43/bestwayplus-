@@ -608,6 +608,29 @@ async function main() {
       if (me.json.user.card) assert.ok(!('pmId' in me.json.user.card), 'payment-method id stripped');
     });
 
+    // ── Property editing (PATCH) ──
+    await ok('a home can be edited by its owner, within the same clamps as creation', async () => {
+      const made = (await req('POST', '/api/properties', { token: customerTok, body: { label: 'Edit me', city: 'Warsaw', rooms: 2, baths: 1 } })).json.property;
+      // owner edits: values clamp exactly like at creation
+      const up = await req('PATCH', `/api/properties/${made.id}`, { token: customerTok, body: { label: 'Edited', rooms: 99, floor: 500, area: -5 } });
+      assert.strictEqual(up.status, 200);
+      assert.strictEqual(up.json.property.label, 'Edited');
+      assert.strictEqual(up.json.property.rooms, 12, 'rooms clamped to 12');
+      assert.strictEqual(up.json.property.floor, 200, 'floor clamped to 200');
+      assert.strictEqual(up.json.property.area, 0, 'negative area clamped to 0');
+      // the type is immutable — sending one changes nothing
+      const tp = await req('PATCH', `/api/properties/${made.id}`, { token: customerTok, body: { type: 'short_term_rental' } });
+      assert.strictEqual(tp.json.property.type, 'apartment', 'type cannot be edited');
+      // an unknown city is silently kept out
+      const ct = await req('PATCH', `/api/properties/${made.id}`, { token: customerTok, body: { city: 'Berlin' } });
+      assert.strictEqual(ct.json.property.city, 'Warsaw', 'unknown city rejected');
+      // a stranger cannot edit someone else's home
+      const stranger = (await req('POST', '/api/register', { body: { name: 'Str', email: 'str' + Date.now() + '@x.pl', password: 'averylongpassword', phone: '600700802', role: 'customer', city: 'Warsaw', acceptedTerms: true } })).json.token;
+      const forb = await req('PATCH', `/api/properties/${made.id}`, { token: stranger, body: { label: 'hax' } });
+      assert.strictEqual(forb.status, 403, 'non-owner gets 403');
+      await req('DELETE', `/api/properties/${made.id}`, { token: customerTok });
+    });
+
     // ── Embedded card window + wallet + LUMI+ + weekly payouts (Stripe off ⇒ no-op) ──
     await ok('cards inline / wallet / LUMI+ / payouts: shapes and gating without Stripe', async () => {
       // Catalog advertises the inline-card capability + the LUMI+ plan.
