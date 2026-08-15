@@ -39,6 +39,7 @@ const suites = [
   ['integration', 'test/city-gating.test.js'],
   ['integration', 'test/money-cancel.test.js'],
   ['integration', 'test/store-integrity.test.js'],
+  ['integration', 'test/subscription.test.js'],
 ];
 
 let failed = 0;

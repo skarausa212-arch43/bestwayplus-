@@ -247,6 +247,41 @@ const T = {
     en: { title: 'Welcome to LUMI+', body: '5% cashback on every order.' },
     uk: { title: 'Ласкаво просимо до LUMI+', body: '5% кешбеку за кожне замовлення.' },
   },
+  // Renewal messages. A recurring charge that arrives unannounced is the most
+  // common reason a subscription becomes a chargeback, so the renewal is told,
+  // the failure is told loudly, and the ending is told.
+  'subscription.renewed': {
+    category: 'account', priority: 'normal', channels: ['in_app', 'email'],
+    deepLink: 'lumi://premium',
+    ru: { title: 'LUMI+ продлён', body: 'Списали 39 zł за следующий месяц.' },
+    pl: { title: 'LUMI+ odnowiony', body: 'Pobraliśmy 39 zł za kolejny miesiąc.' },
+    en: { title: 'LUMI+ renewed', body: 'We charged 39 zł for the next month.' },
+    uk: { title: 'LUMI+ продовжено', body: 'Списали 39 zł за наступний місяць.' },
+  },
+  'subscription.payment_failed': {
+    category: 'account', priority: 'high', channels: ['in_app', 'push', 'email'],
+    deepLink: 'lumi://wallet',
+    ru: { title: 'Не удалось продлить LUMI+', body: 'Банк отклонил платёж. Обновите карту — попробуем ещё раз завтра.' },
+    pl: { title: 'Nie udało się odnowić LUMI+', body: 'Bank odrzucił płatność. Zaktualizuj kartę — spróbujemy jutro.' },
+    en: { title: 'LUMI+ renewal failed', body: 'Your bank declined the payment. Update your card — we retry tomorrow.' },
+    uk: { title: 'Не вдалося продовжити LUMI+', body: 'Банк відхилив платіж. Оновіть картку — спробуємо завтра.' },
+  },
+  'subscription.cancelled': {
+    category: 'account', priority: 'normal', channels: ['in_app', 'email'],
+    deepLink: 'lumi://premium',
+    ru: { title: 'Продление LUMI+ отключено', body: 'Подписка действует до конца оплаченного периода.' },
+    pl: { title: 'Odnawianie LUMI+ wyłączone', body: 'Subskrypcja działa do końca opłaconego okresu.' },
+    en: { title: 'LUMI+ renewal is off', body: 'Your membership runs to the end of the paid period.' },
+    uk: { title: 'Продовження LUMI+ вимкнено', body: 'Підписка діє до кінця оплаченого періоду.' },
+  },
+  'subscription.ended': {
+    category: 'account', priority: 'normal', channels: ['in_app', 'email'],
+    deepLink: 'lumi://premium',
+    ru: { title: 'LUMI+ завершён', body: 'Кэшбек и приоритетная подача больше не действуют.' },
+    pl: { title: 'LUMI+ zakończony', body: 'Cashback i priorytetowe zlecenia już nie działają.' },
+    en: { title: 'LUMI+ has ended', body: 'Cashback and priority dispatch no longer apply.' },
+    uk: { title: 'LUMI+ завершено', body: 'Кешбек і пріоритетна подача більше не діють.' },
+  },
   'cashback.earned': {
     category: 'account', priority: 'normal', channels: ['in_app'],
     deepLink: 'lumi://wallet',

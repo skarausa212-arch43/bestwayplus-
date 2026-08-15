@@ -629,12 +629,26 @@ async function main() {
       // Top-up requires Stripe; off ⇒ 503.
       const tu = await req('POST', '/api/wallet/topup', { token: customerTok, body: { amount: 100 } });
       assert.strictEqual(tu.status, 503); assert.strictEqual(tu.json.code, 'CARDS_OFF');
-      // LUMI+ activates free when Stripe is off (dev), then cancels.
-      const sub = await req('POST', '/api/subscribe', { token: customerTok, body: { active: true } });
+      // LUMI+ activates free when Stripe is off (dev), and renews monthly.
+      // On its own account: cancelling no longer clears the membership, and a
+      // LUMI+ customer picks their provider instead of the first to accept — so
+      // leaving the shared customer subscribed would silently change dispatch
+      // for every test after this one.
+      const subber = (await req('POST', '/api/register', { body: {
+        name: 'Plus Member', email: 'plusmember@x.pl', password: 'averylongpassword',
+        phone: '600700801', role: 'customer', city: 'Warsaw', acceptedTerms: true } })).json.token;
+      const sub = await req('POST', '/api/subscribe', { token: subber, body: { active: true } });
       assert.strictEqual(sub.status, 200);
       assert.strictEqual(sub.json.user.subscription, 'plus');
-      const unsub = await req('POST', '/api/subscribe', { token: customerTok, body: { active: false } });
-      assert.strictEqual(unsub.json.user.subscription, null, 'cancel clears the subscription');
+      assert.ok(sub.json.user.subscriptionPeriodEnd > Date.now(), 'a paid period is opened');
+      // Cancelling switches renewal off but does not revoke the month already
+      // paid for — the sweep ends the membership when that period runs out.
+      const unsub = await req('POST', '/api/subscribe', { token: subber, body: { active: false } });
+      assert.strictEqual(unsub.json.user.subscription, 'plus', 'benefits run to the end of the paid period');
+      assert.ok(unsub.json.user.subscriptionCancelAt, 'renewal is switched off');
+      // Turning it back on inside the same period is free and immediate.
+      const resub = await req('POST', '/api/subscribe', { token: subber, body: { active: true } });
+      assert.strictEqual(resub.json.user.subscriptionCancelAt, null, 'renewal switched back on');
       // Weekly payout file: capability-gated; admin gets the who/how-much/IBAN list.
       const notAdm = await req('GET', '/api/admin/payouts', { token: customerTok });
       assert.strictEqual(notAdm.status, 403);

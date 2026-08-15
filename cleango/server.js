@@ -122,6 +122,12 @@ const PREMIUM_DISCOUNT = 0;
 // LUMI+ subscription: a flat monthly fee charged off-session from the saved
 // card, in exchange for 5% cashback to the LUMI wallet on every completed order.
 const PLUS_PLAN = { priceMinor: 3900, currency: CURRENCY, cashbackRate: 0.05, period: 'month' };
+// Renewal: the fee is charged again every month from the saved card. A declined
+// card does not end the membership on the spot — banks decline for reasons the
+// customer can fix (expiry, limit, travel block), so it goes past-due and is
+// retried daily. Only after this many failed days does the membership end.
+const PLUS_MAX_RETRIES = 3;
+const PLUS_RETRY_MS = 24 * 3600 * 1000;
 // Cancellation: free before the cleaner departs; once they're on the way we
 // withhold this share of the order (the rest is refunded).
 const LATE_CANCEL_FEE_RATE = 0.40;
@@ -2120,38 +2126,181 @@ route('GET', '/api/properties/:id/analytics', async (req, res, params) => {
 });
 
 // ---- Premium (LUMI+) ----
+
+const subLog = (level, msg, extra) =>
+  console[level === 'error' ? 'error' : 'log'](JSON.stringify({ at: new Date().toISOString(), level, scope: 'subscription', msg, ...extra }));
+
+/**
+ * One month on, keeping the day of month where it exists. Billing on the 31st
+ * must not skip February and land the customer two months later — it clamps to
+ * the 28th/30th, and the anchor day is kept in the subscription so a later month
+ * with 31 days bills on the 31st again.
+ */
+function addMonth(ts, anchorDay) {
+  const d = new Date(ts);
+  const day = anchorDay || d.getUTCDate();
+  const y = d.getUTCFullYear(), m = d.getUTCMonth();
+  const lastOfNext = new Date(Date.UTC(y, m + 2, 0)).getUTCDate();   // day 0 of m+2 = last day of m+1
+  return Date.UTC(y, m + 1, Math.min(day, lastOfNext), d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
+}
+
+/** The idempotency key for one billing period — the same period never charges twice. */
+const plusChargeKey = (userId, periodStart) => `plus:${userId}:${new Date(periodStart).toISOString().slice(0, 10)}`;
+
+/**
+ * Charge the LUMI+ fee for one period. Money is server-authoritative and the
+ * ledger is append-only, so a successful charge always writes exactly one
+ * wallet row keyed by the Stripe id.
+ */
+async function chargePlus(user, periodStart) {
+  const amountMinor = getSettings().plusPriceMinor;
+  if (!stripe.isEnabled()) return { ok: true, free: true };          // dev: no gateway configured
+  if (!user.card || !user.card.pmId) return { ok: false, reason: 'no_card' };
+  const r = await stripe.chargeOffSession({
+    customerId: user.stripeCustomerId, pmId: user.card.pmId,
+    amount: amountMinor, description: 'LUMI+ subskrypcja',
+    idempotencyKey: plusChargeKey(user.id, periodStart),
+    metadata: { userId: user.id, kind: 'subscription' },
+  });
+  if (!r.ok) return { ok: false, reason: r.requiresAction ? 'sca' : 'declined', declineCode: r.declineCode };
+  walletTxAdd(user.id, {
+    kind: 'subscription', amountMinor: -amountMinor, currency: PLUS_PLAN.currency,
+    note: 'LUMI+', ref: r.id,
+  });
+  return { ok: true, id: r.id, amountMinor };
+}
+
+/** End the membership — used by both "cancelled and the period ran out" and "card kept failing". */
+function endPlus(user, reason) {
+  user.subscription = null;
+  user.subscriptionStatus = null;
+  user.subscriptionPeriodEnd = null;
+  user.subscriptionCancelAt = null;
+  user.subscriptionRetries = 0;
+  audit('subscription.ended', user.id, user.id, { reason });
+  notify(user.id, 'subscription.ended', { reason });
+}
+
+/**
+ * Charge every membership whose paid period has run out.
+ *
+ * Driven by each member's own `subscriptionPeriodEnd`, not by "run this on the
+ * 1st": the process can restart, miss a window, or run twice, and the outcome
+ * has to be the same either way. The per-period idempotency key is the second
+ * guard — a period that has already been paid cannot be charged again even if
+ * this runs twice in the same minute.
+ */
+let _billingRunning = false;
+async function billDueSubscriptions(at) {
+  if (_billingRunning) return { skipped: true };                     // claimed synchronously
+  _billingRunning = true;
+  at = at || now();
+  const out = { charged: 0, failed: 0, ended: 0 };
+  try {
+    for (const user of Object.values(db.users)) {
+      if (user.subscription !== 'plus') continue;
+      if (!user.subscriptionPeriodEnd || user.subscriptionPeriodEnd > at) continue;
+
+      // Cancelled earlier: the period they paid for is over, so it ends now.
+      if (user.subscriptionCancelAt) { endPlus(user, 'cancelled'); out.ended++; persist.users(); continue; }
+
+      const periodStart = user.subscriptionPeriodEnd;
+      const r = await chargePlus(user, periodStart);
+      if (r.ok) {
+        user.subscriptionPeriodEnd = addMonth(periodStart, user.subscriptionAnchorDay);
+        user.subscriptionStatus = 'active';
+        user.subscriptionRetries = 0;
+        out.charged++;
+        audit('subscription.renewed', user.id, user.id, { amountMinor: r.amountMinor || 0 });
+        notify(user.id, 'subscription.renewed', { until: user.subscriptionPeriodEnd });
+      } else {
+        // Read the attempt number before endPlus() resets it — otherwise the
+        // one log line worth reading, the final failure, reports attempt 0.
+        const attempt = (user.subscriptionRetries || 0) + 1;
+        user.subscriptionRetries = attempt;
+        if (attempt >= PLUS_MAX_RETRIES) { endPlus(user, 'payment_failed'); out.ended++; }
+        else {
+          // Keep the benefits while we retry — the customer has not refused to
+          // pay, their bank said no once. Push the due date, not the period.
+          user.subscriptionStatus = 'past_due';
+          user.subscriptionPeriodEnd = at + PLUS_RETRY_MS;
+          out.failed++;
+          notify(user.id, 'subscription.payment_failed', { attempt, reason: r.reason });
+        }
+        subLog('warn', 'LUMI+ renewal failed', { userId: user.id, attempt, reason: r.reason });
+      }
+      persist.users();
+    }
+  } finally { _billingRunning = false; }
+  return out;
+}
+
+// Renewals are due on each member's own date, so the sweep runs often and does
+// nothing most of the time. Hourly means a renewal lands within an hour of its
+// due moment, and a restart at any point costs at most one hour of delay.
+const PLUS_SWEEP_MS = 3600 * 1000;
+setInterval(() => {
+  billDueSubscriptions().then((r) => {
+    if (r && (r.charged || r.failed || r.ended)) subLog('info', 'LUMI+ billing sweep', r);
+  }).catch((e) => subLog('error', 'LUMI+ billing sweep crashed', { message: e && e.message }));
+}, PLUS_SWEEP_MS).unref?.();
+
+// Run it by hand — e.g. after fixing a gateway outage, without waiting an hour.
+route('POST', '/api/admin/subscriptions/bill', async (req, res) => {
+  const user = authUser(req);
+  if (!user || user.role !== 'admin') return send(res, 403, { error: 'Forbidden.' });
+  const r = await billDueSubscriptions();
+  audit('subscription.billing_run', user.id, user.id, r);
+  send(res, 200, { result: r });
+});
+
 route('POST', '/api/subscribe', async (req, res) => {
   const user = authUser(req);
   if (!user) return send(res, 401, { error: 'Not authenticated.' });
   const b = await readBody(req);
-  // Cancel — free, immediate.
+
+  // Turning renewal off. The month is already paid for, so the benefits run to
+  // the end of it — taking them away the moment someone cancels would be
+  // charging for a month and delivering part of it.
   if (b.active === false) {
-    user.subscription = null; persist.users();
-    audit('subscription.cancelled', user.id, user.id, {});
+    if (user.subscription !== 'plus') return send(res, 200, { user: publicUser(user) });
+    if (!user.subscriptionPeriodEnd) { endPlus(user, 'cancelled'); persist.users(); return send(res, 200, { user: publicUser(user) }); }
+    user.subscriptionCancelAt = now();
+    persist.users();
+    audit('subscription.cancelled', user.id, user.id, { until: user.subscriptionPeriodEnd });
+    notify(user.id, 'subscription.cancelled', { until: user.subscriptionPeriodEnd });
     return send(res, 200, { user: publicUser(user) });
   }
-  if (user.subscription === 'plus') return send(res, 200, { user: publicUser(user) }); // already active
-  // Activating LUMI+ charges the plan fee off-session from the saved card. When
-  // Stripe is not configured (dev), activation stays free so the flow still works.
-  const plusPriceMinor = getSettings().plusPriceMinor;
-  if (stripe.isEnabled()) {
-    if (!user.card || !user.card.pmId) return send(res, 402, { error: 'Добавьте карту, чтобы оформить LUMI+.', code: 'NEEDS_CARD' });
-    const period = new Date().toISOString().slice(0, 7); // YYYY-MM — one charge per month
-    const r = await stripe.chargeOffSession({
-      customerId: user.stripeCustomerId, pmId: user.card.pmId,
-      amount: plusPriceMinor, description: 'LUMI+ subskrypcja',
-      idempotencyKey: `plus:${user.id}:${period}`, metadata: { userId: user.id, kind: 'subscription' },
-    });
-    if (!r.ok) {
-      if (r.requiresAction) return send(res, 402, { error: 'Банк требует подтверждение оплаты — попробуйте другую карту.', code: 'SCA_REQUIRED' });
-      return send(res, 402, { error: 'Не удалось списать оплату LUMI+. Проверьте карту.', code: 'CHARGE_FAILED', declineCode: r.declineCode });
+
+  // Turning it back on inside a period already paid for: no second charge.
+  if (user.subscription === 'plus') {
+    if (user.subscriptionCancelAt) {
+      user.subscriptionCancelAt = null;
+      persist.users();
+      audit('subscription.resumed', user.id, user.id, {});
     }
-    walletTxAdd(user.id, { kind: 'subscription', amountMinor: -plusPriceMinor, currency: PLUS_PLAN.currency, note: 'LUMI+', ref: r.id });
+    return send(res, 200, { user: publicUser(user) });
   }
-  user.subscription = 'plus'; user.premiumSince = now();
+
+  // Activating charges the first month off-session from the saved card. When
+  // Stripe is not configured (dev), activation stays free so the flow works.
+  const start = now();
+  const r = await chargePlus({ ...user, id: user.id }, start);
+  if (!r.ok) {
+    if (r.reason === 'no_card') return send(res, 402, { error: 'Добавьте карту, чтобы оформить LUMI+.', code: 'NEEDS_CARD' });
+    if (r.reason === 'sca') return send(res, 402, { error: 'Банк требует подтверждение оплаты — попробуйте другую карту.', code: 'SCA_REQUIRED' });
+    return send(res, 402, { error: 'Не удалось списать оплату LUMI+. Проверьте карту.', code: 'CHARGE_FAILED', declineCode: r.declineCode });
+  }
+  user.subscription = 'plus';
+  user.premiumSince = start;
+  user.subscriptionStatus = 'active';
+  user.subscriptionAnchorDay = new Date(start).getUTCDate();   // bill on this day every month
+  user.subscriptionPeriodEnd = addMonth(start, user.subscriptionAnchorDay);
+  user.subscriptionCancelAt = null;
+  user.subscriptionRetries = 0;
   persist.users();
-  audit('subscription.started', user.id, user.id, { amountMinor: stripe.isEnabled() ? plusPriceMinor : 0 });
-  notify(user.id, 'subscription.started', {});
+  audit('subscription.started', user.id, user.id, { amountMinor: r.amountMinor || 0, until: user.subscriptionPeriodEnd });
+  notify(user.id, 'subscription.started', { until: user.subscriptionPeriodEnd });
   send(res, 200, { user: publicUser(user) });
 });
 // Wallet top-up: charge the saved card off-session, credit the LUMI balance.
@@ -4507,3 +4656,9 @@ if (ADMIN_EMAILS.size) {
 server.listen(PORT, () => {
   console.log(`\n  LUMI running →  http://localhost:${PORT}\n`);
 });
+
+// Exposed for the test suite, which loads this file in-process. Passing an `at`
+// into the sweep is how a test moves a month forward without touching the clock
+// or the store — the operational route above never takes one, so nothing in
+// production can bill "as of" a date that has not arrived.
+module.exports = { billDueSubscriptions, addMonth, plusChargeKey };
