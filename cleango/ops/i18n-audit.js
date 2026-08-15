@@ -140,7 +140,7 @@ const SKIP_SEL = '[data-noi18n]';
       catch { return null; }
     });
     if (bkId) {
-      await page.evaluate((id) => renderBookingDetail(id), bkId);
+      await page.evaluate((id) => openBooking(id), bkId);
       await harvest('booking-detail');
     }
 
@@ -159,7 +159,7 @@ const SKIP_SEL = '[data-noi18n]';
       catch { return null; }
     });
     if (doneId) {
-      await page.evaluate((id) => renderBookingDetail(id), doneId);
+      await page.evaluate((id) => openBooking(id), doneId);
       await harvest('booking-completed');
       await page.evaluate((id) => openIssue(id), doneId);
       await harvest('issue-modal');
@@ -227,7 +227,7 @@ const SKIP_SEL = '[data-noi18n]';
       catch { return null; }
     });
     if (jobId) {
-      await cpage.evaluate((id) => renderBookingDetail(id), jobId);
+      await cpage.evaluate((id) => openBooking(id), jobId);
       await charvest('job-detail');
     }
     await cctx.close();

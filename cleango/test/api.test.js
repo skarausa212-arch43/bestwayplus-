@@ -623,6 +623,22 @@ async function main() {
       if (me.json.user.card) assert.ok(!('pmId' in me.json.user.card), 'payment-method id stripped');
     });
 
+    // ── Admin economics estimate ──
+    await ok('admin stats carry a consistent net-of-fees estimate', async () => {
+      const r = await req('GET', '/api/admin/stats', { token: await adminToken() });
+      const e = r.json.economics;
+      assert.ok(e, 'economics block present');
+      // arithmetic holds together, whatever the data
+      assert.strictEqual(e.preTaxMinor, e.commissionMinor - e.stripeFeeMinor - e.vatOnCommissionMinor, 'pre-tax = commission − stripe − vat');
+      assert.strictEqual(e.netMinor, e.preTaxMinor - e.citMinor, 'net = pre-tax − cit');
+      assert.ok(e.citMinor >= 0, 'CIT never negative');
+      const expectVat = e.commissionMinor - Math.round(e.commissionMinor / (1 + e.rates.vatRate));
+      assert.strictEqual(e.vatOnCommissionMinor, expectVat, 'VAT is extracted from the commission, not added');
+      // the block is admin-only: it never leaks into non-admin payloads
+      const c = await req('GET', '/api/admin/stats', { token: customerTok });
+      assert.strictEqual(c.status, 403);
+    });
+
     // ── Property editing (PATCH) ──
     await ok('a home can be edited by its owner, within the same clamps as creation', async () => {
       const made = (await req('POST', '/api/properties', { token: customerTok, body: { label: 'Edit me', city: 'Warsaw', rooms: 2, baths: 1 } })).json.property;

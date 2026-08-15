@@ -113,6 +113,9 @@ node('patch-manifest.js');
 step('название приложения из capacitor.config.json');
 node('patch-strings.js');
 
+step('загрузки в WebView (PDF чека и т.п.)');
+node('patch-download.js');
+
 console.log(`
 🟢 Проект готов: ${ANDROID}
 

@@ -161,6 +161,14 @@ function settingsDefaults() {
     plusPriceMinor: PLUS_PLAN.priceMinor,
     plusCashbackRate: PLUS_PLAN.cashbackRate,
     lateCancelRate: LATE_CANCEL_FEE_RATE,
+    // Economics of one zloty of turnover, admin-tunable. Defaults: Stripe's
+    // standard EEA card pricing (1.5% + 1 zł per charge), Polish VAT on the
+    // platform's commission, and the 9% CIT rate for small taxpayers. These
+    // feed the admin profit ESTIMATE only — no money moves through them.
+    stripeFeeRate: 0.015,
+    stripeFeeFixedMinor: 100,
+    vatRate: 0.23,
+    citRate: 0.09,
     announcement: { text: '', active: false },
     maintenance: { active: false, message: '' },
   };
@@ -3631,6 +3639,40 @@ const SYS_TPL = {
   companyAssigned: '{cleaner} назначен(а) на заказ компанией {name}.',
   replaced:   'Исполнитель заменён на {cleaner}.',
 };
+/**
+ * Heal system messages written before sysKey existed. The old rows carry baked
+ * prose (some of it literally English), which can never be translated for the
+ * reader — but every one of them was produced by a known template, so the key
+ * and params can be recovered by matching the prose back against those
+ * templates. Runs once at startup; a store with nothing to heal is untouched.
+ */
+function migrateSystemMessages() {
+  const LEGACY = [
+    [/^(.+) принял заказ и скоро приедет\.$/, (m) => ['accepted', { name: m[1] }]],
+    [/^(.+) выбрал\(а\) исполнителя: (.+)\.$/, (m) => ['chosen', { name: m[1], cleaner: m[2] }]],
+    [/^(.+) выехал\(а\) к вам\. В пути ~(\d+) мин\.$/, (m) => ['enroute', { name: m[1], eta: Number(m[2]) }]],
+    [/^(?:Cleaning started\.|Уборка началась\.)$/, () => ['started', null]],
+    [/^(?:Job completed\. Payment released\. Please leave a review!|Заказ завершён\. Оплата проведена\. Оставьте, пожалуйста, отзыв!)$/, () => ['completed', null]],
+    [/^Booking cancelled by (.+)\.$/, (m) => ['cancelled', { name: m[1] }]],
+    [/^Заказ отменён \((.+)\)\.$/, (m) => ['cancelled', { name: m[1] }]],
+    [/^Заказ переназначен оператором — ищем нового исполнителя\.$/, () => ['redispatched', null]],
+    [/^(.+) назначен\(а\) на заказ компанией (.+)\.$/, (m) => ['companyAssigned', { cleaner: m[1], name: m[2] }]],
+    [/^Исполнитель заменён на (.+)\.$/, (m) => ['replaced', { cleaner: m[1] }]],
+  ];
+  let healed = 0;
+  for (const msgs of Object.values(db.messages)) {
+    for (const m of msgs) {
+      if (m.type !== 'system' || m.sysKey || !m.text) continue;
+      for (const [re, mk] of LEGACY) {
+        const hit = re.exec(m.text);
+        if (hit) { const [key, params] = mk(hit); m.sysKey = key; if (params) m.sysParams = params; healed++; break; }
+      }
+    }
+  }
+  if (healed) { persist.messages(); console.log(`Migrated ${healed} legacy system chat message(s) to keyed form.`); }
+}
+migrateSystemMessages();
+
 function sysMessage(bookingId, key, params) {
   const tpl = SYS_TPL[key] || String(key);
   const body = tpl.replace(/\{(\w+)\}/g, (m, k) => (params && params[k] != null ? params[k] : m));
@@ -3806,7 +3848,25 @@ route('GET', '/api/admin/stats', async (req, res) => {
   const revenue = completed.reduce((s, b) => s + b.price, 0);
   const commission = completed.reduce((s, b) => s + b.commission, 0);
   const users = Object.values(db.users);
+  // What actually stays of the commission — an ESTIMATE, not accounting.
+  // The platform charges the customer the full price and pays the provider
+  // their payout, so the card fee and the VAT on the commission both come out
+  // of the platform's share. CIT applies to what is left when it is positive.
+  const st = getSettings();
+  const grossMinor = Math.round(revenue * 100);
+  const commissionMinor = Math.round(commission * 100);
+  const stripeFeeMinor = Math.round(grossMinor * st.stripeFeeRate) + completed.length * st.stripeFeeFixedMinor;
+  const vatOnCommissionMinor = commissionMinor - Math.round(commissionMinor / (1 + st.vatRate));
+  const preTaxMinor = commissionMinor - stripeFeeMinor - vatOnCommissionMinor;
+  const citMinor = Math.max(0, Math.round(preTaxMinor * st.citRate));
+  const netMinor = preTaxMinor - citMinor;
   send(res, 200, {
+    economics: {
+      grossMinor, commissionMinor, stripeFeeMinor, vatOnCommissionMinor,
+      preTaxMinor, citMinor, netMinor,
+      rates: { stripeFeeRate: st.stripeFeeRate, stripeFeeFixedMinor: st.stripeFeeFixedMinor, vatRate: st.vatRate, citRate: st.citRate },
+      charges: completed.length, currency: CURRENCY,
+    },
     stats: {
       revenue, commission, currency: CURRENCY,
       completedJobs: completed.length,
@@ -4078,6 +4138,10 @@ route('POST', '/api/admin/settings', async (req, res) => {
   if (b.plusCashbackRate != null) changed.plusCashbackRate = next.plusCashbackRate = clampRate(b.plusCashbackRate);
   if (b.lateCancelRate != null) changed.lateCancelRate = next.lateCancelRate = clampRate(b.lateCancelRate);
   if (b.plusPriceMinor != null) changed.plusPriceMinor = next.plusPriceMinor = Math.max(0, Math.min(100000, Math.round(Number(b.plusPriceMinor) || 0)));
+  if (b.stripeFeeRate != null) changed.stripeFeeRate = next.stripeFeeRate = clampRate(b.stripeFeeRate);
+  if (b.stripeFeeFixedMinor != null) changed.stripeFeeFixedMinor = next.stripeFeeFixedMinor = Math.max(0, Math.min(10000, Math.round(Number(b.stripeFeeFixedMinor) || 0)));
+  if (b.vatRate != null) changed.vatRate = next.vatRate = clampRate(b.vatRate);
+  if (b.citRate != null) changed.citRate = next.citRate = clampRate(b.citRate);
   if (b.announcement != null) {
     changed.announcement = next.announcement = { text: String((b.announcement || {}).text || '').slice(0, 280), active: !!(b.announcement || {}).active };
   }
