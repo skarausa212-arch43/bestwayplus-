@@ -2301,6 +2301,15 @@ Object.assign(TR.uk,{
   "скоро в вашем городе":"скоро у вашому місті","Услуга":"Послуга",
 });
 
+/* System chat lines, by event key — the Russian text doubles as the dictionary
+   key, so each viewer reads the line in their own language. Shared by the
+   thread renderer and the conversations-list preview. */
+const SYS_TPL_CHAT={accepted:'{name} принял заказ и скоро приедет.',chosen:'{name} выбрал(а) исполнителя: {cleaner}.',
+  enroute:'{name} выехал(а) к вам. В пути ~{eta} мин.',started:'Уборка началась.',
+  completed:'Заказ завершён. Оплата проведена. Оставьте, пожалуйста, отзыв!',cancelled:'Заказ отменён ({name}).',
+  redispatched:'Заказ переназначен оператором — ищем нового исполнителя.',
+  companyAssigned:'{cleaner} назначен(а) на заказ компанией {name}.',replaced:'Исполнитель заменён на {cleaner}.'};
+
 /* ---------- Verticals ----------
    Which services are bookable, and what tapping one does. Two screens offer
    them — the home grid and the switcher on the booking screen — so the rule
@@ -3212,7 +3221,7 @@ async function loadReco(){
         ${avatarEl(c,44)}
         <div class="reco-meta">
           <h4>${esc(c.name)}${c.verified?`<span style="color:var(--accent-600);display:inline-flex">${I.check}</span>`:''}</h4>
-          <div class="rt">⭐ ${c.rating||'—'} (${c.jobsDone}) · ${c.experienceYears?`${c.experienceYears} ${plural(c.experienceYears,'год','года','лет')} опыта`:'Уборка'}</div>
+          <div class="rt">⭐ ${c.rating||'—'} (${c.jobsDone}) · ${c.experienceYears?`${c.experienceYears} ${plural(c.experienceYears,'год','года','лет')} ${t('опыта')}`:t('Уборка')}</div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
           <button class="iconbtn" data-fav="${c.id}" title="В избранное" style="width:32px;height:32px;color:${c.favorited?'var(--danger)':'var(--ink-3)'}">${I.heart}</button>
@@ -6181,12 +6190,7 @@ async function loadMessages(id){
         // Keyed system lines translate for the reader — the server stores the
         // event, not the prose, because customer and cleaner may read the same
         // line in different languages. Old messages without a key show as-is.
-        const SYS_TPL={accepted:'{name} принял заказ и скоро приедет.',chosen:'{name} выбрал(а) исполнителя: {cleaner}.',
-          enroute:'{name} выехал(а) к вам. В пути ~{eta} мин.',started:'Уборка началась.',
-          completed:'Заказ завершён. Оплата проведена. Оставьте, пожалуйста, отзыв!',cancelled:'Заказ отменён ({name}).',
-          redispatched:'Заказ переназначен оператором — ищем нового исполнителя.',
-          companyAssigned:'{cleaner} назначен(а) на заказ компанией {name}.',replaced:'Исполнитель заменён на {cleaner}.'};
-        const txt=m.sysKey&&SYS_TPL[m.sysKey]?t(SYS_TPL[m.sysKey],m.sysParams||{}):m.text;
+        const txt=m.sysKey&&SYS_TPL_CHAT[m.sysKey]?t(SYS_TPL_CHAT[m.sysKey],m.sysParams||{}):m.text;
         return `<div class="msg sys">${esc(txt)}</div>`;
       }
       const me=m.from===state.user.id;
@@ -7018,7 +7022,7 @@ async function viewMessages(){
         <div class="avatar">${(cv.withName||'L')[0]}</div>
         <div class="meta" style="min-width:0"><h4 style="display:flex;align-items:center;gap:8px">${esc(cv.withName)}${cv.unread?`<span class="notif-badge" style="position:static;display:inline-flex">${cv.unread}</span>`:''}</h4>
           <div class="muted tiny" style="margin:3px 0 4px">${esc(t(svcLabelRu(cv.service)))} · ${statusBadge(cv.status)}</div>
-          <div class="tiny" style="color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(cv.lastText)||'—'}</div>
+          <div class="tiny" ${cv.lastSysKey?'':'data-noi18n'} style="color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cv.lastSysKey&&SYS_TPL_CHAT[cv.lastSysKey]?esc(t(SYS_TPL_CHAT[cv.lastSysKey],cv.lastSysParams||{})):(esc(cv.lastText)||'—')}</div>
         </div>
         <div class="muted tiny" style="align-self:flex-start">${timeAgo(cv.lastAt)}</div>
       </div>`);

@@ -4532,7 +4532,11 @@ route('GET', '/api/conversations', async (req, res) => {
     return {
       bookingId: b.id, service: b.serviceLabel, status: b.status,
       withName: other ? other.name : 'LUMI',
-      lastText: last ? (last.type === 'image' ? '📷 Фото' : (last.text || last.body || '')) : '',
+      lastText: last ? (last.type === 'image' ? '📷' : (last.text || last.body || '')) : '',
+      // A system line as the thread preview: hand the client the key so the
+      // preview translates like the line itself does inside the thread.
+      lastSysKey: last && last.type === 'system' ? (last.sysKey || null) : null,
+      lastSysParams: last && last.type === 'system' ? (last.sysParams || null) : null,
       lastAt: last ? last.at : b.createdAt,
       unread: chat.unreadCount(msgs, b.reads || {}, user.id),
     };
