@@ -116,6 +116,9 @@ node('patch-strings.js');
 step('загрузки в WebView (PDF чека и т.п.)');
 node('patch-download.js');
 
+step('версия сборки из capacitor.config.json');
+node('patch-version.js');
+
 console.log(`
 🟢 Проект готов: ${ANDROID}
 

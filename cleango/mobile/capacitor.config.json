@@ -25,7 +25,9 @@
     "backgroundColor": "#0C100E"
   },
   "android": {
-    "backgroundColor": "#0C100E"
+    "backgroundColor": "#0C100E",
+    "versionCode": 2,
+    "versionName": "1.1"
   },
   "plugins": {
     "PushNotifications": {
