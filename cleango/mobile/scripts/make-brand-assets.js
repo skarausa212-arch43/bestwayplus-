@@ -137,14 +137,21 @@ const files = {
 </svg>`,
 };
 
-fs.mkdirSync(ASSETS, { recursive: true });
-(async () => {
-  for (const [name, svg] of Object.entries(files)) {
-    const out = path.join(ASSETS, name);
-    await sharp(Buffer.from(svg)).png().toFile(out);
-    const { width, height } = await sharp(out).metadata();
-    console.log(`✓ ${name.padEnd(22)} ${width}×${height}`);
-  }
-  console.log(`\nЗнак в безопасной зоне: ${Math.round(CORNER_R * FG_SCALE)}px из ${Math.round(SAFE_R)}px допустимых.`);
-  console.log('Дальше:  npm run assets   — разложит по всем плотностям Android.');
-})().catch((e) => { console.error(e); process.exit(1); });
+// The palette and the mark are the brand's single vector source — the store
+// graphics script (make-store-assets.js) draws from these same values.
+module.exports = { INK_A, INK_B, OUTLINE, LIGHT_A, LIGHT_B, LIGHT_C, MUNTIN_DARK,
+  GREEN, GREEN_LT, PAPER, mark, glow, ground, litWindow, DARK_MARK };
+
+if (require.main === module) {
+  fs.mkdirSync(ASSETS, { recursive: true });
+  (async () => {
+    for (const [name, svg] of Object.entries(files)) {
+      const out = path.join(ASSETS, name);
+      await sharp(Buffer.from(svg)).png().toFile(out);
+      const { width, height } = await sharp(out).metadata();
+      console.log(`✓ ${name.padEnd(22)} ${width}×${height}`);
+    }
+    console.log(`\nЗнак в безопасной зоне: ${Math.round(CORNER_R * FG_SCALE)}px из ${Math.round(SAFE_R)}px допустимых.`);
+    console.log('Дальше:  npm run assets   — разложит по всем плотностям Android.');
+  })().catch((e) => { console.error(e); process.exit(1); });
+}
