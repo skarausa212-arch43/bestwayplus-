@@ -1988,7 +1988,9 @@ Object.assign(TR.uk,{"Воронка заказов":"Воронка замов�
 /* PWA install banner */
 Object.assign(TR.pl,{"Установить LUMI":"Zainstaluj LUMI","Быстрый доступ с домашнего экрана":"Szybki dostęp z ekranu głównego","Установить":"Zainstaluj"});
 Object.assign(TR.en,{"Установить LUMI":"Install LUMI","Быстрый доступ с домашнего экрана":"Quick access from your home screen","Установить":"Install"});
-Object.assign(TR.uk,{"Установить LUMI":"Встановити LUMI","Быстрый доступ с домашнего экрана":"Швидкий доступ з головного екрана","Установить":"Встановити"});
+Object.assign(TR.pl,{"Нажмите {icon} и выберите «На экран „Домой“»":"Naciśnij {icon} i wybierz „Do ekranu początkowego”"});
+Object.assign(TR.en,{"Нажмите {icon} и выберите «На экран „Домой“»":"Tap {icon} and choose “Add to Home Screen”"});
+Object.assign(TR.uk,{"Установить LUMI":"Встановити LUMI","Быстрый доступ с домашнего экрана":"Швидкий доступ з головного екрана","Установить":"Встановити","Нажмите {icon} и выберите «На экран „Домой“»":"Натисніть {icon} і виберіть «На початковий екран»"});
 /* admin users panel */
 Object.assign(TR.pl,{"Пользователи":"Użytkownicy","Все":"Wszyscy","Компании":"Firmy","Админы":"Administratorzy","Регистрация":"Rejestracja","Открыть профиль":"Otwórz profil","● Онлайн":"● Online","На проверке":"W weryfikacji","Заблокирован":"Zablokowany","Активен":"Aktywny"});
 Object.assign(TR.en,{"На проверке":"Pending review","Заблокирован":"Blocked","Активен":"Active"});
@@ -7476,6 +7478,26 @@ function showInstallBanner(){
   $('#ibInstall',bn).onclick=async()=>{ bn.remove(); if(_installPrompt){ _installPrompt.prompt(); try{await _installPrompt.userChoice;}catch{} _installPrompt=null; } };
   $('#ibClose',bn).onclick=()=>{ bn.remove(); localStorage.setItem('lumi_install_dismissed','1'); };
 }
+
+// iOS Safari never fires beforeinstallprompt, so iPhones show the same banner
+// with share-menu instructions instead of an install button. Detection covers
+// iPadOS, which reports itself as a Mac but is the only "Mac" with a touch
+// screen. Standalone mode and the Capacitor shell mean it is already installed.
+function showIosInstallHint(){
+  const ios=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const standalone=navigator.standalone===true||matchMedia('(display-mode: standalone)').matches;
+  if(!ios||standalone||window.Capacitor)return;
+  if(localStorage.getItem('lumi_install_dismissed')||$('#installBanner'))return;
+  const share='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 3v12M8 7l4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
+  const bn=el(`<div id="installBanner" class="install-banner" data-noi18n>
+    <div class="ib-ic">${logoBadge('pwa')}</div>
+    <div class="ib-tx"><b>${t('Установить LUMI')}</b><span>${t('Нажмите {icon} и выберите «На экран „Домой“»',{icon:share})}</span></div>
+    <button class="ib-x" id="ibClose" aria-label="${t('Закрыть')}">✕</button>
+  </div>`);
+  document.body.appendChild(bn);
+  $('#ibClose',bn).onclick=()=>{ bn.remove(); localStorage.setItem('lumi_install_dismissed','1'); };
+}
+addEventListener('load',()=>{ setTimeout(showIosInstallHint,2500); });
 </script>
 </body>
 </html>
