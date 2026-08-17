@@ -61,7 +61,6 @@ const CHECKS = [
     return pages.every((f) => { try { const h = require('fs').readFileSync(path.join(ROOT, f), 'utf8'); return /rel="canonical"/.test(h) && /hreflang="pl"/.test(h); } catch { return false; } });
   }],
   ['Marketing', 'Brand guidelines', false, () => exists('public/brand.html') && exists('assets/README.md')],
-  ['Marketing', 'Investor overview', false, () => exists('public/investors.html')],
   ['Marketing', 'Asset library (structure + naming)', false, () => { try { require('child_process').execFileSync(process.execPath, [path.join(ROOT, 'ops/asset-check.js')], { stdio: 'ignore' }); return true; } catch { return false; } }],
 ];
 

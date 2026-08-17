@@ -892,7 +892,7 @@ const SEO_PAGES = [
 ];
 // Never indexed: the API, and the investor deck (business figures should not
 // rank in search — it stays reachable by direct link).
-const SEO_DISALLOW = ['/api/', '/investors.html'];
+const SEO_DISALLOW = ['/api/'];
 const xmlEsc = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 function pageLastmod(file) {
   try { return fs.statSync(path.join(PUBLIC_DIR, file)).mtime.toISOString().slice(0, 10); }
