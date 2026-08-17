@@ -24,6 +24,8 @@ jobs:
         with:
           host: ${{ inputs.host }}
           username: root
-          password: ${{ secrets.SERVER_PASSWORD }}
+          # Сервер lumi.pl использует свой пароль (секрет LUMI_SERVER_PASSWORD),
+          # старый сервер bestwayplus — SERVER_PASSWORD.
+          password: ${{ inputs.host == '51.254.176.170' && secrets.LUMI_SERVER_PASSWORD || secrets.SERVER_PASSWORD }}
           command_timeout: 40m
           script: ${{ inputs.script }}
