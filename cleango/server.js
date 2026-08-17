@@ -372,6 +372,7 @@ const db = {
   settings: loadJSON('settings.json', {}),   // admin-editable platform settings (open cities, economy, announcement)
   sos: loadJSON('sos.json', {}),             // id -> panic alert raised from inside a live order
   acceptances: loadJSON('acceptances.json', []),  // append-only legal acceptance history (who/what/version/when/ip/ua/doc hash)
+  traffic: loadJSON('traffic.json', {}),     // 'YYYY-MM-DD' -> { v, b, u:[hash], r:{host:n}, s:{utm:n}, p:{path:n} } site-visit stats
 };
 const persist = {
   users: () => saveJSON('users.json', db.users),
@@ -393,7 +394,54 @@ const persist = {
   settings: () => saveJSON('settings.json', db.settings),
   gardenReminders: () => saveJSON('garden-reminders.json', db.gardenReminders),
   acceptances: () => saveJSON('acceptances.json', db.acceptances),
+  traffic: () => saveJSON('traffic.json', db.traffic),
 };
+
+// ── Site-visit statistics (privacy-friendly, first-party) ──────────────────
+// Counted on every HTML page the server actually delivers. No cookies and no
+// third-party scripts: a visitor is a per-day sha256 of ip+user-agent, so
+// nothing personally identifiable is ever stored. Bots are counted separately.
+// Writes are batched (a pageview must never cost a disk write).
+const BOT_RE = /bot|crawl|spider|slurp|bingpreview|yandex|duckduck|baidu|semrush|ahrefs|mj12|petal|facebookexternalhit|whatsapp|telegram|skypeuripreview|lighthouse|pingdom|uptime|headless|python-requests|curl|wget/i;
+let _trafficTimer = null;
+function persistTrafficSoon() {
+  if (_trafficTimer) return;
+  _trafficTimer = setTimeout(() => { _trafficTimer = null; try { persist.traffic(); } catch {} }, 10000);
+  if (_trafficTimer.unref) _trafficTimer.unref();
+}
+const _uniqSets = {};   // day -> Set(hash), rebuilt lazily after restarts
+function recordVisit(req, pagePath) {
+  try {
+    const day = new Date().toISOString().slice(0, 10);
+    let e = db.traffic[day];
+    if (!e) {
+      e = db.traffic[day] = { v: 0, b: 0, u: [], r: {}, s: {}, p: {} };
+      const keys = Object.keys(db.traffic).sort();          // retention: ~4 months
+      while (keys.length > 120) { const k = keys.shift(); delete db.traffic[k]; delete _uniqSets[k]; }
+    }
+    const ua = String(req.headers['user-agent'] || '');
+    if (!ua || BOT_RE.test(ua)) { e.b++; persistTrafficSoon(); return; }
+    e.v++;
+    const set = _uniqSets[day] || (_uniqSets[day] = new Set(e.u));
+    const hash = crypto.createHash('sha256').update(clientIp(req) + '|' + ua + '|' + day).digest('hex').slice(0, 16);
+    if (!set.has(hash) && set.size < 50000) { set.add(hash); e.u.push(hash); }
+    // Where the visit came from: external referrer host and/or utm_source.
+    const ref = String(req.headers['referer'] || '');
+    if (ref) {
+      try {
+        const host = new URL(ref).hostname.replace(/^www\./, '');
+        if (host && !/(^|\.)lumi24\.pl$/.test(host) && host !== 'localhost' && !/^127\./.test(host)) {
+          if (e.r[host] != null || Object.keys(e.r).length < 300) e.r[host] = (e.r[host] || 0) + 1;
+        }
+      } catch {}
+    }
+    const utm = /[?&]utm_source=([^&#]{1,40})/.exec(req.url || '');
+    if (utm) { const sName = decodeURIComponent(utm[1]); if (e.s[sName] != null || Object.keys(e.s).length < 100) e.s[sName] = (e.s[sName] || 0) + 1; }
+    const pp = (String(pagePath || '/').slice(0, 60)) === '/index.html' ? '/' : String(pagePath || '/').slice(0, 60);
+    if (e.p[pp] != null || Object.keys(e.p).length < 50) e.p[pp] = (e.p[pp] || 0) + 1;
+    persistTrafficSoon();
+  } catch {}
+}
 
 // ── Legal acceptance history ──────────────────────────────────────────────
 // Proof of contract: who accepted which document, which version, when, from
@@ -4249,6 +4297,29 @@ route('POST', '/api/admin/payouts/settle', async (req, res) => {
   send(res, 200, { settled, total, blocked, blockedCount: blocked.length });
 });
 
+// Site-visit statistics for the admin panel: daily views/uniques/bots plus
+// where the traffic came from (referrer hosts, utm_source) and which pages.
+route('GET', '/api/admin/traffic', async (req, res) => {
+  const admin = requireCap(req, res, 'analytics.view'); if (!admin) return;
+  const n = Math.max(7, Math.min(90, Number((/days=(\d{1,2})/.exec(req.url) || [])[1]) || 30));
+  const days = [];
+  const top = (obj, acc) => { for (const [k, v] of Object.entries(obj || {})) acc[k] = (acc[k] || 0) + v; };
+  const refs = {}, sources = {}, paths = {};
+  let views = 0, uniques = 0, bots = 0;
+  for (let i = n - 1; i >= 0; i--) {
+    const day = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+    const e = db.traffic[day] || { v: 0, b: 0, u: [], r: {}, s: {}, p: {} };
+    days.push({ date: day, views: e.v, uniques: e.u.length, bots: e.b });
+    views += e.v; uniques += e.u.length; bots += e.b;
+    top(e.r, refs); top(e.s, sources); top(e.p, paths);
+  }
+  const rank = (o, lim) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, lim);
+  send(res, 200, {
+    days, totals: { views, uniques, bots },
+    referrers: rank(refs, 12), sources: rank(sources, 12), paths: rank(paths, 12),
+  });
+});
+
 // Manual finance corrections (chargeback from the PSP, goodwill adjustment).
 // Never edits history: each correction is a NEW immutable ledger row, audited,
 // and idempotent via the caller-supplied key (retrying a submit is a no-op).
@@ -4792,11 +4863,13 @@ function serveStatic(req, res) {
       // SPA fallback
       return fs.readFile(path.join(PUBLIC_DIR, 'index.html'), (e2, html) => {
         if (e2) return send(res, 404, 'Not found');
+        recordVisit(req, urlPath);   // deep links land here — count them under their path
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', ...SECURITY_HEADERS });
         res.end(html);
       });
     }
     const ext = path.extname(filePath);
+    if (ext === '.html') recordVisit(req, urlPath);
     res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', ...SECURITY_HEADERS });
     res.end(data);
   });

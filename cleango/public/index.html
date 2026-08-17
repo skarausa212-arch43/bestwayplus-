@@ -2913,7 +2913,7 @@ function renderAuth(){
    ========================================================================= */
 function navItems(){
   const r=state.user.role;
-  if(r==='admin') return [['admin','Панель',I.admin],['analytics','Аналитика',I.chart],['bookings','Заказы',I.jobs],['audit','Аудит',I.receipt]];
+  if(r==='admin') return [['admin','Панель',I.admin],['traffic','Посещения',I.globe],['analytics','Аналитика',I.chart],['bookings','Заказы',I.jobs],['audit','Аудит',I.receipt]];
   if(r==='company') return [['company','Компания',I.building],['board','Заказы',I.jobs],['staff','Персонал',I.users],['finance','Финансы',I.chart]];
   if(r==='cleaner') return [['jobs','Заявки',I.jobs],['bookings','Мои работы',I.book],['earnings','Доход',I.chart],['wallet','Кошелёк',I.wallet]];
   return [['home','Главная',I.home],['properties','Дома',I.building],['book','Заказать',I.book],['bookings','Заказы',I.jobs],['messages','Чаты',I.send],['wallet','Кошелёк',I.wallet]];
@@ -3103,7 +3103,7 @@ async function loadProperties(){
 
 function render(){
   if(!state.user){ renderAuth(); return; }
-  const map={home:viewHome,properties:viewProperties,smart:viewSmart,shortstay:viewShortstay,stroverview:viewStrOverview,passport:viewPassport,premium:viewPremium,book:viewBook,bookings:viewBookings,wallet:viewWallet,jobs:viewJobs,admin:viewAdmin,messages:viewMessages,earnings:viewEarnings,audit:viewAudit,analytics:viewAnalytics,company:viewCompany,board:viewBoard,staff:viewStaff,finance:viewFinance};
+  const map={home:viewHome,properties:viewProperties,smart:viewSmart,shortstay:viewShortstay,stroverview:viewStrOverview,passport:viewPassport,premium:viewPremium,book:viewBook,bookings:viewBookings,wallet:viewWallet,jobs:viewJobs,admin:viewAdmin,traffic:viewTraffic,messages:viewMessages,earnings:viewEarnings,audit:viewAudit,analytics:viewAnalytics,company:viewCompany,board:viewBoard,staff:viewStaff,finance:viewFinance};
   const fn=map[state.view]||viewHome;
   fn();
 }
@@ -7162,6 +7162,48 @@ function funnelBars(funnel){
     <div style="height:12px;border-radius:8px;background:var(--surface-2);overflow:hidden"><div style="height:100%;width:${Math.round(f.count/max*100)}%;min-width:6px;background:${cols[i%3]};border-radius:8px;transition:width .5s"></div></div>
   </div>`).join('');
 }
+/* Посещения сайта: своя серверная статистика — без cookies и внешних скриптов.
+   Считается на каждой HTML-странице, которую реально отдал сервер; повторные
+   открытия установленного приложения может забирать кэш PWA (см. подпись). */
+async function viewTraffic(){
+  const c=el(`<div><div class="section-title">Посещения сайта</div><div id="trBody"><div class="card pad"><div class="sk" style="height:200px"></div></div></div></div>`);
+  shell(c);
+  try{
+    const T=await api('/api/admin/traffic?days=30');
+    const days=T.days, mx=Math.max(1,...days.map(d=>d.views));
+    const today=days[days.length-1]||{views:0,uniques:0,bots:0};
+    const bw=560/days.length;
+    const bars=days.map((d,i)=>{
+      const h=Math.max(d.views?3:1,(d.views/mx)*120);
+      const hu=Math.max(d.uniques?2:0,(d.uniques/mx)*120);
+      return `<g><rect x="${(i*bw+1).toFixed(1)}" y="${(136-h).toFixed(1)}" width="${(bw-2).toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="var(--primary-200)"><title>${d.date}: ${d.views} просмотров · ${d.uniques} посетителей</title></rect>
+        <rect x="${(i*bw+1).toFixed(1)}" y="${(136-hu).toFixed(1)}" width="${(bw-2).toFixed(1)}" height="${hu.toFixed(1)}" rx="2" fill="var(--primary-600)"><title>${d.date}: ${d.uniques} посетителей</title></rect></g>`;
+    }).join('');
+    const lbl=(i)=>days[i]?days[i].date.slice(5).replace('-','.'):'';
+    const tbl=(title,rows,emptyText)=>`<div class="card pad" style="flex:1;min-width:240px"><div class="admin-sec-h">${title}</div>
+      ${rows.length?`<table class="tbl"><tbody>${rows.map(([k,v])=>`<tr><td style="word-break:break-all">${esc(k)}</td><td style="text-align:right;font-weight:700">${v}</td></tr>`).join('')}</tbody></table>`
+      :`<div class="muted tiny">${emptyText}</div>`}</div>`;
+    $('#trBody',c).innerHTML=`
+      <div class="kpi-grid" style="margin-bottom:16px">
+        ${kpi(I.globe,T.totals.views,'Просмотров за 30 дней','var(--primary-050)','var(--primary-600)')}
+        ${kpi(I.home,T.totals.uniques,'Посетителей (уникальных в день)','var(--surface-2)','var(--ink)')}
+        ${kpi(I.spark,today.views+' / '+today.uniques,'Сегодня: просмотры / посетители','var(--surface-2)','var(--ink)')}
+        ${kpi(I.shield,T.totals.bots,'Боты и краулеры (не в счётчиках)','var(--surface-2)','var(--muted)')}
+      </div>
+      <div class="card pad" style="margin-bottom:16px">
+        <div class="admin-sec-h">По дням — просмотры (светлым) и уникальные посетители (тёмным)</div>
+        <svg viewBox="0 0 560 152" style="width:100%;height:auto" preserveAspectRatio="none">${bars}</svg>
+        <div class="row" style="justify-content:space-between"><span class="hint tiny">${lbl(0)}</span><span class="hint tiny">${lbl(Math.floor(days.length/2))}</span><span class="hint tiny">${lbl(days.length-1)}</span></div>
+      </div>
+      <div class="row" style="gap:16px;flex-wrap:wrap;align-items:stretch">
+        ${tbl('Откуда переходят (сайты)',T.referrers,'Пока только прямые заходы — внешних переходов нет.')}
+        ${tbl('Кампании (utm_source)',T.sources,'Добавляйте к ссылкам ?utm_source=facebook — источники появятся здесь.')}
+        ${tbl('Популярные страницы',T.paths,'Пока пусто.')}
+      </div>
+      <div class="hint tiny" style="margin-top:12px">Считает сам сервер при каждой открытой странице — без cookies и сторонних скриптов. Посетитель = уникальный за день (по обезличенному отпечатку). Установленное приложение может открываться из кэша PWA — такие заходы сервер не видит, поэтому реальных пользователей чуть больше, чем в счётчике.</div>`;
+  }catch(e){ $('#trBody',c).innerHTML=`<div class="card pad">${esc(e.message)}</div>`; }
+}
+
 async function viewAnalytics(){
   const c=el(`<div><div class="section-title">Аналитика и метрики <span class="badge" style="background:var(--surface-2)" id="schemaV"></span></div><div id="anBody"><div class="card pad"><div class="sk" style="height:200px"></div></div></div></div>`);
   shell(c);

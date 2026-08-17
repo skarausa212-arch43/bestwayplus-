@@ -1195,6 +1195,23 @@ async function main() {
       assert.strictEqual(row.status, 'open');
     });
 
+    await ok('посещения: сервер считает просмотры/источники, боты отдельно, доступ только админу', async () => {
+      const ua = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0' };
+      await req('GET', '/?utm_source=facebook', { headers: { ...ua, Referer: 'https://www.facebook.com/some/post' } });
+      await req('GET', '/partners.html', { headers: { ...ua, Referer: 'https://www.google.com/' } });
+      await req('GET', '/', { headers: { 'User-Agent': 'Googlebot/2.1 (+http://www.google.com/bot.html)' } });
+      const r = await req('GET', '/api/admin/traffic?days=7', { token: await adminToken() });
+      assert.strictEqual(r.status, 200);
+      const today = r.json.days[r.json.days.length - 1];
+      assert.ok(today.views >= 2, 'human page views counted: ' + today.views);
+      assert.ok(today.uniques >= 1, 'unique visitors counted');
+      assert.ok(today.bots >= 1, 'bots counted separately');
+      assert.ok(r.json.referrers.some(([h]) => h === 'facebook.com' || h === 'google.com'), 'referrer hosts recorded');
+      assert.ok(r.json.sources.some(([sName]) => sName === 'facebook'), 'utm_source recorded');
+      assert.ok(r.json.paths.some(([p2]) => p2 === '/partners.html'), 'page paths recorded');
+      assert.strictEqual((await req('GET', '/api/admin/traffic', { token: customerTok })).status, 403);
+    });
+
     console.log(`\n${passed} API/integration checks passed.`);
   } finally {
     child.kill('SIGKILL');
