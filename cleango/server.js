@@ -1442,7 +1442,10 @@ route('GET', '/api/catalog', async (req, res) => {
   send(res, 200, {
     services: SERVICE_CATALOG, extras, extraCategories: EXTRAS_CATEGORIES, equipment: EQUIPMENT,
     professions: Object.fromEntries(Object.entries(PROFESSIONS).map(([k, v]) => [k, { label: v.label, active: v.active, equipment: v.equipment }])),
-    commissionRate: getSettings().commissionRate, currency: CURRENCY, oauth: oauth.providers(),
+    // The commission rate is deliberately NOT here: it is the platform's
+    // internal economics, visible only in the admin panel. Clients see prices,
+    // providers see their payout per job — neither needs the rate.
+    currency: CURRENCY, oauth: oauth.providers(),
     serviceFrom: serviceFromTable(),
     frequencyDiscounts: cityPrices.FREQUENCY_DISCOUNTS,
     paymentsEnabled: pay.isEnabled() || stripe.isEnabled(),

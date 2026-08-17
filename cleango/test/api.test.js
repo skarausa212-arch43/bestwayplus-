@@ -720,12 +720,14 @@ async function main() {
       assert.strictEqual((await req('GET', '/api/admin/settings', { token: customerTok })).status, 403);
       assert.strictEqual((await req('POST', '/api/admin/settings', { token: customerTok, body: { commissionRate: 0.9 } })).status, 403);
       const before = (await req('GET', '/api/admin/settings', { token: adm })).json.settings;
-      // Change the commission → the public catalog reflects it live.
+      // Change the commission → the admin sees it; the public catalog must NOT
+      // carry the rate at all (platform economics are admin-only).
       await req('POST', '/api/admin/settings', { token: adm, body: { commissionRate: 0.25 } });
-      assert.strictEqual((await req('GET', '/api/catalog', { token: customerTok })).json.commissionRate, 0.25);
+      assert.strictEqual((await req('GET', '/api/admin/settings', { token: adm })).json.settings.commissionRate, 0.25);
+      assert.strictEqual((await req('GET', '/api/catalog', { token: customerTok })).json.commissionRate, undefined, 'commission rate leaked to the public catalog');
       // Rates are clamped (can't set 900%).
       await req('POST', '/api/admin/settings', { token: adm, body: { commissionRate: 9 } });
-      assert.strictEqual((await req('GET', '/api/catalog', { token: customerTok })).json.commissionRate, 0.95);
+      assert.strictEqual((await req('GET', '/api/admin/settings', { token: adm })).json.settings.commissionRate, 0.95);
       // Restore the original commission so later price/payout assertions are unaffected.
       await req('POST', '/api/admin/settings', { token: adm, body: { commissionRate: before.commissionRate } });
       // Announcement flows to the catalog when active, and clears when off.
