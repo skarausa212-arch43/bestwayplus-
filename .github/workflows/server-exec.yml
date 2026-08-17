@@ -10,6 +10,10 @@ on:
         description: Shell script to run on the server
         required: true
         default: "uname -a"
+      host:
+        description: Server to run on (old bestwayplus box by default)
+        required: false
+        default: "130.17.12.118"
 
 jobs:
   exec:
@@ -18,7 +22,7 @@ jobs:
       - name: Run script on server
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: 130.17.12.118
+          host: ${{ inputs.host }}
           username: root
           password: ${{ secrets.SERVER_PASSWORD }}
           command_timeout: 40m
