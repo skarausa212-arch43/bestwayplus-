@@ -1182,6 +1182,19 @@ async function main() {
       assert.ok(mine2.includes('1990-04-14'), 'birth date exported');
     });
 
+    await ok('партнёрская заявка: без логина, валидация, попадает в поддержку админа', async () => {
+      const bad = await req('POST', '/api/partners/apply', { body: { name: 'X', email: 'nope', message: 'hi' } });
+      assert.strictEqual(bad.status, 400);
+      const okr = await req('POST', '/api/partners/apply', { body: { name: 'Jan Kowalski', company: 'CzystoMax Sp. z o.o.',
+        email: 'jan@czystomax.pl', phone: '+48 600 100 200', segment: 'cleaning', message: 'Mamy 6 brygad we Wrocławiu, chcemy dołączyć.' } });
+      assert.strictEqual(okr.status, 200, JSON.stringify(okr.json));
+      const sup = await req('GET', '/api/admin/support', { token: await adminToken() });
+      const row = sup.json.support.find((s) => s.topic === 'partner' && /CzystoMax/.test(s.name));
+      assert.ok(row, 'inquiry lands in the admin support inbox');
+      assert.ok(/cleaning/.test(row.message) && /600 100 200/.test(row.message), 'segment and phone preserved');
+      assert.strictEqual(row.status, 'open');
+    });
+
     console.log(`\n${passed} API/integration checks passed.`);
   } finally {
     child.kill('SIGKILL');

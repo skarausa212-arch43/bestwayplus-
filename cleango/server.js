@@ -888,6 +888,7 @@ const SEO_PAGES = [
   { path: '/terms.html',          file: 'terms.html',          priority: '0.4', changefreq: 'yearly', langs: true },
   { path: '/terms-provider.html', file: 'terms-provider.html', priority: '0.4', changefreq: 'yearly', langs: true },
   { path: '/privacy.html',        file: 'privacy.html',        priority: '0.4', changefreq: 'yearly', langs: true },
+  { path: '/partners.html',       file: 'partners.html',       priority: '0.6', changefreq: 'monthly', langs: true },
   { path: '/brand.html',          file: 'brand.html',          priority: '0.3', changefreq: 'yearly' },
 ];
 // Never indexed: the API, and the investor deck (business figures should not
@@ -3568,7 +3569,36 @@ const SUPPORT_EMAIL = process.env.LUMI_SUPPORT_EMAIL || 'support@lumi24.pl';
 const SUPPORT_TOPICS = {
   general: 'Общий вопрос', order: 'Вопрос по заказу', payment: 'Оплата и чеки',
   account: 'Аккаунт и доступ', provider: 'Стать исполнителем', other: 'Другое',
+  partner: 'Партнёрство',
 };
+
+// Partner inquiries from the public /partners.html page. No account required —
+// a company considering LUMI has none yet — so the limiter keys on the IP and
+// the row lands in the same admin support inbox everything else uses.
+route('POST', '/api/partners/apply', async (req, res) => {
+  const rl = rateLimit('partner:' + clientIp(req), 5, 3600000);   // 5/hour/IP
+  if (!rl.ok) return send(res, 429, { error: 'Zbyt wiele zgłoszeń. Spróbuj później.', code: 'RATE_LIMITED' }, { 'Retry-After': rl.retryAfter });
+  const b = await readBody(req);
+  const name = String(b.name || '').trim().slice(0, 80);
+  const company = String(b.company || '').trim().slice(0, 120);
+  const email = String(b.email || '').trim().slice(0, 120);
+  const phone = String(b.phone || '').trim().slice(0, 30);
+  const segment = String(b.segment || '').trim().slice(0, 40);
+  const message = String(b.message || '').trim().slice(0, 2000);
+  if (name.length < 2 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || message.length < 10) {
+    return send(res, 400, { error: 'Podaj imię, poprawny e-mail i kilka słów o współpracy.', code: 'VALIDATION_ERROR' });
+  }
+  const id = uid('s_');
+  db.support[id] = { id, userId: null, name: company ? `${name} · ${company}` : name, email, role: 'partner',
+    topic: 'partner', message: `[${segment || 'partner'}]${phone ? ` tel. ${phone}` : ''}\n${message}`,
+    status: 'open', createdAt: now() };
+  persist.support();
+  audit('support.message', 'public', id, { topic: 'partner', segment });
+  for (const a of Object.values(db.users)) {
+    if (a.role === 'admin') notify(a.id, 'support.message_admin', { who: db.support[id].name, topic: SUPPORT_TOPICS.partner });
+  }
+  send(res, 200, { ok: true });
+});
 route('POST', '/api/support', async (req, res) => {
   const user = authUser(req);
   if (!user) return send(res, 401, { error: 'Not authenticated.' });
