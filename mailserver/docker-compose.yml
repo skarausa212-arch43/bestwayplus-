@@ -66,6 +66,7 @@ services:
       - MAIL_DOMAIN=${MAIL_DOMAIN}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-}
+      - MAX_ACCOUNTS=${MAX_ACCOUNTS:-20}
     volumes:
       - ./docker-data/multimail:/data
       - ./docker-data/dms/config/:/dmsconfig/:ro   # админ-статистика (только чтение)

@@ -2,7 +2,7 @@
   "name": "multimail",
   "version": "1.0.0",
   "private": true,
-  "description": "Dashboard: up to 10 mailboxes in one page (IMAP aggregator)",
+  "description": "Dashboard: up to 20 mailboxes in one page (IMAP aggregator)",
   "main": "server.js",
   "dependencies": {
     "express": "^4.19.2",

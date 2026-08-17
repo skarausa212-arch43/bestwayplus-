@@ -33,7 +33,7 @@ function chatIsAdmin(chatId) {
 // Конфиг DMS смонтирован read-only — для админ-статистики
 const DMS_CONFIG_DIR = process.env.DMS_CONFIG_DIR || '/dmsconfig';
 const PORT = process.env.PORT || 8082;
-const MAX_ACCOUNTS = 10;
+const MAX_ACCOUNTS = parseInt(process.env.MAX_ACCOUNTS, 10) || 20;
 const SESSION_TTL = 30 * 24 * 3600_000; // 30 дней; продлевается при каждом заходе
 const SESSIONS_FILE = process.env.SESSIONS_FILE || '/data/sessions.json';
 

@@ -6,7 +6,7 @@
 
 Почтовый сервис **EmailInc** (бывш. Viply) на домене **emailinc.info**:
 - `mailserver/` в этой ветке — весь стек: docker-mailserver v14 (Postfix+Dovecot+rspamd+fail2ban),
-  Roundcube (webmail), signup-лендинг (Node, порт 8081), multimail «до 10 ящиков» (Node, 8082).
+  Roundcube (webmail), signup-лендинг (Node, порт 8081), multimail «до 20 ящиков» (Node, 8082).
 - Лендинг и multimail уже ребрендированы под EmailInc (тёмный #050505/#101114,
   синий #2563FF, циан #43C8FF, конверт-логотип, анимации: констелляция, само-шифрующийся
   заголовок, конвейер You→Lock→Inbox, 3D-tilt формы, живые тосты).
