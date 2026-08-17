@@ -133,7 +133,10 @@ const PLUS_RETRY_MS = 24 * 3600 * 1000;
 const LATE_CANCEL_FEE_RATE = 0.40;
 // Current version of the legal documents users consent to at sign-up. Bump when
 // the Terms / Provider Agreement / Privacy Policy change materially.
-const TERMS_VERSION = '1.1';
+// Bumped whenever a published legal document materially changes. Providers
+// whose stored version is older must re-accept before taking NEW jobs (the
+// gate lives in the booking-accept route); customers are never blocked.
+const TERMS_VERSION = '1.2';
 // Consumer right of withdrawal — ustawa o prawach konsumenta (30.05.2014).
 // A distance contract can be withdrawn from within 14 days (art. 27). A service
 // that starts inside that window needs the consumer's express request to begin
@@ -368,6 +371,7 @@ const db = {
   gardenReminders: loadJSON('garden-reminders.json', []),  // "Zapisz się — przypomnimy" season signups  // userId -> [{ id, ts, kind, amountMinor, currency, note, ... }] customer payments ledger
   settings: loadJSON('settings.json', {}),   // admin-editable platform settings (open cities, economy, announcement)
   sos: loadJSON('sos.json', {}),             // id -> panic alert raised from inside a live order
+  acceptances: loadJSON('acceptances.json', []),  // append-only legal acceptance history (who/what/version/when/ip/ua/doc hash)
 };
 const persist = {
   users: () => saveJSON('users.json', db.users),
@@ -388,7 +392,35 @@ const persist = {
   walletTx: () => saveJSON('wallet-tx.json', db.walletTx),
   settings: () => saveJSON('settings.json', db.settings),
   gardenReminders: () => saveJSON('garden-reminders.json', db.gardenReminders),
+  acceptances: () => saveJSON('acceptances.json', db.acceptances),
 };
+
+// ── Legal acceptance history ──────────────────────────────────────────────
+// Proof of contract: who accepted which document, which version, when, from
+// which IP/user-agent, against which exact text (sha256 of the served file).
+// Rows are append-only — a re-acceptance adds a row, never rewrites one.
+const LEGAL_DOCS = { terms: 'terms.html', 'terms-provider': 'terms-provider.html', privacy: 'privacy.html' };
+const legalDocHash = (() => {
+  const cache = {};
+  return (doc) => {
+    if (cache[doc]) return cache[doc];
+    try {
+      cache[doc] = crypto.createHash('sha256').update(fs.readFileSync(path.join(PUBLIC_DIR, LEGAL_DOCS[doc]))).digest('hex');
+    } catch { cache[doc] = null; }
+    return cache[doc];
+  };
+})();
+function recordAcceptance(user, req, docs) {
+  for (const doc of docs) {
+    db.acceptances.push(Object.freeze({
+      id: uid('acc_'), userId: user.id, doc, version: TERMS_VERSION,
+      at: now(), ip: clientIp(req), userAgent: String(req.headers['user-agent'] || '').slice(0, 300),
+      docSha256: legalDocHash(doc),
+    }));
+  }
+  persist.acceptances();
+}
+const docsForRole = (role) => role === 'cleaner' ? ['terms', 'terms-provider', 'privacy'] : ['terms', 'privacy'];
 // Customer-facing payments ledger ("Бухгалтерия платежей"): top-ups, card
 // charges, LUMI+ fees and cashback. Amounts are minor units (grosz); positive =
 // credit to the wallet, negative = charged from the card.
@@ -537,7 +569,8 @@ function publicUser(u) {
   // ranking server-side and must never reach other users' payloads.
   // Payment internals (Stripe customer id, the card's payment-method id) never
   // leave the server — the client only needs the brand/last4 summary.
-  const { password, idDocument, pesel, nip, bankAccount, bankName, location, stripeCustomerId, card, ...rest } = u;
+  const { password, idDocument, pesel, nip, bankAccount, bankName, location, stripeCustomerId, card,
+    birthDate, address, country, taxResidence, vatStatus, ...rest } = u;
   const out = { ...rest, hasIdDocument: !!idDocument, hasBankDetails: !!bankAccount };
   if (card) out.card = { brand: card.brand, last4: card.last4, exp: card.exp };   // safe summary only
   return out;
@@ -995,6 +1028,7 @@ route('POST', '/api/register', async (req, res) => {
   };
   if (role === 'cleaner') {
     user.entityType = entityType;
+    applyTaxProfile(user, b);       // optional DAC7 identity fields at sign-up
     user.bio = bio.slice(0, 600);
     user.experienceYears = Math.max(0, Math.min(50, Number(b.experienceYears) || 0));
     user.teamSize = teamSize;                 // how many people work in this cleaner's team
@@ -1015,6 +1049,7 @@ route('POST', '/api/register', async (req, res) => {
   db.users[id] = user;
   persist.users();
   audit('user.created', id, id, { role });
+  if (role !== 'admin') recordAcceptance(user, req, docsForRole(role));
   mailer.queue(mailer.welcome(user));   // welcome email (no-op until SMTP is configured)
   // Give new customers a starter property so booking works in one tap.
   if (role === 'customer') {
@@ -1161,7 +1196,28 @@ route('POST', '/api/auth/apple/callback', async (req, res) => {
 route('GET', '/api/me', async (req, res) => {
   const user = authUser(req);
   if (!user) return send(res, 401, { error: 'Not authenticated.' });
-  return send(res, 200, { user: publicUser(user) });
+  const out = { user: publicUser(user), termsVersion: TERMS_VERSION,
+    termsOutdated: user.role === 'cleaner' && user.termsVersion !== TERMS_VERSION };
+  // The provider's own tax profile (DAC7 data) — visible to its owner only;
+  // publicUser strips these fields from every other payload.
+  if (user.role === 'cleaner') {
+    out.taxProfile = { birthDate: user.birthDate || null, address: user.address || null,
+      country: user.country || 'PL', taxResidence: user.taxResidence || 'PL', vatStatus: user.vatStatus || 'none' };
+  }
+  return send(res, 200, out);
+});
+
+// Re-acceptance of the current legal documents (after a version bump). Appends
+// new acceptance rows — the old ones are never touched — and unlocks new jobs.
+route('POST', '/api/me/accept-terms', async (req, res) => {
+  const user = authUser(req);
+  if (!user) return send(res, 401, { error: 'Not authenticated.' });
+  recordAcceptance(user, req, docsForRole(user.role));
+  user.termsVersion = TERMS_VERSION;
+  user.acceptedTermsAt = now();
+  persist.users();
+  audit('legal.reaccepted', user.id, user.id, { version: TERMS_VERSION });
+  send(res, 200, { ok: true, termsVersion: TERMS_VERSION });
 });
 
 // Editable profile bits. Images arrive as (client-downscaled) data URLs.
@@ -1181,9 +1237,22 @@ route('PATCH', '/api/me', async (req, res) => {
   }
   if (typeof b.hasCar === 'boolean') user.hasCar = b.hasCar;
   if (typeof b.name === 'string' && b.name.trim()) user.name = b.name.trim().slice(0, 60);
+  // Provider tax profile (DAC7 §6) — optional, owner-editable, admin-visible,
+  // stripped from every public payload by publicUser.
+  if (user.role === 'cleaner') applyTaxProfile(user, b);
   persist.users();
   send(res, 200, { user: publicUser(user) });
 });
+// The DAC7 identity fields a marketplace must be able to report per provider.
+// Validation is lenient (data may arrive gradually); the DAC7 export marks
+// providers whose profile is still incomplete instead of blocking them here.
+function applyTaxProfile(user, b) {
+  if (typeof b.birthDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(b.birthDate)) user.birthDate = b.birthDate;
+  if (typeof b.address === 'string') user.address = b.address.trim().slice(0, 200);
+  if (typeof b.country === 'string' && /^[A-Za-z]{2}$/.test(b.country.trim())) user.country = b.country.trim().toUpperCase();
+  if (typeof b.taxResidence === 'string' && /^[A-Za-z]{2}$/.test(b.taxResidence.trim())) user.taxResidence = b.taxResidence.trim().toUpperCase();
+  if (b.vatStatus === 'none' || b.vatStatus === 'vat') user.vatStatus = b.vatStatus;
+}
 route('POST', '/api/me/avatar', async (req, res) => {
   const user = authUser(req);
   if (!user) return send(res, 401, { error: 'Not authenticated.' });
@@ -2455,6 +2524,7 @@ route('POST', '/api/bookings', async (req, res) => {
       locationPrecise: !!(validLoc(b.location) || (prop && validLoc(prop.location))),
       invitedCleanerId: null, arriveBy: null, enrouteAt: null, etaMinutes: null, track: null,
       price: gPrice, payout: gPrice - gCommission, commission: gCommission, plusDiscount: false,
+      vatRate: getSettings().vatRate,   // tax snapshot, same as the cleaning path
       currency: gEst.currency, durationHours: Math.round((gEst.durationMin / 60) * 10) / 10,
       // Customer-safe breakdown for the receipt & order card (no commission inside).
       garden: {
@@ -2504,6 +2574,10 @@ route('POST', '/api/bookings', async (req, res) => {
   const id = uid('b_');
   const booking = {
     id,
+    // Tax snapshot: the VAT rate in force when the order was created. Receipts
+    // and accounting exports read THIS, so changing the setting later never
+    // recomputes history (§VAT: rates are stored per transaction).
+    vatRate: getSettings().vatRate,
     customerId: user.id,
     propertyId: prop ? prop.id : null,
     cleanerId: null,
@@ -2980,6 +3054,12 @@ route('POST', '/api/bookings/:id/accept', async (req, res, params) => {
   if (!user || user.role !== 'cleaner') return send(res, 403, { error: 'Cleaners only.' });
   if (!user.verified) return send(res, 403, { error: 'Your account is pending verification.' });
   if (user.investigationSince) return send(res, 403, { error: 'Приём заказов приостановлен на время разбирательства по инциденту.', code: 'UNDER_INVESTIGATION' });
+  // A materially new version of the provider agreement must be accepted before
+  // taking NEW jobs (running jobs are untouched). The client shows the document
+  // and calls /api/me/accept-terms.
+  if (user.termsVersion !== TERMS_VERSION) {
+    return send(res, 409, { error: 'Обновлён договор исполнителя — примите новую версию, чтобы брать заказы.', code: 'TERMS_REACCEPT_REQUIRED' });
+  }
   const bk = db.bookings[params.id];
   if (!bk) return send(res, 404, { error: 'Booking not found.' });
   if (bk.status !== 'searching') return send(res, 409, { error: 'This job is no longer available.' });
@@ -3538,11 +3618,14 @@ function buildReceipt(bk, viewer) {
       return { label: def.label, qty, unit: def.unit || null, type: def.type,
         amount: def.type === 'percent' ? null : def.price * qty, percent: def.percent || null };
     });
-  // The receipt is a Polish commercial document: it always carries the seller's
-  // requisites, and the VAT split is shown to the CUSTOMER too — «w tym VAT» is
-  // what a Polish receipt is expected to say. The split is informational and
-  // reveals nothing about the commission.
-  const netExVat = Math.round(bk.price / 1.23);
+  // The receipt is a Polish commercial document, and a MARKETPLACE one: the
+  // service is rendered by the independent Wykonawca, LUMI (BESTWAY PLUS) is
+  // the intermediary that took the payment. Both parties appear, and the VAT
+  // split uses the rate snapshotted on the booking — never today's setting.
+  // The split is informational and reveals nothing about the commission.
+  const vatRate = bk.vatRate != null ? bk.vatRate : 0.23;   // legacy orders predate the snapshot
+  const netExVat = Math.round(bk.price / (1 + vatRate));
+  const prov = bk.cleanerId ? db.users[bk.cleanerId] : null;
   const base = {
     receiptNo: 'LUMI-' + String(bk.id).replace(/^b_/, '').slice(0, 8).toUpperCase(),
     bookingId: bk.id, issuedAt: completedAt, paidAt: completedAt,
@@ -3552,12 +3635,19 @@ function buildReceipt(bk, viewer) {
     currency: bk.currency, plus: !!bk.plusDiscount,
     paidVia: bk.paidVia || (bk.paid ? 'card' : null),
     customerName: (db.users[bk.customerId] || {}).name || null,
-    cleanerName: bk.cleanerId ? (db.users[bk.cleanerId] || {}).name : null,
+    cleanerName: prov ? prov.name : null,
+    vatRate,
+    // The party that actually rendered the service — the independent Wykonawca.
+    provider: prov ? { name: prov.name, entityType: prov.entityType || 'individual',
+      companyName: prov.entityType === 'company' ? (prov.companyName || null) : null } : null,
+    // LUMI's own requisites — the platform is the intermediary, not the seller
+    // of the service itself; the UI labels this block accordingly.
     seller: {
       name: 'BESTWAY PLUS Sp. z o.o.',
       address: 'ul. Zajączkowska 44, 51-180 Wrocław, Polska',
       nip: '8952277581', krs: '0001125792', regon: '529604122',
       email: SUPPORT_EMAIL, site: 'lumi24.pl',
+      role: 'intermediary',
     },
   };
   if (viewer.role === 'cleaner') {
@@ -3567,7 +3657,8 @@ function buildReceipt(bk, viewer) {
   if (viewer.role === 'admin') {
     return { ...base, kind: 'admin', items, total: bk.price, payout: bk.payout,
       commission: bk.commission, platformRevenue: bk.commission, netExVat, vat: bk.price - netExVat,
-      commissionRate: Math.round(getSettings().commissionRate * 100) };
+      // Derived from the booking itself — today's setting must not relabel history.
+      commissionRate: bk.price ? Math.round(bk.commission / bk.price * 100) : null };
   }
   // Customer receipt — itemized, total paid, NO commission/payout.
   return { ...base, kind: 'customer', items, total: bk.price, netExVat, vat: bk.price - netExVat };
@@ -4020,6 +4111,12 @@ route('GET', '/api/admin/users/:id', async (req, res, params) => {
       companyName: u.companyName || null, nip: u.nip || null,   // admin-only
       pesel: u.pesel || null,                                   // admin-only
       bankAccount: u.bankAccount || null, bankName: u.bankName || null,  // admin-only
+      // DAC7 tax profile + the legal acceptance trail (admin-only)
+      birthDate: u.birthDate || null, address: u.address || null,
+      country: u.country || null, taxResidence: u.taxResidence || null, vatStatus: u.vatStatus || null,
+      termsVersion: u.termsVersion || null, acceptedTermsAt: u.acceptedTermsAt || null,
+      acceptances: db.acceptances.filter((a) => a.userId === u.id)
+        .map(({ id, doc, version, at, ip, userAgent, docSha256 }) => ({ id, doc, version, at, ip, userAgent, docSha256 })),
       avatar: u.avatar || null,
       idDocument: u.idDocument || null,          // admin-only
       createdAt: u.createdAt,
@@ -4117,6 +4214,112 @@ route('POST', '/api/admin/payouts/settle', async (req, res) => {
   }
   persist.users();
   send(res, 200, { settled, total, blocked, blockedCount: blocked.length });
+});
+
+// Manual finance corrections (chargeback from the PSP, goodwill adjustment).
+// Never edits history: each correction is a NEW immutable ledger row, audited,
+// and idempotent via the caller-supplied key (retrying a submit is a no-op).
+route('POST', '/api/admin/finance/adjust', async (req, res) => {
+  const admin = requireCap(req, res, 'payouts.manage'); if (!admin) return;
+  const b = await readBody(req);
+  const type = b.type === 'chargeback' ? 'chargeback' : 'adjustment';
+  const amountMinor = Math.round(Number(b.amountMinor));
+  const reason = String(b.reason || '').trim().slice(0, 300);
+  if (!Number.isFinite(amountMinor) || amountMinor === 0) return send(res, 400, { error: 'Укажите сумму в грошах (не ноль).', code: 'AMOUNT_REQUIRED' });
+  if (reason.length < 5) return send(res, 400, { error: 'Укажите причину корректировки (минимум 5 символов).', code: 'REASON_REQUIRED' });
+  if (b.bookingId && !db.bookings[b.bookingId]) return send(res, 404, { error: 'Booking not found.' });
+  const key = 'adjust:' + (String(b.key || '').slice(0, 80) || crypto.randomBytes(8).toString('hex'));
+  const entry = ledger.record({ type, bookingId: b.bookingId || null, amountMinor,
+    currency: CURRENCY, actor: admin.id, reason }, key);
+  audit('finance.adjusted', admin.id, b.bookingId || null, { type, amountMinor, reason });
+  send(res, 200, { entry: { id: entry.id, type: entry.type, amountMinor: entry.amountMinor, at: entry.at } });
+});
+
+// Accounting export (CSV): one row per order that carries money, with the
+// marketplace split spelled out — GMV is the client's payment, LUMI's own
+// income is only the commission, VAT uses each order's snapshotted rate.
+const csvCell = (v) => { const s = v == null ? '' : String(v); return /[",;\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+const zl = (m) => (m / 100).toFixed(2);
+route('GET', '/api/admin/export/accounting.csv', async (req, res) => {
+  const admin = requireCap(req, res, 'payments.view'); if (!admin) return;
+  const st = getSettings();
+  const rows = [['order_id', 'document_no', 'payment_id', 'date', 'status', 'client_payment', 'contractor_amount',
+    'lumi_commission_gross', 'vat_rate', 'vat_on_commission', 'lumi_commission_net', 'psp_fee_est',
+    'refund', 'currency', 'contractor', 'contractor_tin', 'needs_review']];
+  const bookings = Object.values(db.bookings)
+    .filter((b) => b.paid || b.status === 'completed' || b.status === 'cancelled')
+    .sort((a, b) => a.createdAt - b.createdAt);
+  for (const bk of bookings) {
+    const grossMinor = Math.round(bk.price * 100);
+    const commissionMinor = Math.round(bk.commission * 100);
+    const payoutMinor = grossMinor - commissionMinor;
+    // Legacy orders predate the per-order VAT snapshot: they are exported with
+    // the historical 23% and flagged for review, never silently backfilled.
+    const legacyVat = bk.vatRate == null;
+    const vatRate = legacyVat ? 0.23 : bk.vatRate;
+    const commissionNetMinor = Math.round(commissionMinor / (1 + vatRate));
+    const vatMinor = commissionMinor - commissionNetMinor;
+    const pspMinor = Math.round(grossMinor * st.stripeFeeRate) + st.stripeFeeFixedMinor;
+    const refundMinor = ledger.forBooking(bk.id).filter((e) => e.type === 'refund' || e.type === 'chargeback')
+      .reduce((s, e) => s + Math.abs(e.amountMinor), 0);
+    const prov = bk.cleanerId ? db.users[bk.cleanerId] : null;
+    rows.push([bk.id, 'LUMI-' + String(bk.id).replace(/^b_/, '').slice(0, 8).toUpperCase(),
+      bk.stripePaymentIntentId || bk.paymentSessionId || '', new Date(bk.createdAt).toISOString().slice(0, 10),
+      bk.status, zl(grossMinor), zl(payoutMinor), zl(commissionMinor), vatRate, zl(vatMinor), zl(commissionNetMinor),
+      zl(pspMinor), refundMinor ? zl(refundMinor) : '0.00', bk.currency || CURRENCY,
+      prov ? prov.name : '', prov ? (prov.entityType === 'company' ? prov.nip || '' : prov.pesel || '') : '',
+      legacyVat ? 'legacy_vat_rate' : '']);
+  }
+  audit('finance.exported', admin.id, null, { rows: rows.length - 1, kind: 'accounting' });
+  res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8',
+    'Content-Disposition': 'attachment; filename="lumi-accounting.csv"' });
+  res.end('﻿' + rows.map((r) => r.map(csvCell).join(';')).join('\n'));
+});
+
+// DAC7 export (CSV): what the platform must be able to report per provider —
+// identity, tax residence, account, and quarterly totals of transactions,
+// consideration (the provider's money) and platform fees. Missing identity
+// fields are LISTED per row so compliance can chase them, not guessed.
+route('GET', '/api/admin/export/dac7.csv', async (req, res) => {
+  const admin = requireCap(req, res, 'payments.view'); if (!admin) return;
+  const year = Number((req.url.split('year=')[1] || '').slice(0, 4)) || new Date().getFullYear();
+  const rows = [['provider_id', 'name', 'entity_type', 'company_name', 'nip', 'pesel', 'birth_date', 'address',
+    'country', 'tax_residence', 'financial_account', 'year',
+    'q1_tx', 'q1_consideration', 'q1_fees', 'q2_tx', 'q2_consideration', 'q2_fees',
+    'q3_tx', 'q3_consideration', 'q3_fees', 'q4_tx', 'q4_consideration', 'q4_fees',
+    'total_tx', 'total_consideration', 'total_fees', 'missing_fields']];
+  const completed = Object.values(db.bookings).filter((b) => b.status === 'completed' && b.cleanerId);
+  const byProvider = new Map();
+  for (const bk of completed) {
+    const at = (bk.timeline.find((t) => t.status === 'completed') || {}).at || bk.updatedAt;
+    const d = new Date(at);
+    if (d.getFullYear() !== year) continue;
+    const q = Math.floor(d.getMonth() / 3);   // 0..3
+    const agg = byProvider.get(bk.cleanerId) || [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]];
+    agg[q][0] += 1;
+    agg[q][1] += Math.round(bk.payout * 100);
+    agg[q][2] += Math.round(bk.commission * 100);
+    byProvider.set(bk.cleanerId, agg);
+  }
+  for (const [pid, agg] of byProvider) {
+    const u = db.users[pid]; if (!u) continue;
+    const company = u.entityType === 'company';
+    const missing = [];
+    if (!company && !u.birthDate) missing.push('birth_date');
+    if (!u.address) missing.push('address');
+    if (company ? !u.nip : !u.pesel) missing.push(company ? 'nip' : 'pesel');
+    if (!u.bankAccount) missing.push('financial_account');
+    const tot = agg.reduce((s, q) => [s[0] + q[0], s[1] + q[1], s[2] + q[2]], [0, 0, 0]);
+    rows.push([u.id, u.name, u.entityType || 'individual', company ? (u.companyName || '') : '',
+      u.nip || '', company ? '' : (u.pesel || ''), u.birthDate || '', u.address || '',
+      u.country || 'PL', u.taxResidence || 'PL', u.bankAccount || '', year,
+      ...agg.flatMap((q) => [q[0], zl(q[1]), zl(q[2])]),
+      tot[0], zl(tot[1]), zl(tot[2]), missing.join('|')]);
+  }
+  audit('finance.exported', admin.id, null, { rows: rows.length - 1, kind: 'dac7', year });
+  res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8',
+    'Content-Disposition': `attachment; filename="lumi-dac7-${year}.csv"` });
+  res.end('﻿' + rows.map((r) => r.map(csvCell).join(';')).join('\n'));
 });
 
 // ── Platform settings (super-admin): open cities, economy, site announcement ──
@@ -4712,6 +4915,9 @@ function seed() {
       createdAt: now(), wallet: 0, rating: role === 'cleaner' ? 4.9 : null,
       jobsDone: 0, verified: role !== 'cleaner' ? true : true, city: HOME, online: role === 'cleaner',
       subscription: null,
+      // Demo accounts are born with the current agreement accepted — the
+      // re-acceptance gate is for real providers after a version bump.
+      acceptedTermsAt: now(), termsVersion: TERMS_VERSION,
       ...extra,
     };
     return id;

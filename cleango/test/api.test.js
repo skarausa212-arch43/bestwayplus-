@@ -101,7 +101,7 @@ async function main() {
       const withConsent = await req('POST', '/api/register', { body: { name: 'With Consent', email: 'withconsent@x.pl', password: 'averylongpassword', phone: '600700800', role: 'customer', city: 'Warsaw', acceptedTerms: true } });
       assert.strictEqual(withConsent.status, 200);
       const me = await req('GET', '/api/me', { token: withConsent.json.token });
-      assert.strictEqual(me.json.user.termsVersion, '1.1', 'terms version recorded on consent');
+      assert.strictEqual(me.json.user.termsVersion, '1.2', 'terms version recorded on consent');
     });
     await ok('login works and rejects bad credentials generically', async () => {
       const bad = await req('POST', '/api/login', { body: { email: 'testcust@x.pl', password: 'wrong-password!!' } });
@@ -339,7 +339,7 @@ async function main() {
       assert.ok(w && w.consentAt, 'express consent stored on the booking');
       assert.strictEqual(w.earlyStart, true);
       assert.ok(w.until > Date.now() + 13 * 86400000, '14-day deadline recorded');
-      assert.strictEqual(w.termsVersion, '1.1', 'consent pinned to the terms version in force');
+      assert.strictEqual(w.termsVersion, '1.2', 'consent pinned to the terms version in force');
       // Scheduled beyond the window: the statutory period runs out before the
       // visit, so no early-start consent is needed and none is recorded.
       const far = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 16);
@@ -1038,6 +1038,146 @@ async function main() {
       assert.ok(locs.every((u) => /^https?:\/\//.test(u)), 'relative <loc> present');
       // the investor deck must never be advertised to crawlers
       assert.ok(!r.text.includes('investors.html'), 'investor page listed in sitemap');
+    });
+
+    // ─────────── Marketplace model: split, VAT snapshot, agreements ───────────
+    let mpBookingId = null;
+    await ok('маркетплейс: заказ 300 zł делится на 255 zł исполнителю + 45 zł комиссии LUMI', async () => {
+      // Find a real configuration the price engine values at exactly 300 zł —
+      // the split must be proven through the production code path, not arithmetic.
+      const cat = await req('GET', '/api/catalog', { token: customerTok });
+      const rawSvc = cat.json.services || {};
+      const services = Array.isArray(rawSvc) ? rawSvc.map((s) => s.key || s.id).filter(Boolean) : Object.keys(rawSvc);
+      let found = null;
+      outer:
+      for (const service of services.length ? services : ['standard', 'general']) {
+        for (let rooms = 1; rooms <= 8 && !found; rooms++) {
+          for (let baths = 0; baths <= 4; baths++) {
+            const est = await req('POST', '/api/estimate', { token: customerTok, body: { service, rooms, baths, city: 'Warsaw' } });
+            if (est.status === 200 && est.json.estimate && est.json.estimate.total === 300) { found = { service, rooms, baths }; break outer; }
+          }
+        }
+      }
+      // The window calculator prices linearly per window — sweep it too.
+      if (!found) {
+        for (const windowSide of ['inside', 'outside', 'both']) {
+          for (let windows = 1; windows <= 40 && !found; windows++) {
+            const est = await req('POST', '/api/estimate', { token: customerTok, body: { service: 'windows', windows, windowSide, city: 'Warsaw' } });
+            if (est.status === 200 && est.json.estimate && est.json.estimate.total === 300) found = { service: 'windows', windows, windowSide };
+          }
+        }
+      }
+      assert.ok(found, 'no 300-zł configuration found in the price engine');
+      const bk = await req('POST', '/api/bookings', { token: customerTok,
+        body: { startNow: true, address: 'ul. Marketplace 300', city: 'Warsaw', ...found } });
+      assert.strictEqual(bk.status, 200, JSON.stringify(bk.json));
+      mpBookingId = bk.json.booking.id;
+      assert.strictEqual(bk.json.booking.price, 300, 'GMV must be 300');
+      const acc = await req('POST', `/api/bookings/${mpBookingId}/accept`, { token: cleanerTok });
+      assert.strictEqual(acc.status, 200, 'accept: ' + JSON.stringify(acc.json));
+      await req('POST', `/api/bookings/${mpBookingId}/enroute`, { token: cleanerTok });
+      await req('POST', `/api/bookings/${mpBookingId}/photos`, { token: cleanerTok, body: { phase: 'before', photo: IMG } });
+      const started = await req('POST', `/api/bookings/${mpBookingId}/status`, { token: cleanerTok, body: { status: 'in_progress' } });
+      assert.strictEqual(started.status, 200, 'start: ' + JSON.stringify(started.json));
+      await req('POST', `/api/bookings/${mpBookingId}/photos`, { token: cleanerTok, body: { phase: 'after', photo: IMG } });
+      const done = await req('POST', `/api/bookings/${mpBookingId}/status`, { token: cleanerTok, body: { status: 'completed' } });
+      assert.strictEqual(done.status, 200, 'complete: ' + JSON.stringify(done.json));
+      const rc = await req('GET', `/api/bookings/${mpBookingId}/receipt`, { token: await adminToken() });
+      assert.strictEqual(rc.json.receipt.total, 300, 'GMV / wartość transakcji');
+      assert.strictEqual(rc.json.receipt.commission, 45, 'prowizja LUMI = 15%');
+      assert.strictEqual(rc.json.receipt.payout, 255, 'środki należne Wykonawcy');
+      assert.strictEqual(rc.json.receipt.payout + rc.json.receipt.commission, rc.json.receipt.total, 'split covers the full payment');
+    });
+    await ok('чек — документ маркетплейса: исполнитель назван, LUMI помечен посредником, VAT из снапшота', async () => {
+      const rc = (await req('GET', `/api/bookings/${mpBookingId}/receipt`, { token: customerTok })).json.receipt;
+      assert.strictEqual(rc.seller.role, 'intermediary', 'платформа — посредник, не продавец услуги');
+      assert.ok(rc.provider && rc.provider.name, 'независимый исполнитель назван на чеке');
+      assert.strictEqual(rc.vatRate, 0.23, 'ставка VAT снапшотится на заказ');
+      assert.ok(rc.commission === undefined && rc.payout === undefined, 'комиссия не видна клиенту');
+    });
+    await ok('бухгалтерский CSV: 300 → 255 + 45; VAT в комиссии 45 → 36.59 нетто + 8.41 VAT', async () => {
+      const r = await req('GET', '/api/admin/export/accounting.csv', { token: await adminToken() });
+      assert.strictEqual(r.status, 200);
+      assert.ok(/text\/csv/.test(r.headers['content-type']));
+      const row = r.text.split('\n').find((l) => l.startsWith(mpBookingId));
+      assert.ok(row, 'booking row present in the export');
+      const cols = row.split(';');
+      const head = r.text.split('\n')[0].replace(/^﻿/, '').split(';');
+      const col = (name) => cols[head.indexOf(name)];
+      assert.strictEqual(col('client_payment'), '300.00');
+      assert.strictEqual(col('contractor_amount'), '255.00');
+      assert.strictEqual(col('lumi_commission_gross'), '45.00');
+      assert.strictEqual(col('vat_rate'), '0.23');
+      assert.strictEqual(col('lumi_commission_net'), '36.59');    // 4500 / 1.23 = 3659 gr
+      assert.strictEqual(col('vat_on_commission'), '8.41');       // 4500 − 3659 = 841 gr
+      assert.strictEqual(col('needs_review'), '', 'fresh order carries its own VAT snapshot');
+      const noAuth = await req('GET', '/api/admin/export/accounting.csv', { token: customerTok });
+      assert.strictEqual(noAuth.status, 403);
+    });
+    await ok('acceptance-история: кто, что, какая версия, когда, IP, user-agent, hash документа', async () => {
+      const reg = await req('POST', '/api/register', { body: { name: 'Legal Cleaner', email: 'legal@x.pl', password: 'averylongpassword',
+        phone: '+48555666777', role: 'cleaner', city: 'Warsaw', acceptedTerms: true, entityType: 'individual', bio: 'Двадцать символов о себе, честно.',
+        teamSize: 1, avatar: IMG, idDocument: IMG, pesel: '44051401359', bankName: 'mBank', bankAccount: 'PL27114020040000300201355387' } });
+      assert.strictEqual(reg.status, 200, JSON.stringify(reg.json));
+      const uid2 = reg.json.user.id;
+      const prof = (await req('GET', `/api/admin/users/${uid2}`, { token: await adminToken() })).json.profile;
+      const docs = prof.acceptances.map((a) => a.doc).sort();
+      assert.deepStrictEqual(docs, ['privacy', 'terms', 'terms-provider'], 'cleaner accepts all three documents');
+      for (const a of prof.acceptances) {
+        assert.ok(a.at > 0 && typeof a.ip === 'string' && typeof a.userAgent === 'string');
+        assert.match(a.docSha256, /^[0-9a-f]{64}$/, 'snapshot hash of the exact document text');
+        assert.ok(a.version, 'version recorded');
+      }
+      // Re-acceptance appends rows — history is never rewritten.
+      const before = prof.acceptances.length;
+      const re = await req('POST', '/api/me/accept-terms', { token: reg.json.token });
+      assert.strictEqual(re.status, 200);
+      const after = (await req('GET', `/api/admin/users/${uid2}`, { token: await adminToken() })).json.profile.acceptances.length;
+      assert.strictEqual(after, before + 3);
+      const me = (await req('GET', '/api/me', { token: reg.json.token })).json;
+      assert.strictEqual(me.termsOutdated, false);
+    });
+    await ok('ручные корректировки: chargeback идемпотентен, нулевая сумма отклоняется', async () => {
+      const adm = await adminToken();
+      const a1 = await req('POST', '/api/admin/finance/adjust', { token: adm,
+        body: { type: 'chargeback', bookingId: mpBookingId, amountMinor: -30000, reason: 'PSP chargeback test', key: 'cb-test-1' } });
+      assert.strictEqual(a1.status, 200);
+      const a2 = await req('POST', '/api/admin/finance/adjust', { token: adm,
+        body: { type: 'chargeback', bookingId: mpBookingId, amountMinor: -30000, reason: 'PSP chargeback test', key: 'cb-test-1' } });
+      assert.strictEqual(a2.json.entry.id, a1.json.entry.id, 'same key → same ledger row, no duplicate');
+      const bad = await req('POST', '/api/admin/finance/adjust', { token: adm, body: { type: 'adjustment', amountMinor: 0, reason: 'nothing' } });
+      assert.strictEqual(bad.status, 400);
+      // The chargeback now shows in the export's refund column.
+      const r = await req('GET', '/api/admin/export/accounting.csv', { token: adm });
+      const cols = r.text.split('\n').find((l) => l.startsWith(mpBookingId)).split(';');
+      const head = r.text.split('\n')[0].replace(/^﻿/, '').split(';');
+      assert.strictEqual(cols[head.indexOf('refund')], '300.00');
+    });
+    await ok('DAC7: экспорт по исполнителям — кварталы, суммы, недостающие данные помечены', async () => {
+      const adm = await adminToken();
+      const year = new Date().getFullYear();
+      const r = await req('GET', `/api/admin/export/dac7.csv?year=${year}`, { token: adm });
+      assert.strictEqual(r.status, 200);
+      const head = r.text.split('\n')[0].replace(/^﻿/, '').split(';');
+      for (const c of ['tax_residence', 'financial_account', 'total_tx', 'total_consideration', 'total_fees', 'missing_fields']) {
+        assert.ok(head.includes(c), 'missing DAC7 column ' + c);
+      }
+      const lines = r.text.split('\n').slice(1).filter(Boolean);
+      assert.ok(lines.length >= 1, 'at least our test provider is reportable');
+      const myId = (await req('GET', '/api/me', { token: cleanerTok })).json.user.id;
+      const mine = lines.find((l) => l.startsWith(myId));
+      assert.ok(mine, 'our provider appears in the report');
+      const cell = (row, name) => row.split(';')[head.indexOf(name)];
+      assert.ok(Number(cell(mine, 'total_consideration')) >= 255, 'the 300-zł order contributes its 255 to consideration');
+      assert.ok(Number(cell(mine, 'total_fees')) >= 45, 'the 45-zł commission is reported as platform fees');
+      assert.ok(Number(cell(mine, 'total_tx')) >= 1, 'transaction count aggregated');
+      assert.ok(cell(mine, 'missing_fields').includes('birth_date'), 'missing birth date is flagged, not guessed');
+      // The provider fills the tax profile → the flag clears.
+      await req('PATCH', '/api/me', { token: cleanerTok, body: { birthDate: '1990-04-14', address: 'ul. Kwiatowa 5, Warszawa', taxResidence: 'PL' } });
+      const r2 = await req('GET', `/api/admin/export/dac7.csv?year=${year}`, { token: adm });
+      const mine2 = r2.text.split('\n').find((l) => l.startsWith(myId));
+      assert.ok(!cell(mine2, 'missing_fields').includes('birth_date'), 'flag cleared after profile completion');
+      assert.ok(mine2.includes('1990-04-14'), 'birth date exported');
     });
 
     console.log(`\n${passed} API/integration checks passed.`);

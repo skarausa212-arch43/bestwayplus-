@@ -1626,7 +1626,19 @@ Object.assign(TR.pl,{"или":"lub","Продолжить с Google":"Kontynuuj 
 Object.assign(TR.en,{"или":"or","Продолжить с Google":"Continue with Google","Продолжить с Apple":"Continue with Apple"});
 Object.assign(TR.uk,{"или":"або","Продолжить с Google":"Продовжити з Google","Продолжить с Apple":"Продовжити з Apple"});
 /* registration consent */
-Object.assign(TR.pl,{"Я принимаю":"Akceptuję","Договор исполнителя":"Umowę wykonawcy","Условия использования":"Regulamin","Политику конфиденциальности":"Politykę prywatności","и":"oraz","Отметьте согласие с условиями, чтобы продолжить":"Zaznacz zgodę na warunki, aby kontynuować"});
+Object.assign(TR.pl,{"Я принимаю":"Akceptuję","Договор исполнителя":"Umowę wykonawcy","Условия использования":"Regulamin","Политику конфиденциальности":"Politykę prywatności","и":"oraz","Отметьте согласие с условиями, чтобы продолжить":"Zaznacz zgodę na warunki, aby kontynuować",
+  "Подтверждаю, что действую как независимый исполнитель и самостоятельно отвечаю за свои налоги и публично-правовые обязанности.":"Potwierdzam, że działam jako niezależny Wykonawca i samodzielnie odpowiadam za własne obowiązki podatkowe i publicznoprawne.",
+  "Обновлён договор исполнителя":"Zaktualizowano umowę wykonawcy",
+  "Мы обновили условия сотрудничества. Чтобы принимать новые заказы, примите новую версию договора.":"Zaktualizowaliśmy warunki współpracy. Aby przyjmować nowe zlecenia, zaakceptuj nową wersję umowy.",
+  "Открыть договор":"Otwórz umowę","Подтвердить":"Potwierdź","Принято. Можно брать заказы!":"Przyjęto. Możesz brać zlecenia!"});
+Object.assign(TR.en,{"Подтверждаю, что действую как независимый исполнитель и самостоятельно отвечаю за свои налоги и публично-правовые обязанности.":"I confirm that I act as an independent contractor and am solely responsible for my own tax and public-law obligations.",
+  "Обновлён договор исполнителя":"The provider agreement has been updated",
+  "Мы обновили условия сотрудничества. Чтобы принимать новые заказы, примите новую версию договора.":"We have updated the terms of cooperation. To take new jobs, please accept the new version of the agreement.",
+  "Открыть договор":"Open the agreement","Подтвердить":"Confirm","Принято. Можно брать заказы!":"Accepted. You can take jobs!"});
+Object.assign(TR.uk,{"Подтверждаю, что действую как независимый исполнитель и самостоятельно отвечаю за свои налоги и публично-правовые обязанности.":"Підтверджую, що дію як незалежний Виконавець і самостійно відповідаю за власні податкові та публічно-правові обов’язки.",
+  "Обновлён договор исполнителя":"Договір із виконавцем оновлено",
+  "Мы обновили условия сотрудничества. Чтобы принимать новые заказы, примите новую версию договора.":"Ми оновили умови співпраці. Щоб приймати нові замовлення, прийміть нову версію договору.",
+  "Открыть договор":"Відкрити договір","Подтвердить":"Підтвердити","Принято. Можно брать заказы!":"Прийнято. Можна брати замовлення!"});
 Object.assign(TR.en,{"Я принимаю":"I accept the","Договор исполнителя":"Provider Agreement","Условия использования":"Terms of Service","Политику конфиденциальности":"Privacy Policy","и":"and","Отметьте согласие с условиями, чтобы продолжить":"Please accept the terms to continue"});
 Object.assign(TR.uk,{"Я принимаю":"Я приймаю","Договор исполнителя":"Договір виконавця","Условия использования":"Умови використання","Политику конфиденциальности":"Політику конфіденційності","и":"та","Отметьте согласие с условиями, чтобы продолжить":"Позначте згоду з умовами, щоб продовжити"});
 /* wallet cashback label (customer balance is accumulated cashback) */
@@ -2801,7 +2813,7 @@ function renderAuth(){
         <label class="field"><span>Пароль</span><input class="input" type="password" name="password" placeholder="${mode==='register'?'минимум 12 символов':'ваш пароль'}" minlength="${mode==='register'?12:1}" required>${mode==='register'?'<span class="hint" style="margin-top:6px;display:block">Не меньше 12 символов. Можно фразу — так надёжнее.</span>':''}</label>
         ${mode==='register'?`<label class="consent" style="display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:13.5px;line-height:1.5;cursor:pointer">
           <input type="checkbox" name="acceptedTerms" id="regConsent" required style="margin-top:2px;width:18px;height:18px;flex:0 0 auto;accent-color:#14C871">
-          <span>${t('Я принимаю')} ${role==='cleaner'?`<a href="/terms-provider.html?lang=${state.lang}" target="_blank" rel="noopener">${t('Договор исполнителя')}</a>, `:''}<a href="/terms.html?lang=${state.lang}" target="_blank" rel="noopener">${t('Условия использования')}</a> ${t('и')} <a href="/privacy.html?lang=${state.lang}" target="_blank" rel="noopener">${t('Политику конфиденциальности')}</a>.</span>
+          <span>${t('Я принимаю')} ${role==='cleaner'?`<a href="/terms-provider.html?lang=${state.lang}" target="_blank" rel="noopener">${t('Договор исполнителя')}</a>, `:''}<a href="/terms.html?lang=${state.lang}" target="_blank" rel="noopener">${t('Условия использования')}</a> ${t('и')} <a href="/privacy.html?lang=${state.lang}" target="_blank" rel="noopener">${t('Политику конфиденциальности')}</a>.${role==='cleaner'?` ${t('Подтверждаю, что действую как независимый исполнитель и самостоятельно отвечаю за свои налоги и публично-правовые обязанности.')}`:''}</span>
         </label>`:''}
         <button class="btn block" type="submit" style="margin-top:6px">${mode==='login'?'Войти':'Создать аккаунт'} ${I.arrow}</button>
         ${mode==='login'?'<div style="text-align:center;margin-top:12px"><button type="button" class="linklike" data-forgot>Забыли пароль?</button></div>':''}
@@ -5469,7 +5481,10 @@ function renderActions(b,ctx){
   bind('acceptBtn',async()=>{try{const r=await api('/api/bookings/'+b.id+'/accept','POST');
     if(r.assigned){confetti();toast('Заказ ваш!');}else{toast('Отклик отправлен — ждём выбора клиента');}
     renderBookingDetail(b.id);
-  }catch(e){toast(e.message,true);}});
+  }catch(e){
+    if(e.code==='TERMS_REACCEPT_REQUIRED'){openReacceptTerms(()=>renderBookingDetail(b.id));return;}
+    toast(e.message,true);
+  }});
   bind('enrouteBtn',async()=>{try{await api('/api/bookings/'+b.id+'/enroute','POST');toast('Клиент видит, что вы в пути');renderBookingDetail(b.id);}catch(e){toast(e.message,true);}});
   bind('startBtn',()=>transition(b.id,'in_progress'));
   bind('completeBtn',()=>transition(b.id,'completed'));
@@ -5479,6 +5494,27 @@ function renderActions(b,ctx){
   bind('reviewBtn',()=>openReview(b.id));
   const up=(id,phase)=>{const e=$('#'+id);if(e)e.onclick=()=>uploadPhoto(b.id,phase);};
   up('upBefore','before');up('upAfter','after');
+}
+// A materially new agreement version blocks NEW jobs server-side; this modal
+// shows the document and records the re-acceptance (appended to the history).
+function openReacceptTerms(onDone){
+  const m=el(`<div class="modal"><div class="card pad">
+    <h3>${t('Обновлён договор исполнителя')}</h3>
+    <p class="muted" style="margin-top:8px">${t('Мы обновили условия сотрудничества. Чтобы принимать новые заказы, примите новую версию договора.')}</p>
+    <p style="margin-top:8px"><a href="/terms-provider.html?lang=${state.lang}" target="_blank" rel="noopener">${t('Открыть договор')}</a></p>
+    <label class="row" style="gap:10px;align-items:flex-start;margin-top:12px;cursor:pointer">
+      <input type="checkbox" id="reaccChk" style="margin-top:2px;width:18px;height:18px;flex:0 0 auto;accent-color:#14C871">
+      <span class="tiny">${t('Я принимаю')} <b>${t('Договор исполнителя')}</b>. ${t('Подтверждаю, что действую как независимый исполнитель и самостоятельно отвечаю за свои налоги и публично-правовые обязанности.')}</span>
+    </label>
+    <button class="btn block" id="reaccGo" style="margin-top:14px">${t('Подтвердить')}</button>
+  </div></div>`);
+  showModalNode(m);
+  const go=$('#reaccGo');
+  go.onclick=async()=>{
+    if(!$('#reaccChk').checked){toast(t('Отметьте согласие с условиями, чтобы продолжить'),true);return;}
+    try{ await api('/api/me/accept-terms','POST',{}); closeModal(); toast(t('Принято. Можно брать заказы!')); if(onDone)onDone(); }
+    catch(e){toast(e.message,true);}
+  };
 }
 const LIVE_STATUSES=['searching','accepted','on_the_way','in_progress'];
 async function refreshBookingDetail(){
@@ -5639,12 +5675,15 @@ const RC_PL={
   address:'Adres', client:'Klient', provider:'Wykonawca', payMethod:'Forma płatności',
   card:'Karta płatnicza', balance:'Saldo LUMI',
   itemsHead:'Wykonane usługi', base:'Usługa podstawowa',
-  total:'Razem zapłacono', inclVat:'w tym VAT 23%', net:'Netto',
+  total:'Razem zapłacono', net:'Netto',
   payout:'Do wypłaty', paidByClient:'Zapłacono przez klienta', commission:'Prowizja platformy',
   plusNote:'LUMI+: 5% wartości zamówienia wraca na saldo LUMI.',
   notFiscal:'Dokument nie jest paragonem fiskalnym.',
-  thanks:'Dziękujemy, że wybierasz LUMI', seller:'Sprzedawca',
+  thanks:'Dziękujemy, że wybierasz LUMI', seller:'Operator platformy (pośrednik)',
+  marketplace:'Usługę świadczy niezależny Wykonawca. LUMI (BESTWAY PLUS Sp. z o.o.) pośredniczy w rezerwacji, komunikacji i płatności.',
 };
+// The VAT line carries the rate snapshotted on the order, not today's setting.
+const rcVatLabel=(r)=>`w tym VAT ${Math.round((r.vatRate!=null?r.vatRate:0.23)*100)}%`;
 function svcLabelPl(l){
   // Keys are the SHORT names svcLabelRu() returns, plus the full labels as a
   // fallback for anything that skipped the shortener.
@@ -5670,19 +5709,23 @@ function rcData(r){
     [RC_PL.doneDate, `${rcDate(r.issuedAt)} · ${rcTime(r.issuedAt)}`],
     [RC_PL.address, r.address?`${r.address}, ${r.city||''}`:null],
     [RC_PL.client, r.kind!=='customer'?r.customerName:null],
-    [RC_PL.provider, r.kind!=='provider'?r.cleanerName:null],
+    // The independent service provider appears on EVERY receipt — the document
+    // is a marketplace one, so the party who rendered the service is named.
+    [RC_PL.provider, r.kind!=='provider'
+      ? (r.provider&&r.provider.companyName?`${r.cleanerName} · ${r.provider.companyName}`:r.cleanerName)
+      : null],
     [RC_PL.payMethod, r.kind==='customer'?(r.paidVia==='balance'?RC_PL.balance:RC_PL.card):null],
   ].filter(([,v])=>v);
   let totals=[],note='';
   if(r.kind==='customer'){
-    totals=[[RC_PL.total,money(r.total),'total'],[RC_PL.inclVat,money(r.vat),'sub'],[RC_PL.net,money(r.netExVat),'sub']];
-    note=r.plus?RC_PL.plusNote:'';
+    totals=[[RC_PL.total,money(r.total),'total'],[rcVatLabel(r),money(r.vat),'sub'],[RC_PL.net,money(r.netExVat),'sub']];
+    note=[r.plus?RC_PL.plusNote:'',RC_PL.marketplace].filter(Boolean).join(' ');
   }else if(r.kind==='provider'){
     totals=[[RC_PL.payout,money(r.payout),'total']];
   }else{
     totals=[[RC_PL.paidByClient,money(r.total),'total'],[RC_PL.payout,money(r.payout),''],
       [`${RC_PL.commission} (${r.commissionRate}%)`,money(r.commission),''],
-      [RC_PL.net,money(r.netExVat),'sub'],[RC_PL.inclVat,money(r.vat),'sub']];
+      [RC_PL.net,money(r.netExVat),'sub'],[rcVatLabel(r),money(r.vat),'sub']];
     note='Prowizja jest widoczna wyłącznie w rozliczeniu administratora.';
   }
   const title=r.kind==='admin'?RC_PL.adminTitle:r.kind==='provider'?RC_PL.providerTitle:RC_PL.customerTitle;

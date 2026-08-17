@@ -14,7 +14,7 @@ const crypto = require('crypto');
 
 const ENTRY_TYPES = new Set([
   'authorization', 'capture', 'refund', 'provider_payout', 'provider_settlement', 'tip',
-  'platform_revenue', 'cancellation_fee', 'adjustment',
+  'platform_revenue', 'cancellation_fee', 'adjustment', 'chargeback',
 ]);
 
 function createLedger({ load, persist } = {}) {
