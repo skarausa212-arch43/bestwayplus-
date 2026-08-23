@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="ru">
+<html lang="pl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LUMI — операционная система вашего дома</title>
-<meta name="description" content="LUMI — премиальная платформа бытовых услуг: уборка за минуты, честная цена до заказа, живое отслеживание исполнителя и умный дом.">
+<title>LUMI — sprzątanie i usługi domowe we Wrocławiu</title>
+<meta name="description" content="LUMI — usługi domowe we Wrocławiu: sprzątanie, mycie okien i ogród. Stała cena znana przed zamówieniem, sprawdzeni wykonawcy, płatność w aplikacji.">
 <style>
   :root{
     --p:#22C55E;--p600:#059669;--p050:#E7F9EF;
@@ -141,112 +141,113 @@
       LUMI
     </div>
     <nav class="nav-links">
-      <a href="#calc">Цена</a><a href="#how">Как это работает</a><a href="#features">Возможности</a><a href="#reviews">Отзывы</a>
+      <a href="#calc">Cena</a><a href="#how">Jak to działa</a><a href="#features">Możliwości</a><a href="#reviews">Dlaczego LUMI</a>
     </nav>
     <div class="hd-cta">
-      <button class="iconbtn" id="theme" title="Тема" aria-label="Сменить тему">🌙</button>
-      <a class="btn ghost" href="/">Войти</a>
-      <a class="btn" href="/">Начать</a>
+      <button class="iconbtn" id="theme" title="Motyw" aria-label="Zmień motyw">🌙</button>
+      <a class="btn ghost" href="/">Zaloguj się</a>
+      <a class="btn" href="/">Zamów</a>
     </div>
   </div></header>
 
   <section class="hero">
     <div class="hero-bg"></div><span class="hero-glow g1"></span><span class="hero-glow g2"></span>
     <div class="wrap">
-      <span class="eyebrow"><span class="stars">★★★★★</span> 4.9 · более 12 000 уборок</span>
-      <h1>Дом, который <span class="grad">заботится о себе</span></h1>
-      <p class="lede">Премиальные бытовые услуги: уборка за минуты, честная цена ещё до заказа,
-        живое отслеживание исполнителя и умный дом, который сам напоминает об обслуживании.</p>
+      <span class="eyebrow">Startujemy we Wrocławiu · nowa platforma usług domowych</span>
+      <h1>Dom, który <span class="grad">dba o siebie</span></h1>
+      <p class="lede">Usługi domowe we Wrocławiu: sprzątanie, mycie okien i ogród. Cenę znasz
+        przed zamówieniem, wykonawcę śledzisz na żywo, a dom sam przypomina o obsłudze.</p>
       <div class="hero-cta">
-        <a class="btn" href="/">Заказать уборку →</a>
-        <a class="btn ghost" href="#calc">Рассчитать цену</a>
+        <a class="btn" href="/">Zamów sprzątanie →</a>
+        <a class="btn ghost" href="#calc">Oblicz cenę</a>
       </div>
-      <div class="cities">Warszawa · Kraków · Wrocław · Poznań · Gdańsk · Łódź</div>
+      <div class="cities">Wrocław · kolejne miasta wkrótce</div>
     </div>
   </section>
 
   <!-- price calculator -->
   <div class="wrap"><div class="calc reveal" id="calc">
-    <h2>Узнайте цену за 10 секунд</h2>
-    <p class="sub">Честная AI-оценка — без регистрации и скрытых доплат.</p>
+    <h2>Poznaj cenę w 10 sekund</h2>
+    <p class="sub">Wycena bez rejestracji i bez ukrytych dopłat.</p>
     <div class="calc-grid">
       <div>
-        <div class="lbl">Тип уборки</div>
+        <div class="lbl">Rodzaj sprzątania</div>
         <div class="svc-pills" id="svc">
-          <button data-s="standard" class="on">Обычная</button>
-          <button data-s="deep">Генеральная</button>
-          <button data-s="moveout">После ремонта</button>
+          <button data-s="standard" class="on">Standardowe</button>
+          <button data-s="deep">Generalne</button>
+          <button data-s="moveout">Po remoncie</button>
         </div>
-        <div class="lbl">Параметры</div>
-        <div class="stepper"><div><div class="sv" id="roomsV">2</div><div class="sl">комнаты</div></div>
+        <div class="lbl">Parametry</div>
+        <div class="stepper"><div><div class="sv" id="roomsV">2</div><div class="sl">pokoje</div></div>
           <div style="display:flex;gap:8px"><button data-step="rooms" data-d="-1">−</button><button data-step="rooms" data-d="1">+</button></div></div>
-        <div class="stepper"><div><div class="sv" id="bathsV">1</div><div class="sl">санузлы</div></div>
+        <div class="stepper"><div><div class="sv" id="bathsV">1</div><div class="sl">łazienki</div></div>
           <div style="display:flex;gap:8px"><button data-step="baths" data-d="-1">−</button><button data-step="baths" data-d="1">+</button></div></div>
         <select class="city" id="city">
-          <option>Warszawa</option><option>Kraków</option><option>Wrocław</option><option>Poznań</option><option>Gdańsk</option><option>Łódź</option>
+          <option>Wrocław</option>
         </select>
       </div>
       <div class="price-panel" id="pp">
-        <div class="pp-lbl">Ориентировочная цена</div>
+        <div class="pp-lbl">Cena orientacyjna</div>
         <div class="amt" id="amt">— zł</div>
-        <div class="rng" id="rng">рассчитываем…</div>
+        <div class="rng" id="rng">liczymy…</div>
         <div class="dur" id="dur">⏱ —</div>
-        <a class="btn white" href="/">Заказать →</a>
+        <a class="btn white" href="/">Zamów →</a>
       </div>
     </div>
-    <p class="note">Итоговая цена фиксируется при оформлении. Диапазон учитывает состояние жилья и спрос.</p>
+    <p class="note">Ostateczna cena jest ustalana przy składaniu zamówienia. Zakres uwzględnia stan mieszkania i dostępność wykonawców.</p>
   </div></div>
 
   <section class="blk"><div class="wrap">
     <div class="stats reveal">
-      <div class="stat"><b data-count="12000" data-suffix="+">0</b><span>уборок выполнено</span></div>
-      <div class="stat"><b data-count="4.9" data-dec="1">0</b><span>средний рейтинг</span></div>
-      <div class="stat"><b data-count="6">0</b><span>городов Польши</span></div>
-      <div class="stat"><b data-count="8" data-suffix=" мин">0</b><span>среднее ожидание</span></div>
+      <div class="stat"><b data-count="7">0</b><span>rodzajów usług dla domu</span></div>
+      <div class="stat"><b data-count="10" data-suffix=" s">0</b><span>tyle trwa wycena</span></div>
+      <div class="stat"><b data-count="100" data-suffix="%">0</b><span>wykonawców po weryfikacji</span></div>
+      <div class="stat"><b data-count="0" data-suffix=" zł">0</b><span>opłat za rejestrację</span></div>
     </div>
   </div></section>
 
   <section class="blk" id="how"><div class="wrap">
-    <div class="sec-head reveal"><h2>Три шага до чистоты</h2><p>Без звонков и торга — всё в приложении.</p></div>
+    <div class="sec-head reveal"><h2>Trzy kroki do czystości</h2><p>Bez telefonów i negocjacji — wszystko w aplikacji.</p></div>
     <div class="steps reveal">
-      <div class="step"><h3>Опишите заказ</h3><p>Тип уборки, комнаты, адрес и удобное время. AI сразу покажет честную цену.</p></div>
-      <div class="step"><h3>Выберите исполнителя</h3><p>Проверенные мастера рядом с рейтингом и отзывами. Или доверьте выбор LUMI.</p></div>
-      <div class="step"><h3>Следите вживую</h3><p>Статус, ETA и чат в реальном времени. Оплата — после уборки, фото «до/после».</p></div>
+      <div class="step"><h3>Opisz zamówienie</h3><p>Rodzaj sprzątania, pokoje, adres i dogodny termin. Cena pojawia się od razu.</p></div>
+      <div class="step"><h3>Wybierz wykonawcę</h3><p>Zweryfikowani wykonawcy w pobliżu, z ocenami. Albo zostaw wybór LUMI.</p></div>
+      <div class="step"><h3>Śledź na żywo</h3><p>Status, czas dojazdu i czat na bieżąco. Zdjęcia „przed/po” po zakończeniu.</p></div>
     </div>
   </div></section>
 
   <section class="blk" id="features"><div class="wrap">
-    <div class="sec-head reveal"><h2>Не просто уборка</h2><p>Целая операционная система вашего дома.</p></div>
+    <div class="sec-head reveal"><h2>Nie tylko sprzątanie</h2><p>Cały dom w jednej aplikacji.</p></div>
     <div class="grid reveal">
-      <div class="card"><div class="ico">⚡</div><h3>FlashClean</h3><p>Исполнитель рядом приедет как можно скорее. Прозрачная цена с ограничением надбавки.</p></div>
-      <div class="card"><div class="ico">✨</div><h3>AI-оценка</h3><p>Мгновенная понятная смета: длительность, состав работ и диапазон цены до подтверждения.</p></div>
-      <div class="card"><div class="ico">🏠</div><h3>Умный дом</h3><p>LUMI Score, календарь обслуживания, реестр техники и напоминания о гарантиях.</p></div>
-      <div class="card"><div class="ico">📍</div><h3>Живое отслеживание</h3><p>Статус заказа, ETA и чат с исполнителем — с уведомлениями на каждом шаге.</p></div>
-      <div class="card"><div class="ico">🗂️</div><h3>Паспорт дома</h3><p>История обслуживания, фото «до/после» и счета — цифровой архив вашего дома.</p></div>
-      <div class="card"><div class="ico">👑</div><h3>LUMI+</h3><p>Кэшбэк на все заказы, приоритетная диспетчеризация и любимые исполнители.</p></div>
+      <div class="card"><div class="ico">⚡</div><h3>FlashClean</h3><p>Wykonawca w pobliżu przyjedzie jak najszybciej. Przejrzysta cena z ograniczoną dopłatą.</p></div>
+      <div class="card"><div class="ico">✨</div><h3>Wycena od ręki</h3><p>Zrozumiały kosztorys: czas trwania, zakres prac i cena — zanim potwierdzisz.</p></div>
+      <div class="card"><div class="ico">🏠</div><h3>Inteligentny dom</h3><p>LUMI Score, kalendarz obsługi, rejestr sprzętu i przypomnienia o gwarancjach.</p></div>
+      <div class="card"><div class="ico">📍</div><h3>Śledzenie na żywo</h3><p>Status zamówienia, czas dojazdu i czat z wykonawcą — z powiadomieniami na każdym kroku.</p></div>
+      <div class="card"><div class="ico">🗂️</div><h3>Paszport domu</h3><p>Historia obsługi, zdjęcia „przed/po” i potwierdzenia płatności — cyfrowe archiwum domu.</p></div>
+      <div class="card"><div class="ico">👑</div><h3>LUMI+</h3><p>Zwrot na saldo za każde zamówienie, priorytetowe przydzielanie i ulubieni wykonawcy.</p></div>
     </div>
   </div></section>
 
   <section class="blk" id="reviews"><div class="wrap">
-    <div class="sec-head reveal"><h2>Нас рекомендуют</h2><p>Настоящие отзывы клиентов LUMI.</p></div>
+    <div class="sec-head reveal"><h2>Dlaczego LUMI</h2><p>Startujemy we Wrocławiu — oto, co gwarantujemy od pierwszego zlecenia.</p></div>
     <div class="quotes reveal">
-      <div class="quote"><div class="qs">★★★★★</div><p>«Заказала генеральную уборку вечером — утром дом сиял. Цена совпала с оценкой один в один.»</p><div class="who"><span class="av">A</span><div><b>Anna K.</b><span>Warszawa</span></div></div></div>
-      <div class="quote"><div class="qs">★★★★★</div><p>«Отслеживание в реальном времени — это топ. Видно, когда мастер выехал. Оплата после работы.»</p><div class="who"><span class="av">M</span><div><b>Marek W.</b><span>Kraków</span></div></div></div>
-      <div class="quote"><div class="qs">★★★★★</div><p>«Умный дом напомнил про фильтры и сервис техники. LUMI+ окупился за два заказа.»</p><div class="who"><span class="av">Z</span><div><b>Zofia L.</b><span>Wrocław</span></div></div></div>
+      <div class="quote"><div class="qs">✓</div><p>Cena znana przed zamówieniem — bez wycen „do uzgodnienia" i dopłat na miejscu.</p><div class="who"><span class="av">1</span><div><b>Stała cena</b><span>zanim potwierdzisz</span></div></div></div>
+      <div class="quote"><div class="qs">✓</div><p>Każdy wykonawca przechodzi weryfikację tożsamości i danych do wypłat, zanim przyjmie pierwsze zlecenie.</p><div class="who"><span class="av">2</span><div><b>Sprawdzeni wykonawcy</b><span>weryfikacja KYC</span></div></div></div>
+      <div class="quote"><div class="qs">✓</div><p>Płatność kartą w aplikacji i potwierdzenie w PDF do każdego zamówienia. Bez gotówki.</p><div class="who"><span class="av">3</span><div><b>Bezpieczna płatność</b><span>i dokument do każdego zlecenia</span></div></div></div>
     </div>
+    <p class="note" style="text-align:center">Oceny i opinie pojawią się tutaj, gdy wystawią je nasi klienci — nie publikujemy opinii, których nikt nie napisał.</p>
   </div></section>
 
   <div class="wrap"><section class="ctaband reveal">
     <span class="glow"></span>
-    <h2>Готовы к сияющему дому?</h2>
-    <p>Создайте аккаунт за минуту — первый заказ можно оформить сразу.</p>
-    <a class="btn white" href="/">Начать бесплатно →</a>
+    <h2>Gotowi na czysty dom?</h2>
+    <p>Załóż konto w minutę — pierwsze zamówienie złożysz od razu.</p>
+    <a class="btn white" href="/">Zacznij za darmo →</a>
   </section></div>
 
   <footer><div class="wrap foot">
     <div class="brand" style="font-size:18px"><svg viewBox="0 0 96 96" width="28" height="28" fill="none"><rect x="6" y="6" width="84" height="84" rx="25" fill="#22C55E"/><path d="M27 51 L48 31 L69 51 V70 a3 3 0 0 1 -3 3 H30 a3 3 0 0 1 -3 -3 Z" stroke="#fff" stroke-width="4.8" stroke-linejoin="round" fill="none"/></svg>LUMI</div>
-    <div style="display:flex;gap:18px;flex-wrap:wrap"><a href="/privacy.html">Конфиденциальность</a><a href="/terms.html">Условия</a><a href="/brand.html">Бренд</a></div>
-    <span>© 2026 LUMI · Warszawa</span>
+    <div style="display:flex;gap:18px;flex-wrap:wrap"><a href="/privacy.html">Prywatność</a><a href="/terms.html">Regulamin</a><a href="/brand.html">Marka</a></div>
+    <span>© 2026 LUMI · Wrocław</span>
   </div>
   <div class="wrap" style="font-size:11px;line-height:1.6;opacity:.6;padding-top:6px">
     <b>BESTWAY PLUS Sp. z o.o.</b> · KRS 0001125792 · NIP 8952277581 · REGON 529604122 · ul. Zajączkowska 44, 51-180 Wrocław, Polska · <a href="mailto:support@lumi24.pl">support@lumi24.pl</a>
@@ -291,16 +292,16 @@
     st[k]=Math.max(min,Math.min(max,st[k]+d));document.getElementById(k+'V').textContent=st[k];quote();};});
   document.getElementById('city').onchange=function(e){st.city=e.target.value;quote();};
   var timer=null;
-  function quote(){clearTimeout(timer);pp.classList.add('loading');rng.textContent='рассчитываем…';
+  function quote(){clearTimeout(timer);pp.classList.add('loading');rng.textContent='liczymy…';
     timer=setTimeout(function(){
       fetch('/api/estimate',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(st)})
       .then(function(r){return r.json();}).then(function(d){
         var e=d.estimate;if(!e)throw 0;
         amt.textContent=e.total+' zł';
-        rng.textContent='обычно '+e.rangeLow+'–'+e.rangeHigh+' zł';
-        dur.textContent='⏱ ~'+(Math.round(e.durationHours*10)/10)+' ч работы';
+        rng.textContent='zwykle '+e.rangeLow+'–'+e.rangeHigh+' zł';
+        dur.textContent='⏱ ~'+(Math.round(e.durationHours*10)/10)+' godz. pracy';
         pp.classList.remove('loading');
-      }).catch(function(){rng.textContent='Не удалось рассчитать';pp.classList.remove('loading');});
+      }).catch(function(){rng.textContent='Nie udało się obliczyć';pp.classList.remove('loading');});
     },220);}
   quote();
 })();
