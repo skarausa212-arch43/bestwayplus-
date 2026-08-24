@@ -403,6 +403,18 @@ const persist = {
 // nothing personally identifiable is ever stored. Bots are counted separately.
 // Writes are batched (a pageview must never cost a disk write).
 const BOT_RE = /bot|crawl|spider|slurp|bingpreview|yandex|duckduck|baidu|semrush|ahrefs|mj12|petal|facebookexternalhit|whatsapp|telegram|skypeuripreview|lighthouse|pingdom|uptime|headless|python-requests|curl|wget/i;
+// Wrocław local day/hour — a dashboard that rolls over at 02:00 local time is
+// useless for "what happened today".
+const WARSAW = { timeZone: 'Europe/Warsaw' };
+const dayKey = (at = Date.now()) => new Date(at).toLocaleDateString('en-CA', WARSAW);   // YYYY-MM-DD
+const hourOf = (at = Date.now()) => Number(new Date(at).toLocaleString('en-GB', { ...WARSAW, hour: '2-digit', hour12: false }).slice(0, 2)) || 0;
+/** mobile / tablet / desktop, plus whether it came from the installed shell. */
+function deviceOf(ua) {
+  if (/iPad|Tablet|PlayBook|Silk/i.test(ua) || (/Android/i.test(ua) && !/Mobile/i.test(ua))) return 'tablet';
+  if (/Mobi|Android|iPhone|iPod/i.test(ua)) return 'mobile';
+  return 'desktop';
+}
+const isShell = (ua) => /;\s*wv\)|Capacitor/i.test(ua);        // Android WebView shell
 let _trafficTimer = null;
 function persistTrafficSoon() {
   if (_trafficTimer) return;
@@ -410,15 +422,18 @@ function persistTrafficSoon() {
   if (_trafficTimer.unref) _trafficTimer.unref();
 }
 const _uniqSets = {};   // day -> Set(hash), rebuilt lazily after restarts
+const blankDay = () => ({ v: 0, b: 0, u: [], r: {}, s: {}, p: {}, d: {}, l: {}, h: [], app: 0 });
 function recordVisit(req, pagePath) {
   try {
-    const day = new Date().toISOString().slice(0, 10);
+    const day = dayKey();
     let e = db.traffic[day];
     if (!e) {
-      e = db.traffic[day] = { v: 0, b: 0, u: [], r: {}, s: {}, p: {} };
+      e = db.traffic[day] = blankDay();
       const keys = Object.keys(db.traffic).sort();          // retention: ~4 months
       while (keys.length > 120) { const k = keys.shift(); delete db.traffic[k]; delete _uniqSets[k]; }
     }
+    // Days written before these fields existed keep working: fill them in.
+    if (!e.d) e.d = {}; if (!e.l) e.l = {}; if (!e.h) e.h = []; if (e.app == null) e.app = 0;
     const ua = String(req.headers['user-agent'] || '');
     if (!ua || BOT_RE.test(ua)) { e.b++; persistTrafficSoon(); return; }
     e.v++;
@@ -437,8 +452,18 @@ function recordVisit(req, pagePath) {
     }
     const utm = /[?&]utm_source=([^&#]{1,40})/.exec(req.url || '');
     if (utm) { const sName = decodeURIComponent(utm[1]); if (e.s[sName] != null || Object.keys(e.s).length < 100) e.s[sName] = (e.s[sName] || 0) + 1; }
-    const pp = (String(pagePath || '/').slice(0, 60)) === '/index.html' ? '/' : String(pagePath || '/').slice(0, 60);
+    const raw = String(pagePath || '/').slice(0, 60);
+    const pp = raw === '/index.html' ? '/' : raw;
     if (e.p[pp] != null || Object.keys(e.p).length < 50) e.p[pp] = (e.p[pp] || 0) + 1;
+    // Who is visiting: device class, installed shell, browser language, hour.
+    const dev = deviceOf(ua);
+    e.d[dev] = (e.d[dev] || 0) + 1;
+    if (isShell(ua)) e.app++;
+    const al = String(req.headers['accept-language'] || '').slice(0, 2).toLowerCase();
+    if (/^[a-z]{2}$/.test(al) && (e.l[al] != null || Object.keys(e.l).length < 30)) e.l[al] = (e.l[al] || 0) + 1;
+    const hr = hourOf();
+    if (!e.h.length) e.h = new Array(24).fill(0);
+    e.h[hr] = (e.h[hr] || 0) + 1;
     persistTrafficSoon();
   } catch {}
 }
@@ -4297,26 +4322,67 @@ route('POST', '/api/admin/payouts/settle', async (req, res) => {
   send(res, 200, { settled, total, blocked, blockedCount: blocked.length });
 });
 
-// Site-visit statistics for the admin panel: daily views/uniques/bots plus
-// where the traffic came from (referrer hosts, utm_source) and which pages.
+// Site-visit statistics for the admin panel — the daily dashboard: traffic per
+// day against the previous period, where it came from, who visits (device,
+// language, hour) and what it turned into (registrations, orders).
 route('GET', '/api/admin/traffic', async (req, res) => {
   const admin = requireCap(req, res, 'analytics.view'); if (!admin) return;
   const n = Math.max(7, Math.min(90, Number((/days=(\d{1,2})/.exec(req.url) || [])[1]) || 30));
-  const days = [];
-  const top = (obj, acc) => { for (const [k, v] of Object.entries(obj || {})) acc[k] = (acc[k] || 0) + v; };
-  const refs = {}, sources = {}, paths = {};
-  let views = 0, uniques = 0, bots = 0;
-  for (let i = n - 1; i >= 0; i--) {
-    const day = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
-    const e = db.traffic[day] || { v: 0, b: 0, u: [], r: {}, s: {}, p: {} };
-    days.push({ date: day, views: e.v, uniques: e.u.length, bots: e.b });
-    views += e.v; uniques += e.u.length; bots += e.b;
-    top(e.r, refs); top(e.s, sources); top(e.p, paths);
-  }
+  const dayAt = (back) => dayKey(Date.now() - back * 86400000);
+
+  // Registrations and orders per day, so traffic can be read as a funnel.
+  const perDay = (rows, at) => {
+    const m = {};
+    for (const r of rows) { const k = dayKey(at(r)); if (k) m[k] = (m[k] || 0) + 1; }
+    return m;
+  };
+  const regs = perDay(Object.values(db.users).filter((u) => u.role !== 'admin'), (u) => u.createdAt);
+  const orders = perDay(Object.values(db.bookings), (b) => b.createdAt);
+
+  const merge = (src, acc) => { for (const [k, v] of Object.entries(src || {})) acc[k] = (acc[k] || 0) + v; };
+  const window = (from, to) => {                     // [from, to) days back
+    const days = [], refs = {}, sources = {}, paths = {}, devices = {}, langs = {};
+    const hours = new Array(24).fill(0);
+    let views = 0, uniques = 0, bots = 0, app = 0, reg = 0, ord = 0;
+    for (let i = from - 1; i >= to; i--) {
+      const date = dayAt(i);
+      const e = db.traffic[date] || blankDay();
+      const row = { date, views: e.v, uniques: (e.u || []).length, bots: e.b,
+        regs: regs[date] || 0, orders: orders[date] || 0 };
+      days.push(row);
+      views += row.views; uniques += row.uniques; bots += row.bots; app += e.app || 0;
+      reg += row.regs; ord += row.orders;
+      merge(e.r, refs); merge(e.s, sources); merge(e.p, paths); merge(e.d, devices); merge(e.l, langs);
+      (e.h || []).forEach((c, h) => { hours[h] += c || 0; });
+    }
+    return { days, refs, sources, paths, devices, langs, hours,
+      totals: { views, uniques, bots, app, regs: reg, orders: ord } };
+  };
+
+  const cur = window(n, 0);
+  const prev = window(n * 2, n).totals;               // same length, immediately before
   const rank = (o, lim) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, lim);
+
+  // Referrers grouped into channels — the question is «откуда идёт трафик»,
+  // and a list of 30 hosts does not answer it.
+  const SEARCH = /google|bing|yahoo|duckduckgo|yandex|ecosia|seznam/i;
+  const SOCIAL = /facebook|instagram|t\.co|twitter|x\.com|tiktok|linkedin|youtube|pinterest|reddit|telegram|whatsapp|vk\.com|olx/i;
+  let search = 0, social = 0, other = 0;
+  for (const [host, c] of Object.entries(cur.refs)) {
+    if (SEARCH.test(host)) search += c; else if (SOCIAL.test(host)) social += c; else other += c;
+  }
+  const campaigns = Object.values(cur.sources).reduce((s2, c) => s2 + c, 0);
+  const direct = Math.max(0, cur.totals.views - search - social - other);
+  const peak = cur.days.reduce((m, d) => (d.views > (m ? m.views : -1) ? d : m), null);
+
   send(res, 200, {
-    days, totals: { views, uniques, bots },
-    referrers: rank(refs, 12), sources: rank(sources, 12), paths: rank(paths, 12),
+    days: cur.days,
+    totals: { ...cur.totals, avgViews: Math.round(cur.totals.views / n), peak },
+    previous: prev,
+    channels: { direct, search, social, referral: other, campaigns },
+    referrers: rank(cur.refs, 15), campaignList: rank(cur.sources, 15), paths: rank(cur.paths, 12),
+    devices: cur.devices, langs: rank(cur.langs, 8), hours: cur.hours,
+    period: n, generatedAt: now(),
   });
 });
 
