@@ -426,6 +426,17 @@ textarea.input{resize:vertical;min-height:80px}
 .tr-h{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%}
 .tr-h span{display:block;width:100%;border-radius:3px 3px 0 0;background:var(--primary-600);opacity:.85}
 .tr-h em{font-style:normal;font-size:9px;color:var(--ink-2);margin-top:3px;height:12px}
+.tr-today{border:1px solid var(--primary-600)}
+.tr-td{display:flex;align-items:center;gap:8px;padding:9px 0}
+.tr-td+.tr-td{border-top:1px solid var(--line)}
+.tr-td-l{flex:1 1 38%;min-width:0;font-size:13.5px;line-height:1.25}
+.tr-td-a{flex:0 0 68px;text-align:right;font-weight:800;font-size:19px;letter-spacing:-.02em}
+.tr-td-b{flex:0 0 60px;text-align:right;font-weight:600;font-size:15px;color:var(--ink-2)}
+.tr-td-d{flex:0 0 96px;text-align:right;font-size:12px;font-weight:700}
+.tr-td-h{padding-top:2px;padding-bottom:4px;border:0}
+.tr-td-h .tr-td-a,.tr-td-h .tr-td-b{font-size:11px;font-weight:700;color:var(--ink-2);text-transform:uppercase;letter-spacing:.04em}
+.tr-td-hrs{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+@media(max-width:420px){.tr-td-d{flex-basis:78px}.tr-td-a{flex-basis:58px;font-size:17px}.tr-td-b{flex-basis:48px}}
 @media(max-width:560px){.tr-k{flex-basis:44%}.tr-bar{flex-basis:26%;min-width:40px}.tr-kpi b{font-size:26px}}
 .kpi b{font-size:28px;letter-spacing:-.03em;display:block}
 .kpi .lab{color:var(--ink-2);font-size:13px;margin-top:2px}
@@ -7234,10 +7245,10 @@ async function viewTraffic(){
     const mx=Math.max(1,...days.map(d=>d.views));
     const W=560,H=140,bw=W/days.length;
     const bars=days.map((d,i)=>{
-      const hv=d.views?Math.max(3,(d.views/mx)*H):0, hu=d.uniques?Math.max(2,(d.uniques/mx)*H):0;
+      const hv=d.views?Math.max(3,(d.views/mx)*H):0, hu=d.hosts?Math.max(2,(d.hosts/mx)*H):0;
       const x=i*bw+Math.min(2,bw*0.12);
       const w=Math.max(1,bw-2*Math.min(2,bw*0.12));
-      const tip=`${d.date}: ${d.views} просмотров · ${d.uniques} посетителей${d.orders?` · ${d.orders} заказ.`:''}`;
+      const tip=`${d.date}: ${d.views} просмотров · ${d.hosts} хостов${d.orders?` · ${d.orders} заказ.`:''}`;
       return `<g><rect x="${x.toFixed(1)}" y="${(H-hv).toFixed(1)}" width="${w.toFixed(1)}" height="${hv.toFixed(1)}" rx="2" fill="var(--primary)" opacity=".28"><title>${tip}</title></rect>`+
              `<rect x="${x.toFixed(1)}" y="${(H-hu).toFixed(1)}" width="${w.toFixed(1)}" height="${hu.toFixed(1)}" rx="2" fill="var(--primary-600)"><title>${tip}</title></rect></g>`;
     }).join('');
@@ -7264,10 +7275,43 @@ async function viewTraffic(){
     const hours=T.hours.map((v,h)=>`<div class="tr-h" title="${h}:00 — ${v} просмотров"><span style="height:${Math.max(2,(v/hmax)*100)}%"></span><em>${h%6===0?h:''}</em></div>`).join('');
     const conv=(a,b)=>b>0?Math.round(a/b*1000)/10:0;
 
+    // «Сегодня и вчера» стоит выше периода: это то, ради чего панель открывают утром.
+    const T0=T.today, T1=T.yesterday;
+    const dnum=(a,b)=>{
+      if(!b) return a? `<span class="tr-up">+${num(a)}</span>` : `<span class="tr-flat">—</span>`;
+      const d=a-b, p=Math.round(d/b*1000)/10;
+      if(d===0) return `<span class="tr-flat">как вчера</span>`;
+      return `<span class="${d>0?'tr-up':'tr-down'}">${d>0?'▲':'▼'} ${Math.abs(p)}%</span>`;
+    };
+    const twoRow=(lab,a,b)=>`<div class="tr-td"><div class="tr-td-l">${lab}</div>
+      <div class="tr-td-a">${num(a)}</div><div class="tr-td-b">${num(b)}</div>
+      <div class="tr-td-d">${dnum(a,b)}</div></div>`;
+    const dLbl=(iso)=>{const d=new Date(iso+'T12:00:00');
+      return d.toLocaleDateString('ru-RU',{day:'numeric',month:'long'})+' · '+['вс','пн','вт','ср','чт','пт','сб'][d.getDay()];};
+    const t0max=Math.max(1,...T0.hours);
+    const t0hours=T0.hours.map((v,h)=>`<div class="tr-h" title="${h}:00 — ${v}"><span style="height:${Math.max(2,(v/t0max)*100)}%"></span><em>${h%6===0?h:''}</em></div>`).join('');
+
     $('#trBody',c).innerHTML=`
+      <div class="card pad tr-today" style="margin-bottom:14px">
+        <div class="row" style="justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px">
+          <div class="admin-sec-h" style="margin:0">Сегодня и вчера</div>
+          <div class="tiny muted">${dLbl(T0.date)} · обновляется сразу</div>
+        </div>
+        <div class="tr-td tr-td-h"><div class="tr-td-l"></div><div class="tr-td-a">сегодня</div><div class="tr-td-b">вчера</div><div class="tr-td-d"></div></div>
+        ${twoRow('Просмотры',T0.views,T1.views)}
+        ${twoRow('Хосты · уникальных IP',T0.hosts,T1.hosts)}
+        ${twoRow('Регистрации',T0.regs,T1.regs)}
+        ${twoRow('Заказы',T0.orders,T1.orders)}
+        ${twoRow('Боты',T0.bots,T1.bots)}
+        <div class="tr-td-hrs">
+          <div class="tiny muted" style="margin-bottom:4px">Сегодня по часам${T0.app?` · из приложения: ${num(T0.app)}`:''}</div>
+          <div class="tr-hours">${t0hours}</div>
+        </div>
+      </div>
+
       <div class="kpi-grid" style="margin-bottom:14px">
         ${kpiBox(num(tot.views),'Просмотров за '+per+' дн',delta(tot.views,prev.views))}
-        ${kpiBox(num(tot.uniques),'Посетителей',delta(tot.uniques,prev.uniques))}
+        ${kpiBox(num(tot.hosts),'Хостов (уникальных IP)',delta(tot.hosts,prev.hosts))}
         ${kpiBox(num(tot.regs),'Регистраций',delta(tot.regs,prev.regs))}
         ${kpiBox(num(tot.orders),'Заказов',delta(tot.orders,prev.orders))}
       </div>
@@ -7275,7 +7319,7 @@ async function viewTraffic(){
       <div class="card pad" style="margin-bottom:14px">
         <div class="row" style="justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px">
           <div class="admin-sec-h" style="margin:0">По дням</div>
-          <div class="tiny muted"><span class="tr-lg a"></span> просмотры <span class="tr-lg b"></span> посетители</div>
+          <div class="tiny muted"><span class="tr-lg a"></span> просмотры <span class="tr-lg b"></span> хосты</div>
         </div>
         <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;margin-top:10px" preserveAspectRatio="none">${bars}</svg>
         <div class="row" style="justify-content:space-between;margin-top:4px">
@@ -7289,11 +7333,11 @@ async function viewTraffic(){
       </div>
 
       <div class="card pad" style="margin-bottom:14px">
-        <div class="admin-sec-h">Путь: посетитель → регистрация → заказ</div>
+        <div class="admin-sec-h">Путь: хост → регистрация → заказ</div>
         <div class="tr-funnel">
-          <div class="tr-fn"><b>${num(tot.uniques)}</b><span>посетителей</span><i style="width:100%"></i></div>
-          <div class="tr-fn"><b>${num(tot.regs)}</b><span>регистраций · ${conv(tot.regs,tot.uniques)}%</span><i style="width:${Math.max(2,conv(tot.regs,tot.uniques))}%"></i></div>
-          <div class="tr-fn"><b>${num(tot.orders)}</b><span>заказов · ${conv(tot.orders,tot.uniques)}%</span><i style="width:${Math.max(2,conv(tot.orders,tot.uniques))}%"></i></div>
+          <div class="tr-fn"><b>${num(tot.hosts)}</b><span>хостов</span><i style="width:100%"></i></div>
+          <div class="tr-fn"><b>${num(tot.regs)}</b><span>регистраций · ${conv(tot.regs,tot.hosts)}%</span><i style="width:${Math.max(2,conv(tot.regs,tot.hosts))}%"></i></div>
+          <div class="tr-fn"><b>${num(tot.orders)}</b><span>заказов · ${conv(tot.orders,tot.hosts)}%</span><i style="width:${Math.max(2,conv(tot.orders,tot.hosts))}%"></i></div>
         </div>
         <div class="hint tiny" style="margin-top:8px">Регистрации и заказы — из базы за тот же период, поэтому видно, во что превращается трафик.</div>
       </div>
@@ -7339,7 +7383,7 @@ async function viewTraffic(){
         </div>
       </div>
 
-      <div class="hint tiny">Считает сам сервер при каждой открытой странице — без cookies и сторонних скриптов, персональные данные не сохраняются. Посетитель = уникальный за день. Установленное приложение иногда открывается из кэша — такие заходы сервер не видит, поэтому реальных пользователей чуть больше.</div>`;
+      <div class="hint tiny">Считает сам сервер при каждой открытой странице — без cookies и сторонних скриптов, персональные данные не сохраняются. Хост = один уникальный IP за день (несколько вкладок или браузеров с одного адреса считаются один раз). Установленное приложение иногда открывается из кэша — такие заходы сервер не видит, поэтому реальных пользователей чуть больше.</div>`;
   }catch(e){ $('#trBody',c).innerHTML=`<div class="card pad">${esc(e.message)}</div>`; }
 }
 

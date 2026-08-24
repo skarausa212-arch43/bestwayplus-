@@ -1222,7 +1222,7 @@ async function main() {
       assert.strictEqual(r.status, 200);
       const today = r.json.days[r.json.days.length - 1];
       assert.ok(today.views >= 2, 'human page views counted: ' + today.views);
-      assert.ok(today.uniques >= 1, 'unique visitors counted');
+      assert.ok(today.hosts >= 1, 'unique hosts counted');
       assert.ok(today.bots >= 1, 'bots counted separately');
       assert.ok(r.json.referrers.some(([h]) => h === 'facebook.com' || h === 'google.com'), 'referrer hosts recorded');
       assert.ok(r.json.campaignList.some(([sName]) => sName === 'facebook'), 'utm_source recorded');
@@ -1232,6 +1232,9 @@ async function main() {
       assert.ok((r.json.devices.desktop || 0) >= 1, 'device class recorded');
       assert.ok(r.json.hours.reduce((a, b) => a + b, 0) >= 2, 'hour histogram filled');
       assert.ok(today.regs >= 0 && today.orders >= 1, 'registrations and orders join the traffic days');
+      assert.ok(r.json.today && r.json.today.date === today.date, 'today card returned');
+      assert.ok(r.json.yesterday && typeof r.json.yesterday.hosts === 'number', 'yesterday card returned');
+      assert.ok(r.json.today.hosts >= 1 && r.json.today.hours.length === 24, 'today carries hosts and its hour histogram');
       assert.ok(r.json.previous && typeof r.json.previous.views === 'number', 'previous period returned for comparison');
       assert.strictEqual((await req('GET', '/api/admin/traffic', { token: customerTok })).status, 403);
     });

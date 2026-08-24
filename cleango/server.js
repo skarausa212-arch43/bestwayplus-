@@ -438,7 +438,7 @@ function recordVisit(req, pagePath) {
     if (!ua || BOT_RE.test(ua)) { e.b++; persistTrafficSoon(); return; }
     e.v++;
     const set = _uniqSets[day] || (_uniqSets[day] = new Set(e.u));
-    const hash = crypto.createHash('sha256').update(clientIp(req) + '|' + ua + '|' + day).digest('hex').slice(0, 16);
+    const hash = crypto.createHash('sha256').update(clientIp(req) + '|' + day).digest('hex').slice(0, 16);
     if (!set.has(hash) && set.size < 50000) { set.add(hash); e.u.push(hash); }
     // Where the visit came from: external referrer host and/or utm_source.
     const ref = String(req.headers['referer'] || '');
@@ -4343,22 +4343,28 @@ route('GET', '/api/admin/traffic', async (req, res) => {
   const window = (from, to) => {                     // [from, to) days back
     const days = [], refs = {}, sources = {}, paths = {}, devices = {}, langs = {};
     const hours = new Array(24).fill(0);
-    let views = 0, uniques = 0, bots = 0, app = 0, reg = 0, ord = 0;
+    let views = 0, hosts = 0, bots = 0, app = 0, reg = 0, ord = 0;
     for (let i = from - 1; i >= to; i--) {
       const date = dayAt(i);
       const e = db.traffic[date] || blankDay();
-      const row = { date, views: e.v, uniques: (e.u || []).length, bots: e.b,
+      const row = { date, views: e.v, hosts: (e.u || []).length, bots: e.b,
         regs: regs[date] || 0, orders: orders[date] || 0 };
       days.push(row);
-      views += row.views; uniques += row.uniques; bots += row.bots; app += e.app || 0;
+      views += row.views; hosts += row.hosts; bots += row.bots; app += e.app || 0;
       reg += row.regs; ord += row.orders;
       merge(e.r, refs); merge(e.s, sources); merge(e.p, paths); merge(e.d, devices); merge(e.l, langs);
       (e.h || []).forEach((c, h) => { hours[h] += c || 0; });
     }
     return { days, refs, sources, paths, devices, langs, hours,
-      totals: { views, uniques, bots, app, regs: reg, orders: ord } };
+      totals: { views, hosts, bots, app, regs: reg, orders: ord } };
   };
 
+  const dayCard = (back) => {
+    const date = dayAt(back);
+    const e = db.traffic[date] || blankDay();
+    return { date, views: e.v, hosts: (e.u || []).length, bots: e.b, app: e.app || 0,
+      regs: regs[date] || 0, orders: orders[date] || 0, hours: e.h && e.h.length ? e.h : new Array(24).fill(0) };
+  };
   const cur = window(n, 0);
   const prev = window(n * 2, n).totals;               // same length, immediately before
   const rank = (o, lim) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, lim);
@@ -4376,6 +4382,7 @@ route('GET', '/api/admin/traffic', async (req, res) => {
   const peak = cur.days.reduce((m, d) => (d.views > (m ? m.views : -1) ? d : m), null);
 
   send(res, 200, {
+    today: dayCard(0), yesterday: dayCard(1),
     days: cur.days,
     totals: { ...cur.totals, avgViews: Math.round(cur.totals.views / n), peak },
     previous: prev,
