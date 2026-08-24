@@ -178,6 +178,26 @@ textarea.input{resize:vertical;min-height:80px}
 .hero p{opacity:.92;margin-top:10px;max-width:460px;font-size:15px}
 .hero .sparkle{position:absolute;right:-30px;top:-30px;width:220px;height:220px;opacity:.28}
 .svc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+/* гостевая витрина */
+.svc-card .vi{width:40px;height:40px;border-radius:13px;display:grid;place-items:center}
+.svc-card .vi svg{width:22px;height:22px}
+.svc-card{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:16px;border-radius:18px;
+  background:var(--surface);border:1px solid var(--line);cursor:pointer;text-align:left;transition:transform .15s,border-color .15s}
+.svc-card:hover{transform:translateY(-2px);border-color:var(--primary)}
+.svc-card b{font-size:15.5px}
+.svc-card.soon{opacity:.62;cursor:default}
+.svc-card.soon:hover{transform:none;border-color:var(--line)}
+.grid.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.grid.three{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.gstep{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;font-weight:800;
+  background:var(--primary-050);color:var(--primary-600);margin-bottom:10px}
+.gfi{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;flex:0 0 auto;
+  background:var(--primary-050);color:var(--primary-600)}
+.gcta{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.auth-note{margin:0 0 16px;padding:12px 14px;border-radius:14px;font-size:13.5px;line-height:1.4;
+  background:var(--primary-050);color:var(--primary-600);border:1px solid var(--primary)}
+.auth-back{display:block;margin:16px auto 0;background:none;border:0;color:var(--ink-2);font:600 14px/1 inherit;cursor:pointer;padding:8px}
+.auth-back:hover{color:var(--primary-600)}
 /* Vertical switcher on the booking screen. A scrolling strip, because the list
    grows with every service that ships and a wrapping grid would push the form
    itself below the fold on a phone. */
@@ -2039,6 +2059,51 @@ Object.assign(TR.uk,{"Воронка заказов":"Воронка замов�
 Object.assign(TR.pl,{"Установить LUMI":"Zainstaluj LUMI","Быстрый доступ с домашнего экрана":"Szybki dostęp z ekranu głównego","Установить":"Zainstaluj"});
 Object.assign(TR.en,{"Установить LUMI":"Install LUMI","Быстрый доступ с домашнего экрана":"Quick access from your home screen","Установить":"Install"});
 Object.assign(TR.pl,{"Партнёрам":"Dla partnerów"});
+Object.assign(TR.pl,{"Дом под контролем —":"Dom pod kontrolą —","в одном приложении":"w jednej aplikacji",
+  "Уборка, мойка окон и сад. Цену видно до заказа, оплата картой, исполнители с проверкой.":"Sprzątanie, mycie okien i ogród. Cenę znasz przed zamówieniem, płacisz kartą, wykonawcy po weryfikacji.",
+  "Рассчитать цену":"Oblicz cenę","Что нужно сделать?":"Czego potrzebujesz?","Доступно сейчас":"Dostępne teraz",
+  "Скоро в вашем городе":"Wkrótce w Twoim mieście","Как это работает":"Jak to działa","Почему LUMI":"Dlaczego LUMI",
+  "Опишите заказ":"Opisz zamówienie","Услуга, комнаты, адрес и время. Цена появляется сразу — без «по договорённости».":"Usługa, pokoje, adres i termin. Cena pojawia się od razu — bez „do uzgodnienia”.",
+  "Аккаунт за минуту":"Konto w minutę","Регистрация нужна только чтобы оформить и оплатить заказ.":"Rejestracja jest potrzebna dopiero, by złożyć i opłacić zamówienie.",
+  "Следите за работой":"Śledź realizację","Статус, чат с исполнителем и фото «до/после». Чек в PDF после оплаты.":"Status, czat z wykonawcą i zdjęcia „przed/po”. Potwierdzenie w PDF po płatności.",
+  "Цена до заказа":"Cena przed zamówieniem","Калькулятор считает по параметрам жилья — итог виден до подтверждения.":"Kalkulator liczy według parametrów mieszkania — wynik widzisz przed potwierdzeniem.",
+  "Проверенные исполнители":"Sprawdzeni wykonawcy","Документы и данные для выплат проверяет модератор LUMI.":"Dokumenty i dane do wypłat weryfikuje moderator LUMI.",
+  "Оплата картой":"Płatność kartą","Без наличных. К каждому заказу — подтверждение оплаты в PDF.":"Bez gotówki. Do każdego zamówienia potwierdzenie płatności w PDF.",
+  "Связь и отчёт":"Kontakt i raport","Чат с исполнителем, статусы и фото «до/после».":"Czat z wykonawcą, statusy i zdjęcia „przed/po”.",
+  "Работаете в клининге?":"Pracujesz w sprzątaniu?","Получайте заказы во Вроцлаве: 85% стоимости заказа остаётся у вас, выплаты каждый вторник.":"Odbieraj zlecenia we Wrocławiu: 85% wartości zamówienia zostaje u Ciebie, wypłaty w każdy wtorek.",
+  "Стать исполнителем":"Zostań wykonawcą","← Смотреть без входа":"← Przeglądaj bez logowania",
+  "Чтобы оформить заказ, войдите или создайте аккаунт — это займёт минуту.":"Aby złożyć zamówienie, zaloguj się lub załóż konto — zajmie to minutę.",
+  "Создайте аккаунт исполнителя — займёт пару минут.":"Załóż konto wykonawcy — zajmie to kilka minut."});
+Object.assign(TR.en,{"Дом под контролем —":"Your home, handled —","в одном приложении":"in one app",
+  "Уборка, мойка окон и сад. Цену видно до заказа, оплата картой, исполнители с проверкой.":"Cleaning, window washing and garden care. See the price before you order, pay by card, every provider is verified.",
+  "Рассчитать цену":"Calculate the price","Что нужно сделать?":"What needs doing?","Доступно сейчас":"Available now",
+  "Скоро в вашем городе":"Coming soon to your city","Как это работает":"How it works","Почему LUMI":"Why LUMI",
+  "Опишите заказ":"Describe the job","Услуга, комнаты, адрес и время. Цена появляется сразу — без «по договорённости».":"Service, rooms, address and time. The price appears at once — no “let’s agree later”.",
+  "Аккаунт за минуту":"An account takes a minute","Регистрация нужна только чтобы оформить и оплатить заказ.":"You only need to register to place and pay for the order.",
+  "Следите за работой":"Follow the work","Статус, чат с исполнителем и фото «до/после». Чек в PDF после оплаты.":"Status, chat with the provider and before/after photos. A PDF confirmation after payment.",
+  "Цена до заказа":"Price before ordering","Калькулятор считает по параметрам жилья — итог виден до подтверждения.":"The calculator prices your actual home — the total is visible before you confirm.",
+  "Проверенные исполнители":"Verified providers","Документы и данные для выплат проверяет модератор LUMI.":"Documents and payout details are checked by a LUMI moderator.",
+  "Оплата картой":"Card payment","Без наличных. К каждому заказу — подтверждение оплаты в PDF.":"No cash. Every order gets a PDF payment confirmation.",
+  "Связь и отчёт":"Contact and report","Чат с исполнителем, статусы и фото «до/после».":"Chat with the provider, live status and before/after photos.",
+  "Работаете в клининге?":"Work in cleaning?","Получайте заказы во Вроцлаве: 85% стоимости заказа остаётся у вас, выплаты каждый вторник.":"Get jobs in Wrocław: you keep 85% of the order value, payouts every Tuesday.",
+  "Стать исполнителем":"Become a provider","← Смотреть без входа":"← Browse without signing in",
+  "Чтобы оформить заказ, войдите или создайте аккаунт — это займёт минуту.":"To place an order, sign in or create an account — it takes a minute.",
+  "Создайте аккаунт исполнителя — займёт пару минут.":"Create a provider account — it takes a couple of minutes."});
+Object.assign(TR.uk,{"Дом под контролем —":"Дім під контролем —","в одном приложении":"в одному застосунку",
+  "Уборка, мойка окон и сад. Цену видно до заказа, оплата картой, исполнители с проверкой.":"Прибирання, миття вікон і сад. Ціну видно до замовлення, оплата карткою, виконавці з перевіркою.",
+  "Рассчитать цену":"Розрахувати ціну","Что нужно сделать?":"Що потрібно зробити?","Доступно сейчас":"Доступно зараз",
+  "Скоро в вашем городе":"Незабаром у вашому місті","Как это работает":"Як це працює","Почему LUMI":"Чому LUMI",
+  "Опишите заказ":"Опишіть замовлення","Услуга, комнаты, адрес и время. Цена появляется сразу — без «по договорённости».":"Послуга, кімнати, адреса і час. Ціна з’являється одразу — без «за домовленістю».",
+  "Аккаунт за минуту":"Акаунт за хвилину","Регистрация нужна только чтобы оформить и оплатить заказ.":"Реєстрація потрібна лише щоб оформити та оплатити замовлення.",
+  "Следите за работой":"Стежте за роботою","Статус, чат с исполнителем и фото «до/после». Чек в PDF после оплаты.":"Статус, чат із виконавцем і фото «до/після». Підтвердження в PDF після оплати.",
+  "Цена до заказа":"Ціна до замовлення","Калькулятор считает по параметрам жилья — итог виден до подтверждения.":"Калькулятор рахує за параметрами житла — підсумок видно до підтвердження.",
+  "Проверенные исполнители":"Перевірені виконавці","Документы и данные для выплат проверяет модератор LUMI.":"Документи та дані для виплат перевіряє модератор LUMI.",
+  "Оплата картой":"Оплата карткою","Без наличных. К каждому заказу — подтверждение оплаты в PDF.":"Без готівки. До кожного замовлення — підтвердження оплати в PDF.",
+  "Связь и отчёт":"Зв’язок і звіт","Чат с исполнителем, статусы и фото «до/после».":"Чат із виконавцем, статуси та фото «до/після».",
+  "Работаете в клининге?":"Працюєте у клінінгу?","Получайте заказы во Вроцлаве: 85% стоимости заказа остаётся у вас, выплаты каждый вторник.":"Отримуйте замовлення у Вроцлаві: 85% вартості замовлення лишається вам, виплати щовівторка.",
+  "Стать исполнителем":"Стати виконавцем","← Смотреть без входа":"← Дивитися без входу",
+  "Чтобы оформить заказ, войдите или создайте аккаунт — это займёт минуту.":"Щоб оформити замовлення, увійдіть або створіть акаунт — це займе хвилину.",
+  "Создайте аккаунт исполнителя — займёт пару минут.":"Створіть акаунт виконавця — займе кілька хвилин."});
 Object.assign(TR.en,{"Партнёрам":"For partners"});
 Object.assign(TR.uk,{"Партнёрам":"Партнерам"});
 Object.assign(TR.pl,{"Нажмите {icon} и выберите «На экран „Домой“»":"Naciśnij {icon} i wybierz „Do ekranu początkowego”"});
@@ -2708,7 +2773,10 @@ function regUpInner(kind,img){
 function renderAuth(){
   const _resetToken=(new URLSearchParams(location.search)).get('reset');
   const clearReset=()=>{ try{history.replaceState({},'',location.pathname);}catch{} };
-  let mode=_resetToken?'reset':'login', role='customer';
+  // Намерение, с которым сюда пришли из гостевого режима: заказ или работа.
+  const intent=state._afterAuth; state._afterAuth=null;
+  const authNote=state._authNote||''; state._authNote='';
+  let mode=_resetToken?'reset':(intent?'register':'login'), role=intent==='provider'?'cleaner':'customer';
   const reg={avatar:null,idDocument:null,equipment:[],professions:['cleaning'],hasCar:null,entityType:'individual',vals:{}};   // cleaner KYC + questionnaire
   const root=$('#root');
   root.innerHTML='';
@@ -2742,6 +2810,7 @@ function renderAuth(){
         </div>
       </div>
       <div class="auth-card" id="authCard"></div>
+      ${_resetToken?'':`<button class="auth-back" id="authBack">${t('← Смотреть без входа')}</button>`}
     </div>
   </div>`);
   const card=$('#authCard',wrap);
@@ -2749,6 +2818,7 @@ function renderAuth(){
     const isReset=mode==='reset';
     card.innerHTML=`
       <div class="auth-mobilemark">${logoBadge('b')}<span class="word">LUMI</span></div>
+      ${authNote?`<div class="auth-note">${esc(t(authNote))}</div>`:''}
       <div class="auth-head">
         <h2>${isReset?'Новый пароль':'Сброс пароля'}</h2>
         <p class="muted">${isReset?'Придумайте новый пароль для входа.':'Укажите email — пришлём ссылку для сброса пароля.'}</p>
@@ -2774,7 +2844,7 @@ function renderAuth(){
         if(isReset){
           const res=await api('/api/password/reset','POST',{token:_resetToken,password:f.get('password')});
           state.token=res.token; state.user=res.user; localStorage.setItem('cg_token',res.token); clearReset();
-          state.view=res.user.role==='admin'?'admin':res.user.role==='cleaner'?'jobs':res.user.role==='company'?'company':'home';
+          state.view=res.user.role==='admin'?'admin':res.user.role==='cleaner'?'jobs':res.user.role==='company'?'company':(intent==='book'&&state.draft?'book':'home');
           await loadCatalog(); if(res.user.role==='customer') await loadProperties();
           render(); toast('Пароль обновлён. Добро пожаловать!');
         }else{
@@ -2789,6 +2859,7 @@ function renderAuth(){
     if(mode==='forgot'||mode==='reset'){ drawRecover(); return; }
     card.innerHTML=`
       <div class="auth-mobilemark">${logoBadge('b')}<span class="word">LUMI</span></div>
+      ${authNote?`<div class="auth-note">${esc(t(authNote))}</div>`:''}
       <div class="auth-head">
         <h2>${mode==='login'?'Добро пожаловать':'Создайте аккаунт'}</h2>
         <p class="muted">${mode==='login'?'Войдите, чтобы продолжить.':'Пара шагов — и дом под контролем.'}</p>
@@ -2938,7 +3009,7 @@ function renderAuth(){
         const res=await api(mode==='login'?'/api/login':'/api/register','POST',payload);
         state.token=res.token;state.user=res.user;
         localStorage.setItem('cg_token',res.token);
-        state.view=res.user.role==='admin'?'admin':res.user.role==='cleaner'?'jobs':res.user.role==='company'?'company':'home';
+        state.view=res.user.role==='admin'?'admin':res.user.role==='cleaner'?'jobs':res.user.role==='company'?'company':(intent==='book'&&state.draft?'book':'home');
         await loadCatalog();
         if(res.user.role==='customer') await loadProperties();
         render();
@@ -2951,6 +3022,8 @@ function renderAuth(){
   // open at launch); re-draw the form once they arrive.
   if(!state.cities.length){ api('/api/cities').then(r=>{ state.cities=r.cities||[]; state.citiesOpen=r.open||r.cities||[]; if(mode==='register')draw(); }).catch(()=>{}); }
   root.appendChild(wrap);
+  // Стена входа больше не тупик: с неё можно вернуться к витрине.
+  const back=$('#authBack',wrap); if(back)back.onclick=()=>{ state.view='home'; render(); };
   const fx=$('#authFX',wrap); if(fx) heroAurora(fx);
   const tb=$('#authTheme',wrap);
   if(tb){ tb.innerHTML=isDark()?I.sun:I.moon; tb.onclick=()=>{toggleTheme();tb.innerHTML=isDark()?I.sun:I.moon;}; }
@@ -2961,6 +3034,9 @@ function renderAuth(){
    APP SHELL
    ========================================================================= */
 function navItems(){
+  // Гость: витрина и калькулятор. Всё остальное требует аккаунта и появляется
+  // после входа — просить регистрацию раньше значит просить её вслепую.
+  if(!state.user) return [['home','Главная',I.home],['book','Заказать',I.book]];
   const r=state.user.role;
   if(r==='admin') return [['admin','Панель',I.admin],['traffic','Посещения',I.globe],['analytics','Аналитика',I.chart],['bookings','Заказы',I.jobs],['audit','Аудит',I.receipt]];
   if(r==='company') return [['company','Компания',I.building],['board','Заказы',I.jobs],['staff','Персонал',I.users],['finance','Финансы',I.chart]];
@@ -2968,11 +3044,12 @@ function navItems(){
   return [['home','Главная',I.home],['properties','Дома',I.building],['book','Заказать',I.book],['bookings','Заказы',I.jobs],['messages','Чаты',I.send],['wallet','Кошелёк',I.wallet]];
 }
 function shell(content){
-  const u=state.user;
+  const guest=!state.user;
+  const u=state.user||{role:'guest',name:'Гость',subscription:null,avatar:null,banner:null};
   const items=navItems();
   const root=$('#root');
   root.innerHTML='';
-  const roleLabel=u.subscription==='plus'?'Premium':(ROLE_RU[u.role]||u.role);
+  const roleLabel=guest?'Гость':(u.subscription==='plus'?'Premium':(ROLE_RU[u.role]||u.role));
   const app=el(`<div class="app dash">
     <aside class="sidebar">
       <div class="brand side">${I.logo}<span>LUMI</span></div>
@@ -2994,11 +3071,12 @@ function shell(content){
         <div class="spacer"></div>
         <button class="iconbtn langbtn" id="langBtn" title="Язык">${I.globe}<b>${state.lang.toUpperCase()}</b></button>
         <button class="iconbtn" id="themeBtn" title="Тема">${isDark()?I.sun:I.moon}</button>
+        ${guest?`<button class="btn sm" id="loginBtn">${t('Войти')}</button>`:`
         <button class="iconbtn" id="bellBtn" title="Уведомления" style="position:relative">${I.bell}<span id="bellBadge" class="notif-badge" style="display:none"></span></button>
         <button class="userchip" id="meBtn" title="${u.name}">
           <span class="avatar" style="${avatarStyle(u.avatar)}">${u.avatar?'':u.name[0].toUpperCase()}</span>
           <span class="uc-txt"><b>${u.name.split(' ')[0]}</b><span>${roleLabel}</span></span>
-        </button>
+        </button>`}
       </div>
       <div class="main">${sessionStorage.getItem('lumi_admin_token')?`<div class="announce-banner" style="background:linear-gradient(120deg,#FEF3C7,#FDE68A);border-color:#F59E0B;color:#78350F"><span>👁 Вы вошли как ${esc(sessionStorage.getItem('lumi_imp_name')||'пользователь')}</span><button class="btn sm" id="stopImp" style="background:#78350F">Вернуться в админку</button></div>`:''}${(state.catalog&&state.catalog.maintenance)?`<div class="announce-banner" style="background:linear-gradient(120deg,#FEE2E2,#FECACA);border-color:var(--danger);color:#7F1D1D">🛠 <span>${esc(state.catalog.maintenance)}</span></div>`:''}${(state.catalog&&state.catalog.announcement)?`<div class="announce-banner">📣 <span>${esc(state.catalog.announcement)}</span></div>`:''}<div class="content view-enter"></div></div>
     </div>
@@ -3018,14 +3096,15 @@ function shell(content){
   });
   $('#langBtn',app).onclick=(e)=>openLangMenu(e.currentTarget);
   $('#themeBtn',app).onclick=toggleTheme;
-  $('#bellBtn',app).onclick=openNotifications;
-  $('#meBtn',app).onclick=openProfile;
+  const bell=$('#bellBtn',app); if(bell)bell.onclick=openNotifications;
+  const me=$('#meBtn',app); if(me)me.onclick=openProfile;
+  const lg=$('#loginBtn',app); if(lg)lg.onclick=()=>requireAuth('');
   $('.content',app).appendChild(content);
   root.appendChild(app);
   // Every view mount starts at the top — otherwise a tall previous screen (e.g. a
   // booking step) leaves the window scrolled down and the next screen looks broken.
   window.scrollTo(0,0);
-  loadNotifBadge();
+  if(!guest)loadNotifBadge();
 }
 
 /* ---------- Notifications ---------- */
@@ -3151,10 +3230,83 @@ async function loadProperties(){
 }
 
 function render(){
-  if(!state.user){ renderAuth(); return; }
+  if(!state.user){ (({home:viewGuestHome,book:viewBook})[state.view]||viewGuestHome)(); return; }
   const map={home:viewHome,properties:viewProperties,smart:viewSmart,shortstay:viewShortstay,stroverview:viewStrOverview,passport:viewPassport,premium:viewPremium,book:viewBook,bookings:viewBookings,wallet:viewWallet,jobs:viewJobs,admin:viewAdmin,traffic:viewTraffic,messages:viewMessages,earnings:viewEarnings,audit:viewAudit,analytics:viewAnalytics,company:viewCompany,board:viewBoard,staff:viewStaff,finance:viewFinance};
   const fn=map[state.view]||viewHome;
   fn();
+}
+
+/* ---------- Гостевой экран: витрина без регистрации ----------
+   Аккаунт нужен только в момент заказа. До этого человек должен увидеть
+   услуги и цену — просить регистрацию раньше значит просить её вслепую. */
+function requireAuth(note,intent){
+  state._authNote=note||'';
+  state._afterAuth=intent||null;
+  renderAuth();
+}
+function viewGuestHome(){
+  const city=(state.citiesOpen&&state.citiesOpen[0])||(state.cities&&state.cities[0])||'Wrocław';
+  const cats=(state.categories||[]).filter(cat=>catActive(cat)||CAT_LABEL_RU[cat.key]);
+  const fromZl=(k)=>{const v=svcFromZl(k==='windows'?'windows':k==='cleaning'?'standard':null,city);return v!=null?v:null;};
+  const c=el(`<div class="grid" style="gap:22px"></div>`);
+
+  c.appendChild(el(`
+    <div class="hero console has-scene">
+      <div class="hero-scene" aria-hidden="true">${HERO_SCENE}</div>
+      <div class="hero-aurora" aria-hidden="true"></div>
+      <div class="hero-veil"></div>
+      <div class="hero-body">
+        <div class="hero-eyebrow"><span class="live-dot"></span>LUMI<span class="dim"> · ${esc(city)}</span></div>
+        <h1 class="hero-h1">${t('Дом под контролем —')}<br><span class="grad-text">${t('в одном приложении')}</span></h1>
+        <p class="hero-status">${t('Уборка, мойка окон и сад. Цену видно до заказа, оплата картой, исполнители с проверкой.')}</p>
+        <div class="hero-chips">
+          <button class="gpill hot" id="gCalc">${I.flash}<span>${t('Рассчитать цену')}</span></button>
+          <button class="gpill" id="gLogin">${I.check}<span>${t('Войти')}</span></button>
+        </div>
+      </div>
+    </div>`));
+
+  const grid=el(`<div><div class="section-title">${t('Что нужно сделать?')}</div><div class="svc-grid" id="gCats"></div></div>`);
+  cats.forEach(cat=>{
+    const active=catActive(cat), price=active?fromZl(cat.key):null;
+    const b=el(`<button type="button" class="svc-card ${active?'':'soon'}">
+      <span class="vi ${CAT_COLOR[cat.key]||'c-cleaning'}">${CAT_ICON[cat.key]||I.broom}</span>
+      <b>${t(catLabel(cat))}</b>
+      <span class="muted tiny">${active?(price!=null?`${t('от')} ${money(price)}`:t('Доступно сейчас')):t('Скоро')}</span>
+    </button>`);
+    b.onclick=()=>{ if(!active){toast(t('Скоро в вашем городе'));return;} openVertical(cat); };
+    $('#gCats',grid).appendChild(b);
+  });
+  c.appendChild(grid);
+
+  const step=(n,ttl,txt)=>`<div class="card pad"><div class="gstep">${n}</div><b>${t(ttl)}</b><p class="muted tiny" style="margin:6px 0 0">${t(txt)}</p></div>`;
+  c.appendChild(el(`<div><div class="section-title">${t('Как это работает')}</div>
+    <div class="grid three">
+      ${step(1,'Опишите заказ','Услуга, комнаты, адрес и время. Цена появляется сразу — без «по договорённости».')}
+      ${step(2,'Аккаунт за минуту','Регистрация нужна только чтобы оформить и оплатить заказ.')}
+      ${step(3,'Следите за работой','Статус, чат с исполнителем и фото «до/после». Чек в PDF после оплаты.')}
+    </div></div>`));
+
+  const feat=(ico,ttl,txt)=>`<div class="card pad row" style="gap:12px;align-items:flex-start">
+    <span class="gfi">${ico}</span><div><b>${t(ttl)}</b><p class="muted tiny" style="margin:4px 0 0">${t(txt)}</p></div></div>`;
+  c.appendChild(el(`<div><div class="section-title">${t('Почему LUMI')}</div>
+    <div class="grid two">
+      ${feat(I.flash,'Цена до заказа','Калькулятор считает по параметрам жилья — итог виден до подтверждения.')}
+      ${feat(I.shield,'Проверенные исполнители','Документы и данные для выплат проверяет модератор LUMI.')}
+      ${feat(I.wallet,'Оплата картой','Без наличных. К каждому заказу — подтверждение оплаты в PDF.')}
+      ${feat(I.chat,'Связь и отчёт','Чат с исполнителем, статусы и фото «до/после».')}
+    </div></div>`));
+
+  c.appendChild(el(`<div class="card pad gcta">
+    <div><b style="font-size:17px">${t('Работаете в клининге?')}</b>
+      <p class="muted tiny" style="margin:6px 0 0">${t('Получайте заказы во Вроцлаве: 85% стоимости заказа остаётся у вас, выплаты каждый вторник.')}</p></div>
+    <button class="btn ghost" id="gPro">${t('Стать исполнителем')}</button>
+  </div>`));
+
+  shell(c);
+  $('#gCalc',c).onclick=()=>{ state.view='book'; render(); };
+  $('#gLogin',c).onclick=()=>requireAuth('');
+  $('#gPro',c).onclick=()=>requireAuth('Создайте аккаунт исполнителя — займёт пару минут.','provider');
 }
 
 /* ---------- HOME (customer) — the LUMI hub ---------- */
@@ -4488,8 +4640,9 @@ function viewPremium(){
 
 /* ---------- BOOKING WIZARD ---------- */
 function newDraft(service,propertyId){
-  const prop=propertyId?state.properties.find(p=>p.id===propertyId):(state.properties[0]||null);
-  return {service:service||'standard',propertyId:prop?prop.id:null,propertyType:prop?prop.type:'apartment',rooms:prop?prop.rooms:2,baths:prop?prop.baths:1,area:prop?prop.area:0,windows:5,windowSide:'inside',floor:1,windowAccess:'normal',extras:[],urgency:'scheduled',frequency:'once',date:'',time:'',scheduledFor:null,address:prop?prop.address:'',city:prop?prop.city:(state.user.city||'Warsaw'),location:(prop&&prop.location&&typeof prop.location.lat==='number')?{lat:prop.location.lat,lng:prop.location.lng}:null,notes:'',photos:[],step:0,estimate:null};
+  const props=state.properties||[];
+  const prop=propertyId?props.find(p=>p.id===propertyId):(props[0]||null);
+  return {service:service||'standard',propertyId:prop?prop.id:null,propertyType:prop?prop.type:'apartment',rooms:prop?prop.rooms:2,baths:prop?prop.baths:1,area:prop?prop.area:0,windows:5,windowSide:'inside',floor:1,windowAccess:'normal',extras:[],urgency:'scheduled',frequency:'once',date:'',time:'',scheduledFor:null,address:prop?prop.address:'',city:prop?prop.city:((state.user&&state.user.city)||(state.citiesOpen&&state.citiesOpen[0])||(state.cities&&state.cities[0])||'Wrocław'),location:(prop&&prop.location&&typeof prop.location.lat==='number')?{lat:prop.location.lat,lng:prop.location.lng}:null,notes:'',photos:[],step:0,estimate:null};
 }
 /* ═══════════ Ogród — garden calculator (Wrocław). Prices come from the
    server (/api/ogrod/estimate) — the client only renders the breakdown.
@@ -4693,6 +4846,7 @@ function openOgrodOrder(g,est,opts){
       setTimeout(()=>consent.closest('.consent-box').classList.remove('shake'),600);
       return;
     }
+    if(!state.user) return requireAuth('Чтобы оформить заказ, войдите или создайте аккаунт — это займёт минуту.','book');
     const btn=$('#ooGo',m);btn.disabled=true;btn.textContent=t('Минутку…');
     try{
       const body={service:'garden',garden:{...g,lawnM2:+g.lawnM2||0,hedgeMb:+g.hedgeMb||0,pielenieM2:+g.pielenieM2||0},
@@ -5210,6 +5364,7 @@ function openServiceInfo(key){
   const ok=$('#svcInfoOk',inner); if(ok)ok.onclick=()=>closeModal();
 }
 async function confirmBooking(){
+  if(!state.user) return requireAuth('Чтобы оформить заказ, войдите или создайте аккаунт — это займёт минуту.','book');
   const d=state.draft;
   try{
     const {booking}=await api('/api/bookings','POST',d);

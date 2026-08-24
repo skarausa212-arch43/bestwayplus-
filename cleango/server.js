@@ -3693,7 +3693,10 @@ route('POST', '/api/support', async (req, res) => {
   send(res, 200, { ok: true, supportEmail: SUPPORT_EMAIL });
 });
 route('GET', '/api/support/meta', async (req, res) => {
-  send(res, 200, { topics: SUPPORT_TOPICS, email: SUPPORT_EMAIL });
+  // «Партнёрство» приходит только с публичной страницы partners.html — в списке
+  // тем поддержки внутри приложения ему не место.
+  const { partner, ...topics } = SUPPORT_TOPICS;
+  send(res, 200, { topics, email: SUPPORT_EMAIL });
 });
 route('GET', '/api/admin/support', async (req, res) => {
   const admin = requireCap(req, res, 'disputes.manage'); if (!admin) return;

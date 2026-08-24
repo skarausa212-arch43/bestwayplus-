@@ -1239,6 +1239,24 @@ async function main() {
       assert.strictEqual((await req('GET', '/api/admin/traffic', { token: customerTok })).status, 403);
     });
 
+    await ok('витрина открыта без входа: каталог и расчёт цены доступны гостю', async () => {
+      // Первый экран — витрина, а не форма: каталог и оценка должны работать без токена.
+      const cat = await req('GET', '/api/catalog');
+      assert.strictEqual(cat.status, 200, 'catalogue must be public');
+      assert.ok(cat.json.services && Object.keys(cat.json.services).length, 'services listed for a guest');
+      const cats = await req('GET', '/api/categories');
+      assert.strictEqual(cats.status, 200);
+      const est = await req('POST', '/api/estimate', { body: { service: 'standard', rooms: 2, baths: 1, city: 'Wrocław' } });
+      assert.strictEqual(est.status, 200, 'a guest can price a job');
+      assert.ok(est.json.estimate.total > 0);
+      // …но заказ по-прежнему требует аккаунта.
+      const anon = await req('POST', '/api/bookings', { body: { service: 'standard', rooms: 2, baths: 1, address: 'ul. Testowa 1', city: 'Wrocław', startNow: true } });
+      assert.strictEqual(anon.status, 403, 'ordering still needs an account');
+      // Тема «Партнёрство» не предлагается в поддержке приложения.
+      const meta = await req('GET', '/api/support/meta');
+      assert.ok(!meta.json.topics.partner, 'partner topic stays out of the in-app support list');
+    });
+
     console.log(`\n${passed} API/integration checks passed.`);
   } finally {
     child.kill('SIGKILL');
