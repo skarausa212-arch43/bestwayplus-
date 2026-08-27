@@ -113,14 +113,27 @@
     <div class="card">
       <h2>Устройство</h2>
 
-      <label for="device">Модель</label>
-      <select id="device"></select>
+      <label for="deviceFilter">Модель</label>
+      <input type="text" id="deviceFilter" placeholder="фильтр: pixel, samsung, tablet…">
+      <select id="device" size="1" style="margin-top:6px"></select>
 
       <label for="locale">Локаль</label>
       <select id="locale"></select>
 
+      <label for="timezone">Часовой пояс</label>
+      <select id="timezone"></select>
+
+      <label for="orientation">Ориентация</label>
+      <select id="orientation">
+        <option value="portrait">Портрет</option>
+        <option value="landscape">Ландшафт</option>
+      </select>
+
       <label for="seed">Seed сессии</label>
-      <input type="text" id="seed" value="default-seed" placeholder="любая строка">
+      <div class="row">
+        <input type="text" id="seed" value="default-seed" placeholder="любая строка">
+        <button id="randomSeed" style="flex:none" title="Случайный seed">🎲</button>
+      </div>
 
       <label for="upstream">Вышестоящий прокси</label>
       <input type="text" id="upstream" placeholder="socks5://user:pass@host:1080">
@@ -130,6 +143,21 @@
 
       <label for="fontsDir">Каталог шрифтов Android</label>
       <input type="text" id="fontsDir" placeholder="./android-fonts">
+
+      <label for="geo">Геопозиция (широта, долгота)</label>
+      <div class="row">
+        <input type="text" id="geoLat" placeholder="55.7558">
+        <input type="text" id="geoLon" placeholder="37.6173">
+      </div>
+      <div class="note" style="margin-top:4px">Пусто — берётся город локали.</div>
+
+      <label for="battery">Батарея: <span id="batteryVal">авто</span></label>
+      <div class="row">
+        <input type="range" id="battery" min="0" max="100" value="-1" style="padding:0">
+        <label style="flex:none;margin:0;display:flex;gap:6px;align-items:center">
+          <input type="checkbox" id="charging"> заряжается
+        </label>
+      </div>
 
       <label for="startUrl">Открыть при запуске</label>
       <input type="text" id="startUrl" placeholder="https://example.com">
@@ -147,6 +175,22 @@
     </div>
 
     <div class="card">
+      <h2>Пресеты</h2>
+      <select id="presetList"></select>
+      <div class="row" style="margin-top:8px">
+        <button id="presetLoad">Загрузить</button>
+        <button id="presetSave">Сохранить</button>
+        <button id="presetDelete" class="danger" style="flex:none">✕</button>
+      </div>
+      <label for="presetName">Имя для сохранения</label>
+      <input type="text" id="presetName" placeholder="например: PL-магазин-1">
+      <div class="row" style="margin-top:10px">
+        <button id="forget" class="danger">Стереть состояние устройства</button>
+      </div>
+      <div id="presetState"></div>
+    </div>
+
+    <div class="card">
       <h2>Запущенные</h2>
       <ul class="sessions" id="sessions"></ul>
       <div class="note" id="noSessions">Пока ничего не запущено.</div>
@@ -161,6 +205,8 @@
       <button id="reload" title="Обновить">⟳</button>
       <input type="text" id="url" placeholder="example.com" disabled>
       <button id="go" disabled>Перейти</button>
+      <button id="shot" disabled title="Скриншот">📷</button>
+      <button id="reset" disabled title="Очистить cookies и хранилище">🧹</button>
     </div>
 
     <div class="bezel">
@@ -193,7 +239,7 @@
 
 <script>
 const $ = (id) => document.getElementById(id);
-const state = { current: null, sse: null, viewport: null };
+const state = { current: null, sse: null, viewport: null, devices: [], locales: [], presets: {} };
 
 async function api(method, path, body) {
   const res = await fetch(path, {
@@ -207,16 +253,40 @@ async function api(method, path, body) {
 }
 
 function config() {
+  const lat = $('geoLat').value.trim();
+  const lon = $('geoLon').value.trim();
+  const batt = Number($('battery').value);
   return {
     deviceId: $('device').value,
     locale: $('locale').value,
+    timezone: $('timezone').value || null,
+    orientation: $('orientation').value,
     seed: $('seed').value || 'default-seed',
     upstream: $('upstream').value.trim(),
     publicIp: $('publicIp').value.trim() || null,
     fontsDir: $('fontsDir').value.trim() || null,
+    // Both coordinates or neither: half a position is not a position.
+    geolocation: lat && lon ? { latitude: Number(lat), longitude: Number(lon) } : null,
+    // -1 on the slider means "leave it to the device profile".
+    battery: batt >= 0 ? { level: batt / 100, charging: $('charging').checked } : null,
     headless: !$('headed').checked,
     url: $('startUrl').value.trim() || null,
   };
+}
+
+function applyConfig(c) {
+  const set = (id, v) => { if (v !== undefined && v !== null) $(id).value = v; };
+  set('device', c.deviceId); set('locale', c.locale); set('orientation', c.orientation);
+  set('seed', c.seed); set('upstream', c.upstream); set('publicIp', c.publicIp);
+  set('fontsDir', c.fontsDir); set('startUrl', c.url);
+  $('timezone').value = c.timezone || '';
+  $('geoLat').value = c.geolocation ? c.geolocation.latitude : '';
+  $('geoLon').value = c.geolocation ? c.geolocation.longitude : '';
+  $('battery').value = c.battery ? Math.round(c.battery.level * 100) : -1;
+  $('charging').checked = !!(c.battery && c.battery.charging);
+  $('headed').checked = c.headless === false;
+  updateBatteryLabel();
+  refreshPreview();
 }
 
 function kv(target, pairs) {
@@ -240,6 +310,7 @@ async function refreshPreview() {
       const p = await api('POST', '/api/preview', c);
       kv($('preview'), [
         ['seed id', p.seedId],
+        ['ориентация', p.orientation === 'landscape' ? 'ландшафт' : 'портрет'],
         ['UA', p.userAgent],
         ['модель', p.model],
         ['Android', p.platformVersion],
@@ -251,6 +322,9 @@ async function refreshPreview() {
         ['языки', p.languages.join(', ')],
         ['Accept-Language', p.acceptLanguage],
         ['Sec-CH-UA', p.secChUa],
+        ['геопозиция', `${p.geolocation.latitude}, ${p.geolocation.longitude} ±${p.geolocation.accuracy}м`],
+        ['батарея', `${Math.round(p.battery.level * 100)}%${p.battery.charging ? ', заряжается' : ''}`],
+        ['страна выхода', p.country],
         ['TLS-шаблон', p.tlsTemplate],
       ]);
     } catch (err) {
@@ -361,9 +435,7 @@ function select(s) {
   state.viewport = s.viewport;
   sizeGlass();
   connectScreen(s.id);
-  $('url').disabled = false;
-  $('go').disabled = false;
-  $('verify').disabled = false;
+  for (const b of ['url', 'go', 'verify', 'shot', 'reset']) $(b).disabled = false;
   $('url').value = s.url || '';
   $('devLabel').textContent =
     `${s.deviceName} · ${s.screen} · ${s.gpu}` + (s.upstream ? ` · через прокси` : '');
@@ -379,9 +451,7 @@ function clearSelection() {
   if (state.sse) { state.sse.close(); state.sse = null; }
   $('screen').removeAttribute('src');
   $('screenEmpty').style.display = 'grid';
-  $('url').disabled = true;
-  $('go').disabled = true;
-  $('verify').disabled = true;
+  for (const b of ['url', 'go', 'verify', 'shot', 'reset']) $(b).disabled = true;
   $('devLabel').textContent = '';
   sizeGlass();
 }
@@ -451,7 +521,114 @@ $('verify').onclick = async () => {
   }
 };
 
-for (const id of ['device', 'locale', 'seed']) {
+// ─── новые контролы ────────────────────────────────────────────
+function updateBatteryLabel() {
+  const v = Number($('battery').value);
+  $('batteryVal').textContent = v < 0 ? 'авто' : `${v}%`;
+}
+$('battery').addEventListener('input', () => { updateBatteryLabel(); refreshPreview(); });
+$('charging').addEventListener('change', refreshPreview);
+
+$('randomSeed').onclick = () => {
+  $('seed').value = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+  refreshPreview();
+};
+
+// Selecting a locale moves the timezone and the position with it — they are
+// one identity, and leaving a stale Moscow fix under a Brazilian locale is the
+// contradiction this panel exists to prevent.
+$('locale').addEventListener('change', () => {
+  const l = state.locales.find((x) => x.tag === $('locale').value);
+  if (l) {
+    $('timezone').value = l.timezone;
+    $('geoLat').value = '';
+    $('geoLon').value = '';
+  }
+  refreshPreview();
+});
+
+$('deviceFilter').addEventListener('input', () => {
+  const q = $('deviceFilter').value.trim().toLowerCase();
+  const sel = $('device');
+  const keep = state.devices.filter(
+    (d) => !q || `${d.name} ${d.id} ${d.formFactor} ${d.gpu}`.toLowerCase().includes(q)
+  );
+  const previous = sel.value;
+  sel.innerHTML = '';
+  for (const d of keep) {
+    const o = document.createElement('option');
+    o.value = d.id;
+    o.textContent = `${d.name} — ${d.screen}`;
+    sel.append(o);
+  }
+  if (keep.some((d) => d.id === previous)) sel.value = previous;
+  refreshPreview();
+});
+
+$('shot').onclick = async () => {
+  const r = await api('POST', `/api/sessions/${state.current}/screenshot`, {});
+  const a = document.createElement('a');
+  a.href = 'data:image/png;base64,' + r.png;
+  a.download = `screen-${Date.now()}.png`;
+  a.click();
+};
+
+$('reset').onclick = async () => {
+  await api('POST', `/api/sessions/${state.current}/reset`, {});
+  $('url').value = 'about:blank';
+};
+
+// ─── пресеты ───────────────────────────────────────────────────
+async function refreshPresets(selected) {
+  const all = await api('GET', '/api/presets');
+  state.presets = all;
+  const sel = $('presetList');
+  sel.innerHTML = '';
+  for (const name of Object.keys(all).sort()) {
+    const o = document.createElement('option');
+    o.value = name;
+    o.textContent = name;
+    sel.append(o);
+  }
+  if (selected) sel.value = selected;
+}
+
+$('presetSave').onclick = async () => {
+  const name = $('presetName').value.trim() || $('presetList').value;
+  if (!name) {
+    $('presetState').innerHTML = '<div class="err">Укажите имя пресета</div>';
+    return;
+  }
+  await api('POST', '/api/presets', { name, config: config() });
+  $('presetName').value = '';
+  $('presetState').innerHTML = `<div class="note">Сохранено: ${name}</div>`;
+  refreshPresets(name);
+};
+
+$('presetLoad').onclick = () => {
+  const c = state.presets[$('presetList').value];
+  if (c) applyConfig(c);
+};
+
+$('presetDelete').onclick = async () => {
+  const name = $('presetList').value;
+  if (!name) return;
+  await api('DELETE', `/api/presets/${encodeURIComponent(name)}`);
+  $('presetState').innerHTML = `<div class="note">Удалён: ${name}</div>`;
+  refreshPresets();
+};
+
+$('forget').onclick = async () => {
+  try {
+    await api('POST', '/api/state/forget', config());
+    $('presetState').innerHTML =
+      '<div class="note">Состояние стёрто — cookies и хранилище этого seed удалены.</div>';
+  } catch (err) {
+    $('presetState').innerHTML = `<div class="err">${err.message}</div>`;
+  }
+};
+
+for (const id of ['device', 'seed', 'timezone', 'orientation']) {
   $(id).addEventListener('input', refreshPreview);
   $(id).addEventListener('change', refreshPreview);
 }
@@ -460,6 +637,9 @@ for (const id of ['device', 'locale', 'seed']) {
 (async () => {
   const cfg = await api('GET', '/api/config');
   $('platform').textContent = cfg.platform;
+
+  state.devices = cfg.devices;
+  state.locales = cfg.locales;
 
   for (const d of cfg.devices) {
     const o = document.createElement('option');
@@ -470,14 +650,34 @@ for (const id of ['device', 'locale', 'seed']) {
   for (const l of cfg.locales) {
     const o = document.createElement('option');
     o.value = l.tag;
-    o.textContent = `${l.tag} · ${l.timezone}`;
+    o.textContent = `${l.tag} · ${l.country} · ${l.timezone}`;
     $('locale').append(o);
   }
-  $('locale').value = 'ru-RU';
 
+  // Timezones are grouped by region, and the first entry means "whatever the
+  // locale implies" so the two cannot silently disagree by default.
+  const auto = document.createElement('option');
+  auto.value = '';
+  auto.textContent = '— по локали —';
+  $('timezone').append(auto);
+  for (const [group, zones] of Object.entries(cfg.timezones)) {
+    const g = document.createElement('optgroup');
+    g.label = group;
+    for (const z of zones) {
+      const o = document.createElement('option');
+      o.value = z;
+      o.textContent = z;
+      g.append(o);
+    }
+    $('timezone').append(g);
+  }
+
+  $('locale').value = 'ru-RU';
+  updateBatteryLabel();
   sizeGlass();
   refreshPreview();
   refreshSessions();
+  refreshPresets();
   setInterval(refreshSessions, 5000);
 })();
 </script>

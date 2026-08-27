@@ -34,6 +34,10 @@ const TARGETS = {
   },
   windows: {
     label: 'Windows',
+    // The double-clickable front door. Only Windows gets one: on macOS and
+    // Linux the terminal is the normal way in, and an unsigned binary there
+    // buys nothing.
+    launcher: { name: 'AndroidEmulator.exe', goos: 'windows', goarch: 'amd64' },
     // zip rather than tar.gz: Explorer opens it on a double click, and the
     // executable bit that tar preserves means nothing to Windows anyway.
     format: 'zip',
@@ -87,6 +91,30 @@ async function buildProxy(arch, outDir) {
   return { name, out, size };
 }
 
+/** Builds the double-click launcher for targets that ship one. */
+async function buildLauncher(target, stage) {
+  if (!target.launcher) return null;
+  const { name, goos, goarch } = target.launcher;
+  const out = join(stage, name);
+  await exec(
+    'go',
+    [
+      'build', '-trimpath',
+      // -H windowsgui: no console window behind the app. Errors reach the user
+      // through a message box instead, since there is nowhere to print them.
+      '-ldflags', '-s -w -H windowsgui',
+      '-o', out, '.',
+    ],
+    {
+      cwd: join(ROOT, 'tools', 'launcher'),
+      timeout: 600_000,
+      env: { ...process.env, GOOS: goos, GOARCH: goarch, CGO_ENABLED: '0' },
+    }
+  );
+  const { size } = await stat(out);
+  return { name, out, size };
+}
+
 async function sha256(path) {
   return createHash('sha256').update(await readFile(path)).digest('hex');
 }
@@ -134,6 +162,20 @@ async function main() {
     console.log(`${(info.size / 1e6).toFixed(1)} MB`);
   }
 
+  const launcher = await buildLauncher(target, stage);
+  if (launcher) {
+    console.log(`  ${launcher.name} ... ${(launcher.size / 1e6).toFixed(1)} MB`);
+  }
+
+  // Go sources for the launcher travel with the archive too.
+  const launcherSrc = join(stage, 'tools', 'launcher');
+  await mkdir(launcherSrc, { recursive: true });
+  for (const f of await readdir(join(ROOT, 'tools', 'launcher'))) {
+    if (f.endsWith('.go') || f === 'go.mod') {
+      await cp(join(ROOT, 'tools', 'launcher', f), join(launcherSrc, f));
+    }
+  }
+
   await writeFile(
     join(stage, 'VERSION'),
     JSON.stringify(
@@ -141,6 +183,9 @@ async function main() {
         target: targetName,
         builtAt: new Date().toISOString(),
         node: process.version,
+        launcher: launcher
+          ? { file: launcher.name, sha256: await sha256(launcher.out) }
+          : null,
         proxies: await Promise.all(
           built.map(async (b) => ({
             file: `tools/tlsproxy/bin/${b.name}`,

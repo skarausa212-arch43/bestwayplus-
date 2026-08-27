@@ -3,8 +3,10 @@ import { readFile } from 'node:fs/promises';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { readFile as fsReadFile, writeFile, mkdir, rm } from 'node:fs/promises';
+
 import { listDevices, getDevice } from '../../profiles/devices.js';
-import { LOCALES } from '../../profiles/network.js';
+import { LOCALES, TIMEZONES } from '../../profiles/network.js';
 import { deriveProfile } from '../profile/derive.js';
 import { writeNetworkProfile } from '../net/profile.js';
 import { fingerprint } from '../net/tlsproxy.js';
@@ -134,6 +136,53 @@ class LiveSession {
 const sessions = new Map();
 let nextId = 1;
 
+/**
+ * Named presets, kept beside the device state so a machine that has the
+ * profiles has the presets too. A flat file is enough: this is a handful of
+ * small objects edited by one person.
+ */
+const PRESETS_FILE = join(process.cwd(), 'profiles-data', 'presets.json');
+
+async function loadPresets() {
+  try {
+    return JSON.parse(await fsReadFile(PRESETS_FILE, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+async function savePresets(all) {
+  await mkdir(dirname(PRESETS_FILE), { recursive: true });
+  await writeFile(PRESETS_FILE, JSON.stringify(all, null, 2), 'utf8');
+}
+
+/**
+ * Rejects an upstream the proxy could only fail on later, with a message that
+ * says what is wrong. A missing port is the common one — `socks5://host` looks
+ * complete and is not.
+ */
+function validateUpstream(raw) {
+  if (!raw) return null;
+  let u;
+  try {
+    u = new URL(raw);
+  } catch {
+    throw new Error(
+      `Не разобрать адрес прокси: "${raw}". Ожидается socks5://user:pass@host:port`
+    );
+  }
+  if (!['socks5:', 'socks5h:', 'http:', 'https:'].includes(u.protocol)) {
+    throw new Error(`Схема "${u.protocol}" не поддерживается — нужен socks5:// или http://`);
+  }
+  if (!u.port) {
+    throw new Error(
+      `В адресе прокси не указан порт: "${raw}". Добавьте его, например ` +
+        `${u.protocol}//${u.hostname}:1080`
+    );
+  }
+  return raw;
+}
+
 function json(res, code, body) {
   const payload = JSON.stringify(body);
   res.writeHead(code, {
@@ -201,7 +250,9 @@ const ROUTES = {
         tag,
         timezone: l.timezone,
         country: l.country,
+        geo: l.geo,
       })),
+      timezones: TIMEZONES,
       platform: process.platform,
     });
   },
@@ -214,6 +265,9 @@ const ROUTES = {
       locale: body.locale,
       seed: body.seed || 'default-seed',
       timezone: body.timezone || undefined,
+      orientation: body.orientation || 'portrait',
+      geolocation: body.geolocation || undefined,
+      battery: body.battery || undefined,
     });
     json(res, 200, {
       seedId: profile.seedId,
@@ -230,6 +284,10 @@ const ROUTES = {
       tlsTemplate: profile.net.tls.utls,
       cores: profile.js.hardwareConcurrency,
       memory: profile.js.deviceMemory,
+      orientation: profile.orientation,
+      geolocation: profile.js.geolocation,
+      battery: profile.js.battery,
+      country: profile.net.expectedCountry,
     });
   },
 
@@ -242,7 +300,9 @@ const ROUTES = {
     });
     const dir = join(process.cwd(), 'profiles-data', `${profile.deviceId}-${profile.seedId}`);
     const path = join(dir, 'network.json');
-    await writeNetworkProfile(profile, path, { upstream: body.upstream || '' });
+    await writeNetworkProfile(profile, path, {
+      upstream: validateUpstream((body.upstream || '').trim()) || '',
+    });
     json(res, 200, await fingerprint(path, { host: body.host || 'www.example.com' }));
   },
 
@@ -251,14 +311,18 @@ const ROUTES = {
   },
 
   async 'POST /api/sessions'(req, res, body) {
+    const upstream = validateUpstream((body.upstream || '').trim());
     const session = await launchDevice({
       deviceId: body.deviceId,
       locale: body.locale || 'en-US',
       seed: body.seed || 'default-seed',
       timezone: body.timezone || undefined,
-      upstream: body.upstream || '',
+      upstream: upstream || '',
       publicIp: body.publicIp || null,
       fontsDir: body.fontsDir || null,
+      orientation: body.orientation || 'portrait',
+      geolocation: body.geolocation || undefined,
+      battery: body.battery || undefined,
       headless: body.headless !== false,
     });
     const id = String(nextId++);
@@ -336,6 +400,65 @@ const ROUTES = {
     } catch (err) {
       json(res, 200, { url: p.url(), error: err.message });
     }
+  },
+
+  async 'GET /api/presets'(req, res) {
+    json(res, 200, await loadPresets());
+  },
+
+  async 'POST /api/presets'(req, res, body) {
+    const name = String(body.name || '').trim();
+    if (!name) return json(res, 400, { error: 'нужно имя пресета' });
+    const all = await loadPresets();
+    all[name] = body.config || {};
+    await savePresets(all);
+    json(res, 200, all);
+  },
+
+  async 'DELETE /api/presets/:name'(req, res, body, [name]) {
+    const all = await loadPresets();
+    delete all[decodeURIComponent(name)];
+    await savePresets(all);
+    json(res, 200, all);
+  },
+
+  /** A full-resolution capture, unlike the screencast frames, which are
+   *  lossy JPEG sized for the panel. */
+  async 'POST /api/sessions/:id/screenshot'(req, res, body, [id]) {
+    const s = requireSession(res, id);
+    if (!s) return;
+    const buf = await s.page.screenshot({ fullPage: !!body.fullPage, type: 'png' });
+    json(res, 200, { png: buf.toString('base64'), url: s.page.url() });
+  },
+
+  /** Clears cookies and origin storage without discarding the identity: the
+   *  same seed still yields the same device, it just arrives with no history. */
+  async 'POST /api/sessions/:id/reset'(req, res, body, [id]) {
+    const s = requireSession(res, id);
+    if (!s) return;
+    await s.session.context.clearCookies();
+    await s.page.goto('about:blank').catch(() => {});
+    await s.page.evaluate(() => {
+      try { localStorage.clear(); sessionStorage.clear(); } catch (e) { /* opaque origin */ }
+    }).catch(() => {});
+    json(res, 200, { reset: id });
+  },
+
+  /** Deletes a stopped device's whole state directory. */
+  async 'POST /api/state/forget'(req, res, body) {
+    const profile = deriveProfile({
+      deviceId: body.deviceId,
+      locale: body.locale,
+      seed: body.seed || 'default-seed',
+    });
+    const dir = join(process.cwd(), 'profiles-data', `${profile.deviceId}-${profile.seedId}`);
+    for (const live of sessions.values()) {
+      if (live.profile.seedId === profile.seedId && live.profile.deviceId === profile.deviceId) {
+        return json(res, 409, { error: 'это устройство сейчас запущено — сначала закройте его' });
+      }
+    }
+    await rm(dir, { recursive: true, force: true });
+    json(res, 200, { forgot: dir });
   },
 
   /** Exactly what `andro verify` runs, on the session already open. It uses a

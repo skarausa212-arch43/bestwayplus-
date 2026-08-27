@@ -99,6 +99,9 @@ export async function launchDevice(options = {}) {
     timezone,
     upstream = '',
     publicIp = null,
+    orientation = 'portrait',
+    geolocation = undefined,
+    battery = undefined,
     headless = true,
     profilesDir = './profiles-data',
     fontsDir = null,
@@ -106,7 +109,9 @@ export async function launchDevice(options = {}) {
     launchOptions = {},
   } = options;
 
-  const profile = deriveProfile({ deviceId, locale, seed, timezone, proxy: upstream });
+  const profile = deriveProfile({
+    deviceId, locale, seed, timezone, proxy: upstream, orientation, geolocation, battery,
+  });
 
   const dir = resolve(join(profilesDir, `${profile.deviceId}-${profile.seedId}`));
   const userDataDir = join(dir, 'chromium');
@@ -179,6 +184,10 @@ export async function launchDevice(options = {}) {
     hasTouch: profile.launch.hasTouch,
     locale: profile.launch.locale,
     timezoneId: profile.launch.timezoneId,
+    // Granted up front so a page that asks does not stall on a prompt no one
+    // can answer, and answered with the same position the locale implies.
+    geolocation: profile.launch.geolocation,
+    permissions: ['geolocation'],
     colorScheme: 'light',
     ...launchOptions.contextOptions,
   });

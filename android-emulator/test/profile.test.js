@@ -161,3 +161,91 @@ test('GPU limits are internally consistent', () => {
     assert.ok(L.MAX_RENDERBUFFER_SIZE === L.MAX_TEXTURE_SIZE, `${d.id}`);
   }
 });
+
+test('every timezone offered is one the runtime actually knows', async () => {
+  const { ALL_TIMEZONES, isValidTimezone } = await import('../profiles/network.js');
+  const bad = ALL_TIMEZONES.filter((tz) => !isValidTimezone(tz));
+  assert.deepEqual(bad, [], 'a typo here reaches the picker and fails only at launch');
+  assert.equal(
+    new Set(ALL_TIMEZONES).size,
+    ALL_TIMEZONES.length,
+    'the picker should not list the same zone twice'
+  );
+  assert.ok(ALL_TIMEZONES.length > 100, `expected a broad list, got ${ALL_TIMEZONES.length}`);
+});
+
+test('every locale names a real timezone and a plausible position', () => {
+  for (const [tag, l] of Object.entries(LOCALES)) {
+    assert.doesNotThrow(
+      () => new Intl.DateTimeFormat('en-US', { timeZone: l.timezone }),
+      `${tag}: ${l.timezone}`
+    );
+    assert.ok(Math.abs(l.geo.latitude) <= 90, `${tag} latitude`);
+    assert.ok(Math.abs(l.geo.longitude) <= 180, `${tag} longitude`);
+    // A metre-accurate fix is its own anomaly; phones report tens of metres.
+    assert.ok(l.geo.accuracy >= 20 && l.geo.accuracy <= 200, `${tag} accuracy`);
+    assert.match(l.country, /^[A-Z]{2}$/, `${tag} country`);
+  }
+});
+
+test('Accept-Language is derived from navigator.languages, not stored beside it', () => {
+  for (const tag of Object.keys(LOCALES)) {
+    const p = deriveProfile({ deviceId: 'pixel-7a', locale: tag, seed: 's' });
+    const langs = p.js.languages;
+    assert.ok(
+      p.net.acceptLanguage.startsWith(langs[0]),
+      `${tag}: header must lead with languages[0]`
+    );
+    for (const lang of langs) {
+      assert.ok(p.net.acceptLanguage.includes(lang), `${tag}: ${lang} missing from header`);
+    }
+    assert.equal(p.net.acceptLanguage.split(',').length, langs.length, tag);
+  }
+});
+
+test('rotating moves the panel, the orientation and the angle together', () => {
+  const portrait = deriveProfile({ deviceId: 'pixel-7a', seed: 's', orientation: 'portrait' });
+  const landscape = deriveProfile({ deviceId: 'pixel-7a', seed: 's', orientation: 'landscape' });
+
+  assert.equal(landscape.js.screen.width, portrait.js.screen.height);
+  assert.equal(landscape.js.screen.height, portrait.js.screen.width);
+  assert.equal(landscape.js.screen.orientation.type, 'landscape-primary');
+  assert.equal(landscape.js.screen.orientation.angle, 90);
+  assert.equal(portrait.js.screen.orientation.angle, 0);
+  // availWidth/Height must follow, or screen and avail contradict each other.
+  assert.equal(landscape.js.screen.availWidth, landscape.js.screen.width);
+  assert.ok(landscape.launch.viewport.width > landscape.launch.viewport.height);
+  // The identity itself must not change just because the phone was turned.
+  assert.equal(landscape.seedId, portrait.seedId);
+  assert.equal(landscape.js.userAgent, portrait.js.userAgent);
+});
+
+test('geolocation defaults to the locale and is overridable within bounds', () => {
+  const def = deriveProfile({ deviceId: 'pixel-7a', locale: 'pl-PL', seed: 's' });
+  assert.equal(def.js.geolocation.latitude, LOCALES['pl-PL'].geo.latitude);
+  assert.equal(def.launch.geolocation.longitude, LOCALES['pl-PL'].geo.longitude);
+
+  const set = deriveProfile({
+    deviceId: 'pixel-7a', locale: 'pl-PL', seed: 's',
+    geolocation: { latitude: -33.87, longitude: 151.21 },
+  });
+  assert.equal(set.js.geolocation.latitude, -33.87);
+
+  for (const bad of [{ latitude: 91, longitude: 0 }, { latitude: 0, longitude: 200 }, { latitude: 'x', longitude: 0 }]) {
+    assert.throws(
+      () => deriveProfile({ deviceId: 'pixel-7a', seed: 's', geolocation: bad }),
+      /geolocation/,
+      JSON.stringify(bad)
+    );
+  }
+});
+
+test('an unknown timezone is refused before anything launches', () => {
+  assert.throws(
+    () => deriveProfile({ deviceId: 'pixel-7a', seed: 's', timezone: 'Mars/Olympus' }),
+    /not a timezone/
+  );
+  assert.doesNotThrow(
+    () => deriveProfile({ deviceId: 'pixel-7a', seed: 's', timezone: 'Pacific/Auckland' })
+  );
+});

@@ -1,88 +1,14 @@
+import { LOCALES, acceptLanguageFor, isValidTimezone } from './locales.js';
+
+export { LOCALES, TIMEZONES, ALL_TIMEZONES, isValidTimezone } from './locales.js';
+
 /**
- * Locale, header-order and TLS profile data.
+ * Header-order and TLS profile data.
  *
  * The rule this file exists to enforce: a device's *network* identity and its
  * *JS* identity are one identity. If `Intl` says Europe/Warsaw the egress IP
  * should geolocate to Poland and `accept-language` should lead with `pl`.
  */
-
-/**
- * Locale presets. `languages` is what `navigator.languages` returns;
- * `acceptLanguage` is the header Chrome derives from it — note the q-values and
- * the fact that Chrome appends the bare language subtag.
- */
-export const LOCALES = {
-  'ru-RU': {
-    languages: ['ru-RU', 'ru', 'en-US', 'en'],
-    acceptLanguage: 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
-    timezone: 'Europe/Moscow',
-    country: 'RU',
-    currency: 'RUB',
-  },
-  'en-US': {
-    languages: ['en-US', 'en'],
-    acceptLanguage: 'en-US,en;q=0.9',
-    timezone: 'America/New_York',
-    country: 'US',
-    currency: 'USD',
-  },
-  'en-GB': {
-    languages: ['en-GB', 'en'],
-    acceptLanguage: 'en-GB,en;q=0.9',
-    timezone: 'Europe/London',
-    country: 'GB',
-    currency: 'GBP',
-  },
-  'de-DE': {
-    languages: ['de-DE', 'de', 'en-US', 'en'],
-    acceptLanguage: 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7',
-    timezone: 'Europe/Berlin',
-    country: 'DE',
-    currency: 'EUR',
-  },
-  'pl-PL': {
-    languages: ['pl-PL', 'pl', 'en-US', 'en'],
-    acceptLanguage: 'pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7',
-    timezone: 'Europe/Warsaw',
-    country: 'PL',
-    currency: 'PLN',
-  },
-  'tr-TR': {
-    languages: ['tr-TR', 'tr', 'en-US', 'en'],
-    acceptLanguage: 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
-    timezone: 'Europe/Istanbul',
-    country: 'TR',
-    currency: 'TRY',
-  },
-  'pt-BR': {
-    languages: ['pt-BR', 'pt', 'en-US', 'en'],
-    acceptLanguage: 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-    timezone: 'America/Sao_Paulo',
-    country: 'BR',
-    currency: 'BRL',
-  },
-  'es-ES': {
-    languages: ['es-ES', 'es', 'en-US', 'en'],
-    acceptLanguage: 'es-ES,es;q=0.9,en-US;q=0.8,en;q=0.7',
-    timezone: 'Europe/Madrid',
-    country: 'ES',
-    currency: 'EUR',
-  },
-  'id-ID': {
-    languages: ['id-ID', 'id', 'en-US', 'en'],
-    acceptLanguage: 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
-    timezone: 'Asia/Jakarta',
-    country: 'ID',
-    currency: 'IDR',
-  },
-  'hi-IN': {
-    languages: ['hi-IN', 'hi', 'en-IN', 'en'],
-    acceptLanguage: 'hi-IN,hi;q=0.9,en-IN;q=0.8,en;q=0.7',
-    timezone: 'Asia/Kolkata',
-    country: 'IN',
-    currency: 'INR',
-  },
-};
 
 /**
  * Chrome/Android header order, per request type. Order is part of the
@@ -195,5 +121,7 @@ export function getLocale(tag) {
       `Unknown locale "${tag}". Known: ${Object.keys(LOCALES).join(', ')}`
     );
   }
-  return { tag, ...l };
+  // acceptLanguage is derived, never stored: a header that disagrees with
+  // navigator.languages is one of the cheapest contradictions to detect.
+  return { tag, ...l, acceptLanguage: acceptLanguageFor(l.languages) };
 }

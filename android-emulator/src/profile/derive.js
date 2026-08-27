@@ -1,5 +1,7 @@
 import { getDevice, CHROMIUM_WEBGL } from '../../profiles/devices.js';
-import { getLocale, resolveTlsProfile, HEADER_ORDER, ACCEPT } from '../../profiles/network.js';
+import {
+  getLocale, resolveTlsProfile, HEADER_ORDER, ACCEPT, isValidTimezone,
+} from '../../profiles/network.js';
 import { fnv1a, rngFor, seedId, randInt } from './prng.js';
 
 /**
@@ -86,11 +88,40 @@ function deriveConnection(rng) {
  * status bar plus the top toolbar; the toolbar collapses on scroll, which is
  * why innerHeight and screen.height legitimately differ on a real device.
  */
-function deriveViewport(device) {
+function deriveViewport(device, screen) {
+  // Landscape hides the reserved strip differently, but the browser chrome is
+  // still there; a viewport equal to the screen would mean a fullscreen app.
   const reserved = device.formFactor === 'tablet' ? 96 : 80;
   return {
-    width: device.screen.width,
-    height: Math.max(320, device.screen.height - reserved),
+    width: screen.width,
+    height: Math.max(280, screen.height - reserved),
+  };
+}
+
+/**
+ * Rotating swaps the panel, not just the CSS box: screen.width/height, the
+ * orientation type and its angle all move together. Reporting a landscape
+ * viewport against a portrait `screen` is a contradiction no real device has.
+ */
+function orientScreen(device, orientation) {
+  const { width, height, dpr, colorDepth } = device.screen;
+  const landscape = orientation === 'landscape';
+  const w = landscape ? height : width;
+  const h = landscape ? width : height;
+  return {
+    width: w,
+    height: h,
+    availWidth: w,
+    availHeight: h,
+    availLeft: 0,
+    availTop: 0,
+    colorDepth,
+    pixelDepth: colorDepth,
+    dpr,
+    orientation: {
+      type: landscape ? 'landscape-primary' : 'portrait-primary',
+      angle: landscape ? 90 : 0,
+    },
   };
 }
 
@@ -102,6 +133,8 @@ export function deriveProfile(options = {}) {
     timezone: timezoneOverride,
     proxy = null,
     battery: batteryOverride,
+    orientation = 'portrait',
+    geolocation: geoOverride,
   } = options;
 
   if (!deviceId) throw new Error('deriveProfile: deviceId is required');
@@ -109,7 +142,29 @@ export function deriveProfile(options = {}) {
   const device = getDevice(deviceId);
   const locale = getLocale(localeTag);
   const tls = resolveTlsProfile(device.browser.major);
+  if (timezoneOverride && !isValidTimezone(timezoneOverride)) {
+    throw new Error(
+      `"${timezoneOverride}" is not a timezone this system's ICU data knows. ` +
+        `Use an IANA name such as Europe/Warsaw.`
+    );
+  }
   const timezone = timezoneOverride || locale.timezone;
+
+  // Position defaults to the locale's city and is overridable, because a
+  // proxy's exit is not always where the language points. Whatever it ends up
+  // being, it is the same value the whole session reports.
+  const geolocation = geoOverride
+    ? {
+        latitude: Number(geoOverride.latitude),
+        longitude: Number(geoOverride.longitude),
+        accuracy: Number(geoOverride.accuracy ?? locale.geo.accuracy),
+      }
+    : { ...locale.geo };
+  for (const [k, limit] of [['latitude', 90], ['longitude', 180]]) {
+    if (!Number.isFinite(geolocation[k]) || Math.abs(geolocation[k]) > limit) {
+      throw new Error(`geolocation.${k} must be a number within +/-${limit}`);
+    }
+  }
 
   const seedNum = typeof seed === 'number' ? seed : fnv1a(String(seed));
   const rng = rngFor(seedNum, 'profile');
@@ -137,7 +192,8 @@ export function deriveProfile(options = {}) {
         Math.round((device.battery.level + (rng() - 0.5) * 0.1) * 100) / 100)),
   };
 
-  const viewport = deriveViewport(device);
+  const screen = orientScreen(device, orientation);
+  const viewport = deriveViewport(device, screen);
 
   return {
     // ---- identity -------------------------------------------------------
@@ -146,6 +202,7 @@ export function deriveProfile(options = {}) {
     deviceId: device.id,
     deviceName: device.name,
     formFactor: device.formFactor,
+    orientation,
 
     // ---- what the page's JS sees ---------------------------------------
     js: {
@@ -182,22 +239,10 @@ export function deriveProfile(options = {}) {
         formFactors: [device.formFactor === 'tablet' ? 'Tablet' : 'Mobile'],
       },
 
-      screen: {
-        width: device.screen.width,
-        height: device.screen.height,
-        // Android reports no reserved OS strip in screen.avail*.
-        availWidth: device.screen.width,
-        availHeight: device.screen.height,
-        availLeft: 0,
-        availTop: 0,
-        colorDepth: device.screen.colorDepth,
-        pixelDepth: device.screen.colorDepth,
-        dpr: device.screen.dpr,
-        orientation: {
-          type: device.formFactor === 'tablet' ? 'landscape-primary' : 'portrait-primary',
-          angle: 0,
-        },
-      },
+      // Android reports no reserved OS strip in screen.avail*.
+      screen,
+      orientation,
+      geolocation,
 
       webgl: {
         ...CHROMIUM_WEBGL,
@@ -245,8 +290,11 @@ export function deriveProfile(options = {}) {
       deviceScaleFactor: device.screen.dpr,
       isMobile: true,
       hasTouch: true,
-      locale: locale.tag,
+      // Preset tags like "en-US-LA" name a city, not a BCP-47 locale; Chromium
+      // wants the language and region only.
+      locale: locale.languages[0],
       timezoneId: timezone,
+      geolocation,
     },
 
     device,
