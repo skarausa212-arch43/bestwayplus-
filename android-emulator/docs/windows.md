@@ -32,6 +32,18 @@ node bin\cli.js verify pixel-8-pro
 Последний аргумент `emulator` в `git clone` — имя новой папки. Он нужен, если
 `bestwayplus-` у вас уже есть: без него git откажется писать в непустой каталог.
 
+## Панель управления
+
+```cmd
+cd /d %USERPROFILE%\emulator\android-emulator
+```
+```cmd
+node bin\cli.js gui
+```
+
+Затем откройте в браузере `http://127.0.0.1:7333` — настройки, живой экран
+устройства и проверка в одном окне. Останов — Ctrl+C в том же окне cmd.
+
 ## Три ошибки, на которые натыкаются первыми
 
 **«Cannot find module ...\tools\fetch-fonts.mjs».** Команды запускаются из

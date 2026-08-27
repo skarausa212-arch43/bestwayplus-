@@ -31,7 +31,12 @@ export class DeviceSession {
   }
 
   async newPage() {
-    return this.context.newPage();
+    const page = await this.context.newPage();
+    // Awaited here rather than left to the context's 'page' event: a page that
+    // navigates before the override lands would send Chromium's own UA on its
+    // first request and report the wrong userAgentData to the first script.
+    await applyUserAgentMetadata(page, this.profile);
+    return page;
   }
 
   async close() {

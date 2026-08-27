@@ -9,6 +9,7 @@ import { writeNetworkProfile } from '../src/net/profile.js';
 import { fingerprint } from '../src/net/tlsproxy.js';
 import { launchDevice } from '../src/session.js';
 import { verifyDevice, summarize } from '../src/verify/index.js';
+import { startGui } from '../src/gui/server.js';
 
 const USAGE = `
 android device emulator
@@ -19,6 +20,7 @@ android device emulator
   andro tls       <device> [opts]     print the JA3/JA4 the profile produces
   andro verify    <device> [opts]     launch and check the emulation against itself
   andro open      <device> <url>      open a URL in the emulated device
+  andro gui       [--port 7333]       control panel with a live device screen
 
 options
   --locale <tag>        locale preset (default en-US)
@@ -156,6 +158,14 @@ async function main() {
         );
       }
       process.exitCode = sum.fail > 0 ? 1 : 0;
+      return;
+    }
+
+    case 'gui': {
+      const { url } = await startGui({ port: Number(flags.port) || 7333 });
+      console.log(`Панель управления: ${url}`);
+      console.log('Откройте этот адрес в браузере. Ctrl+C — остановить.');
+      await new Promise(() => {}); // the server owns the process from here
       return;
     }
 

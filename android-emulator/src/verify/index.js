@@ -270,11 +270,23 @@ export function buildChecks(profile, fp, options = {}) {
   return checks;
 }
 
-export async function verifyDevice(options = {}) {
+/**
+ * Verifies a session that is already running.
+ *
+ * The collector gets its own page on a real http origin, and that is not a
+ * convenience: on `about:blank` there is no secure context, so
+ * `navigator.userAgentData` and `navigator.mediaDevices` are simply absent, and
+ * with no viewport meta the layout falls back to 980px. Checking there reports
+ * nine failures against an emulation that is working perfectly — a wrong answer
+ * delivered confidently, which is worse than no answer.
+ *
+ * The page is temporary so a caller mirroring the session (the control panel)
+ * keeps whatever the user was looking at.
+ */
+export async function verifyInSession(session, options = {}) {
   return withLocalOrigin(async (url) => {
-    const session = await launchDevice(options);
+    const page = await session.newPage();
     try {
-      const page = session.pages[0] || (await session.newPage());
       await page.goto(url, { waitUntil: 'load' });
       // getVoices() populates asynchronously on first call in some builds.
       await page.waitForTimeout(150);
@@ -289,9 +301,18 @@ export async function verifyDevice(options = {}) {
         }),
       };
     } finally {
-      await session.close();
+      await page.close().catch(() => {});
     }
   });
+}
+
+export async function verifyDevice(options = {}) {
+  const session = await launchDevice(options);
+  try {
+    return await verifyInSession(session, options);
+  } finally {
+    await session.close();
+  }
 }
 
 export function summarize(checks) {
