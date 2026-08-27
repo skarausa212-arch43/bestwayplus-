@@ -4,3 +4,8 @@ android-fonts/
 tools/tlsproxy/tlsproxy
 dist/
 tools/tlsproxy/bin/
+# ...except the Windows binaries, which are committed on purpose: without them
+# a `git clone` is not a working install on Windows, and Go is not always
+# installable there (winget is missing on plenty of Windows 10 builds).
+!tools/tlsproxy/bin/tlsproxy-win32-x64.exe
+!tools/tlsproxy/bin/tlsproxy-win32-arm64.exe

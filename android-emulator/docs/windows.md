@@ -12,19 +12,25 @@ x64 и ARM64 (`tools\tlsproxy\bin\`), нужный выбирается авто
 
 ### Или из репозитория, без архива
 
-Тогда понадобится Go — собранные бинарники в git не хранятся:
+Go **не нужен**: `.exe` прокси для Windows лежат прямо в ветке (это единственное
+исключение из правила «бинарники в git не хранятся» — без них клон не был бы
+рабочей установкой, а `winget` есть далеко не в каждой сборке Windows 10).
 
-```powershell
-winget install --id GoLang.Go -e
-# перезапустить консоль, чтобы обновился PATH
+Команды выполняйте **по одной**. `npx` может спросить `Ok to proceed? (y)` —
+на такой вопрос надо ответить `y` и нажать Enter, а не вставлять следующую
+команду: она уйдёт как ответ и всё отменится.
+
+```cmd
 cd /d %USERPROFILE%
-git clone -b claude/android-device-emulator-wmqczw https://github.com/skarausa212-arch43/bestwayplus-.git
-cd bestwayplus-\android-emulator
+git clone -b claude/android-device-emulator-wmqczw https://github.com/skarausa212-arch43/bestwayplus-.git emulator
+cd emulator\android-emulator
 npm install
 npx playwright install chromium
-npm run build:proxy
 node bin\cli.js verify pixel-8-pro
 ```
+
+Последний аргумент `emulator` в `git clone` — имя новой папки. Он нужен, если
+`bestwayplus-` у вас уже есть: без него git откажется писать в непустой каталог.
 
 ## Три ошибки, на которые натыкаются первыми
 
