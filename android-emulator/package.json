@@ -15,6 +15,7 @@
     "verify": "node bin/cli.js verify",
     "build:proxy": "cd tools/tlsproxy && go build -o tlsproxy .",
     "release:macos": "node tools/build-release.mjs macos",
+    "release:windows": "node tools/build-release.mjs windows",
     "release:linux": "node tools/build-release.mjs linux"
   },
   "engines": {

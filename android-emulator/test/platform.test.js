@@ -106,18 +106,37 @@ test('proxy binary names use Node\'s platform and arch vocabulary', () => {
   assert.equal(proxyBinaryName('darwin', 'x64'), 'tlsproxy-darwin-x64');
   assert.equal(proxyBinaryName('linux', 'x64'), 'tlsproxy-linux-x64');
   assert.ok(!proxyBinaryName('darwin', 'x64').includes('amd64'));
+
+  // Windows refuses to execute a file with no executable extension, so the
+  // suffix belongs to the name and not to whoever happens to spawn it.
+  assert.equal(proxyBinaryName('win32', 'x64'), 'tlsproxy-win32-x64.exe');
+  assert.equal(proxyBinaryName('win32', 'arm64'), 'tlsproxy-win32-arm64.exe');
+  for (const p of ['linux', 'darwin']) {
+    assert.ok(!proxyBinaryName(p, 'x64').endsWith('.exe'), `${p} must not get .exe`);
+  }
 });
 
-test('a built macOS release contains binaries the resolver would find', async (t) => {
-  const binDir = join(ROOT, 'dist', 'android-emulator-macos', 'tools', 'tlsproxy', 'bin');
-  try {
-    await access(binDir);
-  } catch {
-    return t.skip('no macOS release built; run tools/build-release.mjs macos');
-  }
+test('built releases contain binaries the resolver would find', async (t) => {
   // The packager and the resolver must agree on the filename, which is the
-  // whole reason proxyBinaryName is shared rather than duplicated.
-  for (const arch of ['arm64', 'x64']) {
-    await access(join(binDir, proxyBinaryName('darwin', arch)));
+  // whole reason proxyBinaryName is shared rather than duplicated. On Windows
+  // that agreement includes the .exe suffix.
+  const targets = [
+    ['android-emulator-macos', 'darwin'],
+    ['android-emulator-windows', 'win32'],
+    ['android-emulator-linux', 'linux'],
+  ];
+  let checked = 0;
+  for (const [stage, platform] of targets) {
+    const binDir = join(ROOT, 'dist', stage, 'tools', 'tlsproxy', 'bin');
+    try {
+      await access(binDir);
+    } catch {
+      continue;
+    }
+    for (const arch of ['arm64', 'x64']) {
+      await access(join(binDir, proxyBinaryName(platform, arch)));
+    }
+    checked++;
   }
+  if (checked === 0) return t.skip('no release built; run tools/build-release.mjs <target>');
 });

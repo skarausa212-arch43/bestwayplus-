@@ -57,23 +57,42 @@ npm run build:proxy                          # нужен Go 1.25+
 Из готового архива — Go не нужен, бинарники прокси уже внутри:
 
 ```bash
+# macOS
 tar -xzf android-emulator-macos.tar.gz
 cd android-emulator-macos && ./install-macos.sh
 ```
 
-Собрать такой архив: `npm run release:macos` или `npm run release:linux`
-(кросс-компилирует прокси под обе архитектуры платформы и пакует всё в
-`dist/`). На macOS слой шрифтов недоступен — подробности в
-[docs/macos.md](docs/macos.md).
+```powershell
+# Windows: распаковать zip, затем из каталога проекта
+powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
+```
+
+Собрать такой архив: `npm run release:macos`, `release:windows` или
+`release:linux` (кросс-компилирует прокси под обе архитектуры платформы и
+пакует всё в `dist/`).
+
+Слой шрифтов работает **только на Linux** — Chromium читает fontconfig лишь
+там. Подробности и обходной путь: [docs/macos.md](docs/macos.md),
+[docs/windows.md](docs/windows.md).
 
 ## Использование
 
+Все команды запускаются **из каталога проекта**. Короткого имени `andro` в
+системе по умолчанию нет — оно появляется только после `npm link`. Поэтому
+базовый способ такой:
+
 ```bash
-andro devices                                    # список устройств
-andro tls   pixel-8-pro                          # JA3/JA4 профиля
-andro verify pixel-8-pro --fonts ./android-fonts # проверить эмуляцию
-andro open  galaxy-s23-ultra https://example.com --upstream socks5://user:pass@host:1080
+cd android-emulator-macos          # или -windows / -linux, куда распаковали
+
+node bin/cli.js devices                                    # список устройств
+node bin/cli.js tls   pixel-8-pro                          # JA3/JA4 профиля
+node bin/cli.js verify pixel-8-pro --fonts ./android-fonts # проверить эмуляцию
+node bin/cli.js open  galaxy-s23-ultra https://example.com --upstream socks5://user:pass@host:1080
 ```
+
+Если хочется короткого `andro` из любого каталога — один раз выполните в
+каталоге проекта `npm link`. Дальше в этом README команды показаны как
+`andro ...`; читайте их как `node bin/cli.js ...`, если ссылку не делали.
 
 Программно:
 
@@ -174,8 +193,8 @@ CSS-размер × DPR с физической матрицей, согласн
 
 ## Известные ограничения
 
-См. [docs/limitations.md](docs/limitations.md), для macOS отдельно
-[docs/macos.md](docs/macos.md). Кратко: патч нативного метода оставляет свой
+См. [docs/limitations.md](docs/limitations.md); по платформам отдельно
+[docs/macos.md](docs/macos.md) и [docs/windows.md](docs/windows.md). Кратко: патч нативного метода оставляет свой
 кадр в stack trace; без `fontsDir` (и вообще на macOS/Windows, где Chromium не
 читает fontconfig) набор шрифтов хоста виден DOM-раскладке; WebSocket поднимается только поверх HTTP/1.1; таблицы брендов
 `Sec-CH-UA` и HTTP/2 SETTINGS переписаны с реальных браузеров и требуют сверки

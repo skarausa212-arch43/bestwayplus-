@@ -32,6 +32,16 @@ const TARGETS = {
       { goos: 'darwin', goarch: 'amd64', nodePlatform: 'darwin', nodeArch: 'x64', note: 'Intel' },
     ],
   },
+  windows: {
+    label: 'Windows',
+    // zip rather than tar.gz: Explorer opens it on a double click, and the
+    // executable bit that tar preserves means nothing to Windows anyway.
+    format: 'zip',
+    archs: [
+      { goos: 'windows', goarch: 'amd64', nodePlatform: 'win32', nodeArch: 'x64', note: 'x86-64' },
+      { goos: 'windows', goarch: 'arm64', nodePlatform: 'win32', nodeArch: 'arm64', note: 'ARM64' },
+    ],
+  },
   linux: {
     label: 'Linux',
     archs: [
@@ -54,6 +64,7 @@ const PAYLOAD = [
   'package-lock.json',
   'README.md',
   'install-macos.sh',
+  'install-windows.ps1',
 ];
 
 async function buildProxy(arch, outDir) {
@@ -145,11 +156,16 @@ async function main() {
     'utf8'
   );
 
-  const archive = join(outDir, `${stageName}.tar.gz`);
+  // tar.gz elsewhere: it preserves the executable bit on the proxy binaries
+  // without depending on how the recipient's unarchiver behaves.
+  const format = target.format || 'tar.gz';
+  const archive = join(outDir, `${stageName}.${format}`);
   await rm(archive, { force: true });
-  // -tar.gz rather than zip: it preserves the executable bit on the proxy
-  // binaries without depending on how the recipient's unarchiver behaves.
-  await exec('tar', ['-czf', archive, '-C', outDir, stageName], { timeout: 300_000 });
+  if (format === 'zip') {
+    await exec('zip', ['-qr', archive, stageName], { cwd: outDir, timeout: 300_000 });
+  } else {
+    await exec('tar', ['-czf', archive, '-C', outDir, stageName], { timeout: 300_000 });
+  }
 
   const { size } = await stat(archive);
   console.log(`\n${archive}`);

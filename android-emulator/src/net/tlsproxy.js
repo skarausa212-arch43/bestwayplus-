@@ -28,7 +28,10 @@ async function exists(path) {
  * binary nothing can find.
  */
 export function proxyBinaryName(platform = process.platform, arch = process.arch) {
-  return `tlsproxy-${platform}-${arch}`;
+  // Windows will not execute a file without an executable extension, so the
+  // suffix is part of the name rather than something the caller remembers.
+  const ext = platform === 'win32' ? '.exe' : '';
+  return `tlsproxy-${platform}-${arch}${ext}`;
 }
 
 /**
