@@ -41,17 +41,23 @@ export function proxyBinaryName(platform = process.platform, arch = process.arch
  */
 export async function ensureBinary({ rebuild = false } = {}) {
   const prebuilt = join(PROXY_SRC, 'bin', proxyBinaryName());
-  const local = join(PROXY_SRC, 'tlsproxy');
+  // Older checkouts built straight into the package directory; still honoured
+  // so an existing working tree does not suddenly rebuild.
+  const legacy = join(PROXY_SRC, process.platform === 'win32' ? 'tlsproxy.exe' : 'tlsproxy');
 
   if (!rebuild) {
     if (await exists(prebuilt)) return prebuilt;
-    if (await exists(local)) return local;
+    if (await exists(legacy)) return legacy;
   }
 
   try {
-    await execFileAsync('go', ['build', '-o', 'tlsproxy', '.'], {
+    await mkdir(join(PROXY_SRC, 'bin'), { recursive: true });
+    // Built to the same path the resolver reads, with the same name — on
+    // Windows that includes the .exe, which `go build -o tlsproxy` omits.
+    await execFileAsync('go', ['build', '-trimpath', '-o', prebuilt, '.'], {
       cwd: PROXY_SRC,
       timeout: 300_000,
+      env: { ...process.env, CGO_ENABLED: '0' },
     });
   } catch (err) {
     throw new Error(
@@ -63,7 +69,7 @@ export async function ensureBinary({ rebuild = false } = {}) {
         `${err.stderr || err.message}`
     );
   }
-  return local;
+  return prebuilt;
 }
 
 /**

@@ -13,7 +13,7 @@
   "scripts": {
     "test": "node --test 'test/*.test.js'",
     "verify": "node bin/cli.js verify",
-    "build:proxy": "cd tools/tlsproxy && go build -o tlsproxy .",
+    "build:proxy": "node tools/build-proxy.mjs",
     "release:macos": "node tools/build-release.mjs macos",
     "release:windows": "node tools/build-release.mjs windows",
     "release:linux": "node tools/build-release.mjs linux"

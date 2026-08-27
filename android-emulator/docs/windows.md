@@ -10,6 +10,22 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
 Нужен Node 20+. Go **не нужен**: в архиве лежат собранные `.exe` прокси для
 x64 и ARM64 (`tools\tlsproxy\bin\`), нужный выбирается автоматически.
 
+### Или из репозитория, без архива
+
+Тогда понадобится Go — собранные бинарники в git не хранятся:
+
+```powershell
+winget install --id GoLang.Go -e
+# перезапустить консоль, чтобы обновился PATH
+cd /d %USERPROFILE%
+git clone -b claude/android-device-emulator-wmqczw https://github.com/skarausa212-arch43/bestwayplus-.git
+cd bestwayplus-\android-emulator
+npm install
+npx playwright install chromium
+npm run build:proxy
+node bin\cli.js verify pixel-8-pro
+```
+
 ## Три ошибки, на которые натыкаются первыми
 
 **«Cannot find module ...\tools\fetch-fonts.mjs».** Команды запускаются из
@@ -42,9 +58,13 @@ Get-ChildItem tools\tlsproxy\bin\* | Unblock-File
 Если запускать чужие бинарники не хочется — соберите свои, исходники в архиве:
 
 ```powershell
-cd tools\tlsproxy
-go build -o bin\tlsproxy-win32-x64.exe .
+npm run build:proxy
 ```
+
+Соберёт под вашу архитектуру и положит туда, где резолвер его ищет. Вручную
+это `go build -o bin\tlsproxy-win32-x64.exe .` из `tools\tlsproxy` — обратите
+внимание на `.exe`: без расширения Windows файл не запустит, а `go build -o
+tlsproxy` его не добавляет.
 
 Хеши того, что собрано в архиве, лежат в `VERSION`.
 
