@@ -1,4 +1,5 @@
-// Command launcher is the double-clickable front door on Windows.
+// Command launcher is the double-clickable front door: AndroidEmulator.exe on
+// Windows, AndroidEmulator.app on macOS.
 //
 // It is not a browser wrapper in the Electron sense — there is no second copy
 // of Chromium here. It performs first-run setup if needed, starts the Node
@@ -6,10 +7,11 @@
 // Chromium-based browser in --app mode, which gives a plain window with no
 // address bar and no tabs. Closing that window stops the server.
 //
-// Built with -H windowsgui so a double click shows no console. Everything that
-// can fail therefore has to report itself: failures pop a message box carrying
-// the server's own output, because a silent exit is the worst possible outcome
-// for something launched by double click.
+// It runs without a console (-H windowsgui on Windows; a .app bundle has no
+// terminal at all). Everything that can fail therefore has to report itself:
+// failures pop a native dialog carrying the server's own output, because a
+// silent exit is the worst possible outcome for something launched by a double
+// click.
 package main
 
 import (
@@ -43,13 +45,13 @@ func projectRoot() (string, error) {
 		dir = parent
 	}
 	return "", fmt.Errorf(
-		"не нашёл bin\\cli.js рядом с %s.\n\n"+
-			"Положите этот .exe внутрь папки android-emulator (или в её подпапку) и запустите снова.",
+		"не нашёл bin/cli.js рядом с %s.\n\n"+
+			"Приложение должно лежать внутри папки android-emulator (или в её подпапке).",
 		filepath.Dir(exe))
 }
 
 // findNode prefers PATH, then the standard installer locations, because a
-// double-clicked exe does not always inherit a shell's PATH.
+// double-clicked app does not inherit a shell's PATH.
 func findNode() (string, error) {
 	if p, err := exec.LookPath("node"); err == nil {
 		return p, nil
@@ -62,7 +64,26 @@ func findNode() (string, error) {
 			filepath.Join(os.Getenv("LOCALAPPDATA"), "Programs", "nodejs", "node.exe"),
 		}
 	} else {
-		candidates = []string{"/usr/local/bin/node", "/usr/bin/node", "/opt/homebrew/bin/node"}
+		// A double-clicked .app gets a bare PATH (/usr/bin:/bin:/usr/sbin:/sbin),
+		// so Homebrew and nvm installs have to be found by hand.
+		candidates = []string{
+			"/opt/homebrew/bin/node", // Apple Silicon Homebrew
+			"/usr/local/bin/node",    // Intel Homebrew, and the official installer
+			"/usr/bin/node",
+		}
+		if home, err := os.UserHomeDir(); err == nil {
+			for _, pat := range []string{
+				filepath.Join(home, ".nvm", "versions", "node", "*", "bin", "node"),
+				filepath.Join(home, ".volta", "bin", "node"),
+				filepath.Join(home, ".asdf", "shims", "node"),
+			} {
+				m, _ := filepath.Glob(pat)
+				// Newest nvm version last, so it wins.
+				for i := len(m) - 1; i >= 0; i-- {
+					candidates = append(candidates, m[i])
+				}
+			}
+		}
 	}
 	for _, c := range candidates {
 		if c == "" {
@@ -111,30 +132,19 @@ func ensureDeps(root, node string) error {
 	if err != nil {
 		return fmt.Errorf(
 			"нужна первичная установка, но %v.\n\n"+
-				"Откройте cmd в папке проекта и выполните:\n  npm install\n"+
-				"  node node_modules\\playwright\\cli.js install chromium", err)
+				"Откройте терминал в папке проекта и выполните:\n  npm install\n"+
+				"  node node_modules/playwright/cli.js install chromium", err)
 	}
 
-	install := exec.Command(npm, "install", "--no-audit", "--no-fund")
-	install.Dir = root
-	inNewConsole(install)
-	if err := install.Run(); err != nil {
+	if err := runSetup(root, node, npm); err != nil {
 		return fmt.Errorf(
-			"не удалось установить зависимости (npm install): %v\n\n"+
-				"Попробуйте вручную в cmd из папки:\n%s", err, root)
+			"первичная установка не удалась: %v\n\n"+
+				"Попробуйте вручную в терминале из папки:\n%s", err, root)
 	}
-
-	// Playwright's own CLI rather than npx: npx asks "Ok to proceed?" when the
-	// package is not yet present, and there is nobody at a prompt here.
-	browsers := exec.Command(node, filepath.Join("node_modules", "playwright", "cli.js"),
-		"install", "chromium")
-	browsers.Dir = root
-	inNewConsole(browsers)
-	if err := browsers.Run(); err != nil {
+	if _, err := os.Stat(marker); err != nil {
 		return fmt.Errorf(
-			"не удалось скачать Chromium: %v\n\n"+
-				"Попробуйте вручную в cmd из папки:\n%s\n  node node_modules\\playwright\\cli.js install chromium",
-			err, root)
+			"установка закончилась, но зависимости так и не появились.\n\n"+
+				"Проверьте вручную в терминале из папки:\n%s\n  npm install", root)
 	}
 	return nil
 }
@@ -148,14 +158,20 @@ func findBrowser(root string) string {
 	var candidates []string
 
 	// The copy Playwright downloaded for this project, wherever it put it.
-	for _, base := range []string{os.Getenv("PLAYWRIGHT_BROWSERS_PATH"),
+	home, _ := os.UserHomeDir()
+	bases := []string{
+		os.Getenv("PLAYWRIGHT_BROWSERS_PATH"),
 		filepath.Join(os.Getenv("LOCALAPPDATA"), "ms-playwright"),
-		filepath.Join(os.Getenv("USERPROFILE"), "AppData", "Local", "ms-playwright")} {
+		filepath.Join(home, "Library", "Caches", "ms-playwright"),
+		filepath.Join(home, ".cache", "ms-playwright"),
+	}
+	for _, base := range bases {
 		if base == "" {
 			continue
 		}
 		for _, pat := range []string{
 			filepath.Join(base, "chromium-*", "chrome-win", "chrome.exe"),
+			filepath.Join(base, "chromium-*", "chrome-mac", "Chromium.app", "Contents", "MacOS", "Chromium"),
 			filepath.Join(base, "chromium-*", "chrome-linux", "chrome"),
 		} {
 			m, _ := filepath.Glob(pat)
@@ -173,17 +189,17 @@ func findBrowser(root string) string {
 			filepath.Join(os.Getenv("ProgramFiles"), "Microsoft", "Edge", "Application", "msedge.exe"),
 		)
 	} else {
-		home, _ := os.UserHomeDir()
-		for _, pat := range []string{
-			filepath.Join(home, ".cache", "ms-playwright", "chromium*", "chrome-linux", "chrome"),
-			"/opt/pw-browsers/chromium*/chrome-linux/chrome",
-		} {
-			m, _ := filepath.Glob(pat)
-			candidates = append(candidates, m...)
-		}
+		m, _ := filepath.Glob("/opt/pw-browsers/chromium*/chrome-linux/chrome")
+		candidates = append(candidates, m...)
 		candidates = append(candidates,
-			"/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser",
+			// macOS: the browsers users actually have.
 			"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+			filepath.Join(home, "Applications", "Google Chrome.app", "Contents", "MacOS", "Google Chrome"),
+			"/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+			"/Applications/Chromium.app/Contents/MacOS/Chromium",
+			"/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+			// Linux
+			"/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser",
 		)
 	}
 

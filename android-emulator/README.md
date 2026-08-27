@@ -59,7 +59,9 @@ npm run build:proxy                          # нужен Go 1.25+
 ```bash
 # macOS
 tar -xzf android-emulator-macos.tar.gz
-cd android-emulator-macos && ./install-macos.sh
+cd android-emulator-macos
+xattr -dr com.apple.quarantine AndroidEmulator.app
+open AndroidEmulator.app
 ```
 
 ```powershell
@@ -77,10 +79,14 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
 
 ## Панель управления
 
-На Windows — двойной клик по `AndroidEmulator.exe`. При первом запуске он сам
-поставит зависимости и скачает Chromium (в видимой консоли, чтобы не выглядеть
-зависшим), затем откроет окно приложения без адресной строки и вкладок. Нужен
-только Node.js 20+.
+Двойной клик по `AndroidEmulator.exe` на Windows или по `AndroidEmulator.app`
+на macOS. При первом запуске приложение само поставит зависимости и скачает
+Chromium — в видимом окне консоли или Терминала, чтобы не выглядеть зависшим,
+— затем откроет окно без адресной строки и вкладок. Нужен только Node.js 20+.
+
+На macOS бандл универсальный (arm64 + x86_64) и не подписан, поэтому перед
+первым запуском снимите карантин: `xattr -dr com.apple.quarantine
+AndroidEmulator.app`. Подробности в [docs/macos.md](docs/macos.md).
 
 Это не второй Chromium — лаунчер находит уже установленный браузер и открывает
 его в режиме `--app`, поэтому весит 6 МБ, а не 150.

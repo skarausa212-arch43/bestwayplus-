@@ -15,11 +15,13 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { mkdir, rm, cp, writeFile, readFile, chmod, readdir, stat } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { proxyBinaryName } from '../src/net/tlsproxy.js';
+import { makeUniversal, CPU_NAMES } from './macho-fat.mjs';
 
 const exec = promisify(execFile);
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -27,6 +29,17 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TARGETS = {
   macos: {
     label: 'macOS',
+    // A .app bundle, because that is what "an application" means here: it opens
+    // from Finder with a double click and has its own Dock entry. The binary
+    // inside is universal, so one bundle covers Apple Silicon and Intel.
+    launcher: {
+      bundle: 'AndroidEmulator.app',
+      exe: 'AndroidEmulator',
+      archs: [
+        { goos: 'darwin', goarch: 'arm64' },
+        { goos: 'darwin', goarch: 'amd64' },
+      ],
+    },
     archs: [
       { goos: 'darwin', goarch: 'arm64', nodePlatform: 'darwin', nodeArch: 'arm64', note: 'Apple Silicon' },
       { goos: 'darwin', goarch: 'amd64', nodePlatform: 'darwin', nodeArch: 'x64', note: 'Intel' },
@@ -91,28 +104,80 @@ async function buildProxy(arch, outDir) {
   return { name, out, size };
 }
 
+const LAUNCHER_SRC = join(ROOT, 'tools', 'launcher');
+
+async function goBuildLauncher(out, goos, goarch, ldflags) {
+  await exec('go', ['build', '-trimpath', '-ldflags', ldflags, '-o', out, '.'], {
+    cwd: LAUNCHER_SRC,
+    timeout: 600_000,
+    env: { ...process.env, GOOS: goos, GOARCH: goarch, CGO_ENABLED: '0' },
+  });
+}
+
+/**
+ * Assembles AndroidEmulator.app. A bundle is a directory with a plist and an
+ * executable, so it can be built anywhere — including on Linux, which is why
+ * the universal binary is stitched together by hand rather than by lipo.
+ */
+async function buildAppBundle(target, stage) {
+  const { bundle, exe, archs } = target.launcher;
+  const contents = join(stage, bundle, 'Contents');
+  await mkdir(join(contents, 'MacOS'), { recursive: true });
+
+  const thin = [];
+  for (const { goos, goarch } of archs) {
+    const out = join(tmpdir(), `andro-launcher-${goos}-${goarch}`);
+    await goBuildLauncher(out, goos, goarch, '-s -w');
+    thin.push(out);
+  }
+  const exePath = join(contents, 'MacOS', exe);
+  const fat = await makeUniversal(thin, exePath);
+  await chmod(exePath, 0o755);
+  for (const t of thin) await rm(t, { force: true });
+
+  await writeFile(
+    join(contents, 'Info.plist'),
+    `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleExecutable</key><string>${exe}</string>
+  <key>CFBundleIdentifier</key><string>com.bestwayplus.android-emulator</string>
+  <key>CFBundleName</key><string>Android Emulator</string>
+  <key>CFBundleDisplayName</key><string>Эмулятор Android-устройств</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleShortVersionString</key><string>0.1.0</string>
+  <key>CFBundleVersion</key><string>0.1.0</string>
+  <key>LSMinimumSystemVersion</key><string>11.0</string>
+  <key>NSHighResolutionCapable</key><true/>
+</dict>
+</plist>
+`,
+    'utf8'
+  );
+  // Classic four-char type/creator. Harmless, and some Finder paths still read it.
+  await writeFile(join(contents, 'PkgInfo'), 'APPL????', 'utf8');
+
+  return {
+    name: bundle,
+    out: exePath,
+    size: fat.size,
+    detail: `universal: ${archs.map((a) => CPU_NAMES[a.goarch === 'arm64' ? 0x0100000c : 0x01000007]).join(' + ')}`,
+  };
+}
+
 /** Builds the double-click launcher for targets that ship one. */
 async function buildLauncher(target, stage) {
   if (!target.launcher) return null;
+  if (target.launcher.bundle) return buildAppBundle(target, stage);
+
   const { name, goos, goarch } = target.launcher;
   const out = join(stage, name);
-  await exec(
-    'go',
-    [
-      'build', '-trimpath',
-      // -H windowsgui: no console window behind the app. Errors reach the user
-      // through a message box instead, since there is nowhere to print them.
-      '-ldflags', '-s -w -H windowsgui',
-      '-o', out, '.',
-    ],
-    {
-      cwd: join(ROOT, 'tools', 'launcher'),
-      timeout: 600_000,
-      env: { ...process.env, GOOS: goos, GOARCH: goarch, CGO_ENABLED: '0' },
-    }
-  );
+  // -H windowsgui: no console window behind the app. Errors reach the user
+  // through a message box instead, since there is nowhere to print them.
+  await goBuildLauncher(out, goos, goarch, '-s -w -H windowsgui');
   const { size } = await stat(out);
-  return { name, out, size };
+  return { name, out, size, detail: `${goos}/${goarch}` };
 }
 
 async function sha256(path) {
@@ -164,7 +229,10 @@ async function main() {
 
   const launcher = await buildLauncher(target, stage);
   if (launcher) {
-    console.log(`  ${launcher.name} ... ${(launcher.size / 1e6).toFixed(1)} MB`);
+    console.log(
+      `  ${launcher.name} ... ${(launcher.size / 1e6).toFixed(1)} MB` +
+        (launcher.detail ? `  (${launcher.detail})` : '')
+    );
   }
 
   // Go sources for the launcher travel with the archive too.

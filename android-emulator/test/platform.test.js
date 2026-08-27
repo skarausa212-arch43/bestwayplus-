@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, writeFile, rm, access } from 'node:fs/promises';
+import { mkdtemp, writeFile, rm, access, readFile, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -139,4 +139,79 @@ test('built releases contain binaries the resolver would find', async (t) => {
     checked++;
   }
   if (checked === 0) return t.skip('no release built; run tools/build-release.mjs <target>');
+});
+
+test('the universal binary builder produces a parsable fat Mach-O', async () => {
+  const { makeUniversal } = await import('../tools/macho-fat.mjs');
+  const dir = await mkdtemp(join(tmpdir(), 'andro-fat-'));
+  try {
+    // Two minimal 64-bit Mach-O headers, differing only in architecture.
+    const thin = (cpuType, cpuSubType, filler) => {
+      const b = Buffer.alloc(4096, filler);
+      b.writeUInt32LE(0xfeedfacf, 0);
+      b.writeUInt32LE(cpuType, 4);
+      b.writeUInt32LE(cpuSubType, 8);
+      return b;
+    };
+    const arm = join(dir, 'arm');
+    const x86 = join(dir, 'x86');
+    await writeFile(arm, thin(0x0100000c, 0, 0x11));
+    await writeFile(x86, thin(0x01000007, 3, 0x22));
+
+    const out = join(dir, 'fat');
+    const res = await makeUniversal([arm, x86], out);
+    assert.equal(res.slices, 2);
+
+    const fat = await readFile(out);
+    assert.equal(fat.readUInt32BE(0), 0xcafebabe, 'fat magic');
+    assert.equal(fat.readUInt32BE(4), 2, 'arch count');
+
+    for (let i = 0; i < 2; i++) {
+      const at = 8 + i * 20;
+      const offset = fat.readUInt32BE(at + 8);
+      const size = fat.readUInt32BE(at + 12);
+      const align = fat.readUInt32BE(at + 16);
+      // A misaligned slice is one the loader will refuse.
+      assert.equal(offset % (1 << align), 0, `slice ${i} alignment`);
+      assert.equal(size, 4096, `slice ${i} size`);
+      assert.equal(
+        fat.readUInt32LE(offset), 0xfeedfacf,
+        `slice ${i} must still start with its own Mach-O magic`
+      );
+    }
+
+    // The same architecture twice would silently produce a binary macOS
+    // rejects, so it is refused up front.
+    await assert.rejects(() => makeUniversal([arm, arm], out), /same architecture|share architecture/);
+    await assert.rejects(
+      () => makeUniversal([join(dir, 'arm'), join(dir, 'nope')], out),
+      /ENOENT/
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('a built macOS release contains a well-formed .app bundle', async (t) => {
+  const app = join(ROOT, 'dist', 'android-emulator-macos', 'AndroidEmulator.app');
+  try {
+    await access(app);
+  } catch {
+    return t.skip('no macOS release built; run tools/build-release.mjs macos');
+  }
+
+  const plist = await readFile(join(app, 'Contents', 'Info.plist'), 'utf8');
+  const exeName = /<key>CFBundleExecutable<\/key><string>([^<]+)<\/string>/.exec(plist)?.[1];
+  assert.ok(exeName, 'Info.plist must name an executable');
+
+  // The plist pointing at a file that is not there is the classic broken
+  // bundle: Finder reports only "the application is damaged".
+  const exe = join(app, 'Contents', 'MacOS', exeName);
+  const st = await stat(exe);
+  assert.ok(st.mode & 0o111, 'the bundle executable must be executable');
+
+  const head = await readFile(exe);
+  assert.equal(head.readUInt32BE(0), 0xcafebabe, 'expected a universal binary');
+  assert.ok(head.readUInt32BE(4) >= 2, 'expected at least two architectures');
+  assert.match(plist, /<key>CFBundlePackageType<\/key><string>APPL<\/string>/);
 });
