@@ -1,0 +1,24 @@
+{
+  "name": "android-device-emulator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Android device emulation across the JS API surface, HTTP headers, HTTP/2 and TLS (JA3/JA4).",
+  "bin": {
+    "andro": "./bin/cli.js"
+  },
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "test": "node --test 'test/*.test.js'",
+    "verify": "node bin/cli.js verify",
+    "build:proxy": "cd tools/tlsproxy && go build -o tlsproxy ."
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "playwright": "1.56.1"
+  }
+}
