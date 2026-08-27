@@ -45,11 +45,26 @@ JA3 от соединения к соединению — сам по себе �
 
 ## Установка
 
+Из исходников (Linux):
+
 ```bash
 npm install
+npx playwright install chromium
 node tools/fetch-fonts.mjs ./android-fonts   # набор шрифтов AOSP (OFL/Apache-2.0)
 npm run build:proxy                          # нужен Go 1.25+
 ```
+
+Из готового архива — Go не нужен, бинарники прокси уже внутри:
+
+```bash
+tar -xzf android-emulator-macos.tar.gz
+cd android-emulator-macos && ./install-macos.sh
+```
+
+Собрать такой архив: `npm run release:macos` или `npm run release:linux`
+(кросс-компилирует прокси под обе архитектуры платформы и пакует всё в
+`dist/`). На macOS слой шрифтов недоступен — подробности в
+[docs/macos.md](docs/macos.md).
 
 ## Использование
 
@@ -159,9 +174,10 @@ CSS-размер × DPR с физической матрицей, согласн
 
 ## Известные ограничения
 
-См. [docs/limitations.md](docs/limitations.md). Кратко: патч нативного метода
-оставляет свой кадр в stack trace; без `fontsDir` набор шрифтов хоста виден
-DOM-раскладке; WebSocket поднимается только поверх HTTP/1.1; таблицы брендов
+См. [docs/limitations.md](docs/limitations.md), для macOS отдельно
+[docs/macos.md](docs/macos.md). Кратко: патч нативного метода оставляет свой
+кадр в stack trace; без `fontsDir` (и вообще на macOS/Windows, где Chromium не
+читает fontconfig) набор шрифтов хоста виден DOM-раскладке; WebSocket поднимается только поверх HTTP/1.1; таблицы брендов
 `Sec-CH-UA` и HTTP/2 SETTINGS переписаны с реальных браузеров и требуют сверки
 при добавлении новой версии Chrome.
 

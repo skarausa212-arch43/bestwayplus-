@@ -19,10 +19,32 @@ async function exists(path) {
   }
 }
 
-/** Builds tools/tlsproxy on first use; a prebuilt binary is reused as-is. */
+/**
+ * The name a prebuilt proxy binary carries for a given host.
+ *
+ * Exported because tools/build-release.mjs writes these files and this module
+ * looks them up: if the packager and the resolver each derived the name
+ * themselves, they would eventually disagree and the archive would ship a
+ * binary nothing can find.
+ */
+export function proxyBinaryName(platform = process.platform, arch = process.arch) {
+  return `tlsproxy-${platform}-${arch}`;
+}
+
+/**
+ * Locates the proxy binary, in order: a prebuilt one for this exact
+ * platform/arch (what a release archive ships, so Go is not needed to run),
+ * then one built here previously, then `go build`.
+ */
 export async function ensureBinary({ rebuild = false } = {}) {
-  const bin = join(PROXY_SRC, 'tlsproxy');
-  if (!rebuild && (await exists(bin))) return bin;
+  const prebuilt = join(PROXY_SRC, 'bin', proxyBinaryName());
+  const local = join(PROXY_SRC, 'tlsproxy');
+
+  if (!rebuild) {
+    if (await exists(prebuilt)) return prebuilt;
+    if (await exists(local)) return local;
+  }
+
   try {
     await execFileAsync('go', ['build', '-o', 'tlsproxy', '.'], {
       cwd: PROXY_SRC,
@@ -30,13 +52,15 @@ export async function ensureBinary({ rebuild = false } = {}) {
     });
   } catch (err) {
     throw new Error(
-      `Failed to build the TLS proxy (${PROXY_SRC}).\n` +
-        `Go 1.25+ is required — without it the browser's own ClientHello goes ` +
-        `on the wire and the TLS fingerprint will not match the emulated device.\n` +
+      `No TLS proxy binary for ${process.platform}/${process.arch}, and building ` +
+        `one failed (${PROXY_SRC}).\n` +
+        `Either drop a prebuilt binary at ${prebuilt}, or install Go 1.25+.\n` +
+        `Without the proxy the browser's own ClientHello goes on the wire and the ` +
+        `TLS fingerprint will not match the emulated device.\n` +
         `${err.stderr || err.message}`
     );
   }
-  return bin;
+  return local;
 }
 
 /**

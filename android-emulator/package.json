@@ -13,7 +13,9 @@
   "scripts": {
     "test": "node --test 'test/*.test.js'",
     "verify": "node bin/cli.js verify",
-    "build:proxy": "cd tools/tlsproxy && go build -o tlsproxy ."
+    "build:proxy": "cd tools/tlsproxy && go build -o tlsproxy .",
+    "release:macos": "node tools/build-release.mjs macos",
+    "release:linux": "node tools/build-release.mjs linux"
   },
   "engines": {
     "node": ">=20"

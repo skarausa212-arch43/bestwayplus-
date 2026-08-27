@@ -6,7 +6,7 @@ import { deriveProfile } from './profile/derive.js';
 import { buildInitScript } from './inject/index.js';
 import { writeNetworkProfile } from './net/profile.js';
 import { TlsProxy } from './net/tlsproxy.js';
-import { fontconfigEnv } from './net/fonts.js';
+import { prepareFonts } from './net/fonts.js';
 
 /**
  * One emulated device = one browser process + one TLS proxy + one on-disk
@@ -16,11 +16,14 @@ import { fontconfigEnv } from './net/fonts.js';
  * what a freshly minted context conspicuously does not.
  */
 export class DeviceSession {
-  constructor(profile, { context, proxy, dir }) {
+  constructor(profile, { context, proxy, dir, fonts }) {
     this.profile = profile;
     this.context = context;
     this.proxy = proxy;
     this.dir = dir;
+    // Whether the browser's font set is really constrained. Not every platform
+    // can do it, so callers must be able to tell rather than assume.
+    this.fonts = fonts;
   }
 
   get pages() {
@@ -138,6 +141,13 @@ export async function launchDevice(options = {}) {
     args.push('--no-sandbox');
   }
 
+  const fonts = prepareFonts(profile, { fontsDir, dir });
+  if (fontsDir && !fonts.active) {
+    // Loud, because the alternative is believing a probe is covered when it is
+    // not. Not fatal, because the rest of the emulation is unaffected.
+    console.warn(`[andro] font restriction inactive: ${fonts.reason}`);
+  }
+
   const context = await chromium.launchPersistentContext(userDataDir, {
     headless,
     args,
@@ -154,7 +164,7 @@ export async function launchDevice(options = {}) {
       // verification origin stays reachable.
       bypass: 'localhost,127.0.0.1,::1',
     },
-    env: { ...process.env, ...fontconfigEnv(profile, { fontsDir, dir }) },
+    env: { ...process.env, ...fonts.env },
 
     userAgent: profile.js.userAgent,
     viewport: profile.launch.viewport,
@@ -181,5 +191,5 @@ export async function launchDevice(options = {}) {
     await applyUserAgentMetadata(page, profile);
   }
 
-  return new DeviceSession(profile, { context, proxy, dir });
+  return new DeviceSession(profile, { context, proxy, dir, fonts });
 }

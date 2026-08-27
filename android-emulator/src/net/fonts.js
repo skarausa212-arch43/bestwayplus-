@@ -2,7 +2,7 @@ import { writeFileSync, mkdirSync, readdirSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 /**
- * Restricts the browser's font set with fontconfig.
+ * Restricts the browser's font set.
  *
  * Why this exists alongside src/inject/fonts.js: the decisive font probe is
  * DOM-based — render a string in `"Target", monospace` and compare
@@ -11,21 +11,53 @@ import { join, resolve } from 'node:path';
  * honest way to answer it is to actually give the browser the font set the
  * emulated device has.
  *
- * Point `fontsDir` at a directory holding the Android faces (see
- * tools/fetch-fonts.mjs) and Chromium will see those and nothing else. Skip it
- * and the host's fonts leak through: the JS layer will still answer
- * `document.fonts.check` and canvas metrics correctly, but a DOM-based probe
- * will see Liberation, DejaVu and whatever else the container ships — which no
- * Android device has.
+ * The mechanism is fontconfig, and fontconfig is Linux-only in Chromium. On
+ * macOS Skia goes through CoreText and on Windows through DirectWrite; neither
+ * reads FONTCONFIG_FILE, and neither offers a per-process way to hide the
+ * system's fonts. So on those platforms this layer genuinely cannot run, and
+ * `prepareFonts` says so rather than writing a config file that would be
+ * ignored — a font restriction that silently does nothing is worse than none,
+ * because you would believe the probe was covered.
  */
-export function fontconfigEnv(profile, { fontsDir, dir }) {
-  if (!fontsDir) return {};
+
+/** Chromium only consults fontconfig on Linux (and other X11/freetype hosts). */
+export function fontconfigSupported(platform = process.platform) {
+  return platform !== 'darwin' && platform !== 'win32';
+}
+
+/**
+ * @returns {{env: Record<string,string>, active: boolean, reason: string}}
+ *   `active` is whether the browser's font set is really constrained. Callers
+ *   should surface it: verification severity depends on it.
+ */
+export function prepareFonts(profile, { fontsDir, dir, platform = process.platform } = {}) {
+  if (!fontsDir) {
+    return {
+      env: {},
+      active: false,
+      reason: 'no fontsDir given, so the host font set is visible to DOM layout',
+    };
+  }
+
+  if (!fontconfigSupported(platform)) {
+    const os = platform === 'darwin' ? 'macOS (CoreText)' : 'Windows (DirectWrite)';
+    return {
+      env: {},
+      active: false,
+      reason:
+        `fontsDir was given but Chromium on ${os} does not read fontconfig, and ` +
+        `neither backend can hide the system's fonts from a single process. ` +
+        `Canvas-based font probes are still handled by the JS layer; DOM-based ` +
+        `ones will see the host's fonts. Run under Linux (a container is enough) ` +
+        `for this layer.`,
+    };
+  }
 
   const abs = resolve(fontsDir);
   if (!existsSync(abs)) {
     throw new Error(
       `fontsDir "${abs}" does not exist. Run tools/fetch-fonts.mjs to populate ` +
-        `it, or omit fontsDir to run with the host's fonts (see src/net/fonts.js).`
+        `it, or omit fontsDir to run with the host's fonts.`
     );
   }
   const faces = readdirSync(abs).filter((f) => /\.(ttf|otf|ttc)$/i.test(f));
@@ -75,5 +107,9 @@ export function fontconfigEnv(profile, { fontsDir, dir }) {
 
   const confPath = join(dir, 'fonts.conf');
   writeFileSync(confPath, conf, 'utf8');
-  return { FONTCONFIG_FILE: confPath, FONTCONFIG_PATH: dir };
+  return {
+    env: { FONTCONFIG_FILE: confPath, FONTCONFIG_PATH: dir },
+    active: true,
+    reason: `${faces.length} face(s) from ${abs}`,
+  };
 }

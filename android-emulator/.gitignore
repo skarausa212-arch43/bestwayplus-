@@ -2,3 +2,5 @@ node_modules/
 profiles-data/
 android-fonts/
 tools/tlsproxy/tlsproxy
+dist/
+tools/tlsproxy/bin/

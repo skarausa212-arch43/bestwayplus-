@@ -158,7 +158,12 @@ export function buildChecks(profile, fp, options = {}) {
   // probes are the real font set's responsibility, so they are only enforced
   // when a font directory was supplied; otherwise they report what leaks.
   const fonts = fp.fonts || { canvas: {}, dom: {}, desktopFaces: [], androidFaces: [] };
-  const fontsConstrained = !!options.fontsDir;
+  // Whether the font set was *actually* constrained, not merely requested:
+  // Chromium reads fontconfig only on Linux, so on macOS and Windows a
+  // fontsDir is accepted and has no effect. Enforcing these as failures there
+  // would report a platform limit as a bug in the profile.
+  const fontsConstrained = !!options.fontsActive;
+  const fontsNote = options.fontsReason || 'font set not constrained';
 
   for (const face of fonts.desktopFaces || []) {
     checks.push(assert(
@@ -174,7 +179,7 @@ export function buildChecks(profile, fp, options = {}) {
     leakedDom,
     fontsConstrained
       ? 'the font directory still contains non-Android faces'
-      : 'no fontsDir given, so the host font set is visible to DOM layout — pass fontsDir to close this',
+      : fontsNote,
     fontsConstrained ? FAIL : WARN
   ));
   const missingAndroid = (fonts.androidFaces || []).filter((f) => fonts.dom[f] !== true);
@@ -184,7 +189,7 @@ export function buildChecks(profile, fp, options = {}) {
     missingAndroid,
     fontsConstrained
       ? 'the font directory is missing faces the profile claims'
-      : 'no fontsDir given, so the host may not have Roboto/Noto at all',
+      : fontsNote,
     fontsConstrained ? FAIL : WARN
   ));
   checks.push(assert('queryLocalFonts absent (Android)', fonts.queryLocalFonts === 'undefined', fonts.queryLocalFonts));
@@ -277,7 +282,11 @@ export async function verifyDevice(options = {}) {
       return {
         profile: session.profile,
         fingerprint: fp,
-        checks: buildChecks(session.profile, fp, options),
+        checks: buildChecks(session.profile, fp, {
+          ...options,
+          fontsActive: session.fonts.active,
+          fontsReason: session.fonts.reason,
+        }),
       };
     } finally {
       await session.close();
