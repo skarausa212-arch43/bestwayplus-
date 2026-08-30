@@ -420,6 +420,49 @@ textarea.input{resize:vertical;min-height:80px}
 .tbl th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);padding:10px 12px;border-bottom:1px solid var(--line)}
 .tbl td{padding:12px;border-bottom:1px solid var(--line);font-size:14px}
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px}
+/* ── Админка: слой в духе TailAdmin (MIT) — карточки 2xl, метрики с дельтой,
+   таблицы с капс-заголовком, статус-пилюли, сгруппированное меню ── */
+.ta-page-h{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+.ta-page-h h2{font-size:24px;letter-spacing:-.02em;margin:0}
+.ta-page-h .crumb{font-size:12.5px;color:var(--ink-2);margin-bottom:4px}
+.ta-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
+.ta-card+.ta-card{margin-top:16px}
+.ta-card>h4{margin:0 0 4px;font-size:16px}
+.ta-card .sub{color:var(--ink-2);font-size:12.5px;margin:0 0 14px}
+.ta-metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
+@media(min-width:1000px){.ta-metrics{grid-template-columns:repeat(3,1fr)}}
+.ta-metric{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+.ta-metric .ic{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;background:var(--surface-2);color:var(--ink)}
+.ta-metric .ic svg{width:22px;height:22px}
+.ta-metric .row2{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-top:16px}
+.ta-metric .row2>div{min-width:0}
+.ta-metric .lab{font-size:13px;color:var(--ink-2)}
+.ta-metric b{display:block;font-size:26px;letter-spacing:-.03em;margin-top:4px}
+.ta-pill{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;flex:none;border-radius:999px;padding:3px 10px;font-size:12.5px;font-weight:700}
+.ta-pill.up{background:var(--primary-050);color:var(--primary-600)}
+.ta-pill.down{background:#FEECEB;color:#C4342A}
+.ta-pill.flat{background:var(--surface-2);color:var(--ink-2)}
+.ta-tbl{width:100%;border-collapse:collapse}
+.ta-tbl th{text-align:left;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2);
+  padding:0 12px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+.ta-tbl td{padding:13px 12px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:middle}
+.ta-tbl tr:last-child td{border-bottom:0}
+.ta-tbl tbody tr:hover{background:var(--surface-2)}
+.ta-scroll{overflow-x:auto;margin:0 -20px;padding:0 20px}
+.ta-empty{padding:26px 12px;text-align:center;color:var(--ink-2);font-size:13.5px}
+.ta-attn{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.ta-attn a{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:14px;border:1px solid var(--line);
+  background:var(--surface);text-decoration:none;color:inherit;cursor:pointer}
+.ta-attn a:hover{border-color:var(--primary)}
+.ta-attn .n{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.ta-attn .k{font-size:12.5px;color:var(--ink-2)}
+.ta-attn .ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;flex:0 0 auto}
+.ta-attn.warn a{border-color:#F5C77E}.ta-attn.warn .ic{background:#FEF3E2;color:#B25E09}
+.ta-attn.danger a{border-color:var(--danger)}.ta-attn.danger .ic{background:#FEECEB;color:#C4342A}
+.ta-attn.ok .ic{background:var(--primary-050);color:var(--primary-600)}
+.nav-group{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);
+  padding:16px 12px 6px;pointer-events:none}
+@media(max-width:960px){.ta-card{padding:16px}.ta-scroll{margin:0 -16px;padding:0 16px}.ta-page-h h2{font-size:20px}}
 /* ── Посещения: панель трафика ── */
 .tr-kpi b{font-size:30px;letter-spacing:-.03em;display:block;line-height:1.1}
 .tr-kpi .lab{color:var(--ink-2);font-size:13px;margin-top:4px}
@@ -2198,7 +2241,10 @@ function i18nApply(root){
     if(h!=null&&h!==k){ nd.nodeValue=nd.nodeValue.replace(k,h); return; }
     if(/[А-Яа-яЁё]/.test(nd.nodeValue)){ const u=unitPass(nd.nodeValue); if(u!==nd.nodeValue) nd.nodeValue=u; }
   });
+  // Атрибуты переводим по тем же правилам, что и текст: внутри data-noi18n
+  // (админка, пользовательский контент, чек) не трогаем ничего.
   if(root.querySelectorAll) root.querySelectorAll('[placeholder],[title],[aria-label]').forEach(e=>{
+    if(e.closest&&e.closest('[data-noi18n]'))return;
     ['placeholder','title','aria-label'].forEach(a=>{ if(!e.hasAttribute(a))return; const v=e.getAttribute(a).trim(); const h=d[v]; if(h!=null&&h!==v)e.setAttribute(a,h); });
   });
 }
@@ -2583,7 +2629,9 @@ function timeAgo(ts){
   }
 }
 // Format dates/times in the active UI language (falls back to Polish).
-function curLocale(){return ({pl:'pl-PL',en:'en-GB',ru:'ru-RU',uk:'uk-UA'})[state.lang]||'pl-PL';}
+// Админка всегда по-русски (см. data-noi18n в shell) — даты не должны выпадать
+// в польский, поэтому для админа локаль фиксирована. Чеки остаются на pl-PL.
+function curLocale(){return state.user&&state.user.role==='admin'?'ru-RU':(({pl:'pl-PL',en:'en-GB',ru:'ru-RU',uk:'uk-UA'})[state.lang]||'pl-PL');}
 function fmtTime(ts){return new Date(ts).toLocaleString(curLocale(),{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'});}
 function fmtDate(ts){return new Date(ts).toLocaleDateString(curLocale(),{day:'numeric',month:'long',year:'numeric'});}
 function roomsWord(n){return n+' '+plural(n,'комната','комнаты','комнат');}
@@ -3038,7 +3086,13 @@ function navItems(){
   // после входа — просить регистрацию раньше значит просить её вслепую.
   if(!state.user) return [['home','Главная',I.home],['book','Заказать',I.book]];
   const r=state.user.role;
-  if(r==='admin') return [['admin','Панель',I.admin],['traffic','Посещения',I.globe],['analytics','Аналитика',I.chart],['bookings','Заказы',I.jobs],['audit','Аудит',I.receipt]];
+  if(r==='admin') return [
+    ['__g','Обзор'],
+      ['admin','Дашборд',I.admin],['traffic','Посещения',I.globe],['analytics','Аналитика',I.chart],
+    ['__g','Операции'],
+      ['bookings','Заказы',I.jobs],['aops','Поддержка',I.chat],['ausers','Пользователи',I.users],
+    ['__g','Деньги и система'],
+      ['afin','Финансы',I.wallet],['aset','Настройки',I.shield],['audit','Аудит',I.receipt]];
   if(r==='company') return [['company','Компания',I.building],['board','Заказы',I.jobs],['staff','Персонал',I.users],['finance','Финансы',I.chart]];
   if(r==='cleaner') return [['jobs','Заявки',I.jobs],['bookings','Мои работы',I.book],['earnings','Доход',I.chart],['wallet','Кошелёк',I.wallet]];
   return [['home','Главная',I.home],['properties','Дома',I.building],['book','Заказать',I.book],['bookings','Заказы',I.jobs],['messages','Чаты',I.send],['wallet','Кошелёк',I.wallet]];
@@ -3082,11 +3136,17 @@ function shell(content){
     </div>
     <div class="tabbar"></div>
   </div>`);
+  // Админка ведётся на русском целиком: смешанные подписи («Prowizja platformy»
+   // рядом с «Оборот (клиенты)») читаются как недоделка. Клиентская часть
+   // переводится как обычно.
+  if(u.role==='admin') app.setAttribute('data-noi18n','');
   const nav=$('.nav',app), tab=$('.tabbar',app);
   const si=$('#stopImp',app); if(si)si.onclick=stopImpersonate;
   const pp=$('#promoPlus',app); if(pp)pp.onclick=()=>{state.view='premium';render();};
   const sup=$('.support-card',app); if(sup)sup.onclick=()=>openSupport();
   items.forEach(([v,label,icon])=>{
+    // Разделы меню — заголовок группы, а не кнопка (нижние вкладки их не показывают).
+    if(v==='__g'){ nav.appendChild(el(`<div class="nav-group">${label}</div>`)); return; }
     const b=el(`<button class="${state.view===v?'active':''}">${icon}<span>${label}</span></button>`);
     b.onclick=()=>{state.view=v;render();};
     nav.appendChild(b);
@@ -3231,7 +3291,7 @@ async function loadProperties(){
 
 function render(){
   if(!state.user){ (({home:viewGuestHome,book:viewBook})[state.view]||viewGuestHome)(); return; }
-  const map={home:viewHome,properties:viewProperties,smart:viewSmart,shortstay:viewShortstay,stroverview:viewStrOverview,passport:viewPassport,premium:viewPremium,book:viewBook,bookings:viewBookings,wallet:viewWallet,jobs:viewJobs,admin:viewAdmin,traffic:viewTraffic,messages:viewMessages,earnings:viewEarnings,audit:viewAudit,analytics:viewAnalytics,company:viewCompany,board:viewBoard,staff:viewStaff,finance:viewFinance};
+  const map={home:viewHome,properties:viewProperties,smart:viewSmart,shortstay:viewShortstay,stroverview:viewStrOverview,passport:viewPassport,premium:viewPremium,book:viewBook,bookings:viewBookings,wallet:viewWallet,jobs:viewJobs,admin:viewAdmin,ausers:viewAdminUsers,aops:viewAdminOps,afin:viewAdminFinance,aset:viewAdminSettings,traffic:viewTraffic,messages:viewMessages,earnings:viewEarnings,audit:viewAudit,analytics:viewAnalytics,company:viewCompany,board:viewBoard,staff:viewStaff,finance:viewFinance};
   const fn=map[state.view]||viewHome;
   fn();
 }
@@ -6613,29 +6673,51 @@ async function refreshJobs(){
 
 /* ---------- ADMIN ---------- */
 let admUserRole='', admUserQ='';
+/* ---------- Админка ----------
+   Раскладка и компоненты — по мотивам TailAdmin (MIT): карточки со скруглением
+   и бордером, метрики с иконкой и дельтой, таблицы с капс-заголовком,
+   сгруппированное меню. Логика и данные — наши, из /api/admin/*. */
+function taPage(title,crumb,right){
+  return `<div class="ta-page-h"><div><div class="crumb">${crumb||'Админка'}</div><h2>${title}</h2></div>
+    <div class="row" style="gap:8px;flex-wrap:wrap">${right||''}</div></div>`;
+}
+function taMetric(ico,val,lab,delta,tone){
+  const t2=tone||'';
+  return `<div class="ta-metric"><div class="ic" ${t2?`style="background:${t2[0]};color:${t2[1]}"`:''}>${ico}</div>
+    <div class="row2"><div><span class="lab">${lab}</span><b>${val}</b></div>${delta||''}</div></div>`;
+}
+function taEmpty(txt){return `<div class="ta-empty">${txt}</div>`;}
+
 async function viewAdmin(){
-  const c=el(`<div><div class="section-title">Панель администратора</div><div id="adminBody"></div></div>`);
+  const c=el(`<div>${taPage('Дашборд','Обзор')}<div id="adminBody"><div class="ta-card"><div class="sk" style="height:200px"></div></div></div></div>`);
   shell(c);
   try{
-    const {stats,recent,cleaners,economics:eco}=await api('/api/admin/stats');
+    const {stats,recent,economics:eco}=await api('/api/admin/stats');
     const body=$('#adminBody',c);
     const zl2m=(m)=>`${(m/100).toFixed(2).replace('.',',')} zł`;
     const ecoRow=(k,v,neg,strong)=>`<div class="rc-line ${strong?'rc-total':''}"><span>${k}</span><span style="${neg?'color:var(--danger)':''}">${neg?'−':''}${zl2m(Math.abs(v))}</span></div>`;
+    const attn=[
+      stats.openSos?['danger','sos',I.shield,stats.openSos,'SOS по заказам']:null,
+      stats.pendingKyc?['warn','kyc',I.check,stats.pendingKyc,'Исполнители на проверке']:null,
+    ].filter(Boolean);
     body.innerHTML=`
-      <div class="kpi-grid" style="margin-bottom:24px">
-        ${kpi(I.cash,money(stats.revenue),'Оборот (клиенты)','var(--primary-050)','var(--primary-600)')}
-        ${kpi(I.wallet,money(stats.commission),'Комиссия платформы','#E8F0FE','#1A73E8')}
-        ${kpi(I.check,stats.completedJobs,'Завершено заказов','#FEF3E2','#B25E09')}
-        ${kpi(I.pin,stats.activeJobs,'Активны сейчас','#FEECEB','#C4342A')}
-        ${kpi(I.users,stats.customers,'Клиенты','var(--surface-2)','var(--ink)')}
-        ${kpi(I.broom,stats.cleaners,'Исполнители','var(--surface-2)','var(--ink)')}
+      <div class="ta-metrics" style="margin-bottom:16px">
+        ${taMetric(I.cash,money(stats.revenue),'Оборот (клиенты)',null,['var(--primary-050)','var(--primary-600)'])}
+        ${taMetric(I.wallet,money(stats.commission),'Комиссия платформы',null,['#E8F0FE','#1A73E8'])}
+        ${taMetric(I.check,stats.completedJobs,'Завершено заказов',null,['#FEF3E2','#B25E09'])}
+        ${taMetric(I.pin,stats.activeJobs,'Активны сейчас',stats.activeJobs?'<span class="ta-pill up">в работе</span>':'')}
+        ${taMetric(I.users,stats.customers,'Клиенты')}
+        ${taMetric(I.broom,stats.cleaners,'Исполнители',stats.pendingKyc?`<span class="ta-pill down">${stats.pendingKyc} на проверке</span>`:'')}
       </div>
-      ${eco?`
-      <div class="card pad" style="margin-bottom:20px">
-        <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
-          <h4>Экономика · что остаётся с комиссии</h4>
-          <span class="badge grey">оценка, не бухгалтерия</span>
-        </div>
+
+      ${attn.length?`<div class="ta-card" style="margin-bottom:16px"><h4>Требует внимания</h4><p class="sub">Открытые вопросы, которые лучше закрыть сегодня.</p>
+        <div class="ta-attn">${attn.map(([tone,key,ico,n,lab])=>`<a data-go="${key}" class="${tone}"><span class="ic">${ico}</span><span><span class="n">${n}</span><span class="k">${lab}</span></span></a>`).join('')}</div>
+        <div class="hint tiny" style="margin-top:10px">Полные списки — в разделах «Поддержка» и «Пользователи».</div></div>`:''}
+
+      ${eco?`<div class="ta-card" style="margin-bottom:16px">
+        <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <h4>Экономика · что остаётся с комиссии</h4><span class="badge grey">оценка, не бухгалтерия</span>
+        </div><p class="sub">За всё время работы платформы.</p>
         ${ecoRow('Комиссия платформы (с VAT)',eco.commissionMinor)}
         ${ecoRow(`Комиссия Stripe (${(eco.rates.stripeFeeRate*100).toFixed(1).replace('.',',')}% + ${(eco.rates.stripeFeeFixedMinor/100).toFixed(2).replace('.',',')} zł × ${eco.charges})`,eco.stripeFeeMinor,true)}
         ${ecoRow(`VAT ${Math.round(eco.rates.vatRate*100)}% с комиссии`,eco.vatOnCommissionMinor,true)}
@@ -6644,82 +6726,60 @@ async function viewAdmin(){
         ${ecoRow(`CIT ${Math.round(eco.rates.citRate*100)}%`,eco.citMinor,true)}
         <div class="rc-sep"></div>
         ${ecoRow('Остаётся платформе',eco.netMinor,false,true)}
-        <p class="tiny muted" style="margin-top:10px">Комиссия Stripe считается со всего оборота — платформа принимает полный платёж клиента и выплачивает исполнителю его долю. Ставки настраиваются в «Настройках платформы».</p>
+        <div class="hint tiny" style="margin-top:10px">Подробности и выгрузки — в разделе «Финансы».</div>
       </div>`:''}
-      <div class="grid" style="grid-template-columns:1fr;gap:20px">
-        <div class="card pad" id="sosCard" style="overflow-x:auto;display:none;border:1.5px solid var(--danger)">
-          <h4 style="margin-bottom:14px">🆘 SOS по заказам <span class="badge" id="sosCount" style="background:var(--danger);color:#fff"></span></h4>
-          <div id="sosBody"></div>
-        </div>
-        <div class="card pad" id="dispCard" style="overflow-x:auto;display:none">
-          <h4 style="margin-bottom:14px">Проблемы по заказам <span class="badge amber" id="dispCount"></span></h4>
-          <div id="dispBody"></div>
-        </div>
-        <div class="card pad" id="supCard" style="overflow-x:auto;display:none">
-          <h4 style="margin-bottom:14px">Обращения в поддержку <span class="badge amber" id="supCount"></span></h4>
-          <div id="supBody"></div>
-        </div>
-        <div class="card pad" style="overflow-x:auto">
-          <h4 style="margin-bottom:14px">Исполнители ${stats.pendingKyc?`<span class="badge amber" style="margin-left:8px">${stats.pendingKyc} на проверке</span>`:''}</h4>
-          <table class="tbl"><thead><tr><th>Имя</th><th>Рейтинг</th><th>Заказов</th><th>Баланс</th><th>Статус</th><th></th></tr></thead><tbody id="clBody"></tbody></table>
-        </div>
-        <div class="card pad">
-          <div class="row" style="justify-content:space-between;margin-bottom:8px;gap:10px;flex-wrap:wrap">
-            <h4>Выплаты исполнителям</h4><span class="badge green">каждый вторник</span>
-          </div>
-          <p class="muted tiny" style="margin-bottom:12px">Каждый вторник сформируйте файл: кому и сколько перевести + номер счёта (IBAN) каждого исполнителя. После перевода отметьте выплаты выполненными.</p>
-          <div class="row" style="gap:10px;flex-wrap:wrap">
-            <button class="btn" id="payoutFile">${I.receipt||''} Сформировать файл выплат</button>
-            <button class="btn ghost" id="payoutSettle" disabled>Отметить выплаченными</button>
-          </div>
-          <div id="payoutBox" class="tiny muted" style="margin-top:12px"></div>
-        </div>
-        <div class="card pad" id="platformCard"><div class="muted tiny">Загрузка…</div></div>
-        <div class="card pad" style="overflow-x:auto">
-          <div class="row" style="justify-content:space-between;margin-bottom:12px;gap:10px;flex-wrap:wrap">
-            <h4>Пользователи</h4>
-            <input class="input" id="usrSearch" placeholder="Поиск по имени или email" style="max-width:280px;height:40px">
-          </div>
-          <div class="urole-tabs" id="uroleTabs"></div>
-          <table class="tbl"><thead><tr><th>Имя</th><th>Роль</th><th>Город</th><th>Регистрация</th><th>Статус</th><th></th></tr></thead><tbody id="usrBody"></tbody></table>
-          <div class="tiny muted" id="usrMore" style="margin-top:10px"></div>
-        </div>
-        <div class="card pad" style="overflow-x:auto">
-          <h4 style="margin-bottom:14px">Недавние заказы</h4>
-          <table class="tbl"><thead><tr><th>Услуга</th><th>Город</th><th>Клиент</th><th>Статус</th><th>Итого</th><th>Комиссия</th><th>Действия</th></tr></thead><tbody id="bkBody"></tbody></table>
-        </div>
+
+      <div class="ta-card">
+        <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <h4>Недавние заказы</h4><button class="btn ghost sm" id="allBk">Все заказы</button>
+        </div><p class="sub">Последние ${recent.length} заказов платформы.</p>
+        <div class="ta-scroll"><table class="ta-tbl"><thead><tr><th>Услуга</th><th>Город</th><th>Клиент</th><th>Статус</th><th>Итого</th><th>Комиссия</th><th></th></tr></thead><tbody id="bkBody"></tbody></table></div>
       </div>`;
-    loadAdminUsers(admUserQ,admUserRole);
-    loadAdminSos();
-    loadAdminDisputes();
-    loadAdminSupport();
-    loadAdminPlatform();
-    const us=$('#usrSearch',body); let ut=null;
-    if(us){us.value=admUserQ;us.oninput=()=>{admUserQ=us.value.trim();clearTimeout(ut);ut=setTimeout(()=>loadAdminUsers(admUserQ,admUserRole),250);};}
-    const kg=$('.kpi-grid',body);stagger(kg);
-    // Weekly payout file (who + how much + IBAN) and settle.
-    const payoutFile=$('#payoutFile',body), payoutSettle=$('#payoutSettle',body), payoutBox=$('#payoutBox',body);
-    let lastPayout=null;
-    if(payoutFile)payoutFile.onclick=async()=>{
-      payoutFile.disabled=true;
-      try{
-        const data=await api('/api/admin/payouts'); lastPayout=data;
-        if(!data.cleaners.length){ payoutBox.textContent=t('Нет исполнителей с балансом к выплате.'); if(payoutSettle)payoutSettle.disabled=true; }
-        else{ downloadPayoutCsv(data);
-          payoutBox.innerHTML=`<b>${data.cleaners.length}</b> ${t('исполнителей')} · ${t('итого')} <b>${money(data.total)}</b> — ${t('файл скачан')}.`;
-          if(payoutSettle)payoutSettle.disabled=false; }
-      }catch(e){ toast(e.message,true); }
-      payoutFile.disabled=false;
-    };
-    if(payoutSettle)payoutSettle.onclick=async()=>{
-      if(!lastPayout||!lastPayout.cleaners.length)return;
-      if(!confirm(t('Отметить эти выплаты выполненными? Балансы исполнителей обнулятся.')))return;
-      payoutSettle.disabled=true;
-      try{ const r=await api('/api/admin/payouts/settle','POST',{ids:lastPayout.cleaners.map(c=>c.id)});
-        toast(t('Выплачено')+`: ${money(r.total)}`); viewAdmin();
-      }catch(e){ toast(e.message,true); payoutSettle.disabled=false; }
-    };
+    body.querySelectorAll('[data-go]').forEach(a=>a.onclick=()=>{ state.view=a.dataset.go==='kyc'?'ausers':'aops'; render(); });
+    const ab=$('#allBk',body); if(ab)ab.onclick=()=>{state.view='bookings';render();};
+    const bkBody=$('#bkBody',body);
+    if(!recent.length)bkBody.innerHTML=`<tr><td colspan="7">${taEmpty('Заказов пока нет.')}</td></tr>`;
+    recent.forEach(b=>{
+      const canRedis=b.status==='accepted';
+      const canCancel=!['completed','cancelled'].includes(b.status);
+      const tr=el(`<tr><td>${svcLabelRu(b.serviceLabel)}</td><td>${b.city}</td><td>${esc(b.customer?.name||'—')}</td>
+        <td>${statusBadge(b.status)}</td><td><b>${money(b.price)}</b></td><td style="color:var(--primary-600)">${money(b.commission)}</td>
+        <td style="white-space:nowrap">${canRedis?`<button class="btn ghost sm" data-redis="${b.id}">Переназначить</button> `:''}${canCancel?`<button class="btn ghost sm" data-cancel="${b.id}">Отменить</button>`:''}</td></tr>`);
+      bkBody.appendChild(tr);
+    });
+    bkBody.querySelectorAll('[data-redis]').forEach(btn=>btn.onclick=async()=>{
+      try{await api('/api/admin/bookings/'+btn.dataset.redis+'/redispatch','POST');toast('Заказ переназначен');viewAdmin();}catch(e){toast(e.message,true);}
+    });
+    bkBody.querySelectorAll('[data-cancel]').forEach(btn=>btn.onclick=async()=>{
+      if(!confirm('Отменить этот заказ?'))return;
+      try{await api('/api/admin/bookings/'+btn.dataset.cancel+'/cancel','POST',{reason:'admin'});toast('Заказ отменён');viewAdmin();}catch(e){toast(e.message,true);}
+    });
+    stagger($('.ta-metrics',body));
+  }catch(err){toast(err.message,true);}
+}
+
+async function viewAdminUsers(){
+  const c=el(`<div>${taPage('Пользователи','Операции','<input class="input" id="usrSearch" placeholder="Поиск по имени или email" style="max-width:260px;height:40px">')}
+    <div id="admUsersBody"><div class="ta-card"><div class="sk" style="height:220px"></div></div></div></div>`);
+  shell(c);
+  try{
+    const {stats,cleaners}=await api('/api/admin/stats');
+    const body=$('#admUsersBody',c);
+    body.innerHTML=`
+      <div class="ta-card" style="margin-bottom:16px">
+        <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <h4>Исполнители</h4>${stats.pendingKyc?`<span class="badge amber">${stats.pendingKyc} на проверке</span>`:'<span class="badge green">все проверены</span>'}
+        </div><p class="sub">KYC, рейтинг и баланс. Нажмите на имя — откроется профиль с документами.</p>
+        <div class="ta-scroll"><table class="ta-tbl"><thead><tr><th>Имя</th><th>Рейтинг</th><th>Заказов</th><th>Баланс</th><th>Статус</th><th></th></tr></thead><tbody id="clBody"></tbody></table></div>
+      </div>
+      <div class="ta-card">
+        <h4>Все пользователи</h4><p class="sub">Клиенты, исполнители, компании и админы.</p>
+        <div class="urole-tabs" id="uroleTabs"></div>
+        <div class="ta-scroll"><table class="ta-tbl"><thead><tr><th>Имя</th><th>Роль</th><th>Город</th><th>Регистрация</th><th>Статус</th><th></th></tr></thead><tbody id="usrBody"></tbody></table></div>
+        <div class="tiny muted" id="usrMore" style="margin-top:10px"></div>
+      </div>`;
     const clBody=$('#clBody',body);
+    if(!cleaners.length)clBody.innerHTML=`<tr><td colspan="6">${taEmpty('Исполнителей пока нет.')}</td></tr>`;
     cleaners.forEach(cl=>{
       const tr=el(`<tr style="cursor:pointer"><td><div class="row" style="gap:9px">${avatarEl(cl,30)}<b>${esc(cl.name)}</b></div></td><td>⭐ ${cl.rating}</td><td>${cl.jobsDone}</td><td>${money(cl.wallet||0)}</td>
         <td>${cl.verified?'<span class="badge green">Проверен</span>':'<span class="badge amber">Ожидает</span>'}</td>
@@ -6730,26 +6790,132 @@ async function viewAdmin(){
     clBody.querySelectorAll('[data-prof]').forEach(btn=>btn.onclick=(e)=>{e.stopPropagation();openAdminUser(btn.dataset.prof);});
     clBody.querySelectorAll('[data-v]').forEach(btn=>btn.onclick=async(e)=>{
       e.stopPropagation();
-      try{await api('/api/admin/verify-cleaner','POST',{cleanerId:btn.dataset.v,verified:true});toast('Исполнитель проверен');viewAdmin();}
-      catch(e){toast(e.message,true);}
+      try{await api('/api/admin/verify-cleaner','POST',{cleanerId:btn.dataset.v,verified:true});toast('Исполнитель проверен');viewAdminUsers();}
+      catch(e2){toast(e2.message,true);}
     });
-    const bkBody=$('#bkBody',body);
-    recent.forEach(b=>{
-      const canRedis=b.status==='accepted';
-      const canCancel=!['completed','cancelled'].includes(b.status);
-      const tr=el(`<tr><td>${svcLabelRu(b.serviceLabel)}</td><td>${b.city}</td><td>${esc(b.customer?.name||'—')}</td>
-        <td>${statusBadge(b.status)}</td><td><b>${money(b.price)}</b></td><td style="color:var(--primary-600)">${money(b.commission)}</td>
-        <td style="white-space:nowrap">${canRedis?`<button class="btn ghost sm" data-redis="${b.id}">Переназначить</button> `:''}${canCancel?`<button class="btn ghost sm" data-cancel="${b.id}">Отменить</button>`:'—'}</td></tr>`);
-      bkBody.appendChild(tr);
-    });
-    bkBody.querySelectorAll('[data-redis]').forEach(btn=>btn.onclick=async()=>{
-      try{await api('/api/admin/bookings/'+btn.dataset.redis+'/redispatch','POST');toast('Заказ переназначен');viewAdmin();}catch(e){toast(e.message,true);}
-    });
-    bkBody.querySelectorAll('[data-cancel]').forEach(btn=>btn.onclick=async()=>{
-      if(!confirm('Отменить этот заказ?'))return;
-      try{await api('/api/admin/bookings/'+btn.dataset.cancel+'/cancel','POST',{reason:'admin'});toast('Заказ отменён');viewAdmin();}catch(e){toast(e.message,true);}
-    });
+    loadAdminUsers(admUserQ,admUserRole);
+    const us=$('#usrSearch',c); let ut=null;
+    if(us){us.value=admUserQ;us.oninput=()=>{admUserQ=us.value.trim();clearTimeout(ut);ut=setTimeout(()=>loadAdminUsers(admUserQ,admUserRole),250);};}
   }catch(err){toast(err.message,true);}
+}
+
+async function viewAdminOps(){
+  const c=el(`<div>${taPage('Поддержка и инциденты','Операции')}
+    <div class="ta-card" id="sosCard" style="display:none;border-color:var(--danger)">
+      <h4>🆘 SOS по заказам <span class="badge" id="sosCount" style="background:var(--danger);color:#fff"></span></h4>
+      <p class="sub">Тревожные кнопки из активных заказов — реагировать первыми.</p>
+      <div class="ta-scroll" id="sosBody"></div>
+    </div>
+    <div class="ta-card" id="dispCard" style="display:none">
+      <h4>Проблемы по заказам <span class="badge amber" id="dispCount"></span></h4>
+      <p class="sub">Споры клиентов и исполнителей: качество, оплата, ущерб.</p>
+      <div class="ta-scroll" id="dispBody"></div>
+    </div>
+    <div class="ta-card" id="supCard" style="display:none">
+      <h4>Обращения в поддержку <span class="badge amber" id="supCount"></span></h4>
+      <p class="sub">Вопросы из приложения и заявки с публичной страницы партнёров.</p>
+      <div class="ta-scroll" id="supBody"></div>
+    </div>
+    <div class="ta-card" id="opsEmpty" style="display:none">${taEmpty('Открытых обращений нет — всё спокойно.')}</div></div>`);
+  shell(c);
+  await Promise.all([loadAdminSos(),loadAdminDisputes(),loadAdminSupport()]);
+  const any=['sosCard','dispCard','supCard'].some(id=>{const e=$('#'+id,c);return e&&e.style.display!=='none';});
+  const emptyBox=$('#opsEmpty',c); if(emptyBox&&!any)emptyBox.style.display='';
+}
+
+async function viewAdminFinance(){
+  const c=el(`<div>${taPage('Финансы','Деньги и система')}<div id="finBody"><div class="ta-card"><div class="sk" style="height:200px"></div></div></div></div>`);
+  shell(c);
+  try{
+    const {economics:eco}=await api('/api/admin/stats');
+    const body=$('#finBody',c);
+    const zl2m=(m)=>`${(m/100).toFixed(2).replace('.',',')} zł`;
+    const ecoRow=(k,v,neg,strong)=>`<div class="rc-line ${strong?'rc-total':''}"><span>${k}</span><span style="${neg?'color:var(--danger)':''}">${neg?'−':''}${zl2m(Math.abs(v))}</span></div>`;
+    body.innerHTML=`
+      <div class="ta-card" style="margin-bottom:16px">
+        <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <h4>Выплаты исполнителям</h4><span class="badge green">каждый вторник</span>
+        </div>
+        <p class="sub">Сформируйте файл: кому и сколько перевести, с номерами счетов. После перевода отметьте выплаченными — балансы обнулятся.</p>
+        <div class="row" style="gap:10px;flex-wrap:wrap">
+          <button class="btn" id="payoutFile">${I.receipt||''} Сформировать файл выплат</button>
+          <button class="btn ghost" id="payoutSettle" disabled>Отметить выплаченными</button>
+        </div>
+        <div id="payoutBox" class="tiny muted" style="margin-top:12px"></div>
+      </div>
+
+      ${eco?`<div class="ta-card" style="margin-bottom:16px">
+        <h4>Экономика платформы</h4><p class="sub">Что остаётся с комиссии после эквайринга и налогов — оценка по текущим ставкам.</p>
+        ${ecoRow('Оборот (GMV)',eco.grossMinor)}
+        ${ecoRow('Комиссия платформы (с VAT)',eco.commissionMinor)}
+        ${ecoRow('Комиссия Stripe',eco.stripeFeeMinor,true)}
+        ${ecoRow(`VAT ${Math.round(eco.rates.vatRate*100)}% с комиссии`,eco.vatOnCommissionMinor,true)}
+        ${ecoRow(`CIT ${Math.round(eco.rates.citRate*100)}%`,eco.citMinor,true)}
+        <div class="rc-sep"></div>
+        ${ecoRow('Остаётся платформе',eco.netMinor,false,true)}
+      </div>`:''}
+
+      <div class="ta-card">
+        <h4>Выгрузки для бухгалтерии</h4><p class="sub">CSV в кодировке UTF-8 — открываются в Excel и передаются бухгалтеру как есть.</p>
+        <div class="row" style="gap:10px;flex-wrap:wrap">
+          <button class="btn ghost" id="expAcc">Бухгалтерский реестр заказов</button>
+          <button class="btn ghost" id="expDac7">Отчёт DAC7 за ${new Date().getFullYear()}</button>
+          <button class="btn ghost" id="finCsv">Финансовый журнал</button>
+        </div>
+        <div id="finSummary" class="tiny muted" style="margin-top:12px">Загрузка…</div>
+        <div class="hint tiny" style="margin-top:10px">Реестр: заказ, оплата клиента, сумма исполнителя, комиссия, VAT, эквайринг. DAC7: данные исполнителей и суммы по кварталам — то, что платформа обязана сообщать.</div>
+      </div>`;
+    const year=new Date().getFullYear();
+    $('#expAcc',body).onclick=()=>downloadServerCsv('/api/admin/export/accounting.csv','lumi-ksiegowosc.csv',$('#expAcc',body));
+    $('#expDac7',body).onclick=()=>downloadServerCsv('/api/admin/export/dac7.csv?year='+year,`lumi-dac7-${year}.csv`,$('#expDac7',body));
+    loadFinanceSummary();
+    bindPayouts(body);
+  }catch(err){toast(err.message,true);}
+}
+
+/* Общие для страниц «Финансы» и «Настройки»: сводка бухгалтерии и выгрузка
+   журнала. Живут отдельно, потому что нужны на двух экранах. */
+async function loadFinanceSummary(scope){
+  const box=scope||document;
+  const target=$('#finSummary',box); if(!target)return;
+  try{
+    const f=await api('/api/admin/finance');
+    const zl=(m)=>money(Math.round((m||0)/100)); const S=f.summary;
+    target.innerHTML=`По журналу платежей: списано <b>${zl(S.grossCapturedMinor)}</b> · комиссия <b style="color:var(--primary-600)">${zl(S.platformRevenueMinor)}</b> · выплачено исполнителям <b>${zl(Math.abs(S.providerPayoutMinor))}</b>`;
+    const btn=$('#finCsv',box); if(btn)btn.onclick=()=>downloadFinanceCsv(f);
+  }catch{ target.textContent='Нет доступа к бухгалтерии.'; }
+}
+/* Недельный файл выплат: сформировать, скачать, отметить выплаченными. */
+function bindPayouts(box){
+  const payoutFile=$('#payoutFile',box), payoutSettle=$('#payoutSettle',box), payoutBox=$('#payoutBox',box);
+  if(!payoutFile)return;
+  let lastPayout=null;
+  payoutFile.onclick=async()=>{
+    payoutFile.disabled=true;
+    try{
+      const data=await api('/api/admin/payouts'); lastPayout=data;
+      if(!data.cleaners.length){ payoutBox.textContent=t('Нет исполнителей с балансом к выплате.'); if(payoutSettle)payoutSettle.disabled=true; }
+      else{ downloadPayoutCsv(data);
+        payoutBox.innerHTML=`<b>${data.cleaners.length}</b> ${t('исполнителей')} · ${t('итого')} <b>${money(data.total)}</b> — ${t('файл скачан')}`;
+        if(payoutSettle)payoutSettle.disabled=false; }
+    }catch(e){ toast(e.message,true); }
+    payoutFile.disabled=false;
+  };
+  if(payoutSettle)payoutSettle.onclick=async()=>{
+    if(!lastPayout||!lastPayout.cleaners.length)return;
+    if(!confirm(t('Отметить эти выплаты выполненными? Балансы исполнителей обнулятся.')))return;
+    payoutSettle.disabled=true;
+    try{ const r=await api('/api/admin/payouts/settle','POST',{ids:lastPayout.cleaners.map(c=>c.id)});
+      toast(t('Выплачено')+`: ${money(r.total)}`); viewAdminFinance();
+    }catch(e){ toast(e.message,true); payoutSettle.disabled=false; }
+  };
+}
+
+async function viewAdminSettings(){
+  const c=el(`<div>${taPage('Настройки платформы','Деньги и система')}
+    <div class="ta-card" id="platformCard"><div class="muted tiny">Загрузка…</div></div></div>`);
+  shell(c);
+  loadAdminPlatform();
 }
 function kpi(ico,val,lab,bg,fg){return `<div class="card pad kpi"><div class="ico" style="background:${bg};color:${fg}">${ico}</div><b>${val}</b><div class="lab">${lab}</div></div>`;}
 // Super-admin platform controls: open/close cities for sign-up, live economy
@@ -6760,8 +6926,7 @@ async function loadAdminPlatform(){
   const s=data.settings, cities=data.cities;
   const pct=(r)=>Math.round((r||0)*100);
   box.innerHTML=`
-    <h4 style="margin-bottom:4px">⚙️ Платформа</h4>
-    <p class="muted tiny" style="margin-bottom:14px">Супер-управление: города, экономика, объявление и рассылка.</p>
+    <p class="muted tiny" style="margin:0 0 16px">Супер-управление: города, экономика, объявление и рассылка.</p>
 
     <div style="margin-bottom:18px">
       <b style="font-size:14px">Города регистрации</b>
@@ -6925,6 +7090,21 @@ async function loadAdminPlatform(){
 }
 // Escape one CSV cell (BOM + quoting handled by the callers).
 function csvCell(v){const s=String(v==null?'':v);return /[",;\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
+/* CSV, который считает сервер: тянем с токеном в заголовке и отдаём файлом.
+   data:-ссылка (а не blob) — её понимает и WebView мобильного приложения. */
+async function downloadServerCsv(path,filename,btn){
+  if(btn)btn.disabled=true;
+  try{
+    const r=await fetch(API+path,{headers:state.token?{Authorization:'Bearer '+state.token}:{}});
+    if(!r.ok)throw new Error(r.status===403?'Нет прав на выгрузку':'Не удалось получить файл');
+    const text=await r.text();
+    const a=document.createElement('a');
+    a.href='data:text/csv;charset=utf-8;name='+encodeURIComponent(filename)+','+encodeURIComponent(text);
+    a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),150);
+    toast(t('Файл скачан'));
+  }catch(e){toast(e.message,true);}
+  if(btn)btn.disabled=false;
+}
 function csvDownload(rows,filename){
   const csv=rows.map(r=>r.map(csvCell).join(',')).join('\r\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}));
