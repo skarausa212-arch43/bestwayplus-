@@ -2587,6 +2587,8 @@ route('POST', '/api/bookings', async (req, res) => {
     const gPrice = Math.round(gEst.totalG / 100);
     const gCommission = Math.round(gPrice * getSettings().commissionRate);
     const gFreq = b.garden && b.garden.mowFrequency === 'coTydzien' ? 'weekly' : b.garden && b.garden.mowFrequency === 'co2Tygodnie' ? 'biweekly' : 'once';
+    const gGate = cardGate(user, gPrice * 100);
+    if (gGate) return send(res, gGate.status, gGate.body);
     const gid = uid('b_');
     const gb = {
       id: gid, customerId: user.id, propertyId: prop ? prop.id : null, cleanerId: null,
@@ -2648,6 +2650,8 @@ route('POST', '/api/bookings', async (req, res) => {
   }
   const price = isPlus ? Math.round(est.total * (1 - PREMIUM_DISCOUNT)) : est.total;
   const commission = Math.round(price * getSettings().commissionRate);
+  const gate = cardGate(user, price * 100);
+  if (gate) return send(res, gate.status, gate.body);
   const id = uid('b_');
   const booking = {
     id,
@@ -2945,6 +2949,31 @@ route('POST', '/api/bookings/:id/pay-card', async (req, res, params) => {
   if (!r.ok) return send(res, 502, { error: 'Не удалось создать платёж.', code: 'CHECKOUT_FAILED' });
   send(res, 200, { redirectUrl: r.url });
 });
+
+// ── Card gate ───────────────────────────────────────────────────────────────
+// Payments are mandatory on the live host. Deriving "payments are off" from a
+// missing Stripe key means a key that fails to load turns every job free and
+// silent, so production demands a working gateway and refuses the order instead
+// of waving it through unpaid.
+const PAYMENTS_OPTIONAL = process.env.NODE_ENV !== 'production';
+function paymentsRequired() { return stripe.isEnabled() || !PAYMENTS_OPTIONAL; }
+// Can this customer pay for an order of this size right now? The LUMI balance
+// counts — accumulated cashback alone can cover a small job.
+function canPayFor(user, priceMinor) {
+  if (Math.round((user.wallet || 0) * 100) >= priceMinor) return true;
+  return !!(user.stripeCustomerId && user.card && user.card.pmId);
+}
+// Checked BEFORE the order goes out to search, not after a provider matched: a
+// provider must never hold a slot for a job that cannot be paid for. Returns
+// { status, body } to send back, or null to let the order through.
+function cardGate(user, priceMinor) {
+  if (!paymentsRequired()) return null;
+  if (!stripe.isEnabled()) {
+    return { status: 503, body: { error: 'Płatności są chwilowo niedostępne — nie możemy przyjąć zamówienia.', code: 'PAYMENTS_UNAVAILABLE' } };
+  }
+  if (canPayFor(user, priceMinor)) return null;
+  return { status: 409, body: { error: 'Aby zamówić usługę, dodaj kartę płatniczą.', code: 'CARD_REQUIRED' } };
+}
 
 // Auto-charge a booking's saved card the moment a cleaner is assigned (off-session).
 // Never throws — resolves after attempting; the app flow continues regardless.
@@ -3255,9 +3284,10 @@ route('POST', '/api/bookings/:id/enroute', async (req, res, params) => {
   if (!bk) return send(res, 404, { error: 'Booking not found.' });
   if (bk.cleanerId !== user.id) return send(res, 403, { error: 'Not your job.' });
   if (bk.status !== 'accepted') return send(res, 409, { error: 'Можно выехать только по принятому заказу.' });
-  // Payment gate (Uber flow): the card is captured on match; if that hasn't
-  // succeeded, no cleaning happens — don't let the cleaner drive out unpaid.
-  if (stripe.isEnabled() && !bk.paid) return send(res, 409, { error: 'Оплата клиента ещё не прошла — не выезжайте. Ждём подтверждения оплаты картой.', code: 'PAYMENT_REQUIRED' });
+  // Payment gate (Uber flow): a card is required before the order goes out to
+  // search and captured on match; if that capture hasn't succeeded, no cleaning
+  // happens — don't let the cleaner drive out unpaid.
+  if (paymentsRequired() && !bk.paid) return send(res, 409, { error: 'Оплата клиента ещё не прошла — не выезжайте. Ждём подтверждения оплаты картой.', code: 'PAYMENT_REQUIRED' });
   const t = buildTrack(bk);
   bk.status = 'on_the_way';
   bk.enrouteAt = now();
@@ -3289,8 +3319,8 @@ route('POST', '/api/bookings/:id/status', async (req, res, params) => {
     // The cleaner must be on-site: mark en route first, then start.
     if (bk.status !== 'on_the_way') return send(res, 409, { error: 'Сначала отметьте, что выехали, затем прибытие.', code: 'MUST_ENROUTE' });
     if (!bk.photosBefore.length) return send(res, 400, { error: 'Upload at least one "before" photo first.' });
-    // Payment gate: no capture, no cleaning (only enforced when Stripe is live).
-    if (stripe.isEnabled() && !bk.paid) return send(res, 409, { error: 'Оплата клиента ещё не прошла — заказ нельзя начать.', code: 'PAYMENT_REQUIRED' });
+    // Payment gate: no capture, no cleaning.
+    if (paymentsRequired() && !bk.paid) return send(res, 409, { error: 'Оплата клиента ещё не прошла — заказ нельзя начать.', code: 'PAYMENT_REQUIRED' });
     bk.status = 'in_progress';
     bk.timeline.push({ status: 'in_progress', at: now() });
     sysMessage(bk.id, 'started');
@@ -5105,8 +5135,12 @@ function seed() {
     return id;
   };
   mk('admin', 'LUMI Admin', 'admin@cleango.app');
-  const annaId = mk('customer', 'Anna Nowak', 'anna@example.com', { subscription: 'plus', premiumSince: now() });
-  const marekId = mk('customer', 'Marek Wiśniewski', 'marek@example.com');
+  // Demo customers carry a demo card so the card gate lets their orders through
+  // (the gate is what a real customer satisfies by attaching one). It is not a
+  // chargeable card — an actual capture still has to come from Stripe.
+  const DEMO_CARD = { stripeCustomerId: 'cus_demo', card: { brand: 'visa', last4: '4242', exp: '12/30', pmId: 'pm_demo' } };
+  const annaId = mk('customer', 'Anna Nowak', 'anna@example.com', { subscription: 'plus', premiumSince: now(), ...DEMO_CARD });
+  const marekId = mk('customer', 'Marek Wiśniewski', 'marek@example.com', { ...DEMO_CARD });
   const piotrId = mk('cleaner', 'Piotr Kowalski', 'piotr@example.com', { jobsDone: 128, rating: 4.9, experienceYears: 5, bio: 'Аккуратная уборка квартир и офисов. Свои эко-средства, пунктуальность.' });
   const zofiaId = mk('cleaner', 'Zofia Lewandowska', 'zofia@example.com', { jobsDone: 64, rating: 4.8, experienceYears: 3, bio: 'Люблю, когда дом сияет. Генеральная уборка и окна — моя специализация.' });
   const martaId = mk('cleaner', 'Marta Nowak', 'marta@example.com', { jobsDone: 210, rating: 4.9, experienceYears: 7, bio: 'Более 200 заказов. Уборка после ремонта и переезда, работа с деликатными поверхностями.' });

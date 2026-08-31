@@ -2191,6 +2191,9 @@ Object.assign(TR.uk,{"Прошу начать оказание услуги до
 Object.assign(TR.pl,{"Новый заказ рядом":"Nowe zlecenie w pobliżu","Новых заказов":"Nowych zleceń","Новые заказы появятся здесь автоматически.":"Nowe zlecenia pojawią się tutaj automatycznie.","Сейчас нет открытых заказов":"Brak otwartych zleceń","Исполнитель назначен":"Wykonawca przydzielony","Исполнитель в пути":"Wykonawca w drodze","Уборка началась":"Sprzątanie się rozpoczęło","Заказ завершён":"Zamówienie zakończone"});
 Object.assign(TR.en,{"Новый заказ рядом":"New job nearby","Новых заказов":"New jobs","Новые заказы появятся здесь автоматически.":"New jobs will appear here automatically.","Сейчас нет открытых заказов":"No open jobs right now","Исполнитель назначен":"Provider assigned","Исполнитель в пути":"Provider on the way","Уборка началась":"Cleaning has started","Заказ завершён":"Order completed"});
 Object.assign(TR.uk,{"Новый заказ рядом":"Нове замовлення поруч","Новых заказов":"Нових замовлень","Новые заказы появятся здесь автоматически.":"Нові замовлення з'являться тут автоматично.","Сейчас нет открытых заказов":"Зараз немає відкритих замовлень","Исполнитель назначен":"Виконавця призначено","Исполнитель в пути":"Виконавець у дорозі","Уборка началась":"Прибирання розпочалося","Заказ завершён":"Замовлення завершено"});
+Object.assign(TR.pl,{"Нужна карта":"Potrzebna karta","Чтобы отправить заказ исполнителям, нужна привязанная карта. Спишем только когда заказ примут.":"Aby wysłać zamówienie do wykonawców, potrzebujemy podpiętej karty. Pobierzemy płatność dopiero po przyjęciu zamówienia.","Сейчас ничего не спишется. Оплата пройдёт только тогда, когда исполнитель примет заказ.":"Teraz nic nie pobierzemy. Płatność pobierzemy dopiero wtedy, gdy wykonawca przyjmie zamówienie.","Позже":"Później","Карта сохранена — подтвердите заказ":"Karta zapisana — potwierdź zamówienie","Оплата временно недоступна — попробуйте позже.":"Płatności są chwilowo niedostępne — spróbuj później."});
+Object.assign(TR.en,{"Нужна карта":"A card is needed","Чтобы отправить заказ исполнителям, нужна привязанная карта. Спишем только когда заказ примут.":"We need a saved card before we send your order to providers. We charge it only once the job is accepted.","Сейчас ничего не спишется. Оплата пройдёт только тогда, когда исполнитель примет заказ.":"Nothing is charged now. Payment is taken only once a provider accepts the job.","Позже":"Later","Карта сохранена — подтвердите заказ":"Card saved — confirm your order","Оплата временно недоступна — попробуйте позже.":"Payments are temporarily unavailable — please try again later."});
+Object.assign(TR.uk,{"Нужна карта":"Потрібна картка","Чтобы отправить заказ исполнителям, нужна привязанная карта. Спишем только когда заказ примут.":"Щоб надіслати замовлення виконавцям, потрібна прив'язана картка. Спишемо лише після того, як замовлення приймуть.","Сейчас ничего не спишется. Оплата пройдёт только тогда, когда исполнитель примет заказ.":"Зараз нічого не спишеться. Оплата пройде лише тоді, коли виконавець прийме замовлення.","Позже":"Пізніше","Карта сохранена — подтвердите заказ":"Картку збережено — підтвердьте замовлення","Оплата временно недоступна — попробуйте позже.":"Оплата тимчасово недоступна — спробуйте пізніше."});
 
 // Browser-tab title per language (the HTML ships the Polish one).
 const DOC_TITLE={
@@ -4908,17 +4911,27 @@ function openOgrodOrder(g,est,opts){
     }
     if(!state.user) return requireAuth('Чтобы оформить заказ, войдите или создайте аккаунт — это займёт минуту.','book');
     const btn=$('#ooGo',m);btn.disabled=true;btn.textContent=t('Минутку…');
-    try{
-      const body={service:'garden',garden:{...g,lawnM2:+g.lawnM2||0,hedgeMb:+g.hedgeMb||0,pielenieM2:+g.pielenieM2||0},
-        startNow:consent.checked,
-        scheduledFor:sched,notes:$('#ooNotes',m).value.slice(0,500),city:'Wrocław'};
-      if(sel&&sel.value)body.propertyId=sel.value;else body.address=$('#ooAddr',m).value.trim();
-      const r=await api('/api/bookings','POST',body);
-      if(!inline)closeModal();
-      toast(t('Заказ принят — ищем садовника 🌿'));
-      state.draft=null;                 // the garden draft is spent
-      state.view='bookings';render();
-    }catch(e){toast(e.message,true);btn.disabled=false;btn.textContent=t('Заказать');}
+    // Read the form once: attaching a card replaces this modal, and the retry
+    // has to place the same order without it.
+    const body={service:'garden',garden:{...g,lawnM2:+g.lawnM2||0,hedgeMb:+g.hedgeMb||0,pielenieM2:+g.pielenieM2||0},
+      startNow:consent.checked,
+      scheduledFor:sched,notes:$('#ooNotes',m).value.slice(0,500),city:'Wrocław'};
+    if(sel&&sel.value)body.propertyId=sel.value;else body.address=$('#ooAddr',m).value.trim();
+    const place=async()=>{
+      try{
+        await api('/api/bookings','POST',body);
+        if(!inline)closeModal();
+        toast(t('Заказ принят — ищем садовника 🌿'));
+        state.draft=null;                 // the garden draft is spent
+        state.view='bookings';render();
+      }catch(e){
+        if(btn.isConnected){btn.disabled=false;btn.textContent=t('Заказать');}
+        if(e.code==='CARD_REQUIRED')return requireCard(place);
+        if(e.code==='PAYMENTS_UNAVAILABLE')return payUnavailable();
+        toast(e.message,true);
+      }
+    };
+    place();
   };
   if(inline)opts.mount(m); else showModalNode(m);
   return m;
@@ -5216,9 +5229,10 @@ function viewBook(){
   else if(d.step===3){ // AI estimate + confirm
     body.innerHTML=`<h2 style="margin-bottom:4px">AI-оценка стоимости</h2><p class="muted" style="margin-bottom:20px">Честная цена, рассчитана мгновенно.</p>
       <div id="estBox"><div class="card pad"><div class="sk" style="height:120px"></div></div></div>
-      ${withdrawalConsentHtml(d)}`;
+      ${withdrawalConsentHtml(d)}${cardHintHtml()}`;
     computeEstimate(body);
     const wd=$('#wdConsent',body); if(wd){ wd.checked=!!d.startNow; wd.onchange=()=>{d.startNow=wd.checked;}; }
+    const ac=$('#bkAddCard',body); if(ac)ac.onclick=(e)=>{ e.preventDefault(); stashDraft(); addCard(()=>viewBook()); };
   }
 
   // nav buttons
@@ -5264,6 +5278,20 @@ function startsInsideWithdrawalWindow(d){
   if(!at||isNaN(at))return true;
   return at<Date.now()+WITHDRAWAL_DAYS*86400000;
 }
+// A heads-up before the button rather than after it: the server refuses an order
+// from a customer with no way to pay, and learning that only on submit wastes the
+// whole form.
+function cardHintHtml(){
+  const cat=state.catalog||{};
+  if(!cat.cardsEnabled)return '';                       // gateway off — nothing to attach
+  if(!state.user||state.user.card)return '';
+  return `<div class="card pad" style="margin-top:14px;display:flex;gap:10px;align-items:flex-start">
+    <span style="color:var(--primary-600);flex:none;margin-top:1px">${I.wallet||''}</span>
+    <span class="tiny" style="line-height:1.5">${t('Сейчас ничего не спишется. Оплата пройдёт только тогда, когда исполнитель примет заказ.')}
+    <a href="#" id="bkAddCard" style="color:var(--primary-600);font-weight:700">${t('Привязать карту')}</a></span>
+  </div>`;
+}
+
 function withdrawalConsentHtml(d){
   if(!startsInsideWithdrawalWindow(d))return '';
   return `<label class="card pad consent-box" style="margin-top:14px;display:flex;gap:10px;align-items:flex-start;cursor:pointer">
@@ -5433,7 +5461,11 @@ async function confirmBooking(){
     toast('Заказ создан — ищем исполнителя…');
     state.activeBooking=booking.id;state.view='bookings';
     render();openBooking(booking.id);
-  }catch(err){toast(err.message,true);}
+  }catch(err){
+    if(err.code==='CARD_REQUIRED')return requireCard(()=>confirmBooking());
+    if(err.code==='PAYMENTS_UNAVAILABLE')return payUnavailable();
+    toast(err.message,true);
+  }
 }
 
 /* ---------- BOOKINGS LIST ---------- */
@@ -6221,9 +6253,11 @@ function loadStripeJs(){
 }
 // Add / replace the saved card. Prefer the embedded Payment Element window
 // (Uber-style, no leaving the app); fall back to hosted Checkout if not configured.
-async function addCard(){
+// `onSaved` runs only on the in-page path — the hosted-Checkout path leaves the
+// page entirely, so anything that must survive it has to be stashed first.
+async function addCard(onSaved){
   const cat=state.catalog||{};
-  if(cat.cardsInline && cat.stripePublishableKey)return openCardModal();
+  if(cat.cardsInline && cat.stripePublishableKey)return openCardModal(onSaved);
   try{
     const {url}=await api('/api/cards/setup','POST');
     if(url){ location.href=url; return; }
@@ -6232,7 +6266,7 @@ async function addCard(){
 }
 // The in-page card window: Stripe Payment Element on a SetupIntent. Raw card data
 // goes straight to Stripe (PCI-safe); on success we persist the card immediately.
-async function openCardModal(){
+async function openCardModal(onSaved){
   const cat=state.catalog||{};
   let Stripe;
   try{ Stripe=await loadStripeJs(); }catch(e){ toast(t('Не удалось загрузить форму оплаты'),true); return; }
@@ -6331,7 +6365,9 @@ async function openCardModal(){
       const r=await api('/api/cards/confirm','POST',{paymentMethodId:setupIntent&&setupIntent.payment_method});
       if(state.user)state.user.card=r.card;
     }catch(e){/* charged/saved on Stripe; webhook reconciles */}
-    close();toast(t('Карта сохранена'));render();
+    close();toast(t('Карта сохранена'));
+    if(onSaved){ onSaved(); return; }
+    render();
   };
 }
 async function removeCard(){
@@ -6339,6 +6375,32 @@ async function removeCard(){
   try{ await api('/api/cards','DELETE'); if(state.user)delete state.user.card; toast(t('Карта удалена')); render(); }
   catch(e){ toast(e.message,true); }
 }
+
+// The server refuses an order from a customer who cannot pay for it (CARD_REQUIRED)
+// — the order never reaches the providers, so nobody holds a slot for a job that
+// would stall. Explain that here and offer the form, instead of a dead-end toast.
+const PENDING_DRAFT_KEY='lumi_draft_pending';
+function stashDraft(){ try{ if(state.draft)sessionStorage.setItem(PENDING_DRAFT_KEY,JSON.stringify(state.draft)); }catch(e){} }
+function popDraft(){ try{ const v=sessionStorage.getItem(PENDING_DRAFT_KEY); sessionStorage.removeItem(PENDING_DRAFT_KEY); return v?JSON.parse(v):null; }catch(e){ return null; } }
+function requireCard(retry){
+  const m=el(`<div class="card pad" style="max-width:400px">
+    <div class="row" style="gap:12px;margin-bottom:14px">
+      <span class="thumb" style="width:46px;height:46px;border-radius:13px;background:var(--primary-050);color:var(--primary-600);display:grid;place-items:center;flex:none">${I.wallet||''}</span>
+      <div style="flex:1">
+        <h3 style="margin-bottom:3px">${t('Нужна карта')}</h3>
+        <p class="muted tiny">${t('Чтобы отправить заказ исполнителям, нужна привязанная карта. Спишем только когда заказ примут.')}</p>
+      </div>
+    </div>
+    <button class="btn block" id="rqCardGo">${t('Привязать карту')}</button>
+    <button class="btn ghost block" id="rqCardLater" style="margin-top:8px">${t('Позже')}</button>
+  </div>`);
+  showModalNode(m);
+  $('#rqCardLater',m).onclick=()=>closeModal();
+  // The hosted-Checkout path navigates away, so stash the draft before leaving;
+  // the in-page path comes back through `retry` with the page still intact.
+  $('#rqCardGo',m).onclick=()=>{ closeModal(); stashDraft(); addCard(retry); };
+}
+function payUnavailable(){ toast(t('Оплата временно недоступна — попробуйте позже.'),true); }
 // After returning from the gateway (?paid=<bookingId>): poll the booking a few
 // times (the P24 webhook lands async) and confirm payment to the customer.
 async function handlePaymentReturn(){
@@ -8002,6 +8064,12 @@ async function handleCardReturn(){
     for(let i=0;i<5;i++){
       try{ const r=await api('/api/cards'); if(r.card){ state.user.card=r.card; break; } }catch(e){}
       await new Promise(r=>setTimeout(r,1500));
+    }
+    const d=popDraft();
+    if(d && state.user.card){
+      state.draft=d; state.view='book';
+      toast(t('Карта сохранена — подтвердите заказ'));
+      render(); return;
     }
     toast(state.user.card?t('Карта сохранена'):t('Карта обрабатывается — обновите через минуту'));
     render();

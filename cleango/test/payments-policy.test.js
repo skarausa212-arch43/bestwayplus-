@@ -122,6 +122,22 @@ async function main() {
       assert.ok(Math.abs(refunded - price * 0.60) < 0.01, `refund is 60% (got ${refunded}, expected ${(price * 0.6).toFixed(2)})`);
     });
 
+    // The card gate: the order is refused BEFORE it reaches providers, so a
+    // provider never holds a slot for a job that cannot be paid for.
+    await ok('card gate: a customer with no card cannot place an order', async () => {
+      const email = `nocard_${Date.now()}@example.com`;
+      const reg = await req('POST', '/api/register', { body: { email, password: 'cleango-test-pass', name: 'No Card',
+        role: 'customer', city: CITY, phone: '+48500600700', acceptedTerms: true } });
+      const tok = reg.json.token;
+      assert.ok(tok, 'customer registered');
+      const r = await req('POST', '/api/bookings', { token: tok, body: { startNow: true, service: 'standard', rooms: 2, baths: 1, address: 'E', city: CITY } });
+      assert.strictEqual(r.status, 409);
+      assert.strictEqual(r.json.code, 'CARD_REQUIRED');
+      // Nothing was created — no provider ever saw it.
+      const mine = (await req('GET', '/api/bookings', { token: tok })).json.bookings || [];
+      assert.strictEqual(mine.length, 0, 'no booking is persisted when the gate refuses');
+    });
+
     console.log(`\n${passed} payment-policy checks passed.`);
   } catch (e) {
     console.error('PAYMENTS-POLICY TEST FAILED:', e.message);
