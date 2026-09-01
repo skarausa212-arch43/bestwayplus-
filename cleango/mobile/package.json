@@ -1,0 +1,29 @@
+{
+  "name": "lumi-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "LUMI native shell (Capacitor) — bundles the web app for instant load, pulls data + auth from lumi24.pl, adds native push.",
+  "scripts": {
+    "android": "node scripts/prepare-android.js",
+    "sync-web": "node scripts/sync-web.js",
+    "place-firebase": "node scripts/place-firebase.js",
+    "assets": "node scripts/gen-assets.js",
+    "open:android": "npx cap open android",
+    "open:ios": "npx cap open ios",
+    "add:ios": "npx cap add ios && npm run place-firebase",
+    "brand": "node scripts/make-brand-assets.js"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/ios": "^8.5.0",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/push-notifications": "^8.1.2",
+    "@capacitor/splash-screen": "^8.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/assets": "^3.0.5",
+    "sharp": "^0.32.6"
+  }
+}

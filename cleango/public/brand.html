@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LUMI — Brand Guidelines</title>
+<style>
+  :root{--p:#14C871;--ink:#0B1220;--bg:#fff;--muted:#5b6472;--card:#f6f8fa;--line:#e7ebf0;--gold:#E9C46A}
+  @media(prefers-color-scheme:dark){:root{--ink:#eef1f5;--bg:#0b1220;--muted:#9aa4b2;--card:#131c2e;--line:#222d42}}
+  *{box-sizing:border-box}
+  body{margin:0;font:16px/1.6 Inter,'SF Pro',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:920px;margin:0 auto;padding:40px 22px 80px}
+  a.back{text-decoration:none;color:var(--muted);font-weight:600}
+  h1{font-size:clamp(30px,5vw,46px);letter-spacing:-.03em;margin:18px 0 4px}
+  .sub{color:var(--muted);font-size:18px;margin-bottom:36px}
+  h2{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:44px 0 16px}
+  .brandmark{display:flex;align-items:center;gap:12px;font-weight:800;font-size:26px;letter-spacing:-.02em}
+  .brandmark svg{width:38px;height:38px}
+  .row{display:flex;gap:16px;flex-wrap:wrap}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;flex:1;min-width:150px}
+  .chip{padding:6px 14px;border-radius:999px;background:var(--card);border:1px solid var(--line);font-weight:600;font-size:14px}
+  .sw{border-radius:14px;height:96px;display:flex;align-items:flex-end;padding:10px;color:#fff;font-size:12px;font-weight:700}
+  .swl{color:var(--ink)}
+  .icons{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:12px}
+  .icons .i{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;place-items:center;gap:8px;font-size:11px;color:var(--muted)}
+  .icons svg{width:26px;height:26px;color:var(--p)}
+  .tag{font-size:24px;font-weight:800;letter-spacing:-.02em}
+  code{background:var(--card);padding:2px 7px;border-radius:6px;font-size:13px}
+  .do{border-left:3px solid var(--p);padding-left:12px}.dont{border-left:3px solid #E5484D;padding-left:12px}
+</style>
+<meta name="description" content="LUMI — гайдлайны бренда: логотип, палитра, типографика.">
+<link rel="canonical" href="https://lumi24.pl/brand.html">
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="/">← LUMI</a>
+  <div class="brandmark" style="margin-top:22px">
+    <svg viewBox="0 0 32 32" fill="none"><path d="M6 15L16 6l10 9v10a1 1 0 01-1 1h-6v-7h-6v7H7a1 1 0 01-1-1V15Z" fill="#E9C46A"/><path d="M22 5l1 2 2 1-2 1-1 2-1-2-2-1 2-1 1-2Z" fill="#14C871"/></svg>
+    LUMI
+  </div>
+  <h1>Brand Guidelines</h1>
+  <div class="sub">Make home maintenance as simple as ordering a ride.</div>
+
+  <h2>Values</h2>
+  <div class="row">
+    <span class="chip">Trust</span><span class="chip">Simplicity</span>
+    <span class="chip">Speed</span><span class="chip">Quality</span><span class="chip">Innovation</span>
+  </div>
+
+  <h2>Tone of voice</h2>
+  <div class="row">
+    <div class="card"><b>Friendly</b><br><span style="color:var(--muted)">Warm, human, never robotic.</span></div>
+    <div class="card"><b>Professional</b><br><span style="color:var(--muted)">Competent and reliable.</span></div>
+    <div class="card"><b>Calm</b><br><span style="color:var(--muted)">Reassuring, unhurried.</span></div>
+    <div class="card"><b>Clear</b><br><span style="color:var(--muted)">Plain language, no jargon.</span></div>
+  </div>
+
+  <h2>Color</h2>
+  <div class="row">
+    <div class="card" style="padding:0;overflow:hidden;border:none"><div class="sw" style="background:#14C871">LUMI Green · #14C871</div></div>
+    <div class="card" style="padding:0;overflow:hidden;border:none"><div class="sw" style="background:#0B1220">Charcoal · #0B1220</div></div>
+    <div class="card" style="padding:0;overflow:hidden;border:none"><div class="sw swl" style="background:#F6F8FA;border:1px solid var(--line)">Soft Gray · #F6F8FA</div></div>
+    <div class="card" style="padding:0;overflow:hidden;border:none"><div class="sw swl" style="background:#fff;border:1px solid var(--line)">White · #FFFFFF</div></div>
+    <div class="card" style="padding:0;overflow:hidden;border:none"><div class="sw" style="background:#E9C46A">Gold accent · #E9C46A</div></div>
+  </div>
+  <p style="color:var(--muted);font-size:14px;margin-top:10px">Primary is LUMI Green; charcoal, soft gray and white are secondary. Gold is reserved for the mark's sparkle. Full palette + dark-mode variants live in <code>design/tokens.css</code>.</p>
+
+  <h2>Typography</h2>
+  <div class="card">
+    <div style="font-size:34px;font-weight:800;letter-spacing:-.02em">Inter / SF Pro</div>
+    <div style="color:var(--muted)">Display 800 · Headings 700 · Body 400–600. Tight tracking on large sizes.</div>
+  </div>
+
+  <h2>Logo</h2>
+  <div class="row" style="align-items:center">
+    <div class="card" style="text-align:center"><div class="brandmark" style="justify-content:center"><svg viewBox="0 0 32 32" fill="none"><path d="M6 15L16 6l10 9v10a1 1 0 01-1 1h-6v-7h-6v7H7a1 1 0 01-1-1V15Z" fill="#E9C46A"/><path d="M22 5l1 2 2 1-2 1-1 2-1-2-2-1 2-1 1-2Z" fill="#14C871"/></svg>LUMI</div><div style="color:var(--muted);font-size:12px;margin-top:8px">logo_primary</div></div>
+    <div class="card" style="text-align:center;background:#0B1220"><div class="brandmark" style="justify-content:center;color:#fff"><svg viewBox="0 0 32 32" fill="none"><path d="M6 15L16 6l10 9v10a1 1 0 01-1 1h-6v-7h-6v7H7a1 1 0 01-1-1V15Z" fill="#fff"/><path d="M22 5l1 2 2 1-2 1-1 2-1-2-2-1 2-1 1-2Z" fill="#fff"/></svg>LUMI</div><div style="color:#9aa4b2;font-size:12px;margin-top:8px">logo_mono (reversed)</div></div>
+  </div>
+  <div class="row" style="margin-top:14px">
+    <div class="card do">Keep clear space around the mark. Use the mono version on busy or dark backgrounds.</div>
+    <div class="card dont">Don't stretch, rotate, recolor the wordmark, or add effects.</div>
+  </div>
+
+  <h2>Icon style</h2>
+  <p style="color:var(--muted);font-size:14px;margin:0 0 14px">Rounded outline · 24px grid · consistent 2px stroke.</p>
+  <div class="icons">
+    <div class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3l3 3-7 7-3-3 7-7Z"/><path d="M9 10l-4 4c-1.5 1.5-2 4-2 6h4c2 0 4.5-.5 6-2l1-1"/></svg>Cleaning</div>
+    <div class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11L12 4l8 7v8a1 1 0 01-1 1h-4v-6H9v6H5a1 1 0 01-1-1v-8Z"/></svg>Home</div>
+    <div class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3Z"/></svg>AI</div>
+    <div class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>Payments</div>
+    <div class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16a1 1 0 011 1v10a1 1 0 01-1 1H9l-5 4V6a1 1 0 011-1Z"/></svg>Chat</div>
+    <div class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>Calendar</div>
+    <div class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11L12 4l8 7v8a1 1 0 01-1 1h-4v-6H9v6H5a1 1 0 01-1-1v-8Z"/><circle cx="12" cy="13" r="2"/></svg>Smart Home</div>
+    <div class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Analytics</div>
+  </div>
+
+  <h2>Photography</h2>
+  <p style="color:var(--muted)">Real homes, natural light, authentic people. Never staged stock or clinical studio shots.</p>
+
+  <h2>Taglines</h2>
+  <div class="tag">Your Home. Smarter.</div>
+  <div class="tag" style="color:var(--p)">Home Care, Reimagined.</div>
+</div>
+</body>
+</html>

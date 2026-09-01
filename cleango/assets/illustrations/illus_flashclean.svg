@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" width="240" height="160" role="img" aria-label="FlashClean illustration">
+  <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EAFBF2"/><stop offset="1" stop-color="#D3F4E2"/></linearGradient></defs>
+  <rect width="240" height="160" rx="16" fill="url(#sky)"/>
+  <path d="M118 40l-16 44h20l-8 36 40-56h-22l14-24h-28Z" fill="#14C871"/>
+  <circle cx="60" cy="60" r="10" fill="#E9C46A"/>
+  <path d="M40 120h160" stroke="#9FE3C1" stroke-width="4" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,34 @@
+{
+  "name": "lumi",
+  "version": "1.0.0",
+  "private": true,
+  "description": "LUMI — premium on-demand home-services platform (zero-dependency Node.js server + vanilla-JS SPA).",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/run.js",
+    "test:api": "node test/api.test.js",
+    "lint": "node -e \"['server.js'].forEach(f=>require('child_process').execFileSync(process.execPath,['--check',f],{stdio:'inherit'}));console.log('lint ok')\"",
+    "security-scan": "node ops/secret-scan.js",
+    "audit-security": "node ops/audit-security.js",
+    "click-audit": "node ops/click-audit.js",
+    "lifecycle-check": "node ops/lifecycle-check.js",
+    "rules-check": "node ops/rules-check.js",
+    "asset-check": "node ops/asset-check.js",
+    "launch-check": "node ops/launch-check.js",
+    "spa-check": "node ops/spa-syntax-check.js",
+    "ui-audit": "node ops/ui-audit.js",
+    "release-audit": "node ops/release-audit.js",
+    "integrations-check": "node ops/integrations-check.js",
+    "live-refresh-check": "node ops/live-refresh-check.js",
+    "mail-dns-check": "node ops/mail-dns-check.js",
+    "mail-test": "node mailer/send-test.js",
+    "stripe-check": "node ops/stripe-check.js",
+    "backup": "node ops/backup.js run",
+    "backup-status": "node ops/backup.js status",
+    "backup-setup": "node ops/backup-setup.js"
+  },
+  "dependencies": {}
+}

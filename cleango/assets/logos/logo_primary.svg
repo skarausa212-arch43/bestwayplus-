@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 56" width="200" height="56" role="img" aria-label="LUMI">
+  <g fill="none">
+    <path d="M10 28L24 15l14 13v14a1.5 1.5 0 01-1.5 1.5H30V33H18v10.5h-6.5A1.5 1.5 0 0110 42V28Z" fill="#E9C46A"/>
+    <path d="M33 11l1.6 3.2L38 16l-3.4 1.8L33 21l-1.6-3.2L28 16l3.4-1.8L33 11Z" fill="#14C871"/>
+  </g>
+  <text x="52" y="37" font-family="Inter,'SF Pro',system-ui,sans-serif" font-size="30" font-weight="800" letter-spacing="-1" fill="#0B1220">LUMI</text>
+</svg>

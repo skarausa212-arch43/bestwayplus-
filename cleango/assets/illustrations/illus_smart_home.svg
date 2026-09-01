@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" width="240" height="160" role="img" aria-label="Smart Home illustration">
+  <rect width="240" height="160" rx="16" fill="#0B1220"/>
+  <path d="M80 96l40-34 40 34v34a2 2 0 01-2 2h-20v-24h-36v24H82a2 2 0 01-2-2V96Z" fill="#E9C46A"/>
+  <path d="M172 44l3 6 6 3-6 3-3 6-3-6-6-3 6-3 3-6Z" fill="#14C871"/>
+  <circle cx="120" cy="104" r="7" fill="#0B1220"/>
+</svg>
