@@ -1,7 +1,11 @@
 name: Server exec
 
-# Runs a shell script on the server over SSH. Triggered manually (workflow_dispatch).
-# Used to administer the box (diagnostics, installs) without a local terminal.
+# Runs a shell script on one of the project's servers over SSH.
+# Triggered manually (workflow_dispatch) to administer a box without a local terminal.
+#
+# Hosts:
+#   130.17.12.118 — старый сервер bestwayplus (Caddy, почта, paymesafe, office)
+#   89.127.193.91 — сервер lumi24.pl (nginx), куда переезжает сайт
 
 on:
   workflow_dispatch:
@@ -11,9 +15,13 @@ on:
         required: true
         default: "uname -a"
       host:
-        description: Server to run on (old bestwayplus box by default)
-        required: false
+        description: Server to run on
+        required: true
         default: "130.17.12.118"
+        type: choice
+        options:
+          - "130.17.12.118"
+          - "89.127.193.91"
 
 jobs:
   exec:
@@ -24,8 +32,6 @@ jobs:
         with:
           host: ${{ inputs.host }}
           username: root
-          # Сервер lumi.pl использует свой пароль (секрет LUMI_SERVER_PASSWORD),
-          # старый сервер bestwayplus — SERVER_PASSWORD.
-          password: ${{ inputs.host == '51.254.176.170' && secrets.LUMI_SERVER_PASSWORD || secrets.SERVER_PASSWORD }}
+          password: ${{ inputs.host == '89.127.193.91' && secrets.LUMI24_SERVER_PASSWORD || secrets.SERVER_PASSWORD }}
           command_timeout: 40m
           script: ${{ inputs.script }}
