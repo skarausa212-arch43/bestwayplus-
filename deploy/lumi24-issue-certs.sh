@@ -15,21 +15,32 @@ WAIT_MINUTES=${WAIT_MINUTES:-60}
 
 command -v certbot >/dev/null || { apt-get update -qq && apt-get install -y certbot python3-certbot-nginx; }
 
-resolved() { getent hosts "$1" | awk '{print $1}' | head -1; }
+# Все A-записи имени, а не первая попавшаяся: лишняя старая запись ломает
+# выпуск сертификата — Let's Encrypt может пойти на старый сервер, получить
+# оттуда редирект на HTTPS и попасть не на тот виртуальный хост.
+resolved() { getent ahostsv4 "$1" | awk '{print $1}' | sort -u | tr '\n' ' ' | sed 's/ $//'; }
 
 wait_for_dns() {
   local host=$1 deadline=$(( $(date +%s) + WAIT_MINUTES * 60 ))
   while :; do
-    local ip; ip=$(resolved "$host")
-    if [ "$ip" = "$SELF" ]; then
-      echo "  $host -> $ip  (доехал)"
+    local ips; ips=$(resolved "$host")
+    if [ "$ips" = "$SELF" ]; then
+      echo "  $host -> $ips  (доехал)"
       return 0
     fi
-    if [ "$(date +%s)" -ge "$deadline" ]; then
-      echo "  $host -> ${ip:-нет ответа}  (за $WAIT_MINUTES мин так и не переехал)"
+    if [ -n "$ips" ] && [ "$ips" != "${ips#*$SELF}" ]; then
+      echo
+      echo "  $host -> $ips"
+      echo "  У имени несколько A-записей. Нужна ровно одна: $SELF."
+      echo "  Удалите лишние в DNS, иначе проверка Let's Encrypt будет случайно"
+      echo "  попадать на старый сервер и падать."
       return 1
     fi
-    printf '\r  ждём %s, сейчас %s ... ' "$host" "${ip:-нет ответа}"
+    if [ "$(date +%s)" -ge "$deadline" ]; then
+      echo "  $host -> ${ips:-нет ответа}  (за $WAIT_MINUTES мин так и не переехал)"
+      return 1
+    fi
+    printf '\r  ждём %s, сейчас %s ... ' "$host" "${ips:-нет ответа}"
     sleep 30
   done
 }
