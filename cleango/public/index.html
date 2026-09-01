@@ -1073,6 +1073,10 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .brand-lockup .logo-badge svg{width:64px;height:64px}
 .lb-house{stroke-dasharray:240;stroke-dashoffset:240;animation:lbdraw 1s .2s cubic-bezier(.6,0,.2,1) forwards}
 .lb-door{stroke-dasharray:44;stroke-dashoffset:44;animation:lbdraw .5s 1s ease forwards}
+/* The house is revealed by that draw animation. With animations off it stayed at
+   full dash offset for good, and the logo lost its house — four dots on a green
+   tile. Reduced motion means no animation, not no logo. */
+@media (prefers-reduced-motion:reduce){.lb-house,.lb-door{stroke-dashoffset:0}}
 @keyframes lbdraw{to{stroke-dashoffset:0}}
 .lb-spark{transform-box:fill-box;transform-origin:center;opacity:0;animation:lbspark .6s 1.15s cubic-bezier(.2,1.6,.4,1) forwards,twk 2.8s 2s ease-in-out infinite}
 @keyframes lbspark{from{opacity:0;transform:scale(.2) rotate(-45deg)}to{opacity:1;transform:none}}
@@ -1119,7 +1123,12 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .hero-scene{position:absolute;inset:0;width:100%;height:100%;z-index:0;overflow:hidden}
 .hero-scene svg{position:absolute;inset:0;width:100%;height:100%}
 .hero.console.has-photo .hero-veil{background:linear-gradient(100deg,rgba(6,12,13,.86),rgba(6,12,13,.55) 46%,rgba(6,12,13,.28) 78%,rgba(6,12,13,.15))}
-.hero.console.has-scene .hero-veil{background:linear-gradient(100deg,rgba(8,26,20,.82),rgba(8,26,20,.5) 44%,rgba(8,26,20,.2) 74%,rgba(8,26,20,.06))}
+/* The scene is 3:1 art in a hero that is wider and shorter on desktop, so the
+   `slice` crop lifts the sofa up into the button row, where its arms and
+   cushions read as empty buttons. Hold the veil near-opaque across the whole
+   text column and only open it up over the right side, where the window and
+   the plant are meant to show. */
+.hero.console.has-scene .hero-veil{background:linear-gradient(100deg,rgba(8,26,20,.95),rgba(8,26,20,.93) 42%,rgba(8,26,20,.72) 58%,rgba(8,26,20,.3) 76%,rgba(8,26,20,.08))}
 .hero-editbanner{position:absolute;top:14px;right:14px;z-index:3;width:38px;height:38px;border-radius:11px;display:grid;place-items:center;
   background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.24);color:#fff;backdrop-filter:blur(8px);transition:transform .15s,background .15s}
 .hero-editbanner:hover{transform:translateY(-2px);background:rgba(255,255,255,.24)}
@@ -1217,6 +1226,10 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 @media(max-width:640px){
   body::before{display:none}                    /* drop ambient aurora glow */
   .hero.console{padding:22px 18px;min-height:0;box-shadow:0 16px 34px -20px rgba(var(--glow),.5)}
+  /* On a phone the hero is nearly square, so the scene fills the whole card and
+     the text sits directly on the illustration. Flatten the veil there: the art
+     stays as atmosphere, the words stay readable. */
+  .hero.console.has-scene .hero-veil{background:linear-gradient(180deg,rgba(8,26,20,.91),rgba(8,26,20,.84) 58%,rgba(8,26,20,.9))}
   .hero-h1{font-size:26px}
   .hero-eyebrow .dim{display:none}              /* keep the eyebrow to one line */
   .hero-chips .gpill span{font-size:13px}
@@ -2268,11 +2281,15 @@ function i18nStart(){
   });
   _i18nObs.observe(document.body,OPT);
 }
+// Re-draw whatever is actually on screen. The auth screen is not one of the
+// views, so a plain render() quietly sends a visitor from the login form back to
+// the storefront — which is what switching language or theme used to do.
+function rerender(){ if(!state.user && state.authOpen) renderAuth(); else render(); }
 function setLang(l){
   if(l!=='ru' && !TR[l])return;
   state.lang=l; localStorage.setItem('lumi_lang',l); document.documentElement.lang=l;
   document.title=DOC_TITLE[l]||DOC_TITLE.pl;
-  if(state.user)render(); else renderAuth();
+  rerender();
 }
 function openLangMenu(anchor){
   document.querySelectorAll('.lang-menu').forEach(m=>m.remove());
@@ -2345,7 +2362,11 @@ const I = {
    until they upload their own photo. Self-contained inline SVG (CSP-safe:
    no external image). Right-weighted so it reads through the lighter side of
    the veil, matching the product mockups. */
-const HERO_SCENE=`<svg viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Уютный светлый дом">
+// `xMaxYMax` anchors the art's right-bottom corner: the window, the floor and the
+// plant stay in frame at every hero size, and the sofa — drawn on the left, which
+// a centred crop lifted straight into the button row — is cropped away instead of
+// ghosting behind the text.
+const HERO_SCENE=`<svg viewBox="0 0 1200 400" preserveAspectRatio="xMaxYMax slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Уютный светлый дом">
   <defs>
     <linearGradient id="hsWall" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#123A2C"/><stop offset=".55" stop-color="#0E4A3E"/><stop offset="1" stop-color="#0B3A32"/>
@@ -2382,8 +2403,9 @@ const HERO_SCENE=`<svg viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid slic
   <!-- floor -->
   <path d="M0 322 Q600 288 1200 318 L1200 400 L0 400 Z" fill="url(#hsFloor)"/>
   <ellipse cx="470" cy="376" rx="440" ry="42" fill="#0A302A" opacity=".55"/>
-  <!-- cozy sofa -->
-  <g transform="translate(150 250)">
+  <!-- cozy sofa, kept on the right under the window: on the left it landed in
+       the hero's button row at desktop crops -->
+  <g transform="translate(706 300) scale(.62)">
     <rect x="0" y="46" width="470" height="86" rx="30" fill="url(#hsSofa)"/>
     <rect x="-16" y="16" width="80" height="120" rx="26" fill="#26BE7C"/>
     <rect x="406" y="16" width="80" height="120" rx="26" fill="#26BE7C"/>
@@ -2659,7 +2681,7 @@ function toggleTheme(){
   const d=document.documentElement.dataset.theme==='dark';
   document.documentElement.dataset.theme=d?'light':'dark';
   localStorage.setItem('cg_theme',d?'light':'dark');
-  render();
+  rerender();
 }
 const isDark=()=>document.documentElement.dataset.theme==='dark';
 
@@ -2821,12 +2843,23 @@ function regUpInner(kind,img){
   const ico=kind==='avatar'?I.cam:I.receipt;
   return `<div class="kyc-up-ic ${done?'has':''}" ${done?`style="background-image:url('${img}')"`:''}>${done?I.check:ico}</div><span>${label}</span>`;
 }
+// Only the open cities are a promise we can keep — sign-up in the rest is refused
+// by the city gate. Listing all six as equals walked someone from Kraków into a
+// form that would turn them away.
+function authCitiesLine(){
+  const open=(state.citiesOpen&&state.citiesOpen.length?state.citiesOpen:['Wrocław']);
+  const soon=(state.cities||[]).filter(c=>open.indexOf(c)<0);
+  return esc(open.join(' · '))+(soon.length?` · ${t('скоро')}: ${esc(soon.join(' · '))}`:'');
+}
 function renderAuth(){
   const _resetToken=(new URLSearchParams(location.search)).get('reset');
   const clearReset=()=>{ try{history.replaceState({},'',location.pathname);}catch{} };
   // Намерение, с которым сюда пришли из гостевого режима: заказ или работа.
-  const intent=state._afterAuth; state._afterAuth=null;
-  const authNote=state._authNote||''; state._authNote='';
+  // Не обнуляем здесь: экран перерисовывается при смене языка, и повод («войдите,
+  // чтобы оформить заказ») должен пережить перерисовку. Сбрасывает их render().
+  state.authOpen=true;
+  const intent=state._afterAuth;
+  const authNote=state._authNote||'';
   let mode=_resetToken?'reset':(intent?'register':'login'), role=intent==='provider'?'cleaner':'customer';
   const reg={avatar:null,idDocument:null,equipment:[],professions:['cleaning'],hasCar:null,entityType:'individual',vals:{}};   // cleaner KYC + questionnaire
   const root=$('#root');
@@ -2845,7 +2878,7 @@ function renderAuth(){
           <div><span class="fk">${I.check}</span>Живое отслеживание исполнителя</div>
           <div><span class="fk">${I.check}</span>Умный дом и история обслуживания</div>
         </div>
-        <div class="auth-cities">Warszawa · Kraków · Wrocław · Poznań · Gdańsk · Łódź</div>
+        <div class="auth-cities">${authCitiesLine()}</div>
       </div>
     </div>
     <div class="auth-form-side">
@@ -3293,6 +3326,9 @@ async function loadProperties(){
 }
 
 function render(){
+  // Anything drawn here is not the auth screen, so this is where we leave it —
+  // and the reason we sent someone there is spent.
+  state.authOpen=false; state._afterAuth=null; state._authNote='';
   if(!state.user){ (({home:viewGuestHome,book:viewBook})[state.view]||viewGuestHome)(); return; }
   const map={home:viewHome,properties:viewProperties,smart:viewSmart,shortstay:viewShortstay,stroverview:viewStrOverview,passport:viewPassport,premium:viewPremium,book:viewBook,bookings:viewBookings,wallet:viewWallet,jobs:viewJobs,admin:viewAdmin,ausers:viewAdminUsers,aops:viewAdminOps,afin:viewAdminFinance,aset:viewAdminSettings,traffic:viewTraffic,messages:viewMessages,earnings:viewEarnings,audit:viewAudit,analytics:viewAnalytics,company:viewCompany,board:viewBoard,staff:viewStaff,finance:viewFinance};
   const fn=map[state.view]||viewHome;
