@@ -35,7 +35,8 @@ server {
     index index.html;
 
     gzip on;
-    gzip_types text/html text/css application/javascript image/svg+xml;
+    # text/html nginx жмёт всегда, в списке его быть не должно — иначе warning о дубле.
+    gzip_types text/css application/javascript image/svg+xml;
     gzip_min_length 1024;
 
     # Почта осталась на старом сервере — проксируем /mail/*, чтобы вебмейл
@@ -63,8 +64,23 @@ nginx -t
 systemctl reload nginx
 
 echo "== 3. Проверка отдачи (по Host-заголовку, до переключения DNS) =="
-curl -sS -o /dev/null -w "HTTP %{http_code}, отдано %{size_download} байт\n" \
-     -H "Host: bestwayplus.pl" http://127.0.0.1/
+CODE="$(curl -sS -o /dev/null -w '%{http_code}' -H "Host: bestwayplus.pl" http://127.0.0.1/)"
+SIZE="$(curl -sS -o /dev/null -w '%{size_download}' -H "Host: bestwayplus.pl" http://127.0.0.1/)"
+echo "HTTP $CODE, отдано $SIZE байт"
+
+if [ "$CODE" = "200" ]; then
+  echo "OK — запрос попадает в наш блок и страница отдаётся."
+else
+  echo
+  echo "!! Ожидался 200. Запрос перехватывает другой server-блок. Подробности:"
+  echo "--- заголовки ответа ---"
+  curl -sSI -H "Host: bestwayplus.pl" http://127.0.0.1/ | sed 's/^/    /'
+  echo "--- какие блоки слушают :80 (файл: строка) ---"
+  nginx -T 2>/dev/null | awk '
+    /^# configuration file /  { f = $4; sub(/:$/, "", f) }
+    /^[[:space:]]*(listen|server_name|return|root)[[:space:]]/ { print "    " f ": " $0 }
+  ' | grep -vE '/etc/nginx/(mime\.types|fastcgi|scgi|uwsgi)' | head -60
+fi
 
 echo
 echo "Готово. Сайт лежит на сервере lumi24 и ждёт DNS."
