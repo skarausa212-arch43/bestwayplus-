@@ -30,12 +30,15 @@ PORT=$($SSH "root@$NEW" 'if ss -tln | grep -q ":3001 "; then echo 3011; else ech
 echo "  порт: $PORT"
 
 echo "== 4. Копируем приложение вместе с данными =="
-# Останавливаем сервис на время снятия копии, чтобы users.json не менялся на лету.
+# Сервис останавливаем на время снятия копии, чтобы users.json не менялся на лету.
+# Что бы дальше ни случилось, старый PayMeSafe обязан подняться обратно.
+trap 'systemctl start paymesafe >/dev/null 2>&1 || true' EXIT
 systemctl stop paymesafe
 tar czf - -C "$(dirname $APP)" "$(basename $APP)" \
   | $SSH "root@$NEW" "mkdir -p $(dirname $APP) && tar xzf - -C $(dirname $APP)"
 systemctl start paymesafe
-echo "  скопировано, старый сервис снова запущен"
+trap - EXIT
+echo "  скопировано, старый сервис снова запущен: $(systemctl is-active paymesafe)"
 
 $SSH "root@$NEW" "ls -la $APP/data/"
 
