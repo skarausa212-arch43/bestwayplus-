@@ -1,0 +1,21 @@
+{
+  "docACTION_REQUIRED": "Action required",
+  "docAPPROVED": "Approved",
+  "docEXPIRED": "Expired",
+  "docREJECTED": "Rejected",
+  "docUNDER_REVIEW": "Under review",
+  "docUPLOADED": "Uploaded",
+  "stageCLOSED": "Closed",
+  "stageCLUB_REVIEWING": "Club reviewing",
+  "stageINFO_REQUESTED": "Additional information requested",
+  "stageNEGOTIATION": "Negotiation",
+  "stageNEW": "New opportunity",
+  "stagePROFILE_UNDER_REVIEW": "Profile under review",
+  "stageSUBMITTED": "Submitted",
+  "stageSUCCESSFUL": "Successful",
+  "verINFO_REQUIRED": "Additional information required",
+  "verNOT_SUBMITTED": "Not submitted",
+  "verPENDING": "Pending verification",
+  "verREJECTED": "Rejected",
+  "verVERIFIED": "Verified"
+}

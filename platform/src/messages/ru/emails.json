@@ -1,0 +1,11 @@
+{
+  "footerSecurity": "Если это были не вы, войдите в аккаунт и немедленно завершите сеанс.",
+  "footerTransactional": "Вы получили это письмо, потому что у вас есть учётная запись в Bestway Football.",
+  "greeting": "Здравствуйте, {name}!",
+  "openPortal": "Открыть портал",
+  "subjectDocApproved": "Ваш документ принят",
+  "subjectDocRequest": "{name}, нам нужен от вас один документ",
+  "subjectOpportunity": "Новая возможность для вас",
+  "subjectReset": "Сброс пароля",
+  "subjectVerify": "Подтвердите адрес электронной почты"
+}

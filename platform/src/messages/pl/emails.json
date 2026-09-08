@@ -1,0 +1,11 @@
+{
+  "footerSecurity": "Jeśli to nie Ty, zaloguj się i natychmiast zakończ tę sesję.",
+  "footerTransactional": "Otrzymujesz tę wiadomość, ponieważ masz konto w Bestway Football.",
+  "greeting": "Cześć {name},",
+  "openPortal": "Otwórz portal",
+  "subjectDocApproved": "Twój dokument został zatwierdzony",
+  "subjectDocRequest": "{name}, potrzebujemy od Ciebie jednego dokumentu",
+  "subjectOpportunity": "Nowa możliwość dla Ciebie",
+  "subjectReset": "Zresetuj hasło",
+  "subjectVerify": "Potwierdź swój adres e-mail"
+}

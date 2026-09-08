@@ -1,0 +1,14 @@
+{
+  "docApproved": "Twój dokument został zatwierdzony",
+  "docExpiring": "Dokument wkrótce wygaśnie",
+  "docRejected": "Dokument wymaga Twojej uwagi",
+  "docRequested": "Poprosiliśmy Cię o dokument",
+  "docRequestedBody": "{type} — {message}",
+  "empty": "Brak powiadomień.",
+  "markAllRead": "Oznacz wszystkie jako przeczytane",
+  "newMessage": "Masz nową wiadomość",
+  "newOpportunity": "Pojawiła się nowa możliwość",
+  "newSignIn": "Nowe logowanie do Twojego konta",
+  "stageChanged": "Status Twojego zgłoszenia się zmienił",
+  "verificationChanged": "Twój status weryfikacji się zmienił"
+}

@@ -1,0 +1,13 @@
+{
+  "grant": "Grant",
+  "granted": "Granted {date}",
+  "history": "Consent history",
+  "marketingHint": "Optional and entirely separate from your account.",
+  "marketingLabel": "I would like to receive occasional updates about services and opportunities.",
+  "privacyLabel": "I have read the privacy policy",
+  "sharingHint": "Optional. You can withdraw this at any time, and doing so revokes every active profile link.",
+  "sharingLabel": "I authorise Bestway Plus to share my professional profile with selected football clubs, licensed agents and professional partners for the purpose of evaluating potential cooperation opportunities.",
+  "termsLabel": "I accept the terms and conditions",
+  "withdraw": "Withdraw",
+  "withdrawn": "Withdrawn {date}"
+}

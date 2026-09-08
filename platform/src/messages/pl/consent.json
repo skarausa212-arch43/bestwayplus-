@@ -1,0 +1,13 @@
+{
+  "grant": "Udziel",
+  "granted": "Udzielona {date}",
+  "history": "Historia zgód",
+  "marketingHint": "Opcjonalne i całkowicie niezależne od Twojego konta.",
+  "marketingLabel": "Chcę otrzymywać okazjonalne informacje o usługach i możliwościach.",
+  "privacyLabel": "Zapoznałem się z polityką prywatności",
+  "sharingHint": "Opcjonalne. Możesz wycofać zgodę w każdej chwili — wycofanie unieważnia wszystkie aktywne linki do profilu.",
+  "sharingLabel": "Upoważniam Bestway Plus do udostępniania mojego profilu zawodowego wybranym klubom piłkarskim, licencjonowanym agentom i partnerom zawodowym w celu oceny potencjalnych możliwości współpracy.",
+  "termsLabel": "Akceptuję regulamin",
+  "withdraw": "Wycofaj",
+  "withdrawn": "Wycofana {date}"
+}

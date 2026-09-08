@@ -1,0 +1,21 @@
+{
+  "docACTION_REQUIRED": "Wymaga działania",
+  "docAPPROVED": "Zatwierdzony",
+  "docEXPIRED": "Wygasł",
+  "docREJECTED": "Odrzucony",
+  "docUNDER_REVIEW": "W trakcie weryfikacji",
+  "docUPLOADED": "Przesłany",
+  "stageCLOSED": "Zamknięte",
+  "stageCLUB_REVIEWING": "Klub analizuje",
+  "stageINFO_REQUESTED": "Poproszono o dodatkowe informacje",
+  "stageNEGOTIATION": "Negocjacje",
+  "stageNEW": "Nowa możliwość",
+  "stagePROFILE_UNDER_REVIEW": "Profil w trakcie oceny",
+  "stageSUBMITTED": "Zgłoszony",
+  "stageSUCCESSFUL": "Zakończone sukcesem",
+  "verINFO_REQUIRED": "Wymagane dodatkowe informacje",
+  "verNOT_SUBMITTED": "Niezłożone",
+  "verPENDING": "Oczekuje na weryfikację",
+  "verREJECTED": "Odrzucony",
+  "verVERIFIED": "Zweryfikowany"
+}

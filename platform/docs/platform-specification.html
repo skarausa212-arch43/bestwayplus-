@@ -1,0 +1,925 @@
+<title>Bestway Football Platform</title>
+<meta name="description" content="Product specification and technical architecture for the Bestway Football platform.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#031A10; --bg2:#061F15; --bg3:#0A291C; --panel:#08251A;
+  --green:#19C76B; --emerald:#38E887; --light:#8AF0B4;
+  --white:#F5F7F6; --muted:#91A59A; --dim:#6B8074;
+  --line:rgba(56,232,135,.16); --line2:rgba(56,232,135,.085);
+  --warn:#F0B429; --bad:#F2645A; --info:#5AB6F2;
+  --mono:ui-monospace,SFMono-Regular,"JetBrains Mono",Menlo,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--white);
+  background-image:radial-gradient(64% 40% at 82% -8%,rgba(25,199,107,.13),transparent 64%),
+                   radial-gradient(50% 36% at 2% 100%,rgba(56,232,135,.07),transparent 70%);
+  background-attachment:fixed;
+  font-family:Manrope,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15.5px;line-height:1.7}
+a{color:var(--emerald);text-decoration:none}
+a:hover{text-decoration:underline}
+::selection{background:var(--green);color:#02150C}
+:focus-visible{outline:1px solid var(--emerald);outline-offset:3px}
+
+h1,h2,h3,h4{font-family:Montserrat,Manrope,sans-serif;margin:0;line-height:1.12;letter-spacing:-.02em;font-weight:800}
+h1{font-size:clamp(30px,4vw,54px)}
+h2{font-size:clamp(23px,2.5vw,34px);margin-top:4px}
+h3{font-size:19px;font-weight:700;letter-spacing:-.012em}
+h4{font-size:15px;font-weight:700;letter-spacing:.01em}
+p{margin:0}
+code,.mono{font-family:var(--mono);font-size:.88em}
+
+.shell{display:grid;grid-template-columns:274px minmax(0,1fr);gap:0;min-height:100vh}
+.shell>*{min-width:0}
+@media(max-width:1020px){.shell{grid-template-columns:1fr}}
+
+/* --- table of contents --- */
+.toc{border-right:1px solid var(--line2);padding:26px 20px 60px;position:sticky;top:0;align-self:start;
+  max-height:100vh;overflow-y:auto;background:rgba(3,26,16,.7);backdrop-filter:blur(8px)}
+@media(max-width:1020px){.toc{position:static;max-height:none;border-right:0;border-bottom:1px solid var(--line2)}}
+.brand{display:flex;align-items:center;gap:11px;margin-bottom:8px}
+.brand svg{height:30px;width:auto;overflow:visible}
+.brand .bw{display:grid;gap:1px;line-height:1}
+.brand b{font-family:Montserrat,sans-serif;font-size:14.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
+.brand i{font-style:normal;font-family:Montserrat,sans-serif;font-size:8px;font-weight:600;
+  letter-spacing:.38em;text-transform:uppercase;color:var(--emerald)}
+.toc .kicker{font-family:Montserrat,sans-serif;font-size:9px;font-weight:700;letter-spacing:.24em;
+  text-transform:uppercase;color:var(--dim);margin:22px 0 10px}
+.toc ol{list-style:none;margin:0;padding:0;counter-reset:t}
+.toc li{counter-increment:t}
+.toc li a{display:grid;grid-template-columns:26px 1fr;gap:6px;padding:6px 8px;border-radius:7px;
+  color:var(--muted);font-size:13.2px;line-height:1.4;transition:.18s}
+.toc li a::before{content:counter(t,decimal-leading-zero);font-family:var(--mono);font-size:10px;
+  color:var(--dim);padding-top:3px}
+.toc li a:hover{background:rgba(56,232,135,.07);color:var(--white);text-decoration:none}
+
+/* --- content --- */
+main{padding:clamp(26px,4vw,58px) clamp(20px,4vw,62px) 120px;max-width:1180px;min-width:0}
+.sec{padding-block:clamp(34px,4vw,58px);border-top:1px solid var(--line2)}
+.sec:first-of-type{border-top:0;padding-top:0}
+.eyebrow{display:block;font-family:Montserrat,sans-serif;font-size:9.5px;font-weight:700;
+  letter-spacing:.26em;text-transform:uppercase;color:var(--emerald);margin-bottom:12px}
+.lede{color:var(--muted);font-size:17px;max-width:74ch;margin-top:14px}
+.sec p+p,.sec>p{margin-top:14px}
+.sec p{max-width:82ch;color:var(--muted)}
+.sec p strong,.sec li strong{color:var(--white);font-weight:600}
+
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:22px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:22px}
+@media(max-width:900px){.grid2,.grid3{grid-template-columns:1fr}}
+.card{background:var(--bg2);border:1px solid var(--line2);border-radius:13px;padding:20px 22px}
+.card h4{margin-bottom:8px;color:var(--white)}
+.card p{font-size:14.2px;color:var(--muted)}
+.card .k{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--emerald);display:block;margin-bottom:9px}
+
+ul.bul{margin:16px 0 0;padding:0;list-style:none;display:grid;gap:9px}
+ul.bul li{display:grid;grid-template-columns:15px 1fr;gap:11px;color:var(--muted);font-size:14.6px}
+ul.bul li::before{content:"";width:5px;height:5px;margin-top:9px;border-radius:1px;
+  background:linear-gradient(135deg,var(--light),var(--green))}
+
+.tw{overflow-x:auto;margin-top:20px;border:1px solid var(--line2);border-radius:13px;background:var(--bg2)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:13.4px}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line2);vertical-align:top}
+th{font-family:Montserrat,sans-serif;font-size:9.5px;font-weight:700;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--emerald);white-space:nowrap;background:rgba(10,41,28,.6)}
+tr:last-child td{border-bottom:0}
+td.mono,th.mono{font-family:var(--mono);font-size:12.2px;white-space:nowrap}
+td strong{color:var(--white);font-weight:600}
+tbody tr:hover{background:rgba(56,232,135,.035)}
+.yes{color:var(--emerald);font-weight:700}
+.no{color:var(--dim)}
+.part{color:var(--warn);font-weight:700}
+.own{color:var(--info);font-weight:700}
+
+pre{margin:20px 0 0;background:#02120B;border:1px solid var(--line2);border-radius:13px;
+  padding:18px 20px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.62;
+  color:#BFD8CB}
+pre .c{color:var(--dim)}
+pre .k{color:var(--emerald)}
+pre .s{color:var(--light)}
+
+/* wireframes */
+.wf{margin-top:22px;border:1px solid var(--line);border-radius:14px;background:var(--bg2);overflow:hidden}
+.wf-h{display:flex;align-items:center;gap:9px;padding:9px 14px;border-bottom:1px solid var(--line2);
+  background:rgba(10,41,28,.7);font-family:var(--mono);font-size:11px;color:var(--muted)}
+.wf-h i{width:8px;height:8px;border-radius:50%;background:var(--line);display:block}
+.wf-h i:first-child{background:rgba(242,100,90,.55)}
+.wf-b{padding:14px;display:grid;gap:8px}
+.box{border:1px dashed var(--line);border-radius:9px;padding:11px 13px;min-height:38px;
+  display:flex;flex-direction:column;justify-content:center;gap:5px;background:rgba(6,31,21,.6)}
+.box.solid{border-style:solid;background:rgba(10,41,28,.8)}
+.box.acc{border-color:var(--green);background:rgba(25,199,107,.09)}
+.box .lb{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--emerald)}
+.box .tx{font-size:13px;color:var(--muted);line-height:1.5}
+.box .tx b{color:var(--white);font-weight:600}
+.row{display:grid;gap:8px}
+.r2{grid-template-columns:1fr 1fr}.r3{grid-template-columns:repeat(3,1fr)}
+.r4{grid-template-columns:repeat(4,1fr)}
+.rside{grid-template-columns:190px minmax(0,1fr)}
+.rmain{grid-template-columns:minmax(0,1fr) 260px}
+@media(max-width:760px){.r2,.r3,.r4,.rside,.rmain{grid-template-columns:1fr}}
+
+.flow{margin-top:20px;display:grid;gap:10px}
+.step{display:grid;grid-template-columns:30px minmax(0,1fr);gap:14px;align-items:start;
+  padding:13px 15px;border:1px solid var(--line2);border-radius:11px;background:var(--bg2)}
+.step .n{font-family:var(--mono);font-size:11px;color:#02150C;background:linear-gradient(135deg,var(--light),var(--green));
+  width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-weight:700}
+.step .t{font-size:14.3px;color:var(--muted)}
+.step .t b{color:var(--white);font-weight:600;display:block;margin-bottom:2px;
+  font-family:Montserrat,sans-serif;font-size:13.6px}
+
+.note{margin-top:20px;border:1px solid var(--line2);border-left:2px solid var(--green);
+  border-radius:0 11px 11px 0;padding:16px 20px;background:rgba(10,41,28,.55)}
+.note .nl{font-family:Montserrat,sans-serif;font-size:9.5px;font-weight:700;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--emerald);display:block;margin-bottom:7px}
+.note.warn{border-left-color:var(--warn)}
+.note.warn .nl{color:var(--warn)}
+.note p{font-size:14.2px;max-width:80ch}
+
+.pill{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  border:1px solid var(--line);border-radius:20px;padding:3px 10px;color:var(--muted);margin:0 4px 4px 0}
+.pill.on{border-color:var(--green);color:var(--emerald);background:rgba(25,199,107,.09)}
+.pill.off{opacity:.55}
+
+.tri{display:grid;grid-template-columns:70px repeat(3,minmax(0,1fr));gap:0;margin-top:18px;
+  border:1px solid var(--line2);border-radius:13px;overflow:hidden;font-size:13.6px}
+.tri>div{padding:10px 13px;border-bottom:1px solid var(--line2);border-right:1px solid var(--line2)}
+.tri>div:nth-child(4n){border-right:0}
+.tri .hd{font-family:Montserrat,sans-serif;font-size:9.5px;font-weight:700;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--emerald);background:rgba(10,41,28,.6)}
+.tri .lg{font-family:var(--mono);font-size:11px;color:var(--dim)}
+@media(max-width:820px){.tri{grid-template-columns:60px 1fr}.tri .hd:nth-child(n+3){display:none}}
+</style>
+<div class="shell">
+<nav class="toc">
+  <div class="brand"><svg viewBox='0 0 104 116' aria-hidden='true'><defs><linearGradient id='lg' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#8AF0B4'/><stop offset='.5' stop-color='#38E887'/><stop offset='1' stop-color='#0E7C46'/></linearGradient></defs><g transform='skewX(-7) translate(7 0)'><path fill-rule='evenodd' fill='url(#lg)' d='M12 6 H64 L82 24 V38 L68 52 L86 68 V92 L68 110 H12 ZM30 20 H56 L66 30 L56 40 H30 Z M30 64 H60 L72 76 L60 88 H30 Z'/></g></svg><span class="bw"><b>Bestway</b><i>Football</i></span></div>
+  <div class="kicker">Platform specification</div>
+  <ol><li><a href="#overview">Product definition and what changes</a></li><li><a href="#architecture">System architecture</a></li><li><a href="#ia">Information architecture and sitemap</a></li><li><a href="#flows">User flows</a></li><li><a href="#schema">Database schema</a></li><li><a href="#rbac">Role and permission matrix</a></li><li><a href="#wireframes">Wireframes</a></li><li><a href="#admin">Admin CRM structure</a></li><li><a href="#portal">Client portal structure</a></li><li><a href="#copy">UI copy — EN / PL / RU</a></li><li><a href="#homepage">Homepage copy — EN / PL / RU</a></li><li><a href="#gdpr">GDPR and consent</a></li><li><a href="#api">API architecture</a></li><li><a href="#docsec">Secure document architecture</a></li><li><a href="#notifications">Notification architecture</a></li><li><a href="#deploy">Deployment architecture</a></li><li><a href="#delivery">Delivery plan and current state</a></li></ol>
+  <div class="kicker">Reference</div>
+  <p style="font-size:12.4px;color:var(--dim);line-height:1.6">Bestway Plus Sp.&nbsp;z&nbsp;o.o., Warsaw.
+  Trading as Bestway Football. Code in <span class="mono">/platform</span>.</p>
+</nav>
+<main>
+  <header style="margin-bottom:14px">
+    <span class="eyebrow">Product specification · v1</span>
+    <h1>The platform behind<br>Bestway Football</h1>
+    <p class="lede">A public website, a client portal and an admin CRM — trilingual, GDPR-bound, and built
+    around documents that must never leak. This document is the contract between the brief and the code:
+    architecture, schema, permissions, flows, copy and the security model, followed by the foundation that
+    now exists in the repository.</p>
+  </header>
+  <section class="sec" id="overview"><span class="eyebrow">Section 01</span><h2>Product definition and what changes</h2>
+<p class="lede">BESTWAY FOOTBALL becomes three products behind one brand: a public marketing site, an
+authenticated client portal, and an internal CRM. They share a design system, an identity provider and a
+database — nothing else. Treating them as one application is the single most common way projects like this
+fail, because a marketing page and a passport scan need opposite defaults.</p>
+
+<div class="grid3">
+  <div class="card"><span class="k">Surface 01</span><h4>Public website</h4>
+    <p>Indexed, localised at <code>/en</code>, <code>/pl</code>, <code>/ru</code>, no authentication, no
+    personal data beyond a contact form. Cached at the edge. Its job is credibility and conversion into
+    <em>Join the network</em>.</p></div>
+  <div class="card"><span class="k">Surface 02</span><h4>Client portal</h4>
+    <p>Authenticated, role-scoped, <code>noindex</code>. Profiles, documents, opportunities, messages.
+    Every response is personal data, so nothing is cached and every query is scoped to the caller.</p></div>
+  <div class="card"><span class="k">Surface 03</span><h4>Admin CRM</h4>
+    <p>Staff only, on <code>/admin</code>, ideally on its own hostname behind IP allow-listing. Holds the
+    internal assessment fields that must never reach a client response.</p></div>
+</div>
+
+<h3 style="margin-top:34px">Non-negotiable constraints</h3>
+<ul class="bul">
+<li><strong>Authorisation is a backend concern.</strong> Hiding a button is a UX decision, not a security
+control. Every read and write passes a server-side policy check keyed on the session, never on a client
+claim.</li>
+<li><strong>Documents never become URLs.</strong> No file is served from the application origin and no
+storage key is guessable. Access is a short-lived signed URL issued after an authorisation check, and every
+issuance is logged.</li>
+<li><strong>Internal fields are a separate table.</strong> Internal rating, potential, marketability and
+comments live in <code>player_internal_assessments</code>, not as columns on the player profile. A leak then
+requires a deliberate join, not a forgotten <code>select</code>.</li>
+<li><strong>Verified means verified by staff.</strong> A user typing a FIFA licence number sets
+<code>PENDING</code>. Only an administrator moves it to <code>VERIFIED</code>, and the public badge reads
+from that column alone.</li>
+<li><strong>Consent is versioned and separable.</strong> Processing consent, profile-sharing consent and
+marketing consent are three rows, never one checkbox.</li>
+<li><strong>No invented content.</strong> No sample players, clubs, transfers, licences or partners ship in
+any environment that is not explicitly a seeded development database.</li>
+</ul>
+
+<div class="note warn"><span class="nl">Regulatory position, carried into the product</span>
+<p>The platform is a networking, coordination and administration tool. Where an action requires a FIFA
+Football Agent licence, the product must not imply Bestway performs it. This is enforced in three places:
+the public copy, the <em>Representation</em> block of the player profile (which records the player's own
+licensed agent), and the opportunity workflow, where the stage names describe coordination rather than
+negotiation on a player's behalf.</p></div>
+</section><section class="sec" id="architecture"><span class="eyebrow">Section 02</span><h2>System architecture</h2>
+<p class="lede">One Next.js application, three route groups, a thin service layer, and a worker for
+everything that must not block a request. Postgres for state, private object storage for files, Redis for
+queues and rate limiting.</p>
+<pre><span class="c">                        ┌──────────────── EU region ────────────────┐</span>
+   browser / mobile     │                                            │
+        │               │   ┌───────────────────────────────────┐    │
+        ├── HTTPS ──────┼──▶│  Next.js app (App Router, RSC)     │    │
+        │               │   │   /[locale]        public site     │    │
+        │               │   │   /[locale]/portal client portal   │    │
+        │               │   │   /admin           admin CRM       │    │
+        │               │   │   /api/v1          route handlers  │    │
+        │               │   └───┬───────────┬───────────┬───────┘    │
+        │               │       │           │           │            │
+        │               │   ┌───▼────┐  ┌───▼────┐  ┌───▼─────────┐  │
+        │               │   │Postgres│  │ Redis  │  │ Queue       │  │
+        │               │   │ (RLS)  │  │ rate,  │  │ (BullMQ)    │  │
+        │               │   └────────┘  │ cache  │  └───┬─────────┘  │
+        │               │               └────────┘      │            │
+        │               │                          ┌────▼─────────┐  │
+        └── signed URL ─┼─────────────────────────▶│ Worker       │  │
+             (PUT/GET)  │                          │  virus scan  │  │
+                        │   ┌──────────────────┐   │  email       │  │
+                        │   │ Private S3 bucket│◀──┤  PDF render  │  │
+                        │   │ SSE-KMS, no ACL  │   │  expiry jobs │  │
+                        │   └──────────────────┘   └──────────────┘  │
+                        └────────────────────────────────────────────┘</pre>
+
+<h3 style="margin-top:32px">Stack</h3>
+<div class="tw"><table>
+<thead><tr><th>Layer</th><th>Choice</th><th>Why this one</th></tr></thead><tbody>
+<tr><td><strong>Framework</strong></td><td class="mono">Next.js 15 · App Router · TypeScript</td>
+<td>Server components keep personal data on the server by default; route groups give the three surfaces
+clean isolation; one deploy target.</td></tr>
+<tr><td><strong>UI</strong></td><td class="mono">Tailwind CSS + local component library</td>
+<td>Design tokens map directly to the brand palette. No third-party component kit, so the dark emerald
+system stays consistent and the bundle stays small.</td></tr>
+<tr><td><strong>i18n</strong></td><td class="mono">next-intl</td>
+<td>Locale-segment routing, message catalogs per namespace, ICU plurals, and server-side formatting of
+dates and numbers per locale.</td></tr>
+<tr><td><strong>Validation</strong></td><td class="mono">Zod, shared client and server</td>
+<td>One schema produces the form validation, the API contract and the TypeScript types. Validation messages
+are i18n keys, not English strings.</td></tr>
+<tr><td><strong>Database</strong></td><td class="mono">PostgreSQL 16 + Prisma</td>
+<td>Relational integrity matters here — documents, consents and audit rows must not drift. Row-level
+security as a second line behind the service layer.</td></tr>
+<tr><td><strong>Auth</strong></td><td class="mono">Auth.js (credentials) + Argon2id</td>
+<td>Email and password now, OAuth and TOTP later without a schema change. Sessions are database-backed so
+staff can revoke them.</td></tr>
+<tr><td><strong>Storage</strong></td><td class="mono">S3-compatible, EU, private</td>
+<td>Block Public Access on, SSE-KMS, versioning, lifecycle rules. Files never transit the app server.</td></tr>
+<tr><td><strong>Queue / cache</strong></td><td class="mono">Redis + BullMQ</td>
+<td>Malware scanning, email, PDF generation and expiry sweeps are jobs, not request work.</td></tr>
+<tr><td><strong>Email</strong></td><td class="mono">Postmark or Resend, EU sending</td>
+<td>Transactional only, templates localised by the recipient's stored locale.</td></tr>
+<tr><td><strong>Scanning</strong></td><td class="mono">ClamAV in the worker</td>
+<td>Self-hosted keeps document bytes inside the perimeter; a vendor API would export them.</td></tr>
+<tr><td><strong>Observability</strong></td><td class="mono">Sentry + structured logs</td>
+<td>Logs carry user ids, never document contents, names or licence numbers.</td></tr>
+</tbody></table></div>
+
+<div class="note"><span class="nl">Repository layout</span>
+<p>A single repository, modular by domain rather than by file type. <code>src/modules/&lt;domain&gt;/</code>
+holds the schema, service, policy and UI for that domain, so document logic is never scattered across four
+folders. Shared primitives live in <code>src/lib</code>, and <code>src/messages/&lt;locale&gt;/</code> holds
+the catalogs.</p></div>
+</section><section class="sec" id="ia"><span class="eyebrow">Section 03</span><h2>Information architecture and sitemap</h2>
+<p class="lede">Public routes carry a locale segment and are indexed. Portal routes carry a locale segment
+and are not. Admin has no locale segment at all — staff language comes from the account, and keeping
+<code>/admin</code> out of the localised tree keeps it out of sitemaps, hreflang sets and translation
+review.</p>
+
+<h3 style="margin-top:30px">Public — indexed, three locales</h3>
+<pre><span class="k">/[locale]</span>                       <span class="c">home</span>
+<span class="k">/[locale]/players</span>               <span class="c">audience landing</span>
+<span class="k">/[locale]/clubs</span>
+<span class="k">/[locale]/agents</span>
+<span class="k">/[locale]/investors</span>
+<span class="k">/[locale]/services</span>              <span class="c">hub</span>
+<span class="k">/[locale]/services/players</span>      <span class="c">· clubs · agents · investors · marketing</span>
+<span class="k">/[locale]/about</span>
+<span class="k">/[locale]/contact</span>
+<span class="k">/[locale]/join</span>                  <span class="c">who are you — role chooser</span>
+<span class="k">/[locale]/join/[role]</span>           <span class="c">player | agent | scout | club | investor</span>
+<span class="k">/[locale]/sign-in</span>               <span class="c">· /forgot-password · /reset-password/[token]</span>
+<span class="k">/[locale]/verify-email/[token]</span>
+<span class="k">/[locale]/legal/privacy</span>          <span class="c">· /terms · /cookies · /notices</span>
+<span class="k">/share/[token]</span>                 <span class="c">tokenised player profile — noindex, no locale segment</span></pre>
+
+<h3 style="margin-top:30px">Client portal — authenticated, noindex</h3>
+<pre><span class="k">/[locale]/portal</span>                        <span class="c">overview</span>
+<span class="k">/[locale]/portal/profile</span>                <span class="c">role-specific form, autosaved</span>
+<span class="k">/[locale]/portal/documents</span>              <span class="c">· /documents/[id]</span>
+<span class="k">/[locale]/portal/opportunities</span>          <span class="c">· /opportunities/[id]</span>
+<span class="k">/[locale]/portal/requests</span>               <span class="c">document requests addressed to me</span>
+<span class="k">/[locale]/portal/messages</span>               <span class="c">· /messages/[conversationId]</span>
+<span class="k">/[locale]/portal/notifications</span>
+<span class="k">/[locale]/portal/settings</span>               <span class="c">· /security · /privacy · /language</span>
+<span class="k">/[locale]/portal/recruitment</span>            <span class="c">CLUB role only — · /recruitment/new</span></pre>
+
+<h3 style="margin-top:30px">Admin CRM — staff only, no locale segment</h3>
+<pre><span class="k">/admin</span>                        <span class="c">operational dashboard</span>
+<span class="k">/admin/players</span>                <span class="c">· /players/[id]  tabs: profile documents opportunities</span>
+                                            <span class="c">messages activity notes assessment</span>
+<span class="k">/admin/agents</span>                 <span class="c">· /agents/[id]   includes licence verification</span>
+<span class="k">/admin/clubs</span>                  <span class="c">· /clubs/[id]</span>
+<span class="k">/admin/investors</span>              <span class="c">· /investors/[id]</span>
+<span class="k">/admin/documents</span>              <span class="c">review queue, filtered by status</span>
+<span class="k">/admin/document-requests</span>
+<span class="k">/admin/opportunities</span>          <span class="c">· /opportunities/[id]  participants and stages</span>
+<span class="k">/admin/recruitment-requests</span>
+<span class="k">/admin/messages</span>
+<span class="k">/admin/tasks</span>
+<span class="k">/admin/share-links</span>            <span class="c">issued links, views, revoke</span>
+<span class="k">/admin/staff</span>                  <span class="c">SUPER_ADMIN only</span>
+<span class="k">/admin/audit</span>                  <span class="c">SUPER_ADMIN only</span>
+<span class="k">/admin/settings</span></pre>
+
+<h3 style="margin-top:30px">Locale handling</h3>
+<ul class="bul">
+<li><strong>English is the default and is still prefixed.</strong> <code>/en/players</code> rather than
+<code>/players</code>. A bare path redirects once, permanently, to the negotiated locale — no duplicate
+content, no ambiguity about the canonical form.</li>
+<li><strong>Detection order:</strong> explicit URL segment → <code>locale</code> on the signed-in user →
+<code>NEXT_LOCALE</code> cookie → <code>Accept-Language</code> → <code>en</code>.</li>
+<li><strong>Switching persists.</strong> The switcher writes the cookie for everyone and, for a signed-in
+user, also writes <code>users.locale</code>, which is what email templates read.</li>
+<li><strong>SEO:</strong> per-locale <code>hreflang</code> including <code>x-default</code> pointing at
+<code>/en</code>, one sitemap per locale, canonical self-referencing.</li>
+<li><strong>Never machine-translate at runtime.</strong> Catalogs are static JSON reviewed by a human; a
+missing key falls back to English and is reported, it does not silently render a key name.</li>
+</ul>
+</section><section class="sec" id="flows"><span class="eyebrow">Section 04</span><h2>User flows</h2>
+<h3>Flow A — Join the network (player)</h3>
+<div class="flow">
+<div class="step"><span class="n">1</span><span class="t"><b>Role selection</b>Public <code>/join</code>
+presents five cards. The choice is a route parameter, not stored state, so the form is linkable and the
+back button behaves.</span></div>
+<div class="step"><span class="n">2</span><span class="t"><b>Account step</b>Email, password, phone,
+preferred language. Password strength is checked server-side against a breach list; the email is checked for
+uniqueness without revealing whether it exists on the public error path.</span></div>
+<div class="step"><span class="n">3</span><span class="t"><b>Consent step</b>Terms and privacy are required
+and recorded separately. Profile-sharing and marketing are optional, unticked, and each writes its own
+<code>consents</code> row with the policy version and the exact text hash shown.</span></div>
+<div class="step"><span class="n">4</span><span class="t"><b>Account created</b>Status
+<code>PENDING_EMAIL</code>. A verification email goes out in the user's chosen language. The user may enter
+the portal but cannot upload documents or be added to an opportunity until verified.</span></div>
+<div class="step"><span class="n">5</span><span class="t"><b>Profile wizard</b>Personal → football →
+career → representation. Every step saves on blur, so a phone user who loses signal loses nothing.
+Completion percentage recalculates on each save.</span></div>
+<div class="step"><span class="n">6</span><span class="t"><b>Document prompts</b>The checklist drives the
+user toward 100%. Nothing is mandatory beyond the account itself; the profile is usable at 40% and
+persuasive at 100%.</span></div>
+</div>
+
+<h3 style="margin-top:34px">Flow B — Document request and fulfilment</h3>
+<div class="flow">
+<div class="step"><span class="n">1</span><span class="t"><b>Staff raises a request</b>From the user's admin
+profile: type, message, optional due date. Writes <code>document_requests</code> and an activity row.</span></div>
+<div class="step"><span class="n">2</span><span class="t"><b>User is notified</b>In-app notification plus a
+localised email. Both link to <code>/portal/requests</code>, never to a file.</span></div>
+<div class="step"><span class="n">3</span><span class="t"><b>Upload intent</b>The client asks the API for an
+upload URL. The server authorises, validates declared MIME type and size, creates the document row as
+<code>UPLOADED</code>/<code>scan:PENDING</code>, and returns a presigned <code>PUT</code> valid for five
+minutes and bound to that content type and length.</span></div>
+<div class="step"><span class="n">4</span><span class="t"><b>Direct upload</b>The browser or phone camera
+uploads straight to storage. The application server never holds the bytes.</span></div>
+<div class="step"><span class="n">5</span><span class="t"><b>Confirm and scan</b>The client confirms; the
+server verifies the object exists and matches the declared size, then queues a scan. An infected object is
+deleted, the row is marked, and staff are alerted.</span></div>
+<div class="step"><span class="n">6</span><span class="t"><b>Review</b>Staff move the document to
+<code>APPROVED</code>, <code>ACTION_REQUIRED</code> or <code>REJECTED</code> with a comment. The request
+closes automatically when a document of the requested type is approved.</span></div>
+</div>
+
+<h3 style="margin-top:34px">Flow C — Opportunity lifecycle</h3>
+<div class="flow">
+<div class="step"><span class="n">1</span><span class="t"><b>Created by staff</b>Club, country, league,
+position, age band, salary band, transfer type, deadline. Visibility starts <code>PRIVATE</code>.</span></div>
+<div class="step"><span class="n">2</span><span class="t"><b>Participants selected</b>Staff add specific
+players. Each addition creates an <code>opportunity_participants</code> row at stage
+<code>NEW</code>.</span></div>
+<div class="step"><span class="n">3</span><span class="t"><b>Player sees it</b>Only the client-safe fields.
+<code>internal_notes</code> on both the opportunity and the participant row are excluded at the query
+level, not filtered in the component.</span></div>
+<div class="step"><span class="n">4</span><span class="t"><b>Player responds</b>Express interest, decline,
+or answer an information request. Stage moves <code>NEW → PROFILE_UNDER_REVIEW → SUBMITTED</code>.</span></div>
+<div class="step"><span class="n">5</span><span class="t"><b>Staff drive it</b>
+<code>CLUB_REVIEWING</code>, <code>INFO_REQUESTED</code>, <code>NEGOTIATION</code>, then
+<code>SUCCESSFUL</code> or <code>CLOSED</code>. Every transition is an activity row with actor and
+timestamp.</span></div>
+</div>
+
+<h3 style="margin-top:34px">Flow D — Secure profile share</h3>
+<div class="flow">
+<div class="step"><span class="n">1</span><span class="t"><b>Staff compose a link</b>Pick the sections and
+the exact documents the recipient may see. Nothing is included by default.</span></div>
+<div class="step"><span class="n">2</span><span class="t"><b>Constraints</b>Mandatory expiry, optional
+password, optional recipient label for the audit trail. The token is random, single-purpose and stored
+hashed.</span></div>
+<div class="step"><span class="n">3</span><span class="t"><b>Recipient opens it</b><code>/share/[token]</code>
+renders only the allowed sections. Documents are still served by short-lived signed URL, scoped to the
+allow-list on the link.</span></div>
+<div class="step"><span class="n">4</span><span class="t"><b>Tracking and revocation</b>Each view writes a
+row with time, IP and user agent. Staff can revoke instantly; the player can see that a share exists.</span></div>
+</div>
+<div class="note warn"><span class="nl">Consent gate</span>
+<p>A share link cannot be created for a player who has not granted the profile-sharing consent. The API
+rejects it; the button is disabled with an explanation. Consent withdrawal automatically revokes every
+active link for that player.</p></div>
+</section><section class="sec" id="schema"><span class="eyebrow">Section 05</span><h2>Database schema</h2>
+<p class="lede">Twenty-eight tables. Every foreign key is marked <code>→</code>, unique constraints
+<code>ᵁ</code>, encrypted-at-column values <code>ᴱ</code>, and internal-only fields <code>ᴵ</code> — the last
+group must never appear in a query that can reach a client response.</p>
+
+<div class="tw"><table>
+<thead><tr><th style="width:190px">Table</th><th style="width:210px">Purpose</th><th>Columns</th></tr></thead>
+<tbody><tr><td class="mono"><strong>users</strong></td><td>Identity and account state</td><td class="mono" style="white-space:normal;font-size:11.4px">id, email ᵁ, email_verified_at, password_hash, phone, locale, role, status, two_factor_enabled, two_factor_secret ᴱ, last_login_at, responsible_manager_id →users, created_at, updated_at, deleted_at</td></tr><tr><td class="mono"><strong>sessions</strong></td><td>Revocable server-side sessions</td><td class="mono" style="white-space:normal;font-size:11.4px">id, user_id →users, token_hash ᵁ, ip, user_agent, expires_at, revoked_at, created_at</td></tr><tr><td class="mono"><strong>auth_tokens</strong></td><td>Email verification, password reset, 2FA recovery</td><td class="mono" style="white-space:normal;font-size:11.4px">id, user_id →users, purpose, token_hash ᵁ, expires_at, consumed_at</td></tr><tr><td class="mono"><strong>player_profiles</strong></td><td>One per PLAYER account</td><td class="mono" style="white-space:normal;font-size:11.4px">id, user_id →users ᵁ, first_name, last_name, date_of_birth, nationality, second_nationality, country_of_residence, city, current_club, primary_position, secondary_position, preferred_foot, height_cm, weight_kg, contract_until, league, national_team_experience, professional_experience, transfermarkt_url, youtube_url, highlights_url, instagram_url, other_links jsonb, career_summary, career_goals, preferred_countries text[], preferred_leagues text[], availability, salary_min, salary_max, salary_currency, has_agent, agent_name, agent_agency, agent_contact, representation_until, photo_document_id →documents, completion_percent</td></tr><tr><td class="mono"><strong>player_previous_clubs</strong></td><td>Career history rows</td><td class="mono" style="white-space:normal;font-size:11.4px">id, player_profile_id →player_profiles, club, country, from_date, to_date, appearances, goals, sort_index</td></tr><tr><td class="mono"><strong>agent_profiles</strong></td><td>One per AGENT account</td><td class="mono" style="white-space:normal;font-size:11.4px">id, user_id →users ᵁ, first_name, last_name, nationality, country, fifa_licence_number, agency_name, website, phone, markets text[], countries text[], leagues text[], languages text[], specialisations text[], bio, verification_status, verified_at, verified_by_user_id →users, verification_note</td></tr><tr><td class="mono"><strong>club_profiles</strong></td><td>Club representative</td><td class="mono" style="white-space:normal;font-size:11.4px">id, user_id →users ᵁ, club_name, country, league, role_title, first_name, last_name, business_email, phone, website, verification_status, verified_at, verified_by_user_id →users</td></tr><tr><td class="mono"><strong>investor_profiles</strong></td><td>Investor or partner</td><td class="mono" style="white-space:normal;font-size:11.4px">id, user_id →users ᵁ, entity_type, display_name, company, country, business_area, investment_interests, football_interests, preferred_markets text[], investment_range, professional_background, contact_info, verification_status</td></tr><tr><td class="mono"><strong>scout_profiles</strong></td><td>Scout</td><td class="mono" style="white-space:normal;font-size:11.4px">id, user_id →users ᵁ, first_name, last_name, country, markets text[], leagues text[], languages text[], experience_years, bio, verification_status</td></tr><tr><td class="mono"><strong>documents</strong></td><td>Every uploaded file</td><td class="mono" style="white-space:normal;font-size:11.4px">id, owner_user_id →users, uploaded_by_user_id →users, type, name, storage_key ᵁ, mime_type, size_bytes, checksum_sha256, status, scan_status, expiry_date, user_comment, admin_comment, delete_locked, version, replaces_document_id →documents, reviewed_by_user_id →users, reviewed_at, created_at, updated_at, deleted_at</td></tr><tr><td class="mono"><strong>document_requests</strong></td><td>Staff asks a user for a file</td><td class="mono" style="white-space:normal;font-size:11.4px">id, target_user_id →users, requested_by_user_id →users, type, message, due_date, status, fulfilled_document_id →documents, created_at, closed_at</td></tr><tr><td class="mono"><strong>document_access_logs</strong></td><td>Who touched which file, when</td><td class="mono" style="white-space:normal;font-size:11.4px">id, document_id →documents, actor_user_id →users, share_link_id →share_links, action, ip, user_agent, created_at</td></tr><tr><td class="mono"><strong>opportunities</strong></td><td>A club vacancy or project</td><td class="mono" style="white-space:normal;font-size:11.4px">id, name, club_name, country, league, position, age_min, age_max, preferred_foot, salary_min, salary_max, salary_currency, transfer_type, contract_length_months, deadline, description, internal_notes ᴵ, visibility, status, created_by_user_id →users, created_at, updated_at</td></tr><tr><td class="mono"><strong>opportunity_participants</strong></td><td>A user's place in an opportunity</td><td class="mono" style="white-space:normal;font-size:11.4px">id, opportunity_id →opportunities, user_id →users, stage, added_by_user_id →users, submitted_at, last_stage_change_at, internal_notes ᴵ, unique(opportunity_id, user_id)</td></tr><tr><td class="mono"><strong>recruitment_requests</strong></td><td>Brief submitted by a club</td><td class="mono" style="white-space:normal;font-size:11.4px">id, club_user_id →users, position, age_min, age_max, preferred_foot, nationality_restrictions, salary_budget, transfer_type, deadline, additional_requirements, status, assigned_to_user_id →users, created_at</td></tr><tr><td class="mono"><strong>conversations</strong></td><td>Message thread</td><td class="mono" style="white-space:normal;font-size:11.4px">id, subject, created_by_user_id →users, last_message_at, created_at</td></tr><tr><td class="mono"><strong>conversation_participants</strong></td><td>Membership and read state</td><td class="mono" style="white-space:normal;font-size:11.4px">conversation_id →conversations, user_id →users, last_read_at, muted, primary key(conversation_id, user_id)</td></tr><tr><td class="mono"><strong>messages</strong></td><td>A single message</td><td class="mono" style="white-space:normal;font-size:11.4px">id, conversation_id →conversations, sender_user_id →users, body, created_at, edited_at, deleted_at</td></tr><tr><td class="mono"><strong>message_attachments</strong></td><td>File on a message</td><td class="mono" style="white-space:normal;font-size:11.4px">id, message_id →messages, document_id →documents, created_at</td></tr><tr><td class="mono"><strong>notifications</strong></td><td>In-app and email fan-out</td><td class="mono" style="white-space:normal;font-size:11.4px">id, user_id →users, type, title_key, body_key, payload jsonb, entity_type, entity_id, read_at, email_sent_at, created_at</td></tr><tr><td class="mono"><strong>admin_notes</strong></td><td>Free-text internal note on a user</td><td class="mono" style="white-space:normal;font-size:11.4px">id, subject_user_id →users, author_user_id →users, body ᴵ, created_at, updated_at</td></tr><tr><td class="mono"><strong>player_internal_assessments</strong></td><td>Internal-only scoring, never exposed</td><td class="mono" style="white-space:normal;font-size:11.4px">id, player_profile_id →player_profiles ᵁ, internal_rating ᴵ, potential ᴵ, marketability ᴵ, reliability ᴵ, priority ᴵ, recommended_markets ᴵ text[], expected_level ᴵ, comments ᴵ, next_action ᴵ, follow_up_date ᴵ, updated_by_user_id →users, updated_at</td></tr><tr><td class="mono"><strong>tasks</strong></td><td>Staff to-do</td><td class="mono" style="white-space:normal;font-size:11.4px">id, title, description, related_user_id →users, assignee_user_id →users, created_by_user_id →users, due_date, priority, status, completed_at, created_at</td></tr><tr><td class="mono"><strong>activity_logs</strong></td><td>Append-only history</td><td class="mono" style="white-space:normal;font-size:11.4px">id, actor_user_id →users, subject_user_id →users, action, entity_type, entity_id, metadata jsonb, ip, user_agent, created_at</td></tr><tr><td class="mono"><strong>consents</strong></td><td>Versioned, one row per consent type</td><td class="mono" style="white-space:normal;font-size:11.4px">id, user_id →users, type, granted, policy_version, text_hash, locale, ip, user_agent, created_at, revoked_at</td></tr><tr><td class="mono"><strong>share_links</strong></td><td>Tokenised external profile view</td><td class="mono" style="white-space:normal;font-size:11.4px">id, player_profile_id →player_profiles, created_by_user_id →users, token_hash ᵁ, password_hash, recipient_label, allowed_sections jsonb, allowed_document_ids uuid[], expires_at, revoked_at, view_count, last_viewed_at, created_at</td></tr><tr><td class="mono"><strong>share_link_views</strong></td><td>Access tracking</td><td class="mono" style="white-space:normal;font-size:11.4px">id, share_link_id →share_links, ip, user_agent, viewed_at</td></tr><tr><td class="mono"><strong>translations</strong></td><td>Editable content strings, CMS layer</td><td class="mono" style="white-space:normal;font-size:11.4px">id, namespace, key, locale, value, updated_by_user_id →users, updated_at, unique(namespace, key, locale)</td></tr></tbody></table></div>
+
+<h3 style="margin-top:32px">Enumerations</h3>
+<pre><span class="k">Role</span>              SUPER_ADMIN · ADMIN · MANAGER · PLAYER · AGENT · CLUB · INVESTOR · SCOUT
+<span class="k">Locale</span>            EN · PL · RU
+<span class="k">AccountStatus</span>     PENDING_EMAIL · ACTIVE · SUSPENDED · DELETION_REQUESTED · DELETED
+<span class="k">VerificationStatus</span>NOT_SUBMITTED · PENDING · VERIFIED · INFO_REQUIRED · REJECTED
+<span class="k">DocumentType</span>      PASSPORT_ID · PLAYER_CV · CLUB_CONTRACT · REPRESENTATION_AGREEMENT · MEDICAL
+                  STATISTICS · TRANSFER_DOCUMENT · VISA · RESIDENCE_PERMIT · INSURANCE
+                  BANK_DETAILS · FINANCIAL · FIFA_LICENCE · COMPANY_DOCUMENT · PLAYER_MANDATE
+                  PHOTO · OTHER
+<span class="k">DocumentStatus</span>    UPLOADED · UNDER_REVIEW · APPROVED · ACTION_REQUIRED · REJECTED · EXPIRED
+<span class="k">ScanStatus</span>        PENDING · CLEAN · INFECTED · FAILED
+<span class="k">Visibility</span>        PRIVATE · SELECTED · VERIFIED_USERS
+<span class="k">Stage</span>             NEW · PROFILE_UNDER_REVIEW · SUBMITTED · CLUB_REVIEWING
+                  INFO_REQUESTED · NEGOTIATION · CLOSED · SUCCESSFUL
+<span class="k">TransferType</span>      TRANSFER · LOAN · FREE_AGENT
+<span class="k">Foot</span>              LEFT · RIGHT · BOTH
+<span class="k">ConsentType</span>       TERMS · PRIVACY · PROFILE_SHARING · MARKETING
+                  COOKIES_ANALYTICS · COOKIES_MARKETING
+<span class="k">TaskPriority</span>      LOW · NORMAL · HIGH · URGENT
+<span class="k">TaskStatus</span>        OPEN · IN_PROGRESS · BLOCKED · DONE · CANCELLED</pre>
+
+<h3 style="margin-top:32px">Schema decisions worth defending</h3>
+<ul class="bul">
+<li><strong>Internal assessment is its own table.</strong> Not columns on <code>player_profiles</code>. A
+careless <code>select *</code> on the profile then cannot leak a rating, and the table can carry a stricter
+row-level policy.</li>
+<li><strong>Documents are soft-deleted and versioned.</strong> <code>replaces_document_id</code> keeps the
+chain, <code>delete_locked</code> is set the moment a document is attached to an active opportunity or an
+approved review, and hard deletion happens only through the erasure job.</li>
+<li><strong>Consents are immutable rows.</strong> Withdrawal writes <code>revoked_at</code>; it never
+updates <code>granted</code>. The full history is the evidence, and <code>text_hash</code> proves which
+wording was shown.</li>
+<li><strong>Activity logs are append-only.</strong> No update or delete grant for the application role;
+retention is handled by a partition drop, not a <code>DELETE</code>.</li>
+<li><strong>Row-level security as a backstop.</strong> The service layer is the primary control, but RLS
+policies keyed on <code>current_setting('app.user_id')</code> mean a bug in one query cannot return another
+user's rows.</li>
+<li><strong>Two indexes that matter early:</strong> <code>documents(owner_user_id, status)</code> for the
+review queue, and a trigram index over player name, club and nationality for admin search.</li>
+</ul>
+</section><section class="sec" id="rbac"><span class="eyebrow">Section 06</span><h2>Role and permission matrix</h2>
+<p class="lede">Seven roles. The matrix below is the contract; it is implemented once as a typed policy
+module and called by every service method, so there is exactly one place to audit.</p>
+<p><span class="yes">●</span> full &nbsp;&nbsp; <span class="own">◐</span> own records only &nbsp;&nbsp;
+<span class="part">◑</span> conditional — see notes &nbsp;&nbsp; <span class="no">·</span> denied</p>
+
+<div class="tw"><table>
+<thead><tr><th style="width:190px">Resource</th><th style="width:150px">Action</th><th class="mono" style="text-align:center">SUPER<br>ADMIN</th><th class="mono" style="text-align:center">ADMIN</th><th class="mono" style="text-align:center">MANAGER</th><th class="mono" style="text-align:center">PLAYER</th><th class="mono" style="text-align:center">AGENT</th><th class="mono" style="text-align:center">CLUB</th><th class="mono" style="text-align:center">INVESTOR</th></tr></thead>
+<tbody><tr><td><strong>Public content</strong></td><td style="color:var(--dim);font-size:12.4px">read</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td></tr><tr><td><strong>Own profile</strong></td><td style="color:var(--dim);font-size:12.4px">read / update</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="own">◐</span></td><td style="text-align:center"><span class="own">◐</span></td><td style="text-align:center"><span class="own">◐</span></td><td style="text-align:center"><span class="own">◐</span></td></tr><tr><td><strong>Any client profile</strong></td><td style="color:var(--dim);font-size:12.4px">read</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="part">◑</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td></tr><tr><td><strong>Internal assessment</strong></td><td style="color:var(--dim);font-size:12.4px">read / write</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="part">◑</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td></tr><tr><td><strong>Admin notes</strong></td><td style="color:var(--dim);font-size:12.4px">read / write</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="part">◑</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td></tr><tr><td><strong>Own documents</strong></td><td style="color:var(--dim);font-size:12.4px">upload / view / replace</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="own">◐</span></td><td style="text-align:center"><span class="own">◐</span></td><td style="text-align:center"><span class="own">◐</span></td><td style="text-align:center"><span class="own">◐</span></td></tr><tr><td><strong>Own documents</strong></td><td style="color:var(--dim);font-size:12.4px">delete</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="part">◑</span></td><td style="text-align:center"><span class="part">◑</span></td><td style="text-align:center"><span class="part">◑</span></td><td style="text-align:center"><span class="part">◑</span></td></tr><tr><td><strong>Any document</strong></td><td style="color:var(--dim);font-size:12.4px">view / download</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="part">◑</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td></tr><tr><td><strong>Document status</strong></td><td style="color:var(--dim);font-size:12.4px">approve / reject</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="part">◑</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td></tr><tr><td><strong>Document request</strong></td><td style="color:var(--dim);font-size:12.4px">raise</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td></tr><tr><td><strong>Verification status</strong></td><td style="color:var(--dim);font-size:12.4px">set VERIFIED</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td></tr><tr><td><strong>Opportunity</strong></td><td style="color:var(--dim);font-size:12.4px">create / edit</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="part">◑</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td></tr><tr><td><strong>Opportunity</strong></td><td style="color:var(--dim);font-size:12.4px">see internal notes</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="part">◑</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td></tr><tr><td><strong>Opportunity</strong></td><td style="color:var(--dim);font-size:12.4px">see as participant</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="own">◐</span></td><td style="text-align:center"><span class="own">◐</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td></tr><tr><td><strong>Opportunity stage</strong></td><td style="color:var(--dim);font-size:12.4px">advance</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="part">◑</span></td><td style="text-align:center"><span class="part">◑</span></td><td style="text-align:center"><span class="part">◑</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td></tr><tr><td><strong>Recruitment request</strong></td><td style="color:var(--dim);font-size:12.4px">submit</td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="no">·</span></td></tr><tr><td><strong>Recruitment request</strong></td><td style="color:var(--dim);font-size:12.4px">read / assign</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="own">◐</span></td><td style="text-align:center"><span class="no">·</span></td></tr><tr><td><strong>Share link</strong></td><td style="color:var(--dim);font-size:12.4px">create / revoke</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="part">◑</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td></tr><tr><td><strong>Share link</strong></td><td style="color:var(--dim);font-size:12.4px">see that one exists</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="own">◐</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td></tr><tr><td><strong>Messages</strong></td><td style="color:var(--dim);font-size:12.4px">with staff</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="own">◐</span></td><td style="text-align:center"><span class="own">◐</span></td><td style="text-align:center"><span class="own">◐</span></td><td style="text-align:center"><span class="own">◐</span></td></tr><tr><td><strong>Messages</strong></td><td style="color:var(--dim);font-size:12.4px">read any thread</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="part">◑</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td></tr><tr><td><strong>Tasks</strong></td><td style="color:var(--dim);font-size:12.4px">create / assign</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td></tr><tr><td><strong>Activity log</strong></td><td style="color:var(--dim);font-size:12.4px">read</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="part">◑</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td></tr><tr><td><strong>Own activity</strong></td><td style="color:var(--dim);font-size:12.4px">read</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="own">◐</span></td><td style="text-align:center"><span class="own">◐</span></td><td style="text-align:center"><span class="own">◐</span></td><td style="text-align:center"><span class="own">◐</span></td></tr><tr><td><strong>Consents</strong></td><td style="color:var(--dim);font-size:12.4px">grant / withdraw own</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="own">◐</span></td><td style="text-align:center"><span class="own">◐</span></td><td style="text-align:center"><span class="own">◐</span></td><td style="text-align:center"><span class="own">◐</span></td></tr><tr><td><strong>Data export / erasure</strong></td><td style="color:var(--dim);font-size:12.4px">request own</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="own">◐</span></td><td style="text-align:center"><span class="own">◐</span></td><td style="text-align:center"><span class="own">◐</span></td><td style="text-align:center"><span class="own">◐</span></td></tr><tr><td><strong>Data export / erasure</strong></td><td style="color:var(--dim);font-size:12.4px">execute</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="part">◑</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td></tr><tr><td><strong>Staff accounts</strong></td><td style="color:var(--dim);font-size:12.4px">manage</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td></tr><tr><td><strong>Audit log</strong></td><td style="color:var(--dim);font-size:12.4px">read</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td></tr><tr><td><strong>Translations (CMS)</strong></td><td style="color:var(--dim);font-size:12.4px">edit</td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="yes">●</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td><td style="text-align:center"><span class="no">·</span></td></tr></tbody></table></div>
+
+<h3 style="margin-top:30px">Conditions behind ◑</h3>
+<ul class="bul">
+<li><strong>MANAGER</strong> sees and edits only the clients where <code>users.responsible_manager_id</code>
+is their own id. Escalation to another manager's client requires an ADMIN.</li>
+<li><strong>Own document deletion</strong> is allowed while <code>delete_locked = false</code> and the
+status is not <code>APPROVED</code>. Once a file is attached to an active opportunity or approved in a
+process, the user may request removal, which becomes a task rather than an immediate delete.</li>
+<li><strong>Stage advance by a client</strong> covers only the transitions offered to them — expressing
+interest or declining. Everything from <code>CLUB_REVIEWING</code> onward is staff-driven.</li>
+<li><strong>ADMIN erasure</strong> executes GDPR deletion but cannot delete audit rows; those are
+pseudonymised, keeping the action history while removing the identity.</li>
+</ul>
+
+<div class="note"><span class="nl">How this is enforced</span>
+<p>Every service method starts with <code>authorize(session, action, resource)</code>, which throws before
+any query runs. UI permission helpers import the same module, so a hidden button and a rejected request are
+guaranteed to agree. Route handlers additionally re-check on the server even when called from a server
+component, because a server component is not an authorisation boundary.</p></div>
+</section><section class="sec" id="wireframes"><span class="eyebrow">Section 07</span><h2>Wireframes</h2>
+<p class="lede">Layout intent for the nine screens that define the product. Everything is mobile-first: each
+of these collapses to a single column, and the document upload path is designed for a phone camera before
+it is designed for a desktop file picker.</p>
+
+<h3 style="margin-top:28px">7.1 — Public homepage</h3>
+<div class="wf"><div class="wf-h"><i></i><i></i><i></i><span>bestwayfootball.pl/en</span></div><div class="wf-b"><div class="box solid"><span class="lb">Header</span><span class="tx"><b>Logo</b> · Home Players Clubs Agents Investors Services About Contact &nbsp;|&nbsp; EN·PL·RU &nbsp;|&nbsp; <b>Sign in</b> &nbsp; <b>Join the network</b></span></div><div class="box acc"><span class="lb">Hero</span><span class="tx"><b>BESTWAY FOOTBALL</b> — Players. Clubs. Opportunities.<br>We connect people, business and opportunities across international football.<br><b>[ Join the network ]</b> &nbsp; [ Explore services ]</span></div><div class="row r4"><div class="box "><span class="lb">Audience</span><span class="tx">Players</span></div><div class="box "><span class="lb">Audience</span><span class="tx">Clubs</span></div><div class="box "><span class="lb">Audience</span><span class="tx">Agents</span></div><div class="box "><span class="lb">Audience</span><span class="tx">Investors</span></div></div><div class="box "><span class="lb">Services grid</span><span class="tx">Twelve service tiles, each linking to its own page</span></div><div class="row r2"><div class="box "><span class="lb">Positioning</span><span class="tx">What we do and, explicitly, what we do not</span></div><div class="box "><span class="lb">Network</span><span class="tx">One network, multiple opportunities</span></div></div><div class="box "><span class="lb">Regulatory note</span><span class="tx">Single short notice — licensed activity is performed by licensed professionals</span></div><div class="box acc"><span class="lb">Closing CTA</span><span class="tx">Join the network</span></div><div class="box solid"><span class="lb">Footer</span><span class="tx">Sitemap · legal · Bestway Plus Sp. z o.o. · language switcher</span></div></div></div>
+
+<h3 style="margin-top:32px">7.2 — Join: who are you?</h3>
+<div class="wf"><div class="wf-h"><i></i><i></i><i></i><span>/en/join</span></div><div class="wf-b"><div class="box "><span class="lb">Heading</span><span class="tx"><b>Who are you?</b> Pick the closest description — it decides which form you get.</span></div><div class="row r3"><div class="box acc"><span class="lb">Card</span><span class="tx"><b>Player</b><br>Professional or emerging</span></div><div class="box "><span class="lb">Card</span><span class="tx"><b>Licensed agent</b><br>FIFA licence holder</span></div><div class="box "><span class="lb">Card</span><span class="tx"><b>Scout</b><br>Independent or club</span></div></div><div class="row r2"><div class="box "><span class="lb">Card</span><span class="tx"><b>Club representative</b><br>Sporting or commercial</span></div><div class="box "><span class="lb">Card</span><span class="tx"><b>Investor / partner</b><br>Individual or company</span></div></div><div class="box "><span class="lb">Reassurance</span><span class="tx">Your data is not published. Nothing is shared with a club without your explicit, separate consent.</span></div></div></div>
+
+<h3 style="margin-top:32px">7.3 — Player registration (step 2 of 4)</h3>
+<div class="wf"><div class="wf-h"><i></i><i></i><i></i><span>/en/join/player</span></div><div class="wf-b"><div class="box solid"><span class="lb">Progress</span><span class="tx">● Account &nbsp; ● Personal &nbsp; ○ Football &nbsp; ○ Career</span></div><div class="row r2"><div class="box "><span class="lb">Field</span><span class="tx">First name</span></div><div class="box "><span class="lb">Field</span><span class="tx">Last name</span></div></div><div class="row r3"><div class="box "><span class="lb">Field</span><span class="tx">Date of birth</span></div><div class="box "><span class="lb">Field</span><span class="tx">Nationality</span></div><div class="box "><span class="lb">Field</span><span class="tx">Second nationality</span></div></div><div class="row r2"><div class="box "><span class="lb">Field</span><span class="tx">Country of residence</span></div><div class="box "><span class="lb">Field</span><span class="tx">City</span></div></div><div class="box "><span class="lb">Autosave</span><span class="tx">Saved a moment ago — you can close this and come back</span></div><div class="row r2"><div class="box "><span class="lb">Action</span><span class="tx">[ Back ]</span></div><div class="box acc"><span class="lb">Action</span><span class="tx">[ Continue ]</span></div></div></div></div>
+
+<h3 style="margin-top:32px">7.4 — Portal overview</h3>
+<div class="wf"><div class="wf-h"><i></i><i></i><i></i><span>/en/portal</span></div><div class="wf-b"><div class="row rside"><div class="box solid"><span class="lb">Sidebar</span><span class="tx">Overview<br>My profile<br>Documents<br>Opportunities<br>Requests<br>Messages<br>Notifications<br>Settings</span></div><div class="row "><div class="box acc"><span class="lb">Greeting</span><span class="tx"><b>Welcome back, [first name]</b></span></div><div class="row r3"><div class="box acc"><span class="lb">Card</span><span class="tx"><b>Profile completion</b><br>65% — ring chart + next step</span></div><div class="box "><span class="lb">Card</span><span class="tx"><b>Documents</b><br>4 approved · 1 action required</span></div><div class="box "><span class="lb">Card</span><span class="tx"><b>Opportunities</b><br>2 active</span></div></div><div class="box acc"><span class="lb">Action required</span><span class="tx">Two items need you: upload current contract · answer club question</span></div><div class="row r2"><div class="box "><span class="lb">Checklist</span><span class="tx">Complete your profile — remaining items, each a direct link</span></div><div class="box "><span class="lb">Activity</span><span class="tx">Recent activity, newest first</span></div></div></div></div></div></div>
+
+<h3 style="margin-top:32px">7.5 — Documents (mobile-first)</h3>
+<div class="wf"><div class="wf-h"><i></i><i></i><i></i><span>/en/portal/documents</span></div><div class="wf-b"><div class="box acc"><span class="lb">Upload</span><span class="tx"><b>[ Take a photo ]</b> &nbsp; [ Choose a file ] &nbsp;— camera capture is the primary action on a phone</span></div><div class="box "><span class="lb">Filter</span><span class="tx">All · Action required · Approved · Expiring soon</span></div><div class="box solid"><span class="lb">Row</span><span class="tx"><b>Passport</b> · uploaded 14 Mar · expires 02.2031 · <b>APPROVED</b> · view / download / replace</span></div><div class="box solid"><span class="lb">Row</span><span class="tx"><b>Current club contract</b> · <b>ACTION REQUIRED</b> · “Pages 3–4 are missing” · replace</span></div><div class="box solid"><span class="lb">Row</span><span class="tx"><b>Player CV</b> · <b>UNDER REVIEW</b> · uploaded 2 days ago</span></div><div class="box "><span class="lb">Empty state</span><span class="tx">No medical documents yet — only upload these if we have asked you to</span></div></div></div>
+
+<h3 style="margin-top:32px">7.6 — Opportunity detail (client view)</h3>
+<div class="wf"><div class="wf-h"><i></i><i></i><i></i><span>/en/portal/opportunities/[id]</span></div><div class="wf-b"><div class="box acc"><span class="lb">Status</span><span class="tx"><b>SUBMITTED</b> — stepper: New › Under review › Submitted › Club reviewing › Negotiation › Closed</span></div><div class="row r2"><div class="box "><span class="lb">Facts</span><span class="tx">Country · league · position · age band · transfer type · contract length · deadline</span></div><div class="box "><span class="lb">Salary</span><span class="tx">Range and currency, only if staff chose to disclose it</span></div></div><div class="box "><span class="lb">Description</span><span class="tx">Client-safe description. Internal notes are excluded by the query, not hidden by CSS.</span></div><div class="row r2"><div class="box acc"><span class="lb">Action</span><span class="tx">[ I am interested ]</span></div><div class="box "><span class="lb">Action</span><span class="tx">[ Not for me ]</span></div></div><div class="box "><span class="lb">Thread</span><span class="tx">Questions and answers with your manager</span></div></div></div>
+
+<h3 style="margin-top:32px">7.7 — Admin: players list</h3>
+<div class="wf"><div class="wf-h"><i></i><i></i><i></i><span>/admin/players</span></div><div class="wf-b"><div class="box solid"><span class="lb">Search</span><span class="tx">Global search · saved views · [ Export ]</span></div><div class="box "><span class="lb">Filters</span><span class="tx">Position · age · nationality · country · league · contract expiry · agent status · profile completion · internal rating · manager</span></div><div class="box solid"><span class="lb">Table head</span><span class="tx">Photo · Name · Age · Nat · Position · Club · Contract until · Completion · Docs · Status · Manager · Last activity</span></div><div class="box "><span class="lb">Row</span><span class="tx">Bulk select · inline status · row click opens the profile</span></div><div class="box "><span class="lb">Pagination</span><span class="tx">Cursor paginated — the table is expected to grow</span></div></div></div>
+
+<h3 style="margin-top:32px">7.8 — Admin: player profile</h3>
+<div class="wf"><div class="wf-h"><i></i><i></i><i></i><span>/admin/players/[id]</span></div><div class="wf-b"><div class="box acc"><span class="lb">Header</span><span class="tx">Photo · name · position · age · nationality · club · <b>completion ring</b> · manager · [ Request document ] [ Create share link ] [ Generate presentation ]</span></div><div class="box solid"><span class="lb">Tabs</span><span class="tx">Profile · Documents · Opportunities · Messages · Activity · Internal notes · Assessment</span></div><div class="row rmain"><div class="box "><span class="lb">Tab body</span><span class="tx">Selected tab content — the Assessment tab is the only place internal fields render</span></div><div class="box "><span class="lb">Rail</span><span class="tx">Quick facts · open tasks · next follow-up · consent state · share links issued</span></div></div><div class="box "><span class="lb">Guard</span><span class="tx">Assessment and internal notes are fetched by a separate authorised endpoint, never bundled into the profile payload</span></div></div></div>
+
+<h3 style="margin-top:32px">7.9 — Secure share view (recipient)</h3>
+<div class="wf"><div class="wf-h"><i></i><i></i><i></i><span>/share/[token]</span></div><div class="wf-b"><div class="box acc"><span class="lb">Gate</span><span class="tx">Password prompt when the link is protected — three attempts, then the link locks</span></div><div class="box "><span class="lb">Identity</span><span class="tx">Shared by Bestway Football · expires in 6 days · this view is recorded</span></div><div class="row r2"><div class="box "><span class="lb">Card</span><span class="tx">Player card — photo, position, key facts</span></div><div class="box "><span class="lb">Card</span><span class="tx">Career summary and highlights</span></div></div><div class="box "><span class="lb">Documents</span><span class="tx">Only the files explicitly allow-listed on this link, each behind a fresh 60-second signed URL</span></div><div class="box "><span class="lb">Footer</span><span class="tx">No navigation into the platform. No indexing. No account creation from here.</span></div></div></div>
+</section><section class="sec" id="admin"><span class="eyebrow">Section 08</span><h2>Admin CRM structure</h2>
+<p class="lede">The CRM is the product for staff. It is organised around work queues rather than record
+browsing, because the daily question is “what needs me today”, not “show me all players”.</p>
+
+<div class="grid2">
+<div class="card"><span class="k">Landing</span><h4>Operational dashboard</h4>
+<p>Eight counters, each a filtered link rather than a decorative tile: new players, new agents, pending
+verification, documents awaiting review, active opportunities, active negotiations, unread messages, open
+tasks due today. Below them, my assigned clients and my follow-ups.</p></div>
+
+<div class="card"><span class="k">Queues</span><h4>Work, not lists</h4>
+<p>Document review, verification, document requests overdue, opportunities past deadline, and tasks. Each
+queue has a single primary action and keyboard navigation, because these are used dozens of times a day.</p></div>
+
+<div class="card"><span class="k">Records</span><h4>Players · Agents · Clubs · Investors</h4>
+<p>Same shape everywhere: filterable table → record with tabs. Tables are cursor-paginated and every filter
+is a URL parameter, so a view can be shared with a colleague.</p></div>
+
+<div class="card"><span class="k">Assessment</span><h4>The internal tab</h4>
+<p>Internal rating, potential, marketability, reliability, priority, recommended markets, expected level,
+comments, next action, follow-up date. Rendered only here, fetched only by an endpoint that requires
+staff, and excluded from every export a client can trigger.</p></div>
+
+<div class="card"><span class="k">Opportunities</span><h4>Pipeline</h4>
+<p>Board by stage plus a table view. Adding a participant is deliberate: search, select, confirm — with a
+warning if the player's profile is below a completeness threshold or a required document is missing.</p></div>
+
+<div class="card"><span class="k">Oversight</span><h4>Audit and staff</h4>
+<p>SUPER_ADMIN only. Every document view, share link issue, status change and export is queryable by actor,
+subject and date. Staff accounts, roles and session revocation live here too.</p></div>
+</div>
+
+<div class="note warn"><span class="nl">Deliberate friction</span>
+<p>Three actions require a confirmation with a typed reason, recorded in the audit log: downloading a
+passport or bank document, creating a share link, and executing an erasure. Friction on rare, sensitive
+actions is a feature.</p></div>
+</section><section class="sec" id="portal"><span class="eyebrow">Section 09</span><h2>Client portal structure</h2>
+<p class="lede">The portal answers three questions on every screen: what is my status, what do you need from
+me, and what happens next. Everything else is secondary.</p>
+
+<div class="tw"><table>
+<thead><tr><th style="width:170px">Screen</th><th>Contents</th><th style="width:200px">Role differences</th></tr></thead>
+<tbody>
+<tr><td><strong>Overview</strong></td><td>Greeting, profile completion ring with the single next step,
+document status summary, active opportunities, unread messages, an <em>action required</em> block that is
+empty when nothing is pending, recent activity.</td><td>Club sees recruitment requests instead of
+opportunities. Investor sees introductions.</td></tr>
+<tr><td><strong>My profile</strong></td><td>The registration form, editable, grouped into the same sections,
+autosaving on blur. Completion recalculates live.</td><td>Entirely role-specific field sets.</td></tr>
+<tr><td><strong>Documents</strong></td><td>Camera-first upload, filter by status, per-file status, expiry
+warnings 60 and 30 days out, comment history from staff.</td><td>Agent sees licence and mandate types;
+club sees company documents.</td></tr>
+<tr><td><strong>Opportunities</strong></td><td>Card list with stage, deadline and the one available action.
+Detail view carries the stepper and the question thread.</td><td>Hidden for investor and scout in v1.</td></tr>
+<tr><td><strong>Requests</strong></td><td>What staff have asked for, with due dates and a direct upload
+control on each row.</td><td>Same for all roles.</td></tr>
+<tr><td><strong>Messages</strong></td><td>Threads with the assigned manager. Attachments become documents
+in the document centre rather than loose files.</td><td>Same for all roles.</td></tr>
+<tr><td><strong>Notifications</strong></td><td>Chronological, filterable, each linking to the object.
+Read state syncs with the badge.</td><td>Same for all roles.</td></tr>
+<tr><td><strong>Settings</strong></td><td>Account, password, two-factor, active sessions, interface
+language, notification preferences.</td><td>Same for all roles.</td></tr>
+<tr><td><strong>Settings → Privacy</strong></td><td>Consent state with grant and withdraw controls and full
+history, data export, account deletion request, list of active share links.</td><td>Same for all roles.</td></tr>
+</tbody></table></div>
+</section><section class="sec" id="copy"><span class="eyebrow">Section 10</span><h2>UI copy — EN / PL / RU</h2>
+<p class="lede">Every string is a key. Nothing is a literal in a component, which is what makes a fourth
+language a translation job rather than a refactor. Below is the core catalogue; the complete files ship in
+the repository at <code>src/messages/&lt;locale&gt;/&lt;namespace&gt;.json</code>.</p>
+
+<div class="note"><span class="nl">Translation rules applied here</span>
+<p>Polish and Russian are written, not converted. <em>Join the network</em> becomes <em>Dołącz do sieci</em>
+and <em>Присоединиться</em> — the Russian drops the noun because the literal form reads like a corporate
+brochure. Roles inflect properly, dates and numbers are formatted by locale rather than pattern-matched, and
+plurals use ICU categories, which matters because Russian needs <em>one / few / many / other</em> where
+English needs two.</p></div>
+<h3 style="margin-top:30px">Navigation</h3><div class="tw"><table><thead><tr><th style="width:200px">Key</th><th style="width:26%">EN</th><th style="width:26%">PL</th><th>RU</th></tr></thead><tbody><tr><td class="mono" style="font-size:11.4px">nav.home</td><td>Home</td><td style="color:var(--muted)">Strona główna</td><td style="color:var(--muted)">Главная</td></tr><tr><td class="mono" style="font-size:11.4px">nav.players</td><td>Players</td><td style="color:var(--muted)">Zawodnicy</td><td style="color:var(--muted)">Игроки</td></tr><tr><td class="mono" style="font-size:11.4px">nav.clubs</td><td>Clubs</td><td style="color:var(--muted)">Kluby</td><td style="color:var(--muted)">Клубы</td></tr><tr><td class="mono" style="font-size:11.4px">nav.agents</td><td>Agents</td><td style="color:var(--muted)">Agenci</td><td style="color:var(--muted)">Агенты</td></tr><tr><td class="mono" style="font-size:11.4px">nav.investors</td><td>Investors</td><td style="color:var(--muted)">Inwestorzy</td><td style="color:var(--muted)">Инвесторы</td></tr><tr><td class="mono" style="font-size:11.4px">nav.services</td><td>Services</td><td style="color:var(--muted)">Usługi</td><td style="color:var(--muted)">Услуги</td></tr><tr><td class="mono" style="font-size:11.4px">nav.about</td><td>About</td><td style="color:var(--muted)">O nas</td><td style="color:var(--muted)">О компании</td></tr><tr><td class="mono" style="font-size:11.4px">nav.contact</td><td>Contact</td><td style="color:var(--muted)">Kontakt</td><td style="color:var(--muted)">Контакты</td></tr><tr><td class="mono" style="font-size:11.4px">auth.signIn</td><td>Sign in</td><td style="color:var(--muted)">Zaloguj się</td><td style="color:var(--muted)">Войти</td></tr><tr><td class="mono" style="font-size:11.4px">cta.join</td><td>Join the network</td><td style="color:var(--muted)">Dołącz do sieci</td><td style="color:var(--muted)">Присоединиться</td></tr></tbody></table></div><h3 style="margin-top:30px">Join and registration</h3><div class="tw"><table><thead><tr><th style="width:200px">Key</th><th style="width:26%">EN</th><th style="width:26%">PL</th><th>RU</th></tr></thead><tbody><tr><td class="mono" style="font-size:11.4px">join.who</td><td>Who are you?</td><td style="color:var(--muted)">Kim jesteś?</td><td style="color:var(--muted)">Кто вы?</td></tr><tr><td class="mono" style="font-size:11.4px">join.hint</td><td>Pick the closest description — it decides which form you get.</td><td style="color:var(--muted)">Wybierz najbliższy opis — od niego zależy formularz.</td><td style="color:var(--muted)">Выберите ближайшее описание — от него зависит форма.</td></tr><tr><td class="mono" style="font-size:11.4px">role.player</td><td>Player</td><td style="color:var(--muted)">Zawodnik</td><td style="color:var(--muted)">Игрок</td></tr><tr><td class="mono" style="font-size:11.4px">role.agent</td><td>Licensed agent</td><td style="color:var(--muted)">Licencjonowany agent</td><td style="color:var(--muted)">Лицензированный агент</td></tr><tr><td class="mono" style="font-size:11.4px">role.scout</td><td>Scout</td><td style="color:var(--muted)">Skaut</td><td style="color:var(--muted)">Скаут</td></tr><tr><td class="mono" style="font-size:11.4px">role.club</td><td>Club representative</td><td style="color:var(--muted)">Przedstawiciel klubu</td><td style="color:var(--muted)">Представитель клуба</td></tr><tr><td class="mono" style="font-size:11.4px">role.investor</td><td>Investor / partner</td><td style="color:var(--muted)">Inwestor / partner</td><td style="color:var(--muted)">Инвестор / партнёр</td></tr><tr><td class="mono" style="font-size:11.4px">form.account</td><td>Account</td><td style="color:var(--muted)">Konto</td><td style="color:var(--muted)">Учётная запись</td></tr><tr><td class="mono" style="font-size:11.4px">form.personal</td><td>Personal information</td><td style="color:var(--muted)">Dane osobowe</td><td style="color:var(--muted)">Личные данные</td></tr><tr><td class="mono" style="font-size:11.4px">form.football</td><td>Football information</td><td style="color:var(--muted)">Informacje piłkarskie</td><td style="color:var(--muted)">Футбольная информация</td></tr><tr><td class="mono" style="font-size:11.4px">form.career</td><td>Career</td><td style="color:var(--muted)">Kariera</td><td style="color:var(--muted)">Карьера</td></tr><tr><td class="mono" style="font-size:11.4px">form.representation</td><td>Representation</td><td style="color:var(--muted)">Reprezentacja</td><td style="color:var(--muted)">Представительство</td></tr><tr><td class="mono" style="font-size:11.4px">field.email</td><td>Email</td><td style="color:var(--muted)">Adres e-mail</td><td style="color:var(--muted)">Электронная почта</td></tr><tr><td class="mono" style="font-size:11.4px">field.password</td><td>Password</td><td style="color:var(--muted)">Hasło</td><td style="color:var(--muted)">Пароль</td></tr><tr><td class="mono" style="font-size:11.4px">field.phone</td><td>Phone</td><td style="color:var(--muted)">Telefon</td><td style="color:var(--muted)">Телефон</td></tr><tr><td class="mono" style="font-size:11.4px">field.language</td><td>Preferred language</td><td style="color:var(--muted)">Preferowany język</td><td style="color:var(--muted)">Предпочитаемый язык</td></tr><tr><td class="mono" style="font-size:11.4px">field.firstName</td><td>First name</td><td style="color:var(--muted)">Imię</td><td style="color:var(--muted)">Имя</td></tr><tr><td class="mono" style="font-size:11.4px">field.lastName</td><td>Last name</td><td style="color:var(--muted)">Nazwisko</td><td style="color:var(--muted)">Фамилия</td></tr><tr><td class="mono" style="font-size:11.4px">field.dob</td><td>Date of birth</td><td style="color:var(--muted)">Data urodzenia</td><td style="color:var(--muted)">Дата рождения</td></tr><tr><td class="mono" style="font-size:11.4px">field.nationality</td><td>Nationality</td><td style="color:var(--muted)">Obywatelstwo</td><td style="color:var(--muted)">Гражданство</td></tr><tr><td class="mono" style="font-size:11.4px">field.currentClub</td><td>Current club</td><td style="color:var(--muted)">Obecny klub</td><td style="color:var(--muted)">Текущий клуб</td></tr><tr><td class="mono" style="font-size:11.4px">field.position</td><td>Primary position</td><td style="color:var(--muted)">Pozycja podstawowa</td><td style="color:var(--muted)">Основная позиция</td></tr><tr><td class="mono" style="font-size:11.4px">field.foot</td><td>Preferred foot</td><td style="color:var(--muted)">Noga dominująca</td><td style="color:var(--muted)">Рабочая нога</td></tr><tr><td class="mono" style="font-size:11.4px">field.contractUntil</td><td>Contract until</td><td style="color:var(--muted)">Kontrakt do</td><td style="color:var(--muted)">Контракт до</td></tr><tr><td class="mono" style="font-size:11.4px">field.hasAgent</td><td>Do you currently have an agent?</td><td style="color:var(--muted)">Czy masz obecnie agenta?</td><td style="color:var(--muted)">Есть ли у вас агент?</td></tr><tr><td class="mono" style="font-size:11.4px">action.continue</td><td>Continue</td><td style="color:var(--muted)">Dalej</td><td style="color:var(--muted)">Продолжить</td></tr><tr><td class="mono" style="font-size:11.4px">action.back</td><td>Back</td><td style="color:var(--muted)">Wstecz</td><td style="color:var(--muted)">Назад</td></tr></tbody></table></div><h3 style="margin-top:30px">Validation</h3><div class="tw"><table><thead><tr><th style="width:200px">Key</th><th style="width:26%">EN</th><th style="width:26%">PL</th><th>RU</th></tr></thead><tbody><tr><td class="mono" style="font-size:11.4px">val.required</td><td>This field is required</td><td style="color:var(--muted)">To pole jest wymagane</td><td style="color:var(--muted)">Обязательное поле</td></tr><tr><td class="mono" style="font-size:11.4px">val.email</td><td>Enter a valid email address</td><td style="color:var(--muted)">Podaj poprawny adres e-mail</td><td style="color:var(--muted)">Введите корректный адрес почты</td></tr><tr><td class="mono" style="font-size:11.4px">val.passwordShort</td><td>Use at least 12 characters</td><td style="color:var(--muted)">Użyj co najmniej 12 znaków</td><td style="color:var(--muted)">Используйте не менее 12 символов</td></tr><tr><td class="mono" style="font-size:11.4px">val.passwordBreached</td><td>This password has appeared in a data breach. Choose another.</td><td style="color:var(--muted)">To hasło pojawiło się w wycieku danych. Wybierz inne.</td><td style="color:var(--muted)">Этот пароль встречался в утечках. Выберите другой.</td></tr><tr><td class="mono" style="font-size:11.4px">val.dobFuture</td><td>Date of birth cannot be in the future</td><td style="color:var(--muted)">Data urodzenia nie może być z przyszłości</td><td style="color:var(--muted)">Дата рождения не может быть в будущем</td></tr><tr><td class="mono" style="font-size:11.4px">val.fileTooLarge</td><td>This file is larger than {max}</td><td style="color:var(--muted)">Ten plik jest większy niż {max}</td><td style="color:var(--muted)">Файл больше, чем {max}</td></tr><tr><td class="mono" style="font-size:11.4px">val.fileType</td><td>Accepted formats: PDF, JPG, PNG</td><td style="color:var(--muted)">Dozwolone formaty: PDF, JPG, PNG</td><td style="color:var(--muted)">Допустимые форматы: PDF, JPG, PNG</td></tr></tbody></table></div><h3 style="margin-top:30px">Dashboard</h3><div class="tw"><table><thead><tr><th style="width:200px">Key</th><th style="width:26%">EN</th><th style="width:26%">PL</th><th>RU</th></tr></thead><tbody><tr><td class="mono" style="font-size:11.4px">dash.welcome</td><td>Welcome back, {name}</td><td style="color:var(--muted)">Witaj ponownie, {name}</td><td style="color:var(--muted)">С возвращением, {name}</td></tr><tr><td class="mono" style="font-size:11.4px">dash.completion</td><td>Profile completion</td><td style="color:var(--muted)">Uzupełnienie profilu</td><td style="color:var(--muted)">Заполненность профиля</td></tr><tr><td class="mono" style="font-size:11.4px">dash.nextStep</td><td>Next step</td><td style="color:var(--muted)">Następny krok</td><td style="color:var(--muted)">Следующий шаг</td></tr><tr><td class="mono" style="font-size:11.4px">dash.actionRequired</td><td>Action required</td><td style="color:var(--muted)">Wymagane działanie</td><td style="color:var(--muted)">Требуется действие</td></tr><tr><td class="mono" style="font-size:11.4px">dash.nothingPending</td><td>Nothing needs your attention right now.</td><td style="color:var(--muted)">Nic nie wymaga teraz Twojej uwagi.</td><td style="color:var(--muted)">Сейчас от вас ничего не требуется.</td></tr><tr><td class="mono" style="font-size:11.4px">nav.overview</td><td>Overview</td><td style="color:var(--muted)">Przegląd</td><td style="color:var(--muted)">Обзор</td></tr><tr><td class="mono" style="font-size:11.4px">nav.myProfile</td><td>My profile</td><td style="color:var(--muted)">Mój profil</td><td style="color:var(--muted)">Мой профиль</td></tr><tr><td class="mono" style="font-size:11.4px">nav.documents</td><td>Documents</td><td style="color:var(--muted)">Dokumenty</td><td style="color:var(--muted)">Документы</td></tr><tr><td class="mono" style="font-size:11.4px">nav.opportunities</td><td>Opportunities</td><td style="color:var(--muted)">Możliwości</td><td style="color:var(--muted)">Возможности</td></tr><tr><td class="mono" style="font-size:11.4px">nav.requests</td><td>Requests</td><td style="color:var(--muted)">Prośby</td><td style="color:var(--muted)">Запросы</td></tr><tr><td class="mono" style="font-size:11.4px">nav.messages</td><td>Messages</td><td style="color:var(--muted)">Wiadomości</td><td style="color:var(--muted)">Сообщения</td></tr><tr><td class="mono" style="font-size:11.4px">nav.notifications</td><td>Notifications</td><td style="color:var(--muted)">Powiadomienia</td><td style="color:var(--muted)">Уведомления</td></tr><tr><td class="mono" style="font-size:11.4px">nav.settings</td><td>Settings</td><td style="color:var(--muted)">Ustawienia</td><td style="color:var(--muted)">Настройки</td></tr></tbody></table></div><h3 style="margin-top:30px">Documents</h3><div class="tw"><table><thead><tr><th style="width:200px">Key</th><th style="width:26%">EN</th><th style="width:26%">PL</th><th>RU</th></tr></thead><tbody><tr><td class="mono" style="font-size:11.4px">doc.upload</td><td>Upload document</td><td style="color:var(--muted)">Prześlij dokument</td><td style="color:var(--muted)">Загрузить документ</td></tr><tr><td class="mono" style="font-size:11.4px">doc.takePhoto</td><td>Take a photo</td><td style="color:var(--muted)">Zrób zdjęcie</td><td style="color:var(--muted)">Сфотографировать</td></tr><tr><td class="mono" style="font-size:11.4px">doc.chooseFile</td><td>Choose a file</td><td style="color:var(--muted)">Wybierz plik</td><td style="color:var(--muted)">Выбрать файл</td></tr><tr><td class="mono" style="font-size:11.4px">doc.replace</td><td>Replace</td><td style="color:var(--muted)">Zastąp</td><td style="color:var(--muted)">Заменить</td></tr><tr><td class="mono" style="font-size:11.4px">doc.download</td><td>Download</td><td style="color:var(--muted)">Pobierz</td><td style="color:var(--muted)">Скачать</td></tr><tr><td class="mono" style="font-size:11.4px">doc.expiry</td><td>Expiry date</td><td style="color:var(--muted)">Data ważności</td><td style="color:var(--muted)">Действителен до</td></tr><tr><td class="mono" style="font-size:11.4px">doc.expiringSoon</td><td>Expires in {days} days</td><td style="color:var(--muted)">Wygasa za {days} dni</td><td style="color:var(--muted)">Истекает через {days} дн.</td></tr><tr><td class="mono" style="font-size:11.4px">docType.PASSPORT_ID</td><td>Passport / ID</td><td style="color:var(--muted)">Paszport / dowód tożsamości</td><td style="color:var(--muted)">Паспорт / удостоверение личности</td></tr><tr><td class="mono" style="font-size:11.4px">docType.PLAYER_CV</td><td>Player CV</td><td style="color:var(--muted)">CV zawodnika</td><td style="color:var(--muted)">Резюме игрока</td></tr><tr><td class="mono" style="font-size:11.4px">docType.CLUB_CONTRACT</td><td>Current club contract</td><td style="color:var(--muted)">Obecny kontrakt klubowy</td><td style="color:var(--muted)">Действующий контракт с клубом</td></tr><tr><td class="mono" style="font-size:11.4px">docType.REPRESENTATION_AGREEMENT</td><td>Representation agreement</td><td style="color:var(--muted)">Umowa o reprezentację</td><td style="color:var(--muted)">Договор о представительстве</td></tr><tr><td class="mono" style="font-size:11.4px">docType.MEDICAL</td><td>Medical documents</td><td style="color:var(--muted)">Dokumentacja medyczna</td><td style="color:var(--muted)">Медицинские документы</td></tr><tr><td class="mono" style="font-size:11.4px">docType.VISA</td><td>Visa</td><td style="color:var(--muted)">Wiza</td><td style="color:var(--muted)">Виза</td></tr><tr><td class="mono" style="font-size:11.4px">docType.RESIDENCE_PERMIT</td><td>Residence permit</td><td style="color:var(--muted)">Karta pobytu</td><td style="color:var(--muted)">Вид на жительство</td></tr><tr><td class="mono" style="font-size:11.4px">docType.INSURANCE</td><td>Insurance</td><td style="color:var(--muted)">Ubezpieczenie</td><td style="color:var(--muted)">Страховка</td></tr><tr><td class="mono" style="font-size:11.4px">docType.BANK_DETAILS</td><td>Bank details</td><td style="color:var(--muted)">Dane bankowe</td><td style="color:var(--muted)">Банковские реквизиты</td></tr><tr><td class="mono" style="font-size:11.4px">docType.FIFA_LICENCE</td><td>FIFA licence</td><td style="color:var(--muted)">Licencja FIFA</td><td style="color:var(--muted)">Лицензия FIFA</td></tr></tbody></table></div><h3 style="margin-top:30px">Statuses</h3><div class="tw"><table><thead><tr><th style="width:200px">Key</th><th style="width:26%">EN</th><th style="width:26%">PL</th><th>RU</th></tr></thead><tbody><tr><td class="mono" style="font-size:11.4px">docStatus.UPLOADED</td><td>Uploaded</td><td style="color:var(--muted)">Przesłany</td><td style="color:var(--muted)">Загружен</td></tr><tr><td class="mono" style="font-size:11.4px">docStatus.UNDER_REVIEW</td><td>Under review</td><td style="color:var(--muted)">W trakcie weryfikacji</td><td style="color:var(--muted)">На проверке</td></tr><tr><td class="mono" style="font-size:11.4px">docStatus.APPROVED</td><td>Approved</td><td style="color:var(--muted)">Zatwierdzony</td><td style="color:var(--muted)">Принят</td></tr><tr><td class="mono" style="font-size:11.4px">docStatus.ACTION_REQUIRED</td><td>Action required</td><td style="color:var(--muted)">Wymaga działania</td><td style="color:var(--muted)">Требуется действие</td></tr><tr><td class="mono" style="font-size:11.4px">docStatus.REJECTED</td><td>Rejected</td><td style="color:var(--muted)">Odrzucony</td><td style="color:var(--muted)">Отклонён</td></tr><tr><td class="mono" style="font-size:11.4px">docStatus.EXPIRED</td><td>Expired</td><td style="color:var(--muted)">Wygasł</td><td style="color:var(--muted)">Истёк</td></tr><tr><td class="mono" style="font-size:11.4px">verify.PENDING</td><td>Pending verification</td><td style="color:var(--muted)">Oczekuje na weryfikację</td><td style="color:var(--muted)">Ожидает проверки</td></tr><tr><td class="mono" style="font-size:11.4px">verify.VERIFIED</td><td>Verified</td><td style="color:var(--muted)">Zweryfikowany</td><td style="color:var(--muted)">Проверен</td></tr><tr><td class="mono" style="font-size:11.4px">verify.INFO_REQUIRED</td><td>Additional information required</td><td style="color:var(--muted)">Wymagane dodatkowe informacje</td><td style="color:var(--muted)">Нужны дополнительные сведения</td></tr><tr><td class="mono" style="font-size:11.4px">stage.NEW</td><td>New opportunity</td><td style="color:var(--muted)">Nowa możliwość</td><td style="color:var(--muted)">Новая возможность</td></tr><tr><td class="mono" style="font-size:11.4px">stage.PROFILE_UNDER_REVIEW</td><td>Profile under review</td><td style="color:var(--muted)">Profil w trakcie oceny</td><td style="color:var(--muted)">Профиль на рассмотрении</td></tr><tr><td class="mono" style="font-size:11.4px">stage.SUBMITTED</td><td>Submitted</td><td style="color:var(--muted)">Zgłoszony</td><td style="color:var(--muted)">Отправлен</td></tr><tr><td class="mono" style="font-size:11.4px">stage.CLUB_REVIEWING</td><td>Club reviewing</td><td style="color:var(--muted)">Klub analizuje</td><td style="color:var(--muted)">Клуб рассматривает</td></tr><tr><td class="mono" style="font-size:11.4px">stage.INFO_REQUESTED</td><td>Additional information requested</td><td style="color:var(--muted)">Poproszono o dodatkowe informacje</td><td style="color:var(--muted)">Запрошены дополнительные сведения</td></tr><tr><td class="mono" style="font-size:11.4px">stage.NEGOTIATION</td><td>Negotiation</td><td style="color:var(--muted)">Negocjacje</td><td style="color:var(--muted)">Переговоры</td></tr><tr><td class="mono" style="font-size:11.4px">stage.CLOSED</td><td>Closed</td><td style="color:var(--muted)">Zamknięte</td><td style="color:var(--muted)">Закрыто</td></tr><tr><td class="mono" style="font-size:11.4px">stage.SUCCESSFUL</td><td>Successful</td><td style="color:var(--muted)">Zakończone sukcesem</td><td style="color:var(--muted)">Успешно завершено</td></tr></tbody></table></div><h3 style="margin-top:30px">Notifications and email</h3><div class="tw"><table><thead><tr><th style="width:200px">Key</th><th style="width:26%">EN</th><th style="width:26%">PL</th><th>RU</th></tr></thead><tbody><tr><td class="mono" style="font-size:11.4px">notif.docRequested</td><td>We have asked you for a document</td><td style="color:var(--muted)">Poprosiliśmy Cię o dokument</td><td style="color:var(--muted)">Мы запросили у вас документ</td></tr><tr><td class="mono" style="font-size:11.4px">notif.docApproved</td><td>Your document was approved</td><td style="color:var(--muted)">Twój dokument został zatwierdzony</td><td style="color:var(--muted)">Ваш документ принят</td></tr><tr><td class="mono" style="font-size:11.4px">notif.docRejected</td><td>A document needs your attention</td><td style="color:var(--muted)">Dokument wymaga Twojej uwagi</td><td style="color:var(--muted)">Документ требует вашего внимания</td></tr><tr><td class="mono" style="font-size:11.4px">notif.newOpportunity</td><td>A new opportunity is available</td><td style="color:var(--muted)">Pojawiła się nowa możliwość</td><td style="color:var(--muted)">Появилась новая возможность</td></tr><tr><td class="mono" style="font-size:11.4px">notif.newMessage</td><td>You have a new message</td><td style="color:var(--muted)">Masz nową wiadomość</td><td style="color:var(--muted)">У вас новое сообщение</td></tr><tr><td class="mono" style="font-size:11.4px">email.subject.verify</td><td>Confirm your email address</td><td style="color:var(--muted)">Potwierdź swój adres e-mail</td><td style="color:var(--muted)">Подтвердите адрес электронной почты</td></tr><tr><td class="mono" style="font-size:11.4px">email.subject.docRequest</td><td>{name}, we need one document from you</td><td style="color:var(--muted)">{name}, potrzebujemy od Ciebie jednego dokumentu</td><td style="color:var(--muted)">{name}, нам нужен от вас один документ</td></tr><tr><td class="mono" style="font-size:11.4px">email.footer.transactional</td><td>You are receiving this because you have an account with Bestway Football.</td><td style="color:var(--muted)">Otrzymujesz tę wiadomość, ponieważ masz konto w Bestway Football.</td><td style="color:var(--muted)">Вы получили это письмо, потому что у вас есть учётная запись в Bestway Football.</td></tr></tbody></table></div>
+</section><section class="sec" id="homepage"><span class="eyebrow">Section 11</span><h2>Homepage copy — EN / PL / RU</h2>
+<p class="lede">The full homepage, written three times rather than translated once. Where a literal rendering
+would sound stiff, the local version departs from the English — the Russian closing line, for instance,
+carries the meaning of the English rather than its grammar.</p>
+<div class="tri"><div class="hd lg"></div><div class="hd">English</div><div class="hd">Polski</div><div class="hd">Русский</div><div class="lg">Hero eyebrow</div><div>Football business · Player support · International network</div><div style="color:var(--muted)">Biznes piłkarski · Wsparcie zawodników · Sieć międzynarodowa</div><div style="color:var(--muted)">Футбольный бизнес · Поддержка игроков · Международная сеть</div><div class="lg">Hero title</div><div>Players. Clubs. Opportunities.</div><div style="color:var(--muted)">Zawodnicy. Kluby. Możliwości.</div><div style="color:var(--muted)">Игроки. Клубы. Возможности.</div><div class="lg">Hero body</div><div>We connect people, business and opportunities across international football. Bestway Football is the platform behind the work that surrounds a career — research, coordination, documents and introductions.</div><div style="color:var(--muted)">Łączymy ludzi, biznes i możliwości w piłce międzynarodowej. Bestway Football to platforma, na której dzieje się cała praca wokół kariery — analizy, koordynacja, dokumenty i kontakty.</div><div style="color:var(--muted)">Мы соединяем людей, бизнес и возможности в международном футболе. Bestway Football — платформа, на которой идёт вся работа вокруг карьеры: аналитика, координация, документы и контакты.</div><div class="lg">Primary CTA</div><div>Join the network</div><div style="color:var(--muted)">Dołącz do sieci</div><div style="color:var(--muted)">Присоединиться</div><div class="lg">Secondary CTA</div><div>Explore services</div><div style="color:var(--muted)">Zobacz usługi</div><div style="color:var(--muted)">Смотреть услуги</div><div class="lg">Section — audiences</div><div>Where do you fit?</div><div style="color:var(--muted)">Gdzie jest Twoje miejsce?</div><div style="color:var(--muted)">Где вы в этой системе?</div><div class="lg">Audience: players</div><div>Career support, relocation, documents and everything around the contract.</div><div style="color:var(--muted)">Wsparcie kariery, relokacja, dokumenty i wszystko wokół kontraktu.</div><div style="color:var(--muted)">Поддержка карьеры, релокация, документы и всё, что окружает контракт.</div><div class="lg">Audience: clubs</div><div>Player research, recruitment support and international market intelligence.</div><div style="color:var(--muted)">Analiza zawodników, wsparcie rekrutacji i wiedza o rynkach zagranicznych.</div><div style="color:var(--muted)">Анализ игроков, помощь в рекрутинге и данные по зарубежным рынкам.</div><div class="lg">Audience: agents</div><div>Back-office capacity, research and business development for licensed professionals.</div><div style="color:var(--muted)">Zaplecze operacyjne, analizy i rozwój biznesu dla licencjonowanych profesjonalistów.</div><div style="color:var(--muted)">Операционный тыл, аналитика и развитие бизнеса для лицензированных специалистов.</div><div class="lg">Audience: investors</div><div>Football projects, market research and structured introductions.</div><div style="color:var(--muted)">Projekty piłkarskie, badania rynku i przemyślane kontakty.</div><div style="color:var(--muted)">Футбольные проекты, исследование рынка и продуманные знакомства.</div><div class="lg">Section — services</div><div>More than football</div><div style="color:var(--muted)">Więcej niż piłka</div><div style="color:var(--muted)">Больше, чем футбол</div><div class="lg">Services intro</div><div>Twelve areas of work around a football career and a football business. Most mandates combine several of them.</div><div style="color:var(--muted)">Dwanaście obszarów pracy wokół kariery piłkarskiej i biznesu piłkarskiego. Większość zleceń łączy kilka z nich.</div><div style="color:var(--muted)">Двенадцать направлений работы вокруг футбольной карьеры и футбольного бизнеса. Большинство задач соединяют сразу несколько.</div><div class="lg">Section — how it works</div><div>Join, complete your profile, and let us do the rest</div><div style="color:var(--muted)">Dołącz, uzupełnij profil, resztę zostaw nam</div><div style="color:var(--muted)">Зарегистрируйтесь, заполните профиль, остальное — наша работа</div><div class="lg">Step 1</div><div>Create an account and tell us who you are. Player, agent, scout, club or investor — the form adapts.</div><div style="color:var(--muted)">Załóż konto i powiedz, kim jesteś. Zawodnik, agent, skaut, klub czy inwestor — formularz się dopasuje.</div><div style="color:var(--muted)">Создайте аккаунт и укажите, кто вы. Игрок, агент, скаут, клуб или инвестор — форма подстроится.</div><div class="lg">Step 2</div><div>Complete your profile and upload your documents in a private, encrypted document centre.</div><div style="color:var(--muted)">Uzupełnij profil i prześlij dokumenty do prywatnego, szyfrowanego centrum dokumentów.</div><div style="color:var(--muted)">Заполните профиль и загрузите документы в закрытый зашифрованный центр документов.</div><div class="lg">Step 3</div><div>We research, prepare and introduce. You see every step, and nothing is shared without your explicit consent.</div><div style="color:var(--muted)">Analizujemy, przygotowujemy i przedstawiamy. Widzisz każdy krok, a nic nie zostaje udostępnione bez Twojej wyraźnej zgody.</div><div style="color:var(--muted)">Мы исследуем, готовим и представляем. Вы видите каждый шаг, и ничего не передаётся без вашего явного согласия.</div><div class="lg">Section — network</div><div>One network. Multiple opportunities.</div><div style="color:var(--muted)">Jedna sieć. Wiele możliwości.</div><div style="color:var(--muted)">Одна сеть. Много возможностей.</div><div class="lg">Network body</div><div>Players, clubs, licensed agents, scouts, investors, brands and the legal and financial professionals who serve them. Most of what we do is putting two of those groups in a room properly prepared.</div><div style="color:var(--muted)">Zawodnicy, kluby, licencjonowani agenci, skauci, inwestorzy, marki oraz obsługujący ich prawnicy i doradcy finansowi. Większość naszej pracy polega na tym, by dwie z tych grup usiadły do stołu dobrze przygotowane.</div><div style="color:var(--muted)">Игроки, клубы, лицензированные агенты, скауты, инвесторы, бренды и работающие с ними юристы и финансисты. Большая часть нашей работы — усадить две из этих групп за стол подготовленными.</div><div class="lg">Regulatory note</div><div>Regulated football agent services are performed by appropriately licensed FIFA Football Agents. Financial, investment, legal and tax services requiring professional licences are provided by appropriately authorised external professionals.</div><div style="color:var(--muted)">Usługi wymagające licencji agenta piłkarskiego FIFA są świadczone przez odpowiednio licencjonowanych agentów FIFA. Usługi finansowe, inwestycyjne, prawne i podatkowe wymagające uprawnień zawodowych świadczą odpowiednio uprawnieni niezależni specjaliści.</div><div style="color:var(--muted)">Услуги, требующие лицензии футбольного агента FIFA, оказываются соответствующими лицензированными агентами FIFA. Финансовые, инвестиционные, юридические и налоговые услуги, требующие профессиональных лицензий, оказывают соответствующим образом уполномоченные независимые специалисты.</div><div class="lg">Closing CTA</div><div>Join the network</div><div style="color:var(--muted)">Dołącz do sieci</div><div style="color:var(--muted)">Присоединиться</div><div class="lg">Closing body</div><div>Creating an account takes two minutes. What you do with it is up to you.</div><div style="color:var(--muted)">Założenie konta zajmuje dwie minuty. Co z nim zrobisz, zależy od Ciebie.</div><div style="color:var(--muted)">Регистрация занимает две минуты. Что делать дальше — решаете вы.</div></div>
+</section><section class="sec" id="gdpr"><span class="eyebrow">Section 12</span><h2>GDPR and consent</h2>
+<p class="lede">The platform stores passports, contracts, medical records and bank details for EU data
+subjects. That places it firmly in the highest-care category, and the design has to show it rather than
+claim it.</p>
+
+<h3>Consent model</h3>
+<div class="tw"><table>
+<thead><tr><th style="width:190px">Consent</th><th style="width:120px">Basis</th><th>Wording shown to the user</th></tr></thead>
+<tbody>
+<tr><td><strong>Terms of service</strong></td><td>Contract</td><td>Required to create an account. Ticked
+deliberately, never pre-ticked.</td></tr>
+<tr><td><strong>Privacy policy</strong></td><td>Contract / legal obligation</td><td>Acknowledgement of how
+data is processed, with the policy version recorded.</td></tr>
+<tr><td><strong>Profile sharing</strong></td><td>Consent</td><td class="mono" style="white-space:normal;font-size:12px">
+EN — “I authorise Bestway Plus to share my professional profile with selected football clubs, licensed
+agents and professional partners for the purpose of evaluating potential cooperation opportunities.”<br><br>
+PL — „Upoważniam Bestway Plus do udostępniania mojego profilu zawodowego wybranym klubom piłkarskim,
+licencjonowanym agentom i partnerom zawodowym w celu oceny potencjalnych możliwości współpracy.”<br><br>
+RU — «Я разрешаю Bestway Plus передавать мой профессиональный профиль отдельным футбольным клубам,
+лицензированным агентам и профессиональным партнёрам для оценки возможного сотрудничества.»</td></tr>
+<tr><td><strong>Marketing</strong></td><td>Consent</td><td>Separate, optional, unticked. Withdrawable in one
+click from every marketing email and from Settings → Privacy.</td></tr>
+<tr><td><strong>Analytics cookies</strong></td><td>Consent</td><td>Off until granted. No analytics script
+loads before a choice is made.</td></tr>
+</tbody></table></div>
+
+<div class="note warn"><span class="nl">Never bundle these</span>
+<p>Processing consent and marketing consent are separate rows, separate checkboxes and separate withdrawal
+paths. Bundling them is the single most common GDPR failure on platforms of this shape, and it invalidates
+both.</p></div>
+
+<h3 style="margin-top:30px">Data subject rights, implemented</h3>
+<ul class="bul">
+<li><strong>Access and export.</strong> Settings → Privacy → Export my data queues a job that produces a
+ZIP: profile as JSON, documents as originals, consent history, activity history. Delivered as a
+signed, expiring link, never as an email attachment.</li>
+<li><strong>Rectification.</strong> The profile is directly editable; corrections to staff-controlled
+fields go through a request that appears as a task.</li>
+<li><strong>Erasure.</strong> A deletion request sets <code>DELETION_REQUESTED</code> and starts a 30-day
+window, during which the account is inaccessible but recoverable. On execution, profile and documents are
+destroyed; audit rows are pseudonymised, not deleted, since retaining a record of processing is itself a
+legal obligation.</li>
+<li><strong>Restriction and objection.</strong> Withdrawing profile-sharing consent revokes every active
+share link immediately and blocks new opportunity assignments.</li>
+<li><strong>Portability.</strong> The export is machine-readable JSON, not a PDF.</li>
+<li><strong>Breach readiness.</strong> Document access logs make “which records were exposed” answerable
+within the 72-hour notification window.</li>
+</ul>
+
+<h3 style="margin-top:30px">Retention</h3>
+<pre><span class="k">Active account</span>          for the life of the account
+<span class="k">Deleted account</span>         profile and documents purged; audit pseudonymised
+<span class="k">Documents</span>               purged with the account, or on expiry + 12 months
+<span class="k">Consent history</span>         6 years — it is the evidence that consent existed
+<span class="k">Activity / access logs</span>  24 months, then partition drop
+<span class="k">Backups</span>                 35 days, encrypted, EU region, erasure replayed on restore</pre>
+</section><section class="sec" id="api"><span class="eyebrow">Section 13</span><h2>API architecture</h2>
+<p class="lede">Server components read directly through the service layer. Everything that mutates state, and
+everything a mobile client will eventually need, goes through versioned route handlers under
+<code>/api/v1</code>. There is no second, weaker path into the data.</p>
+
+<pre><span class="c">── auth ──────────────────────────────────────────────</span>
+POST   /api/v1/auth/register              <span class="c">role-specific body, zod-validated</span>
+POST   /api/v1/auth/login                 <span class="c">rate limited 5/15min per ip+email</span>
+POST   /api/v1/auth/logout
+POST   /api/v1/auth/verify-email
+POST   /api/v1/auth/forgot-password       <span class="c">always 202, never reveals existence</span>
+POST   /api/v1/auth/reset-password
+POST   /api/v1/auth/2fa/enable | verify | disable
+GET    /api/v1/auth/sessions              <span class="c">list · DELETE /:id revokes</span>
+
+<span class="c">── profile ───────────────────────────────────────────</span>
+GET    /api/v1/me                         <span class="c">session, role, locale, completion</span>
+GET    /api/v1/me/profile
+PATCH  /api/v1/me/profile                 <span class="c">partial, autosave-friendly</span>
+GET    /api/v1/me/completion
+
+<span class="c">── documents ─────────────────────────────────────────</span>
+GET    /api/v1/documents                  <span class="c">own; staff pass ?userId with authz</span>
+POST   /api/v1/documents/upload-intent    <span class="c">→ presigned PUT, 5 min, type+size bound</span>
+POST   /api/v1/documents/:id/confirm      <span class="c">verify object, queue scan</span>
+GET    /api/v1/documents/:id/download-url <span class="c">→ presigned GET, 60 s, logged</span>
+PATCH  /api/v1/documents/:id              <span class="c">staff: status, comment, expiry</span>
+DELETE /api/v1/documents/:id              <span class="c">soft; blocked when delete_locked</span>
+
+<span class="c">── requests · opportunities · messages ───────────────</span>
+GET    /api/v1/document-requests          POST /api/v1/document-requests        <span class="c">staff</span>
+GET    /api/v1/opportunities              GET  /api/v1/opportunities/:id
+POST   /api/v1/opportunities/:id/respond  <span class="c">interested | decline | answer</span>
+GET    /api/v1/conversations              GET  /api/v1/conversations/:id/messages
+POST   /api/v1/conversations/:id/messages
+GET    /api/v1/notifications              POST /api/v1/notifications/read
+
+<span class="c">── privacy ───────────────────────────────────────────</span>
+GET    /api/v1/me/consents                POST /api/v1/me/consents
+POST   /api/v1/me/export                  POST /api/v1/me/delete-request
+
+<span class="c">── admin (all require staff role) ────────────────────</span>
+GET    /api/v1/admin/search?q=            <span class="c">players agents clubs docs opportunities</span>
+GET    /api/v1/admin/players              <span class="c">cursor paginated, filterable</span>
+GET    /api/v1/admin/players/:id/assessment   PATCH …   <span class="c">internal fields, separate endpoint</span>
+POST   /api/v1/admin/agents/:id/verify
+POST   /api/v1/admin/share-links          DELETE /api/v1/admin/share-links/:id
+POST   /api/v1/admin/players/:id/presentation <span class="c">queues PDF render</span>
+GET    /api/v1/admin/audit                <span class="c">SUPER_ADMIN</span></pre>
+
+<h3 style="margin-top:30px">Conventions</h3>
+<ul class="bul">
+<li><strong>Every handler opens the same way:</strong> resolve session → <code>authorize()</code> → parse
+with zod → call the service. A handler that queries before authorising is a review failure, not a style
+preference.</li>
+<li><strong>Errors are shaped and localised.</strong> <code>{ error: { code, messageKey, fields } }</code>.
+The client renders the key in the user's locale; the server never sends an English sentence to be shown.</li>
+<li><strong>Rate limits</strong> on login, registration, password reset, upload intent and download URL
+issuance — the last two because they are the expensive and the sensitive ones.</li>
+<li><strong>Idempotency keys</strong> on upload confirm and on anything that sends email.</li>
+<li><strong>No PII in URLs.</strong> Identifiers are UUIDs; filters go in the body for admin search.</li>
+</ul>
+</section><section class="sec" id="docsec"><span class="eyebrow">Section 14</span><h2>Secure document architecture</h2>
+<p class="lede">This is the part of the platform that carries real risk. A leaked passport scan is not a bug
+report, it is a notifiable incident. The design assumes the application will eventually have a
+vulnerability and limits what that vulnerability can reach.</p>
+
+<pre><span class="k">UPLOAD</span>
+  browser ──▶ POST /documents/upload-intent
+                   authorize(session, 'document:create', target)
+                   validate declared mime ∈ allow-list, size ≤ 15 MB
+                   storage_key = uuid()/uuid()          <span class="c">unguessable, no filename</span>
+                   INSERT document (UPLOADED, scan PENDING)
+              ◀── presigned PUT · 5 min · content-type and content-length bound
+  browser ──▶ PUT https://s3…/…                          <span class="c">bytes never touch the app server</span>
+  browser ──▶ POST /documents/:id/confirm
+                   HEAD object · verify size and content-type
+                   enqueue scan job
+<span class="k">SCAN</span>
+  worker  ──▶ stream object ▶ ClamAV
+                   CLEAN    → scan_status CLEAN, notify staff queue
+                   INFECTED → delete object, quarantine row, alert, notify user
+<span class="k">DOWNLOAD</span>
+  browser ──▶ GET /documents/:id/download-url
+                   authorize(session, 'document:read', doc)
+                   require scan_status = CLEAN
+                   INSERT document_access_log (actor, ip, ua)
+              ◀── presigned GET · 60 s · response-content-disposition: attachment</pre>
+
+<h3 style="margin-top:30px">Controls</h3>
+<div class="grid2">
+<div class="card"><span class="k">Storage</span><h4>Private by construction</h4>
+<p>Block Public Access enabled at the account level. No bucket policy grants <code>*</code>. Server-side
+encryption with a customer-managed KMS key. Versioning on, so a malicious overwrite is recoverable.
+Lifecycle rules move expired documents to a quarantine prefix before deletion.</p></div>
+
+<div class="card"><span class="k">Keys</span><h4>Unguessable and meaningless</h4>
+<p>Keys are <code>{uuid}/{uuid}</code> with no filename, user id, name or document type. Enumeration
+reveals nothing, and a leaked key is useless without a signature.</p></div>
+
+<div class="card"><span class="k">Transport</span><h4>Short-lived signatures</h4>
+<p>Upload URLs live five minutes and are bound to the declared content type and length, so a signed URL
+cannot be reused to upload something else. Download URLs live sixty seconds and force an attachment
+disposition, which stops a malicious SVG or HTML from executing on our origin.</p></div>
+
+<div class="card"><span class="k">Validation</span><h4>Do not trust the extension</h4>
+<p>Allow-list of PDF, JPEG, PNG, HEIC and DOCX. Magic-byte sniffing on the worker, not the declared MIME
+type. Size ceiling enforced twice — in the signature and again on confirm.</p></div>
+
+<div class="card"><span class="k">Access</span><h4>Every read is a record</h4>
+<p><code>document_access_logs</code> records actor, document, action, IP and user agent for every issued
+URL — including staff and including share-link recipients. Downloading a passport or a bank document
+additionally requires a typed reason.</p></div>
+
+<div class="card"><span class="k">Deletion</span><h4>Soft, then final</h4>
+<p>User deletion is a soft delete. <code>delete_locked</code> blocks removal while a document backs an
+active process; the request becomes a task instead. Hard deletion happens only in the erasure job, which
+also removes storage objects and all versions.</p></div>
+</div>
+
+<div class="note warn"><span class="nl">Things deliberately not done</span>
+<p>No document is ever served from the application origin, so there is no <code>/uploads/</code> path to
+guess and no proxy endpoint to confuse. No file name supplied by a user is used as a storage key. No
+document is attached to an outbound email — emails link into the portal, which re-authorises. And no
+thumbnail or preview is generated for identity documents, because a preview is a second, less-guarded copy.</p></div>
+
+<h3 style="margin-top:30px">Account and session security</h3>
+<ul class="bul">
+<li><strong>Argon2id</strong> password hashing; minimum twelve characters checked against a breach corpus
+rather than composition rules.</li>
+<li><strong>Database-backed sessions</strong> in <code>HttpOnly · Secure · SameSite=Lax</code> cookies, so
+staff can revoke a session and a user can see and end their own.</li>
+<li><strong>TOTP two-factor</strong>, optional for clients and mandatory for every staff role.</li>
+<li><strong>Re-authentication</strong> before changing email, password or two-factor, and before any staff
+export.</li>
+<li><strong>Strict CSP</strong>, HSTS, no inline scripts, and no third-party script on any authenticated
+route.</li>
+</ul>
+</section><section class="sec" id="notifications"><span class="eyebrow">Section 15</span><h2>Notification architecture</h2>
+<p class="lede">One event model feeds two channels today and a third later. The service emits a domain event;
+what happens next is configuration, not new code at each call site.</p>
+
+<pre>service ──▶ emit(<span class="s">'document.requested'</span>, { targetUserId, documentType, requestId })
+                    │
+          ┌─────────┴──────────┐
+          ▼                    ▼
+  INSERT notification    enqueue email job
+  (in-app, unread)       │  read users.locale
+          │              │  render localised template
+          ▼              │  dedupe on idempotency key
+   badge + list          ▼
+                    Postmark / Resend  ──▶  delivery webhook ──▶ email_sent_at</pre>
+
+<div class="tw"><table>
+<thead><tr><th style="width:210px">Event</th><th style="width:110px">In-app</th><th style="width:110px">Email</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td class="mono">document.requested</td><td class="yes">●</td><td class="yes">●</td><td>Links to the request, never to a file.</td></tr>
+<tr><td class="mono">document.approved</td><td class="yes">●</td><td class="yes">●</td><td>Batched — one email if several are approved within an hour.</td></tr>
+<tr><td class="mono">document.rejected</td><td class="yes">●</td><td class="yes">●</td><td>Always carries the reviewer's comment.</td></tr>
+<tr><td class="mono">document.expiring</td><td class="yes">●</td><td class="yes">●</td><td>60 and 30 days before expiry, then once on the day.</td></tr>
+<tr><td class="mono">opportunity.assigned</td><td class="yes">●</td><td class="yes">●</td><td>Client-safe fields only.</td></tr>
+<tr><td class="mono">opportunity.stageChanged</td><td class="yes">●</td><td class="part">◑</td><td>Email only on stages the client acts on.</td></tr>
+<tr><td class="mono">message.received</td><td class="yes">●</td><td class="part">◑</td><td>Email after five minutes if still unread.</td></tr>
+<tr><td class="mono">verification.changed</td><td class="yes">●</td><td class="yes">●</td><td>Agent licence verification outcome.</td></tr>
+<tr><td class="mono">profile.actionRequired</td><td class="yes">●</td><td class="no">·</td><td>Dashboard only — not worth an email.</td></tr>
+<tr><td class="mono">security.newSignIn</td><td class="no">·</td><td class="yes">●</td><td>New device or country. Not suppressible.</td></tr>
+</tbody></table></div>
+
+<ul class="bul">
+<li><strong>Language follows the recipient</strong>, from <code>users.locale</code> — not the language of
+the staff member who triggered the event.</li>
+<li><strong>Transactional mail is not marketing.</strong> It carries no unsubscribe, because a document
+request is not a newsletter. Marketing mail is a separate stream gated on its own consent.</li>
+<li><strong>Quiet hours and digests</strong> are user preferences; security notifications ignore both.</li>
+<li><strong>Web push and mobile push</strong> plug into the same emitter when they arrive — no service
+changes.</li>
+</ul>
+</section><section class="sec" id="deploy"><span class="eyebrow">Section 16</span><h2>Deployment architecture</h2>
+<p class="lede">Everything that touches personal data stays in the EU, in one region, with a documented
+processor list. That is a legal requirement here, not an infrastructure preference.</p>
+
+<div class="tw"><table>
+<thead><tr><th style="width:170px">Component</th><th style="width:210px">Production</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><strong>Application</strong></td><td class="mono">Vercel (fra1) or Docker on Hetzner / OVH</td>
+<td>Vercel is faster to ship; a container is easier to keep entirely inside one jurisdiction. Either way,
+one region.</td></tr>
+<tr><td><strong>Database</strong></td><td class="mono">PostgreSQL 16, EU — Neon or RDS eu-central-1</td>
+<td>Point-in-time recovery, encrypted at rest, private networking, no public endpoint.</td></tr>
+<tr><td><strong>Storage</strong></td><td class="mono">S3-compatible, EU — Scaleway, OVH or eu-central-1</td>
+<td>Block Public Access, SSE-KMS, versioning, lifecycle, access logging to a separate bucket.</td></tr>
+<tr><td><strong>Queue / cache</strong></td><td class="mono">Redis, EU, TLS</td><td>BullMQ jobs and rate-limit counters.</td></tr>
+<tr><td><strong>Worker</strong></td><td class="mono">Separate container</td>
+<td>ClamAV, email, PDF rendering, expiry sweeps, export jobs. Scales independently of the web tier.</td></tr>
+<tr><td><strong>Email</strong></td><td class="mono">Postmark or Resend, EU</td><td>SPF, DKIM and DMARC on <code>bestwayfootball.pl</code>.</td></tr>
+<tr><td><strong>Errors</strong></td><td class="mono">Sentry, EU</td><td>PII scrubbing on; document names and licence numbers are redacted before send.</td></tr>
+<tr><td><strong>Secrets</strong></td><td class="mono">Provider vault / Doppler</td><td>No secret in the repository, rotation documented.</td></tr>
+</tbody></table></div>
+
+<h3 style="margin-top:30px">Environments and release</h3>
+<ul class="bul">
+<li><strong>Three environments.</strong> Local with docker-compose, staging with synthetic data only, and
+production. Production data is never copied downward — staging is seeded, never restored from a live dump.</li>
+<li><strong>Migrations</strong> run as a gated step before the new revision receives traffic; every
+migration is reversible or ships with a written rollback.</li>
+<li><strong>CI</strong> runs typecheck, lint, unit tests, a policy test suite that asserts the permission
+matrix, and a build. The policy suite is the one that must never be skipped.</li>
+<li><strong>Backups</strong> daily with a 35-day window, plus a quarterly restore drill that is actually
+performed and recorded.</li>
+<li><strong>DNS.</strong> <code>bestwayfootball.pl</code> for the public site and portal;
+<code>admin.bestwayfootball.pl</code> for the CRM, so it can carry IP allow-listing and its own WAF rules
+without affecting clients.</li>
+</ul>
+</section><section class="sec" id="delivery"><span class="eyebrow">Section 17</span><h2>Delivery plan and current state</h2>
+<p class="lede">The specification above is complete. The code below is a real foundation — not a mock-up —
+covering the parts that are expensive to retrofit: the schema, the i18n architecture, the permission model
+and the document security layer. What is scaffolded is marked as such.</p>
+
+<div class="tw"><table>
+<thead><tr><th style="width:60px">Phase</th><th style="width:230px">Scope</th><th style="width:130px">State</th><th>Contents</th></tr></thead>
+<tbody>
+<tr><td class="mono">0</td><td><strong>Foundation</strong></td><td><span class="yes">In the repository</span></td>
+<td>Prisma schema for all 28 tables, enums and indexes; next-intl setup with locale routing and middleware;
+EN/PL/RU catalogs; typed RBAC policy module with the full matrix; design tokens and the base component
+library.</td></tr>
+<tr><td class="mono">1</td><td><strong>Security layer</strong></td><td><span class="yes">In the repository</span></td>
+<td>Storage adapter with presigned upload and download, MIME and size validation, access logging, the
+authorize() gate, session helpers, Argon2id hashing, rate limiter.</td></tr>
+<tr><td class="mono">2</td><td><strong>Public site</strong></td><td><span class="part">Scaffolded</span></td>
+<td>Localised routes, homepage and audience pages wired to the catalogs, join role chooser.</td></tr>
+<tr><td class="mono">3</td><td><strong>Auth and registration</strong></td><td><span class="part">Scaffolded</span></td>
+<td>Registration schemas per role, consent capture, email verification, sign-in.</td></tr>
+<tr><td class="mono">4</td><td><strong>Portal</strong></td><td>Next</td>
+<td>Overview, profile autosave, document centre with camera upload, requests, opportunities.</td></tr>
+<tr><td class="mono">5</td><td><strong>Admin CRM</strong></td><td>Next</td>
+<td>Queues, record tables, player profile tabs, assessment endpoint, verification, share links.</td></tr>
+<tr><td class="mono">6</td><td><strong>Comms and PDF</strong></td><td>Next</td>
+<td>Messaging, notification fan-out, localised email templates, player presentation renderer.</td></tr>
+<tr><td class="mono">7</td><td><strong>Hardening</strong></td><td>Before launch</td>
+<td>Policy test suite, penetration test, DPIA, processor agreements, restore drill, 2FA enforcement for staff.</td></tr>
+</tbody></table></div>
+
+<div class="note warn"><span class="nl">One honest caveat</span>
+<p>A platform of this scope is a multi-month build for a team, not a single delivery. What is in the
+repository now is the architecture made real and the security-critical modules written properly, so that
+feature work can proceed without revisiting foundations. Nothing in it contains invented players, clubs,
+transfers, licences or partners, and no sample data ships outside a development seed.</p></div>
+</section>
+</main>
+</div>

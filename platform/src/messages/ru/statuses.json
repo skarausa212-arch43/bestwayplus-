@@ -1,0 +1,21 @@
+{
+  "docACTION_REQUIRED": "Требуется действие",
+  "docAPPROVED": "Принят",
+  "docEXPIRED": "Истёк",
+  "docREJECTED": "Отклонён",
+  "docUNDER_REVIEW": "На проверке",
+  "docUPLOADED": "Загружен",
+  "stageCLOSED": "Закрыто",
+  "stageCLUB_REVIEWING": "Клуб рассматривает",
+  "stageINFO_REQUESTED": "Запрошены дополнительные сведения",
+  "stageNEGOTIATION": "Переговоры",
+  "stageNEW": "Новая возможность",
+  "stagePROFILE_UNDER_REVIEW": "Профиль на рассмотрении",
+  "stageSUBMITTED": "Отправлен",
+  "stageSUCCESSFUL": "Успешно завершено",
+  "verINFO_REQUIRED": "Нужны дополнительные сведения",
+  "verNOT_SUBMITTED": "Не подано",
+  "verPENDING": "Ожидает проверки",
+  "verREJECTED": "Отклонено",
+  "verVERIFIED": "Проверен"
+}

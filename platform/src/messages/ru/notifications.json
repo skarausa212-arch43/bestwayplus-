@@ -1,0 +1,14 @@
+{
+  "docApproved": "Ваш документ принят",
+  "docExpiring": "У документа истекает срок",
+  "docRejected": "Документ требует вашего внимания",
+  "docRequested": "Мы запросили у вас документ",
+  "docRequestedBody": "{type} — {message}",
+  "empty": "Уведомлений нет.",
+  "markAllRead": "Отметить все как прочитанные",
+  "newMessage": "У вас новое сообщение",
+  "newOpportunity": "Появилась новая возможность",
+  "newSignIn": "Новый вход в ваш аккаунт",
+  "stageChanged": "Статус вашей заявки изменился",
+  "verificationChanged": "Ваш статус проверки изменился"
+}

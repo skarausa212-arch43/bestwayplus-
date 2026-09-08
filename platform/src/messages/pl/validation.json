@@ -1,0 +1,18 @@
+{
+  "consentRequired": "Musisz to zaakceptować, aby kontynuować",
+  "dateInvalid": "Podaj poprawną datę",
+  "dobFuture": "Data urodzenia nie może być z przyszłości",
+  "dobTooYoung": "Musisz mieć co najmniej 16 lat, aby założyć konto",
+  "email": "Podaj poprawny adres e-mail",
+  "emailTaken": "Konto z tym adresem już istnieje",
+  "fileTooLarge": "Ten plik jest większy niż {max}",
+  "fileType": "Dozwolone formaty: PDF, JPG, PNG",
+  "invalidCredentials": "Nieprawidłowy e-mail lub hasło",
+  "numberRange": "Podaj wartość od {min} do {max}",
+  "passwordBreached": "To hasło pojawiło się w wycieku danych. Wybierz inne.",
+  "passwordShort": "Użyj co najmniej 12 znaków",
+  "phone": "Podaj poprawny numer telefonu",
+  "required": "To pole jest wymagane",
+  "tooManyAttempts": "Zbyt wiele prób. Spróbuj ponownie za {minutes} min.",
+  "url": "Podaj poprawny link"
+}

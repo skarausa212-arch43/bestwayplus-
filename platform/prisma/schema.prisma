@@ -1,0 +1,850 @@
+// ---------------------------------------------------------------------------
+// Bestway Football — data model
+//
+// Conventions
+//   · UUID primary keys everywhere; sequential ids leak volume and order.
+//   · Internal-only data lives in its own table (PlayerInternalAssessment,
+//     AdminNote) so a careless select on a profile cannot leak it.
+//   · Consents and activity are append-only; withdrawal writes revokedAt.
+//   · Documents are soft-deleted and versioned. Storage keys are opaque.
+// ---------------------------------------------------------------------------
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgcrypto, pg_trgm]
+}
+
+// ------------------------------------------------------------------ enums --
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
+  PLAYER
+  AGENT
+  CLUB
+  INVESTOR
+  SCOUT
+}
+
+enum Locale {
+  EN
+  PL
+  RU
+}
+
+enum AccountStatus {
+  PENDING_EMAIL
+  ACTIVE
+  SUSPENDED
+  DELETION_REQUESTED
+  DELETED
+}
+
+enum VerificationStatus {
+  NOT_SUBMITTED
+  PENDING
+  VERIFIED
+  INFO_REQUIRED
+  REJECTED
+}
+
+enum DocumentType {
+  PASSPORT_ID
+  PLAYER_CV
+  CLUB_CONTRACT
+  REPRESENTATION_AGREEMENT
+  MEDICAL
+  STATISTICS
+  TRANSFER_DOCUMENT
+  VISA
+  RESIDENCE_PERMIT
+  INSURANCE
+  BANK_DETAILS
+  FINANCIAL
+  FIFA_LICENCE
+  COMPANY_DOCUMENT
+  PLAYER_MANDATE
+  PHOTO
+  OTHER
+}
+
+enum DocumentStatus {
+  UPLOADED
+  UNDER_REVIEW
+  APPROVED
+  ACTION_REQUIRED
+  REJECTED
+  EXPIRED
+}
+
+enum ScanStatus {
+  PENDING
+  CLEAN
+  INFECTED
+  FAILED
+}
+
+enum DocumentRequestStatus {
+  OPEN
+  FULFILLED
+  CANCELLED
+}
+
+enum OpportunityVisibility {
+  PRIVATE
+  SELECTED
+  VERIFIED_USERS
+}
+
+enum OpportunityStatus {
+  DRAFT
+  OPEN
+  ON_HOLD
+  CLOSED
+}
+
+enum Stage {
+  NEW
+  PROFILE_UNDER_REVIEW
+  SUBMITTED
+  CLUB_REVIEWING
+  INFO_REQUESTED
+  NEGOTIATION
+  CLOSED
+  SUCCESSFUL
+}
+
+enum TransferType {
+  TRANSFER
+  LOAN
+  FREE_AGENT
+}
+
+enum Foot {
+  LEFT
+  RIGHT
+  BOTH
+}
+
+enum EntityType {
+  INDIVIDUAL
+  COMPANY
+}
+
+enum ConsentType {
+  TERMS
+  PRIVACY
+  PROFILE_SHARING
+  MARKETING
+  COOKIES_ANALYTICS
+  COOKIES_MARKETING
+}
+
+enum TaskPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  OPEN
+  IN_PROGRESS
+  BLOCKED
+  DONE
+  CANCELLED
+}
+
+enum AuthTokenPurpose {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+  TWO_FACTOR_RECOVERY
+}
+
+enum DocumentAction {
+  UPLOAD_INTENT
+  UPLOAD_CONFIRMED
+  DOWNLOAD_URL_ISSUED
+  STATUS_CHANGED
+  REPLACED
+  SOFT_DELETED
+  HARD_DELETED
+}
+
+// --------------------------------------------------------------- identity --
+
+model User {
+  id                   String        @id @default(uuid()) @db.Uuid
+  email                String        @unique
+  emailVerifiedAt      DateTime?
+  passwordHash         String
+  phone                String?
+  locale               Locale        @default(EN)
+  role                 Role
+  status               AccountStatus @default(PENDING_EMAIL)
+  twoFactorEnabled     Boolean       @default(false)
+  twoFactorSecret      String? // encrypted at the application layer
+  lastLoginAt          DateTime?
+  responsibleManagerId String?       @db.Uuid
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  deletedAt            DateTime?
+
+  responsibleManager User?  @relation("ManagedClients", fields: [responsibleManagerId], references: [id], onDelete: SetNull)
+  managedClients     User[] @relation("ManagedClients")
+
+  sessions   Session[]
+  authTokens AuthToken[]
+  consents   Consent[]
+
+  playerProfile   PlayerProfile?
+  agentProfile    AgentProfile?
+  clubProfile     ClubProfile?
+  investorProfile InvestorProfile?
+  scoutProfile    ScoutProfile?
+
+  ownedDocuments    Document[] @relation("DocumentOwner")
+  uploadedDocuments Document[] @relation("DocumentUploader")
+  reviewedDocuments Document[] @relation("DocumentReviewer")
+
+  documentRequestsReceived DocumentRequest[] @relation("RequestTarget")
+  documentRequestsRaised   DocumentRequest[] @relation("RequestAuthor")
+  documentAccessLogs       DocumentAccessLog[]
+
+  opportunitiesCreated  Opportunity[]            @relation("OpportunityAuthor")
+  opportunityEntries    OpportunityParticipant[] @relation("ParticipantUser")
+  opportunityAdditions  OpportunityParticipant[] @relation("ParticipantAuthor")
+  recruitmentRequests   RecruitmentRequest[]     @relation("RecruitmentAuthor")
+  recruitmentAssignments RecruitmentRequest[]    @relation("RecruitmentAssignee")
+
+  conversationsCreated ConversationParticipant[]
+  messagesSent         Message[]
+  notifications        Notification[]
+
+  adminNotesAbout    AdminNote[] @relation("NoteSubject")
+  adminNotesAuthored AdminNote[] @relation("NoteAuthor")
+
+  tasksAssigned TaskItem[] @relation("TaskAssignee")
+  tasksCreated  TaskItem[] @relation("TaskAuthor")
+  tasksAbout    TaskItem[] @relation("TaskSubject")
+
+  activityAsActor   ActivityLog[] @relation("ActivityActor")
+  activityAsSubject ActivityLog[] @relation("ActivitySubject")
+
+  shareLinksCreated ShareLink[]
+  verifiedAgents    AgentProfile[] @relation("AgentVerifier")
+  verifiedClubs     ClubProfile[]  @relation("ClubVerifier")
+  assessmentsWritten PlayerInternalAssessment[]
+  translationsEdited Translation[]
+
+  @@index([role, status])
+  @@index([responsibleManagerId])
+  @@map("users")
+}
+
+model Session {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique
+  ip        String?
+  userAgent String?
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("sessions")
+}
+
+model AuthToken {
+  id         String           @id @default(uuid()) @db.Uuid
+  userId     String           @db.Uuid
+  purpose    AuthTokenPurpose
+  tokenHash  String           @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@map("auth_tokens")
+}
+
+// --------------------------------------------------------------- profiles --
+
+model PlayerProfile {
+  id                     String    @id @default(uuid()) @db.Uuid
+  userId                 String    @unique @db.Uuid
+  firstName              String?
+  lastName               String?
+  dateOfBirth            DateTime? @db.Date
+  nationality            String?
+  secondNationality      String?
+  countryOfResidence     String?
+  city                   String?
+  currentClub            String?
+  primaryPosition        String?
+  secondaryPosition      String?
+  preferredFoot          Foot?
+  heightCm               Int?
+  weightKg               Int?
+  contractUntil          DateTime? @db.Date
+  league                 String?
+  nationalTeamExperience String?
+  professionalExperience String?
+  transfermarktUrl       String?
+  youtubeUrl             String?
+  highlightsUrl          String?
+  instagramUrl           String?
+  otherLinks             Json?
+  careerSummary          String?
+  careerGoals            String?
+  preferredCountries     String[]
+  preferredLeagues       String[]
+  availability           String?
+  salaryMin              Int?
+  salaryMax              Int?
+  salaryCurrency         String?
+  hasAgent               Boolean   @default(false)
+  agentName              String?
+  agentAgency            String?
+  agentContact           String?
+  representationUntil    DateTime? @db.Date
+  photoDocumentId        String?   @db.Uuid
+  completionPercent      Int       @default(0)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  user          User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  previousClubs PlayerPreviousClub[]
+  assessment    PlayerInternalAssessment?
+  shareLinks    ShareLink[]
+
+  @@index([nationality])
+  @@index([primaryPosition])
+  @@index([contractUntil])
+  @@map("player_profiles")
+}
+
+model PlayerPreviousClub {
+  id              String    @id @default(uuid()) @db.Uuid
+  playerProfileId String    @db.Uuid
+  club            String
+  country         String?
+  fromDate        DateTime? @db.Date
+  toDate          DateTime? @db.Date
+  appearances     Int?
+  goals           Int?
+  sortIndex       Int       @default(0)
+
+  playerProfile PlayerProfile @relation(fields: [playerProfileId], references: [id], onDelete: Cascade)
+
+  @@index([playerProfileId, sortIndex])
+  @@map("player_previous_clubs")
+}
+
+model AgentProfile {
+  id                 String             @id @default(uuid()) @db.Uuid
+  userId             String             @unique @db.Uuid
+  firstName          String?
+  lastName           String?
+  nationality        String?
+  country            String?
+  fifaLicenceNumber  String?
+  agencyName         String?
+  website            String?
+  phone              String?
+  markets            String[]
+  countries          String[]
+  leagues            String[]
+  languages          String[]
+  specialisations    String[]
+  bio                String?
+  verificationStatus VerificationStatus @default(NOT_SUBMITTED)
+  verifiedAt         DateTime?
+  verifiedByUserId   String?            @db.Uuid
+  verificationNote   String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  user       User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verifiedBy User? @relation("AgentVerifier", fields: [verifiedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([verificationStatus])
+  @@map("agent_profiles")
+}
+
+model ClubProfile {
+  id                 String             @id @default(uuid()) @db.Uuid
+  userId             String             @unique @db.Uuid
+  clubName           String?
+  country            String?
+  league             String?
+  roleTitle          String?
+  firstName          String?
+  lastName           String?
+  businessEmail      String?
+  phone              String?
+  website            String?
+  verificationStatus VerificationStatus @default(NOT_SUBMITTED)
+  verifiedAt         DateTime?
+  verifiedByUserId   String?            @db.Uuid
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  user       User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verifiedBy User? @relation("ClubVerifier", fields: [verifiedByUserId], references: [id], onDelete: SetNull)
+
+  @@map("club_profiles")
+}
+
+model InvestorProfile {
+  id                     String             @id @default(uuid()) @db.Uuid
+  userId                 String             @unique @db.Uuid
+  entityType             EntityType         @default(INDIVIDUAL)
+  displayName            String?
+  company                String?
+  country                String?
+  businessArea           String?
+  investmentInterests    String?
+  footballInterests      String?
+  preferredMarkets       String[]
+  investmentRange        String?
+  professionalBackground String?
+  contactInfo            String?
+  verificationStatus     VerificationStatus @default(NOT_SUBMITTED)
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("investor_profiles")
+}
+
+model ScoutProfile {
+  id                 String             @id @default(uuid()) @db.Uuid
+  userId             String             @unique @db.Uuid
+  firstName          String?
+  lastName           String?
+  country            String?
+  markets            String[]
+  leagues            String[]
+  languages          String[]
+  experienceYears    Int?
+  bio                String?
+  verificationStatus VerificationStatus @default(NOT_SUBMITTED)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("scout_profiles")
+}
+
+// ---- internal only. Never selected by a query that reaches a client. ------
+
+model PlayerInternalAssessment {
+  id                 String    @id @default(uuid()) @db.Uuid
+  playerProfileId    String    @unique @db.Uuid
+  internalRating     Int?
+  potential          Int?
+  marketability      Int?
+  reliability        Int?
+  priority           TaskPriority?
+  recommendedMarkets String[]
+  expectedLevel      String?
+  comments           String?
+  nextAction         String?
+  followUpDate       DateTime? @db.Date
+  updatedByUserId    String?   @db.Uuid
+  updatedAt          DateTime  @updatedAt
+
+  playerProfile PlayerProfile @relation(fields: [playerProfileId], references: [id], onDelete: Cascade)
+  updatedBy     User?         @relation(fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  @@map("player_internal_assessments")
+}
+
+model AdminNote {
+  id            String   @id @default(uuid()) @db.Uuid
+  subjectUserId String   @db.Uuid
+  authorUserId  String   @db.Uuid
+  body          String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  subject User @relation("NoteSubject", fields: [subjectUserId], references: [id], onDelete: Cascade)
+  author  User @relation("NoteAuthor", fields: [authorUserId], references: [id], onDelete: Cascade)
+
+  @@index([subjectUserId, createdAt])
+  @@map("admin_notes")
+}
+
+// -------------------------------------------------------------- documents --
+
+model Document {
+  id                  String         @id @default(uuid()) @db.Uuid
+  ownerUserId         String         @db.Uuid
+  uploadedByUserId    String         @db.Uuid
+  type                DocumentType
+  name                String
+  storageKey          String         @unique
+  mimeType            String
+  sizeBytes           Int
+  checksumSha256      String?
+  status              DocumentStatus @default(UPLOADED)
+  scanStatus          ScanStatus     @default(PENDING)
+  expiryDate          DateTime?      @db.Date
+  userComment         String?
+  adminComment        String?
+  deleteLocked        Boolean        @default(false)
+  version             Int            @default(1)
+  replacesDocumentId  String?        @db.Uuid
+  reviewedByUserId    String?        @db.Uuid
+  reviewedAt          DateTime?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  deletedAt           DateTime?
+
+  owner      User  @relation("DocumentOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  uploadedBy User  @relation("DocumentUploader", fields: [uploadedByUserId], references: [id], onDelete: Restrict)
+  reviewedBy User? @relation("DocumentReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  replaces   Document?  @relation("DocumentVersions", fields: [replacesDocumentId], references: [id], onDelete: SetNull)
+  replacedBy Document[] @relation("DocumentVersions")
+
+  accessLogs       DocumentAccessLog[]
+  fulfilledRequest DocumentRequest[]
+  attachments      MessageAttachment[]
+
+  // The review queue and the expiry sweep are the two hot paths.
+  @@index([ownerUserId, status])
+  @@index([status, scanStatus])
+  @@index([expiryDate])
+  @@map("documents")
+}
+
+model DocumentRequest {
+  id                  String                @id @default(uuid()) @db.Uuid
+  targetUserId        String                @db.Uuid
+  requestedByUserId   String                @db.Uuid
+  type                DocumentType
+  message             String?
+  dueDate             DateTime?             @db.Date
+  status              DocumentRequestStatus @default(OPEN)
+  fulfilledDocumentId String?               @db.Uuid
+  createdAt           DateTime              @default(now())
+  closedAt            DateTime?
+
+  target      User      @relation("RequestTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+  requestedBy User      @relation("RequestAuthor", fields: [requestedByUserId], references: [id], onDelete: Restrict)
+  fulfilledBy Document? @relation(fields: [fulfilledDocumentId], references: [id], onDelete: SetNull)
+
+  @@index([targetUserId, status])
+  @@map("document_requests")
+}
+
+model DocumentAccessLog {
+  id          String         @id @default(uuid()) @db.Uuid
+  documentId  String         @db.Uuid
+  actorUserId String?        @db.Uuid
+  shareLinkId String?        @db.Uuid
+  action      DocumentAction
+  reason      String? // required for identity and financial documents
+  ip          String?
+  userAgent   String?
+  createdAt   DateTime       @default(now())
+
+  document  Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  actor     User?      @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  shareLink ShareLink? @relation(fields: [shareLinkId], references: [id], onDelete: SetNull)
+
+  @@index([documentId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@map("document_access_logs")
+}
+
+// ----------------------------------------------------------- opportunities --
+
+model Opportunity {
+  id                   String                @id @default(uuid()) @db.Uuid
+  name                 String
+  clubName             String?
+  country              String?
+  league               String?
+  position             String?
+  ageMin               Int?
+  ageMax               Int?
+  preferredFoot        Foot?
+  salaryMin            Int?
+  salaryMax            Int?
+  salaryCurrency       String?
+  transferType         TransferType?
+  contractLengthMonths Int?
+  deadline             DateTime?             @db.Date
+  description          String?
+  internalNotes        String? // INTERNAL
+  visibility           OpportunityVisibility @default(PRIVATE)
+  status               OpportunityStatus     @default(DRAFT)
+  createdByUserId      String                @db.Uuid
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+
+  createdBy    User                     @relation("OpportunityAuthor", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  participants OpportunityParticipant[]
+
+  @@index([status, deadline])
+  @@map("opportunities")
+}
+
+model OpportunityParticipant {
+  id                 String    @id @default(uuid()) @db.Uuid
+  opportunityId      String    @db.Uuid
+  userId             String    @db.Uuid
+  stage              Stage     @default(NEW)
+  addedByUserId      String    @db.Uuid
+  submittedAt        DateTime?
+  lastStageChangeAt  DateTime  @default(now())
+  internalNotes      String? // INTERNAL
+  createdAt          DateTime  @default(now())
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  user        User        @relation("ParticipantUser", fields: [userId], references: [id], onDelete: Cascade)
+  addedBy     User        @relation("ParticipantAuthor", fields: [addedByUserId], references: [id], onDelete: Restrict)
+
+  @@unique([opportunityId, userId])
+  @@index([userId, stage])
+  @@map("opportunity_participants")
+}
+
+model RecruitmentRequest {
+  id                      String        @id @default(uuid()) @db.Uuid
+  clubUserId              String        @db.Uuid
+  position                String?
+  ageMin                  Int?
+  ageMax                  Int?
+  preferredFoot           Foot?
+  nationalityRestrictions String?
+  salaryBudget            String?
+  transferType            TransferType?
+  deadline                DateTime?     @db.Date
+  additionalRequirements  String?
+  status                  String        @default("OPEN")
+  assignedToUserId        String?       @db.Uuid
+  createdAt               DateTime      @default(now())
+
+  clubUser   User  @relation("RecruitmentAuthor", fields: [clubUserId], references: [id], onDelete: Cascade)
+  assignedTo User? @relation("RecruitmentAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@map("recruitment_requests")
+}
+
+// ------------------------------------------------------- communication ----
+
+model Conversation {
+  id              String   @id @default(uuid()) @db.Uuid
+  subject         String?
+  createdByUserId String?  @db.Uuid
+  lastMessageAt   DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@index([lastMessageAt])
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  conversationId String    @db.Uuid
+  userId         String    @db.Uuid
+  lastReadAt     DateTime?
+  muted          Boolean   @default(false)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@index([userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String    @id @default(uuid()) @db.Uuid
+  conversationId String    @db.Uuid
+  senderUserId   String    @db.Uuid
+  body           String
+  createdAt      DateTime  @default(now())
+  editedAt       DateTime?
+  deletedAt      DateTime?
+
+  conversation Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User                @relation(fields: [senderUserId], references: [id], onDelete: Restrict)
+  attachments  MessageAttachment[]
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
+}
+
+model MessageAttachment {
+  id         String   @id @default(uuid()) @db.Uuid
+  messageId  String   @db.Uuid
+  documentId String   @db.Uuid
+  createdAt  DateTime @default(now())
+
+  message  Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Restrict)
+
+  @@map("message_attachments")
+}
+
+model Notification {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  type        String
+  titleKey    String
+  bodyKey     String?
+  payload     Json?
+  entityType  String?
+  entityId    String?   @db.Uuid
+  readAt      DateTime?
+  emailSentAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+  @@map("notifications")
+}
+
+// -------------------------------------------------- governance and audit --
+
+model TaskItem {
+  id              String       @id @default(uuid()) @db.Uuid
+  title           String
+  description     String?
+  relatedUserId   String?      @db.Uuid
+  assigneeUserId  String?      @db.Uuid
+  createdByUserId String       @db.Uuid
+  dueDate         DateTime?    @db.Date
+  priority        TaskPriority @default(NORMAL)
+  status          TaskStatus   @default(OPEN)
+  completedAt     DateTime?
+  createdAt       DateTime     @default(now())
+
+  relatedUser User? @relation("TaskSubject", fields: [relatedUserId], references: [id], onDelete: SetNull)
+  assignee    User? @relation("TaskAssignee", fields: [assigneeUserId], references: [id], onDelete: SetNull)
+  createdBy   User  @relation("TaskAuthor", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@index([assigneeUserId, status, dueDate])
+  @@map("tasks")
+}
+
+/// Append-only. The application role has no UPDATE or DELETE grant on this
+/// table; retention is handled by dropping monthly partitions.
+model ActivityLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  actorUserId   String?  @db.Uuid
+  subjectUserId String?  @db.Uuid
+  action        String
+  entityType    String?
+  entityId      String?  @db.Uuid
+  metadata      Json?
+  ip            String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  actor   User? @relation("ActivityActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  subject User? @relation("ActivitySubject", fields: [subjectUserId], references: [id], onDelete: SetNull)
+
+  @@index([subjectUserId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([action, createdAt])
+  @@map("activity_logs")
+}
+
+/// One row per grant or withdrawal. Never updated in place — the history is
+/// the evidence, and textHash proves which wording the user was shown.
+model Consent {
+  id            String      @id @default(uuid()) @db.Uuid
+  userId        String      @db.Uuid
+  type          ConsentType
+  granted       Boolean
+  policyVersion String
+  textHash      String
+  locale        Locale
+  ip            String?
+  userAgent     String?
+  createdAt     DateTime    @default(now())
+  revokedAt     DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, createdAt])
+  @@map("consents")
+}
+
+model ShareLink {
+  id                String    @id @default(uuid()) @db.Uuid
+  playerProfileId   String    @db.Uuid
+  createdByUserId   String    @db.Uuid
+  tokenHash         String    @unique
+  passwordHash      String?
+  recipientLabel    String?
+  allowedSections   Json
+  allowedDocumentIds String[] @db.Uuid
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  viewCount         Int       @default(0)
+  lastViewedAt      DateTime?
+  createdAt         DateTime  @default(now())
+
+  playerProfile PlayerProfile       @relation(fields: [playerProfileId], references: [id], onDelete: Cascade)
+  createdBy     User                @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+  views         ShareLinkView[]
+  accessLogs    DocumentAccessLog[]
+
+  @@index([playerProfileId, expiresAt])
+  @@map("share_links")
+}
+
+model ShareLinkView {
+  id          String   @id @default(uuid()) @db.Uuid
+  shareLinkId String   @db.Uuid
+  ip          String?
+  userAgent   String?
+  viewedAt    DateTime @default(now())
+
+  shareLink ShareLink @relation(fields: [shareLinkId], references: [id], onDelete: Cascade)
+
+  @@index([shareLinkId, viewedAt])
+  @@map("share_link_views")
+}
+
+/// Editable marketing copy only. Interface strings live in versioned JSON
+/// catalogs under src/messages so they can be reviewed in a pull request.
+model Translation {
+  id              String   @id @default(uuid()) @db.Uuid
+  namespace       String
+  key             String
+  locale          Locale
+  value           String
+  updatedByUserId String?  @db.Uuid
+  updatedAt       DateTime @updatedAt
+
+  updatedBy User? @relation(fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([namespace, key, locale])
+  @@map("translations")
+}

@@ -1,0 +1,16 @@
+{
+  "haveAccount": "Masz już konto?",
+  "hint": "Wybierz najbliższy opis — od niego zależy formularz.",
+  "reassurance": "Twoje dane nie są publikowane. Nic nie trafia do klubu bez Twojej wyraźnej, odrębnej zgody.",
+  "roleAgent": "Licencjonowany agent",
+  "roleAgentHint": "Posiadacz licencji FIFA",
+  "roleClub": "Przedstawiciel klubu",
+  "roleClubHint": "Sportowy lub handlowy",
+  "roleInvestor": "Inwestor / partner",
+  "roleInvestorHint": "Osoba lub firma",
+  "rolePlayer": "Zawodnik",
+  "rolePlayerHint": "Zawodowy lub rozwijający się",
+  "roleScout": "Skaut",
+  "roleScoutHint": "Niezależny lub klubowy",
+  "title": "Kim jesteś?"
+}

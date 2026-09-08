@@ -1,0 +1,11 @@
+{
+  "footerSecurity": "If this was not you, sign in and end the session immediately.",
+  "footerTransactional": "You are receiving this because you have an account with Bestway Football.",
+  "greeting": "Hello {name},",
+  "openPortal": "Open the portal",
+  "subjectDocApproved": "Your document was approved",
+  "subjectDocRequest": "{name}, we need one document from you",
+  "subjectOpportunity": "A new opportunity for you",
+  "subjectReset": "Reset your password",
+  "subjectVerify": "Confirm your email address"
+}

@@ -1,0 +1,18 @@
+{
+  "consentRequired": "You need to accept this to continue",
+  "dateInvalid": "Enter a valid date",
+  "dobFuture": "Date of birth cannot be in the future",
+  "dobTooYoung": "You must be at least 16 to create an account",
+  "email": "Enter a valid email address",
+  "emailTaken": "An account with this email already exists",
+  "fileTooLarge": "This file is larger than {max}",
+  "fileType": "Accepted formats: PDF, JPG, PNG",
+  "invalidCredentials": "Email or password is incorrect",
+  "numberRange": "Enter a value between {min} and {max}",
+  "passwordBreached": "This password has appeared in a data breach. Choose another.",
+  "passwordShort": "Use at least 12 characters",
+  "phone": "Enter a valid phone number",
+  "required": "This field is required",
+  "tooManyAttempts": "Too many attempts. Try again in {minutes} minutes.",
+  "url": "Enter a valid link"
+}

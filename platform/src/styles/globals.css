@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+/* The platform commits to one dark emerald world; there is no light theme to
+   fall back to, so every surface paints itself explicitly. */
+html, body {
+  background-color: #031A10;
+  color: #F5F7F6;
+}
+
+body {
+  background-image:
+    radial-gradient(64% 40% at 82% -8%, rgba(25, 199, 107, .13), transparent 64%),
+    radial-gradient(50% 36% at 2% 100%, rgba(56, 232, 135, .07), transparent 70%);
+  background-attachment: fixed;
+}
+
+::selection { background: #19C76B; color: #02150C; }
+
+:focus-visible {
+  outline: 1px solid #38E887;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

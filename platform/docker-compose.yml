@@ -1,0 +1,33 @@
+# Local development only. Production runs managed, EU-region services.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: bwf
+      POSTGRES_PASSWORD: bwf
+      POSTGRES_DB: bwf
+    ports: ['5432:5432']
+    volumes: ['bwf_pg:/var/lib/postgresql/data']
+
+  redis:
+    image: redis:7-alpine
+    ports: ['6379:6379']
+
+  # S3-compatible storage so local development exercises the same signed-URL
+  # path as production rather than a filesystem shortcut.
+  storage:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: bwf
+      MINIO_ROOT_PASSWORD: bwf-local-secret
+    ports: ['9000:9000', '9001:9001']
+    volumes: ['bwf_minio:/data']
+
+  clamav:
+    image: clamav/clamav:stable
+    ports: ['3310:3310']
+
+volumes:
+  bwf_pg:
+  bwf_minio:

@@ -1,0 +1,16 @@
+{
+  "haveAccount": "Already have an account?",
+  "hint": "Pick the closest description — it decides which form you get.",
+  "reassurance": "Your data is not published. Nothing is shared with a club without your explicit, separate consent.",
+  "roleAgent": "Licensed agent",
+  "roleAgentHint": "FIFA licence holder",
+  "roleClub": "Club representative",
+  "roleClubHint": "Sporting or commercial",
+  "roleInvestor": "Investor / partner",
+  "roleInvestorHint": "Individual or company",
+  "rolePlayer": "Player",
+  "rolePlayerHint": "Professional or emerging",
+  "roleScout": "Scout",
+  "roleScoutHint": "Independent or club",
+  "title": "Who are you?"
+}
