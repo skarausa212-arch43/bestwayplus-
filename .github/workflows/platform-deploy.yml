@@ -37,6 +37,12 @@ jobs:
 
       - name: Checks
         working-directory: platform
+        # DATABASE_URL is read by prisma validate/generate for schema parsing
+        # only — no connection is made — but the CLI refuses to run without
+        # it set to something. A placeholder is correct here: the runner must
+        # never hold the real one.
+        env:
+          DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
         run: |
           npx prisma validate
           npx prisma generate
