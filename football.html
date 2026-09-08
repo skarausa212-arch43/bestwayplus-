@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Best Way Plus Football</title>
+<meta name="description" content="Best Way Plus — partner office in Poland for football agents abroad: marketing, recruiting, contracts and registration.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============ TOKENS (dark-first) ============ */
+:root{
+  --bg:#070C09;
+  --bg2:#0A110C;
+  --panel:#0E1611;
+  --panel2:#121C16;
+  --ink:#E9EEE6;
+  --ink2:#A3B2A1;
+  --ink3:#71806F;
+  --rule:rgba(190,220,192,.14);
+  --rule2:rgba(190,220,192,.07);
+  --accent:#FFB020;
+  --accent2:#FFC757;
+  --accent-ink:#FFB020;
+  --accent-wash:rgba(255,176,32,.10);
+  --turf:#3E9A6B;
+  --turf-wash:rgba(62,154,107,.12);
+  --chalk:rgba(233,238,230,.5);
+  --shadow:0 24px 60px rgba(0,0,0,.45);
+  --maxw:1180px;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#EDEFE9;
+    --bg2:#E5E9E1;
+    --panel:#FBFCF8;
+    --panel2:#F2F5EE;
+    --ink:#0F1710;
+    --ink2:#4C5A4C;
+    --ink3:#6E7C6D;
+    --rule:rgba(15,23,16,.16);
+    --rule2:rgba(15,23,16,.08);
+    --accent:#B25E00;
+    --accent2:#8F4B00;
+    --accent-ink:#8F4B00;
+    --accent-wash:rgba(255,176,32,.20);
+    --turf:#1E6A45;
+    --turf-wash:rgba(30,106,69,.10);
+    --chalk:rgba(15,23,16,.35);
+    --shadow:0 18px 44px rgba(30,45,32,.14);
+  }
+}
+:root[data-theme="light"]{
+  --bg:#EDEFE9;
+  --bg2:#E5E9E1;
+  --panel:#FBFCF8;
+  --panel2:#F2F5EE;
+  --ink:#0F1710;
+  --ink2:#4C5A4C;
+  --ink3:#6E7C6D;
+  --rule:rgba(15,23,16,.16);
+  --rule2:rgba(15,23,16,.08);
+  --accent:#B25E00;
+  --accent2:#8F4B00;
+  --accent-ink:#8F4B00;
+  --accent-wash:rgba(255,176,32,.20);
+  --turf:#1E6A45;
+  --turf-wash:rgba(30,106,69,.10);
+  --chalk:rgba(15,23,16,.35);
+  --shadow:0 18px 44px rgba(30,45,32,.14);
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  font-size:16.5px;line-height:1.65;-webkit-font-smoothing:antialiased;
+}
+img{max-width:100%}
+a{color:inherit}
+::selection{background:var(--accent);color:#0B120E}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+
+h1,h2,h3{font-family:Oswald,"IBM Plex Sans",system-ui,sans-serif;font-weight:600;
+  text-transform:uppercase;letter-spacing:-.005em;line-height:1.02;text-wrap:balance;margin:0}
+h1{font-size:clamp(36px,5.2vw,64px);font-weight:700;letter-spacing:-.015em}
+h2{font-size:clamp(27px,3.9vw,46px);font-weight:600}
+h3{font-size:clamp(18px,1.5vw,21px);letter-spacing:.005em;line-height:1.15}
+p{margin:0}
+
+.wrap{width:min(var(--maxw),100% - 44px);margin-inline:auto}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+.lbl{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--ink3)}
+.measure{max-width:62ch}
+
+/* ============ HEADER ============ */
+header{position:sticky;top:0;z-index:60;background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:blur(14px);border-bottom:1px solid var(--rule2)}
+.bar{display:flex;align-items:center;gap:26px;height:66px}
+.brand{display:flex;align-items:baseline;gap:9px;text-decoration:none;flex:0 0 auto}
+.brand b{font-family:Oswald,sans-serif;font-weight:700;font-size:20px;letter-spacing:.01em;text-transform:uppercase}
+.brand span{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.2em;color:var(--accent-ink);text-transform:uppercase}
+nav.main{display:flex;gap:22px;margin-inline-start:auto}
+nav.main a{font-size:13.5px;text-decoration:none;color:var(--ink2);padding-block:6px;
+  border-bottom:1px solid transparent;transition:color .18s,border-color .18s}
+nav.main a:hover{color:var(--ink);border-bottom-color:var(--accent)}
+.tools{display:flex;align-items:center;gap:10px}
+.langs{display:flex;border:1px solid var(--rule);border-radius:2px;overflow:hidden}
+.langs button{appearance:none;background:none;border:0;padding:6px 9px;cursor:pointer;
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.12em;color:var(--ink3);transition:.18s}
+.langs button:hover{color:var(--ink)}
+.langs button[aria-pressed="true"]{background:var(--accent);color:#0B120E}
+.iconbtn{appearance:none;background:none;border:1px solid var(--rule);border-radius:2px;
+  width:32px;height:30px;display:grid;place-items:center;cursor:pointer;color:var(--ink2)}
+.iconbtn:hover{color:var(--ink);border-color:var(--accent)}
+.btn{display:inline-flex;align-items:center;gap:9px;text-decoration:none;cursor:pointer;
+  font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.13em;text-transform:uppercase;
+  padding:12px 20px;border-radius:2px;border:1px solid var(--accent);background:var(--accent);color:#0B120E;
+  font-weight:600;transition:.2s}
+.btn:hover{background:var(--accent2);border-color:var(--accent2)}
+.btn.ghost{background:none;color:var(--ink);border-color:var(--rule)}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-wash)}
+.btn.sm{padding:9px 15px;font-size:11px}
+@media(max-width:900px){nav.main{display:none}.bar{height:60px;gap:14px}}
+
+/* ============ SECTION SCAFFOLD ============ */
+section{padding-block:clamp(62px,8.5vw,116px);border-top:1px solid var(--rule2)}
+.sec-grid{display:grid;grid-template-columns:120px minmax(0,1fr);gap:38px}
+.rail{position:sticky;top:96px;align-self:start}
+.rail .code{font-family:Oswald,sans-serif;font-size:26px;font-weight:600;color:var(--accent-ink);line-height:1}
+.rail .tag{margin-top:8px;font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--ink3)}
+.rail::before{content:"";display:block;width:44px;height:1px;background:var(--accent);margin-bottom:14px}
+@media(max-width:860px){.sec-grid{grid-template-columns:1fr;gap:22px}.rail{position:static;display:flex;align-items:baseline;gap:12px}
+  .rail::before{display:none}.rail .tag{margin-top:0}}
+.lede{margin-top:16px;color:var(--ink2);font-size:clamp(16.5px,1.5vw,19px)}
+
+/* ============ HERO ============ */
+.hero{position:relative;overflow:hidden;border-top:0;padding-block:clamp(52px,7vw,92px) clamp(56px,7vw,96px)}
+.hero-bg{position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(760px 420px at 82% -8%,var(--accent-wash),transparent 68%),
+    radial-gradient(620px 520px at 6% 106%,var(--turf-wash),transparent 70%);}
+.pitch{position:absolute;right:-130px;top:64%;translate:0 -50%;width:min(700px,62vw);opacity:.9;pointer-events:none}
+.pitch path,.pitch rect,.pitch line,.pitch circle{fill:none;stroke:var(--chalk);stroke-width:1.3;opacity:.34}
+.pitch .spot{fill:var(--chalk);stroke:none;opacity:.4}
+@media(max-width:980px){.pitch{display:none}}
+.hero-grid{position:relative;display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);
+  gap:clamp(30px,5vw,64px);align-items:center}
+@media(max-width:980px){.hero-grid{grid-template-columns:1fr;gap:38px}}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;font-family:"IBM Plex Mono",monospace;
+  font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink2);
+  border:1px solid var(--rule);border-radius:999px;padding:6px 14px}
+.eyebrow i{width:6px;height:6px;border-radius:50%;background:var(--accent);display:block;flex:0 0 auto}
+h1{margin-top:22px}
+h1 em{font-style:normal;color:var(--accent-ink)}
+.hero p.sub{margin-top:20px;color:var(--ink2);font-size:clamp(16.5px,1.5vw,18.5px);max-width:54ch}
+.cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
+.hero-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:30px}
+.chip{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink2);border:1px solid var(--rule);border-radius:2px;padding:6px 10px}
+
+/* ---- transfer file card ---- */
+.file{background:var(--panel);border:1px solid var(--rule);border-radius:3px;box-shadow:var(--shadow);
+  overflow:hidden}
+.file-head{display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:12px 16px;border-bottom:1px solid var(--rule);background:var(--panel2)}
+.file-head .t{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase}
+.file-head .id{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--accent-ink)}
+.rows{display:grid}
+.row{display:grid;grid-template-columns:112px minmax(0,1fr);gap:12px;padding:10px 16px;
+  border-bottom:1px solid var(--rule2);font-family:"IBM Plex Mono",monospace;font-size:12.5px}
+.row dt{color:var(--ink3);letter-spacing:.1em;text-transform:uppercase;font-size:10.5px;margin:0;padding-top:2px}
+.row dd{margin:0;color:var(--ink)}
+.row dd b{font-weight:600}
+.track{padding:16px}
+.track ol{list-style:none;margin:0;padding:0;display:grid;gap:0}
+.track li{display:grid;grid-template-columns:16px 1fr auto;gap:12px;align-items:start;
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;padding-block:7px;position:relative}
+.track li::before{content:"";position:absolute;left:7px;top:22px;bottom:-7px;width:1px;background:var(--rule)}
+.track li:last-child::before{display:none}
+.track .dot{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--rule);margin-top:2px;
+  display:grid;place-items:center;background:var(--panel)}
+.track li.done .dot{border-color:var(--turf);background:var(--turf)}
+.track li.done .dot::after{content:"";width:5px;height:9px;border:solid var(--panel);border-width:0 1.6px 1.6px 0;rotate:45deg;translate:0 -1px}
+.track li.now .dot{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-wash)}
+.track li.now .dot::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.track li.done span,.track li.now span{color:var(--ink)}
+.track li span{color:var(--ink3)}
+.track li em{font-style:normal;color:var(--ink3);font-size:10.5px;letter-spacing:.08em}
+.track li.now em{color:var(--accent-ink)}
+.file-foot{padding:11px 16px;border-top:1px solid var(--rule);background:var(--panel2);
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;color:var(--ink3);text-transform:uppercase}
+
+/* ============ COVERAGE STRIP ============ */
+.strip{border-top:1px solid var(--rule2);border-bottom:1px solid var(--rule2);background:var(--bg2)}
+.strip .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:10px 26px;padding-block:18px}
+.strip .lbl{flex:0 0 auto}
+.strip ul{list-style:none;display:flex;flex-wrap:wrap;gap:8px 22px;margin:0;padding:0}
+.strip li{font-family:Oswald,sans-serif;text-transform:uppercase;font-size:14.5px;letter-spacing:.02em;color:var(--ink2)}
+.strip li::before{content:"/ ";color:var(--accent);font-family:"IBM Plex Mono",monospace;font-size:12px}
+
+/* ============ SERVICES ============ */
+.svc{display:grid;gap:1px;background:var(--rule2);border:1px solid var(--rule2);margin-top:6px}
+.svc article{background:var(--bg);padding:clamp(22px,3vw,34px);display:grid;
+  grid-template-columns:minmax(0,.62fr) minmax(0,1fr);gap:clamp(18px,3vw,38px)}
+@media(max-width:760px){.svc article{grid-template-columns:1fr;gap:16px}}
+.svc h3{color:var(--ink)}
+.svc .num{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.18em;color:var(--accent-ink);
+  display:block;margin-bottom:10px}
+.svc .claim{margin-top:12px;color:var(--ink2);font-size:15.5px}
+.svc ul{list-style:none;margin:0;padding:0;display:grid;gap:12px;align-content:start}
+.svc li{display:grid;grid-template-columns:18px 1fr;gap:12px;font-size:15px;color:var(--ink2)}
+.svc li::before{content:"";width:9px;height:9px;margin-top:8px;border:1px solid var(--accent);
+  rotate:45deg;background:var(--accent-wash)}
+.svc li b{color:var(--ink);font-weight:600}
+
+/* ============ PROCESS ============ */
+.steps{display:grid;gap:0;margin-top:8px;counter-reset:s}
+.steps li{list-style:none;display:grid;grid-template-columns:64px minmax(0,1fr) 150px;gap:22px;
+  padding:22px 0;border-bottom:1px solid var(--rule2);align-items:start}
+.steps li:first-child{border-top:1px solid var(--rule2)}
+.steps .n{font-family:Oswald,sans-serif;font-size:30px;font-weight:600;color:var(--ink3);line-height:.9}
+.steps li:hover .n{color:var(--accent-ink)}
+.steps h3{margin-bottom:7px}
+.steps p{color:var(--ink2);font-size:15px}
+.steps .dur{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink3);text-align:right;padding-top:4px}
+@media(max-width:760px){.steps li{grid-template-columns:44px 1fr;gap:14px}
+  .steps .dur{grid-column:2;text-align:left;padding-top:0}}
+
+/* ============ WINDOW CALENDAR ============ */
+.cal{margin-top:10px;border:1px solid var(--rule);border-radius:3px;background:var(--panel);padding:20px;overflow-x:auto}
+.cal-inner{min-width:640px}
+.months{display:grid;grid-template-columns:118px repeat(12,1fr);gap:4px;align-items:end}
+.months .h{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.14em;color:var(--ink3);
+  text-transform:uppercase;text-align:center;padding-bottom:8px;border-bottom:1px solid var(--rule2)}
+.months .h:first-child{text-align:left;border-bottom:0}
+.calrow{display:grid;grid-template-columns:118px repeat(12,1fr);gap:4px;align-items:center;margin-top:8px}
+.calrow .name{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink2)}
+.band{height:26px;border-radius:2px;display:flex;align-items:center;justify-content:center;
+  font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.band.prep{background:var(--turf-wash);border:1px dashed var(--turf);color:var(--turf)}
+.band.open{background:var(--accent-wash);border:1px solid var(--accent);color:var(--accent-ink)}
+.cal-note{margin-top:14px;font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.06em;
+  color:var(--ink3);line-height:1.6}
+
+/* ============ TWO-COL PANELS ============ */
+.duo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(20px,3vw,34px);margin-top:8px}
+@media(max-width:860px){.duo{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--rule);border-radius:3px;padding:clamp(20px,2.6vw,28px)}
+.pyramid{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:2px}
+.pyramid li{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:baseline;
+  padding:11px 14px;background:var(--panel2);border-left:2px solid var(--turf);
+  font-family:"IBM Plex Mono",monospace;font-size:12.5px}
+.pyramid li:nth-child(1){border-left-color:var(--accent)}
+.pyramid li .t{font-family:Oswald,sans-serif;font-size:15px;text-transform:uppercase;letter-spacing:.02em;color:var(--ink)}
+.pyramid li .c{color:var(--ink3);font-size:11px;letter-spacing:.1em}
+.args{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:16px}
+.args li{border-top:1px solid var(--rule2);padding-top:14px}
+.args b{display:block;font-family:Oswald,sans-serif;text-transform:uppercase;font-size:15px;
+  letter-spacing:.02em;margin-bottom:5px}
+.args span{color:var(--ink2);font-size:14.5px}
+
+/* ============ MODELS ============ */
+.models{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:8px}
+@media(max-width:860px){.models{grid-template-columns:1fr}}
+.model{border:1px solid var(--rule);border-radius:3px;padding:24px;display:flex;flex-direction:column;gap:14px;background:var(--bg2)}
+.model.pick{border-color:var(--accent);background:var(--panel)}
+.model .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.model .flag{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:#0B120E;background:var(--accent);padding:3px 8px;border-radius:2px;font-weight:600}
+.model p{color:var(--ink2);font-size:14.5px}
+.model ul{list-style:none;margin:0;padding:0;display:grid;gap:9px;font-size:13.5px;color:var(--ink2)}
+.model ul li{display:grid;grid-template-columns:14px 1fr;gap:10px}
+.model ul li::before{content:"—";color:var(--accent-ink);font-family:"IBM Plex Mono",monospace}
+.model .fee{margin-top:auto;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink3);border-top:1px solid var(--rule2);padding-top:14px}
+
+/* ============ FAQ ============ */
+.faq{margin-top:8px;border-top:1px solid var(--rule2)}
+.faq details{border-bottom:1px solid var(--rule2)}
+.faq summary{cursor:pointer;list-style:none;padding:19px 0;display:grid;grid-template-columns:1fr 22px;
+  gap:16px;align-items:center;font-family:Oswald,sans-serif;text-transform:uppercase;
+  font-size:clamp(15px,1.5vw,18px);letter-spacing:.01em}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";font-family:"IBM Plex Mono",monospace;color:var(--accent-ink);font-size:18px;
+  justify-self:end;transition:rotate .2s}
+.faq details[open] summary::after{content:"–"}
+.faq .a{padding:0 0 20px;color:var(--ink2);font-size:15px;max-width:70ch}
+
+/* ============ CONTACT ============ */
+.contact{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.85fr);gap:clamp(24px,4vw,52px);margin-top:8px}
+@media(max-width:900px){.contact{grid-template-columns:1fr}}
+form{display:grid;gap:14px}
+form>button[type=submit]{justify-self:start}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:560px){.f2{grid-template-columns:1fr}}
+label{display:grid;gap:6px}
+label>span{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink3)}
+input,select,textarea{font-family:"IBM Plex Sans",sans-serif;font-size:15px;color:var(--ink);
+  background:var(--panel);border:1px solid var(--rule);border-radius:2px;padding:11px 13px;width:100%}
+textarea{resize:vertical;min-height:104px}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);outline:none}
+.formnote{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.08em;color:var(--ink3);line-height:1.6}
+#sent{display:none;border:1px solid var(--turf);background:var(--turf-wash);color:var(--ink);
+  padding:12px 14px;border-radius:2px;font-family:"IBM Plex Mono",monospace;font-size:12px}
+#sent.on{display:block}
+.cards{display:grid;gap:14px;align-content:start}
+.card{border:1px solid var(--rule);border-radius:3px;padding:18px;background:var(--panel)}
+.card .k{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink3)}
+.card .v{margin-top:6px;font-family:Oswald,sans-serif;text-transform:uppercase;font-size:17px;letter-spacing:.01em}
+.card .m{margin-top:6px;color:var(--ink2);font-size:14px}
+
+/* ============ FOOTER ============ */
+footer{border-top:1px solid var(--rule);background:var(--bg2);padding-block:36px}
+.fgrid{display:flex;flex-wrap:wrap;gap:18px 40px;justify-content:space-between;align-items:flex-start}
+footer .note{color:var(--ink3);font-size:12.5px;max-width:58ch;line-height:1.7}
+.proto{display:inline-flex;align-items:center;gap:8px;border:1px dashed var(--accent);color:var(--accent-ink);
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  padding:5px 11px;border-radius:2px}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap bar">
+    <a class="brand" href="#top"><b>Best&nbsp;Way&nbsp;Plus</b><span>Football&nbsp;/&nbsp;PL</span></a>
+    <nav class="main">
+      <a href="#services" data-i="nav.services">Services</a>
+      <a href="#process" data-i="nav.process">Process</a>
+      <a href="#windows" data-i="nav.windows">Windows</a>
+      <a href="#poland" data-i="nav.poland">Poland</a>
+      <a href="#models" data-i="nav.models">Terms</a>
+      <a href="#faq" data-i="nav.faq">FAQ</a>
+    </nav>
+    <div class="tools">
+      <div class="langs" role="group" aria-label="Language">
+        <button type="button" data-lang="pl" aria-pressed="false">PL</button>
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="ru" aria-pressed="false">RU</button>
+      </div>
+      <button class="iconbtn" id="theme" type="button" aria-label="Switch theme">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" aria-hidden="true"><path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10Z"/></svg>
+      </button>
+      <a class="btn sm" href="#contact" data-i="nav.cta">Send a player</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="hero-bg" aria-hidden="true"></div>
+  <svg class="pitch" viewBox="0 0 620 560" aria-hidden="true">
+    <line x1="40" y1="20" x2="40" y2="540"/>
+    <rect x="40" y="112" width="212" height="336"/>
+    <rect x="40" y="212" width="86" height="136"/>
+    <rect x="24" y="248" width="16" height="64"/>
+    <circle class="spot" cx="182" cy="280" r="4"/>
+    <path d="M252 214 A 84 84 0 0 1 252 346"/>
+    <circle cx="600" cy="280" r="120"/>
+    <circle class="spot" cx="600" cy="280" r="4"/>
+    <path d="M40 40 A 22 22 0 0 0 62 20"/>
+    <path d="M40 520 A 22 22 0 0 1 62 540"/>
+  </svg>
+
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow"><i></i><span data-i="hero.eyebrow">Wrocław, Poland — partner desk for football agents</span></span>
+      <h1 data-i="hero.h1">Your agency's <em>office</em> inside Polish football</h1>
+      <p class="sub" data-i="hero.sub">You keep the player and the mandate. We take care of Poland: club access, trials, the contract and every stamp that has to follow it — from the first profile you send us to the day he is registered and living here.</p>
+      <div class="cta">
+        <a class="btn" href="#contact" data-i="hero.cta1">Send a player profile</a>
+        <a class="btn ghost" href="#process" data-i="hero.cta2">See how we work</a>
+      </div>
+      <div class="hero-meta">
+        <span class="chip" data-i="hero.chip1">Marketing</span>
+        <span class="chip" data-i="hero.chip2">Recruiting</span>
+        <span class="chip" data-i="hero.chip3">Contracts</span>
+        <span class="chip" data-i="hero.chip4">Relocation &amp; permits</span>
+        <span class="chip" data-i="hero.chip5">PL · EN · RU · UA</span>
+      </div>
+    </div>
+
+    <div class="file">
+      <div class="file-head">
+        <span class="t" data-i="file.title">Transfer file</span>
+        <span class="id mono">BWP-24-0731</span>
+      </div>
+      <dl class="rows">
+        <div class="row"><dt data-i="file.k1">Player</dt><dd><b data-i="file.v1">CB, right-footed, 2003</b></dd></div>
+        <div class="row"><dt data-i="file.k2">Origin</dt><dd data-i="file.v2">Serbia — Super Liga U21</dd></div>
+        <div class="row"><dt data-i="file.k3">Agent</dt><dd data-i="file.v3">Partner agency, Belgrade</dd></div>
+        <div class="row"><dt data-i="file.k4">Target</dt><dd data-i="file.v4">Betclic 1. Liga / 2. Liga</dd></div>
+        <div class="row"><dt data-i="file.k5">Permit</dt><dd data-i="file.v5">EU — none required</dd></div>
+      </dl>
+      <div class="track">
+        <ol>
+          <li class="done"><span class="dot"></span><span data-i="file.s1">Dossier &amp; highlight reel built</span><em>D+4</em></li>
+          <li class="done"><span class="dot"></span><span data-i="file.s2">Shortlist: 9 clubs contacted</span><em>D+11</em></li>
+          <li class="done"><span class="dot"></span><span data-i="file.s3">3 replies, 2 trial invitations</span><em>D+18</em></li>
+          <li class="now"><span class="dot"></span><span data-i="file.s4">Trial week — travel booked</span><em data-i="file.now">now</em></li>
+          <li><span class="dot"></span><span data-i="file.s5">Terms, contract, commission split</span><em>—</em></li>
+          <li><span class="dot"></span><span data-i="file.s6">ITC, PZPN registration, landing</span><em>—</em></li>
+        </ol>
+      </div>
+      <div class="file-foot" data-i="file.foot">Example file — illustrative, not a real transfer</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ COVERAGE STRIP ============ -->
+<div class="strip">
+  <div class="wrap">
+    <span class="lbl" data-i="strip.lbl">Where we work</span>
+    <ul>
+      <li>Ekstraklasa</li>
+      <li>Betclic 1. Liga</li>
+      <li>2. Liga</li>
+      <li>3. Liga</li>
+      <li>Centralna Liga Juniorów</li>
+      <li data-i="strip.acad">Academies</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============ SERVICES ============ -->
+<section id="services">
+  <div class="wrap sec-grid">
+    <div class="rail"><div class="code">§01</div><div class="tag" data-i="rail.services">Services</div></div>
+    <div>
+      <h2 data-i="svc.h2">Three jobs, done on the ground</h2>
+      <p class="lede measure" data-i="svc.lede">An agent 2 000 km away can send an e-mail. He cannot sit in a sporting director's office on a Tuesday morning, drive a player to a trial, or stand in a queue at the voivodeship office. That is the part we do.</p>
+
+      <div class="svc">
+        <article>
+          <div>
+            <span class="num">01 / Marketing</span>
+            <h3 data-i="svc1.h">Make the player visible to the twelve people who matter</h3>
+            <p class="claim" data-i="svc1.c">Not a mass mailing. A dossier built the way Polish clubs read them, put in front of a shortlist we choose with you.</p>
+          </div>
+          <ul>
+            <li><b data-i="svc1.a">Bilingual dossier (PL/EN)</b> — <span data-i="svc1.a2">position profile, physical data, minutes played, contract status, salary expectation.</span></li>
+            <li><b data-i="svc1.b">Highlight reel cut by position</b> — <span data-i="svc1.b2">6–8 minutes for scouts, 90 seconds for the first message, full matches on request.</span></li>
+            <li><b data-i="svc1.c1">Data one-pager</b> — <span data-i="svc1.c2">Wyscout / InStat / Transfermarkt cleaned up into the numbers a Polish analyst asks for.</span></li>
+            <li><b data-i="svc1.d">Presence in Polish</b> — <span data-i="svc1.d2">local media, club channels, social profiles that a fan and a director can actually read.</span></li>
+          </ul>
+        </article>
+
+        <article>
+          <div>
+            <span class="num">02 / Recruiting</span>
+            <h3 data-i="svc2.h">Access, not a list of addresses</h3>
+            <p class="claim" data-i="svc2.c">We match the player to real squad needs and budgets, then organise everything a trial needs so the club only has to watch him play.</p>
+          </div>
+          <ul>
+            <li><b data-i="svc2.a">Club shortlist</b> — <span data-i="svc2.a2">by position need, budget band, playing style and squad-composition rules for the current season.</span></li>
+            <li><b data-i="svc2.b">Trials organised end to end</b> — <span data-i="svc2.b2">dates, flights, accommodation, insurance, transport, translator, guaranteed pitch time.</span></li>
+            <li><b data-i="svc2.c1">Two-way flow</b> — <span data-i="svc2.c2">we also source Polish players and coaches for clubs your agency works with abroad.</span></li>
+            <li><b data-i="svc2.d">Academies and CLJ</b> — <span data-i="svc2.d2">placements for 16–19-year-olds, with the schooling and guardianship questions answered first.</span></li>
+          </ul>
+        </article>
+
+        <article>
+          <div>
+            <span class="num">03 / Contracts</span>
+            <h3 data-i="svc3.h">The part that ends in a signature</h3>
+            <p class="claim" data-i="svc3.c">Negotiation support, a contract read by a Polish lawyer, and the registration chain that makes the player eligible to step on the pitch.</p>
+          </div>
+          <ul>
+            <li><b data-i="svc3.a">Term sheet &amp; negotiation</b> — <span data-i="svc3.a2">salary, bonuses, apartment, car, flights home, release clause, sell-on percentage.</span></li>
+            <li><b data-i="svc3.b">Legal review</b> — <span data-i="svc3.b2">the contract is checked against Polish labour and PZPN rules by a cooperating law firm before anyone signs.</span></li>
+            <li><b data-i="svc3.c1">Registration chain</b> — <span data-i="svc3.c2">ITC through FIFA TMS, PZPN licensing paperwork, deadlines tracked against the window.</span></li>
+            <li><b data-i="svc3.d">Money that arrives</b> — <span data-i="svc3.d2">commission split agreed in writing with you up front, invoicing and payment flow handled on the Polish side.</span></li>
+          </ul>
+        </article>
+
+        <article>
+          <div>
+            <span class="num">04 / Landing</span>
+            <h3 data-i="svc4.h">The paperwork that quietly kills deals</h3>
+            <p class="claim" data-i="svc4.c">A signed contract is not a settled player. Most transfers that collapse late collapse here.</p>
+          </div>
+          <ul>
+            <li><b data-i="svc4.a">Immigration</b> — <span data-i="svc4.a2">national D visa, work permit type A, temporary residence card, family members included.</span></li>
+            <li><b data-i="svc4.b">Basics</b> — <span data-i="svc4.b2">PESEL number, bank account, tax registration, health insurance, phone and address.</span></li>
+            <li><b data-i="svc4.c1">Living</b> — <span data-i="svc4.c2">apartment near the training ground, car, school for the children, Polish lessons twice a week.</span></li>
+            <li><b data-i="svc4.d">Somebody to call</b> — <span data-i="svc4.d2">one Polish-speaking contact on the ground for the player and for you, in your time zone.</span></li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PROCESS ============ -->
+<section id="process">
+  <div class="wrap sec-grid">
+    <div class="rail"><div class="code">§02</div><div class="tag" data-i="rail.process">Process</div></div>
+    <div>
+      <h2 data-i="proc.h2">From your e-mail to his first training session</h2>
+      <p class="lede measure" data-i="proc.lede">Six stages. You are copied on every one of them, and nothing moves to the next stage without your written go-ahead.</p>
+      <ul class="steps">
+        <li><span class="n">01</span><div><h3 data-i="p1.h">Brief and mandate</h3><p data-i="p1.p">We agree in writing what we do, what you keep, and how the commission is split — before any club hears the player's name.</p></div><span class="dur" data-i="p1.d">1–2 days</span></li>
+        <li><span class="n">02</span><div><h3 data-i="p2.h">Dossier build</h3><p data-i="p2.p">Video, data, documents and a realistic level assessment. If we think the target league is wrong, we say so here and not after a wasted trial.</p></div><span class="dur" data-i="p2.d">3–5 days</span></li>
+        <li><span class="n">03</span><div><h3 data-i="p3.h">Market pass</h3><p data-i="p3.p">A named shortlist of clubs, contacted directly. You get the replies as they come — including the refusals and the reasons behind them.</p></div><span class="dur" data-i="p3.d">1–3 weeks</span></li>
+        <li><span class="n">04</span><div><h3 data-i="p4.h">Trial on site</h3><p data-i="p4.p">Travel, housing, insurance, translator and daily reports from training. If it does not work at club A, he is at club B that week.</p></div><span class="dur" data-i="p4.d">3–10 days</span></li>
+        <li><span class="n">05</span><div><h3 data-i="p5.h">Terms and contract</h3><p data-i="p5.p">Negotiation with the club, legal review, signature. Commission documented for both sides at the same moment.</p></div><span class="dur" data-i="p5.d">1–3 weeks</span></li>
+        <li><span class="n">06</span><div><h3 data-i="p6.h">Registration and landing</h3><p data-i="p6.p">ITC and PZPN registration inside the window, then permits, PESEL, apartment and the first month of ordinary life.</p></div><span class="dur" data-i="p6.d">window-bound</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ WINDOWS ============ -->
+<section id="windows">
+  <div class="wrap sec-grid">
+    <div class="rail"><div class="code">§03</div><div class="tag" data-i="rail.windows">Calendar</div></div>
+    <div>
+      <h2 data-i="cal.h2">Work starts two months before the window opens</h2>
+      <p class="lede measure" data-i="cal.lede">Agents who write to us in the last week of August are asking for a miracle. The preparation band below is where transfers are actually won.</p>
+      <div class="cal">
+        <div class="cal-inner">
+          <div class="months">
+            <div class="h"></div>
+            <div class="h" data-i="m.1">Jan</div><div class="h" data-i="m.2">Feb</div><div class="h" data-i="m.3">Mar</div>
+            <div class="h" data-i="m.4">Apr</div><div class="h" data-i="m.5">May</div><div class="h" data-i="m.6">Jun</div>
+            <div class="h" data-i="m.7">Jul</div><div class="h" data-i="m.8">Aug</div><div class="h" data-i="m.9">Sep</div>
+            <div class="h" data-i="m.10">Oct</div><div class="h" data-i="m.11">Nov</div><div class="h" data-i="m.12">Dec</div>
+          </div>
+          <div class="calrow">
+            <span class="name" data-i="cal.r1">Preparation</span>
+            <div class="band prep" style="grid-column:2/3" data-i="cal.b1">Prep</div>
+            <div class="band prep" style="grid-column:6/8" data-i="cal.b2">Summer prep</div>
+            <div class="band prep" style="grid-column:13/14" data-i="cal.b5">Prep</div>
+          </div>
+          <div class="calrow">
+            <span class="name" data-i="cal.r2">Window open</span>
+            <div class="band open" style="grid-column:3/5" data-i="cal.b3">Winter window</div>
+            <div class="band open" style="grid-column:8/11" data-i="cal.b4">Summer window</div>
+          </div>
+        </div>
+        <p class="cal-note" data-i="cal.note">Indicative bands only. Exact opening and closing dates for the Polish registration periods are set by PZPN for each season, and differ by league level — we confirm the current dates for your specific case before any deadline is planned around them.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ POLAND ============ -->
+<section id="poland">
+  <div class="wrap sec-grid">
+    <div class="rail"><div class="code">§04</div><div class="tag" data-i="rail.poland">Market</div></div>
+    <div>
+      <h2 data-i="pl.h2">Why send a player to Poland at all</h2>
+      <p class="lede measure" data-i="pl.lede">Poland is a stepping-stone market that actually works: an EU country, a televised top division, four professional levels beneath it, and clubs that still answer a well-prepared approach.</p>
+      <div class="duo">
+        <div class="panel">
+          <span class="lbl" data-i="pl.pyr">The pyramid we work in</span>
+          <ul class="pyramid">
+            <li><span class="t">Ekstraklasa</span><span class="c" data-i="pl.l1">Top flight — UEFA places</span></li>
+            <li><span class="t">Betclic 1. Liga</span><span class="c" data-i="pl.l2">Level 2 — professional</span></li>
+            <li><span class="t">2. Liga</span><span class="c" data-i="pl.l3">Level 3 — professional</span></li>
+            <li><span class="t">3. Liga</span><span class="c" data-i="pl.l4">Level 4 — regional groups</span></li>
+            <li><span class="t">CLJ U19 / U17</span><span class="c" data-i="pl.l5">Youth — national league</span></li>
+          </ul>
+          <p class="cal-note" data-i="pl.pyrnote">Club numbers and group formats change between seasons; we work from the current PZPN and league regulations, not from last year's table.</p>
+        </div>
+        <div class="panel">
+          <span class="lbl" data-i="pl.why">What it gives your player</span>
+          <ul class="args">
+            <li><b data-i="pl.a1">An EU shop window</b><span data-i="pl.a1p">Scouts from Germany, Austria, Belgium and the Netherlands watch Ekstraklasa and the 1. Liga. A good season here is seen.</span></li>
+            <li><b data-i="pl.a2">A realistic first contract</b><span data-i="pl.a2p">Wages that a level-2 or level-3 club can genuinely pay, in a country where that salary is enough to live well.</span></li>
+            <li><b data-i="pl.a3">Legal status in the Schengen area</b><span data-i="pl.a3p">A work permit and residence card in Poland change what is possible for a non-EU player's whole career.</span></li>
+            <li><b data-i="pl.a4">Doors that still open</b><span data-i="pl.a4p">Sporting directors here take a phone call. That is worth more than a database subscription.</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MODELS ============ -->
+<section id="models">
+  <div class="wrap sec-grid">
+    <div class="rail"><div class="code">§05</div><div class="tag" data-i="rail.models">Terms</div></div>
+    <div>
+      <h2 data-i="mo.h2">Three ways to work with us</h2>
+      <p class="lede measure" data-i="mo.lede">Whichever one you pick, the split is written down before we start. We do not sign players. The mandate stays yours.</p>
+      <div class="models">
+        <div class="model">
+          <div class="top"><h3 data-i="mo1.h">Per player</h3></div>
+          <p data-i="mo1.p">One file, one mandate. You send a profile, we run it from dossier to registration.</p>
+          <ul>
+            <li data-i="mo1.a">Full cycle for a single player</li>
+            <li data-i="mo1.b">Success-based share of the commission</li>
+            <li data-i="mo1.c">Trial costs agreed in advance</li>
+          </ul>
+          <div class="fee" data-i="mo1.f">Fee: share of commission, per mandate</div>
+        </div>
+        <div class="model pick">
+          <div class="top"><h3 data-i="mo2.h">Retainer</h3><span class="flag" data-i="mo2.flag">Most agencies</span></div>
+          <p data-i="mo2.p">For agencies moving several players per window and wanting a standing desk in Poland.</p>
+          <ul>
+            <li data-i="mo2.a">Unlimited profiles inside the period</li>
+            <li data-i="mo2.b">Priority in the transfer window</li>
+            <li data-i="mo2.c">Two-way flow: Polish players out to you</li>
+            <li data-i="mo2.d">Monthly market report</li>
+          </ul>
+          <div class="fee" data-i="mo2.f">Fee: monthly + reduced success share</div>
+        </div>
+        <div class="model">
+          <div class="top"><h3 data-i="mo3.h">Single service</h3></div>
+          <p data-i="mo3.p">You already have the club. You need one piece of the job done properly in Poland.</p>
+          <ul>
+            <li data-i="mo3.a">Marketing package only</li>
+            <li data-i="mo3.b">Trial organisation only</li>
+            <li data-i="mo3.c">Contract, registration and permits only</li>
+          </ul>
+          <div class="fee" data-i="mo3.f">Fee: fixed, quoted per task</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section id="faq">
+  <div class="wrap sec-grid">
+    <div class="rail"><div class="code">§06</div><div class="tag" data-i="rail.faq">Questions</div></div>
+    <div>
+      <h2 data-i="faq.h2">What agents ask us first</h2>
+      <div class="faq">
+        <details open><summary data-i="q1">Will you take my player away from me?</summary>
+          <div class="a" data-i="a1">No. We work for the agent, not for the player. The representation contract stays with you, the player's contact stays with you, and our mandate is written so that we cannot sign him ourselves. It is the whole basis of the business — an agency that steals clients gets exactly one deal.</div></details>
+        <details><summary data-i="q2">Are you licensed agents yourselves?</summary>
+          <div class="a" data-i="a2">Best Way Plus provides marketing, organisational, administrative and relocation services. Where an action legally requires a licensed football agent, it is performed by licensed agents and by the law firm we cooperate with — and you are told in advance who is doing what and under which licence.</div></details>
+        <details><summary data-i="q3">What level of player is realistic?</summary>
+          <div class="a" data-i="a3">Honestly: 2. Liga and 3. Liga are open to a well-prepared unknown player. The 1. Liga wants either real minutes at a comparable level or a striking data profile. Ekstraklasa is a targeted, slow process. We tell you which of the three you are in before you buy a plane ticket.</div></details>
+        <details><summary data-i="q4">Who pays for the trial?</summary>
+          <div class="a" data-i="a4">Travel, accommodation and insurance are budgeted before departure and paid by the agent or the player, unless the club invites him at its own cost. We do not mark up those costs — you get the invoices.</div></details>
+        <details><summary data-i="q5">Which languages do you work in?</summary>
+          <div class="a" data-i="a5">Polish, English, Russian and Ukrainian in-house; Spanish, Serbian and Portuguese through partners. The player never negotiates in a language he does not control.</div></details>
+        <details><summary data-i="q6">How fast can it go?</summary>
+          <div class="a" data-i="a6">Inside an open window, with a player who fits, four to six weeks from first e-mail to registration is realistic. Anything faster is luck. Anything sold to you as faster is a warning sign.</div></details>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CONTACT ============ -->
+<section id="contact">
+  <div class="wrap sec-grid">
+    <div class="rail"><div class="code">§07</div><div class="tag" data-i="rail.contact">Contact</div></div>
+    <div>
+      <h2 data-i="ct.h2">Send us one player and see how it goes</h2>
+      <p class="lede measure" data-i="ct.lede">A position, an age, a video link and the level you are aiming at is enough to start. You get an honest assessment within two working days — including "no, not in Poland" when that is the answer.</p>
+      <div class="contact">
+        <form id="lead" novalidate>
+          <div class="f2">
+            <label><span data-i="ct.f1">Your name</span><input name="name" autocomplete="name" required></label>
+            <label><span data-i="ct.f2">Agency</span><input name="agency" autocomplete="organization"></label>
+          </div>
+          <div class="f2">
+            <label><span data-i="ct.f3">Country</span><input name="country" autocomplete="country-name"></label>
+            <label><span data-i="ct.f4">E-mail or WhatsApp</span><input name="contact" autocomplete="email" required></label>
+          </div>
+          <div class="f2">
+            <label><span data-i="ct.f5">Player position</span>
+              <select name="position">
+                <option data-i="ct.p0">Select…</option>
+                <option data-i="ct.p1">Goalkeeper</option>
+                <option data-i="ct.p2">Centre-back</option>
+                <option data-i="ct.p3">Full-back</option>
+                <option data-i="ct.p4">Midfielder</option>
+                <option data-i="ct.p5">Winger</option>
+                <option data-i="ct.p6">Striker</option>
+              </select></label>
+            <label><span data-i="ct.f6">Target level</span>
+              <select name="level">
+                <option data-i="ct.l0">Select…</option>
+                <option>Ekstraklasa</option>
+                <option>Betclic 1. Liga</option>
+                <option>2. Liga</option>
+                <option>3. Liga</option>
+                <option data-i="ct.l5">Academy / CLJ</option>
+              </select></label>
+          </div>
+          <label><span data-i="ct.f7">Player, video link, situation</span><textarea name="message" data-i-ph="ct.ph" placeholder="CB, 2003, 188 cm, 24 matches in the second division, contract expires in June — video: …"></textarea></label>
+          <div id="sent" role="status"></div>
+          <button class="btn" type="submit" data-i="ct.send">Send the profile</button>
+          <p class="formnote" data-i="ct.note">Prototype: this form is a demonstration and does not send anything yet. In the live version it goes to the desk that answers it.</p>
+        </form>
+        <div class="cards">
+          <div class="card"><div class="k" data-i="ct.k1">Office</div><div class="v">Wrocław, Polska</div><div class="m" data-i="ct.m1">Meetings by appointment; we travel to clubs across the country.</div></div>
+          <div class="card"><div class="k" data-i="ct.k2">E-mail</div><div class="v mono" style="text-transform:none">agents@bestwayplus.pl</div><div class="m" data-i="ct.m2">Placeholder address for the prototype.</div></div>
+          <div class="card"><div class="k" data-i="ct.k3">Response time</div><div class="v" data-i="ct.v3">2 working days</div><div class="m" data-i="ct.m3">During an open window, same day.</div></div>
+          <div class="card"><div class="k" data-i="ct.k4">Working languages</div><div class="v">PL / EN / RU / UA</div><div class="m" data-i="ct.m4">ES, SR, PT through partners.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap fgrid">
+    <div>
+      <a class="brand" href="#top"><b>Best&nbsp;Way&nbsp;Plus</b><span>Football&nbsp;/&nbsp;PL</span></a>
+      <p class="note" style="margin-top:12px" data-i="ft.note">Best Way Plus — partner services in Poland for football agents abroad: marketing, recruiting, contracts, registration and relocation.</p>
+    </div>
+    <div style="display:grid;gap:12px;align-content:start">
+      <span class="proto" data-i="ft.proto">Prototype — demonstration content</span>
+      <p class="note" data-i="ft.legal">Company details, licence information, addresses and figures on this page are placeholders for the design prototype and are not legal or commercial statements.</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+const DICT = {
+pl:{
+"nav.services":"Usługi","nav.process":"Proces","nav.windows":"Okna","nav.poland":"Polska","nav.models":"Warunki","nav.faq":"FAQ","nav.cta":"Zgłoś piłkarza",
+"hero.eyebrow":"Wrocław, Polska — biuro partnerskie dla agentów piłkarskich","hero.h1":"Twoje <em>biuro</em> w polskiej piłce","hero.sub":"Piłkarz i mandat zostają u Ciebie. My bierzemy na siebie Polskę: dostęp do klubów, testy, kontrakt i każdą pieczątkę, która musi po nim nastąpić — od pierwszego profilu, który nam wyślesz, do dnia, w którym zawodnik jest zarejestrowany i mieszka tutaj.",
+"hero.cta1":"Wyślij profil piłkarza","hero.cta2":"Zobacz, jak pracujemy","hero.chip1":"Marketing","hero.chip2":"Rekrutacja","hero.chip3":"Kontrakty","hero.chip4":"Relokacja i zezwolenia","hero.chip5":"PL · EN · RU · UA",
+"file.title":"Teczka transferowa","file.k1":"Zawodnik","file.v1":"Środkowy obrońca, prawonożny, 2003","file.k2":"Pochodzenie","file.v2":"Serbia — Super Liga U21","file.k3":"Agent","file.v3":"Agencja partnerska, Belgrad","file.k4":"Cel","file.v4":"Betclic 1. Liga / 2. Liga","file.k5":"Zezwolenie","file.v5":"UE — niewymagane",
+"file.s1":"Dossier i skrót wideo gotowe","file.s2":"Lista klubów: 9 kontaktów","file.s3":"3 odpowiedzi, 2 zaproszenia na testy","file.s4":"Tydzień testowy — przelot zarezerwowany","file.now":"teraz","file.s5":"Warunki, kontrakt, podział prowizji","file.s6":"ITC, rejestracja w PZPN, wdrożenie","file.foot":"Przykładowa teczka — materiał poglądowy, nie prawdziwy transfer",
+"strip.lbl":"Gdzie pracujemy","strip.acad":"Akademie",
+"rail.services":"Usługi","rail.process":"Proces","rail.windows":"Kalendarz","rail.poland":"Rynek","rail.models":"Warunki","rail.faq":"Pytania","rail.contact":"Kontakt",
+"svc.h2":"Trzy zadania, wykonane na miejscu","svc.lede":"Agent oddalony o 2000 km może wysłać maila. Nie usiądzie we wtorek rano w gabinecie dyrektora sportowego, nie zawiezie zawodnika na testy i nie postoi w kolejce w urzędzie wojewódzkim. To robimy my.",
+"svc1.h":"Pokaż zawodnika dwunastu osobom, które mają znaczenie","svc1.c":"Nie masowa wysyłka. Dossier zbudowane tak, jak czytają je polskie kluby, położone na biurku listy, którą wybieramy razem z Tobą.",
+"svc1.a":"Dwujęzyczne dossier (PL/EN)","svc1.a2":"profil pozycyjny, dane fizyczne, rozegrane minuty, status kontraktu, oczekiwania finansowe.",
+"svc1.b":"Skrót wideo cięty pod pozycję","svc1.b2":"6–8 minut dla skautów, 90 sekund do pierwszej wiadomości, pełne mecze na życzenie.",
+"svc1.c1":"Jednostronicowa karta danych","svc1.c2":"Wyscout / InStat / Transfermarkt uporządkowane do liczb, o które pyta polski analityk.",
+"svc1.d":"Obecność po polsku","svc1.d2":"lokalne media, kanały klubowe, profile społecznościowe, które kibic i dyrektor naprawdę przeczytają.",
+"svc2.h":"Dostęp, a nie lista adresów","svc2.c":"Dopasowujemy zawodnika do realnych potrzeb kadrowych i budżetów, a potem organizujemy wszystko, czego wymagają testy — tak, by klub musiał tylko popatrzeć, jak gra.",
+"svc2.a":"Lista klubów","svc2.a2":"według potrzeb na pozycji, przedziału budżetowego, stylu gry i zasad kompletowania kadry w bieżącym sezonie.",
+"svc2.b":"Testy zorganizowane od A do Z","svc2.b2":"terminy, przeloty, zakwaterowanie, ubezpieczenie, transport, tłumacz, gwarantowane minuty na boisku.",
+"svc2.c1":"Ruch w dwie strony","svc2.c2":"pozyskujemy też polskich zawodników i trenerów dla klubów, z którymi Twoja agencja pracuje za granicą.",
+"svc2.d":"Akademie i CLJ","svc2.d2":"transfery 16–19-latków, z wcześniej rozwiązaną kwestią szkoły i opieki.",
+"svc3.h":"Ta część, która kończy się podpisem","svc3.c":"Wsparcie w negocjacjach, kontrakt przeczytany przez polskiego prawnika i łańcuch rejestracyjny, dzięki któremu zawodnik może wyjść na boisko.",
+"svc3.a":"Term sheet i negocjacje","svc3.a2":"pensja, bonusy, mieszkanie, samochód, loty do domu, klauzula odejścia, procent od odsprzedaży.",
+"svc3.b":"Analiza prawna","svc3.b2":"kontrakt sprawdzany pod kątem polskiego prawa pracy i przepisów PZPN przez współpracującą kancelarię, zanim ktokolwiek podpisze.",
+"svc3.c1":"Łańcuch rejestracyjny","svc3.c2":"ITC przez FIFA TMS, dokumenty licencyjne PZPN, terminy pilnowane względem okna transferowego.",
+"svc3.d":"Pieniądze, które docierają","svc3.d2":"podział prowizji ustalony z Tobą na piśmie z góry, fakturowanie i przepływ płatności po stronie polskiej.",
+"svc4.h":"Papiery, które po cichu zabijają transfery","svc4.c":"Podpisany kontrakt to jeszcze nie ułożony zawodnik. Większość transferów, które padają na ostatniej prostej, pada właśnie tutaj.",
+"svc4.a":"Legalizacja pobytu","svc4.a2":"wiza krajowa D, zezwolenie na pracę typ A, karta pobytu czasowego, także dla rodziny.",
+"svc4.b":"Podstawy","svc4.b2":"numer PESEL, konto bankowe, rejestracja podatkowa, ubezpieczenie zdrowotne, telefon i adres.",
+"svc4.c1":"Życie","svc4.c2":"mieszkanie blisko boiska treningowego, samochód, szkoła dla dzieci, lekcje polskiego dwa razy w tygodniu.",
+"svc4.d":"Ktoś, do kogo można zadzwonić","svc4.d2":"jedna polskojęzyczna osoba kontaktowa dla zawodnika i dla Ciebie, w Twojej strefie czasowej.",
+"proc.h2":"Od Twojego maila do jego pierwszego treningu","proc.lede":"Sześć etapów. Jesteś w kopii na każdym z nich i nic nie przechodzi dalej bez Twojej pisemnej zgody.",
+"p1.h":"Brief i mandat","p1.p":"Ustalamy na piśmie, co robimy, co zostaje u Ciebie i jak dzielimy prowizję — zanim jakikolwiek klub usłyszy nazwisko zawodnika.","p1.d":"1–2 dni",
+"p2.h":"Budowa dossier","p2.p":"Wideo, dane, dokumenty i realna ocena poziomu. Jeśli uważamy, że docelowa liga jest źle dobrana, mówimy to teraz, a nie po straconych testach.","p2.d":"3–5 dni",
+"p3.h":"Przejście po rynku","p3.p":"Imienna lista klubów, kontakt bezpośredni. Odpowiedzi dostajesz na bieżąco — łącznie z odmowami i ich powodami.","p3.d":"1–3 tygodnie",
+"p4.h":"Testy na miejscu","p4.p":"Przelot, nocleg, ubezpieczenie, tłumacz i codzienne raporty z treningów. Jeśli nie wyjdzie w klubie A, w tym samym tygodniu jest w klubie B.","p4.d":"3–10 dni",
+"p5.h":"Warunki i kontrakt","p5.p":"Negocjacje z klubem, analiza prawna, podpis. Prowizja udokumentowana dla obu stron w tym samym momencie.","p5.d":"1–3 tygodnie",
+"p6.h":"Rejestracja i wdrożenie","p6.p":"ITC i rejestracja w PZPN w oknie transferowym, potem zezwolenia, PESEL, mieszkanie i pierwszy miesiąc zwyczajnego życia.","p6.d":"zależnie od okna",
+"cal.h2":"Praca zaczyna się dwa miesiące przed otwarciem okna","cal.lede":"Agenci, którzy piszą do nas w ostatnim tygodniu sierpnia, proszą o cud. To w pasie przygotowań wygrywa się transfery.",
+"m.1":"Sty","m.2":"Lut","m.3":"Mar","m.4":"Kwi","m.5":"Maj","m.6":"Cze","m.7":"Lip","m.8":"Sie","m.9":"Wrz","m.10":"Paź","m.11":"Lis","m.12":"Gru",
+"cal.r1":"Przygotowanie","cal.r2":"Okno otwarte","cal.b1":"Przygot.","cal.b5":"Przygot.","cal.b2":"Przygotowanie letnie","cal.b3":"Okno zimowe","cal.b4":"Okno letnie",
+"cal.note":"Pasy mają charakter orientacyjny. Dokładne daty otwarcia i zamknięcia okien rejestracyjnych w Polsce ustala PZPN na każdy sezon i różnią się one w zależności od poziomu rozgrywek — potwierdzamy aktualne terminy dla Twojej sprawy, zanim ktokolwiek zaplanuje wokół nich deadline.",
+"pl.h2":"Po co w ogóle wysyłać zawodnika do Polski","pl.lede":"Polska to rynek-przystanek, który naprawdę działa: kraj UE, transmitowana ekstraklasa, cztery profesjonalne poziomy poniżej i kluby, które wciąż odpowiadają na dobrze przygotowaną ofertę.",
+"pl.pyr":"Piramida, w której działamy","pl.l1":"Poziom 1 — miejsca w UEFA","pl.l2":"Poziom 2 — zawodowy","pl.l3":"Poziom 3 — zawodowy","pl.l4":"Poziom 4 — grupy regionalne","pl.l5":"Młodzież — liga centralna",
+"pl.pyrnote":"Liczba klubów i format grup zmieniają się między sezonami; pracujemy na aktualnych przepisach PZPN i regulaminach rozgrywek, a nie na zeszłorocznej tabeli.",
+"pl.why":"Co to daje Twojemu zawodnikowi",
+"pl.a1":"Witryna w Unii","pl.a1p":"Skauci z Niemiec, Austrii, Belgii i Holandii oglądają Ekstraklasę i 1. Ligę. Dobry sezon tutaj jest widziany.",
+"pl.a2":"Realny pierwszy kontrakt","pl.a2p":"Pensja, którą klub z drugiego czy trzeciego poziomu faktycznie może zapłacić, w kraju, gdzie za nią da się dobrze żyć.",
+"pl.a3":"Legalny status w strefie Schengen","pl.a3p":"Zezwolenie na pracę i karta pobytu w Polsce zmieniają możliwości zawodnika spoza UE na całą karierę.",
+"pl.a4":"Drzwi, które wciąż się otwierają","pl.a4p":"Dyrektorzy sportowi tutaj odbierają telefon. To jest warte więcej niż abonament w bazie danych.",
+"mo.h2":"Trzy sposoby współpracy","mo.lede":"Niezależnie od wybranego modelu podział jest spisany, zanim zaczniemy. Nie podpisujemy zawodników. Mandat zostaje Twój.",
+"mo1.h":"Za zawodnika","mo1.p":"Jedna teczka, jeden mandat. Wysyłasz profil, my prowadzimy go od dossier do rejestracji.","mo1.a":"Pełny cykl dla jednego zawodnika","mo1.b":"Udział w prowizji rozliczany od sukcesu","mo1.c":"Koszty testów ustalone z góry","mo1.f":"Wynagrodzenie: udział w prowizji, per mandat",
+"mo2.h":"Abonament","mo2.flag":"Wybór agencji","mo2.p":"Dla agencji przenoszących kilku zawodników w oknie i chcących mieć stałe biuro w Polsce.","mo2.a":"Nielimitowane profile w okresie","mo2.b":"Priorytet w oknie transferowym","mo2.c":"Ruch w dwie strony: polscy zawodnicy do Ciebie","mo2.d":"Miesięczny raport rynkowy","mo2.f":"Wynagrodzenie: miesięczne + obniżony udział",
+"mo3.h":"Pojedyncza usługa","mo3.p":"Klub już masz. Potrzebujesz, by jeden element został zrobiony w Polsce porządnie.","mo3.a":"Sam pakiet marketingowy","mo3.b":"Sama organizacja testów","mo3.c":"Sam kontrakt, rejestracja i zezwolenia","mo3.f":"Wynagrodzenie: stałe, wyceniane za zadanie",
+"faq.h2":"O co agenci pytają najpierw",
+"q1":"Czy przejmiecie mi zawodnika?","a1":"Nie. Pracujemy dla agenta, nie dla zawodnika. Umowa o reprezentację zostaje u Ciebie, kontakt do zawodnika zostaje u Ciebie, a nasz mandat jest tak napisany, że nie możemy go podpisać sami. To cała podstawa tego biznesu — agencja, która podbiera klientów, robi dokładnie jeden transfer.",
+"q2":"Czy sami jesteście licencjonowanymi agentami?","a2":"Best Way Plus świadczy usługi marketingowe, organizacyjne, administracyjne i relokacyjne. Tam, gdzie czynność wymaga prawnie licencjonowanego agenta piłkarskiego, wykonują ją licencjonowani agenci i współpracująca z nami kancelaria — a Ty z góry wiesz, kto co robi i na jakiej licencji.",
+"q3":"Jaki poziom zawodnika jest realny?","a3":"Szczerze: 2. Liga i 3. Liga są otwarte na dobrze przygotowanego, nieznanego zawodnika. 1. Liga oczekuje albo realnych minut na porównywalnym poziomie, albo wyrazistego profilu danych. Ekstraklasa to proces punktowy i powolny. Mówimy Ci, w którym z tych trzech scenariuszy jesteś, zanim kupisz bilet lotniczy.",
+"q4":"Kto płaci za testy?","a4":"Przelot, zakwaterowanie i ubezpieczenie są budżetowane przed wyjazdem i pokrywa je agent lub zawodnik, chyba że klub zaprasza na własny koszt. Nie doliczamy marży do tych kosztów — dostajesz faktury.",
+"q5":"W jakich językach pracujecie?","a5":"Polski, angielski, rosyjski i ukraiński wewnętrznie; hiszpański, serbski i portugalski przez partnerów. Zawodnik nigdy nie negocjuje w języku, którego nie kontroluje.",
+"q6":"Jak szybko to może pójść?","a6":"W otwartym oknie, przy zawodniku, który pasuje, cztery do sześciu tygodni od pierwszego maila do rejestracji jest realne. Cokolwiek szybszego to szczęście. Cokolwiek szybszego, co ktoś Ci sprzedaje, to sygnał ostrzegawczy.",
+"ct.h2":"Wyślij nam jednego zawodnika i zobacz, jak to działa","ct.lede":"Pozycja, rocznik, link do wideo i poziom, o który celujesz — to wystarczy na start. Uczciwą ocenę dostajesz w ciągu dwóch dni roboczych, łącznie z „nie, nie w Polsce”, jeśli taka jest odpowiedź.",
+"ct.f1":"Imię i nazwisko","ct.f2":"Agencja","ct.f3":"Kraj","ct.f4":"E-mail lub WhatsApp","ct.f5":"Pozycja zawodnika","ct.f6":"Docelowy poziom","ct.f7":"Zawodnik, link do wideo, sytuacja",
+"ct.p0":"Wybierz…","ct.p1":"Bramkarz","ct.p2":"Środkowy obrońca","ct.p3":"Boczny obrońca","ct.p4":"Pomocnik","ct.p5":"Skrzydłowy","ct.p6":"Napastnik","ct.l0":"Wybierz…","ct.l5":"Akademia / CLJ",
+"ct.ph":"Środkowy obrońca, 2003, 188 cm, 24 mecze w drugiej lidze, kontrakt do czerwca — wideo: …",
+"ct.send":"Wyślij profil","ct.note":"Prototyp: ten formularz jest demonstracją i na razie niczego nie wysyła. W wersji produkcyjnej trafia do osoby, która na niego odpowiada.",
+"ct.k1":"Biuro","ct.m1":"Spotkania po umówieniu; jeździmy do klubów w całym kraju.","ct.k2":"E-mail","ct.m2":"Adres poglądowy na potrzeby prototypu.","ct.k3":"Czas odpowiedzi","ct.v3":"2 dni robocze","ct.m3":"W otwartym oknie — tego samego dnia.","ct.k4":"Języki robocze","ct.m4":"ES, SR, PT przez partnerów.",
+"ft.note":"Best Way Plus — usługi partnerskie w Polsce dla zagranicznych agentów piłkarskich: marketing, rekrutacja, kontrakty, rejestracja i relokacja.",
+"ft.proto":"Prototyp — treści demonstracyjne","ft.legal":"Dane firmy, informacje licencyjne, adresy i liczby na tej stronie są elementami poglądowymi prototypu i nie stanowią oświadczeń prawnych ani handlowych."
+},
+ru:{
+"nav.services":"Услуги","nav.process":"Процесс","nav.windows":"Окна","nav.poland":"Польша","nav.models":"Условия","nav.faq":"Вопросы","nav.cta":"Прислать игрока",
+"hero.eyebrow":"Вроцлав, Польша — партнёрский офис для футбольных агентов","hero.h1":"Ваш <em>офис</em> внутри польского футбола","hero.sub":"Игрок и мандат остаются у вас. Польшу берём на себя мы: доступ к клубам, просмотры, контракт и все печати, которые должны за ним последовать, — от первого профиля, который вы пришлёте, до дня, когда игрок зарегистрирован и живёт здесь.",
+"hero.cta1":"Прислать профиль игрока","hero.cta2":"Как мы работаем","hero.chip1":"Маркетинг","hero.chip2":"Рекрутинг","hero.chip3":"Контракты","hero.chip4":"Релокация и разрешения","hero.chip5":"PL · EN · RU · UA",
+"file.title":"Трансферное дело","file.k1":"Игрок","file.v1":"Центральный защитник, правша, 2003","file.k2":"Откуда","file.v2":"Сербия — Суперлига U21","file.k3":"Агент","file.v3":"Партнёрское агентство, Белград","file.k4":"Цель","file.v4":"Betclic 1. Liga / 2. Liga","file.k5":"Разрешение","file.v5":"ЕС — не требуется",
+"file.s1":"Досье и нарезка готовы","file.s2":"Шорт-лист: 9 клубов на связи","file.s3":"3 ответа, 2 приглашения на просмотр","file.s4":"Неделя просмотра — перелёт забронирован","file.now":"сейчас","file.s5":"Условия, контракт, деление комиссии","file.s6":"ITC, регистрация в PZPN, адаптация","file.foot":"Пример дела — иллюстрация, не реальный трансфер",
+"strip.lbl":"Где мы работаем","strip.acad":"Академии",
+"rail.services":"Услуги","rail.process":"Процесс","rail.windows":"Календарь","rail.poland":"Рынок","rail.models":"Условия","rail.faq":"Вопросы","rail.contact":"Контакт",
+"svc.h2":"Три задачи, сделанные на месте","svc.lede":"Агент за 2000 км может отправить письмо. Он не сядет во вторник утром в кабинете спортивного директора, не отвезёт игрока на просмотр и не отстоит очередь в воеводском управлении. Это делаем мы.",
+"svc1.h":"Показать игрока тем двенадцати, от кого всё зависит","svc1.c":"Не массовая рассылка. Досье, собранное так, как его читают польские клубы, и положенное на стол списку, который мы выбираем вместе с вами.",
+"svc1.a":"Двуязычное досье (PL/EN)","svc1.a2":"позиционный профиль, физические данные, сыгранные минуты, статус контракта, ожидания по зарплате.",
+"svc1.b":"Нарезка под позицию","svc1.b2":"6–8 минут для скаутов, 90 секунд для первого сообщения, полные матчи по запросу.",
+"svc1.c1":"Страница данных","svc1.c2":"Wyscout / InStat / Transfermarkt, приведённые к цифрам, которые спрашивает польский аналитик.",
+"svc1.d":"Присутствие на польском","svc1.d2":"локальные медиа, клубные каналы, соцсети, которые болельщик и директор действительно прочитают.",
+"svc2.h":"Доступ, а не список адресов","svc2.c":"Подбираем игрока под реальные потребности состава и бюджеты, а затем организуем всё, что нужно для просмотра, — клубу остаётся только посмотреть, как он играет.",
+"svc2.a":"Шорт-лист клубов","svc2.a2":"по потребности на позиции, бюджетной вилке, стилю игры и правилам комплектования состава в текущем сезоне.",
+"svc2.b":"Просмотры под ключ","svc2.b2":"даты, перелёты, проживание, страховка, транспорт, переводчик, гарантированные минуты на поле.",
+"svc2.c1":"Движение в обе стороны","svc2.c2":"мы также ищем польских игроков и тренеров для клубов, с которыми ваше агентство работает за рубежом.",
+"svc2.d":"Академии и CLJ","svc2.d2":"переходы для 16–19-летних, с заранее решённым вопросом школы и опеки.",
+"svc3.h":"Та часть, что заканчивается подписью","svc3.c":"Поддержка в переговорах, контракт, прочитанный польским юристом, и регистрационная цепочка, после которой игрок имеет право выйти на поле.",
+"svc3.a":"Term sheet и переговоры","svc3.a2":"зарплата, бонусы, квартира, машина, перелёты домой, клаусула отступного, процент от перепродажи.",
+"svc3.b":"Юридическая проверка","svc3.b2":"контракт сверяется с польским трудовым правом и регламентом PZPN сотрудничающей юрфирмой до того, как кто-либо подпишет.",
+"svc3.c1":"Регистрационная цепочка","svc3.c2":"ITC через FIFA TMS, лицензионные документы PZPN, сроки под контролем относительно окна.",
+"svc3.d":"Деньги, которые доходят","svc3.d2":"деление комиссии согласовано с вами письменно заранее, счета и платежи ведутся с польской стороны.",
+"svc4.h":"Бумаги, которые тихо убивают сделки","svc4.c":"Подписанный контракт — ещё не устроенный игрок. Большинство трансферов, разваливающихся на финише, разваливаются именно здесь.",
+"svc4.a":"Легализация","svc4.a2":"национальная виза D, разрешение на работу типа A, карта временного пребывания, включая семью.",
+"svc4.b":"База","svc4.b2":"номер PESEL, счёт в банке, налоговая регистрация, медицинская страховка, телефон и адрес.",
+"svc4.c1":"Быт","svc4.c2":"квартира рядом с тренировочной базой, машина, школа для детей, польский два раза в неделю.",
+"svc4.d":"Кому позвонить","svc4.d2":"один польскоговорящий контакт на месте — для игрока и для вас, в вашем часовом поясе.",
+"proc.h2":"От вашего письма до его первой тренировки","proc.lede":"Шесть этапов. Вы в копии на каждом, и ничего не идёт дальше без вашего письменного согласия.",
+"p1.h":"Бриф и мандат","p1.p":"Письменно фиксируем, что делаем мы, что остаётся у вас и как делится комиссия, — до того, как хоть один клуб услышит фамилию игрока.","p1.d":"1–2 дня",
+"p2.h":"Сборка досье","p2.p":"Видео, данные, документы и трезвая оценка уровня. Если считаем, что целевая лига выбрана неверно, говорим это здесь, а не после впустую съеденного просмотра.","p2.d":"3–5 дней",
+"p3.h":"Проход по рынку","p3.p":"Поимённый список клубов и прямой контакт. Ответы вы получаете по мере поступления — включая отказы и их причины.","p3.d":"1–3 недели",
+"p4.h":"Просмотр на месте","p4.p":"Перелёт, жильё, страховка, переводчик и ежедневные отчёты с тренировок. Не получилось в клубе A — на той же неделе он в клубе B.","p4.d":"3–10 дней",
+"p5.h":"Условия и контракт","p5.p":"Переговоры с клубом, юридическая проверка, подпись. Комиссия задокументирована для обеих сторон в один и тот же момент.","p5.d":"1–3 недели",
+"p6.h":"Регистрация и адаптация","p6.p":"ITC и регистрация в PZPN внутри окна, затем разрешения, PESEL, квартира и первый месяц обычной жизни.","p6.d":"зависит от окна",
+"cal.h2":"Работа начинается за два месяца до открытия окна","cal.lede":"Агенты, которые пишут нам в последнюю неделю августа, просят о чуде. Трансферы выигрываются в полосе подготовки.",
+"m.1":"Янв","m.2":"Фев","m.3":"Мар","m.4":"Апр","m.5":"Май","m.6":"Июн","m.7":"Июл","m.8":"Авг","m.9":"Сен","m.10":"Окт","m.11":"Ноя","m.12":"Дек",
+"cal.r1":"Подготовка","cal.r2":"Окно открыто","cal.b1":"Подгот.","cal.b5":"Подгот.","cal.b2":"Летняя подготовка","cal.b3":"Зимнее окно","cal.b4":"Летнее окно",
+"cal.note":"Полосы даны ориентировочно. Точные даты открытия и закрытия регистрационных периодов в Польше устанавливает PZPN на каждый сезон, и они различаются по уровням лиг — актуальные сроки под ваш случай мы подтверждаем до того, как вокруг них будет спланирован дедлайн.",
+"pl.h2":"Зачем вообще везти игрока в Польшу","pl.lede":"Польша — рынок-ступень, который действительно работает: страна ЕС, транслируемая высшая лига, четыре профессиональных уровня под ней и клубы, которые всё ещё отвечают на грамотно подготовленное предложение.",
+"pl.pyr":"Пирамида, в которой мы работаем","pl.l1":"Уровень 1 — места в еврокубках","pl.l2":"Уровень 2 — профессиональный","pl.l3":"Уровень 3 — профессиональный","pl.l4":"Уровень 4 — региональные группы","pl.l5":"Молодёжь — центральная лига",
+"pl.pyrnote":"Число клубов и формат групп меняются от сезона к сезону; мы работаем по действующим регламентам PZPN и лиг, а не по прошлогодней таблице.",
+"pl.why":"Что это даёт вашему игроку",
+"pl.a1":"Витрина внутри ЕС","pl.a1p":"Скауты из Германии, Австрии, Бельгии и Нидерландов смотрят Экстраклассу и 1. Лигу. Хороший сезон здесь замечают.",
+"pl.a2":"Реальный первый контракт","pl.a2p":"Зарплата, которую клуб второго или третьего уровня действительно может платить, в стране, где на неё можно нормально жить.",
+"pl.a3":"Легальный статус в Шенгене","pl.a3p":"Разрешение на работу и карта побыту в Польше меняют возможности игрока не из ЕС на всю карьеру.",
+"pl.a4":"Двери, которые ещё открываются","pl.a4p":"Спортивные директора здесь берут трубку. Это стоит больше, чем подписка на базу данных.",
+"mo.h2":"Три формата сотрудничества","mo.lede":"Какой бы вы ни выбрали, деление зафиксировано письменно до старта. Мы не подписываем игроков. Мандат остаётся вашим.",
+"mo1.h":"За игрока","mo1.p":"Одно дело, один мандат. Вы присылаете профиль — мы ведём его от досье до регистрации.","mo1.a":"Полный цикл по одному игроку","mo1.b":"Доля в комиссии по факту результата","mo1.c":"Расходы на просмотр согласованы заранее","mo1.f":"Оплата: доля комиссии, по мандату",
+"mo2.h":"Ретейнер","mo2.flag":"Выбор агентств","mo2.p":"Для агентств, которые двигают нескольких игроков за окно и хотят постоянный офис в Польше.","mo2.a":"Неограниченные профили в периоде","mo2.b":"Приоритет в трансферное окно","mo2.c":"Движение в обе стороны: польские игроки — вам","mo2.d":"Ежемесячный отчёт по рынку","mo2.f":"Оплата: ежемесячно + сниженная доля",
+"mo3.h":"Отдельная услуга","mo3.p":"Клуб у вас уже есть. Нужно, чтобы одну часть работы в Польше сделали как следует.","mo3.a":"Только маркетинговый пакет","mo3.b":"Только организация просмотра","mo3.c":"Только контракт, регистрация и разрешения","mo3.f":"Оплата: фиксированная, по задаче",
+"faq.h2":"Что агенты спрашивают первым",
+"q1":"Вы уведёте у меня игрока?","a1":"Нет. Мы работаем на агента, а не на игрока. Договор о представительстве остаётся у вас, контакт игрока остаётся у вас, а наш мандат составлен так, что подписать его сами мы не можем. На этом стоит весь бизнес: агентство, которое уводит клиентов, делает ровно одну сделку.",
+"q2":"Вы сами лицензированные агенты?","a2":"Best Way Plus оказывает маркетинговые, организационные, административные и релокационные услуги. Там, где действие по закону требует лицензированного футбольного агента, его выполняют лицензированные агенты и сотрудничающая с нами юридическая фирма — и вы заранее знаете, кто что делает и по какой лицензии.",
+"q3":"Какой уровень игрока реален?","a3":"Честно: 2. Liga и 3. Liga открыты для хорошо подготовленного неизвестного игрока. 1. Liga хочет либо реальных минут на сопоставимом уровне, либо яркого профиля по данным. Экстракласса — точечный и небыстрый процесс. Мы говорим, в каком из трёх сценариев вы находитесь, до покупки билета.",
+"q4":"Кто платит за просмотр?","a4":"Перелёт, проживание и страховка бюджетируются до выезда и оплачиваются агентом или игроком, если клуб не приглашает за свой счёт. Наценку на эти расходы мы не делаем — счета отдаём вам.",
+"q5":"На каких языках вы работаете?","a5":"Польский, английский, русский и украинский — внутри; испанский, сербский и португальский — через партнёров. Игрок никогда не ведёт переговоры на языке, которым не владеет.",
+"q6":"Насколько быстро это может пройти?","a6":"В открытое окно, с подходящим игроком, четыре-шесть недель от первого письма до регистрации — реально. Быстрее — это везение. Быстрее, если вам это продают, — тревожный знак.",
+"ct.h2":"Пришлите одного игрока и посмотрите, как это работает","ct.lede":"Позиция, год рождения, ссылка на видео и уровень, на который целитесь, — этого достаточно для старта. Честную оценку вы получаете в течение двух рабочих дней, включая «нет, не в Польшу», если ответ такой.",
+"ct.f1":"Ваше имя","ct.f2":"Агентство","ct.f3":"Страна","ct.f4":"E-mail или WhatsApp","ct.f5":"Позиция игрока","ct.f6":"Целевой уровень","ct.f7":"Игрок, ссылка на видео, ситуация",
+"ct.p0":"Выберите…","ct.p1":"Вратарь","ct.p2":"Центральный защитник","ct.p3":"Крайний защитник","ct.p4":"Полузащитник","ct.p5":"Вингер","ct.p6":"Нападающий","ct.l0":"Выберите…","ct.l5":"Академия / CLJ",
+"ct.ph":"ЦЗ, 2003, 188 см, 24 матча во втором дивизионе, контракт до июня — видео: …",
+"ct.send":"Отправить профиль","ct.note":"Прототип: форма демонстрационная и пока ничего не отправляет. В рабочей версии она уходит тому, кто на неё отвечает.",
+"ct.k1":"Офис","ct.m1":"Встречи по договорённости; ездим по клубам всей страны.","ct.k2":"E-mail","ct.m2":"Демонстрационный адрес для прототипа.","ct.k3":"Время ответа","ct.v3":"2 рабочих дня","ct.m3":"В открытое окно — в тот же день.","ct.k4":"Рабочие языки","ct.m4":"ES, SR, PT через партнёров.",
+"ft.note":"Best Way Plus — партнёрские услуги в Польше для иностранных футбольных агентов: маркетинг, рекрутинг, контракты, регистрация и релокация.",
+"ft.proto":"Прототип — демонстрационное наполнение","ft.legal":"Реквизиты компании, сведения о лицензиях, адреса и цифры на этой странице — заполнители дизайн-прототипа, а не юридические или коммерческие заявления."
+}
+};
+</script>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---- keep the English source as the third dictionary ---- */
+  var EN = {}, EN_PH = {};
+  document.querySelectorAll("[data-i]").forEach(function(el){ EN[el.getAttribute("data-i")] = el.innerHTML; });
+  document.querySelectorAll("[data-i-ph]").forEach(function(el){ EN_PH[el.getAttribute("data-i-ph")] = el.placeholder; });
+  var SENT = {
+    en:"Received. In the live version this reaches the desk that answers within two working days.",
+    pl:"Odebrane. W wersji produkcyjnej trafia to do osoby, która odpowiada w ciągu dwóch dni roboczych.",
+    ru:"Принято. В рабочей версии это уходит тому, кто отвечает в течение двух рабочих дней."
+  };
+  var lang = "en";
+
+  function apply(code){
+    var d = (code === "en") ? EN : (DICT[code] || EN);
+    var ph = (code === "en") ? EN_PH : (DICT[code] || EN_PH);
+    document.querySelectorAll("[data-i]").forEach(function(el){
+      var k = el.getAttribute("data-i");
+      if (d[k] !== undefined) el.innerHTML = d[k];
+      else if (EN[k] !== undefined) el.innerHTML = EN[k];
+    });
+    document.querySelectorAll("[data-i-ph]").forEach(function(el){
+      var k = el.getAttribute("data-i-ph");
+      var v = (ph && ph[k] !== undefined) ? ph[k] : EN_PH[k];
+      if (v !== undefined) el.placeholder = v;
+    });
+    document.documentElement.lang = code;
+    document.querySelectorAll(".langs button").forEach(function(b){
+      b.setAttribute("aria-pressed", String(b.dataset.lang === code));
+    });
+    lang = code;
+    try { localStorage.setItem("bwp-lang", code); } catch (e) {}
+  }
+
+  document.querySelectorAll(".langs button").forEach(function(b){
+    b.addEventListener("click", function(){ apply(b.dataset.lang); });
+  });
+
+  var start = null;
+  try { start = localStorage.getItem("bwp-lang"); } catch (e) {}
+  if (!start) {
+    var nav = (navigator.language || "en").toLowerCase();
+    start = /^pl/.test(nav) ? "pl" : /^(ru|uk|be|kk)/.test(nav) ? "ru" : "en";
+  }
+  if (start !== "en") apply(start);
+
+  /* ---- theme ---- */
+  var root = document.documentElement;
+  try {
+    var saved = localStorage.getItem("bwp-theme");
+    if (saved === "light" || saved === "dark") root.setAttribute("data-theme", saved);
+  } catch (e) {}
+  document.getElementById("theme").addEventListener("click", function(){
+    var cur = root.getAttribute("data-theme");
+    if (!cur) cur = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    var next = cur === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("bwp-theme", next); } catch (e) {}
+  });
+
+  /* ---- prototype form ---- */
+  var form = document.getElementById("lead"), out = document.getElementById("sent");
+  form.addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var missing = [].slice.call(form.querySelectorAll("[required]")).filter(function(i){ return !i.value.trim(); });
+    if (missing.length) { missing[0].focus(); missing[0].style.borderColor = "var(--accent)"; return; }
+    out.textContent = SENT[lang] || SENT.en;
+    out.classList.add("on");
+    form.querySelector("button[type=submit]").disabled = true;
+  });
+})();
+</script>
+</body>
+</html>
