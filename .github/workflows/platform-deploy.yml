@@ -1,0 +1,103 @@
+name: Platform deploy
+
+# Собирает Next.js на раннере и ставит готовый бандл на 89.127.193.91.
+#
+# Сборка вынесена с сервера намеренно: на машине 960 МБ RAM без swap, там уже
+# работают LUMI и PayMeSafe, а `next build` съедает больше, чем на ней есть.
+# На сервер приезжает standalone-бандл и запускается systemd-юнитом — так же,
+# как lumi.service и paymesafe.service. Docker на этой машине не используется.
+
+on:
+  workflow_dispatch:
+    inputs:
+      migrate:
+        description: Применить миграции БД (prisma migrate deploy)
+        type: boolean
+        default: true
+
+concurrency:
+  group: platform-deploy
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: platform/package-lock.json
+
+      - name: Install dependencies
+        working-directory: platform
+        run: npm ci
+
+      - name: Checks
+        working-directory: platform
+        run: |
+          npx prisma validate
+          npx prisma generate
+          npm run typecheck
+          npm run test
+          npx tsx scripts/check-messages.ts
+
+      - name: Build
+        working-directory: platform
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+        run: npm run build
+
+      - name: Assemble bundle
+        working-directory: platform
+        run: |
+          set -euo pipefail
+          rm -rf bundle && mkdir -p bundle
+
+          # standalone уже содержит server.js и только те модули, которые
+          # реально импортируются — вместе со сгенерированным Prisma-клиентом.
+          cp -a .next/standalone/. bundle/
+          mkdir -p bundle/.next
+          cp -a .next/static bundle/.next/static
+          [ -d public ] && cp -a public bundle/public
+
+          # Схема и миграции нужны на сервере: prisma migrate deploy читает их
+          # оттуда, а не из бандла приложения.
+          cp -a prisma bundle/prisma
+
+          # Отдельный минимальный package.json только для CLI миграций.
+          # Ставить весь devDependencies на сервер не нужно.
+          mkdir -p bundle/migrate
+          printf '{\n  "name": "bwf-migrate",\n  "private": true,\n  "dependencies": { "prisma": "5.22.0" }\n}\n' \
+            > bundle/migrate/package.json
+
+          tar -czf platform-bundle.tar.gz -C bundle .
+          ls -lh platform-bundle.tar.gz
+          echo "файлов в бандле: $(find bundle -type f | wc -l)"
+
+      - name: Copy bundle to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 89.127.193.91
+          username: root
+          password: ${{ secrets.LUMI24_SERVER_PASSWORD }}
+          source: platform/platform-bundle.tar.gz
+          target: /tmp
+          strip_components: 1
+
+      - name: Install on server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: 89.127.193.91
+          username: root
+          password: ${{ secrets.LUMI24_SERVER_PASSWORD }}
+          command_timeout: 30m
+          envs: MIGRATE
+          script: |
+            set -euo pipefail
+            curl -fsSL https://raw.githubusercontent.com/skarausa212-arch43/bestwayplus-/claude/best-way-plus-website-qrzy5k/deploy/lumi24-install-platform-lean.sh -o /root/install-platform-lean.sh
+            MIGRATE="${MIGRATE:-true}" bash /root/install-platform-lean.sh
+        env:
+          MIGRATE: ${{ inputs.migrate }}
