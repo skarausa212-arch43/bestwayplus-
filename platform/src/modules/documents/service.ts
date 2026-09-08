@@ -91,8 +91,11 @@ export async function createUploadIntent(
 export async function confirmUpload(actor: Actor, documentId: string, ctx: RequestContext = {}) {
   const document = await prisma.document.findUnique({
     where: { id: documentId },
-    select: { id: true, ownerUserId: true, storageKey: true, sizeBytes: true, mimeType: true, scanStatus: true,
-              owner: { select: { responsibleManagerId: true } } },
+    select: {
+      id: true, ownerUserId: true, storageKey: true, sizeBytes: true, mimeType: true,
+      scanStatus: true, deletedAt: true,
+      owner: { select: { responsibleManagerId: true } },
+    },
   });
   if (!document || document.deletedAt) throw new Error('Unknown document');
 

@@ -331,11 +331,55 @@ def build_spa(path, css):
     open(path, "w", encoding="utf-8").write(doc)
     return len(doc)
 
+def build_meta(outdir):
+    """robots.txt, sitemap.xml and edge headers — regenerated with the pages so
+    a new page cannot be added without appearing in the sitemap."""
+    from datetime import date
+    today = date.today().isoformat()
+
+    urls = []
+    for slug in PAGES:
+        loc = f"https://{DOMAIN}/" if slug == "home" else f"https://{DOMAIN}/{slug}.html"
+        priority = "1.0" if slug == "home" else "0.7"
+        urls.append(
+            f"  <url>\n    <loc>{loc}</loc>\n    <lastmod>{today}</lastmod>\n"
+            f"    <changefreq>monthly</changefreq>\n    <priority>{priority}</priority>\n  </url>"
+        )
+
+    sitemap = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+               '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+               + "\n".join(urls) + "\n</urlset>\n")
+    open(os.path.join(outdir, "sitemap.xml"), "w", encoding="utf-8").write(sitemap)
+
+    open(os.path.join(outdir, "robots.txt"), "w", encoding="utf-8").write(
+        f"User-agent: *\nAllow: /\n\nSitemap: https://{DOMAIN}/sitemap.xml\n"
+    )
+
+    # Netlify and Cloudflare Pages both read _headers.
+    open(os.path.join(outdir, "_headers"), "w", encoding="utf-8").write(
+        "/*\n"
+        "  X-Content-Type-Options: nosniff\n"
+        "  X-Frame-Options: DENY\n"
+        "  Referrer-Policy: strict-origin-when-cross-origin\n"
+        "  Permissions-Policy: camera=(), geolocation=(), microphone=()\n"
+        "  Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline' "
+        "https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data:; script-src 'self'; frame-ancestors 'none'; base-uri 'self'\n"
+        "  Strict-Transport-Security: max-age=63072000; includeSubDomains\n"
+    )
+
+    open(os.path.join(outdir, "_redirects"), "w", encoding="utf-8").write(
+        f"https://www.{DOMAIN}/*  https://{DOMAIN}/:splat  301!\n"
+        "/index.html  /  301!\n"
+    )
+
+
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__))
-    css = open(os.path.join(here, "site.css"), encoding="utf-8").read()
-    site = "/home/user/bestwayplus-/site"
+    # The stylesheet lives with the built site; this script regenerates the
+    # pages around it rather than owning a second copy.
+    site = here
+    css = open(os.path.join(site, "assets", "site.css"), encoding="utf-8").read()
     n = build_static(site)
-    open(os.path.join(site, "assets", "site.css"), "w", encoding="utf-8").write(css)
-    size = build_spa(os.path.join(here, "..", "bwp-corporate.html"), css)
-    print("static pages:", n, "| spa bytes:", size)
+    build_meta(site)
+    print("static pages:", n, "| sitemap, robots and headers regenerated")

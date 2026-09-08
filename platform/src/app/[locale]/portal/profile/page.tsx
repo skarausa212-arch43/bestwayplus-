@@ -62,6 +62,30 @@ function toDay(value: Date | null | undefined): string | null {
   return value ? value.toISOString().slice(0, 10) : null;
 }
 
+const DATE_FIELDS = new Set(['dateOfBirth', 'contractUntil', 'representationUntil']);
+
+/**
+ * Builds the draft from the field list rather than spreading the profile, so
+ * the form only ever receives the scalars it renders — array columns such as
+ * preferredCountries have their own editor and do not belong here.
+ */
+function toDraft(
+  profile: Record<string, unknown> | null,
+): Record<string, string | number | boolean | null> {
+  const draft: Record<string, string | number | boolean | null> = {};
+  for (const field of FIELDS) {
+    const raw = profile?.[field.name];
+    if (DATE_FIELDS.has(field.name)) {
+      draft[field.name] = toDay(raw as Date | null | undefined);
+    } else if (typeof raw === 'string' || typeof raw === 'number' || typeof raw === 'boolean') {
+      draft[field.name] = raw;
+    } else {
+      draft[field.name] = null;
+    }
+  }
+  return draft;
+}
+
 export default async function ProfilePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale as AppLocale);
@@ -72,12 +96,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ locale
   const t = await getTranslations('portal');
   const profile = await getOwnPlayerProfile(session);
 
-  const initial = {
-    ...(profile ?? {}),
-    dateOfBirth: toDay(profile?.dateOfBirth),
-    contractUntil: toDay(profile?.contractUntil),
-    representationUntil: toDay(profile?.representationUntil),
-  } as Record<string, string | number | boolean | null>;
+  const initial = toDraft(profile as Record<string, unknown> | null);
 
   return (
     <div className="grid gap-6">

@@ -1,0 +1,51 @@
+name: platform
+
+on:
+  push:
+    branches: ['**']
+    paths: ['platform/**', '.github/workflows/platform.yml']
+  pull_request:
+    paths: ['platform/**']
+
+defaults:
+  run:
+    working-directory: platform
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Never a real connection: prisma generate parses the URL, it does not dial.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      AUTH_SECRET: ci-placeholder-secret-value-32-bytes
+      TOKEN_PEPPER: ci-placeholder-pepper
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: platform/package-lock.json
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Prisma schema is valid
+        run: npx prisma validate
+
+      - run: npx prisma generate
+
+      - name: Types
+        run: npm run typecheck
+
+      # The permission matrix is the one suite that must never be skipped.
+      - name: Tests
+        run: npm run test
+
+      - name: Message catalogs
+        run: npx tsx scripts/check-messages.ts
+
+      - name: Build
+        run: npx next build

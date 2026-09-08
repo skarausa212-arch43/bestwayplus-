@@ -17,6 +17,8 @@ const CSP = [
 
 const config: NextConfig = {
   reactStrictMode: true,
+  // Self-contained server bundle for the container image.
+  output: 'standalone',
   poweredByHeader: false,
   // Documents are never served from this origin, so no remote image patterns.
   images: { remotePatterns: [] },
