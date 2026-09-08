@@ -1,0 +1,77 @@
+# Стек Bestway Football для сервера lumi24 (89.127.193.91).
+#
+# Всё слушает только 127.0.0.1 и на нестандартных портах: на машине уже живут
+# LUMI, bestwayplus и paymesafe, и занимать 5432/6379/9000 нельзя.
+# Наружу ходит один nginx, который уже стоит на сервере.
+
+name: bestwayfootball
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bwf
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+      POSTGRES_DB: bwf
+      # Персональные данные ЕС: локаль и кодировка фиксируются явно.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports: ['127.0.0.1:5433:5432']
+    volumes: ['pgdata:/var/lib/postgresql/data']
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U bwf -d bwf']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--requirepass', '${REDIS_PASSWORD:?set in .env}', '--save', '900', '1']
+    ports: ['127.0.0.1:6380:6379']
+    volumes: ['redisdata:/data']
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli -a "$$REDIS_PASSWORD" ping | grep -q PONG']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+  # S3-совместимое хранилище на своей же машине: документы не уезжают к
+  # стороннему провайдеру, договор с обработчиком не нужен.
+  storage:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: ['server', '/data']
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:?set in .env}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:?set in .env}
+      # Подписанные ссылки отдаются браузеру, поэтому подписываются публичным
+      # именем, а не 127.0.0.1 — иначе скачать документ невозможно.
+      MINIO_SERVER_URL: ${S3_ENDPOINT:?set in .env}
+      MINIO_BROWSER: 'off'
+    ports: ['127.0.0.1:9002:9000']
+    volumes: ['miniodata:/data']
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: [.env]
+    ports: ['127.0.0.1:3001:3000']
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      storage: {condition: service_started}
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:

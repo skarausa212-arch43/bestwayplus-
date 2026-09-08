@@ -44,8 +44,18 @@ wait_for_dns() {
 
 echo "== Ждём, пока домен будет указывать на $SELF =="
 READY=1
-for h in bestwayfootball.pl www.bestwayfootball.pl; do
+# app и storage появляются вместе с платформой; если их A-записей ещё нет,
+# сертификат для сайта всё равно выпускается — платформа подождёт.
+SITE_HOSTS="bestwayfootball.pl www.bestwayfootball.pl"
+APP_HOSTS="app.bestwayfootball.pl storage.bestwayfootball.pl"
+
+for h in $SITE_HOSTS; do
   wait_for_dns "$h" || READY=0
+done
+
+APP_READY=1
+for h in $APP_HOSTS; do
+  WAIT_MINUTES=1 wait_for_dns "$h" || APP_READY=0
 done
 
 [ "$READY" = 1 ] || { echo; echo "Записи не переехали — сертификат не выпускаю."; exit 1; }
@@ -73,10 +83,23 @@ EOF
   nginx -t && systemctl reload nginx
 fi
 
+if [ "$APP_READY" = 1 ]; then
+  echo
+  echo "== Сертификат платформы =="
+  # Отдельный сертификат: сайт не должен зависеть от имён платформы.
+  certbot --nginx -d app.bestwayfootball.pl -d storage.bestwayfootball.pl \
+          --non-interactive --agree-tos -m "$EMAIL" --redirect
+else
+  echo
+  echo "app/storage ещё не переехали — сертификат платформы пропускаю."
+  echo "Запустите скрипт повторно, когда добавите их A-записи."
+fi
+
 echo
 echo "== Проверка снаружи =="
 for u in https://bestwayfootball.pl/ https://www.bestwayfootball.pl/ \
-         https://bestwayfootball.pl/sitemap.xml https://bestwayplus.pl/ https://lumi24.pl/; do
+         https://bestwayfootball.pl/sitemap.xml https://app.bestwayfootball.pl/en \
+         https://bestwayplus.pl/ https://lumi24.pl/; do
   printf '  %-42s ' "$u"
   curl -sS -o /dev/null -w 'HTTP %{http_code}, %{size_download} байт\n' "$u" || echo "не ответил"
 done

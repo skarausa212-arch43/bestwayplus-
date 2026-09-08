@@ -9,13 +9,38 @@ scan until everything in section 3 is done.
 
 ---
 
+## 0. Topology on the shared server
+
+Everything runs on the existing lumi24 box at 89.127.193.91, alongside LUMI,
+bestwayplus and paymesafe. Three names, three jobs:
+
+| Name | Serves | How |
+| --- | --- | --- |
+| `bestwayfootball.pl` | the finished 19-page marketing site | nginx, static files |
+| `app.bestwayfootball.pl` | portal, CRM, API, share links | nginx → 127.0.0.1:3001 |
+| `storage.bestwayfootball.pl` | object storage, signed URLs only | nginx → 127.0.0.1:9002 |
+
+The platform is on its own name rather than at the apex because its public
+pages are currently two, against nineteen finished static ones — putting it at
+the apex would replace a complete site with a stub. Moving it later is a
+one-line nginx change.
+
+`storage.` is not optional. A presigned URL is handed to the **browser**, so it
+must be signed with a hostname the browser can reach; signing with
+`127.0.0.1:9002` produces links that can never be opened. This is the detail
+most likely to be discovered only after the first upload fails.
+
+Ports are deliberately non-standard and bound to loopback — 5433, 6380, 9002,
+3001 — because the box already runs services on the usual ones.
+
 ## 1. DNS
 
 | Record | Name | Value | Note |
 | --- | --- | --- | --- |
-| A / ALIAS | `bestwayfootball.pl` | host address | apex |
-| CNAME | `www` | `bestwayfootball.pl` | redirect to apex |
-| CNAME | `admin` | platform host | CRM on its own name, so it can carry IP allow-listing |
+| A | `bestwayfootball.pl` | 89.127.193.91 | apex — exactly one record, extra ones break ACME |
+| A | `www` | 89.127.193.91 | redirected to apex after the certificate is issued |
+| A | `app` | 89.127.193.91 | portal, CRM and API |
+| A | `storage` | 89.127.193.91 | signed document URLs |
 | TXT | `bestwayfootball.pl` | `v=spf1 include:<mail provider> -all` | |
 | CNAME | `<selector>._domainkey` | provider DKIM value | |
 | TXT | `_dmarc` | `v=DMARC1; p=quarantine; rua=mailto:dmarc@bestwayfootball.pl` | start at `p=none`, tighten after a week of reports |
