@@ -4,8 +4,16 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from content import *
 
 DOMAIN = "bestwayfootball.pl"
-MARK = '<svg class="mk" viewBox="16.5 18 35 64" fill="none" stroke="currentColor" stroke-width="9.5" aria-hidden="true"><path d="M21.25 18 V82"/><circle cx="34" cy="35.5" r="12.75"/><circle cx="34" cy="64.5" r="12.75"/></svg>'
-FAVICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%2308090A'/%3E%3Cg transform='translate(16,0)' fill='none' stroke='%23F3F4F1' stroke-width='9.5'%3E%3Cpath d='M21.25 18 V82'/%3E%3Ccircle cx='34' cy='35.5' r='12.75'/%3E%3Ccircle cx='34' cy='64.5' r='12.75'/%3E%3C/g%3E%3C/svg%3E"
+ROUNDEL_S = '<svg class="crest" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><circle cx="50" cy="50" r="47"/><g transform="translate(50 50) scale(0.72) translate(-50 -50)"><circle cx="50" cy="50" r="45.5"/><path d="M10.17 28.0 A39.83 6.0 0 0 0 89.83 28.0"/><path d="M9.13 70.0 A40.87 6.0 0 0 0 90.87 70.0"/></g></svg>'
+ROUNDEL = '<svg class="crest" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="50" cy="50" r="47"/><circle cx="50" cy="50" r="41.5" stroke-width="1.1"/><g transform="translate(50 50) scale(0.70) translate(-50 -50)"><circle cx="50" cy="50" r="45.5"/><path d="M10.17 28.0 A39.83 6.0 0 0 0 89.83 28.0"/><path d="M9.13 70.0 A40.87 6.0 0 0 0 90.87 70.0"/><path d="M43.5 44.0V66.0"/><path d="M56.5 44.0V66.0"/><path d="M43.5 46.8H56.5"/><path d="M43.5 52.2H56.5"/><path d="M43.5 57.8H56.5"/><path d="M43.5 63.2H56.5"/></g></svg>'
+SEAL = '<svg class="seal" viewBox="0 0 140 140" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><defs><path id="sealTop" d="M70 70 m-54.5,0 a54.5,54.5 0 1,1 109,0" fill="none"/><path id="sealBot" d="M70 70 m-54.5,0 a54.5,54.5 0 1,0 109,0" fill="none"/></defs><circle cx="70" cy="70" r="67"/><circle cx="70" cy="70" r="61.5" stroke-width="1"/><circle cx="70" cy="70" r="45" stroke-width="1"/><g transform="translate(70 70) scale(0.80) translate(-50 -50)"><circle cx="50" cy="50" r="45.5"/><path d="M10.17 28.0 A39.83 6.0 0 0 0 89.83 28.0"/><path d="M9.13 70.0 A40.87 6.0 0 0 0 90.87 70.0"/><path d="M43.5 44.0V66.0"/><path d="M56.5 44.0V66.0"/><path d="M43.5 46.8H56.5"/><path d="M43.5 52.2H56.5"/><path d="M43.5 57.8H56.5"/><path d="M43.5 63.2H56.5"/></g><text class="seal-t"><textPath href="#sealTop" startOffset="50%" text-anchor="middle">Bestway Plus</textPath></text><text class="seal-t"><textPath href="#sealBot" startOffset="50%" text-anchor="middle">Football &#183; Poland</textPath></text><circle cx="8.6" cy="70" r="2.4" class="pip"/><circle cx="131.4" cy="70" r="2.4" class="pip"/></svg>'
+FAVICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='16' fill='%230F3D2E'/%3E%3Cg fill='none' stroke='%23F1EFE4' stroke-width='4' stroke-linecap='round'%3E%3Ccircle cx='50' cy='50' r='40'/%3E%3Cg transform='translate(50 50) scale(0.72) translate(-50 -50)'%3E%3Ccircle cx='50' cy='50' r='45.5'/%3E%3Cpath d='M10.17 28.0 A39.83 6.0 0 0 0 89.83 28.0'/%3E%3Cpath d='M9.13 70.0 A40.87 6.0 0 0 0 90.87 70.0'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"
+BULLET = 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Ccircle cx=\'50\' cy=\'50\' r=\'48\' fill=\'%230F3D2E\'/%3E%3Cg fill=\'none\' stroke=\'%23F1EFE4\' stroke-width=\'9\'%3E%3Cpath d=\'M10.17 28.0 A39.83 6.0 0 0 0 89.83 28.0\'/%3E%3Cpath d=\'M9.13 70.0 A40.87 6.0 0 0 0 90.87 70.0\'/%3E%3C/g%3E%3C/svg%3E")'
+
+ROMAN = ["","I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII"]
+def rn(v):
+    try: return ROMAN[int(str(v).lstrip("0") or 0)]
+    except (ValueError, IndexError): return str(v)
 
 ARROW = ('<svg class="ar" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" '
          'stroke-width="1.4" aria-hidden="true"><path d="M4 12L12 4M6 4h6v6"/></svg>')
@@ -37,7 +45,7 @@ def b_split(bk, m):
 def b_idx(bk, m):
     _, eye, head, intro, rows = bk
     it = "".join(
-        f'<a href="{href(r[3],m)}"><span class="n">{E(r[0])}</span>'
+        f'<a href="{href(r[3],m)}"><span class="n">{E(rn(r[0]))}</span>'
         f'<span class="t">{E(r[1])}</span><span class="d">{E(r[2])}</span>{ARROW}</a>' for r in rows)
     intro_h = f'<p class="lead measure pad-t">{E(intro)}</p>' if intro else ""
     return f'''<section class="sec"><div class="wrap">
@@ -47,7 +55,7 @@ def b_idx(bk, m):
 def b_cards(bk, m):
     _, eye, head, intro, items = bk
     cls = "cards" if len(items) % 3 == 0 or len(items) > 4 else "cards two"
-    it = "".join(f'<div class="card"><span class="cn">{E(i[0])}</span><h3>{E(i[1])}</h3><p>{E(i[2])}</p></div>'
+    it = "".join(f'<div class="card"><span class="cn">{E(rn(i[0]))}</span><h3>{E(i[1])}</h3><p>{E(i[2])}</p></div>'
                  for i in items)
     intro_h = f'<p class="lead measure pad-t">{E(intro)}</p>' if intro else ""
     return f'''<section class="sec tint"><div class="wrap">
@@ -59,7 +67,7 @@ def b_clusters(bk, m):
     it = ""
     for n, (name, desc, tags) in enumerate(items):
         tg = "".join(f"<span>{E(t)}</span>" for t in tags)
-        it += (f'<div class="cluster"><div><span class="cn">{n+1:02d} / {len(items):02d}</span>'
+        it += (f'<div class="cluster"><div><span class="cn">{rn(n+1)} of {rn(len(items))}</span>'
                f'<h3>{E(name)}</h3><p>{E(desc)}</p></div><div class="tags">{tg}</div></div>')
     intro_h = f'<p class="lead measure pad-t">{E(intro)}</p>' if intro else ""
     return f'''<section class="sec"><div class="wrap">
@@ -76,7 +84,7 @@ def b_plate(bk, m):
     ps = "".join(f"<p>{E(p)}</p>" for p in paras)
     cap_h = "<br>".join(E(l) for l in cap.split("\n"))
     return f'''<section class="sec"><div class="wrap split">
-<div><div class="plate"><span class="cap">{cap_h}</span></div></div>
+<div><div class="plate"><div class="win">{ROUNDEL_S}</div><span class="cap">{cap_h}</span></div></div>
 <div class="stack"><h2>{E(head)}</h2><div class="stack lead">{ps}</div></div></div></section>'''
 
 def b_faq(bk, m):
@@ -88,14 +96,15 @@ def b_faq(bk, m):
 
 def b_legal(bk, m):
     _, eye, head, items = bk
-    it = "".join(f'<div class="cluster"><div><span class="cn">Notice {n+1:02d}</span><h3>{E(t)}</h3></div>'
+    it = "".join(f'<div class="cluster"><div><span class="cn">Notice {rn(n+1)}</span><h3>{E(t)}</h3></div>'
                  f'<div><p class="dim" style="font-size:15px;line-height:1.72">{E(b)}</p></div></div>'
                  for n,(t,b) in enumerate(items))
     return f'<section class="sec"><div class="wrap"><div class="clusters">{it}</div></div></section>'
 
 def b_band(bk, m):
     _, head, text, cta, target = bk
-    return f'''<section class="band"><div class="wrap in">
+    return f'''<section class="band"><div class="wrap"><div class="orn">{ROUNDEL_S}</div></div>
+<div class="wrap in" style="margin-top:clamp(28px,3.4vw,46px)">
 <div><h2 style="max-width:18ch">{E(head)}</h2><p class="lead pad-t measure">{E(text)}</p></div>
 <div><a class="btn" href="{href(target,m)}">{E(cta)} {ARROW}</a></div></div></section>'''
 
@@ -146,7 +155,7 @@ def header(slug, m):
     nav = "".join('<a href="%s" data-nav="%s"%s>%s</a>'
                   % (href(s,m), s, ' class="on"' if s==slug else '', E(t)) for s,t in NAV)
     return f'''<header class="hdr"><div class="wrap hdr-in">
-<a class="logo" href="{href("home",m)}">{MARK}<span class="wm"><b>Bestway Plus</b><i>Poland</i></span></a>
+<a class="logo" href="{href("home",m)}">{ROUNDEL_S}<span class="wm"><b>Bestway Plus</b><i>Football &#183; Poland</i></span></a>
 <button class="burger" id="burger" type="button" aria-label="Menu" aria-expanded="false">
 <span></span><span></span><span></span></button>
 <nav class="nav" id="nav">{nav}<a class="btn sm" href="{href("contact",m)}" style="margin-block:10px">Contact</a></nav>
@@ -158,9 +167,9 @@ def footer(m):
     for title, links in FOOTER:
         ls = "".join(f'<a href="{href(s,m)}">{E(t)}</a>' for s,t in links)
         cols += f'<div class="fcol"><span class="fh">{E(title)}</span>{ls}</div>'
-    return f'''<footer class="ftr">{MARK.replace(chr(34)+"mk"+chr(34), chr(34)+"fmark"+chr(34))}<div class="wrap">
+    return f'''<footer class="ftr"><div class="wrap">
 <div class="fmap">
-<div class="fcol flock">{MARK}
+<div class="fcol flock">{SEAL}
 <div><p style="font-size:15px;line-height:1.5;max-width:32ch">{E(SLOGAN)}</p>
 <p class="dim" style="font-size:13px;line-height:1.65;max-width:34ch;margin-top:12px">{E(LEGAL_NAME)} —
 international football business, player support and sports consulting. Registered in Poland.</p></div>
@@ -188,15 +197,16 @@ def page_body(slug, m):
                   for l,t,c in h.get("cta",[]))
     cta_h = f'<div class="hero-cta">{cta}</div>' if cta else ""
     if is_home:
-        out.append(f'''<section class="hero"><div class="hero-light"></div><div class="hero-beams"></div>
-<div class="wrap"><span class="eyebrow">{E(h["eyebrow"])}</span><h1>{E(h["h1"])}</h1>
+        out.append(f'''<section class="hero"><div class="wrap">{SEAL}
+<span class="eyebrow">{E(h["eyebrow"])}</span><h1>{E(h["h1"])}</h1>
+<div class="hero-rule"></div>
 <p class="hero-sub">{E(h["sub"])}</p>{cta_h}</div></section>''')
     else:
         out.append(f'''<section class="phero"><div class="wrap">{crumbs}
 <span class="eyebrow">{E(h["eyebrow"])}</span><h1 style="margin-top:20px">{E(h["h1"])}</h1>
 <p class="lead">{E(h["sub"])}</p>{cta_h}</div></section>''')
     if p.get("router"):
-        rt = "".join(f'<a href="{href(r[3],m)}"><span class="n">{E(r[0])}</span>'
+        rt = "".join(f'<a href="{href(r[3],m)}"><span class="n">{E(rn(r[0]))}</span>'
                      f'<span class="t">{E(r[1])}</span><span class="d">{E(r[2])}</span></a>'
                      for r in p["router"])
         out.append(f'<div class="wrap"><div class="router">{rt}</div></div>')
@@ -207,8 +217,8 @@ def page_body(slug, m):
 CSS_LINK = '<link rel="stylesheet" href="assets/site.css">'
 FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
          '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
-         '<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800'
-         '&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">')
+         '<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500'
+         '&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">')
 
 JS_COMMON = '''
 (function(){"use strict";
