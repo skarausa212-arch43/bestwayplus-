@@ -32,9 +32,16 @@ AVAIL_MB=$(df -Pm / | awk 'NR==2{print $4}')
 echo "  диск: ${AVAIL_MB} МБ свободно"
 [ "$AVAIL_MB" -ge 2500 ] || { echo "ERROR: нужно хотя бы 2.5 ГБ свободно"; exit 1; }
 
-# Порт занят — узнать об этом надо до, а не после установки.
+# Повторный запуск — свой же старый процесс на этом порту, а не чужой сосед.
+# Останавливаем его до проверки: иначе редеплой после падения приложения
+# (Restart=always держит порт занятым воскресшим крашящимся процессом)
+# всегда бы отваливался на этой проверке, не доходя до самого редеплоя.
+systemctl stop bwf 2>/dev/null || true
+
+# Порт занят — узнать об этом надо до, а не после установки. Дошли сюда —
+# останов выше не помог, значит порт держит действительно чужой процесс.
 if ss -lnt "sport = :$APP_PORT" 2>/dev/null | grep -q LISTEN; then
-  echo "ERROR: порт $APP_PORT занят:"; ss -lntp "sport = :$APP_PORT" | tail -n +2; exit 1
+  echo "ERROR: порт $APP_PORT занят чужим процессом:"; ss -lntp "sport = :$APP_PORT" | tail -n +2; exit 1
 fi
 
 command -v node >/dev/null || { echo "ERROR: нет node"; exit 1; }
@@ -46,9 +53,9 @@ echo
 echo "== 1. Swap =="
 # 960 МБ на три сервиса без swap — приложение убьёт OOM-killer при первом же
 # всплеске. Гарантия не производительности, а того, что процесс не исчезнет.
-if [ "$(free -m | awk 'NR==3{print $2}')" -lt 512 ]; then
+if [ "$(free -m | awk 'NR==3{print $2}')" -lt 1536 ]; then
   if [ ! -f /swapfile ]; then
-    fallocate -l 1G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=1024
+    fallocate -l 2G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=2048
     chmod 600 /swapfile
     mkswap /swapfile >/dev/null
   fi
@@ -181,11 +188,19 @@ Wants=postgresql.service redis-server.service
 Type=simple
 WorkingDirectory=$ROOT/current
 EnvironmentFile=$ROOT/.env
+# V8 auto-sizes its heap from memory it detects at startup, including a cgroup
+# MemoryMax below — with the old 420M cap it was computing an old-space limit
+# around 250 MB and aborting with "JavaScript heap out of memory" a few
+# seconds after the first request. An explicit --max-old-space-size makes the
+# heap ceiling ours to set, not V8's guess against a cgroup number.
+Environment=NODE_OPTIONS=--max-old-space-size=400
 ExecStart=/usr/bin/node $ROOT/current/server.js
 Restart=always
 RestartSec=5
-# Машина общая: сервис не должен утянуть за собой соседей.
-MemoryMax=420M
+# Машина общая: сервис не должен утянуть за собой соседей. Выше, чем сам
+# --max-old-space-size, чтобы под пиковую нагрузку оставался запас на код,
+# буферы и стек, прежде чем в дело вступит своп.
+MemoryMax=768M
 User=root
 StandardOutput=journal
 StandardError=journal
