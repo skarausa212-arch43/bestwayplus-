@@ -8,7 +8,7 @@
 #
 # Что скрипт НЕ трогает: lumi24.pl, bestwayplus.pl, paymesafe, почту и
 # статический сайт bestwayfootball.pl. Все службы слушают 127.0.0.1 на
-# нестандартных портах (5433, 6380, 9002, 3001), чтобы не столкнуться с LUMI.
+# нестандартных портах (5433, 6380, 9002, 3010), чтобы не столкнуться с LUMI.
 #
 # Сертификаты здесь не выпускаются — сначала A-записи, потом
 # lumi24-issue-certs-football.sh.
@@ -27,6 +27,26 @@ free -m | awk 'NR==2{printf "  RAM: %d МБ всего, %d МБ свободно
 df -h / | awk 'NR==2{printf "  Диск: %s свободно из %s\n", $4, $2}'
 AVAIL_MB=$(df -Pm / | awk 'NR==2{print $4}')
 [ "$AVAIL_MB" -ge 6000 ] || { echo "ERROR: нужно хотя бы 6 ГБ свободно, есть ${AVAIL_MB} МБ"; exit 1; }
+
+# Машина делит порты с LUMI и PayMeSafe. Занятый порт проявился бы только на
+# docker compose up, уже после сборки, поэтому проверяем заранее.
+for port in 5433 6380 9002 3010; do
+  if ss -lnt "sport = :$port" 2>/dev/null | grep -q LISTEN; then
+    echo "ERROR: порт $port уже занят:"
+    ss -lntp "sport = :$port" | tail -n +2
+    exit 1
+  fi
+done
+echo "  порты 5433, 6380, 9002, 3010 свободны"
+
+# RAM: next build упирается в память раньше, чем в диск.
+RAM_MB=$(free -m | awk 'NR==2{print $2}')
+SWAP_MB=$(free -m | awk 'NR==3{print $2}')
+if [ $((RAM_MB + SWAP_MB)) -lt 2048 ]; then
+  echo "ERROR: RAM ${RAM_MB} МБ + swap ${SWAP_MB} МБ — для сборки и четырёх"
+  echo "       контейнеров этого не хватит. Нужен swap или другая машина."
+  exit 1
+fi
 
 if ! command -v docker >/dev/null; then
   echo "== 0a. Ставим docker =="
@@ -120,7 +140,7 @@ server {
     client_max_body_size 20m;
 
     location / {
-        proxy_pass http://127.0.0.1:3001;
+        proxy_pass http://127.0.0.1:3010;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;

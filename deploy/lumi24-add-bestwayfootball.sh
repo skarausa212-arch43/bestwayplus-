@@ -93,6 +93,16 @@ ln -sfn /etc/nginx/sites-available/bestwayfootball /etc/nginx/sites-enabled/best
 nginx -t
 systemctl reload nginx
 
+# reload не мгновенный: старые воркеры ещё принимают соединения, пока не закроют
+# текущие. Запрос, попавший в такой воркер, обслуживает default_server (lumi) и
+# получает его редирект на https — проверка ниже показала бы 301 на живом сайте.
+# Ждём, пока новый блок начнёт отвечать.
+for _ in $(seq 1 20); do
+  code="$(curl -s -o /dev/null -w '%{http_code}' -H "Host: bestwayfootball.pl" http://127.0.0.1/ || true)"
+  [ "$code" = "200" ] && break
+  sleep 0.5
+done
+
 echo "== 4. Проверка отдачи по Host-заголовку (до переключения DNS) =="
 for path in / /players.html /players /sitemap.xml /robots.txt /assets/site.css; do
   printf '  %-22s ' "$path"
