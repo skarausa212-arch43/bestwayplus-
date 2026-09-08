@@ -4,6 +4,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from content import *
 
 DOMAIN = "bestwayfootball.pl"
+import i18n
 from assets import SPRITE, logo, icon, GRID, CONTACT_RAIL, FAVICON
 BRAND = "Bestway Football"
 TAGLINE = "Players. Clubs. Opportunities."
@@ -16,7 +17,29 @@ def rn(v):
 
 ARROW = ('<svg class="ar" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" '
          'stroke-width="1.4" aria-hidden="true"><path d="M4 12L12 4M6 4h6v6"/></svg>')
-E = html.escape
+LANG = "en"
+
+def E(text):
+    """Экранирование и перевод одной операцией. Весь видимый текст шаблонов уже
+    проходит через E(), поэтому локализация не требует правки самих шаблонов."""
+    return html.escape(i18n.t(str(text), LANG))
+
+def alt_href(slug, lang):
+    """Корне-абсолютная ссылка на ту же страницу в другом языке. Внутри одного
+    языка ссылки остаются относительными, поэтому дерево можно перенести."""
+    base = "/" if lang == "en" else "/%s/" % lang
+    return base if slug == "home" else base + slug + ".html"
+
+
+def lang_switch(slug, mode):
+    if mode != "static":
+        return ""
+    links = "".join(
+        '<a href="%s" hreflang="%s" lang="%s"%s>%s</a>'
+        % (alt_href(slug, l), l, l, ' class="on" aria-current="true"' if l == LANG else "", i18n.LABEL[l])
+        for l in i18n.LOCALES)
+    return '<div class="langs" role="group" aria-label="%s">%s</div>' % (E("Language"), links)
+
 
 def href(slug, mode):
     if mode == "spa":
@@ -95,7 +118,7 @@ def b_faq(bk, m):
 
 def b_legal(bk, m):
     _, eye, head, items = bk
-    it = "".join(f'<div class="cluster"><div><span class="cn">Notice {n+1:02d}</span><h3>{E(t)}</h3></div>'
+    it = "".join(f'<div class="cluster"><div><span class="cn">{E("Notice")} {n+1:02d}</span><h3>{E(t)}</h3></div>'
                  f'<div><p class="dim" style="font-size:15px;line-height:1.72">{E(b)}</p></div></div>'
                  for n,(t,b) in enumerate(items))
     return f'<section class="sec"><div class="wrap"><div class="clusters">{it}</div></div></section>'
@@ -109,41 +132,38 @@ def b_band(bk, m):
 def b_contact_form(bk, m):
     C = COMPANY
     return f'''<section class="sec flush"><div class="wrap split">
-<div class="hd"><span class="eyebrow">Enquiry</span><h2>Send a message</h2>
-<p class="lead pad-t">Every enquiry is read by a person. If your request is outside what we do, we will say
-so and, where we can, point you somewhere better.</p></div>
+<div class="hd"><span class="eyebrow">{E("Enquiry")}</span><h2>{E("Send a message")}</h2>
+<p class="lead pad-t">{E("Every enquiry is read by a person. If your request is outside what we do, we will say so and, where we can, point you somewhere better.")}</p></div>
 <form class="form" id="enq" novalidate>
 <div class="f2">
-<label><span>Name</span><input name="name" autocomplete="name" required></label>
-<label><span>Organisation</span><input name="org" autocomplete="organization"></label>
+<label><span>{E("Name")}</span><input name="name" autocomplete="name" required></label>
+<label><span>{E("Organisation")}</span><input name="org" autocomplete="organization"></label>
 </div>
 <div class="f2">
-<label><span>Country</span><input name="country" autocomplete="country-name"></label>
-<label><span>Email</span><input name="email" type="email" autocomplete="email" required></label>
+<label><span>{E("Country")}</span><input name="country" autocomplete="country-name"></label>
+<label><span>{E("Email")}</span><input name="email" type="email" autocomplete="email" required></label>
 </div>
-<label><span>I am writing as</span><select name="role">
-<option>Please select</option><option>Player</option><option>Club</option>
-<option>Licensed football agent</option><option>Scout</option><option>Investor</option>
-<option>Brand or sponsor</option><option>Other</option></select></label>
-<label><span>What are you trying to do?</span><textarea name="msg"
-placeholder="Three lines is enough. A date, a country or a budget band helps more than a long description."></textarea></label>
+<label><span>{E("I am writing as")}</span><select name="role">
+<option>{E("Please select")}</option><option>{E("Player")}</option><option>{E("Club")}</option>
+<option>{E("Licensed football agent")}</option><option>{E("Scout")}</option><option>{E("Investor")}</option>
+<option>{E("Brand or sponsor")}</option><option>{E("Other")}</option></select></label>
+<label><span>{E("What are you trying to do?")}</span><textarea name="msg"
+placeholder="{E("Three lines is enough. A date, a country or a budget band helps more than a long description.")}"></textarea></label>
 <div id="formnote" role="status"></div>
-<div><button class="btn" type="submit">Send enquiry</button></div>
-<p class="dim" style="font-size:12.5px;line-height:1.7">Prototype: this form is a demonstration and does not
-transmit anything yet. In the live site it delivers to the enquiry address and stores nothing else.</p>
+<div><button class="btn" type="submit">{E("Send enquiry")}</button></div>
+<p class="dim" style="font-size:12.5px;line-height:1.7">{E("Prototype: this form is a demonstration and does not transmit anything yet. In the live site it delivers to the enquiry address and stores nothing else.")}</p>
 </form></div></section>
 <section class="sec"><div class="wrap split">
-<div class="hd"><span class="eyebrow">Company</span><h2>Details</h2></div>
+<div class="hd"><span class="eyebrow">{E("Company")}</span><h2>{E("Details")}</h2></div>
 <div class="grid2">
-<div class="stack"><span class="eyebrow">Registered office</span><p class="lead">{C["legal_name"]}<br>{C["street_pl"]}<br>{C["postcode"]} {C["city"]}, {C["country"]}<br><span class="dim" style="font-size:14px">Trading as Bestway Football</span></p></div>
-<div class="stack"><span class="eyebrow">Coverage</span><p class="lead">International, primarily Europe</p></div>
-<div class="stack"><span class="eyebrow">Web</span><p class="lead"><a class="tlink" style="font-size:13px"
+<div class="stack"><span class="eyebrow">{E("Registered office")}</span><p class="lead">{C["legal_name"]}<br>{C["street_pl"]}<br>{C["postcode"]} {C["city"]}, {C["country"]}<br><span class="dim" style="font-size:14px">{E("Trading as Bestway Football")}</span></p></div>
+<div class="stack"><span class="eyebrow">{E("Coverage")}</span><p class="lead">{E("International, primarily Europe")}</p></div>
+<div class="stack"><span class="eyebrow">{E("Web")}</span><p class="lead"><a class="tlink" style="font-size:13px"
 href="https://bestwayfootball.pl">bestwayfootball.pl</a></p></div>
-<div class="stack"><span class="eyebrow">Registration</span><p class="lead">NIP {C["nip"]}<br>REGON {C["regon"]}<br>KRS {C["krs"]}</p></div>
-<div class="stack"><span class="eyebrow">Enquiries</span><p class="lead"><a class="tlink" style="font-size:13px"
+<div class="stack"><span class="eyebrow">{E("Registration")}</span><p class="lead">NIP {C["nip"]}<br>REGON {C["regon"]}<br>KRS {C["krs"]}</p></div>
+<div class="stack"><span class="eyebrow">{E("Enquiries")}</span><p class="lead"><a class="tlink" style="font-size:13px"
 href="mailto:{C["email"]}">{C["email"]}</a></p></div>
-<div class="stack"><span class="eyebrow">Confidentiality</span><p class="lead">Enquiries are treated as
-confidential and are not shared outside the company.</p></div>
+<div class="stack"><span class="eyebrow">{E("Confidentiality")}</span><p class="lead">{E("Enquiries are treated as confidential and are not shared outside the company.")}</p></div>
 </div></div></section>'''
 
 def b_tiles(bk, m):
@@ -183,8 +203,9 @@ def header(slug, m):
 <a class="logo" href="{href("home",m)}">{logo()}<span class="wm"><b>Bestway</b><i>Football</i></span></a>
 <button class="burger" id="burger" type="button" aria-label="Menu" aria-expanded="false">
 <span></span><span></span><span></span></button>
-<nav class="nav" id="nav">{nav}<a class="btn sm" href="{href("contact",m)}" style="margin-block:10px">Contact</a></nav>
-<a class="btn sm" href="{href("contact",m)}">Contact</a>
+<nav class="nav" id="nav">{nav}<a class="btn sm" href="{href("contact",m)}" style="margin-block:10px">{E("Contact")}</a></nav>
+{lang_switch(slug, m)}
+<a class="btn sm" href="{href("contact",m)}">{E("Contact")}</a>
 </div></header>'''
 
 def footer(m):
@@ -197,19 +218,15 @@ def footer(m):
 <div class="fcol flock">{logo()}
 <div><p style="font-size:15px;line-height:1.5;max-width:32ch">{E(SLOGAN)}</p>
 <p class="dim" style="font-size:13px;line-height:1.65;max-width:34ch;margin-top:12px">{E(LEGAL_NAME)},
-trading as Bestway Football. Football business. Player support. Investment. Opportunities.<br>{META_LINE}</p>
+{E("trading as Bestway Football. Football business. Player support. Investment. Opportunities.")}<br>{E(META_LINE)}</p>
 <p class="dim" style="font-size:13px;line-height:1.65;max-width:34ch;margin-top:10px">{COMPANY["street_pl"]}, {COMPANY["postcode"]} {COMPANY["city"]}, {COMPANY["country"]}<br>
 NIP {COMPANY["nip"]} &#183; REGON {COMPANY["regon"]} &#183; KRS {COMPANY["krs"]}<br>
 <a class="tlink" href="mailto:{COMPANY["email"]}">{COMPANY["email"]}</a></p></div>
 <a class="dom" href="https://{DOMAIN}">{DOMAIN}</a></div>
 {cols}</div>
-<p class="fdisc">Bestway Plus is not a FIFA Football Agent and does not carry out football agent activity;
-services reserved for a licensed football agent are performed by an appropriately licensed FIFA Football
-Agent. The company does not provide regulated investment, legal or tax advice — these are provided by
-appropriately licensed independent professionals where required. Nothing on this website is an offer or
-recommendation to invest, and no outcome is guaranteed.</p>
+<p class="fdisc">{E("Bestway Plus is not a FIFA Football Agent and does not carry out football agent activity; services reserved for a licensed football agent are performed by an appropriately licensed FIFA Football Agent. The company does not provide regulated investment, legal or tax advice — these are provided by appropriately licensed independent professionals where required. Nothing on this website is an offer or recommendation to invest, and no outcome is guaranteed.")}</p>
 <div class="fbar"><span>&copy; {E(LEGAL_NAME)}</span>
-<span>Prototype — demonstration content</span>
+<span>{E("Prototype — demonstration content")}</span>
 <a href="{href("legal-notices",m)}">Legal notices</a></div>
 </div></footer>'''
 
@@ -219,7 +236,7 @@ def page_body(slug, m):
     crumbs = ""
     if p.get("parent"):
         ps, pt = p["parent"]
-        crumbs = (f'<div class="crumbs"><a href="{href("home",m)}">Home</a><span>/</span>'
+        crumbs = (f'<div class="crumbs"><a href="{href("home",m)}">{E("Home")}</a><span>/</span>'
                   f'<a href="{href(ps,m)}">{E(pt)}</a></div>')
     cta = "".join(f'<a class="{c}" href="{href(t,m)}">{E(l)} {ARROW if c=="btn" else ""}</a>'
                   for l,t,c in h.get("cta",[]))
@@ -244,7 +261,8 @@ def page_body(slug, m):
         out.append(RENDER[bk[0]](bk, m))
     return "\n".join(out)
 
-CSS_LINK = '<link rel="stylesheet" href="assets/site.css">'
+# Корне-абсолютный путь: один и тот же файл обслуживает /, /pl/ и /ru/.
+CSS_LINK = '<link rel="stylesheet" href="/assets/site.css">'
 FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
          '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
          '<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700'
@@ -261,7 +279,7 @@ JS_COMMON = '''
    var miss=[].slice.call(f.querySelectorAll("[required]")).filter(function(i){return !i.value.trim();});
    var note=document.getElementById("formnote");
    if(miss.length){miss[0].focus();miss[0].style.borderBottomColor="var(--steel)";return;}
-   note.textContent="Received. In the live site this reaches the enquiry desk, which answers every serious message.";
+   note.textContent=__SENT__;
    note.classList.add("on"); f.querySelector("button[type=submit]").disabled=true;});
 })();'''
 
@@ -282,13 +300,42 @@ JS_SPA = '''
  window.addEventListener("hashchange",route); route();
 })();'''
 
-def build_static(outdir):
-    os.makedirs(os.path.join(outdir, "assets"), exist_ok=True)
+def js_common():
+    sent = i18n.t("Received. In the live site this reaches the enquiry desk, "
+                  "which answers every serious message.", LANG)
+    return JS_COMMON.replace("__SENT__", json.dumps(sent, ensure_ascii=False))
+
+
+# Выбор языка запоминается и применяется только на английском корне: возврат
+# на /, если раньше выбрали PL или RU, ведёт в выбранный язык. На остальных
+# страницах адрес всегда важнее сохранённого выбора.
+JS_LANG = '''
+(function(){"use strict";
+ var KEY="bwf.lang", here=document.documentElement.lang||"en";
+ document.addEventListener("click",function(ev){
+   var a=ev.target.closest?ev.target.closest(".langs a"):null;
+   if(a){try{localStorage.setItem(KEY,a.getAttribute("hreflang"));}catch(e){}}});
+ if(!__ROOT__) return;
+ var saved; try{saved=localStorage.getItem(KEY);}catch(e){}
+ if(saved && saved!==here && (saved==="pl"||saved==="ru")) location.replace("/"+saved+"/");
+})();'''
+
+
+def build_static(outdir, lang="en"):
+    global LANG
+    LANG = lang
+    out = outdir if lang == "en" else os.path.join(outdir, lang)
+    os.makedirs(out, exist_ok=True)
     for slug, p in PAGES.items():
         fn = ("index" if slug == "home" else slug) + ".html"
-        canon = "" if slug == "home" else fn
+        canon = alt_href(slug, lang).lstrip("/")
+        alts = "".join(
+            '<link rel="alternate" hreflang="%s" href="https://%s%s">' % (l, DOMAIN, alt_href(slug, l))
+            for l in i18n.LOCALES)
+        alts += '<link rel="alternate" hreflang="x-default" href="https://%s%s">' % (DOMAIN, alt_href(slug, "en"))
+        js_lang = JS_LANG.replace("__ROOT__", "true" if slug == "home" else "false")
         doc = f'''<!DOCTYPE html>
-<html lang="en"><head>
+<html lang="{i18n.HTML_LANG[lang]}"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="dark">
@@ -300,6 +347,7 @@ def build_static(outdir):
 <meta property="og:site_name" content="Bestway Plus">
 <meta property="og:url" content="https://{DOMAIN}/{canon}">
 <link rel="canonical" href="https://{DOMAIN}/{canon}">
+{alts}
 <link rel="icon" href="{FAVICON}">
 {FONTS}
 {CSS_LINK}
@@ -310,9 +358,10 @@ def build_static(outdir):
 {page_body(slug,"static")}
 </main>
 {footer("static")}
-<script>{JS_COMMON}</script>
+<script>{js_common()}</script>
+<script>{js_lang}</script>
 </body></html>'''
-        open(os.path.join(outdir, fn), "w", encoding="utf-8").write(doc)
+        open(os.path.join(out, fn), "w", encoding="utf-8").write(doc)
     return len(PAGES)
 
 def build_spa(path, css):
@@ -330,7 +379,7 @@ def build_spa(path, css):
 {header("home","spa")}
 <main>{body}</main>
 {footer("spa")}
-<script>{JS_COMMON}</script>
+<script>{js_common()}</script>
 <script>{js}</script>
 '''
     open(path, "w", encoding="utf-8").write(doc)
@@ -344,15 +393,23 @@ def build_meta(outdir):
 
     urls = []
     for slug in PAGES:
-        loc = f"https://{DOMAIN}/" if slug == "home" else f"https://{DOMAIN}/{slug}.html"
         priority = "1.0" if slug == "home" else "0.7"
-        urls.append(
-            f"  <url>\n    <loc>{loc}</loc>\n    <lastmod>{today}</lastmod>\n"
-            f"    <changefreq>monthly</changefreq>\n    <priority>{priority}</priority>\n  </url>"
-        )
+        # Каждый язык — отдельный URL, и в каждом перечислены остальные:
+        # иначе поисковик считает переводы дублями друг друга.
+        links = "".join(
+            f'\n    <xhtml:link rel="alternate" hreflang="{l}" href="https://{DOMAIN}{alt_href(slug, l)}"/>'
+            for l in i18n.LOCALES)
+        for lang in i18n.LOCALES:
+            loc = f"https://{DOMAIN}{alt_href(slug, lang)}"
+            urls.append(
+                f"  <url>\n    <loc>{loc}</loc>\n    <lastmod>{today}</lastmod>\n"
+                f"    <changefreq>monthly</changefreq>\n    <priority>{priority}</priority>"
+                f"{links}\n  </url>"
+            )
 
     sitemap = ('<?xml version="1.0" encoding="UTF-8"?>\n'
-               '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+               '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n'
+               '        xmlns:xhtml="http://www.w3.org/1999/xhtml">\n'
                + "\n".join(urls) + "\n</urlset>\n")
     open(os.path.join(outdir, "sitemap.xml"), "w", encoding="utf-8").write(sitemap)
 
@@ -385,6 +442,19 @@ if __name__ == "__main__":
     # pages around it rather than owning a second copy.
     site = here
     css = open(os.path.join(site, "assets", "site.css"), encoding="utf-8").read()
-    n = build_static(site)
+    total = 0
+    for lang in i18n.LOCALES:
+        total += build_static(site, lang)
     build_meta(site)
-    print("static pages:", n, "| sitemap, robots and headers regenerated")
+
+    print("страниц собрано:", total, "| языков:", len(i18n.LOCALES),
+          "| sitemap, robots и headers обновлены")
+    for lang in i18n.LOCALES[1:]:
+        miss = i18n.missing(lang)
+        if miss:
+            print(f"  {lang.upper()}: без перевода {len(miss)} строк "
+                  f"({sum(len(x.split()) for x in miss)} слов)")
+            if os.environ.get("DUMP_MISSING"):
+                import json as _j
+                _j.dump(miss, open(os.path.join(here, f"missing-{lang}.json"), "w"),
+                        ensure_ascii=False, indent=0)

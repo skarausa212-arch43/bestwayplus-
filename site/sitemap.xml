@@ -1,117 +1,517 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://bestwayfootball.pl/</loc>
     <lastmod>2026-09-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/pl/</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/ru/</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/"/>
   </url>
   <url>
     <loc>https://bestwayfootball.pl/services.html</loc>
     <lastmod>2026-09-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/services.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/services.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/services.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/pl/services.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/services.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/services.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/services.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/ru/services.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/services.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/services.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/services.html"/>
   </url>
   <url>
     <loc>https://bestwayfootball.pl/players.html</loc>
     <lastmod>2026-09-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/players.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/players.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/players.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/pl/players.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/players.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/players.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/players.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/ru/players.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/players.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/players.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/players.html"/>
   </url>
   <url>
     <loc>https://bestwayfootball.pl/clubs.html</loc>
     <lastmod>2026-09-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/clubs.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/clubs.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/clubs.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/pl/clubs.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/clubs.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/clubs.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/clubs.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/ru/clubs.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/clubs.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/clubs.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/clubs.html"/>
   </url>
   <url>
     <loc>https://bestwayfootball.pl/agents.html</loc>
     <lastmod>2026-09-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/agents.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/agents.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/agents.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/pl/agents.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/agents.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/agents.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/agents.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/ru/agents.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/agents.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/agents.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/agents.html"/>
   </url>
   <url>
     <loc>https://bestwayfootball.pl/investors.html</loc>
     <lastmod>2026-09-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/investors.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/investors.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/investors.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/pl/investors.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/investors.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/investors.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/investors.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/ru/investors.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/investors.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/investors.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/investors.html"/>
   </url>
   <url>
     <loc>https://bestwayfootball.pl/brands.html</loc>
     <lastmod>2026-09-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/brands.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/brands.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/brands.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/pl/brands.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/brands.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/brands.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/brands.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/ru/brands.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/brands.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/brands.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/brands.html"/>
   </url>
   <url>
     <loc>https://bestwayfootball.pl/player-support.html</loc>
     <lastmod>2026-09-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/player-support.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/player-support.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/player-support.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/pl/player-support.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/player-support.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/player-support.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/player-support.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/ru/player-support.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/player-support.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/player-support.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/player-support.html"/>
   </url>
   <url>
     <loc>https://bestwayfootball.pl/relocation.html</loc>
     <lastmod>2026-09-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/relocation.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/relocation.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/relocation.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/pl/relocation.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/relocation.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/relocation.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/relocation.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/ru/relocation.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/relocation.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/relocation.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/relocation.html"/>
   </url>
   <url>
     <loc>https://bestwayfootball.pl/football-business.html</loc>
     <lastmod>2026-09-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/football-business.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/football-business.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/football-business.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/pl/football-business.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/football-business.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/football-business.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/football-business.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/ru/football-business.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/football-business.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/football-business.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/football-business.html"/>
   </url>
   <url>
     <loc>https://bestwayfootball.pl/recruitment.html</loc>
     <lastmod>2026-09-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/recruitment.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/recruitment.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/recruitment.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/pl/recruitment.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/recruitment.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/recruitment.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/recruitment.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/ru/recruitment.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/recruitment.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/recruitment.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/recruitment.html"/>
   </url>
   <url>
     <loc>https://bestwayfootball.pl/financial-wealth.html</loc>
     <lastmod>2026-09-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/financial-wealth.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/financial-wealth.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/financial-wealth.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/pl/financial-wealth.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/financial-wealth.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/financial-wealth.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/financial-wealth.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/ru/financial-wealth.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/financial-wealth.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/financial-wealth.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/financial-wealth.html"/>
   </url>
   <url>
     <loc>https://bestwayfootball.pl/marketing.html</loc>
     <lastmod>2026-09-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/marketing.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/marketing.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/marketing.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/pl/marketing.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/marketing.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/marketing.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/marketing.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/ru/marketing.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/marketing.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/marketing.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/marketing.html"/>
   </url>
   <url>
     <loc>https://bestwayfootball.pl/legal-coordination.html</loc>
     <lastmod>2026-09-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/legal-coordination.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/legal-coordination.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/legal-coordination.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/pl/legal-coordination.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/legal-coordination.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/legal-coordination.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/legal-coordination.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/ru/legal-coordination.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/legal-coordination.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/legal-coordination.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/legal-coordination.html"/>
   </url>
   <url>
     <loc>https://bestwayfootball.pl/network.html</loc>
     <lastmod>2026-09-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/network.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/network.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/network.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/pl/network.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/network.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/network.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/network.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/ru/network.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/network.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/network.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/network.html"/>
   </url>
   <url>
     <loc>https://bestwayfootball.pl/about.html</loc>
     <lastmod>2026-09-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/about.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/about.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/about.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/pl/about.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/about.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/about.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/about.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/ru/about.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/about.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/about.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/about.html"/>
   </url>
   <url>
     <loc>https://bestwayfootball.pl/faq.html</loc>
     <lastmod>2026-09-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/faq.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/faq.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/faq.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/pl/faq.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/faq.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/faq.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/faq.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/ru/faq.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/faq.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/faq.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/faq.html"/>
   </url>
   <url>
     <loc>https://bestwayfootball.pl/contact.html</loc>
     <lastmod>2026-09-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/contact.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/contact.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/contact.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/pl/contact.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/contact.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/contact.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/contact.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/ru/contact.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/contact.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/contact.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/contact.html"/>
   </url>
   <url>
     <loc>https://bestwayfootball.pl/legal-notices.html</loc>
     <lastmod>2026-09-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/legal-notices.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/legal-notices.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/legal-notices.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/pl/legal-notices.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/legal-notices.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/legal-notices.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/legal-notices.html"/>
+  </url>
+  <url>
+    <loc>https://bestwayfootball.pl/ru/legal-notices.html</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bestwayfootball.pl/legal-notices.html"/>
+    <xhtml:link rel="alternate" hreflang="pl" href="https://bestwayfootball.pl/pl/legal-notices.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://bestwayfootball.pl/ru/legal-notices.html"/>
   </url>
 </urlset>

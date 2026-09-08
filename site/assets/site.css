@@ -76,6 +76,17 @@ p{margin:0}
 .nav a.on{color:var(--white)}
 .nav .btn{display:none}
 .nav a.btn{color:var(--void)}
+/* Переключатель языков — справа сверху, перед кнопкой контакта. В мобильном
+   меню навигация уезжает в выпадающую панель, а языки остаются в шапке:
+   выбор языка нужен до того, как читатель откроет меню. */
+.langs{display:flex;align-items:center;gap:2px;margin-inline-start:auto;flex:0 0 auto}
+.nav+.langs{margin-inline-start:18px}
+.langs a{font-family:Montserrat,sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.16em;
+  color:var(--grey2);padding:6px 8px;border-radius:2px;line-height:1;transition:color .2s,background .2s}
+.langs a:hover{color:var(--white)}
+.langs a.on{color:var(--void);background:var(--mint)}
+@media(max-width:1080px){.langs{margin-inline-start:auto}.nav+.langs{margin-inline-start:0}}
+@media(max-width:520px){.langs a{padding:6px 5px;font-size:10px;letter-spacing:.1em}}
 .burger{display:none;appearance:none;background:none;border:1px solid var(--line);color:var(--mint);
   width:42px;height:38px;cursor:pointer;margin-inline-start:auto;border-radius:8px}
 .burger span{display:block;width:16px;height:1.5px;background:currentColor;margin:3.5px auto;border-radius:2px}
