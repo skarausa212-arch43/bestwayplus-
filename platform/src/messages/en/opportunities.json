@@ -1,0 +1,22 @@
+{
+  "ageRange": "Age range",
+  "contractLength": "Contract length",
+  "deadline": "Deadline",
+  "decline": "Not for me",
+  "empty": "No opportunities yet. A complete profile is what gets you on the list.",
+  "interested": "I am interested",
+  "intro": "Opportunities shared with you by your manager. Nothing here is public.",
+  "months": "{count} months",
+  "notDisclosed": "Not disclosed",
+  "position": "Position",
+  "progress": "Progress",
+  "provideInfo": "Send the requested information",
+  "responded": "Your response has been recorded.",
+  "salary": "Salary range",
+  "stageNotAllowed": "This step is not available right now.",
+  "title": "Opportunities",
+  "transferType": "Transfer type",
+  "typeFREE_AGENT": "Free agent",
+  "typeLOAN": "Loan",
+  "typeTRANSFER": "Transfer"
+}

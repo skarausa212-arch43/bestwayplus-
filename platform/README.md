@@ -19,10 +19,13 @@ flows, wireframes, permission matrix, GDPR model and security design — is in
 | Consent model with versioned wording | Complete | `src/modules/consent` |
 | Registration schemas, all five roles | Complete | `src/modules/auth/schemas.ts` |
 | Public site | Homepage and join chooser wired to the catalogs | `src/app/[locale]` |
-| Portal, admin CRM, messaging, PDF | Not started — phases 4–6 of the plan | — |
+| Client portal | Overview, autosaving profile, document centre with camera upload, requests, opportunities, settings and privacy | `src/app/[locale]/portal` |
+| Profile completion | Pure, weighted, 7 tests | `src/modules/players/completion.ts` |
+| Opportunity projection | Client-safe select with 5 tests asserting internal fields never appear | `src/modules/opportunities` |
+| Admin CRM, messaging, PDF | Not started — phases 5–6 of the plan | — |
 
 The dependency tree has not been installed in this environment, so the Next
-build has not been run. The schema, the policy suite and the catalog guard
+build has not been run. The schema, the 21 unit tests and the catalog guard
 have all been executed and pass.
 
 ## Layout
@@ -79,10 +82,16 @@ npm run dev
 
 ```bash
 npm run typecheck
-npm run test:policy    # the permission matrix — never skip this one
-npm run i18n:check     # fails on any catalog drift
+npm run test           # 21 tests: permission matrix, completion, projection
+npm run test:policy    # the permission matrix alone — never skip this one
+npm run i18n:check     # fails on catalog drift and on a missing enum label
 npm run build
 ```
+
+`i18n:check` runs two passes: key parity across the three locales, and a
+cross-check that every Prisma enum value the UI renders as a label has a
+translation. Adding a value to `DocumentStatus` and forgetting the label is
+otherwise silent until a user sees a blank status pill.
 
 ## Deployment notes
 

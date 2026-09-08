@@ -62,10 +62,49 @@ for (const namespace of namespaces) {
   }
 }
 
+/**
+ * Second pass: every Prisma enum value that the UI renders as a label must
+ * have a key. Adding a value to an enum and forgetting the label is silent
+ * until a user sees a blank status pill, so it is checked here.
+ */
+const ENUM_LABELS: Array<{ enumName: string; namespace: string; prefix: string }> = [
+  { enumName: 'DocumentStatus', namespace: 'statuses', prefix: 'doc' },
+  { enumName: 'Stage', namespace: 'statuses', prefix: 'stage' },
+  { enumName: 'VerificationStatus', namespace: 'statuses', prefix: 'ver' },
+  { enumName: 'DocumentType', namespace: 'documents', prefix: 'type' },
+  { enumName: 'TransferType', namespace: 'opportunities', prefix: 'type' },
+];
+
+const schema = readFileSync(join(process.cwd(), 'prisma', 'schema.prisma'), 'utf8');
+
+function enumValues(name: string): string[] {
+  const match = new RegExp(`enum ${name} \\{([^}]*)\\}`).exec(schema);
+  if (!match) return [];
+  return match[1]!.split('\n').map((line) => line.trim()).filter(Boolean);
+}
+
+for (const { enumName, namespace, prefix } of ENUM_LABELS) {
+  const values = enumValues(enumName);
+  if (values.length === 0) {
+    problems.push(`enum ${enumName} not found in prisma/schema.prisma`);
+    continue;
+  }
+  for (const locale of locales) {
+    const keys = new Set(flatten(read(locale, namespace)));
+    for (const value of values) {
+      const key = `${prefix}${value}`;
+      if (!keys.has(key)) problems.push(`${locale}/${namespace}: missing enum label "${key}" (${enumName})`);
+    }
+  }
+}
+
 if (problems.length > 0) {
   console.error(`Message catalogs are inconsistent (${problems.length}):`);
   for (const problem of problems) console.error(`  · ${problem}`);
   process.exit(1);
 }
 
-console.log(`Catalogs consistent — ${locales.length} locales, ${namespaces.length} namespaces.`);
+console.log(
+  `Catalogs consistent — ${locales.length} locales, ${namespaces.length} namespaces, ` +
+  `${ENUM_LABELS.length} enum label sets.`,
+);

@@ -1,0 +1,22 @@
+{
+  "ageRange": "Przedział wiekowy",
+  "contractLength": "Długość kontraktu",
+  "deadline": "Termin",
+  "decline": "To nie dla mnie",
+  "empty": "Brak możliwości. Kompletny profil to najlepszy sposób, by trafić na listę.",
+  "interested": "Jestem zainteresowany",
+  "intro": "Możliwości udostępnione Ci przez opiekuna. Nic z tego nie jest publiczne.",
+  "months": "{count} mies.",
+  "notDisclosed": "Nieujawnione",
+  "position": "Pozycja",
+  "progress": "Postęp",
+  "provideInfo": "Wyślij wymagane informacje",
+  "responded": "Twoja odpowiedź została zapisana.",
+  "salary": "Przedział wynagrodzenia",
+  "stageNotAllowed": "Ten krok nie jest teraz dostępny.",
+  "title": "Możliwości",
+  "transferType": "Rodzaj transferu",
+  "typeFREE_AGENT": "Wolny zawodnik",
+  "typeLOAN": "Wypożyczenie",
+  "typeTRANSFER": "Transfer"
+}

@@ -4,6 +4,7 @@ import { routing, isAppLocale } from './routing';
 const NAMESPACES = [
   'common', 'nav', 'home', 'join', 'forms', 'validation',
   'portal', 'documents', 'statuses', 'notifications', 'emails',
+  'opportunities',
   'consent', 'legal',
 ] as const;
 
