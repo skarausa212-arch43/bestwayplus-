@@ -22,10 +22,11 @@ flows, wireframes, permission matrix, GDPR model and security design — is in
 | Client portal | Overview, autosaving profile, document centre with camera upload, requests, opportunities, settings and privacy | `src/app/[locale]/portal` |
 | Profile completion | Pure, weighted, 7 tests | `src/modules/players/completion.ts` |
 | Opportunity projection | Client-safe select with 5 tests asserting internal fields never appear | `src/modules/opportunities` |
-| Admin CRM, messaging, PDF | Not started — phases 5–6 of the plan | — |
+| Admin CRM | Dashboard queues, players table, player tabs, isolated assessment, agent verification, document review, share links | `src/app/admin`, `src/modules/admin` |
+| Messaging, PDF, share view | Not started — phase 6 of the plan | — |
 
 The dependency tree has not been installed in this environment, so the Next
-build has not been run. The schema, the 21 unit tests and the catalog guard
+build has not been run. The schema, the 30 unit tests and the catalog guard
 have all been executed and pass.
 
 ## Layout
@@ -82,7 +83,7 @@ npm run dev
 
 ```bash
 npm run typecheck
-npm run test           # 21 tests: permission matrix, completion, projection
+npm run test           # 30 tests: permissions, completion, projections, admin guards
 npm run test:policy    # the permission matrix alone — never skip this one
 npm run i18n:check     # fails on catalog drift and on a missing enum label
 npm run build
