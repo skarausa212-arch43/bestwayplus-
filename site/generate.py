@@ -226,7 +226,6 @@ NIP {COMPANY["nip"]} &#183; REGON {COMPANY["regon"]} &#183; KRS {COMPANY["krs"]}
 {cols}</div>
 <p class="fdisc">{E("Bestway Plus is not a FIFA Football Agent and does not carry out football agent activity; services reserved for a licensed football agent are performed by an appropriately licensed FIFA Football Agent. The company does not provide regulated investment, legal or tax advice — these are provided by appropriately licensed independent professionals where required. Nothing on this website is an offer or recommendation to invest, and no outcome is guaranteed.")}</p>
 <div class="fbar"><span>&copy; {E(LEGAL_NAME)}</span>
-<span>{E("Prototype — demonstration content")}</span>
 <a href="{href("legal-notices",m)}">{E("Legal notices")}</a></div>
 </div></footer>'''
 
@@ -286,16 +285,27 @@ JS_COMMON = '''
  // or JS that hasn't run yet, sees full content, not a page waiting on a
  // script that may never fire.
  if("IntersectionObserver" in window && !matchMedia("(prefers-reduced-motion: reduce)").matches){
-   var targets=[].slice.call(document.querySelectorAll("main section")).filter(function(el){
-     return !el.classList.contains("hero") && !el.classList.contains("phero");});
-   targets.forEach(function(el,i){
+   // Grid rows — tiles, cards, cluster entries, index rows, FAQ items — reveal
+   // one at a time with a short per-item delay, so a section arrives as a
+   // visible cascade rather than one flat block appearing all at once.
+   var gridItems=[].slice.call(document.querySelectorAll(
+     ".tiles>*,.cards>*,.clusters>*,.idx>*,.faq>*"));
+   gridItems.forEach(function(el,i){
+     el.classList.add("reveal","pending");
+     el.style.transitionDelay=(i%6)*0.07+"s";});
+   // Everything else below the fold — sections with no grid of their own —
+   // still fades up as a block; a lone paragraph has nothing to cascade.
+   var sections=[].slice.call(document.querySelectorAll("main section")).filter(function(el){
+     return !el.classList.contains("hero") && !el.classList.contains("phero")
+       && !el.querySelector(".tiles,.cards,.clusters,.idx,.faq");});
+   sections.forEach(function(el,i){
      el.classList.add("reveal","pending");
      el.style.transitionDelay=(i%3)*0.08+"s";});
    var io=new IntersectionObserver(function(entries){
      entries.forEach(function(e){
        if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target);}});
    },{threshold:.12,rootMargin:"0px 0px -60px 0px"});
-   targets.forEach(function(el){io.observe(el);});
+   gridItems.concat(sections).forEach(function(el){io.observe(el);});
  }
 })();'''
 

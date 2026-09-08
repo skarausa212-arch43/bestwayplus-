@@ -54,7 +54,6 @@ NIP 8952277581 &#183; REGON 529604122 &#183; KRS 0001125792<br>
 <div class="fcol"><span class="fh">Komu służymy</span><a href="players.html">Zawodnicy</a><a href="clubs.html">Kluby</a><a href="agents.html">Licencjonowani agenci</a><a href="investors.html">Inwestorzy</a><a href="brands.html">Marki</a></div><div class="fcol"><span class="fh">Czym się zajmujemy</span><a href="player-support.html">Wsparcie zawodnika</a><a href="relocation.html">Relokacja</a><a href="football-business.html">Biznes piłkarski</a><a href="recruitment.html">Rekrutacja i skauting</a><a href="financial-wealth.html">Finanse i majątek</a><a href="marketing.html">Marketing i budowanie marki</a><a href="legal-coordination.html">Koordynacja prawna</a></div><div class="fcol"><span class="fh">Firma</span><a href="about.html">O nas</a><a href="network.html">Sieć kontaktów</a><a href="faq.html">FAQ</a><a href="contact.html">Kontakt</a><a href="legal-notices.html">Noty prawne</a></div></div>
 <p class="fdisc">Bestway Plus nie jest agentem piłkarskim FIFA i nie prowadzi działalności agenta piłkarskiego; usługi zastrzeżone dla licencjonowanego agenta piłkarskiego wykonuje odpowiednio licencjonowany agent piłkarski FIFA. Spółka nie świadczy regulowanego doradztwa inwestycyjnego, prawnego ani podatkowego — świadczą je, jeżeli jest to wymagane, odpowiednio licencjonowani niezależni profesjonaliści. Nic na tej stronie nie stanowi oferty ani rekomendacji inwestycyjnej, a żaden rezultat nie jest gwarantowany.</p>
 <div class="fbar"><span>&copy; Bestway Plus Sp. z o.o.</span>
-<span>Prototyp — treść demonstracyjna</span>
 <a href="legal-notices.html">Noty prawne</a></div>
 </div></footer>
 <script>
@@ -75,16 +74,27 @@ NIP 8952277581 &#183; REGON 529604122 &#183; KRS 0001125792<br>
  // or JS that hasn't run yet, sees full content, not a page waiting on a
  // script that may never fire.
  if("IntersectionObserver" in window && !matchMedia("(prefers-reduced-motion: reduce)").matches){
-   var targets=[].slice.call(document.querySelectorAll("main section")).filter(function(el){
-     return !el.classList.contains("hero") && !el.classList.contains("phero");});
-   targets.forEach(function(el,i){
+   // Grid rows — tiles, cards, cluster entries, index rows, FAQ items — reveal
+   // one at a time with a short per-item delay, so a section arrives as a
+   // visible cascade rather than one flat block appearing all at once.
+   var gridItems=[].slice.call(document.querySelectorAll(
+     ".tiles>*,.cards>*,.clusters>*,.idx>*,.faq>*"));
+   gridItems.forEach(function(el,i){
+     el.classList.add("reveal","pending");
+     el.style.transitionDelay=(i%6)*0.07+"s";});
+   // Everything else below the fold — sections with no grid of their own —
+   // still fades up as a block; a lone paragraph has nothing to cascade.
+   var sections=[].slice.call(document.querySelectorAll("main section")).filter(function(el){
+     return !el.classList.contains("hero") && !el.classList.contains("phero")
+       && !el.querySelector(".tiles,.cards,.clusters,.idx,.faq");});
+   sections.forEach(function(el,i){
      el.classList.add("reveal","pending");
      el.style.transitionDelay=(i%3)*0.08+"s";});
    var io=new IntersectionObserver(function(entries){
      entries.forEach(function(e){
        if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target);}});
    },{threshold:.12,rootMargin:"0px 0px -60px 0px"});
-   targets.forEach(function(el){io.observe(el);});
+   gridItems.concat(sections).forEach(function(el){io.observe(el);});
  }
 })();</script>
 <script>

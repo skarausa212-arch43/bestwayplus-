@@ -364,32 +364,61 @@ input:focus,select:focus,textarea:focus{border-color:var(--emerald);outline:none
   background:linear-gradient(135deg,var(--mint),var(--emerald2))}
 
 /* ---------- motion ---------- */
-/* The mark's light sweep: restrained on purpose — one glint every few
-   seconds, most of the cycle idle off-canvas, not a constant shimmer. */
-.shine{animation:bwf-shine 5.2s cubic-bezier(.3,.1,.2,1) infinite}
+/* The mark's light sweep, on a shorter, more frequent cycle than a first
+   restrained pass used — it needs to actually be seen, not just exist. */
+.shine{animation:bwf-shine 3.4s cubic-bezier(.3,.1,.2,1) infinite}
 @keyframes bwf-shine{
   0%{transform:translateX(-6px);opacity:0}
-  8%{opacity:.9}
+  8%{opacity:1}
   46%{transform:translateX(150px);opacity:0}
   100%{transform:translateX(150px);opacity:0}
 }
 
-/* Hero content rises in on load — always the first thing seen, so it plays
-   immediately rather than waiting on a scroll trigger. */
-.hero .wrap,.phero .wrap{animation:bwf-rise .9s cubic-bezier(.16,.8,.24,1) both}
-@keyframes bwf-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+/* Hero content rises in on load in a visible cascade — each direct child of
+   the hero/page-hero wrap a beat behind the last — rather than the whole
+   block moving as one rigid unit, which barely reads as motion at all. */
+.hero .wrap>*,.phero .wrap>*{animation:bwf-rise .8s cubic-bezier(.16,.8,.24,1) both}
+.hero .wrap>*:nth-child(1),.phero .wrap>*:nth-child(1){animation-delay:.02s}
+.hero .wrap>*:nth-child(2),.phero .wrap>*:nth-child(2){animation-delay:.12s}
+.hero .wrap>*:nth-child(3),.phero .wrap>*:nth-child(3){animation-delay:.22s}
+.hero .wrap>*:nth-child(4),.phero .wrap>*:nth-child(4){animation-delay:.32s}
+.hero .wrap>*:nth-child(5),.phero .wrap>*:nth-child(5){animation-delay:.42s}
+.hero .wrap>*:nth-child(6){animation-delay:.52s}
+@keyframes bwf-rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
 
-/* Below-the-fold sections fade up as they enter view. JS adds .pending only
-   where it can also observe and reveal — so with JS disabled or before it
-   runs, nothing is hidden waiting on a script that never arrives. */
-.reveal.pending{opacity:0;transform:translateY(24px);
-  transition:opacity .8s cubic-bezier(.16,.8,.24,1),transform .8s cubic-bezier(.16,.8,.24,1)}
+/* Below-the-fold content rises into place as it's scrolled to. JS adds
+   .pending only where it can also observe and reveal — so with JS disabled,
+   or before it runs, nothing sits waiting on a script that may never arrive.
+   Grid children (tiles, cards, cluster rows, index rows, FAQ entries) reveal
+   individually with a per-item delay set inline by JS, so a section cascades
+   in piece by piece instead of arriving as one flat block. */
+/* !important on transition only: .pending is never removed once .in is
+   added, so it stays the active rule for the pending→in change — and grid
+   items this applies to (.tile, .card, .cluster, .idx a) each carry their
+   own transition for background/transform on hover, at the same .0,0,1,0.
+   specificity as this two-class selector would only just barely beat.
+   Winning outright, rather than by source-order luck, is the point. */
+.reveal.pending{opacity:0;transform:translateY(26px);
+  transition:opacity .7s cubic-bezier(.16,.8,.24,1),transform .7s cubic-bezier(.16,.8,.24,1) !important}
 .reveal.in{opacity:1;transform:none}
 
 .tile,.card{transition:background .3s,transform .3s,box-shadow .3s}
 .tile:hover,.card:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(0,0,0,.28)}
-.cluster{transition:background .3s}
-.cluster:hover{background:var(--panel)}
+.cluster{transition:background .3s,transform .3s}
+.cluster:hover{background:var(--panel);transform:translateY(-2px)}
+.idx a,.faq summary{transition:background .25s,transform .2s}
+.idx a:hover{transform:translateX(4px)}
+
+/* A slow breathing glow on primary calls to action — the one piece of
+   constant, idle motion on the page, so a reader who never scrolls or
+   hovers still sees that something here is alive. Paused on hover so it
+   doesn't fight the hover glow that already lands there. */
+@keyframes bwf-pulse{
+  0%,100%{box-shadow:0 0 0 rgba(51,193,119,0)}
+  50%{box-shadow:0 12px 36px rgba(51,193,119,.4)}
+}
+.btn:not(.sm):not(.line){animation:bwf-pulse 3.2s ease-in-out infinite}
+.btn:not(.sm):not(.line):hover{animation-play-state:paused}
 
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.001ms!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
