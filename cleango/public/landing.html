@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LUMI — sprzątanie i usługi domowe we Wrocławiu</title>
+<meta name="description" content="LUMI — usługi domowe we Wrocławiu: sprzątanie, mycie okien i ogród. Stała cena znana przed zamówieniem, sprawdzeni wykonawcy, płatność w aplikacji.">
+<style>
+  :root{
+    --p:#22C55E;--p600:#059669;--p050:#E7F9EF;
+    --ink:#0B1220;--ink2:#39445a;--muted:#68758b;--bg:#ffffff;--bg2:#F4F8F6;
+    --card:#ffffff;--line:#E7ECEA;--line2:#dbe3e0;--shadow:0 18px 50px rgba(6,42,26,.10);
+  }
+  @media(prefers-color-scheme:dark){:root{--ink:#eef2f5;--ink2:#c3ccd8;--muted:#93a0b2;--bg:#0A1017;--bg2:#0E1620;--card:#111A25;--line:#1e2a37;--line2:#26333f;--shadow:0 18px 50px rgba(0,0,0,.4);--p050:#0f2a1e}}
+  :root[data-theme="dark"]{--ink:#eef2f5;--ink2:#c3ccd8;--muted:#93a0b2;--bg:#0A1017;--bg2:#0E1620;--card:#111A25;--line:#1e2a37;--line2:#26333f;--shadow:0 18px 50px rgba(0,0,0,.4);--p050:#0f2a1e}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font:17px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  a{color:inherit}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 22px}
+  .grad{background:linear-gradient(120deg,#34D77F,#059669);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .btn{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#22C55E,#059669);color:#fff;font-weight:750;text-decoration:none;padding:13px 24px;border-radius:13px;border:0;cursor:pointer;font-size:15.5px;transition:transform .16s,box-shadow .16s;box-shadow:0 8px 22px rgba(5,150,105,.28)}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(5,150,105,.36)}
+  .btn.ghost{background:transparent;color:var(--ink);box-shadow:none;border:1.5px solid var(--line2)}
+  .btn.ghost:hover{border-color:var(--p);color:var(--p600);transform:none}
+  .btn.white{background:#fff;color:#08351f;box-shadow:none}
+
+  /* header */
+  header{position:sticky;top:0;z-index:50;backdrop-filter:saturate(1.4) blur(12px);background:color-mix(in srgb,var(--bg) 82%,transparent);border-bottom:1px solid transparent;transition:border-color .3s}
+  header.stuck{border-color:var(--line)}
+  .hd{display:flex;align-items:center;justify-content:space-between;padding:14px 0;gap:12px}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:850;font-size:21px;letter-spacing:-.02em}
+  .brand svg{width:38px;height:38px}
+  .nav-links{display:flex;gap:26px;margin-left:auto}
+  .nav-links a{text-decoration:none;color:var(--muted);font-size:15px;font-weight:650}
+  .nav-links a:hover{color:var(--ink)}
+  .hd-cta{display:flex;gap:10px;align-items:center}
+  .iconbtn{width:42px;height:42px;border-radius:12px;border:1.5px solid var(--line2);background:var(--card);color:var(--ink);display:grid;place-items:center;cursor:pointer}
+  @media(max-width:760px){.nav-links{display:none}.hd-cta .ghost{display:none}}
+
+  /* hero */
+  .hero{position:relative;text-align:center;padding:76px 0 150px;overflow:hidden}
+  .hero-bg{position:absolute;inset:0;z-index:-1;background:radial-gradient(120% 80% at 50% -12%,#3AE083 0%,#12B36A 34%,transparent 62%);opacity:.16}
+  .hero-glow{position:absolute;border-radius:50%;filter:blur(80px);z-index:-1;opacity:.5;animation:float 14s ease-in-out infinite}
+  .g1{width:340px;height:340px;background:#34D77F;top:-40px;left:8%}
+  .g2{width:300px;height:300px;background:#0EA5A5;top:40px;right:6%;animation-delay:-5s}
+  .eyebrow{display:inline-flex;align-items:center;gap:9px;background:var(--p050);color:var(--p600);border:1px solid color-mix(in srgb,var(--p) 30%,transparent);padding:7px 15px;border-radius:999px;font-size:13.5px;font-weight:700;margin-bottom:22px}
+  .stars{letter-spacing:2px}
+  .hero h1{font-size:clamp(36px,6.4vw,62px);line-height:1.04;letter-spacing:-.035em;margin:0 0 20px;font-weight:850}
+  .hero .lede{font-size:clamp(17px,2.4vw,21px);color:var(--muted);max-width:660px;margin:0 auto 30px}
+  .hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .cities{margin-top:26px;color:var(--muted);font-size:14px;font-weight:600}
+
+  /* calculator */
+  .calc{max-width:760px;margin:-108px auto 0;position:relative;z-index:5;background:var(--card);border:1px solid var(--line);border-radius:26px;box-shadow:var(--shadow);padding:28px}
+  .calc h2{margin:0 0 4px;font-size:22px;letter-spacing:-.02em}
+  .calc .sub{color:var(--muted);font-size:14.5px;margin:0 0 20px}
+  .calc-grid{display:grid;grid-template-columns:1.2fr .9fr;gap:22px}
+  @media(max-width:680px){.calc{margin-top:-90px;padding:22px}.calc-grid{grid-template-columns:1fr;gap:18px}}
+  .lbl{font-size:12.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:0 0 9px}
+  .svc-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+  .svc-pills button{flex:1;min-width:96px;padding:11px 10px;border-radius:13px;border:1.5px solid var(--line2);background:var(--bg);color:var(--ink2);font-weight:700;font-size:14px;cursor:pointer;transition:.15s}
+  .svc-pills button.on{background:var(--p);border-color:var(--p);color:#fff;box-shadow:0 8px 18px rgba(5,150,105,.25)}
+  .stepper{display:flex;align-items:center;justify-content:space-between;border:1.5px solid var(--line2);border-radius:13px;padding:8px 10px;margin-bottom:14px}
+  .stepper .sv{font-weight:800;font-size:17px}
+  .stepper .sl{font-size:12.5px;color:var(--muted);font-weight:650}
+  .stepper button{width:38px;height:38px;border-radius:10px;border:0;background:var(--bg2);color:var(--ink);font-size:22px;font-weight:700;cursor:pointer;display:grid;place-items:center}
+  .stepper button:hover{background:var(--p050);color:var(--p600)}
+  select.city{width:100%;padding:12px 12px;border-radius:13px;border:1.5px solid var(--line2);background:var(--bg);color:var(--ink);font-size:15px;font-weight:600}
+  .price-panel{background:linear-gradient(155deg,#0EA55E,#04724B);border-radius:20px;padding:24px 22px;color:#fff;display:flex;flex-direction:column;justify-content:center;text-align:center;position:relative;overflow:hidden}
+  .price-panel .pp-lbl{font-size:13px;opacity:.85;font-weight:650}
+  .price-panel .amt{font-size:46px;font-weight:850;letter-spacing:-.03em;line-height:1;margin:6px 0}
+  .price-panel .rng{font-size:14px;opacity:.9}
+  .price-panel .dur{margin-top:12px;font-size:13.5px;background:rgba(255,255,255,.16);border-radius:999px;padding:6px 12px;display:inline-block}
+  .price-panel .btn.white{margin-top:16px;justify-content:center}
+  .price-panel.loading .amt{opacity:.35}
+  .note{font-size:12px;color:var(--muted);margin:14px 2px 0;text-align:center}
+
+  /* sections */
+  section.blk{padding:70px 0}
+  .sec-head{text-align:center;max-width:640px;margin:0 auto 42px}
+  .sec-head h2{font-size:clamp(27px,4vw,38px);letter-spacing:-.03em;margin:0 0 12px;font-weight:850}
+  .sec-head p{color:var(--muted);margin:0;font-size:17px}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+  @media(max-width:680px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat{background:var(--bg2);border:1px solid var(--line);border-radius:18px;padding:26px 18px;text-align:center}
+  .stat b{display:block;font-size:clamp(30px,4vw,40px);font-weight:850;letter-spacing:-.03em;background:linear-gradient(120deg,#22C55E,#0EA5A5);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .stat span{color:var(--muted);font-size:14px;font-weight:600}
+
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;counter-reset:s}
+  @media(max-width:760px){.steps{grid-template-columns:1fr}}
+  .step{position:relative;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:28px 24px}
+  .step::before{counter-increment:s;content:counter(s);position:absolute;top:-14px;left:24px;width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#22C55E,#059669);color:#fff;font-weight:850;display:grid;place-items:center;box-shadow:0 8px 18px rgba(5,150,105,.3)}
+  .step h3{margin:10px 0 8px;font-size:19px}
+  .step p{margin:0;color:var(--muted);font-size:15px}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:26px;transition:transform .18s,box-shadow .18s}
+  .card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+  .card .ico{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;margin-bottom:15px;background:var(--p050);color:var(--p600);font-size:23px}
+  .card h3{margin:0 0 8px;font-size:18px}
+  .card p{margin:0;color:var(--muted);font-size:15px}
+
+  .quotes{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  @media(max-width:760px){.quotes{grid-template-columns:1fr}}
+  .quote{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px}
+  .quote .qs{color:#F5B301;letter-spacing:1px;font-size:15px}
+  .quote p{font-size:15.5px;line-height:1.55;margin:12px 0 16px}
+  .who{display:flex;align-items:center;gap:12px}
+  .who .av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#34D77F,#059669);color:#fff;font-weight:800;display:grid;place-items:center}
+  .who b{font-size:14.5px;display:block}
+  .who span{font-size:13px;color:var(--muted)}
+
+  .ctaband{position:relative;overflow:hidden;text-align:center;background:linear-gradient(135deg,#0E9E5C,#04724B);color:#fff;border-radius:28px;padding:60px 22px;margin:20px 0 66px}
+  .ctaband h2{font-size:clamp(28px,4vw,38px);margin:0 0 12px;letter-spacing:-.02em}
+  .ctaband p{opacity:.9;max-width:520px;margin:0 auto 26px}
+  .ctaband .glow{position:absolute;width:320px;height:320px;border-radius:50%;background:#5BF0A6;filter:blur(90px);opacity:.4;top:-120px;right:-40px}
+
+  footer{border-top:1px solid var(--line);padding:30px 0;color:var(--muted);font-size:14px}
+  .foot{display:flex;gap:18px;flex-wrap:wrap;justify-content:space-between;align-items:center}
+  .foot a{color:var(--muted);text-decoration:none}
+  .foot a:hover{color:var(--ink)}
+
+  /* animate only when JS is active — no-JS / crawlers see content immediately */
+  html.js .reveal{opacity:0;transform:translateY(22px);transition:opacity .6s cubic-bezier(.2,.7,.3,1),transform .6s cubic-bezier(.2,.7,.3,1)}
+  html.js .reveal.in{opacity:1;transform:none}
+  @keyframes float{50%{transform:translate(0,26px) scale(1.05)}}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto}.reveal{opacity:1;transform:none}}
+</style>
+<link rel="canonical" href="https://lumi24.pl/landing.html">
+</head>
+<body>
+  <header id="hdr"><div class="wrap hd">
+    <div class="brand">
+      <svg viewBox="0 0 96 96" fill="none"><defs>
+        <linearGradient id="lg" x1="14" y1="8" x2="82" y2="90" gradientUnits="userSpaceOnUse"><stop stop-color="#34D77F"/><stop offset=".5" stop-color="#22C55E"/><stop offset="1" stop-color="#059669"/></linearGradient></defs>
+        <rect x="6" y="6" width="84" height="84" rx="25" fill="url(#lg)"/>
+        <path d="M27 51 L48 31 L69 51 V70 a3 3 0 0 1 -3 3 H30 a3 3 0 0 1 -3 -3 Z" stroke="#fff" stroke-width="4.8" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+        <path d="M69 24 l2.5 5.6 5.6 2.5 -5.6 2.5 L69 41 l-2.5 -5.6 -5.6 -2.5 5.6 -2.5 Z" fill="#F1FFFD"/></svg>
+      LUMI
+    </div>
+    <nav class="nav-links">
+      <a href="#calc">Cena</a><a href="#how">Jak to działa</a><a href="#features">Możliwości</a><a href="#reviews">Dlaczego LUMI</a>
+    </nav>
+    <div class="hd-cta">
+      <button class="iconbtn" id="theme" title="Motyw" aria-label="Zmień motyw">🌙</button>
+      <a class="btn ghost" href="/">Zaloguj się</a>
+      <a class="btn" href="/">Zamów</a>
+    </div>
+  </div></header>
+
+  <section class="hero">
+    <div class="hero-bg"></div><span class="hero-glow g1"></span><span class="hero-glow g2"></span>
+    <div class="wrap">
+      <span class="eyebrow">Startujemy we Wrocławiu · nowa platforma usług domowych</span>
+      <h1>Dom, który <span class="grad">dba o siebie</span></h1>
+      <p class="lede">Usługi domowe we Wrocławiu: sprzątanie, mycie okien i ogród. Cenę znasz
+        przed zamówieniem, wykonawcę śledzisz na żywo, a dom sam przypomina o obsłudze.</p>
+      <div class="hero-cta">
+        <a class="btn" href="/">Zamów sprzątanie →</a>
+        <a class="btn ghost" href="#calc">Oblicz cenę</a>
+      </div>
+      <div class="cities">Wrocław · kolejne miasta wkrótce</div>
+    </div>
+  </section>
+
+  <!-- price calculator -->
+  <div class="wrap"><div class="calc reveal" id="calc">
+    <h2>Poznaj cenę w 10 sekund</h2>
+    <p class="sub">Wycena bez rejestracji i bez ukrytych dopłat.</p>
+    <div class="calc-grid">
+      <div>
+        <div class="lbl">Rodzaj sprzątania</div>
+        <div class="svc-pills" id="svc">
+          <button data-s="standard" class="on">Standardowe</button>
+          <button data-s="deep">Generalne</button>
+          <button data-s="moveout">Po remoncie</button>
+        </div>
+        <div class="lbl">Parametry</div>
+        <div class="stepper"><div><div class="sv" id="roomsV">2</div><div class="sl">pokoje</div></div>
+          <div style="display:flex;gap:8px"><button data-step="rooms" data-d="-1">−</button><button data-step="rooms" data-d="1">+</button></div></div>
+        <div class="stepper"><div><div class="sv" id="bathsV">1</div><div class="sl">łazienki</div></div>
+          <div style="display:flex;gap:8px"><button data-step="baths" data-d="-1">−</button><button data-step="baths" data-d="1">+</button></div></div>
+        <select class="city" id="city">
+          <option>Wrocław</option>
+        </select>
+      </div>
+      <div class="price-panel" id="pp">
+        <div class="pp-lbl">Cena orientacyjna</div>
+        <div class="amt" id="amt">— zł</div>
+        <div class="rng" id="rng">liczymy…</div>
+        <div class="dur" id="dur">⏱ —</div>
+        <a class="btn white" href="/">Zamów →</a>
+      </div>
+    </div>
+    <p class="note">Ostateczna cena jest ustalana przy składaniu zamówienia. Zakres uwzględnia stan mieszkania i dostępność wykonawców.</p>
+  </div></div>
+
+  <section class="blk"><div class="wrap">
+    <div class="stats reveal">
+      <div class="stat"><b data-count="7">0</b><span>rodzajów usług dla domu</span></div>
+      <div class="stat"><b data-count="10" data-suffix=" s">0</b><span>tyle trwa wycena</span></div>
+      <div class="stat"><b data-count="100" data-suffix="%">0</b><span>wykonawców po weryfikacji</span></div>
+      <div class="stat"><b data-count="0" data-suffix=" zł">0</b><span>opłat za rejestrację</span></div>
+    </div>
+  </div></section>
+
+  <section class="blk" id="how"><div class="wrap">
+    <div class="sec-head reveal"><h2>Trzy kroki do czystości</h2><p>Bez telefonów i negocjacji — wszystko w aplikacji.</p></div>
+    <div class="steps reveal">
+      <div class="step"><h3>Opisz zamówienie</h3><p>Rodzaj sprzątania, pokoje, adres i dogodny termin. Cena pojawia się od razu.</p></div>
+      <div class="step"><h3>Wybierz wykonawcę</h3><p>Zweryfikowani wykonawcy w pobliżu, z ocenami. Albo zostaw wybór LUMI.</p></div>
+      <div class="step"><h3>Śledź na żywo</h3><p>Status, czas dojazdu i czat na bieżąco. Zdjęcia „przed/po” po zakończeniu.</p></div>
+    </div>
+  </div></section>
+
+  <section class="blk" id="features"><div class="wrap">
+    <div class="sec-head reveal"><h2>Nie tylko sprzątanie</h2><p>Cały dom w jednej aplikacji.</p></div>
+    <div class="grid reveal">
+      <div class="card"><div class="ico">⚡</div><h3>FlashClean</h3><p>Wykonawca w pobliżu przyjedzie jak najszybciej. Przejrzysta cena z ograniczoną dopłatą.</p></div>
+      <div class="card"><div class="ico">✨</div><h3>Wycena od ręki</h3><p>Zrozumiały kosztorys: czas trwania, zakres prac i cena — zanim potwierdzisz.</p></div>
+      <div class="card"><div class="ico">🏠</div><h3>Inteligentny dom</h3><p>LUMI Score, kalendarz obsługi, rejestr sprzętu i przypomnienia o gwarancjach.</p></div>
+      <div class="card"><div class="ico">📍</div><h3>Śledzenie na żywo</h3><p>Status zamówienia, czas dojazdu i czat z wykonawcą — z powiadomieniami na każdym kroku.</p></div>
+      <div class="card"><div class="ico">🗂️</div><h3>Paszport domu</h3><p>Historia obsługi, zdjęcia „przed/po” i potwierdzenia płatności — cyfrowe archiwum domu.</p></div>
+      <div class="card"><div class="ico">👑</div><h3>LUMI+</h3><p>Zwrot na saldo za każde zamówienie, priorytetowe przydzielanie i ulubieni wykonawcy.</p></div>
+    </div>
+  </div></section>
+
+  <section class="blk" id="reviews"><div class="wrap">
+    <div class="sec-head reveal"><h2>Dlaczego LUMI</h2><p>Startujemy we Wrocławiu — oto, co gwarantujemy od pierwszego zlecenia.</p></div>
+    <div class="quotes reveal">
+      <div class="quote"><div class="qs">✓</div><p>Cena znana przed zamówieniem — bez wycen „do uzgodnienia" i dopłat na miejscu.</p><div class="who"><span class="av">1</span><div><b>Stała cena</b><span>zanim potwierdzisz</span></div></div></div>
+      <div class="quote"><div class="qs">✓</div><p>Każdy wykonawca przechodzi weryfikację tożsamości i danych do wypłat, zanim przyjmie pierwsze zlecenie.</p><div class="who"><span class="av">2</span><div><b>Sprawdzeni wykonawcy</b><span>weryfikacja KYC</span></div></div></div>
+      <div class="quote"><div class="qs">✓</div><p>Płatność kartą w aplikacji i potwierdzenie w PDF do każdego zamówienia. Bez gotówki.</p><div class="who"><span class="av">3</span><div><b>Bezpieczna płatność</b><span>i dokument do każdego zlecenia</span></div></div></div>
+    </div>
+    <p class="note" style="text-align:center">Oceny i opinie pojawią się tutaj, gdy wystawią je nasi klienci — nie publikujemy opinii, których nikt nie napisał.</p>
+  </div></section>
+
+  <div class="wrap"><section class="ctaband reveal">
+    <span class="glow"></span>
+    <h2>Gotowi na czysty dom?</h2>
+    <p>Załóż konto w minutę — pierwsze zamówienie złożysz od razu.</p>
+    <a class="btn white" href="/">Zacznij za darmo →</a>
+  </section></div>
+
+  <footer><div class="wrap foot">
+    <div class="brand" style="font-size:18px"><svg viewBox="0 0 96 96" width="28" height="28" fill="none"><rect x="6" y="6" width="84" height="84" rx="25" fill="#22C55E"/><path d="M27 51 L48 31 L69 51 V70 a3 3 0 0 1 -3 3 H30 a3 3 0 0 1 -3 -3 Z" stroke="#fff" stroke-width="4.8" stroke-linejoin="round" fill="none"/></svg>LUMI</div>
+    <div style="display:flex;gap:18px;flex-wrap:wrap"><a href="/privacy.html">Prywatność</a><a href="/terms.html">Regulamin</a><a href="/brand.html">Marka</a></div>
+    <span>© 2026 LUMI · Wrocław</span>
+  </div>
+  <div class="wrap" style="font-size:11px;line-height:1.6;opacity:.6;padding-top:6px">
+    <b>BESTWAY PLUS Sp. z o.o.</b> · KRS 0001125792 · NIP 8952277581 · REGON 529604122 · ul. Zajączkowska 44, 51-180 Wrocław, Polska · <a href="mailto:support@lumi24.pl">support@lumi24.pl</a>
+  </div></footer>
+
+<script>
+(function(){
+  var root=document.documentElement; root.classList.add('js');
+  // safety: if the observer never fires for some element, reveal after a beat
+  setTimeout(function(){document.querySelectorAll('.reveal:not(.in)').forEach(function(n){var r=n.getBoundingClientRect();if(r.top<innerHeight*1.1)n.classList.add('in');});},400);
+  // theme
+  var tb=document.getElementById('theme');
+  var saved=localStorage.getItem('lumi_theme');
+  if(saved)root.setAttribute('data-theme',saved);
+  function isDark(){var t=root.getAttribute('data-theme');return t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;}
+  function paint(){tb.textContent=isDark()?'☀️':'🌙';}
+  paint();
+  tb.onclick=function(){var d=!isDark();root.setAttribute('data-theme',d?'dark':'light');localStorage.setItem('lumi_theme',d?'dark':'light');paint();};
+
+  // sticky header shadow
+  var hdr=document.getElementById('hdr');
+  addEventListener('scroll',function(){hdr.classList.toggle('stuck',scrollY>8);},{passive:true});
+
+  // reveal on scroll
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);if(e.target.querySelector('[data-count]'))countAll(e.target);}})},{threshold:.15});
+  document.querySelectorAll('.reveal').forEach(function(n){io.observe(n);});
+
+  // count-up
+  function countAll(scope){scope.querySelectorAll('[data-count]').forEach(function(el){
+    var to=parseFloat(el.dataset.count),dec=+(el.dataset.dec||0),suf=el.dataset.suffix||'',t0=performance.now(),dur=1300;
+    function fmt(v){var s=dec?v.toFixed(dec):Math.round(v).toLocaleString('ru-RU');return s+suf;}
+    function tick(t){var k=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-k,3);el.textContent=fmt(to*e);if(k<1)requestAnimationFrame(tick);}
+    requestAnimationFrame(tick);});}
+
+  // price calculator (server-authoritative via /api/estimate)
+  var st={service:'standard',rooms:2,baths:1,city:'Warszawa'};
+  var amt=document.getElementById('amt'),rng=document.getElementById('rng'),dur=document.getElementById('dur'),pp=document.getElementById('pp');
+  document.getElementById('svc').addEventListener('click',function(e){var b=e.target.closest('[data-s]');if(!b)return;
+    st.service=b.dataset.s;document.querySelectorAll('#svc button').forEach(function(x){x.classList.toggle('on',x===b);});quote();});
+  document.querySelectorAll('[data-step]').forEach(function(b){b.onclick=function(){
+    var k=b.dataset.step,d=+b.dataset.d,min=k==='baths'?0:1,max=k==='baths'?6:10;
+    st[k]=Math.max(min,Math.min(max,st[k]+d));document.getElementById(k+'V').textContent=st[k];quote();};});
+  document.getElementById('city').onchange=function(e){st.city=e.target.value;quote();};
+  var timer=null;
+  function quote(){clearTimeout(timer);pp.classList.add('loading');rng.textContent='liczymy…';
+    timer=setTimeout(function(){
+      fetch('/api/estimate',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(st)})
+      .then(function(r){return r.json();}).then(function(d){
+        var e=d.estimate;if(!e)throw 0;
+        amt.textContent=e.total+' zł';
+        rng.textContent='zwykle '+e.rangeLow+'–'+e.rangeHigh+' zł';
+        dur.textContent='⏱ ~'+(Math.round(e.durationHours*10)/10)+' godz. pracy';
+        pp.classList.remove('loading');
+      }).catch(function(){rng.textContent='Nie udało się obliczyć';pp.classList.remove('loading');});
+    },220);}
+  quote();
+})();
+</script>
+</body>
+</html>

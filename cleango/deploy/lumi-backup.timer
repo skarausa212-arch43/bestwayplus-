@@ -1,0 +1,13 @@
+[Unit]
+Description=Nightly LUMI backup
+
+[Timer]
+# 03:20 local time, with a spread so a fleet does not hit the bucket at once.
+OnCalendar=*-*-* 03:20:00
+RandomizedDelaySec=20m
+# If the server was off at 03:20, run once it is back rather than skipping a day.
+Persistent=true
+Unit=lumi-backup.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,46 @@
+{
+  "appId": "pl.lumi24.app",
+  "appName": "LUMI",
+  "webDir": "www",
+  "backgroundColor": "#0C100E",
+  "server": {
+    "url": "https://lumi24.pl",
+    "androidScheme": "https",
+    "cleartext": false,
+    "errorPath": "offline.html",
+    "allowNavigation": [
+      "lumi24.pl",
+      "*.lumi24.pl",
+      "checkout.stripe.com",
+      "*.stripe.com",
+      "hooks.stripe.com",
+      "secure.przelewy24.pl",
+      "*.przelewy24.pl",
+      "accounts.google.com",
+      "appleid.apple.com"
+    ]
+  },
+  "ios": {
+    "contentInset": "always",
+    "backgroundColor": "#0C100E"
+  },
+  "android": {
+    "backgroundColor": "#0C100E",
+    "versionCode": 2,
+    "versionName": "1.1"
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": [
+        "badge",
+        "sound",
+        "alert"
+      ]
+    },
+    "SplashScreen": {
+      "launchShowDuration": 600,
+      "backgroundColor": "#0C100E",
+      "showSpinner": false
+    }
+  }
+}
