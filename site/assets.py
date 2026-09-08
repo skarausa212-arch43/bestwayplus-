@@ -6,25 +6,51 @@ SPRITE = ('<svg width="0" height="0" style="position:absolute" aria-hidden="true
  '<linearGradient id="bwG" x1="0" y1="0" x2="1" y2="1">'
  '<stop offset="0" stop-color="#8DF3B6"/><stop offset=".46" stop-color="#33C177"/>'
  '<stop offset="1" stop-color="#0C7B45"/></linearGradient>'
- '<linearGradient id="bwGf" x1="0" y1="0" x2="1" y2="1">'
- '<stop offset="0" stop-color="#B6FAD2"/><stop offset="1" stop-color="#4BD68C"/></linearGradient>'
+ '<linearGradient id="bwGf" x1="0" y1="0" x2="1" y2="0">'
+ '<stop offset="0" stop-color="#fff" stop-opacity="0"/>'
+ '<stop offset=".5" stop-color="#fff" stop-opacity=".8"/>'
+ '<stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>'
  '<linearGradient id="bwI" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="24" y2="24">'
  '<stop offset="0" stop-color="#93F2BA"/><stop offset="1" stop-color="#25AE68"/></linearGradient>'
  '</defs></svg>')
 
-# ---- the B monogram ------------------------------------------------------
-_B = ("M12 6 H64 L82 24 V38 L68 52 L86 68 V92 L68 110 H12 Z"
-      "M30 20 H56 L66 30 L56 40 H30 Z"
-      "M30 64 H60 L72 76 L60 88 H30 Z")
-_FACET = "M0 82 L104 16 L104 -6 L0 -6 Z"
+# ---- the B monogram --------------------------------------------------------
+# Outer silhouette: a stem plus two angular bowls, chamfered corners at top and
+# bottom to match the brand's faceted style. The two counters (the "windows"
+# that make it read as a B rather than a wedge) are true rounded ellipses, not
+# the pointed hexagon notches of the first draft — those looked like arrowheads
+# cut into a slab rather than the inside of a letter. fill-rule=evenodd punches
+# both holes through the one gradient fill.
+_B_OUTER = "M12 6 H64 L82 24 V38 L68 52 L86 68 V92 L68 110 H12 Z"
+
+
+def _ellipse_hole(cx, cy, rx, ry):
+    """A closed ellipse as a cubic-bezier subpath, for use as an evenodd hole."""
+    k = 0.5522847498
+    kx, ky = rx * k, ry * k
+    return (
+        f"M{cx+rx:.2f} {cy:.2f} "
+        f"C{cx+rx:.2f} {cy+ky:.2f} {cx+kx:.2f} {cy+ry:.2f} {cx:.2f} {cy+ry:.2f} "
+        f"C{cx-kx:.2f} {cy+ry:.2f} {cx-rx:.2f} {cy+ky:.2f} {cx-rx:.2f} {cy:.2f} "
+        f"C{cx-rx:.2f} {cy-ky:.2f} {cx-kx:.2f} {cy-ry:.2f} {cx:.2f} {cy-ry:.2f} "
+        f"C{cx+kx:.2f} {cy-ry:.2f} {cx+rx:.2f} {cy-ky:.2f} {cx+rx:.2f} {cy:.2f} Z"
+    )
+
+
+_B = _B_OUTER + " " + _ellipse_hole(56, 29, 19, 12.5) + " " + _ellipse_hole(59, 81, 20, 14)
+
 
 def logo(cls="mk", grad="bwG"):
+    """The B mark. A soft diagonal light sweeps across it every few seconds —
+    restrained rather than constant, so it reads as a glint, not a spinner.
+    Reduced-motion viewers get the static mark (see .shine in site.css)."""
     return (f'<svg class="{cls}" viewBox="0 0 104 116" aria-hidden="true">'
             f'<defs><clipPath id="bclip{cls}"><path d="{_B}" fill-rule="evenodd"/></clipPath></defs>'
             f'<g transform="skewX(-7) translate(7 0)">'
             f'<path d="{_B}" fill="url(#{grad})" fill-rule="evenodd"/>'
-            f'<g clip-path="url(#bclip{cls})"><path d="{_FACET}" fill="url(#bwGf)" opacity=".9"/></g>'
-            f'</g></svg>')
+            f'<g clip-path="url(#bclip{cls})">'
+            f'<rect class="shine" x="-34" y="-20" width="30" height="160" fill="url(#bwGf)"/>'
+            f'</g></g></svg>')
 
 def logo_flat(colour="#0B120E"):
     """Single-colour cut, for tiles and small sizes."""

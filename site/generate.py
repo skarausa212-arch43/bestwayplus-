@@ -281,6 +281,22 @@ JS_COMMON = '''
    if(miss.length){miss[0].focus();miss[0].style.borderBottomColor="var(--steel)";return;}
    note.textContent=__SENT__;
    note.classList.add("on"); f.querySelector("button[type=submit]").disabled=true;});
+ // Below-the-fold sections fade up as they enter view. The .pending class is
+ // only ever added here — never in CSS by default — so a reader with no JS,
+ // or JS that hasn't run yet, sees full content, not a page waiting on a
+ // script that may never fire.
+ if("IntersectionObserver" in window && !matchMedia("(prefers-reduced-motion: reduce)").matches){
+   var targets=[].slice.call(document.querySelectorAll("main section")).filter(function(el){
+     return !el.classList.contains("hero") && !el.classList.contains("phero");});
+   targets.forEach(function(el,i){
+     el.classList.add("reveal","pending");
+     el.style.transitionDelay=(i%3)*0.08+"s";});
+   var io=new IntersectionObserver(function(entries){
+     entries.forEach(function(e){
+       if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target);}});
+   },{threshold:.12,rootMargin:"0px 0px -60px 0px"});
+   targets.forEach(function(el){io.observe(el);});
+ }
 })();'''
 
 JS_SPA = '''

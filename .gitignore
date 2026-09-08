@@ -1,3 +1,4 @@
 site/missing-*.json
 platform/bundle/
 platform/platform-bundle.tar.gz
+site/__pycache__/
