@@ -3,6 +3,10 @@ import os, html, json, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from content import *
 
+DOMAIN = "bestwayfootball.pl"
+MARK = '<svg class="mk" viewBox="16.5 18 35 64" fill="none" stroke="currentColor" stroke-width="9.5" aria-hidden="true"><path d="M21.25 18 V82"/><circle cx="34" cy="35.5" r="12.75"/><circle cx="34" cy="64.5" r="12.75"/></svg>'
+FAVICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%2308090A'/%3E%3Cg transform='translate(16,0)' fill='none' stroke='%23F3F4F1' stroke-width='9.5'%3E%3Cpath d='M21.25 18 V82'/%3E%3Ccircle cx='34' cy='35.5' r='12.75'/%3E%3Ccircle cx='34' cy='64.5' r='12.75'/%3E%3C/g%3E%3C/svg%3E"
+
 ARROW = ('<svg class="ar" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" '
          'stroke-width="1.4" aria-hidden="true"><path d="M4 12L12 4M6 4h6v6"/></svg>')
 E = html.escape
@@ -125,6 +129,8 @@ transmit anything yet. In the live site it delivers to the enquiry address and s
 <div class="grid2">
 <div class="stack"><span class="eyebrow">Registered</span><p class="lead">Bestway Plus Sp. z o.o.<br>Poland</p></div>
 <div class="stack"><span class="eyebrow">Coverage</span><p class="lead">International, primarily Europe</p></div>
+<div class="stack"><span class="eyebrow">Web</span><p class="lead"><a class="tlink" style="font-size:13px"
+href="https://bestwayfootball.pl">bestwayfootball.pl</a></p></div>
 <div class="stack"><span class="eyebrow">Enquiries</span><p class="lead">Placeholder — full company details,
 registered address and contact channels to be published here before launch.</p></div>
 <div class="stack"><span class="eyebrow">Confidentiality</span><p class="lead">Enquiries are treated as
@@ -140,7 +146,7 @@ def header(slug, m):
     nav = "".join('<a href="%s" data-nav="%s"%s>%s</a>'
                   % (href(s,m), s, ' class="on"' if s==slug else '', E(t)) for s,t in NAV)
     return f'''<header class="hdr"><div class="wrap hdr-in">
-<a class="logo" href="{href("home",m)}"><b>Bestway Plus</b><i>Poland</i></a>
+<a class="logo" href="{href("home",m)}">{MARK}<span class="wm"><b>Bestway Plus</b><i>Poland</i></span></a>
 <button class="burger" id="burger" type="button" aria-label="Menu" aria-expanded="false">
 <span></span><span></span><span></span></button>
 <nav class="nav" id="nav">{nav}<a class="btn sm" href="{href("contact",m)}" style="margin-block:10px">Contact</a></nav>
@@ -152,12 +158,13 @@ def footer(m):
     for title, links in FOOTER:
         ls = "".join(f'<a href="{href(s,m)}">{E(t)}</a>' for s,t in links)
         cols += f'<div class="fcol"><span class="fh">{E(title)}</span>{ls}</div>'
-    return f'''<footer class="ftr"><div class="wrap">
+    return f'''<footer class="ftr">{MARK.replace(chr(34)+"mk"+chr(34), chr(34)+"fmark"+chr(34))}<div class="wrap">
 <div class="fmap">
-<div class="fcol"><span class="fh">{E(LEGAL_NAME)}</span>
-<p class="dim" style="font-size:14.5px;line-height:1.65;max-width:32ch">{E(SLOGAN)}</p>
-<p class="dim" style="font-size:13px;line-height:1.65;max-width:34ch">International football business,
-player support and sports consulting. Registered in Poland.</p></div>
+<div class="fcol flock">{MARK}
+<div><p style="font-size:15px;line-height:1.5;max-width:32ch">{E(SLOGAN)}</p>
+<p class="dim" style="font-size:13px;line-height:1.65;max-width:34ch;margin-top:12px">{E(LEGAL_NAME)} —
+international football business, player support and sports consulting. Registered in Poland.</p></div>
+<a class="dom" href="https://{DOMAIN}">{DOMAIN}</a></div>
 {cols}</div>
 <p class="fdisc">Bestway Plus is not a FIFA Football Agent and does not carry out football agent activity;
 services reserved for a licensed football agent are performed by an appropriately licensed FIFA Football
@@ -239,6 +246,7 @@ def build_static(outdir):
     os.makedirs(os.path.join(outdir, "assets"), exist_ok=True)
     for slug, p in PAGES.items():
         fn = ("index" if slug == "home" else slug) + ".html"
+        canon = "" if slug == "home" else fn
         doc = f'''<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8">
@@ -249,6 +257,10 @@ def build_static(outdir):
 <meta property="og:title" content="{E(p["seo_title"])}">
 <meta property="og:description" content="{E(p["seo_desc"])}">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="Bestway Plus">
+<meta property="og:url" content="https://{DOMAIN}/{canon}">
+<link rel="canonical" href="https://{DOMAIN}/{canon}">
+<link rel="icon" href="{FAVICON}">
 {FONTS}
 {CSS_LINK}
 </head><body>
