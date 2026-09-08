@@ -1,1 +1,3 @@
 site/missing-*.json
+platform/bundle/
+platform/platform-bundle.tar.gz
