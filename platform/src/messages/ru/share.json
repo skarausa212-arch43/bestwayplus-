@@ -1,0 +1,19 @@
+{
+  "documents": "Документы",
+  "expires": "Ссылка действует до {date}",
+  "noDocuments": "К этой ссылке документы не приложены.",
+  "open": "Открыть",
+  "passwordLabel": "Пароль",
+  "passwordRequired": "Профиль защищён паролем.",
+  "recorded": "Просмотр фиксируется.",
+  "regulatory": "Bestway Plus Sp. z o.o. не является футбольным агентом FIFA. Услуги, требующие лицензии агента FIFA, оказываются соответствующими лицензированными агентами FIFA.",
+  "sectionCareer": "Карьера",
+  "sectionFootball": "Футбол",
+  "sectionIdentity": "Данные",
+  "sectionLinks": "Ссылки",
+  "sharedBy": "Предоставлено Bestway Football",
+  "title": "Профиль игрока",
+  "tooManyAttempts": "Слишком много попыток. Повторите позже.",
+  "unavailable": "Ссылка больше недоступна.",
+  "wrongPassword": "Неверный пароль."
+}

@@ -1,0 +1,19 @@
+{
+  "documents": "Dokumenty",
+  "expires": "Ten link wygasa {date}",
+  "noDocuments": "Do tego linku nie dołączono dokumentów.",
+  "open": "Otwórz",
+  "passwordLabel": "Hasło",
+  "passwordRequired": "Ten profil jest chroniony hasłem.",
+  "recorded": "To wyświetlenie jest rejestrowane.",
+  "regulatory": "Bestway Plus Sp. z o.o. nie jest agentem piłkarskim FIFA. Usługi wymagające licencji agenta FIFA są świadczone przez odpowiednio licencjonowanych agentów FIFA.",
+  "sectionCareer": "Kariera",
+  "sectionFootball": "Piłka nożna",
+  "sectionIdentity": "Dane",
+  "sectionLinks": "Linki",
+  "sharedBy": "Udostępnione przez Bestway Football",
+  "title": "Profil zawodnika",
+  "tooManyAttempts": "Zbyt wiele prób. Spróbuj później.",
+  "unavailable": "Ten link nie jest już dostępny.",
+  "wrongPassword": "Nieprawidłowe hasło."
+}

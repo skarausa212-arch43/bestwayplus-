@@ -23,10 +23,14 @@ flows, wireframes, permission matrix, GDPR model and security design — is in
 | Profile completion | Pure, weighted, 7 tests | `src/modules/players/completion.ts` |
 | Opportunity projection | Client-safe select with 5 tests asserting internal fields never appear | `src/modules/opportunities` |
 | Admin CRM | Dashboard queues, players table, player tabs, isolated assessment, agent verification, document review, share links | `src/app/admin`, `src/modules/admin` |
-| Messaging, PDF, share view | Not started — phase 6 of the plan | — |
+| Share view | `/share/[token]` with password gate, tracked views, scoped document access | `src/app/share`, `src/modules/share` |
+| Messaging | Threads, composer, participant-scoped access | `src/modules/messaging` |
+| Localised email | Five transactional templates, rendered in the recipient's locale | `src/modules/email` |
+| Player presentation | Print HTML built from the same allow-list as a share link | `src/modules/presentation` |
+| Auth screens, tasks, audit UI | Remaining before launch | — |
 
 The dependency tree has not been installed in this environment, so the Next
-build has not been run. The schema, the 30 unit tests and the catalog guard
+build has not been run. The schema, the 45 unit tests and the catalog guard
 have all been executed and pass.
 
 ## Layout
@@ -68,6 +72,11 @@ scripts/check-messages.ts   CI guard for catalog drift
    including validation and API error messages.
 8. **No invented data.** No sample players, clubs, transfers, licences or
    partners outside an explicit development seed.
+9. **One definition of what may leave the building.** Share links and generated
+   presentations project through the same allow-list in
+   `src/modules/share/sections.ts`. Salary, representation terms and the
+   internal assessment are unreachable from both, and a test proves a banned
+   field is stripped even if someone later adds it to a section.
 
 ## Getting started
 
@@ -83,7 +92,7 @@ npm run dev
 
 ```bash
 npm run typecheck
-npm run test           # 30 tests: permissions, completion, projections, admin guards
+npm run test           # 45 tests: permissions, projections, guards, email, share, PDF
 npm run test:policy    # the permission matrix alone — never skip this one
 npm run i18n:check     # fails on catalog drift and on a missing enum label
 npm run build

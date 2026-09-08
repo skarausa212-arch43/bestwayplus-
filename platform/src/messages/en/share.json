@@ -1,0 +1,19 @@
+{
+  "documents": "Documents",
+  "expires": "This link expires {date}",
+  "noDocuments": "No documents were included with this link.",
+  "open": "Open",
+  "passwordLabel": "Password",
+  "passwordRequired": "This profile is password protected.",
+  "recorded": "This view is recorded.",
+  "regulatory": "Bestway Plus Sp. z o.o. is not a FIFA Football Agent. Regulated football agent services are performed by appropriately licensed FIFA Football Agents.",
+  "sectionCareer": "Career",
+  "sectionFootball": "Football",
+  "sectionIdentity": "Identity",
+  "sectionLinks": "Links",
+  "sharedBy": "Shared by Bestway Football",
+  "title": "Player profile",
+  "tooManyAttempts": "Too many attempts. Try again later.",
+  "unavailable": "This link is no longer available.",
+  "wrongPassword": "That password is not correct."
+}
