@@ -83,23 +83,30 @@ jobs:
           ls -lh platform-bundle.tar.gz
           echo "файлов в бандле: $(find bundle -type f | wc -l)"
 
-      - name: Copy bundle and install script to server
+      - name: Copy bundle to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: 89.127.193.91
           username: root
           password: ${{ secrets.LUMI24_SERVER_PASSWORD }}
-          # Оба файла берутся из чекаута этого же прогона, а не по HTTP с
-          # raw.githubusercontent.com: тот кэширует на CDN-краях, и прогон,
-          # стартовавший через минуту после пуша, однажды получил версию
-          # install-скрипта из предыдущего коммита — правка в нём просто не
-          # успела дойти. Файл из чекаута всегда ровно тот, что собрала эта
-          # сборка.
-          source: |
-            platform/platform-bundle.tar.gz
-            deploy/lumi24-install-platform-lean.sh
+          source: platform/platform-bundle.tar.gz
           target: /tmp
-          strip_components: 0
+          strip_components: 1
+
+      - name: Copy install script to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 89.127.193.91
+          username: root
+          password: ${{ secrets.LUMI24_SERVER_PASSWORD }}
+          # Из чекаута этого же прогона, а не по HTTP с raw.githubusercontent.com:
+          # тот кэширует на CDN-краях, и однажды прогон, стартовавший через
+          # минуту после пуша, получил версию скрипта из предыдущего коммита —
+          # правка в нём просто не успела дойти. Файл из чекаута — всегда
+          # ровно тот, что собрала эта сборка.
+          source: deploy/lumi24-install-platform-lean.sh
+          target: /tmp
+          strip_components: 1
 
       - name: Install on server
         uses: appleboy/ssh-action@v1.2.0
@@ -111,7 +118,6 @@ jobs:
           envs: MIGRATE
           script: |
             set -euo pipefail
-            mv /tmp/platform/platform-bundle.tar.gz /tmp/platform-bundle.tar.gz
-            MIGRATE="${MIGRATE:-true}" bash /tmp/deploy/lumi24-install-platform-lean.sh
+            MIGRATE="${MIGRATE:-true}" bash /tmp/lumi24-install-platform-lean.sh
         env:
           MIGRATE: ${{ inputs.migrate }}
