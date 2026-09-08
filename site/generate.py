@@ -243,7 +243,7 @@ def page_body(slug, m):
     cta_h = f'<div class="hero-cta">{cta}</div>' if cta else ""
     if is_home:
         out.append(f'''<section class="hero"><div class="wrap">
-<div class="lock">{logo()}<div class="wm"><b>Bestway</b><i>Football</i></div>
+<div class="lock">{logo(detail=True)}<div class="wm"><b>Bestway</b><i>Football</i></div>
 <span class="tagline">{E(TAGLINE)}</span></div>
 <span class="eyebrow">{E(h["eyebrow"])}</span><h1>{E(h["h1"])}</h1>
 <p class="hero-sub">{E(h["sub"])}</p>{cta_h}

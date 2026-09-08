@@ -14,59 +14,96 @@ SPRITE = ('<svg width="0" height="0" style="position:absolute" aria-hidden="true
  '<stop offset="0" stop-color="#93F2BA"/><stop offset="1" stop-color="#25AE68"/></linearGradient>'
  '</defs></svg>')
 
-# ---- the B monogram --------------------------------------------------------
-# Outer silhouette: a stem plus two angular bowls, chamfered corners at top and
-# bottom to match the brand's faceted style. The two counters (the "windows"
-# that make it read as a B rather than a wedge) are true rounded ellipses, not
-# the pointed hexagon notches of the first draft — those looked like arrowheads
-# cut into a slab rather than the inside of a letter. fill-rule=evenodd punches
-# both holes through the one gradient fill.
-_B_OUTER = "M12 6 H64 L82 24 V38 L68 52 L86 68 V92 L68 110 H12 Z"
+# ---- the mark: a faceted ball in flight -----------------------------------
+# A ten-sided ball (not a smooth circle — the straight facet edges match the
+# faceted style used everywhere else on the site) with the classic soccer-ball
+# centre panel, trailing three receding bars like a kicked ball's motion blur —
+# football and forward motion in one shape, no letter required. Two renderings
+# share the same geometry logic: SIMPLE is the ball alone, solid and bold
+# enough to survive a 24px favicon; DETAILED adds the seam lines and the
+# trail, for the one place — the homepage hero — big enough to carry them.
+
+# -- simple: centred in its own box, no trail (header, footer, favicon) -----
+_BALL_SIMPLE_OUTER = "M50 6 L75.86 14.4 L91.85 36.4 L91.85 63.6 L75.86 85.6 L50 94 L24.14 85.6 L8.15 63.6 L8.15 36.4 L24.14 14.4 Z"
+_BALL_SIMPLE_INNER = "M59.99 36.25 L66.17 55.25 L50 67 L33.83 55.25 L40.01 36.25 Z"
+
+# -- detailed: pushed up-right within a wider box, leaving room for the trail
+_BALL_VB = 140
+_BALL_OUTER = "M76 8 L99.51 15.64 L114.04 35.64 L114.04 60.36 L99.51 80.36 L76 88 L52.49 80.36 L37.96 60.36 L37.96 35.64 L52.49 15.64 Z"
+_BALL_INNER = "M84.82 35.86 L90.27 52.64 L76 63 L61.73 52.64 L67.18 35.86 Z"
+_BALL_SPOKES = (
+    "M84.82 35.86 L88.36 9.96", "M84.82 35.86 L108.36 24.49",
+    "M90.27 52.64 L116 48", "M90.27 52.64 L108.36 71.51",
+    "M76 63 L88.36 86.04", "M76 63 L63.64 86.04",
+    "M61.73 52.64 L43.64 71.51", "M61.73 52.64 L36 48",
+    "M67.18 35.86 L43.64 24.49", "M67.18 35.86 L63.64 9.96",
+)
+# Three bars along one ray out of the ball's lower-left edge, shrinking and
+# fading with distance — a receding kick trail, not a comet with no source.
+_BALL_TRAIL_ORIGIN = (51.95, 83.65)
+_BALL_TRAIL_UNIT = (-0.5592, 0.829)   # direction cosine of the trail ray
+_BALL_TRAIL_BARS = ((0, 25, 7.5, 1), (26, 17, 6, .58), (45, 10, 4.5, .3))
 
 
-def _ellipse_hole(cx, cy, rx, ry):
-    """A closed ellipse as a cubic-bezier subpath, for use as an evenodd hole."""
-    k = 0.5522847498
-    kx, ky = rx * k, ry * k
-    return (
-        f"M{cx+rx:.2f} {cy:.2f} "
-        f"C{cx+rx:.2f} {cy+ky:.2f} {cx+kx:.2f} {cy+ry:.2f} {cx:.2f} {cy+ry:.2f} "
-        f"C{cx-kx:.2f} {cy+ry:.2f} {cx-rx:.2f} {cy+ky:.2f} {cx-rx:.2f} {cy:.2f} "
-        f"C{cx-rx:.2f} {cy-ky:.2f} {cx-kx:.2f} {cy-ry:.2f} {cx:.2f} {cy-ry:.2f} "
-        f"C{cx+kx:.2f} {cy-ry:.2f} {cx+rx:.2f} {cy-ky:.2f} {cx+rx:.2f} {cy:.2f} Z"
-    )
+def _ball_trail():
+    ox, oy = _BALL_TRAIL_ORIGIN
+    ux, uy = _BALL_TRAIL_UNIT
+    bars = []
+    for dist, length, w, op in _BALL_TRAIL_BARS:
+        cx, cy = ox + ux * dist, oy + uy * dist
+        bars.append(
+            f'<rect x="{-length/2:.1f}" y="{-w/2:.1f}" width="{length}" height="{w}" '
+            f'rx="{w/2:.1f}" fill="url(#bwG)" opacity="{op}" '
+            f'transform="translate({cx:.1f} {cy:.1f}) rotate(34)"/>'
+        )
+    return "".join(bars)
 
 
-_B = _B_OUTER + " " + _ellipse_hole(56, 29, 19, 12.5) + " " + _ellipse_hole(59, 81, 20, 14)
-
-
-def logo(cls="mk", grad="bwG"):
-    """The B mark. A soft diagonal light sweeps across it every few seconds —
-    restrained rather than constant, so it reads as a glint, not a spinner.
-    Reduced-motion viewers get the static mark (see .shine in site.css)."""
-    return (f'<svg class="{cls}" viewBox="0 0 104 116" aria-hidden="true">'
-            f'<defs><clipPath id="bclip{cls}"><path d="{_B}" fill-rule="evenodd"/></clipPath></defs>'
-            f'<g transform="skewX(-7) translate(7 0)">'
-            f'<path d="{_B}" fill="url(#{grad})" fill-rule="evenodd"/>'
+def logo(cls="mk", grad="bwG", detail=False):
+    """The ball mark. Detailed (seams + trail) only where it is large enough
+    to read — the hero; everywhere else gets the bold, centred, trail-less cut
+    that still reads at a 24px favicon. Either way a soft diagonal light sweeps
+    across it every few seconds — restrained rather than constant, so it reads
+    as a glint, not a spinner. Reduced-motion viewers get the static mark."""
+    if detail:
+        vb = _BALL_VB
+        body = (f'<path d="{_BALL_OUTER}" fill="url(#{grad})"/>'
+                f'<path d="{_BALL_INNER}" fill="#04150C" opacity=".16"/>'
+                + "".join(f'<path d="{s}" stroke="#04150C" stroke-width="1.5" '
+                          f'stroke-linecap="round" opacity=".5"/>' for s in _BALL_SPOKES)
+                + _ball_trail())
+        clip = _BALL_OUTER
+    else:
+        vb = 100
+        body = (f'<path d="{_BALL_SIMPLE_OUTER}" fill="url(#{grad})"/>'
+                f'<path d="{_BALL_SIMPLE_INNER}" fill="#04150C"/>')
+        clip = _BALL_SIMPLE_OUTER
+    return (f'<svg class="{cls}" viewBox="0 0 {vb} {vb}" aria-hidden="true">'
+            f'<defs><clipPath id="bclip{cls}"><path d="{clip}"/></clipPath></defs>'
+            f'{body}'
             f'<g clip-path="url(#bclip{cls})">'
-            f'<rect class="shine" x="-34" y="-20" width="30" height="160" fill="url(#bwGf)"/>'
-            f'</g></g></svg>')
+            f'<rect class="shine" x="{-vb*0.3:.0f}" y="{-vb*0.2:.0f}" width="{vb*0.28:.0f}" '
+            f'height="{vb*1.4:.0f}" fill="url(#bwGf)"/>'
+            f'</g></svg>')
 
-def logo_flat(colour="#0B120E"):
-    """Single-colour cut, for tiles and small sizes."""
-    return (f'<svg class="mk" viewBox="0 0 104 116" aria-hidden="true">'
-            f'<g transform="skewX(-7) translate(7 0)">'
-            f'<path d="{_B}" fill="{colour}" fill-rule="evenodd"/></g></svg>')
 
 _ICON_SVG = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'>"
    "<rect width='128' height='128' rx='28' fill='#07160E'/>"
    "<linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>"
    "<stop offset='0' stop-color='#8DF3B6'/><stop offset='1' stop-color='#159A56'/></linearGradient>"
-   "<g transform='translate(20 6) scale(0.79) skewX(-7) translate(7 0)'>"
-   "<path d='" + _B + "' fill='url(%23g)' fill-rule='evenodd'/></g></svg>")
+   "<g transform='translate(14 14)'>"
+   "<path d='" + _BALL_SIMPLE_OUTER + "' fill='url(#g)'/>"
+   "<path d='" + _BALL_SIMPLE_INNER + "' fill='#04150C'/></g></svg>")
 
+# A raw '#' in a data: URI ends the URL and starts a fragment — everything
+# after the first one (the background fill, here) was silently dropped, so
+# every favicon this site has ever shipped, including the letter mark before
+# this one, rendered as a blank or broken tab icon. '#' now goes through the
+# same encoding pass as '<', '>' and '"' instead of being hand-encoded only
+# at the two call sites someone happened to remember.
 FAVICON = ("data:image/svg+xml,"
-           + _ICON_SVG.replace('<', '%3C').replace('>', '%3E').replace('"', "'"))
+           + _ICON_SVG.replace('<', '%3C').replace('>', '%3E')
+                       .replace('"', "'").replace('#', '%23'))
 
 # ---- icon set ------------------------------------------------------------
 _ICONS = {
