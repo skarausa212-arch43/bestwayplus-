@@ -7,7 +7,7 @@ DOMAIN = "bestwayfootball.pl"
 from assets import SPRITE, logo, icon, GRID, CONTACT_RAIL, FAVICON
 BRAND = "Bestway Football"
 TAGLINE = "Players. Clubs. Opportunities."
-META_LINE = "Est. 2025 \u00b7 Warsaw \u00b7 Europe \u00b7 Global"
+META_LINE = "Est. 2024 \u00b7 Wroc\u0142aw \u00b7 Europe \u00b7 Global"
 
 ROMAN = ["","I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII"]
 def rn(v):
@@ -107,7 +107,8 @@ def b_band(bk, m):
 <div><a class="btn" href="{href(target,m)}">{E(cta)} {ARROW}</a></div></div></section>'''
 
 def b_contact_form(bk, m):
-    return '''<section class="sec flush"><div class="wrap split">
+    C = COMPANY
+    return f'''<section class="sec flush"><div class="wrap split">
 <div class="hd"><span class="eyebrow">Enquiry</span><h2>Send a message</h2>
 <p class="lead pad-t">Every enquiry is read by a person. If your request is outside what we do, we will say
 so and, where we can, point you somewhere better.</p></div>
@@ -134,12 +135,13 @@ transmit anything yet. In the live site it delivers to the enquiry address and s
 <section class="sec"><div class="wrap split">
 <div class="hd"><span class="eyebrow">Company</span><h2>Details</h2></div>
 <div class="grid2">
-<div class="stack"><span class="eyebrow">Registered</span><p class="lead">Bestway Plus Sp. z o.o.<br>Warsaw, Poland &#183; Est. 2025<br><span class="dim" style="font-size:14px">Trading as Bestway Football</span></p></div>
+<div class="stack"><span class="eyebrow">Registered office</span><p class="lead">{C["legal_name"]}<br>{C["street_pl"]}<br>{C["postcode"]} {C["city"]}, {C["country"]}<br><span class="dim" style="font-size:14px">Trading as Bestway Football</span></p></div>
 <div class="stack"><span class="eyebrow">Coverage</span><p class="lead">International, primarily Europe</p></div>
 <div class="stack"><span class="eyebrow">Web</span><p class="lead"><a class="tlink" style="font-size:13px"
 href="https://bestwayfootball.pl">bestwayfootball.pl</a></p></div>
-<div class="stack"><span class="eyebrow">Enquiries</span><p class="lead">Placeholder — full company details,
-registered address and contact channels to be published here before launch.</p></div>
+<div class="stack"><span class="eyebrow">Registration</span><p class="lead">NIP {C["nip"]}<br>REGON {C["regon"]}<br>KRS {C["krs"]}</p></div>
+<div class="stack"><span class="eyebrow">Enquiries</span><p class="lead"><a class="tlink" style="font-size:13px"
+href="mailto:{C["email"]}">{C["email"]}</a></p></div>
 <div class="stack"><span class="eyebrow">Confidentiality</span><p class="lead">Enquiries are treated as
 confidential and are not shared outside the company.</p></div>
 </div></div></section>'''
@@ -195,7 +197,10 @@ def footer(m):
 <div class="fcol flock">{logo()}
 <div><p style="font-size:15px;line-height:1.5;max-width:32ch">{E(SLOGAN)}</p>
 <p class="dim" style="font-size:13px;line-height:1.65;max-width:34ch;margin-top:12px">{E(LEGAL_NAME)},
-trading as Bestway Football. Football business. Player support. Investment. Opportunities.<br>Est. 2025 &#183; Warsaw &#183; Europe &#183; Global</p></div>
+trading as Bestway Football. Football business. Player support. Investment. Opportunities.<br>{META_LINE}</p>
+<p class="dim" style="font-size:13px;line-height:1.65;max-width:34ch;margin-top:10px">{COMPANY["street_pl"]}, {COMPANY["postcode"]} {COMPANY["city"]}, {COMPANY["country"]}<br>
+NIP {COMPANY["nip"]} &#183; REGON {COMPANY["regon"]} &#183; KRS {COMPANY["krs"]}<br>
+<a class="tlink" href="mailto:{COMPANY["email"]}">{COMPANY["email"]}</a></p></div>
 <a class="dom" href="https://{DOMAIN}">{DOMAIN}</a></div>
 {cols}</div>
 <p class="fdisc">Bestway Plus is not a FIFA Football Agent and does not carry out football agent activity;

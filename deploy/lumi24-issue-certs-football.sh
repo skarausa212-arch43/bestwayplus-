@@ -44,10 +44,11 @@ wait_for_dns() {
 
 echo "== Ждём, пока домен будет указывать на $SELF =="
 READY=1
-# app и storage появляются вместе с платформой; если их A-записей ещё нет,
-# сертификат для сайта всё равно выпускается — платформа подождёт.
+# app появляется вместе с платформой; если его A-записи ещё нет, сертификат
+# для сайта всё равно выпускается — платформа подождёт.
+# storage здесь нет: документы лежат во внешнем S3 со своим именем.
 SITE_HOSTS="bestwayfootball.pl www.bestwayfootball.pl"
-APP_HOSTS="app.bestwayfootball.pl storage.bestwayfootball.pl"
+APP_HOSTS="app.bestwayfootball.pl"
 
 for h in $SITE_HOSTS; do
   wait_for_dns "$h" || READY=0
@@ -87,12 +88,12 @@ if [ "$APP_READY" = 1 ]; then
   echo
   echo "== Сертификат платформы =="
   # Отдельный сертификат: сайт не должен зависеть от имён платформы.
-  certbot --nginx -d app.bestwayfootball.pl -d storage.bestwayfootball.pl \
+  certbot --nginx -d app.bestwayfootball.pl \
           --non-interactive --agree-tos -m "$EMAIL" --redirect
 else
   echo
-  echo "app/storage ещё не переехали — сертификат платформы пропускаю."
-  echo "Запустите скрипт повторно, когда добавите их A-записи."
+  echo "app ещё не переехал — сертификат платформы пропускаю."
+  echo "Запустите скрипт повторно, когда добавите его A-запись."
 fi
 
 echo

@@ -3,6 +3,23 @@ BRAND = "Bestway Football"
 LEGAL_NAME = "Bestway Plus Sp. z o.o."
 SLOGAN = "Connecting players, clubs, capital and opportunities."
 
+# Реквизиты из реестра. Единственный источник правды для футера, страницы
+# контактов и юридических уведомлений — чтобы адрес нельзя было поправить
+# в одном месте и забыть в двух других.
+COMPANY = dict(
+    legal_name="Bestway Plus Sp. z o.o.",
+    street="ul. Zajaczkowska 44",
+    street_pl="ul. Zaj\u0105czkowska 44",
+    postcode="51-180",
+    city="Wroc\u0142aw",
+    country="Poland",
+    nip="8952277581",
+    regon="529604122",
+    krs="0001125792",
+    email="bestwaypluspl@gmail.com",
+    founded="2024",
+)
+
 NAV = [("services","Services"),("network","Network"),("about","About"),("faq","FAQ")]
 
 FOOTER = [
@@ -637,14 +654,14 @@ PAGES["about"] = dict(
  nav="About",
  seo_title="About Bestway Football — International Football Business Company in Poland",
  seo_desc="Bestway Plus Sp. z o.o. is an international football business and player support company based in Poland, working with players, clubs, licensed agents, investors and brands.",
- hero=dict(eyebrow="About us", h1="An international football business company, based in Warsaw.",
+ hero=dict(eyebrow="About us", h1="An international football business company, based in Wroc\u0142aw.",
    sub="We work at the intersection of football, business and international opportunity — supporting "
        "players, clubs, licensed agents, investors and commercial partners.",
    cta=[("Start a conversation","contact","btn")]),
  blocks=[
   ("plate","Photography — 4:5\nOffice or city, architectural, restrained\nTo be supplied by the client",
    "Our role goes beyond the pitch.",
-   ["Bestway Plus Sp. z o.o. is registered in Warsaw, Poland and trades as Bestway Football. It works "
+   ["Bestway Plus Sp. z o.o. is registered in Wroc\u0142aw, Poland and trades as Bestway Football. It works "
     "internationally, primarily across Europe. "
     "We coordinate professional networks, business development, player support, market research, "
     "marketing, recruitment support and international projects.",
@@ -703,7 +720,7 @@ PAGES["faq"] = dict(
     "By written engagement agreed before work begins — typically a project fee, a retainer, or a defined "
     "arrangement for a market or client segment. Terms are set per mandate and confirmed in writing."),
    ("Where do you operate?",
-    "The company is registered in Warsaw, Poland and works internationally, primarily across Europe. Individual "
+    "The company is registered in Wroc\u0142aw, Poland and works internationally, primarily across Europe. Individual "
     "mandates regularly involve markets beyond it."),
    ("What languages do you work in?",
     "Working languages are confirmed per mandate. Where a matter requires a language we do not cover "
@@ -751,6 +768,12 @@ PAGES["legal-notices"] = dict(
        "regulated work.", cta=[]),
  blocks=[
   ("legal","Notices","",[
+   ("Company identification",
+    "Bestway Plus Sp. z o.o., trading as Bestway Football. Registered office: "
+    + COMPANY["street_pl"] + ", " + COMPANY["postcode"] + " " + COMPANY["city"] + ", " + COMPANY["country"] + ". "
+    "NIP " + COMPANY["nip"] + ", REGON " + COMPANY["regon"] + ", KRS " + COMPANY["krs"] + ", "
+    "entered in the Register of Entrepreneurs of the National Court Register (Krajowy Rejestr S\u0105dowy). "
+    "Enquiries: " + COMPANY["email"] + "."),
    ("Football agent activity",
     "Bestway Plus Sp. z o.o., trading as Bestway Football, is not a FIFA Football Agent and does not hold a "
     "FIFA Football Agent licence. "
