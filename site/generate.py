@@ -4,11 +4,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from content import *
 
 DOMAIN = "bestwayfootball.pl"
-ROUNDEL_S = '<svg class="crest" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><circle cx="50" cy="50" r="47"/><g transform="translate(50 50) scale(0.72) translate(-50 -50)"><circle cx="50" cy="50" r="45.5"/><path d="M10.17 28.0 A39.83 6.0 0 0 0 89.83 28.0"/><path d="M9.13 70.0 A40.87 6.0 0 0 0 90.87 70.0"/></g></svg>'
-ROUNDEL = '<svg class="crest" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="50" cy="50" r="47"/><circle cx="50" cy="50" r="41.5" stroke-width="1.1"/><g transform="translate(50 50) scale(0.70) translate(-50 -50)"><circle cx="50" cy="50" r="45.5"/><path d="M10.17 28.0 A39.83 6.0 0 0 0 89.83 28.0"/><path d="M9.13 70.0 A40.87 6.0 0 0 0 90.87 70.0"/><path d="M43.5 44.0V66.0"/><path d="M56.5 44.0V66.0"/><path d="M43.5 46.8H56.5"/><path d="M43.5 52.2H56.5"/><path d="M43.5 57.8H56.5"/><path d="M43.5 63.2H56.5"/></g></svg>'
-SEAL = '<svg class="seal" viewBox="0 0 140 140" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><defs><path id="sealTop" d="M70 70 m-54.5,0 a54.5,54.5 0 1,1 109,0" fill="none"/><path id="sealBot" d="M70 70 m-54.5,0 a54.5,54.5 0 1,0 109,0" fill="none"/></defs><circle cx="70" cy="70" r="67"/><circle cx="70" cy="70" r="61.5" stroke-width="1"/><circle cx="70" cy="70" r="45" stroke-width="1"/><g transform="translate(70 70) scale(0.80) translate(-50 -50)"><circle cx="50" cy="50" r="45.5"/><path d="M10.17 28.0 A39.83 6.0 0 0 0 89.83 28.0"/><path d="M9.13 70.0 A40.87 6.0 0 0 0 90.87 70.0"/><path d="M43.5 44.0V66.0"/><path d="M56.5 44.0V66.0"/><path d="M43.5 46.8H56.5"/><path d="M43.5 52.2H56.5"/><path d="M43.5 57.8H56.5"/><path d="M43.5 63.2H56.5"/></g><text class="seal-t"><textPath href="#sealTop" startOffset="50%" text-anchor="middle">Bestway Plus</textPath></text><text class="seal-t"><textPath href="#sealBot" startOffset="50%" text-anchor="middle">Football &#183; Poland</textPath></text><circle cx="8.6" cy="70" r="2.4" class="pip"/><circle cx="131.4" cy="70" r="2.4" class="pip"/></svg>'
-FAVICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='16' fill='%230F3D2E'/%3E%3Cg fill='none' stroke='%23F1EFE4' stroke-width='4' stroke-linecap='round'%3E%3Ccircle cx='50' cy='50' r='40'/%3E%3Cg transform='translate(50 50) scale(0.72) translate(-50 -50)'%3E%3Ccircle cx='50' cy='50' r='45.5'/%3E%3Cpath d='M10.17 28.0 A39.83 6.0 0 0 0 89.83 28.0'/%3E%3Cpath d='M9.13 70.0 A40.87 6.0 0 0 0 90.87 70.0'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"
-BULLET = 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Ccircle cx=\'50\' cy=\'50\' r=\'48\' fill=\'%230F3D2E\'/%3E%3Cg fill=\'none\' stroke=\'%23F1EFE4\' stroke-width=\'9\'%3E%3Cpath d=\'M10.17 28.0 A39.83 6.0 0 0 0 89.83 28.0\'/%3E%3Cpath d=\'M9.13 70.0 A40.87 6.0 0 0 0 90.87 70.0\'/%3E%3C/g%3E%3C/svg%3E")'
+from assets import SPRITE, logo, icon, GRID, CONTACT_RAIL, FAVICON
+BRAND = "Bestway Football"
+TAGLINE = "Players. Clubs. Opportunities."
+META_LINE = "Est. 2025 \u00b7 Warsaw \u00b7 Europe \u00b7 Global"
 
 ROMAN = ["","I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII"]
 def rn(v):
@@ -45,7 +44,7 @@ def b_split(bk, m):
 def b_idx(bk, m):
     _, eye, head, intro, rows = bk
     it = "".join(
-        f'<a href="{href(r[3],m)}"><span class="n">{E(rn(r[0]))}</span>'
+        f'<a href="{href(r[3],m)}"><span class="n">{E(r[0])}</span>'
         f'<span class="t">{E(r[1])}</span><span class="d">{E(r[2])}</span>{ARROW}</a>' for r in rows)
     intro_h = f'<p class="lead measure pad-t">{E(intro)}</p>' if intro else ""
     return f'''<section class="sec"><div class="wrap">
@@ -55,7 +54,7 @@ def b_idx(bk, m):
 def b_cards(bk, m):
     _, eye, head, intro, items = bk
     cls = "cards" if len(items) % 3 == 0 or len(items) > 4 else "cards two"
-    it = "".join(f'<div class="card"><span class="cn">{E(rn(i[0]))}</span><h3>{E(i[1])}</h3><p>{E(i[2])}</p></div>'
+    it = "".join(f'<div class="card"><span class="cn">{E(i[0])}</span><h3>{E(i[1])}</h3><p>{E(i[2])}</p></div>'
                  for i in items)
     intro_h = f'<p class="lead measure pad-t">{E(intro)}</p>' if intro else ""
     return f'''<section class="sec tint"><div class="wrap">
@@ -67,7 +66,7 @@ def b_clusters(bk, m):
     it = ""
     for n, (name, desc, tags) in enumerate(items):
         tg = "".join(f"<span>{E(t)}</span>" for t in tags)
-        it += (f'<div class="cluster"><div><span class="cn">{rn(n+1)} of {rn(len(items))}</span>'
+        it += (f'<div class="cluster"><div><span class="cn">{n+1:02d} / {len(items):02d}</span>'
                f'<h3>{E(name)}</h3><p>{E(desc)}</p></div><div class="tags">{tg}</div></div>')
     intro_h = f'<p class="lead measure pad-t">{E(intro)}</p>' if intro else ""
     return f'''<section class="sec"><div class="wrap">
@@ -84,7 +83,7 @@ def b_plate(bk, m):
     ps = "".join(f"<p>{E(p)}</p>" for p in paras)
     cap_h = "<br>".join(E(l) for l in cap.split("\n"))
     return f'''<section class="sec"><div class="wrap split">
-<div><div class="plate"><div class="win">{ROUNDEL_S}</div><span class="cap">{cap_h}</span></div></div>
+<div><div class="plate"><span class="cap">{cap_h}</span></div></div>
 <div class="stack"><h2>{E(head)}</h2><div class="stack lead">{ps}</div></div></div></section>'''
 
 def b_faq(bk, m):
@@ -96,15 +95,14 @@ def b_faq(bk, m):
 
 def b_legal(bk, m):
     _, eye, head, items = bk
-    it = "".join(f'<div class="cluster"><div><span class="cn">Notice {rn(n+1)}</span><h3>{E(t)}</h3></div>'
+    it = "".join(f'<div class="cluster"><div><span class="cn">Notice {n+1:02d}</span><h3>{E(t)}</h3></div>'
                  f'<div><p class="dim" style="font-size:15px;line-height:1.72">{E(b)}</p></div></div>'
                  for n,(t,b) in enumerate(items))
     return f'<section class="sec"><div class="wrap"><div class="clusters">{it}</div></div></section>'
 
 def b_band(bk, m):
     _, head, text, cta, target = bk
-    return f'''<section class="band"><div class="wrap"><div class="orn">{ROUNDEL_S}</div></div>
-<div class="wrap in" style="margin-top:clamp(28px,3.4vw,46px)">
+    return f'''<section class="band"><div class="wrap in">
 <div><h2 style="max-width:18ch">{E(head)}</h2><p class="lead pad-t measure">{E(text)}</p></div>
 <div><a class="btn" href="{href(target,m)}">{E(cta)} {ARROW}</a></div></div></section>'''
 
@@ -136,7 +134,7 @@ transmit anything yet. In the live site it delivers to the enquiry address and s
 <section class="sec"><div class="wrap split">
 <div class="hd"><span class="eyebrow">Company</span><h2>Details</h2></div>
 <div class="grid2">
-<div class="stack"><span class="eyebrow">Registered</span><p class="lead">Bestway Plus Sp. z o.o.<br>Poland</p></div>
+<div class="stack"><span class="eyebrow">Registered</span><p class="lead">Bestway Plus Sp. z o.o.<br>Warsaw, Poland &#183; Est. 2025<br><span class="dim" style="font-size:14px">Trading as Bestway Football</span></p></div>
 <div class="stack"><span class="eyebrow">Coverage</span><p class="lead">International, primarily Europe</p></div>
 <div class="stack"><span class="eyebrow">Web</span><p class="lead"><a class="tlink" style="font-size:13px"
 href="https://bestwayfootball.pl">bestwayfootball.pl</a></p></div>
@@ -146,7 +144,32 @@ registered address and contact channels to be published here before launch.</p><
 confidential and are not shared outside the company.</p></div>
 </div></div></section>'''
 
-RENDER = {"statement":b_statement,"split":b_split,"idx":b_idx,"cards":b_cards,"clusters":b_clusters,
+def b_tiles(bk, m):
+    _, eye, head, intro = bk
+    it = "".join(
+        f'<a class="tile" href="{href(t[3],m)}">{icon(t[0])}'
+        f'<span class="tt">{t[1]}</span><span class="ts">{t[2]}</span></a>' for t in GRID)
+    intro_h = f'<p class="lead measure pad-t">{E(intro)}</p>' if intro else ""
+    return f'''<section class="sec"><div class="wrap">
+<div class="sec-intro"><span class="eyebrow">{E(eye)}</span><h2>{E(head)}</h2>{intro_h}</div>
+<div class="tiles">{it}</div></div></section>'''
+
+def b_manifesto(bk, m):
+    _, eye, words, paras = bk
+    ws = "".join(f"<span>{E(w)}</span>" for w in words)
+    ps = "".join(f"<p>{E(p)}</p>" for p in paras)
+    return f'''<section class="sec tint"><div class="wrap split">
+<div class="hd"><span class="eyebrow">{E(eye)}</span><div class="words">{ws}</div></div>
+<div class="stack lead">{ps}</div></div></section>'''
+
+def b_rail(bk, m):
+    _, label = bk
+    it = "".join(f'<span>{icon(n)}</span>' for n in CONTACT_RAIL)
+    return f'''<section class="sec"><div class="wrap">
+<span class="eyebrow">{E(label)}</span>
+<div class="rail" style="margin-top:20px">{it}</div></div></section>'''
+
+RENDER = {"tiles":b_tiles,"manifesto":b_manifesto,"rail":b_rail,"statement":b_statement,"split":b_split,"idx":b_idx,"cards":b_cards,"clusters":b_clusters,
           "note":b_note,"plate":b_plate,"faq":b_faq,"legal":b_legal,"band":b_band,
           "contact_form":b_contact_form}
 
@@ -155,7 +178,7 @@ def header(slug, m):
     nav = "".join('<a href="%s" data-nav="%s"%s>%s</a>'
                   % (href(s,m), s, ' class="on"' if s==slug else '', E(t)) for s,t in NAV)
     return f'''<header class="hdr"><div class="wrap hdr-in">
-<a class="logo" href="{href("home",m)}">{ROUNDEL_S}<span class="wm"><b>Bestway Plus</b><i>Football &#183; Poland</i></span></a>
+<a class="logo" href="{href("home",m)}">{logo()}<span class="wm"><b>Bestway</b><i>Football</i></span></a>
 <button class="burger" id="burger" type="button" aria-label="Menu" aria-expanded="false">
 <span></span><span></span><span></span></button>
 <nav class="nav" id="nav">{nav}<a class="btn sm" href="{href("contact",m)}" style="margin-block:10px">Contact</a></nav>
@@ -169,10 +192,10 @@ def footer(m):
         cols += f'<div class="fcol"><span class="fh">{E(title)}</span>{ls}</div>'
     return f'''<footer class="ftr"><div class="wrap">
 <div class="fmap">
-<div class="fcol flock">{SEAL}
+<div class="fcol flock">{logo()}
 <div><p style="font-size:15px;line-height:1.5;max-width:32ch">{E(SLOGAN)}</p>
-<p class="dim" style="font-size:13px;line-height:1.65;max-width:34ch;margin-top:12px">{E(LEGAL_NAME)} —
-international football business, player support and sports consulting. Registered in Poland.</p></div>
+<p class="dim" style="font-size:13px;line-height:1.65;max-width:34ch;margin-top:12px">{E(LEGAL_NAME)},
+trading as Bestway Football. Football business. Player support. Investment. Opportunities.<br>Est. 2025 &#183; Warsaw &#183; Europe &#183; Global</p></div>
 <a class="dom" href="https://{DOMAIN}">{DOMAIN}</a></div>
 {cols}</div>
 <p class="fdisc">Bestway Plus is not a FIFA Football Agent and does not carry out football agent activity;
@@ -197,16 +220,18 @@ def page_body(slug, m):
                   for l,t,c in h.get("cta",[]))
     cta_h = f'<div class="hero-cta">{cta}</div>' if cta else ""
     if is_home:
-        out.append(f'''<section class="hero"><div class="wrap">{SEAL}
+        out.append(f'''<section class="hero"><div class="wrap">
+<div class="lock">{logo()}<div class="wm"><b>Bestway</b><i>Football</i></div>
+<span class="tagline">{E(TAGLINE)}</span></div>
 <span class="eyebrow">{E(h["eyebrow"])}</span><h1>{E(h["h1"])}</h1>
-<div class="hero-rule"></div>
-<p class="hero-sub">{E(h["sub"])}</p>{cta_h}</div></section>''')
+<p class="hero-sub">{E(h["sub"])}</p>{cta_h}
+<div class="hero-meta"><span>{E(META_LINE)}</span></div></div></section>''')
     else:
         out.append(f'''<section class="phero"><div class="wrap">{crumbs}
 <span class="eyebrow">{E(h["eyebrow"])}</span><h1 style="margin-top:20px">{E(h["h1"])}</h1>
 <p class="lead">{E(h["sub"])}</p>{cta_h}</div></section>''')
     if p.get("router"):
-        rt = "".join(f'<a href="{href(r[3],m)}"><span class="n">{E(rn(r[0]))}</span>'
+        rt = "".join(f'<a href="{href(r[3],m)}"><span class="n">{E(r[0])}</span>'
                      f'<span class="t">{E(r[1])}</span><span class="d">{E(r[2])}</span></a>'
                      for r in p["router"])
         out.append(f'<div class="wrap"><div class="router">{rt}</div></div>')
@@ -217,8 +242,8 @@ def page_body(slug, m):
 CSS_LINK = '<link rel="stylesheet" href="assets/site.css">'
 FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
          '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
-         '<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500'
-         '&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">')
+         '<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700'
+         '&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">')
 
 JS_COMMON = '''
 (function(){"use strict";
@@ -274,6 +299,7 @@ def build_static(outdir):
 {FONTS}
 {CSS_LINK}
 </head><body>
+{SPRITE}
 {header(slug,"static")}
 <main>
 {page_body(slug,"static")}
@@ -290,6 +316,7 @@ def build_spa(path, css):
     js = JS_SPA.replace("__META__", json.dumps(meta, ensure_ascii=False))
     doc = f'''<title>Bestway Plus</title>
 <meta name="description" content="{E(PAGES["home"]["seo_desc"])}">
+{SPRITE}
 {FONTS}
 <style>
 {css}

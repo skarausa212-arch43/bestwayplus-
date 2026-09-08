@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-BRAND = "Bestway Plus"
+BRAND = "Bestway Football"
 LEGAL_NAME = "Bestway Plus Sp. z o.o."
 SLOGAN = "Connecting players, clubs, capital and opportunities."
 
@@ -17,15 +17,15 @@ FOOTER = [
 ]
 
 # ---- reusable regulatory language (short, professional, used sparingly) -----
-D_AGENT = ("Bestway Plus is not a FIFA Football Agent and does not carry out football agent activity. "
+D_AGENT = ("Bestway Football is not a FIFA Football Agent and does not carry out football agent activity. "
            "Where a mandate requires services reserved for a licensed football agent, those services are "
            "performed directly by an appropriately licensed FIFA Football Agent.")
-D_FIN = ("Bestway Plus does not provide regulated investment advice, asset or portfolio management, or "
+D_FIN = ("Bestway Football does not provide regulated investment advice, asset or portfolio management, or "
          "individual financial recommendations. Investment, tax and regulated financial advice is provided "
          "only by appropriately licensed independent professionals where required.")
-D_INV = ("Nothing on this page is an offer, solicitation or recommendation to invest. Bestway Plus is not a "
+D_INV = ("Nothing on this page is an offer, solicitation or recommendation to invest. Bestway Football is not a "
          "licensed investment adviser and gives no assurance as to returns or outcomes.")
-D_LEG = ("Legal advice is provided by independent qualified legal professionals. Bestway Plus coordinates "
+D_LEG = ("Legal advice is provided by independent qualified legal professionals. Bestway Football coordinates "
          "and administers; it does not provide legal or tax advice.")
 D_OUT = ("No outcome is guaranteed. We are engaged for work and coordination, not for results that depend "
          "on clubs, markets or third parties.")
@@ -43,12 +43,12 @@ PAGES = {}
 
 PAGES["home"] = dict(
  nav="Home",
- seo_title="Bestway Plus — Football Business, Player Support & Sports Consulting",
+ seo_title="Bestway Football — Football Business, Player Support & Sports Consulting",
  seo_desc="International football business and player support company based in Poland. We connect players, clubs, licensed agents, investors and brands across European football.",
  hero=dict(
    eyebrow="Football business · Player support · Sports consulting",
    h1="Connecting players, clubs, capital and opportunities.",
-   sub="Bestway Plus is an international football business and player support company based in Poland. "
+   sub="Bestway Football is an international football business and player support company based in Poland. "
        "We work at the intersection of football, business and international opportunity — for players, "
        "clubs, licensed agents, investors and commercial partners.",
    cta=[("Start a conversation","contact","btn"),("What we do","services","btn line")],
@@ -66,23 +66,14 @@ PAGES["home"] = dict(
    ["A professional career moves fast and across borders. Contracts, countries, languages, taxes, housing, "
     "family, media and money all change at once — usually inside a few weeks, and usually while the player "
     "is expected to perform.",
-    "Bestway Plus exists for that surrounding work. We coordinate the professionals a career needs, we do "
+    "Bestway Football exists for that surrounding work. We coordinate the professionals a career needs, we do "
     "the research and administration that clubs and agents rarely have time for, and we make sure the "
     "people on each side of a conversation are the right ones.",
     "Our role is deliberately defined. Where a service is reserved for a licensed professional — a football "
     "agent, a lawyer, a tax adviser, a financial adviser — that professional performs it. We organise, "
     "coordinate and support around them."]),
-  ("idx","Disciplines","What we do",
-   "Nine areas of work. Most mandates combine several of them.",
-   [("01","Player Care & Career Support","Career planning, relocation, administration and everyday life around a professional contract.","player-support"),
-    ("02","Relocation & International Player Services","Arriving in a new country properly — housing, permits coordination, banking, schooling, integration.","relocation"),
-    ("03","Football Business Consulting","Market analysis, club development, European market entry and international expansion.","football-business"),
-    ("04","Recruitment, Scouting & Market Intelligence","Talent identification, player research, club requirement analysis and transfer market monitoring.","recruitment"),
-    ("05","Support for Licensed Football Agents","Back-office, research, lead generation and operational capacity for licensed agents.","agents"),
-    ("06","Financial Coordination & Wealth Support","Budgeting, cash-flow planning and coordination of licensed financial, tax and banking professionals.","financial-wealth"),
-    ("07","Investment & Football Projects","Project sourcing, business plan support, due diligence support and investor introductions.","investors"),
-    ("08","Marketing, Branding & Sponsorship","Personal branding, media, commercial profiles, sponsor search and partnership development.","marketing"),
-    ("09","Legal & Contract Coordination","Documentation, translation, compliance support and coordination of independent legal professionals.","legal-coordination")]),
+  ("tiles","More than football","Twelve ways we are useful",
+   "The work around a football career and a football business. Most mandates combine several of these."),
   ("cards","Method","How we work",
    "Four principles that shape every mandate.",
    [("01","Scope in writing","Every engagement starts with a written scope: what we do, who performs each regulated service, and how we are paid. Before any work begins."),
@@ -96,6 +87,14 @@ PAGES["home"] = dict(
     "commercial brands and the legal and financial professionals who serve them. Most of what we do is "
     "putting two of those groups in a room properly prepared."],
    ("Explore the network","network")),
+  ("manifesto","Bestway Football",["Global","People","Real","Opportunities"],
+   ["We are a Polish company working across European football and beyond. The registered entity is "
+    "Bestway Plus Sp. z o.o.; Bestway Football is the name we trade under.",
+    "What that means in practice is unglamorous and specific. We research markets, prepare people and "
+    "projects properly, handle the administration nobody else wants, and introduce parties who should be "
+    "talking to each other.",
+    "Everything reserved for a licensed professional is performed by one. We are precise about that line "
+    "because clients and counterparties are entitled to know exactly who is doing what."]),
   ("note","Regulatory note", D_AGENT + " " + D_FIN),
   ("band","Tell us what you are trying to do.",
    "A short conversation is usually enough to establish whether we are the right partner — and we will say "
@@ -105,7 +104,7 @@ PAGES["home"] = dict(
 
 PAGES["services"] = dict(
  nav="Services",
- seo_title="Services — Bestway Plus | Football Business & Player Support",
+ seo_title="Services — Bestway Football | Football Business & Player Support",
  seo_desc="Services for players, clubs, licensed agents, investors and brands: player support, relocation, recruitment, football business consulting, financial coordination and marketing.",
  hero=dict(eyebrow="Services", h1="Two ways in: who you are, or what you need.",
    sub="Every mandate is different. Start from the audience you belong to, or go straight to the discipline "
@@ -140,7 +139,7 @@ PAGES["services"] = dict(
 # ============================== AUDIENCE PAGES ==============================
 PAGES["players"] = dict(
  nav="Players", parent=("services","Services"),
- seo_title="For Players — Career, Relocation & Life Support | Bestway Plus",
+ seo_title="For Players — Career, Relocation & Life Support | Bestway Football",
  seo_desc="Support for professional and emerging footballers: career planning, relocation, administration, personal branding and coordination of licensed legal, tax and financial professionals.",
  hero=dict(eyebrow="For players", h1="Everything around the contract.",
    sub="You have an agent for the deal. This is the rest of it — the country, the paperwork, the money, "
@@ -175,7 +174,7 @@ PAGES["players"] = dict(
 
 PAGES["clubs"] = dict(
  nav="Clubs", parent=("services","Services"),
- seo_title="For Clubs — Recruitment Support & Market Intelligence | Bestway Plus",
+ seo_title="For Clubs — Recruitment Support & Market Intelligence | Bestway Football",
  seo_desc="Support for football clubs: international player research, recruitment support, scouting networks, market entry, commercial development and investor introductions.",
  hero=dict(eyebrow="For clubs", h1="Research, reach and the work between windows.",
    sub="Extra capacity for sporting and commercial departments — international player research, market "
@@ -224,7 +223,7 @@ PAGES["clubs"] = dict(
 
 PAGES["agents"] = dict(
  nav="Licensed Agents", parent=("services","Services"),
- seo_title="Support for Licensed Football Agents — Back-Office & Research | Bestway Plus",
+ seo_title="Support for Licensed Football Agents — Back-Office & Research | Bestway Football",
  seo_desc="Operational partner for licensed FIFA Football Agents: back-office, player and club research, lead generation, marketing, documentation coordination and CRM management.",
  hero=dict(eyebrow="For licensed football agents", h1="The capacity behind a licensed practice.",
    sub="A licence lets you do the regulated work. It does not give you a research desk, a back office or a "
@@ -269,7 +268,7 @@ PAGES["agents"] = dict(
 
 PAGES["investors"] = dict(
  nav="Investors", parent=("services","Services"),
- seo_title="Investment & Football Projects — Advisory Support | Bestway Plus",
+ seo_title="Investment & Football Projects — Advisory Support | Bestway Football",
  seo_desc="Support for investors in football: project sourcing, market research, business plan and financial model coordination, due diligence support and structured introductions.",
  hero=dict(eyebrow="For investors", h1="Football as a business, examined properly.",
    sub="Project sourcing, research and preparation for investors and entrepreneurs looking at clubs, "
@@ -312,7 +311,7 @@ PAGES["investors"] = dict(
 
 PAGES["brands"] = dict(
  nav="Brands", parent=("services","Services"),
- seo_title="Sponsorship & Commercial Partnerships in Football | Bestway Plus",
+ seo_title="Sponsorship & Commercial Partnerships in Football | Bestway Football",
  seo_desc="Sponsorship strategy, athlete-brand matching, endorsement sourcing and international commercial partnership development for brands entering football.",
  hero=dict(eyebrow="For brands and sponsors", h1="Football is a channel. Most brands buy it badly.",
    sub="Sponsorship and partnership work built around what the brand needs to achieve — audience, market, "
@@ -349,7 +348,7 @@ PAGES["brands"] = dict(
 # ============================ DISCIPLINE PAGES ==============================
 PAGES["player-support"] = dict(
  nav="Player Support", parent=("services","Services"),
- seo_title="Player Care & Career Support — Professional Footballers | Bestway Plus",
+ seo_title="Player Care & Career Support — Professional Footballers | Bestway Football",
  seo_desc="Career planning, professional development, lifestyle and administrative support for professional footballers, delivered alongside the player's licensed agent.",
  hero=dict(eyebrow="Discipline 01", h1="Player care and career support.",
    sub="Comprehensive support for professional footballers outside the regulated activity of a football "
@@ -390,7 +389,7 @@ PAGES["player-support"] = dict(
 
 PAGES["relocation"] = dict(
  nav="Relocation", parent=("services","Services"),
- seo_title="Relocation & International Player Services | Bestway Plus",
+ seo_title="Relocation & International Player Services | Bestway Football",
  seo_desc="Relocation coordination for footballers moving to European clubs: housing, immigration specialist coordination, banking, insurance, schooling, language and local integration.",
  hero=dict(eyebrow="Discipline 02", h1="Arriving properly.",
    sub="Relocation coordination for players and families moving into European football — from the first "
@@ -416,7 +415,7 @@ PAGES["relocation"] = dict(
     ("03","First season","School, language, family employment where possible, and the annual renewals nobody remembers.")]),
   ("note","Regulatory note",
    "Immigration, residence and work permit matters are handled by qualified external specialists. "
-   "Bestway Plus coordinates the process and manages documentation; it does not provide immigration or "
+   "Bestway Football coordinates the process and manages documentation; it does not provide immigration or "
    "legal advice."),
   ("band","Tell us the country and the date.",
    "Those two facts determine almost everything else.", "Speak to us in confidence","contact"),
@@ -425,7 +424,7 @@ PAGES["relocation"] = dict(
 
 PAGES["football-business"] = dict(
  nav="Football Business", parent=("services","Services"),
- seo_title="Football Business Consulting & Market Entry in Europe | Bestway Plus",
+ seo_title="Football Business Consulting & Market Entry in Europe | Bestway Football",
  seo_desc="Football business consulting: club development, European market analysis, international expansion, commercial strategy, strategic partnerships and industry advisory.",
  hero=dict(eyebrow="Discipline 03", h1="Football business consulting.",
    sub="Advisory and research for clubs, academies, sports organisations and companies entering or "
@@ -462,7 +461,7 @@ PAGES["football-business"] = dict(
 
 PAGES["recruitment"] = dict(
  nav="Recruitment & Scouting", parent=("services","Services"),
- seo_title="Recruitment, Scouting & Market Intelligence in Football | Bestway Plus",
+ seo_title="Recruitment, Scouting & Market Intelligence in Football | Bestway Football",
  seo_desc="Talent identification, player and club research, recruitment consulting, scouting network development and transfer market intelligence for clubs and licensed agents.",
  hero=dict(eyebrow="Discipline 04", h1="Recruitment, scouting and market intelligence.",
    sub="Research and sourcing support for clubs, licensed agents and academies — the work that happens "
@@ -502,7 +501,7 @@ PAGES["recruitment"] = dict(
 
 PAGES["financial-wealth"] = dict(
  nav="Financial & Wealth", parent=("services","Services"),
- seo_title="Financial Coordination & Wealth Support for Athletes | Bestway Plus",
+ seo_title="Financial Coordination & Wealth Support for Athletes | Bestway Football",
  seo_desc="Financial organisation for professional athletes: budgeting, cash-flow planning, administration and coordination of licensed tax, banking, insurance and wealth professionals.",
  hero=dict(eyebrow="Discipline 06", h1="Financial coordination and wealth support.",
    sub="Organisation, planning support and coordination of licensed professionals — for athletes whose "
@@ -510,7 +509,7 @@ PAGES["financial-wealth"] = dict(
    cta=[("Speak to us in confidence","contact","btn")]),
  blocks=[
   ("split","Position","Coordination, not advice.",
-   ["This is the part of the page worth reading carefully. Bestway Plus does not provide regulated "
+   ["This is the part of the page worth reading carefully. Bestway Football does not provide regulated "
     "investment advice, does not manage assets or portfolios, and does not make individual financial "
     "recommendations.",
     "What we do is organisational: helping an athlete understand their own cash flow, keeping the "
@@ -539,7 +538,7 @@ PAGES["financial-wealth"] = dict(
 
 PAGES["marketing"] = dict(
  nav="Marketing & Branding", parent=("services","Services"),
- seo_title="Personal Branding, Marketing & Sponsorship in Football | Bestway Plus",
+ seo_title="Personal Branding, Marketing & Sponsorship in Football | Bestway Football",
  seo_desc="Personal branding for athletes, digital presence, media relations, commercial profiles, sponsor search and brand partnership development for players, agents and clubs.",
  hero=dict(eyebrow="Discipline 08", h1="Marketing, branding and sponsorship.",
    sub="Building a commercial profile that is accurate, international and useful — for players, licensed "
@@ -575,7 +574,7 @@ PAGES["marketing"] = dict(
 
 PAGES["legal-coordination"] = dict(
  nav="Legal Coordination", parent=("services","Services"),
- seo_title="Legal & Contract Coordination in Football | Bestway Plus",
+ seo_title="Legal & Contract Coordination in Football | Bestway Football",
  seo_desc="Contract administration, documentation, translation, compliance support and introductions to independent qualified lawyers for players, clubs and licensed agents.",
  hero=dict(eyebrow="Discipline 09", h1="Legal and contract coordination.",
    sub="Administration, documentation and coordination around legal work — performed with, and never "
@@ -591,7 +590,7 @@ PAGES["legal-coordination"] = dict(
      "The document work around a contract, done accurately and on schedule.",
      ["Contract Administration","Document Preparation Support","Documentation Management",
       "Translation & Interpretation"])]),
-  ("note","Important notice", D_LEG + " Bestway Plus does not draft, opine on or negotiate legal terms on "
+  ("note","Important notice", D_LEG + " Bestway Football does not draft, opine on or negotiate legal terms on "
    "its own account. " + D_AGENT),
   ("band","Send the document and the deadline.",
    "We will tell you which specialist it needs and in which country.", "Start a conversation","contact"),
@@ -601,8 +600,8 @@ PAGES["legal-coordination"] = dict(
 # ============================== COMPANY PAGES ===============================
 PAGES["network"] = dict(
  nav="Network",
- seo_title="International Network — One Network, Multiple Opportunities | Bestway Plus",
- seo_desc="Bestway Plus connects players, clubs, licensed football agents, scouts, investors, brands and legal and financial professionals across international football.",
+ seo_title="International Network — One Network, Multiple Opportunities | Bestway Football",
+ seo_desc="Bestway Football connects players, clubs, licensed football agents, scouts, investors, brands and legal and financial professionals across international football.",
  hero=dict(eyebrow="Network", h1="One network. Multiple opportunities.",
    sub="The company's real asset is not a database of contacts. It is knowing which specific person to "
        "call, in which country, for a particular problem — and being trusted enough that the call is "
@@ -636,16 +635,17 @@ PAGES["network"] = dict(
 
 PAGES["about"] = dict(
  nav="About",
- seo_title="About Bestway Plus — International Football Business Company in Poland",
+ seo_title="About Bestway Football — International Football Business Company in Poland",
  seo_desc="Bestway Plus Sp. z o.o. is an international football business and player support company based in Poland, working with players, clubs, licensed agents, investors and brands.",
- hero=dict(eyebrow="About us", h1="An international football business company, based in Poland.",
+ hero=dict(eyebrow="About us", h1="An international football business company, based in Warsaw.",
    sub="We work at the intersection of football, business and international opportunity — supporting "
        "players, clubs, licensed agents, investors and commercial partners.",
    cta=[("Start a conversation","contact","btn")]),
  blocks=[
   ("plate","Photography — 4:5\nOffice or city, architectural, restrained\nTo be supplied by the client",
    "Our role goes beyond the pitch.",
-   ["Bestway Plus Sp. z o.o. is registered in Poland and works internationally, primarily across Europe. "
+   ["Bestway Plus Sp. z o.o. is registered in Warsaw, Poland and trades as Bestway Football. It works "
+    "internationally, primarily across Europe. "
     "We coordinate professional networks, business development, player support, market research, "
     "marketing, recruitment support and international projects.",
     "The company was built around a straightforward observation: in football, the deal is usually the "
@@ -676,15 +676,15 @@ PAGES["about"] = dict(
 
 PAGES["faq"] = dict(
  nav="FAQ",
- seo_title="Frequently Asked Questions — Bestway Plus",
- seo_desc="How Bestway Plus works: relationship with licensed FIFA football agents, regulated services, engagement terms, confidentiality and international coverage.",
+ seo_title="Frequently Asked Questions — Bestway Football",
+ seo_desc="How Bestway Football works: relationship with licensed FIFA football agents, regulated services, engagement terms, confidentiality and international coverage.",
  hero=dict(eyebrow="FAQ", h1="Questions we are asked first.",
    sub="Direct answers, including to the ones about what we are not.",
    cta=[("Ask something else","contact","btn line")]),
  blocks=[
   ("faq","Answers","",[
    ("Are you a FIFA Football Agency?",
-    "No. Bestway Plus is a football business, player support and sports consulting company. We are not a "
+    "No. Bestway Football is a football business, player support and sports consulting company. We are not a "
     "FIFA Football Agent and we do not carry out football agent activity. Where a mandate requires services "
     "reserved for a licensed football agent, those services are performed directly by an appropriately "
     "licensed FIFA Football Agent."),
@@ -703,7 +703,7 @@ PAGES["faq"] = dict(
     "By written engagement agreed before work begins — typically a project fee, a retainer, or a defined "
     "arrangement for a market or client segment. Terms are set per mandate and confirmed in writing."),
    ("Where do you operate?",
-    "The company is registered in Poland and works internationally, primarily across Europe. Individual "
+    "The company is registered in Warsaw, Poland and works internationally, primarily across Europe. Individual "
     "mandates regularly involve markets beyond it."),
    ("What languages do you work in?",
     "Working languages are confirmed per mandate. Where a matter requires a language we do not cover "
@@ -727,12 +727,13 @@ PAGES["faq"] = dict(
 PAGES["contact"] = dict(
  nav="Contact",
  seo_title="Contact — Bestway Plus Sp. z o.o., Poland",
- seo_desc="Contact Bestway Plus, an international football business and player support company based in Poland. Enquiries from players, clubs, licensed agents, investors and brands.",
+ seo_desc="Contact Bestway Football, an international football business and player support company based in Poland. Enquiries from players, clubs, licensed agents, investors and brands.",
  hero=dict(eyebrow="Contact", h1="Start a conversation.",
    sub="Tell us who you are and what you are trying to do. We answer every serious enquiry, including the "
        "ones we decline.", cta=[]),
  blocks=[
   ("contact_form",),
+  ("rail","Ways to reach us"),
   ("cards","Before you write","What helps us answer quickly", "",
    [("01","Say which side you are on","Player, club, licensed agent, investor or brand. It changes the answer entirely."),
     ("02","Give the constraint","A date, a budget band, a country, a deadline. Constraints are more useful than ambitions."),
@@ -743,45 +744,46 @@ PAGES["contact"] = dict(
 
 PAGES["legal-notices"] = dict(
  nav="Legal notices",
- seo_title="Legal Notices & Disclaimers — Bestway Plus",
+ seo_title="Legal Notices & Disclaimers — Bestway Football",
  seo_desc="Regulatory position, scope of services and disclaimers for Bestway Plus Sp. z o.o. regarding football agent activity, financial, investment, legal and tax services.",
  hero=dict(eyebrow="Legal notices", h1="Scope of services and disclaimers.",
-   sub="A single page setting out precisely what Bestway Plus does, what it does not do, and who performs "
+   sub="A single page setting out precisely what Bestway Football does, what it does not do, and who performs "
        "regulated work.", cta=[]),
  blocks=[
   ("legal","Notices","",[
    ("Football agent activity",
-    "Bestway Plus Sp. z o.o. is not a FIFA Football Agent and does not hold a FIFA Football Agent licence. "
+    "Bestway Plus Sp. z o.o., trading as Bestway Football, is not a FIFA Football Agent and does not hold a "
+    "FIFA Football Agent licence. "
     "The company does not carry out football agent activity, does not represent players or clubs in "
     "transfer or employment negotiations, and does not seek representation mandates. Where a matter "
     "requires services reserved for a licensed football agent, those services are performed directly by an "
     "appropriately licensed FIFA Football Agent, engaged separately by the client. Nothing on this website "
-    "should be read as a representation that Bestway Plus, its owners or its staff hold such a licence."),
+    "should be read as a representation that Bestway Football, its owners or its staff hold such a licence."),
    ("Financial services",
-    "Bestway Plus does not provide regulated investment advice, portfolio or asset management, insurance "
+    "Bestway Football does not provide regulated investment advice, portfolio or asset management, insurance "
     "mediation, or individual financial recommendations. Services described as financial coordination or "
     "wealth support are organisational and administrative in nature. Investment, tax and regulated "
     "financial advice is provided only by appropriately licensed independent professionals where required."),
    ("Investment",
     "Nothing on this website constitutes an offer, solicitation, recommendation or inducement to invest in "
-    "any asset, security, club, project or undertaking. Bestway Plus is not a licensed investment adviser "
+    "any asset, security, club, project or undertaking. Bestway Football is not a licensed investment adviser "
     "or intermediary and gives no assurance, express or implied, as to returns, valuations or outcomes. "
     "Any person considering an investment should obtain independent professional advice."),
    ("Legal and tax",
-    "Bestway Plus does not provide legal or tax advice and does not draft, opine on or negotiate legal "
+    "Bestway Football does not provide legal or tax advice and does not draft, opine on or negotiate legal "
     "terms on its own account. Legal advice is provided by independent qualified legal professionals; tax "
     "advice by appropriately licensed tax advisers. The company's role is coordination, documentation and "
     "administration."),
    ("Immigration and permits",
     "Residence, work permit and immigration matters are handled by qualified external specialists. "
-    "Bestway Plus coordinates the process and manages documentation; it does not provide immigration "
+    "Bestway Football coordinates the process and manages documentation; it does not provide immigration "
     "advice or make representations about the outcome of any application."),
    ("Outcomes",
-    "No outcome is guaranteed. Bestway Plus is engaged for defined work, research, coordination and "
+    "No outcome is guaranteed. Bestway Football is engaged for defined work, research, coordination and "
     "access. Transfers, signings, sponsorships, partnerships, permits and investments depend on clubs, "
     "counterparties, regulators, markets and other third parties outside the company's control."),
    ("Third parties, names and imagery",
-    "Bestway Plus does not use the names, logos, images or marks of clubs, players, competitions or "
+    "Bestway Football does not use the names, logos, images or marks of clubs, players, competitions or "
     "organisations to imply a relationship, endorsement or completed transaction that has not been "
     "confirmed in writing by the party concerned. Any such material appearing on this website does so "
     "under a written permission."),
