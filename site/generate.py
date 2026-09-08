@@ -227,7 +227,7 @@ NIP {COMPANY["nip"]} &#183; REGON {COMPANY["regon"]} &#183; KRS {COMPANY["krs"]}
 <p class="fdisc">{E("Bestway Plus is not a FIFA Football Agent and does not carry out football agent activity; services reserved for a licensed football agent are performed by an appropriately licensed FIFA Football Agent. The company does not provide regulated investment, legal or tax advice — these are provided by appropriately licensed independent professionals where required. Nothing on this website is an offer or recommendation to invest, and no outcome is guaranteed.")}</p>
 <div class="fbar"><span>&copy; {E(LEGAL_NAME)}</span>
 <span>{E("Prototype — demonstration content")}</span>
-<a href="{href("legal-notices",m)}">Legal notices</a></div>
+<a href="{href("legal-notices",m)}">{E("Legal notices")}</a></div>
 </div></footer>'''
 
 def page_body(slug, m):

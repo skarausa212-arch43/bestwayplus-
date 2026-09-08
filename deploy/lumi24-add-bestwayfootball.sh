@@ -28,13 +28,20 @@ SRC="$(find "$TMPDIR" -maxdepth 2 -type d -name site | head -1)"
 
 PAGES="$(find "$SRC" -maxdepth 1 -name '*.html' | wc -l)"
 [ "$PAGES" -ge 15 ] || { echo "ERROR: страниц всего $PAGES — архив выглядит неполным"; exit 1; }
-echo "страниц в архиве: $PAGES"
+for lang in pl ru; do
+  N="$(find "$SRC/$lang" -maxdepth 1 -name '*.html' 2>/dev/null | wc -l)"
+  [ "$N" -ge 15 ] || { echo "ERROR: в языке $lang только $N страниц — архив неполный"; exit 1; }
+  echo "страниц в архиве ($lang): $N"
+done
+echo "страниц в архиве (en): $PAGES"
 
 echo "== 2. Раскладываем в $DOCROOT =="
 mkdir -p "$DOCROOT"
 # Генератор и служебные файлы Netlify на nginx не нужны.
 rm -f "$SRC"/*.py "$SRC/_headers" "$SRC/_redirects" "$SRC/README.md"
-rm -rf "$SRC/__pycache__"
+# locales/ читает только генератор при сборке; на сервере эти JSON никому не
+# нужны и содержат весь текст сайта одним файлом.
+rm -rf "$SRC/__pycache__" "$SRC/locales"
 # --delete: удалённая из репозитория страница должна исчезать и на сервере.
 if command -v rsync >/dev/null; then
   rsync -a --delete "$SRC"/ "$DOCROOT"/
@@ -104,7 +111,8 @@ for _ in $(seq 1 20); do
 done
 
 echo "== 4. Проверка отдачи по Host-заголовку (до переключения DNS) =="
-for path in / /players.html /players /sitemap.xml /robots.txt /assets/site.css; do
+for path in / /players.html /players /pl/ /pl/players.html /ru/ /ru/players.html \
+            /sitemap.xml /robots.txt /assets/site.css; do
   printf '  %-22s ' "$path"
   curl -sS -o /dev/null -w 'HTTP %{http_code}, %{size_download} байт\n' \
        -H "Host: bestwayfootball.pl" "http://127.0.0.1$path" || echo "не ответил"
