@@ -1,6 +1,9 @@
 {
+  "createOne": "Create one",
+  "formError": "Please check the highlighted fields.",
   "haveAccount": "Already have an account?",
   "hint": "Pick the closest description — it decides which form you get.",
+  "noAccount": "Don't have an account?",
   "reassurance": "Your data is not published. Nothing is shared with a club without your explicit, separate consent.",
   "roleAgent": "Licensed agent",
   "roleAgentHint": "FIFA licence holder",
@@ -12,5 +15,10 @@
   "rolePlayerHint": "Professional or emerging",
   "roleScout": "Scout",
   "roleScoutHint": "Independent or club",
+  "signInHint": "Sign in to your account.",
+  "signInSubmit": "Sign in",
+  "signInTitle": "Welcome back.",
+  "submit": "Create account",
+  "submitting": "Creating account…",
   "title": "Who are you?"
 }

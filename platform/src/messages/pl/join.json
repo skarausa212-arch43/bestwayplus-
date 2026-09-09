@@ -1,6 +1,9 @@
 {
+  "createOne": "Załóż je",
+  "formError": "Sprawdź podświetlone pola.",
   "haveAccount": "Masz już konto?",
   "hint": "Wybierz najbliższy opis — od niego zależy formularz.",
+  "noAccount": "Nie masz konta?",
   "reassurance": "Twoje dane nie są publikowane. Nic nie trafia do klubu bez Twojej wyraźnej, odrębnej zgody.",
   "roleAgent": "Licencjonowany agent",
   "roleAgentHint": "Posiadacz licencji FIFA",
@@ -12,5 +15,10 @@
   "rolePlayerHint": "Zawodowy lub rozwijający się",
   "roleScout": "Skaut",
   "roleScoutHint": "Niezależny lub klubowy",
+  "signInHint": "Zaloguj się do swojego konta.",
+  "signInSubmit": "Zaloguj się",
+  "signInTitle": "Witamy ponownie.",
+  "submit": "Utwórz konto",
+  "submitting": "Tworzymy konto…",
   "title": "Kim jesteś?"
 }

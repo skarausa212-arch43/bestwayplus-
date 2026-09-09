@@ -14,5 +14,6 @@
   "phone": "Podaj poprawny numer telefonu",
   "required": "To pole jest wymagane",
   "tooManyAttempts": "Zbyt wiele prób. Spróbuj ponownie za {minutes} min.",
+  "twoFactorUnavailable": "Logowanie dwuskładnikowe dla tego konta nie jest jeszcze dostępne. Skontaktuj się z nami.",
   "url": "Podaj poprawny link"
 }

@@ -4,12 +4,28 @@ import type { AppLocale } from '@/i18n/routing';
 import { LogoMark, Wordmark } from '@/components/Logo';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
+/**
+ * The full marketing site — players, clubs, agents, investors, services,
+ * about, contact — already exists at bestwayfootball.pl, nineteen finished
+ * pages deep. This app is the account side of the same brand, not a second
+ * copy of that content, so these go there rather than to local routes that
+ * would just be thin duplicates (or, until they're built, 404s).
+ */
+const MARKETING_HOST = 'https://bestwayfootball.pl';
+
+function marketingUrl(locale: AppLocale, slug: string) {
+  const base = locale === 'en' ? MARKETING_HOST : `${MARKETING_HOST}/${locale}`;
+  return slug === '' ? `${base}/` : `${base}/${slug}.html`;
+}
+
 const AUDIENCES = [
-  { key: 'audiencePlayers', href: '/players', nav: 'players' },
-  { key: 'audienceClubs', href: '/clubs', nav: 'clubs' },
-  { key: 'audienceAgents', href: '/agents', nav: 'agents' },
-  { key: 'audienceInvestors', href: '/investors', nav: 'investors' },
+  { key: 'audiencePlayers', slug: 'players', nav: 'players' },
+  { key: 'audienceClubs', slug: 'clubs', nav: 'clubs' },
+  { key: 'audienceAgents', slug: 'agents', nav: 'agents' },
+  { key: 'audienceInvestors', slug: 'investors', nav: 'investors' },
 ] as const;
+
+const MARKETING_NAV = ['services', 'about', 'contact'] as const;
 
 const STEPS = ['howStep1', 'howStep2', 'howStep3'] as const;
 
@@ -30,14 +46,23 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             <Wordmark />
           </Link>
           <nav className="ms-auto hidden items-center gap-7 lg:flex">
-            {(['players', 'clubs', 'agents', 'investors', 'services', 'about', 'contact'] as const).map((key) => (
-              <Link
+            {AUDIENCES.map(({ slug, nav: navKey }) => (
+              <a
+                key={slug}
+                href={marketingUrl(locale as AppLocale, slug)}
+                className="font-display text-[11.5px] font-semibold uppercase tracking-[0.2em] text-ink-muted transition-colors hover:text-ink"
+              >
+                {nav(navKey)}
+              </a>
+            ))}
+            {MARKETING_NAV.map((key) => (
+              <a
                 key={key}
-                href={`/${key}`}
+                href={marketingUrl(locale as AppLocale, key)}
                 className="font-display text-[11.5px] font-semibold uppercase tracking-[0.2em] text-ink-muted transition-colors hover:text-ink"
               >
                 {nav(key)}
-              </Link>
+              </a>
             ))}
           </nav>
           <div className="ms-auto flex items-center gap-4 lg:ms-0">
@@ -100,11 +125,12 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               {t('audiencesTitle')}
             </h2>
             <div className="mt-8 grid gap-px overflow-hidden rounded-xl border border-line-faint bg-line-faint sm:grid-cols-2 lg:grid-cols-4">
-              {AUDIENCES.map(({ key, href, nav: navKey }) => (
-                <Link key={key} href={href} className="grid gap-2 bg-bg p-6 transition-colors hover:bg-bg-panel">
+              {AUDIENCES.map(({ key, slug, nav: navKey }) => (
+                <a key={key} href={marketingUrl(locale as AppLocale, slug)}
+                   className="grid gap-2 bg-bg p-6 transition-colors hover:bg-bg-panel">
                   <span className="font-display text-lg font-extrabold text-ink">{nav(navKey)}</span>
                   <span className="text-sm leading-relaxed text-ink-muted">{t(key)}</span>
-                </Link>
+                </a>
               ))}
             </div>
           </div>

@@ -14,5 +14,6 @@
   "phone": "Enter a valid phone number",
   "required": "This field is required",
   "tooManyAttempts": "Too many attempts. Try again in {minutes} minutes.",
+  "twoFactorUnavailable": "Two-factor sign-in for this account isn't available yet. Contact us for help.",
   "url": "Enter a valid link"
 }
