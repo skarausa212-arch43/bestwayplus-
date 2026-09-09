@@ -9,6 +9,8 @@
   "newMessage": "У вас новое сообщение",
   "newOpportunity": "Появилась новая возможность",
   "newSignIn": "Новый вход в ваш аккаунт",
+  "recruitmentAssigned": "Вам назначена заявка на подбор",
+  "recruitmentUpdated": "Ваша заявка на подбор обновлена",
   "stageChanged": "Статус вашей заявки изменился",
   "taskAssigned": "Вам назначена задача",
   "verificationChanged": "Ваш статус проверки изменился"

@@ -1,0 +1,15 @@
+{
+  "additionalRequirements": "Dodatkowe wymagania",
+  "ageMax": "Wiek maks.",
+  "ageMin": "Wiek min.",
+  "assign": "Przypisz do mnie",
+  "assignedTo": "Przypisano do",
+  "assignedToNoOne": "Nieprzypisane",
+  "mine": "Przypisane do mnie",
+  "nationalityRestrictions": "Ograniczenia narodowościowe",
+  "newRequest": "Nowe zapytanie",
+  "noRequests": "Brak zapytań rekrutacyjnych.",
+  "requestCreated": "Zapytanie wysłane.",
+  "salaryBudget": "Budżet płacowy",
+  "submit": "Wyślij zapytanie"
+}

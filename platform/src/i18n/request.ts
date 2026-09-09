@@ -5,7 +5,7 @@ const NAMESPACES = [
   'common', 'nav', 'home', 'join', 'forms', 'validation',
   'portal', 'documents', 'statuses', 'notifications', 'emails',
   'opportunities', 'admin', 'share', 'messages', 'tasks',
-  'consent', 'legal',
+  'consent', 'legal', 'recruitment',
 ] as const;
 
 /**

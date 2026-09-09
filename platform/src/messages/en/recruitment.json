@@ -1,0 +1,15 @@
+{
+  "additionalRequirements": "Additional requirements",
+  "ageMax": "Max age",
+  "ageMin": "Min age",
+  "assign": "Assign to me",
+  "assignedTo": "Assigned to",
+  "assignedToNoOne": "Unassigned",
+  "mine": "Assigned to me",
+  "nationalityRestrictions": "Nationality restrictions",
+  "newRequest": "New request",
+  "noRequests": "No recruitment requests yet.",
+  "requestCreated": "Request submitted.",
+  "salaryBudget": "Salary budget",
+  "submit": "Submit request"
+}

@@ -159,6 +159,18 @@ export const verifyEmailToken = z.object({
   token: z.string().min(20, 'validation.required'),
 });
 
+export const recruitmentRequest = z.object({
+  position: shortText.optional(),
+  ageMin: z.number().int().min(14).max(60).optional(),
+  ageMax: z.number().int().min(14).max(60).optional(),
+  preferredFoot: z.enum(['LEFT', 'RIGHT', 'BOTH']).optional(),
+  nationalityRestrictions: shortText.optional(),
+  salaryBudget: shortText.optional(),
+  transferType: z.enum(['TRANSFER', 'LOAN', 'FREE_AGENT']).optional(),
+  deadline: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'validation.dateInvalid').optional(),
+  additionalRequirements: longText.optional(),
+});
+
 export const uploadIntent = z.object({
   ownerUserId: z.string().uuid().optional(),
   type: z.enum([

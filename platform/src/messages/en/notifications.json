@@ -9,6 +9,8 @@
   "newMessage": "You have a new message",
   "newOpportunity": "A new opportunity is available",
   "newSignIn": "New sign-in to your account",
+  "recruitmentAssigned": "A recruitment request was assigned to you",
+  "recruitmentUpdated": "Your recruitment request was updated",
   "stageChanged": "Your application status changed",
   "taskAssigned": "A task was assigned to you",
   "verificationChanged": "Your verification status changed"

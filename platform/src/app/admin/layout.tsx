@@ -23,6 +23,7 @@ const NAV = [
   { href: '/admin/scouts', key: 'scouts' },
   { href: '/admin/documents', key: 'documents' },
   { href: '/admin/opportunities', key: 'opportunities' },
+  { href: '/admin/recruitment', key: 'recruitment' },
   { href: '/admin/tasks', key: 'tasks' },
   { href: '/admin/messages', key: 'messages' },
   { href: '/admin/staff', key: 'staff' },

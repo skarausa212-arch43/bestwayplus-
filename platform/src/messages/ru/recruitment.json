@@ -1,0 +1,15 @@
+{
+  "additionalRequirements": "Дополнительные требования",
+  "ageMax": "Возраст до",
+  "ageMin": "Возраст от",
+  "assign": "Назначить на себя",
+  "assignedTo": "Назначено",
+  "assignedToNoOne": "Не назначено",
+  "mine": "Назначенные мне",
+  "nationalityRestrictions": "Ограничения по гражданству",
+  "newRequest": "Новая заявка",
+  "noRequests": "Заявок на подбор пока нет.",
+  "requestCreated": "Заявка отправлена.",
+  "salaryBudget": "Бюджет по зарплате",
+  "submit": "Отправить заявку"
+}
