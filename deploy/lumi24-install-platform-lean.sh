@@ -286,6 +286,22 @@ ln -sfn /etc/nginx/sites-available/bestwayfootball-app /etc/nginx/sites-enabled/
 nginx -t
 systemctl reload nginx
 
+# The heredoc above always rewrites this file from a plain-HTTP template, so
+# every re-run of this script — including a routine app-only redeploy, long
+# after the certificate exists — silently wipes the "listen 443 ssl" block
+# certbot adds into this same file and drops the platform back to HTTP-only.
+# (This is exactly how it broke last time: a platform-deploy right after
+# certs were issued undid them.) Re-apply it every time: certbot install
+# uses the certificate already on disk (no reissue, no rate limit) and is a
+# no-op before that certificate exists yet, which is why this is gated on
+# the live dir.
+if [ -d "/etc/letsencrypt/live/$APP_HOST" ]; then
+  echo "== 8b. Восстанавливаем HTTPS-блок (certbot) =="
+  certbot install --nginx --cert-name "$APP_HOST" --non-interactive
+  nginx -t
+  systemctl reload nginx
+fi
+
 # reload не мгновенный: пока старые воркеры не закрыли соединения, запрос
 # может уйти в default_server и вернуть его редирект. Ждём новый блок.
 for _ in $(seq 1 20); do

@@ -100,6 +100,20 @@ ln -sfn /etc/nginx/sites-available/bestwayfootball /etc/nginx/sites-enabled/best
 nginx -t
 systemctl reload nginx
 
+# The heredoc above always rewrites this file from a plain-HTTP template, so
+# every re-run of this script — including a content-only redeploy, long
+# after the certificate exists — would silently wipe the "listen 443 ssl"
+# block certbot adds into this same file and drop the live site back to
+# HTTP-only. Re-apply it every time: certbot install uses the certificate
+# already on disk (no reissue, no rate limit) and is a no-op before that
+# certificate exists yet, which is why this is gated on the live dir.
+if [ -d /etc/letsencrypt/live/bestwayfootball.pl ]; then
+  echo "== 3b. Восстанавливаем HTTPS-блок (certbot) =="
+  certbot install --nginx --cert-name bestwayfootball.pl --non-interactive
+  nginx -t
+  systemctl reload nginx
+fi
+
 # reload не мгновенный: старые воркеры ещё принимают соединения, пока не закроют
 # текущие. Запрос, попавший в такой воркер, обслуживает default_server (lumi) и
 # получает его редирект на https — проверка ниже показала бы 301 на живом сайте.

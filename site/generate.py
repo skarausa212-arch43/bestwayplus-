@@ -131,6 +131,11 @@ def b_band(bk, m):
 
 def b_contact_form(bk, m):
     C = COMPANY
+    # The confirmation text has to reach site.js (an external, CSP-clean file
+    # with no per-build interpolation) somehow — a data attribute on the
+    # element that needs it, rather than a value baked into an inline script.
+    sent = E("Received. In the live site this reaches the enquiry desk, "
+             "which answers every serious message.")
     return f'''<section class="sec flush"><div class="wrap split">
 <div class="hd"><span class="eyebrow">{E("Enquiry")}</span><h2>{E("Send a message")}</h2>
 <p class="lead pad-t">{E("Every enquiry is read by a person. If your request is outside what we do, we will say so and, where we can, point you somewhere better.")}</p></div>
@@ -149,7 +154,7 @@ def b_contact_form(bk, m):
 <option>{E("Brand or sponsor")}</option><option>{E("Other")}</option></select></label>
 <label><span>{E("What are you trying to do?")}</span><textarea name="msg"
 placeholder="{E("Three lines is enough. A date, a country or a budget band helps more than a long description.")}"></textarea></label>
-<div id="formnote" role="status"></div>
+<div id="formnote" role="status" data-sent="{sent}"></div>
 <div><button class="btn" type="submit">{E("Send enquiry")}</button></div>
 <p class="dim" style="font-size:12.5px;line-height:1.7">{E("Prototype: this form is a demonstration and does not transmit anything yet. In the live site it delivers to the enquiry address and stores nothing else.")}</p>
 </form></div></section>
@@ -276,6 +281,13 @@ FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
          '<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700'
          '&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">')
 
+# build_static no longer uses JS_COMMON/JS_LANG below — the deployed nginx
+# block sends "script-src 'self'" with no 'unsafe-inline' and no nonce, which
+# silently kills every inline <script>, burger menu included. It now ships
+# the same logic (minus the per-build string interpolation that assumed an
+# inline script) as the static file site/assets/site.js. These two constants
+# stay only because build_spa(), unused by any deploy target, still inlines
+# them; do not point build_static back at them.
 JS_COMMON = '''
 (function(){"use strict";
  var burger=document.getElementById("burger"),nav=document.getElementById("nav");
@@ -368,9 +380,11 @@ def build_static(outdir, lang="en"):
             '<link rel="alternate" hreflang="%s" href="https://%s%s">' % (l, DOMAIN, alt_href(slug, l))
             for l in i18n.LOCALES)
         alts += '<link rel="alternate" hreflang="x-default" href="https://%s%s">' % (DOMAIN, alt_href(slug, "en"))
-        js_lang = JS_LANG.replace("__ROOT__", "true" if slug == "home" else "false")
+        # data-root marks the one page per language where the saved-language
+        # redirect in site.js is allowed to fire — see the comment there.
+        root_attr = ' data-root' if slug == "home" else ''
         doc = f'''<!DOCTYPE html>
-<html lang="{i18n.HTML_LANG[lang]}"><head>
+<html lang="{i18n.HTML_LANG[lang]}"{root_attr}><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="dark">
@@ -394,8 +408,7 @@ def build_static(outdir, lang="en"):
 {page_body(slug,"static")}
 </main>
 {footer("static")}
-<script>{js_common()}</script>
-<script>{js_lang}</script>
+<script src="/assets/site.js" defer></script>
 </body></html>'''
         open(os.path.join(out, fn), "w", encoding="utf-8").write(doc)
     return len(PAGES)

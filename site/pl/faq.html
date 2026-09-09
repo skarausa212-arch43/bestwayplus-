@@ -50,55 +50,5 @@ NIP 8952277581 &#183; REGON 529604122 &#183; KRS 0001125792<br>
 <div class="fbar"><span>&copy; Bestway Plus Sp. z o.o.</span>
 <a href="legal-notices.html">Noty prawne</a></div>
 </div></footer>
-<script>
-(function(){"use strict";
- var burger=document.getElementById("burger"),nav=document.getElementById("nav");
- if(burger){burger.addEventListener("click",function(){
-   var open=nav.classList.toggle("open");
-   burger.setAttribute("aria-expanded",String(open));});}
- document.addEventListener("submit",function(ev){
-   var f=ev.target; if(f.id!=="enq")return; ev.preventDefault();
-   var miss=[].slice.call(f.querySelectorAll("[required]")).filter(function(i){return !i.value.trim();});
-   var note=document.getElementById("formnote");
-   if(miss.length){miss[0].focus();miss[0].style.borderBottomColor="var(--steel)";return;}
-   note.textContent="Odebrano. W wersji produkcyjnej wiadomość trafia do działu zapytań, który odpowiada na każdą poważną wiadomość.";
-   note.classList.add("on"); f.querySelector("button[type=submit]").disabled=true;});
- // Below-the-fold sections fade up as they enter view. The .pending class is
- // only ever added here — never in CSS by default — so a reader with no JS,
- // or JS that hasn't run yet, sees full content, not a page waiting on a
- // script that may never fire.
- if("IntersectionObserver" in window && !matchMedia("(prefers-reduced-motion: reduce)").matches){
-   // Grid rows — tiles, cards, cluster entries, index rows, FAQ items — reveal
-   // one at a time with a short per-item delay, so a section arrives as a
-   // visible cascade rather than one flat block appearing all at once.
-   var gridItems=[].slice.call(document.querySelectorAll(
-     ".tiles>*,.cards>*,.clusters>*,.idx>*,.faq>*"));
-   gridItems.forEach(function(el,i){
-     el.classList.add("reveal","pending");
-     el.style.transitionDelay=(i%6)*0.07+"s";});
-   // Everything else below the fold — sections with no grid of their own —
-   // still fades up as a block; a lone paragraph has nothing to cascade.
-   var sections=[].slice.call(document.querySelectorAll("main section")).filter(function(el){
-     return !el.classList.contains("hero") && !el.classList.contains("phero")
-       && !el.querySelector(".tiles,.cards,.clusters,.idx,.faq");});
-   sections.forEach(function(el,i){
-     el.classList.add("reveal","pending");
-     el.style.transitionDelay=(i%3)*0.08+"s";});
-   var io=new IntersectionObserver(function(entries){
-     entries.forEach(function(e){
-       if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target);}});
-   },{threshold:.12,rootMargin:"0px 0px -60px 0px"});
-   gridItems.concat(sections).forEach(function(el){io.observe(el);});
- }
-})();</script>
-<script>
-(function(){"use strict";
- var KEY="bwf.lang", here=document.documentElement.lang||"en";
- document.addEventListener("click",function(ev){
-   var a=ev.target.closest?ev.target.closest(".langs a"):null;
-   if(a){try{localStorage.setItem(KEY,a.getAttribute("hreflang"));}catch(e){}}});
- if(!false) return;
- var saved; try{saved=localStorage.getItem(KEY);}catch(e){}
- if(saved && saved!==here && (saved==="pl"||saved==="ru")) location.replace("/"+saved+"/");
-})();</script>
+<script src="/assets/site.js" defer></script>
 </body></html>
