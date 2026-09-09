@@ -55,7 +55,14 @@ if [ ! -f "/etc/opendkim/keys/$DOMAIN/$SELECTOR.private" ]; then
 else
   echo "  ключ DKIM уже есть — не трогаю"
 fi
-chown -R opendkim:opendkim /etc/opendkim/keys
+# Только сама поддиректория с ключом должна принадлежать opendkim — если
+# chown -R захватывает и родительский /etc/opendkim/keys, opendkim при
+# старте (запускается от root) считает ключ небезопасным: "keys is
+# writeable and owned by uid <opendkim>, which is not the executing uid (0)"
+# и отказывается стартовать (status=78/CONFIG).
+chown root:root /etc/opendkim/keys
+chmod 755 /etc/opendkim/keys
+chown -R opendkim:opendkim /etc/opendkim/keys/$DOMAIN
 chmod 700 /etc/opendkim/keys/$DOMAIN
 chmod 600 /etc/opendkim/keys/$DOMAIN/$SELECTOR.private
 
