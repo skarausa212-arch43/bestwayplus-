@@ -13,6 +13,8 @@ export interface SessionUser extends Actor {
   status: string;
   emailVerified: boolean;
   twoFactorEnabled: boolean;
+  /** The Session row behind this request — lets Settings mark "this device". */
+  sessionId: string;
 }
 
 /**
@@ -71,6 +73,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   const session = await prisma.session.findUnique({
     where: { tokenHash: hashToken(token) },
     select: {
+      id: true,
       expiresAt: true,
       revokedAt: true,
       user: {
@@ -108,7 +111,30 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     status: user.status,
     emailVerified: Boolean(user.emailVerifiedAt),
     twoFactorEnabled: user.twoFactorEnabled,
+    sessionId: session.id,
   };
+}
+
+/** A user's own active sessions, newest first — Settings > Active sessions. */
+export async function listSessions(userId: string) {
+  return prisma.session.findMany({
+    where: { userId, revokedAt: null, expiresAt: { gt: new Date() } },
+    select: { id: true, ip: true, userAgent: true, createdAt: true, expiresAt: true },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+/**
+ * Ends one of the caller's own sessions. Scoped by userId in the same query
+ * so a guessed id can never revoke someone else's — there is no separate
+ * ownership check to forget.
+ */
+export async function revokeSession(userId: string, sessionId: string): Promise<boolean> {
+  const { count } = await prisma.session.updateMany({
+    where: { id: sessionId, userId, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+  return count > 0;
 }
 
 /** Request metadata for audit rows. */
