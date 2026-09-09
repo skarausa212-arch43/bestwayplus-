@@ -12,10 +12,15 @@ export async function dashboardCounters(actor: Actor) {
   const mine = actor.role === 'MANAGER' ? { responsibleManagerId: actor.userId } : {};
   const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000);
 
-  const [newPlayers, newAgents, pendingVerification, documentsToReview, activeOpportunities, openTasks, unreadMessages] =
-    await Promise.all([
+  const [
+    newPlayers, newAgents, newClubs, newInvestors, newScouts,
+    pendingVerification, documentsToReview, activeOpportunities, openTasks, unreadMessages,
+  ] = await Promise.all([
       prisma.user.count({ where: { ...mine, role: 'PLAYER', createdAt: { gte: sevenDaysAgo } } }),
       prisma.user.count({ where: { ...mine, role: 'AGENT', createdAt: { gte: sevenDaysAgo } } }),
+      prisma.user.count({ where: { ...mine, role: 'CLUB', createdAt: { gte: sevenDaysAgo } } }),
+      prisma.user.count({ where: { ...mine, role: 'INVESTOR', createdAt: { gte: sevenDaysAgo } } }),
+      prisma.user.count({ where: { ...mine, role: 'SCOUT', createdAt: { gte: sevenDaysAgo } } }),
       prisma.agentProfile.count({ where: { verificationStatus: 'PENDING' } }),
       prisma.document.count({
         where: {
@@ -35,5 +40,8 @@ export async function dashboardCounters(actor: Actor) {
       }),
     ]);
 
-  return { newPlayers, newAgents, pendingVerification, documentsToReview, activeOpportunities, openTasks, unreadMessages };
+  return {
+    newPlayers, newAgents, newClubs, newInvestors, newScouts,
+    pendingVerification, documentsToReview, activeOpportunities, openTasks, unreadMessages,
+  };
 }

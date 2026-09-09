@@ -27,6 +27,7 @@ const NAV = [
   { href: '/admin/tasks', key: 'tasks' },
   { href: '/admin/messages', key: 'messages' },
   { href: '/admin/staff', key: 'staff' },
+  { href: '/admin/audit', key: 'audit' },
 ] as const;
 
 /**
@@ -44,9 +45,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const messages = await getMessages({ locale });
   const t = await getTranslations({ locale, namespace: 'admin' });
 
-  // staff:manage is SUPER_ADMIN-only — an ADMIN or MANAGER following an old
-  // link would just hit noAccess, but there is no reason to show them the tab.
-  const nav = session.role === 'SUPER_ADMIN' ? NAV : NAV.filter((item) => item.key !== 'staff');
+  // staff:manage and audit:read are both SUPER_ADMIN-only — an ADMIN or
+  // MANAGER following an old link would just hit noAccess, but there is no
+  // reason to show them either tab.
+  const nav = session.role === 'SUPER_ADMIN'
+    ? NAV
+    : NAV.filter((item) => item.key !== 'staff' && item.key !== 'audit');
 
   return (
     <html lang={locale} className={`${display.variable} ${sans.variable}`}>
