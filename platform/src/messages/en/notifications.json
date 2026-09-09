@@ -10,5 +10,6 @@
   "newOpportunity": "A new opportunity is available",
   "newSignIn": "New sign-in to your account",
   "stageChanged": "Your application status changed",
+  "taskAssigned": "A task was assigned to you",
   "verificationChanged": "Your verification status changed"
 }

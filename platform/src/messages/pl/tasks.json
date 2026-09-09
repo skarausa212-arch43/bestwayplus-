@@ -1,0 +1,10 @@
+{
+  "assignee": "Wykonawca",
+  "createTask": "Utwórz zadanie",
+  "dueDate": "Termin",
+  "noTasks": "Brak zadań pasujących do tych filtrów.",
+  "relatedTo": "Dotyczy — email (opcjonalnie)",
+  "taskDescription": "Opis",
+  "taskTitle": "Tytuł zadania",
+  "unassigned": "Nieprzypisane"
+}

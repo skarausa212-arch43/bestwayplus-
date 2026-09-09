@@ -1,0 +1,10 @@
+{
+  "assignee": "Assignee",
+  "createTask": "Create task",
+  "dueDate": "Due date",
+  "noTasks": "No tasks match these filters.",
+  "relatedTo": "Related to — email (optional)",
+  "taskDescription": "Description",
+  "taskTitle": "Task title",
+  "unassigned": "Unassigned"
+}
