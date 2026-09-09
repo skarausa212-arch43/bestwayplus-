@@ -66,9 +66,9 @@ export default async function AdminAgents({
             <Card as="li" key={agent.id}>
               <div className="flex flex-wrap items-start justify-between gap-5">
                 <div className="min-w-0">
-                  <p className="font-display text-base font-extrabold text-ink">
+                  <a href={`/admin/agents/${agent.userId}`} className="font-display text-base font-extrabold text-ink hover:text-emerald">
                     {[agent.firstName, agent.lastName].filter(Boolean).join(' ') || agent.user.email}
-                  </p>
+                  </a>
                   <p className="mt-1 text-xs text-ink-muted">
                     {[agent.agencyName, agent.country].filter(Boolean).join(' · ')}
                   </p>

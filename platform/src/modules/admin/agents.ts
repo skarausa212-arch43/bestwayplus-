@@ -4,6 +4,36 @@ import { recordActivity } from '@/modules/activity/service';
 import { notify } from '@/modules/notifications/service';
 import type { VerificationStatus } from '@prisma/client';
 
+/**
+ * Single agent, for the detail page. Same authorisation shape as
+ * getPlayerForStaff: the owning user is looked up first so a manager's scope
+ * (their own clients only) can be checked before any profile data is read.
+ */
+export async function getAgentForStaff(actor: Actor, agentUserId: string) {
+  const owner = await prisma.user.findUnique({
+    where: { id: agentUserId },
+    select: { id: true, responsibleManagerId: true },
+  });
+  if (!owner) return null;
+
+  authorize(actor, 'profile:readAny', {
+    ownerUserId: owner.id,
+    responsibleManagerId: owner.responsibleManagerId,
+  });
+
+  return prisma.agentProfile.findUnique({
+    where: { userId: agentUserId },
+    select: {
+      id: true, firstName: true, lastName: true, nationality: true, country: true,
+      fifaLicenceNumber: true, agencyName: true, website: true, phone: true,
+      markets: true, countries: true, leagues: true, languages: true, specialisations: true,
+      bio: true, verificationStatus: true, verifiedAt: true, verificationNote: true,
+      verifiedBy: { select: { email: true } },
+      user: { select: { email: true, createdAt: true, responsibleManagerId: true, responsibleManager: { select: { email: true } } } },
+    },
+  });
+}
+
 export async function listAgents(actor: Actor, filters: { status?: VerificationStatus; query?: string } = {}) {
   authorize(actor, 'profile:readAny', { ownerUserId: actor.userId, responsibleManagerId: actor.userId });
 
