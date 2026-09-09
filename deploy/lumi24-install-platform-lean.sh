@@ -113,7 +113,19 @@ if [ ! -f "$ENVFILE" ]; then
   cat > "$ENVFILE" <<EOF
 NODE_ENV=production
 PORT=$APP_PORT
-HOSTNAME=127.0.0.1
+# 'localhost', not 127.0.0.1 — Next's standalone router builds its own
+# "initURL" from this value to decide whether a middleware rewrite target is
+# same-origin. next-intl always rewrites through an absolute URL built from
+# request.url, which in the edge-runtime sandbox is always "localhost:<port>"
+# regardless of HOSTNAME. Set this to 127.0.0.1 and the two representations
+# of "myself" never string-match: every localized request gets treated as a
+# cross-origin rewrite and genuinely proxied over the network to the very
+# process handling it — a same-process deadlock that hangs for the full 30s
+# proxy timeout and, under load, OOMs before that. 'localhost' still binds
+# loopback only (confirmed: reachable on both 127.0.0.1 and localhost, not
+# on the box's public interface), so nothing here trades away the isolation
+# 127.0.0.1 was chosen for — it only fixes the string comparison.
+HOSTNAME=localhost
 APP_URL=https://$APP_HOST
 ADMIN_URL=https://$APP_HOST
 DATABASE_URL=postgresql://$DB_USER:$DB_PASS@127.0.0.1:5432/$DB_NAME?schema=public
