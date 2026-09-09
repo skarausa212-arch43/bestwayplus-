@@ -59,6 +59,7 @@
   "tabProfile": "Profil",
   "tasks": "Zadania",
   "unreadMessages": "Ostatnie wiadomości",
+  "verificationNotePlaceholder": "Np. licencja FIFA potwierdzona pod numerem …, kontakt bezpośrednio z agencją.",
   "verificationNoteRequired": "Zapisz podstawę weryfikacji, zanim jej udzielisz.",
   "verify": "Zweryfikuj",
   "views": "{count} wyświetleń"

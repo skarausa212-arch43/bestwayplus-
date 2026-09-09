@@ -59,6 +59,7 @@
   "tabProfile": "Profile",
   "tasks": "Tasks",
   "unreadMessages": "Recent messages",
+  "verificationNotePlaceholder": "E.g. FIFA licence confirmed under number …, agency contacted directly.",
   "verificationNoteRequired": "Record the basis for verification before granting it.",
   "verify": "Verify",
   "views": "{count} views"
