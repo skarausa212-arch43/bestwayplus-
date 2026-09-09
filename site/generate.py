@@ -196,14 +196,23 @@ RENDER = {"tiles":b_tiles,"manifesto":b_manifesto,"rail":b_rail,"statement":b_st
           "contact_form":b_contact_form}
 
 # ------------------------------------------------------------------ shells --
+PORTAL_HOST = "app.bestwayfootball.pl"
+
+def portal_href(path="join"):
+    """The account side of the brand lives on its own subdomain, not as pages
+    here — see platform/src/app/[locale]/page.tsx for why. Locale-prefixed
+    always, matching that app's own routing."""
+    return f"https://{PORTAL_HOST}/{LANG}/{path}"
+
 def header(slug, m):
     nav = "".join('<a href="%s" data-nav="%s"%s>%s</a>'
                   % (href(s,m), s, ' class="on"' if s==slug else '', E(t)) for s,t in NAV)
+    portal = f'<a href="{portal_href()}">{E("Client Portal")}</a>'
     return f'''<header class="hdr"><div class="wrap hdr-in">
 <a class="logo" href="{href("home",m)}">{logo()}<span class="wm"><b>Bestway</b><i>Football</i></span></a>
 <button class="burger" id="burger" type="button" aria-label="Menu" aria-expanded="false">
 <span></span><span></span><span></span></button>
-<nav class="nav" id="nav">{nav}<a class="btn sm" href="{href("contact",m)}" style="margin-block:10px">{E("Contact")}</a></nav>
+<nav class="nav" id="nav">{nav}{portal}<a class="btn sm" href="{href("contact",m)}" style="margin-block:10px">{E("Contact")}</a></nav>
 {lang_switch(slug, m)}
 <a class="btn sm" href="{href("contact",m)}">{E("Contact")}</a>
 </div></header>'''
@@ -374,7 +383,8 @@ def build_static(outdir, lang="en"):
 <meta property="og:url" content="https://{DOMAIN}/{canon}">
 <link rel="canonical" href="https://{DOMAIN}/{canon}">
 {alts}
-<link rel="icon" href="{FAVICON}">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="{FAVICON}" type="image/svg+xml">
 {FONTS}
 {CSS_LINK}
 </head><body>
