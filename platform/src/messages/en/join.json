@@ -1,10 +1,20 @@
 {
+  "backToSignIn": "Back to sign in",
   "createOne": "Create one",
+  "forgotPasswordHint": "Enter the email on your account and we'll send you a link to reset your password.",
+  "forgotPasswordLink": "Forgot your password?",
+  "forgotPasswordSubmit": "Send reset link",
+  "forgotPasswordSuccess": "If an account exists for that email, a reset link is on its way.",
+  "forgotPasswordTitle": "Reset your password",
   "formError": "Please check the highlighted fields.",
   "haveAccount": "Already have an account?",
   "hint": "Pick the closest description — it decides which form you get.",
   "noAccount": "Don't have an account?",
   "reassurance": "Your data is not published. Nothing is shared with a club without your explicit, separate consent.",
+  "resendVerification": "Resend confirmation email",
+  "resetPasswordSubmit": "Set new password",
+  "resetPasswordSuccess": "Password updated. Sign in with your new password.",
+  "resetPasswordTitle": "Choose a new password",
   "roleAgent": "Licensed agent",
   "roleAgentHint": "FIFA licence holder",
   "roleClub": "Club representative",
@@ -20,5 +30,9 @@
   "signInTitle": "Welcome back.",
   "submit": "Create account",
   "submitting": "Creating account…",
-  "title": "Who are you?"
+  "title": "Who are you?",
+  "verifyEmailFailed": "This confirmation link is invalid or has expired.",
+  "verifyEmailPending": "Confirming…",
+  "verifyEmailSuccess": "Your email is confirmed.",
+  "verifyEmailTitle": "Confirming your email"
 }

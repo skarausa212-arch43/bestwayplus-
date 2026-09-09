@@ -1,10 +1,20 @@
 {
+  "backToSignIn": "Powrót do logowania",
   "createOne": "Załóż je",
+  "forgotPasswordHint": "Podaj adres e-mail powiązany z kontem — wyślemy link do zresetowania hasła.",
+  "forgotPasswordLink": "Zapomniałeś hasła?",
+  "forgotPasswordSubmit": "Wyślij link do resetu",
+  "forgotPasswordSuccess": "Jeśli konto z tym adresem istnieje, link do resetu jest już w drodze.",
+  "forgotPasswordTitle": "Zresetuj hasło",
   "formError": "Sprawdź podświetlone pola.",
   "haveAccount": "Masz już konto?",
   "hint": "Wybierz najbliższy opis — od niego zależy formularz.",
   "noAccount": "Nie masz konta?",
   "reassurance": "Twoje dane nie są publikowane. Nic nie trafia do klubu bez Twojej wyraźnej, odrębnej zgody.",
+  "resendVerification": "Wyślij ponownie e-mail potwierdzający",
+  "resetPasswordSubmit": "Ustaw nowe hasło",
+  "resetPasswordSuccess": "Hasło zaktualizowane. Zaloguj się nowym hasłem.",
+  "resetPasswordTitle": "Wybierz nowe hasło",
   "roleAgent": "Licencjonowany agent",
   "roleAgentHint": "Posiadacz licencji FIFA",
   "roleClub": "Przedstawiciel klubu",
@@ -20,5 +30,9 @@
   "signInTitle": "Witamy ponownie.",
   "submit": "Utwórz konto",
   "submitting": "Tworzymy konto…",
-  "title": "Kim jesteś?"
+  "title": "Kim jesteś?",
+  "verifyEmailFailed": "Ten link potwierdzający jest nieprawidłowy lub wygasł.",
+  "verifyEmailPending": "Potwierdzanie…",
+  "verifyEmailSuccess": "Adres e-mail został potwierdzony.",
+  "verifyEmailTitle": "Potwierdzanie adresu e-mail"
 }

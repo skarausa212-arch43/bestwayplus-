@@ -71,14 +71,16 @@ export function renderEmail(
   key: TemplateKey,
   locale: AppLocale,
   catalog: Catalog,
-  vars: { name?: string; appUrl: string } & Record<string, string | number>,
+  vars: { name?: string; appUrl: string; path?: string } & Record<string, string | number>,
 ): RenderedEmail {
   const template = TEMPLATES[key];
   const subject = interpolate(catalog[template.subjectKey] ?? key, vars);
   const greeting = interpolate(catalog.greeting ?? '', { ...vars, name: vars.name ?? '' });
   const cta = catalog[template.action] ?? '';
   const footer = catalog.footerTransactional ?? '';
-  const url = `${vars.appUrl.replace(/\/$/, '')}/${locale}${template.path}`;
+  // A one-time token (password reset, email verification) can't live in the
+  // static template.path — the caller passes the real link via vars.path.
+  const url = `${vars.appUrl.replace(/\/$/, '')}/${locale}${vars.path ?? template.path}`;
 
   const text = [greeting, subject, '', `${cta}: ${url}`, '', footer]
     .filter(Boolean).join('\n');

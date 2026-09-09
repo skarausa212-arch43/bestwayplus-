@@ -1,10 +1,20 @@
 {
+  "backToSignIn": "Назад ко входу",
   "createOne": "Создать",
+  "forgotPasswordHint": "Введите email, указанный в аккаунте, — мы отправим ссылку для сброса пароля.",
+  "forgotPasswordLink": "Забыли пароль?",
+  "forgotPasswordSubmit": "Отправить ссылку",
+  "forgotPasswordSuccess": "Если аккаунт с таким email существует, ссылка для сброса уже отправлена.",
+  "forgotPasswordTitle": "Сброс пароля",
   "formError": "Проверьте выделенные поля.",
   "haveAccount": "Уже есть аккаунт?",
   "hint": "Выберите ближайшее описание — от него зависит форма.",
   "noAccount": "Нет аккаунта?",
   "reassurance": "Ваши данные не публикуются. Ничего не передаётся клубу без вашего отдельного явного согласия.",
+  "resendVerification": "Отправить письмо повторно",
+  "resetPasswordSubmit": "Установить новый пароль",
+  "resetPasswordSuccess": "Пароль обновлён. Войдите с новым паролем.",
+  "resetPasswordTitle": "Придумайте новый пароль",
   "roleAgent": "Лицензированный агент",
   "roleAgentHint": "Обладатель лицензии FIFA",
   "roleClub": "Представитель клуба",
@@ -20,5 +30,9 @@
   "signInTitle": "С возвращением.",
   "submit": "Создать аккаунт",
   "submitting": "Создаём аккаунт…",
-  "title": "Кто вы?"
+  "title": "Кто вы?",
+  "verifyEmailFailed": "Эта ссылка подтверждения недействительна или истекла.",
+  "verifyEmailPending": "Подтверждаем…",
+  "verifyEmailSuccess": "Ваш email подтверждён.",
+  "verifyEmailTitle": "Подтверждение email"
 }

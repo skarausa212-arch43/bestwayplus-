@@ -22,6 +22,8 @@
   "documents": "Documents",
   "documentsNeedAction": "{count} need your attention",
   "documentsSummary": "{approved} approved · {pending} in review",
+  "emailNotVerified": "Not verified",
+  "emailVerified": "Verified",
   "expiringSoon": "Expiring soon",
   "exportData": "Export my data",
   "messages": "Messages",
@@ -36,6 +38,7 @@
   "recentActivity": "Recent activity",
   "recruitment": "Recruitment requests",
   "requests": "Requests",
+  "resendVerification": "Resend confirmation email",
   "sectionCareer": "Career",
   "sectionFootball": "Football",
   "sectionLinks": "Links",
@@ -48,6 +51,7 @@
   "settingsSecurity": "Security",
   "signedInAs": "Signed in as {email}",
   "twoFactor": "Two-factor authentication",
+  "verificationSent": "Confirmation email sent.",
   "viewAll": "View all",
   "welcome": "Welcome back, {name}"
 }

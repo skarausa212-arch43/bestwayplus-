@@ -36,6 +36,7 @@ export const LIMITS = {
   login: { limit: 5, windowSeconds: 900 },
   register: { limit: 3, windowSeconds: 3600 },
   passwordReset: { limit: 3, windowSeconds: 3600 },
+  verifyResend: { limit: 3, windowSeconds: 3600 },
   uploadIntent: { limit: 30, windowSeconds: 600 },
   downloadUrl: { limit: 60, windowSeconds: 600 },
   shareView: { limit: 20, windowSeconds: 600 },

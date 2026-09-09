@@ -39,6 +39,14 @@ export async function createSession(userId: string, ctx: { ip?: string; userAgen
   return { expiresAt };
 }
 
+/** Ends every active session for a user — used after a password reset. */
+export async function revokeAllSessions(userId: string): Promise<void> {
+  await prisma.session.updateMany({
+    where: { userId, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+}
+
 export async function destroySession(): Promise<void> {
   const store = await cookies();
   const token = store.get(COOKIE)?.value;

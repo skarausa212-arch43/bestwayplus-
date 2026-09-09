@@ -22,6 +22,8 @@
   "documents": "Документы",
   "documentsNeedAction": "{count} требует внимания",
   "documentsSummary": "{approved} принято · {pending} на проверке",
+  "emailNotVerified": "Не подтверждён",
+  "emailVerified": "Подтверждён",
   "expiringSoon": "Скоро истекает",
   "exportData": "Выгрузить мои данные",
   "messages": "Сообщения",
@@ -36,6 +38,7 @@
   "recentActivity": "Последние действия",
   "recruitment": "Заявки на подбор",
   "requests": "Запросы",
+  "resendVerification": "Отправить письмо повторно",
   "sectionCareer": "Карьера",
   "sectionFootball": "Футбол",
   "sectionLinks": "Ссылки",
@@ -48,6 +51,7 @@
   "settingsSecurity": "Безопасность",
   "signedInAs": "Вы вошли как {email}",
   "twoFactor": "Двухфакторная аутентификация",
+  "verificationSent": "Письмо с подтверждением отправлено.",
   "viewAll": "Смотреть все",
   "welcome": "С возвращением, {name}"
 }

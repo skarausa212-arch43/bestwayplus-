@@ -6,6 +6,7 @@ import { registration } from '@/modules/auth/schemas';
 import { recordConsent } from '@/modules/consent/service';
 import { createSession, requestContext } from '@/modules/auth/session';
 import { recordActivity } from '@/modules/activity/service';
+import { sendVerificationEmail } from '@/modules/auth/email-verification';
 import { toPrismaLocale, type AppLocale } from '@/i18n/routing';
 import type { Role } from '@prisma/client';
 
@@ -203,6 +204,7 @@ export async function POST(request: Request) {
   });
 
   await createSession(userId, { ip: ctx.ip ?? undefined, userAgent: ctx.userAgent ?? undefined });
+  await sendVerificationEmail(userId);
 
   return NextResponse.json({ ok: true });
 }

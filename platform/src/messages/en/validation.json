@@ -10,10 +10,13 @@
   "invalidCredentials": "Email or password is incorrect",
   "numberRange": "Enter a value between {min} and {max}",
   "passwordBreached": "This password has appeared in a data breach. Choose another.",
+  "passwordMismatch": "Passwords don't match",
   "passwordShort": "Use at least 12 characters",
   "phone": "Enter a valid phone number",
   "required": "This field is required",
+  "resetTokenInvalid": "This reset link is invalid or has expired.",
   "tooManyAttempts": "Too many attempts. Try again in {minutes} minutes.",
   "twoFactorUnavailable": "Two-factor sign-in for this account isn't available yet. Contact us for help.",
-  "url": "Enter a valid link"
+  "url": "Enter a valid link",
+  "verifyTokenInvalid": "This confirmation link is invalid or has expired."
 }

@@ -148,6 +148,17 @@ export const signIn = z.object({
   totp: z.string().regex(/^\d{6}$/).optional(),
 });
 
+export const forgotPassword = z.object({ email });
+
+export const resetPassword = z.object({
+  token: z.string().min(20, 'validation.required'),
+  password,
+});
+
+export const verifyEmailToken = z.object({
+  token: z.string().min(20, 'validation.required'),
+});
+
 export const uploadIntent = z.object({
   ownerUserId: z.string().uuid().optional(),
   type: z.enum([

@@ -10,10 +10,13 @@
   "invalidCredentials": "Nieprawidłowy e-mail lub hasło",
   "numberRange": "Podaj wartość od {min} do {max}",
   "passwordBreached": "To hasło pojawiło się w wycieku danych. Wybierz inne.",
+  "passwordMismatch": "Hasła się nie zgadzają",
   "passwordShort": "Użyj co najmniej 12 znaków",
   "phone": "Podaj poprawny numer telefonu",
   "required": "To pole jest wymagane",
+  "resetTokenInvalid": "Ten link do resetu jest nieprawidłowy lub wygasł.",
   "tooManyAttempts": "Zbyt wiele prób. Spróbuj ponownie za {minutes} min.",
   "twoFactorUnavailable": "Logowanie dwuskładnikowe dla tego konta nie jest jeszcze dostępne. Skontaktuj się z nami.",
-  "url": "Podaj poprawny link"
+  "url": "Podaj poprawny link",
+  "verifyTokenInvalid": "Ten link potwierdzający jest nieprawidłowy lub wygasł."
 }

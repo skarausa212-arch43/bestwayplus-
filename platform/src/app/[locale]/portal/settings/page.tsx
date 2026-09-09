@@ -4,6 +4,7 @@ import type { AppLocale } from '@/i18n/routing';
 import { getSessionUser } from '@/modules/auth/session';
 import { Card, Eyebrow, SectionTitle } from '@/components/ui';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { ResendVerificationButton } from '@/components/ResendVerificationButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +24,12 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
       <Card>
         <Eyebrow>{t('settingsAccount')}</Eyebrow>
         <p className="mt-3 text-sm text-ink">{session.email}</p>
+        <div className="mt-2 flex items-center gap-3 text-xs">
+          <span className={session.emailVerified ? 'text-emerald' : 'text-state-bad'}>
+            {session.emailVerified ? t('emailVerified') : t('emailNotVerified')}
+          </span>
+          {!session.emailVerified && <ResendVerificationButton />}
+        </div>
       </Card>
 
       <Card>

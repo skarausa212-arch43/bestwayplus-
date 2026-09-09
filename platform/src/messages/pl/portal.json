@@ -22,6 +22,8 @@
   "documents": "Dokumenty",
   "documentsNeedAction": "{count} wymaga Twojej uwagi",
   "documentsSummary": "{approved} zatwierdzone · {pending} w weryfikacji",
+  "emailNotVerified": "Niezweryfikowany",
+  "emailVerified": "Zweryfikowany",
   "expiringSoon": "Wkrótce wygasa",
   "exportData": "Eksportuj moje dane",
   "messages": "Wiadomości",
@@ -36,6 +38,7 @@
   "recentActivity": "Ostatnia aktywność",
   "recruitment": "Zapytania rekrutacyjne",
   "requests": "Prośby",
+  "resendVerification": "Wyślij ponownie e-mail potwierdzający",
   "sectionCareer": "Kariera",
   "sectionFootball": "Piłka nożna",
   "sectionLinks": "Linki",
@@ -48,6 +51,7 @@
   "settingsSecurity": "Bezpieczeństwo",
   "signedInAs": "Zalogowano jako {email}",
   "twoFactor": "Uwierzytelnianie dwuskładnikowe",
+  "verificationSent": "Wysłano e-mail potwierdzający.",
   "viewAll": "Zobacz wszystkie",
   "welcome": "Witaj ponownie, {name}"
 }
