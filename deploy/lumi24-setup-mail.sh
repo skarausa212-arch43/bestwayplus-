@@ -77,6 +77,7 @@ PidFile         /run/opendkim/opendkim.pid
 Mode            sv
 SubDomains      no
 AutoRestart     yes
+UserID          opendkim:opendkim
 EOF
 
 sed -i 's/^SOCKET=.*/SOCKET="inet:8891@localhost"/' /etc/default/opendkim 2>/dev/null || \
