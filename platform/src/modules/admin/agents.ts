@@ -35,10 +35,19 @@ export async function getAgentForStaff(actor: Actor, agentUserId: string) {
 }
 
 export async function listAgents(actor: Actor, filters: { status?: VerificationStatus; query?: string } = {}) {
+  // This authorize call only gates whether the actor may call listAgents at
+  // all — the self-referential ownerUserId/responsibleManagerId pair always
+  // passes for a manager (they are always their own assigned manager), same
+  // as listPlayers below. The actual scoping is the where-clause filter that
+  // follows; skipping it here previously let any MANAGER list every agent in
+  // the system, not just their own clients.
   authorize(actor, 'profile:readAny', { ownerUserId: actor.userId, responsibleManagerId: actor.userId });
+
+  const scope = actor.role === 'MANAGER' ? { user: { responsibleManagerId: actor.userId } } : {};
 
   return prisma.agentProfile.findMany({
     where: {
+      ...scope,
       ...(filters.status ? { verificationStatus: filters.status } : {}),
       ...(filters.query
         ? {

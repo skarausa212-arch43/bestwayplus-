@@ -18,9 +18,14 @@ const NAV = [
   { href: '/admin', key: 'dashboard' },
   { href: '/admin/players', key: 'players' },
   { href: '/admin/agents', key: 'agents' },
+  { href: '/admin/clubs', key: 'clubs' },
+  { href: '/admin/investors', key: 'investors' },
+  { href: '/admin/scouts', key: 'scouts' },
   { href: '/admin/documents', key: 'documents' },
   { href: '/admin/opportunities', key: 'opportunities' },
   { href: '/admin/tasks', key: 'tasks' },
+  { href: '/admin/messages', key: 'messages' },
+  { href: '/admin/staff', key: 'staff' },
 ] as const;
 
 /**
@@ -38,6 +43,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const messages = await getMessages({ locale });
   const t = await getTranslations({ locale, namespace: 'admin' });
 
+  // staff:manage is SUPER_ADMIN-only — an ADMIN or MANAGER following an old
+  // link would just hit noAccess, but there is no reason to show them the tab.
+  const nav = session.role === 'SUPER_ADMIN' ? NAV : NAV.filter((item) => item.key !== 'staff');
+
   return (
     <html lang={locale} className={`${display.variable} ${sans.variable}`}>
       <body className="font-sans antialiased">
@@ -52,7 +61,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                   </span>
                 </a>
                 <nav className="hidden items-center gap-1 md:flex">
-                  {NAV.map((item) => (
+                  {nav.map((item) => (
                     <a
                       key={item.href}
                       href={item.href}
