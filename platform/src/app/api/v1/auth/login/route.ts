@@ -4,10 +4,12 @@ import { verifyPassword } from '@/lib/crypto';
 import { signIn } from '@/modules/auth/schemas';
 import { createSession, requestContext } from '@/modules/auth/session';
 import { recordActivity } from '@/modules/activity/service';
+import { rateLimit, LIMITS } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 const GENERIC_ERROR = { ok: false as const, error: 'validation.invalidCredentials' };
+const RATE_LIMITED = { ok: false as const, error: 'validation.tooManyAttempts' };
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -18,6 +20,12 @@ export async function POST(request: Request) {
 
   const { email, password } = parsed.data;
   const ctx = await requestContext();
+
+  // Keyed by IP, not by the submitted email — keying by email would let an
+  // attacker lock a real user out of their own account by failing logins
+  // against it from anywhere.
+  const limit = await rateLimit(`login:${ctx.ip ?? 'unknown'}`, LIMITS.login);
+  if (!limit.allowed) return NextResponse.json(RATE_LIMITED, { status: 429 });
 
   const user = await prisma.user.findUnique({
     where: { email },

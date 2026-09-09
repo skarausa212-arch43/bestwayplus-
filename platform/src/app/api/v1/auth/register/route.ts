@@ -8,6 +8,7 @@ import { createSession, requestContext } from '@/modules/auth/session';
 import { recordActivity } from '@/modules/activity/service';
 import { sendVerificationEmail } from '@/modules/auth/email-verification';
 import { toPrismaLocale, type AppLocale } from '@/i18n/routing';
+import { rateLimit, LIMITS } from '@/lib/rate-limit';
 import type { Role } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
@@ -143,6 +144,11 @@ export async function POST(request: Request) {
 
   const data = parsed.data;
   const ctx = await requestContext();
+
+  const limit = await rateLimit(`register:${ctx.ip ?? 'unknown'}`, LIMITS.register);
+  if (!limit.allowed) {
+    return NextResponse.json({ ok: false, error: 'validation.tooManyAttempts' }, { status: 429 });
+  }
 
   // Password strength is checked by schema length only; uniqueness needs the
   // database and can't live in a synchronous zod refinement.
