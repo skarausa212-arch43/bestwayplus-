@@ -9,7 +9,7 @@
     --bg:#f5f6f8; --card:#ffffff; --ink:#0f172a; --muted:#64748b; --line:#e6e8ee;
     --accent:#2457ff; --accent-dark:#1a3fd6; --accent-soft:#eef2ff;
     --green:#0f9d58; --green-soft:#e7f6ee; --amber:#b45309; --amber-soft:#fef3c7;
-    --red:#dc2626; --red-soft:#fee2e2;
+    --red:#dc2626; --red-soft:#fee2e2; --purple:#7c3aed; --purple-soft:#f3e8ff;
     --radius:16px; --shadow:0 1px 2px rgba(15,23,42,.05),0 8px 24px rgba(15,23,42,.06);
     --shadow-lg:0 4px 12px rgba(15,23,42,.08),0 24px 48px rgba(15,23,42,.14);
   }
@@ -20,19 +20,40 @@
   input,select,textarea{font-family:inherit;font-size:15px;color:var(--ink)}
   img{max-width:100%;display:block}
   ::placeholder{color:#94a3b8}
+  a{color:var(--accent)}
 
   /* ---------- header ---------- */
-  header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
-  .header-in{max-width:1200px;margin:0 auto;padding:0 20px;height:64px;display:flex;align-items:center;gap:16px}
+  header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.93);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+  .header-in{max-width:1280px;margin:0 auto;padding:0 20px;height:64px;display:flex;align-items:center;gap:14px}
   .logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:21px;letter-spacing:-.5px;cursor:pointer;white-space:nowrap}
-  .logo svg{flex:none}
   .logo span{color:var(--accent)}
-  .header-search{flex:1;max-width:420px;position:relative;display:none}
-  @media(min-width:760px){.header-search{display:block}}
+  .nav{display:none;gap:2px;margin-left:6px}
+  @media(min-width:1080px){.nav{display:flex}}
+  .nav button{background:none;border:none;padding:9px 13px;border-radius:10px;font-size:14.5px;font-weight:600;color:var(--muted);transition:.15s}
+  .nav button:hover{background:var(--bg);color:var(--ink)}
+  .nav button.on{color:var(--ink);background:var(--bg)}
+  .header-search{flex:1;max-width:330px;position:relative;display:none}
+  @media(min-width:860px){.header-search{display:block}}
   .header-search input{width:100%;height:40px;border:1px solid var(--line);border-radius:99px;padding:0 16px 0 40px;background:var(--bg);outline:none;transition:.15s}
   .header-search input:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px var(--accent-soft)}
   .header-search svg{position:absolute;left:14px;top:11px;pointer-events:none}
-  .header-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .header-right{margin-left:auto;display:flex;align-items:center;gap:8px;min-width:0}
+  .menu-btn{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:11px;border:1px solid var(--line);background:#fff;font-size:17px;flex:none}
+  .menu-btn:hover{background:var(--bg)}
+  @media(min-width:1080px){.menu-btn{display:none}}
+  @media(max-width:1079px){.hide-sm{display:none!important}}
+  @media(max-width:620px){
+    .header-in{gap:8px;padding:0 14px}
+    .logo{font-size:18px}.logo svg{width:26px;height:26px}
+    .header-right .btn{padding:9px 12px}
+    .header-right .lbl{display:none}
+  }
+  .menu-sheet{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+  .menu-sheet button{text-align:left;border:none;background:var(--bg);border-radius:12px;padding:13px 16px;font-size:15px;font-weight:600;color:var(--ink);transition:.15s}
+  .menu-sheet button:hover{background:var(--accent-soft);color:var(--accent)}
+  .lang{border:1px solid var(--line);background:#fff;border-radius:9px;padding:6px 9px;font-size:12.5px;font-weight:700;color:var(--muted)}
+  .lang:hover{border-color:#c9cfdb;color:var(--ink)}
+
   .btn{border:none;border-radius:12px;padding:10px 18px;font-size:14.5px;font-weight:600;transition:.15s;display:inline-flex;align-items:center;gap:8px;justify-content:center}
   .btn-primary{background:var(--accent);color:#fff;box-shadow:0 4px 14px rgba(36,87,255,.3)}
   .btn-primary:hover{background:var(--accent-dark);transform:translateY(-1px)}
@@ -42,43 +63,52 @@
   .btn-outline:hover{border-color:#c9cfdb;background:var(--bg)}
   .btn-green{background:var(--green);color:#fff}
   .btn-green:hover{filter:brightness(1.06)}
+  .btn-dark{background:var(--ink);color:#fff}
+  .btn-dark:hover{filter:brightness(1.25)}
   .btn-lg{padding:14px 26px;font-size:16px;border-radius:14px}
   .btn-sm{padding:7px 13px;font-size:13px;border-radius:9px}
-  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
-  .avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#7c3aed);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;cursor:pointer;border:none}
+  .btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+  .avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#7c3aed);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;cursor:pointer;border:none;flex:none}
 
   /* ---------- hero ---------- */
   .hero{background:linear-gradient(160deg,#0e1730 0%,#14245c 55%,#1c3aa0 100%);color:#fff;position:relative;overflow:hidden}
   .hero::after{content:"";position:absolute;right:-140px;top:-140px;width:480px;height:480px;border-radius:50%;background:radial-gradient(circle,rgba(93,140,255,.35),transparent 70%)}
-  .hero-in{max-width:1200px;margin:0 auto;padding:64px 20px 88px;position:relative;z-index:1}
-  .hero h1{font-size:clamp(30px,4.6vw,46px);font-weight:800;letter-spacing:-1.2px;line-height:1.12;max-width:640px}
-  .hero p.sub{margin-top:14px;font-size:17px;color:#c3cdf0;max-width:520px}
+  .hero-in{max-width:1280px;margin:0 auto;padding:60px 20px 84px;position:relative;z-index:1}
+  .hero h1{font-size:clamp(30px,4.6vw,46px);font-weight:800;letter-spacing:-1.2px;line-height:1.12;max-width:660px}
+  .hero p.sub{margin-top:14px;font-size:17px;color:#c3cdf0;max-width:540px}
   .hero-stats{display:flex;gap:34px;margin-top:26px;flex-wrap:wrap}
   .hero-stats b{display:block;font-size:22px}
   .hero-stats span{font-size:13px;color:#9fb0e6}
 
-  .search-panel{max-width:1200px;margin:-52px auto 0;padding:0 20px;position:relative;z-index:2}
+  .search-panel{max-width:1280px;margin:-52px auto 0;padding:0 20px;position:relative;z-index:2}
   .search-card{background:var(--card);border-radius:20px;box-shadow:var(--shadow-lg);padding:18px;display:grid;grid-template-columns:repeat(4,1fr) auto;gap:12px}
   @media(max-width:900px){.search-card{grid-template-columns:1fr 1fr}}
   @media(max-width:540px){.search-card{grid-template-columns:1fr}}
   .field label{display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px}
-  .field select,.field input{width:100%;height:46px;border:1px solid var(--line);border-radius:12px;padding:0 12px;background:#fff;outline:none;transition:.15s;appearance:auto}
+  .field select,.field input{width:100%;height:46px;border:1px solid var(--line);border-radius:12px;padding:0 12px;background:#fff;outline:none;transition:.15s}
   .field select:focus,.field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
   .search-card .btn{align-self:end;height:46px}
 
-  /* ---------- sections ---------- */
-  .wrap{max-width:1200px;margin:0 auto;padding:0 20px}
-  .section-head{display:flex;align-items:baseline;justify-content:space-between;margin:44px 0 18px;gap:12px;flex-wrap:wrap}
+  /* ---------- layout ---------- */
+  .wrap{max-width:1280px;margin:0 auto;padding:0 20px}
+  .page{max-width:960px;margin:0 auto;padding:34px 20px 70px}
+  .page h1{font-size:28px;letter-spacing:-.6px;margin-bottom:6px}
+  .page .lead{color:var(--muted);margin-bottom:24px}
+  .panel{background:#fff;border-radius:20px;box-shadow:var(--shadow);padding:26px;margin-bottom:18px}
+  .panel h3{font-size:17px;margin-bottom:4px}
+  .panel .hint{font-size:13.5px;color:var(--muted);margin-bottom:16px}
+  .section-head{display:flex;align-items:baseline;justify-content:space-between;margin:40px 0 16px;gap:12px;flex-wrap:wrap}
   .section-head h2{font-size:24px;font-weight:800;letter-spacing:-.5px}
   .section-head .count{color:var(--muted);font-size:14px}
   .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}
-  .chip{border:1px solid var(--line);background:#fff;border-radius:99px;padding:8px 16px;font-size:14px;font-weight:600;color:var(--ink);transition:.15s}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:99px;padding:8px 15px;font-size:13.5px;font-weight:600;color:var(--ink);transition:.15s;display:inline-flex;align-items:center;gap:6px}
   .chip:hover{border-color:#c9cfdb}
   .chip.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .chip.smart.active{background:var(--purple);border-color:var(--purple)}
 
-  /* ---------- cards grid ---------- */
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:20px;margin-bottom:56px}
-  .car-card{background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);transition:.18s;cursor:pointer;display:flex;flex-direction:column;border:1px solid transparent}
+  /* ---------- car cards ---------- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(272px,1fr));gap:20px;margin-bottom:50px}
+  .car-card{background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);transition:.18s;cursor:pointer;display:flex;flex-direction:column}
   .car-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
   .car-photo{position:relative;aspect-ratio:16/10;background:#e9edf5;overflow:hidden}
   .car-photo img{width:100%;height:100%;object-fit:cover}
@@ -86,169 +116,226 @@
   .fav-btn:hover{transform:scale(1.1)}
   .badge{position:absolute;left:10px;top:10px;background:rgba(15,23,42,.78);color:#fff;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:99px;backdrop-filter:blur(4px)}
   .badge.new{background:var(--green)}
+  .badge.hold{background:var(--amber)}
+  .badge.sold{background:var(--red)}
+  .deal{position:absolute;right:10px;bottom:10px;font-size:11px;font-weight:800;padding:4px 10px;border-radius:99px;letter-spacing:.3px;backdrop-filter:blur(4px)}
+  .deal.great{background:rgba(15,157,88,.92);color:#fff}
+  .deal.good{background:rgba(36,87,255,.9);color:#fff}
+  .deal.fair{background:rgba(255,255,255,.92);color:var(--muted)}
+  .deal.high{background:rgba(220,38,38,.9);color:#fff}
   .car-body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:5px;flex:1}
-  .car-price{font-size:20px;font-weight:800;letter-spacing:-.4px;display:flex;align-items:center;gap:8px}
-  .car-price .offer-tag{font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:99px;padding:3px 9px;letter-spacing:.2px}
+  .car-price{font-size:20px;font-weight:800;letter-spacing:-.4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .car-price .offer-tag{font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:99px;padding:3px 9px}
+  .car-price .was{font-size:13px;font-weight:600;color:var(--muted);text-decoration:line-through}
   .car-title{font-size:15px;font-weight:600}
   .car-meta{font-size:13px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap}
   .car-meta i{font-style:normal}
-  .car-loc{margin-top:auto;padding-top:8px;font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:5px}
-
-  .empty{padding:70px 20px;text-align:center;color:var(--muted)}
-  .empty .big{font-size:44px;margin-bottom:10px}
+  .trust-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+  .tb{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:.2px;display:inline-flex;align-items:center;gap:3px}
+  .tb.ok{background:var(--green-soft);color:var(--green)}
+  .tb.info{background:var(--accent-soft);color:var(--accent)}
+  .tb.warn{background:var(--amber-soft);color:var(--amber)}
+  .tb.bad{background:var(--red-soft);color:var(--red)}
+  .tb.pur{background:var(--purple-soft);color:var(--purple)}
+  .car-loc{margin-top:auto;padding-top:8px;font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:5px;justify-content:space-between}
+  .deadline{font-size:12px;font-weight:700;color:var(--amber)}
+  .empty{padding:64px 20px;text-align:center;color:var(--muted)}
+  .empty .big{font-size:42px;margin-bottom:10px}
 
   /* ---------- how it works ---------- */
-  .how{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:56px 0;margin-bottom:56px}
-  .how-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:26px;margin-top:30px}
+  .how{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:52px 0;margin-bottom:0}
+  .how-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(228px,1fr));gap:24px;margin-top:28px}
   .how-step{padding:22px;border-radius:var(--radius);background:var(--bg)}
   .how-step .num{width:38px;height:38px;border-radius:12px;background:var(--accent);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:14px;font-size:17px}
   .how-step h3{font-size:16.5px;margin-bottom:6px}
   .how-step p{font-size:14px;color:var(--muted)}
 
-  footer{background:var(--ink);color:#94a3b8;padding:40px 0;font-size:14px}
+  footer{background:var(--ink);color:#94a3b8;padding:38px 0;font-size:13.5px}
   footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:center}
   footer .logo{color:#fff;font-size:18px}
 
   /* ---------- modal ---------- */
-  .modal-back{position:fixed;inset:0;background:rgba(10,15,30,.55);z-index:100;display:none;align-items:flex-start;justify-content:center;padding:30px 16px;overflow-y:auto;backdrop-filter:blur(3px)}
+  .modal-back{position:fixed;inset:0;background:rgba(10,15,30,.55);z-index:100;display:none;align-items:flex-start;justify-content:center;padding:26px 16px;overflow-y:auto;backdrop-filter:blur(3px)}
   .modal-back.open{display:flex}
   .modal{background:#fff;border-radius:22px;width:100%;box-shadow:var(--shadow-lg);animation:pop .22s ease;position:relative;margin:auto 0}
   @keyframes pop{from{transform:translateY(14px) scale(.98);opacity:0}to{transform:none;opacity:1}}
-  .modal.sm{max-width:420px;padding:30px}
-  .modal.md{max-width:560px;padding:30px}
-  .modal.lg{max-width:900px;padding:0;overflow:hidden}
+  .modal.sm{max-width:430px;padding:30px}
+  .modal.md{max-width:580px;padding:30px}
+  .modal.lg{max-width:960px;padding:0;overflow:hidden}
   .modal-x{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:50%;border:none;background:var(--bg);font-size:16px;color:var(--muted);z-index:5;transition:.15s}
   .modal-x:hover{background:var(--line);color:var(--ink)}
   .modal h2{font-size:22px;letter-spacing:-.4px;margin-bottom:4px}
-  .modal .sub{color:var(--muted);font-size:14px;margin-bottom:20px}
+  .modal .sub{color:var(--muted);font-size:14px;margin-bottom:18px}
   .form-grid{display:grid;gap:14px}
-  .form-grid .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  @media(max-width:520px){.form-grid .row2{grid-template-columns:1fr}}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  @media(max-width:560px){.row2,.row3{grid-template-columns:1fr}}
   .f label{display:block;font-size:13px;font-weight:600;margin-bottom:5px}
+  .f .sublabel{font-weight:400;color:var(--muted);font-size:12.5px}
   .f input,.f select,.f textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 13px;outline:none;transition:.15s;background:#fff}
-  .f textarea{resize:vertical;min-height:90px}
+  .f textarea{resize:vertical;min-height:88px}
   .f input:focus,.f select:focus,.f textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
   .form-err{background:var(--red-soft);color:var(--red);font-size:13.5px;padding:10px 14px;border-radius:10px;display:none}
   .switch-auth{text-align:center;font-size:14px;color:var(--muted);margin-top:16px}
   .switch-auth a{color:var(--accent);font-weight:600;cursor:pointer;text-decoration:none}
+  .note{font-size:12.5px;color:var(--muted);background:var(--bg);border-radius:10px;padding:10px 13px;line-height:1.45}
+  .note.demo{border-left:3px solid var(--purple)}
 
-  /* ---------- detail modal ---------- */
+  /* ---------- detail ---------- */
   .detail-gallery{position:relative;background:#0f172a}
-  .detail-gallery .main{aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .detail-gallery .main{aspect-ratio:16/9;overflow:hidden}
   .detail-gallery .main img{width:100%;height:100%;object-fit:cover}
-  .gal-nav{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;border:none;background:rgba(255,255,255,.9);font-size:18px;box-shadow:0 2px 10px rgba(0,0,0,.25);transition:.15s}
-  .gal-nav:hover{background:#fff}
+  .gal-nav{position:absolute;top:42%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;border:none;background:rgba(255,255,255,.9);font-size:18px;box-shadow:0 2px 10px rgba(0,0,0,.25)}
   .gal-prev{left:14px}.gal-next{right:14px}
+  .shot-tag{position:absolute;left:14px;bottom:82px;background:rgba(15,23,42,.8);color:#fff;font-size:11.5px;font-weight:700;padding:4px 11px;border-radius:99px}
   .thumbs{display:flex;gap:8px;padding:10px;background:#0f172a;overflow-x:auto}
   .thumbs img{width:76px;height:54px;object-fit:cover;border-radius:8px;cursor:pointer;opacity:.55;transition:.15s;flex:none;border:2px solid transparent}
   .thumbs img.on{opacity:1;border-color:#fff}
-  .detail-body{padding:26px;display:grid;grid-template-columns:1.6fr 1fr;gap:28px}
-  @media(max-width:760px){.detail-body{grid-template-columns:1fr}}
+  .detail-body{padding:26px;display:grid;grid-template-columns:1.55fr 1fr;gap:26px}
+  @media(max-width:820px){.detail-body{grid-template-columns:1fr}}
   .detail-body h2{font-size:24px}
   .detail-price{font-size:28px;font-weight:800;letter-spacing:-.6px;margin:6px 0 2px}
-  .spec-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;margin:18px 0}
+  .spec-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:18px 0}
   .spec{background:var(--bg);border-radius:12px;padding:10px 14px}
   .spec b{display:block;font-size:14.5px}
-  .spec span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+  .spec span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
   .detail-desc{font-size:14.5px;color:#334155;white-space:pre-line}
-  .seller-card{background:var(--bg);border-radius:16px;padding:20px;height:fit-content;position:sticky;top:10px}
-  .seller-card .who{display:flex;align-items:center;gap:12px;margin-bottom:16px}
-  .seller-card .who .avatar{cursor:default}
+  .box{border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:16px}
+  .box h4{font-size:14.5px;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+  .kv{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;padding:6px 0;border-bottom:1px dashed var(--line)}
+  .kv:last-child{border:none}
+  .kv span{color:var(--muted)}
+  .kv b{font-weight:700;text-align:right}
+  .seller-card{background:var(--bg);border-radius:16px;padding:20px;height:fit-content;position:sticky;top:78px}
+  .seller-card .who{display:flex;align-items:center;gap:12px;margin-bottom:14px}
   .seller-card .who b{font-size:15px}
   .seller-card .who span{font-size:12.5px;color:var(--muted);display:block}
-  .seller-card .btn{width:100%;margin-bottom:10px}
-  .trust{font-size:12.5px;color:var(--muted);display:flex;gap:6px;align-items:flex-start;margin-top:8px}
+  .seller-card .btn{width:100%;margin-bottom:9px}
+  .trust{font-size:12.5px;color:var(--muted);display:flex;gap:6px;align-items:flex-start;margin-top:10px;line-height:1.45}
+  .stars{color:#f59e0b;font-size:13px;letter-spacing:1px}
+  .qa-log{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;max-height:230px;overflow-y:auto}
+  .qa-msg{font-size:13.5px;padding:9px 12px;border-radius:12px;max-width:88%}
+  .qa-msg.me{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+  .qa-msg.bot{background:var(--bg);align-self:flex-start;border-bottom-left-radius:4px}
+  .qa-msg.bot b{color:var(--accent)}
+  .audio-row{display:flex;align-items:center;gap:10px;background:var(--bg);border-radius:12px;padding:10px 12px;margin-top:8px}
+  .audio-row audio{flex:1;height:34px}
 
-  /* ---------- sell page / dashboard ---------- */
-  .page{max-width:860px;margin:0 auto;padding:36px 20px 70px}
-  .page h1{font-size:28px;letter-spacing:-.6px;margin-bottom:6px}
-  .page .lead{color:var(--muted);margin-bottom:26px}
-  .panel{background:#fff;border-radius:20px;box-shadow:var(--shadow);padding:28px}
-  .photo-drop{border:2px dashed #c9d2e4;border-radius:16px;padding:34px;text-align:center;color:var(--muted);cursor:pointer;transition:.15s;background:var(--bg)}
+  /* ---------- wizard ---------- */
+  .steps{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap}
+  .step-pill{flex:1;min-width:120px;background:#fff;border-radius:12px;padding:11px 14px;box-shadow:var(--shadow);border:2px solid transparent;transition:.15s}
+  .step-pill.on{border-color:var(--accent)}
+  .step-pill.done{border-color:var(--green)}
+  .step-pill small{display:block;font-size:11px;font-weight:800;letter-spacing:.6px;color:var(--muted);text-transform:uppercase}
+  .step-pill b{font-size:14px}
+  .wizard-nav{display:flex;justify-content:space-between;gap:12px;margin-top:20px}
+
+  .photo-drop{border:2px dashed #c9d2e4;border-radius:16px;padding:30px;text-align:center;color:var(--muted);cursor:pointer;transition:.15s;background:var(--bg)}
   .photo-drop:hover,.photo-drop.drag{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
   .photo-drop b{color:var(--ink);display:block;margin-bottom:4px;font-size:15px}
-  .photo-previews{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:12px}
-  .photo-previews .ph{position:relative;aspect-ratio:4/3;border-radius:10px;overflow:hidden;background:var(--bg)}
-  .photo-previews .ph img{width:100%;height:100%;object-fit:cover}
+  .photo-previews{display:grid;grid-template-columns:repeat(auto-fill,minmax(126px,1fr));gap:10px;margin-top:12px}
+  .photo-previews .ph{position:relative;border-radius:10px;overflow:hidden;background:var(--bg);border:1px solid var(--line)}
+  .photo-previews .ph img{width:100%;aspect-ratio:4/3;object-fit:cover}
+  .photo-previews .ph select{width:100%;border:none;border-top:1px solid var(--line);font-size:11.5px;padding:5px;background:#fff;outline:none}
   .photo-previews .ph button{position:absolute;top:5px;right:5px;width:24px;height:24px;border-radius:50%;border:none;background:rgba(15,23,42,.75);color:#fff;font-size:12px}
-  .photo-previews .ph .cover-tag{position:absolute;left:5px;bottom:5px;background:rgba(15,23,42,.75);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px}
+  .shot-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .shot-need{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:99px;background:var(--bg);color:var(--muted)}
+  .shot-need.got{background:var(--green-soft);color:var(--green)}
 
-  .tabbar{display:flex;gap:6px;background:#fff;border-radius:14px;padding:6px;box-shadow:var(--shadow);width:fit-content;margin-bottom:24px;flex-wrap:wrap}
-  .tabbar button{border:none;background:transparent;border-radius:10px;padding:9px 18px;font-size:14px;font-weight:600;color:var(--muted);transition:.15s;position:relative}
+  .slider-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  input[type=range]{flex:1;min-width:200px;accent-color:var(--accent);height:6px}
+  .price-out{font-size:28px;font-weight:800;letter-spacing:-.6px;min-width:120px}
+  .meter{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:14px}
+  .meter div{background:var(--bg);border-radius:12px;padding:12px 14px}
+  .meter b{display:block;font-size:17px}
+  .meter span{font-size:11.5px;color:var(--muted);text-transform:uppercase;font-weight:700;letter-spacing:.5px}
+
+  .roast{background:var(--amber-soft);border-radius:12px;padding:14px 16px;margin-top:12px;font-size:13.5px;color:#78350f;display:none}
+  .roast.good{background:var(--green-soft);color:#065f46}
+  .roast ul{margin:8px 0 0 18px}
+  .roast li{margin-bottom:4px}
+
+  /* ---------- dashboard ---------- */
+  .tabbar{display:flex;gap:6px;background:#fff;border-radius:14px;padding:6px;box-shadow:var(--shadow);width:fit-content;margin-bottom:22px;flex-wrap:wrap}
+  .tabbar button{border:none;background:transparent;border-radius:10px;padding:9px 16px;font-size:14px;font-weight:600;color:var(--muted);transition:.15s}
   .tabbar button.on{background:var(--ink);color:#fff}
-  .tabbar button .dot{position:absolute;top:6px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--red)}
   .dash-list{display:flex;flex-direction:column;gap:14px}
   .dash-item{background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
-  .dash-item img.thumb{width:110px;height:76px;object-fit:cover;border-radius:10px;flex:none}
-  .dash-item .info{flex:1;min-width:170px}
+  .dash-item img.thumb{width:112px;height:78px;object-fit:cover;border-radius:10px;flex:none}
+  .dash-item .info{flex:1;min-width:180px}
   .dash-item .info b{display:block;font-size:15.5px}
-  .dash-item .info span{font-size:13px;color:var(--muted)}
+  .dash-item .info span{font-size:13px;color:var(--muted);display:block}
   .dash-item .actions{display:flex;gap:8px;flex-wrap:wrap}
-  .pill{font-size:12px;font-weight:700;padding:4px 11px;border-radius:99px}
+  .pill{font-size:12px;font-weight:700;padding:4px 11px;border-radius:99px;display:inline-block}
   .pill.green{background:var(--green-soft);color:var(--green)}
   .pill.amber{background:var(--amber-soft);color:var(--amber)}
   .pill.red{background:var(--red-soft);color:var(--red)}
   .pill.gray{background:var(--bg);color:var(--muted)}
+  .pill.blue{background:var(--accent-soft);color:var(--accent)}
+  .pill.pur{background:var(--purple-soft);color:var(--purple)}
   .offer-msg{font-size:13.5px;color:#334155;background:var(--bg);border-radius:10px;padding:9px 12px;margin-top:8px;width:100%}
+  .scam-warn{background:var(--red-soft);color:#991b1b;font-size:13px;padding:9px 12px;border-radius:10px;margin-top:8px;width:100%;font-weight:600}
 
-  /* ---------- toast ---------- */
-  #toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:13px 22px;border-radius:12px;font-size:14.5px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:200;box-shadow:var(--shadow-lg);max-width:90vw;text-align:center}
+  table.comps{width:100%;border-collapse:collapse;font-size:13.5px}
+  table.comps th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line)}
+  table.comps td{padding:9px 10px;border-bottom:1px solid var(--line)}
+  table.comps tr:last-child td{border:none}
+  .comp-wrap{overflow-x:auto}
+
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:13px 22px;border-radius:12px;font-size:14.5px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:200;box-shadow:var(--shadow-lg);max-width:90vw;text-align:center}
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
 
-<!-- ================= HEADER ================= -->
 <header>
   <div class="header-in">
     <div class="logo" onclick="go('home')">
       <svg width="30" height="30" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="9" fill="#2457ff"/><path d="M7 20l2.2-5.4A3 3 0 0 1 12 12.7h8a3 3 0 0 1 2.8 1.9L25 20" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><rect x="6" y="19" width="20" height="5" rx="2.2" fill="#fff"/><circle cx="10.5" cy="24" r="2" fill="#0f172a"/><circle cx="21.5" cy="24" r="2" fill="#0f172a"/></svg>
       Drive<span>way</span>
     </div>
+    <nav class="nav" id="mainNav"></nav>
     <div class="header-search">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-      <input id="hdrSearch" placeholder="Search make, model…  e.g. Toyota Camry" onkeydown="if(event.key==='Enter')hdrGo()">
+      <input id="hdrSearch" placeholder="Search make, model…" onkeydown="if(event.key==='Enter')hdrGo()">
     </div>
     <div class="header-right" id="headerRight"></div>
   </div>
 </header>
 
-<!-- ================= HOME VIEW ================= -->
 <div id="view-home">
   <section class="hero">
     <div class="hero-in">
-      <h1>Buy and sell cars<br>the easy way.</h1>
-      <p class="sub">List your car in 2 minutes, get real offers from real buyers. No dealership games, no hidden fees.</p>
+      <h1 data-i18n="heroTitle"></h1>
+      <p class="sub" data-i18n="heroSub"></p>
       <div class="hero-stats">
-        <div><b id="statCars">0</b><span>cars for sale</span></div>
-        <div><b>50</b><span>states covered</span></div>
-        <div><b>$0</b><span>listing fee</span></div>
+        <div><b id="statCars">0</b><span data-i18n="statCars"></span></div>
+        <div><b id="statSold">0</b><span data-i18n="statSold"></span></div>
+        <div><b>$0</b><span data-i18n="statFee"></span></div>
       </div>
     </div>
   </section>
 
   <div class="search-panel">
     <div class="search-card">
-      <div class="field"><label>Make</label><select id="fMake"><option value="">Any make</option></select></div>
-      <div class="field"><label>Max price</label><select id="fPrice">
-        <option value="">No limit</option><option value="10000">Under $10,000</option><option value="20000">Under $20,000</option>
-        <option value="35000">Under $35,000</option><option value="50000">Under $50,000</option><option value="80000">Under $80,000</option>
+      <div class="field"><label data-i18n="make"></label><select id="fMake"></select></div>
+      <div class="field"><label data-i18n="maxPrice"></label><select id="fPrice">
+        <option value="">—</option><option value="15000">Under $15,000</option><option value="25000">Under $25,000</option>
+        <option value="35000">Under $35,000</option><option value="50000">Under $50,000</option><option value="100000">Under $100,000</option>
       </select></div>
-      <div class="field"><label>Year from</label><select id="fYear">
-        <option value="">Any year</option><option>2024</option><option>2022</option><option>2020</option><option>2018</option><option>2015</option><option>2010</option>
+      <div class="field"><label data-i18n="yearFrom"></label><select id="fYear">
+        <option value="">—</option><option>2022</option><option>2020</option><option>2018</option><option>2015</option><option>2010</option>
       </select></div>
-      <div class="field"><label>State</label><select id="fState"><option value="">All states</option></select></div>
-      <button class="btn btn-primary" onclick="applyFilters()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        Search
-      </button>
+      <div class="field"><label data-i18n="yourZip"></label><input id="fZip" maxlength="5" placeholder="78701" oninput="onZip()"></div>
+      <button class="btn btn-primary" onclick="applyFilters()" data-i18n="search"></button>
     </div>
   </div>
 
   <div class="wrap">
     <div class="chips" id="bodyChips"></div>
+    <div class="chips" id="smartChips" style="margin-top:10px"></div>
     <div class="section-head">
-      <h2 id="listTitle">Fresh listings</h2>
+      <h2 id="listTitle" data-i18n="freshListings"></h2>
       <span class="count" id="listCount"></span>
     </div>
     <div class="grid" id="carGrid"></div>
@@ -256,127 +343,60 @@
 
   <section class="how">
     <div class="wrap">
-      <h2 style="font-size:26px;letter-spacing:-.5px">How Driveway works</h2>
-      <div class="how-grid">
-        <div class="how-step"><div class="num">1</div><h3>Create your listing</h3><p>Sign up free, add photos and details. Your car goes live instantly — no listing fees, ever.</p></div>
-        <div class="how-step"><div class="num">2</div><h3>Get offers</h3><p>Buyers hit “Make Offer” with their price. You see every offer in your dashboard.</p></div>
-        <div class="how-step"><div class="num">3</div><h3>Accept & close the deal</h3><p>Accept the best offer, meet the buyer, sign the title. Simple as that.</p></div>
-      </div>
+      <h2 style="font-size:26px;letter-spacing:-.5px" data-i18n="howTitle"></h2>
+      <div class="how-grid" id="howGrid"></div>
     </div>
   </section>
 </div>
 
-<!-- ================= SELL VIEW ================= -->
-<div id="view-sell" style="display:none">
-  <div class="page">
-    <h1>Sell your car</h1>
-    <p class="lead">Fill in the details below — it takes about 2 minutes. Listings are free.</p>
-    <div class="panel">
-      <div class="form-grid">
-        <div class="form-err" id="sellErr"></div>
-        <div class="row2">
-          <div class="f"><label>Make *</label><select id="sMake"></select></div>
-          <div class="f"><label>Model *</label><input id="sModel" placeholder="e.g. Camry SE"></div>
-        </div>
-        <div class="row2">
-          <div class="f"><label>Year *</label><input id="sYear" type="number" min="1960" max="2027" placeholder="2019"></div>
-          <div class="f"><label>Mileage (mi) *</label><input id="sMiles" type="number" min="0" placeholder="45000"></div>
-        </div>
-        <div class="row2">
-          <div class="f"><label>Price (USD) *</label><input id="sPrice" type="number" min="1" placeholder="18500"></div>
-          <div class="f"><label>Body type</label><select id="sBody">
-            <option>Sedan</option><option>SUV</option><option>Truck</option><option>Coupe</option>
-            <option>Hatchback</option><option>Convertible</option><option>Van</option><option>Wagon</option>
-          </select></div>
-        </div>
-        <div class="row2">
-          <div class="f"><label>Transmission</label><select id="sTrans"><option>Automatic</option><option>Manual</option></select></div>
-          <div class="f"><label>Fuel</label><select id="sFuel"><option>Gasoline</option><option>Hybrid</option><option>Electric</option><option>Diesel</option></select></div>
-        </div>
-        <div class="row2">
-          <div class="f"><label>City *</label><input id="sCity" placeholder="Austin"></div>
-          <div class="f"><label>State *</label><select id="sState"></select></div>
-        </div>
-        <div class="f"><label>Description</label><textarea id="sDesc" placeholder="Condition, service history, extras… Clean title? One owner? Tell buyers why your car is great."></textarea></div>
-        <div class="f">
-          <label>Photos * <span style="color:var(--muted);font-weight:400">(up to 8, first photo is the cover)</span></label>
-          <div class="photo-drop" id="photoDrop" onclick="document.getElementById('photoInput').click()">
-            <b>Click to upload or drag photos here</b>JPG or PNG, up to 8 photos
-          </div>
-          <input type="file" id="photoInput" accept="image/*" multiple hidden>
-          <div class="photo-previews" id="photoPreviews"></div>
-        </div>
-        <button class="btn btn-primary btn-lg" onclick="publishListing()" style="margin-top:6px">Publish listing — free</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ================= DASHBOARD VIEW ================= -->
+<div id="view-sell" style="display:none"></div>
 <div id="view-dash" style="display:none">
-  <div class="page" style="max-width:960px">
-    <h1>My garage</h1>
-    <p class="lead">Your listings, incoming offers and offers you've made.</p>
-    <div class="tabbar">
-      <button id="tabListings" class="on" onclick="dashTab('listings')">My listings</button>
-      <button id="tabOffersIn" onclick="dashTab('offersIn')">Offers received</button>
-      <button id="tabOffersOut" onclick="dashTab('offersOut')">My offers</button>
-      <button id="tabFavs" onclick="dashTab('favs')">Saved</button>
-    </div>
+  <div class="page" style="max-width:1000px">
+    <h1 data-i18n="myGarage"></h1>
+    <p class="lead" data-i18n="myGarageSub"></p>
+    <div class="tabbar" id="dashTabs"></div>
     <div class="dash-list" id="dashContent"></div>
   </div>
 </div>
+<div id="view-sold" style="display:none"></div>
+<div id="view-wanted" style="display:none"></div>
 
-<!-- ================= AUTH MODAL ================= -->
 <div class="modal-back" id="authModal">
   <div class="modal sm">
     <button class="modal-x" onclick="closeModal('authModal')">✕</button>
     <div id="authSignup">
-      <h2>Create account</h2>
-      <p class="sub">Free forever. Sell cars, make offers, save favorites.</p>
+      <h2 data-i18n="createAccount"></h2>
+      <p class="sub" data-i18n="createAccountSub"></p>
       <div class="form-grid">
         <div class="form-err" id="signupErr"></div>
-        <div class="f"><label>Full name</label><input id="suName" placeholder="Alex Johnson"></div>
+        <div class="f"><label data-i18n="fullName"></label><input id="suName" placeholder="Alex Johnson"></div>
         <div class="f"><label>Email</label><input id="suEmail" type="email" placeholder="you@example.com"></div>
-        <div class="f"><label>Phone</label><input id="suPhone" placeholder="(555) 123-4567"></div>
-        <div class="f"><label>Password</label><input id="suPass" type="password" placeholder="6+ characters"></div>
-        <button class="btn btn-primary btn-lg" onclick="signup()">Sign up</button>
+        <div class="row2">
+          <div class="f"><label data-i18n="phone"></label><input id="suPhone" placeholder="(555) 123-4567"></div>
+          <div class="f"><label data-i18n="zip"></label><input id="suZip" maxlength="5" placeholder="78701"></div>
+        </div>
+        <div class="f"><label data-i18n="password"></label><input id="suPass" type="password" placeholder="6+ characters"></div>
+        <button class="btn btn-primary btn-lg" onclick="signup()" data-i18n="signUp"></button>
       </div>
-      <div class="switch-auth">Already have an account? <a onclick="authMode('login')">Log in</a></div>
+      <div class="switch-auth"><span data-i18n="haveAccount"></span> <a onclick="authMode('login')" data-i18n="logIn"></a></div>
     </div>
     <div id="authLogin" style="display:none">
-      <h2>Welcome back</h2>
-      <p class="sub">Log in to manage your listings and offers.</p>
+      <h2 data-i18n="welcomeBack"></h2>
+      <p class="sub" data-i18n="welcomeBackSub"></p>
       <div class="form-grid">
         <div class="form-err" id="loginErr"></div>
         <div class="f"><label>Email</label><input id="liEmail" type="email" placeholder="you@example.com"></div>
-        <div class="f"><label>Password</label><input id="liPass" type="password" placeholder="Your password"></div>
-        <button class="btn btn-primary btn-lg" onclick="login()">Log in</button>
+        <div class="f"><label data-i18n="password"></label><input id="liPass" type="password"></div>
+        <button class="btn btn-primary btn-lg" onclick="login()" data-i18n="logIn"></button>
       </div>
-      <div class="switch-auth">New to Driveway? <a onclick="authMode('signup')">Create account</a></div>
+      <div class="switch-auth"><span data-i18n="newHere"></span> <a onclick="authMode('signup')" data-i18n="createAccount"></a></div>
     </div>
   </div>
 </div>
 
-<!-- ================= DETAIL MODAL ================= -->
-<div class="modal-back" id="detailModal">
-  <div class="modal lg" id="detailContent"></div>
-</div>
-
-<!-- ================= OFFER MODAL ================= -->
-<div class="modal-back" id="offerModal">
-  <div class="modal md">
-    <button class="modal-x" onclick="closeModal('offerModal')">✕</button>
-    <h2>Make an offer</h2>
-    <p class="sub" id="offerSub"></p>
-    <div class="form-grid">
-      <div class="form-err" id="offerErr"></div>
-      <div class="f"><label>Your offer (USD)</label><input id="offerAmount" type="number" min="1" placeholder="e.g. 17500"></div>
-      <div class="f"><label>Message to seller (optional)</label><textarea id="offerMsg" placeholder="Hi! I'm interested in your car. Can we meet this week?"></textarea></div>
-      <button class="btn btn-green btn-lg" onclick="submitOffer()">Send offer</button>
-    </div>
-  </div>
-</div>
+<div class="modal-back" id="detailModal"><div class="modal lg" id="detailContent"></div></div>
+<div class="modal-back" id="offerModal"><div class="modal md" id="offerContent"></div></div>
+<div class="modal-back" id="genModal"><div class="modal md" id="genContent"></div></div>
 
 <footer>
   <div class="wrap">
@@ -384,516 +404,1357 @@
       <svg width="26" height="26" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="9" fill="#2457ff"/><path d="M7 20l2.2-5.4A3 3 0 0 1 12 12.7h8a3 3 0 0 1 2.8 1.9L25 20" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><rect x="6" y="19" width="20" height="5" rx="2.2" fill="#fff"/><circle cx="10.5" cy="24" r="2" fill="#0f172a"/><circle cx="21.5" cy="24" r="2" fill="#0f172a"/></svg>
       Drive<span style="color:#5d8cff">way</span>
     </div>
-    <div>© 2026 Driveway · Buy & sell cars across the USA · Concept prototype</div>
+    <div>© 2026 Driveway · Concept prototype · All estimates are illustrative, not financial or legal advice</div>
   </div>
 </footer>
 
 <div id="toast"></div>
 
 <script>
-/* =====================================================
-   Driveway — car marketplace concept prototype
-   Single-file demo: auth, listings with photos, offers.
-   Data persists in localStorage (bw_* keys).
-   ===================================================== */
+/* =====================================================================
+   DRIVEWAY — US car marketplace concept prototype
+   Single file. Data persists in localStorage under bw2_*.
+   Sections:  1 data  2 helpers  3 auth  4 browse  5 detail
+              6 sell wizard  7 offers & auto-negotiation
+              8 garage  9 sold comps  10 wanted board  11 boot
+   ===================================================================== */
 
-const MAKES = ["Toyota","Honda","Ford","Chevrolet","Tesla","BMW","Mercedes-Benz","Audi","Nissan","Hyundai","Kia","Jeep","Subaru","Volkswagen","Lexus","Mazda","Dodge","Ram","GMC","Porsche"];
-const STATES = ["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"];
-const BODIES = ["All","Coupe","Sedan","SUV","Truck","Electric"];
+/* ============ 1. DATA ============ */
 
-/* ---------- tiny store ---------- */
-const store = {
-  get(k, d){ try{ return JSON.parse(localStorage.getItem(k)) ?? d }catch(e){ return d } },
-  set(k, v){ localStorage.setItem(k, JSON.stringify(v)) }
+const MAKES=["Toyota","Honda","Ford","Chevrolet","Tesla","BMW","Mercedes-Benz","Audi","Nissan","Hyundai","Kia","Jeep","Subaru","Volkswagen","Lexus","Mazda","Dodge","Ram","GMC","Porsche","Lamborghini","Volvo","Acura","Infiniti"];
+
+/* State reference data — APPROXIMATE, for demo only.
+   [ state sales tax %, title+reg fee $, safety/emissions test, CARB-style emissions state,
+     road-salt (rust belt), insurance cost factor ] */
+const ST={
+ AL:[4,180,0,0,0,.95], AK:[0,150,0,0,1,.88], AZ:[5.6,220,1,0,0,1.05], AR:[6.5,175,0,0,0,.97],
+ CA:[7.25,320,1,1,0,1.35], CO:[2.9,290,1,1,1,1.08], CT:[6.35,300,1,1,1,1.28], DE:[0,240,1,1,1,1.15],
+ FL:[6,255,0,0,0,1.42], GA:[4,240,1,0,0,1.10], HI:[4,205,1,0,0,.82], ID:[6,190,0,0,1,.80],
+ IL:[6.25,305,1,0,1,1.02], IN:[7,200,1,0,1,.92], IA:[6,175,0,0,1,.78], KS:[6.5,195,1,0,1,.95],
+ KY:[6,185,0,0,1,1.05], LA:[4.45,230,1,0,0,1.55], ME:[5.5,170,1,1,1,.80], MD:[6,285,1,1,1,1.18],
+ MA:[6.25,280,1,1,1,1.12], MI:[6,250,0,0,1,1.48], MN:[6.875,245,0,1,1,.92], MS:[7,185,0,0,0,1.00],
+ MO:[4.225,190,1,0,1,.96], MT:[0,230,0,0,1,.90], NE:[5.5,195,1,0,1,.88], NV:[6.85,275,1,1,0,1.20],
+ NH:[0,195,1,0,1,.78], NJ:[6.625,290,1,1,1,1.24], NM:[5,175,1,1,0,1.02], NY:[4,300,1,1,1,1.30],
+ NC:[3,200,1,0,0,.85], ND:[5,165,0,0,1,.75], OH:[5.75,215,1,0,1,.88], OK:[4.5,230,0,0,0,1.06],
+ OR:[0,300,1,1,1,.95], PA:[6,240,1,1,1,1.06], RI:[7,270,1,1,1,1.32], SC:[5,185,0,0,0,1.08],
+ SD:[4,160,0,0,1,.76], TN:[7,195,1,0,0,.94], TX:[6.25,235,1,0,0,1.14], UT:[6.1,205,1,1,1,.96],
+ VT:[6,215,1,1,1,.80], VA:[4.15,225,1,1,0,.96], WA:[6.5,290,1,1,1,1.02], WV:[6,200,1,0,1,.92],
+ WI:[5,190,1,0,1,.86], WY:[4,175,0,0,1,.80]
 };
-let users    = store.get('bw_users', []);
-let session  = store.get('bw_session', null);      // email of logged-in user
-let userCars = store.get('bw_listings', []);
-let offers   = store.get('bw_offers', []);
-let favs     = store.get('bw_favs', {});           // {email: [carId,...]}
+const STATES=Object.keys(ST).sort();
+/* Representative ZIP prefix → state, just enough for the demo ZIP lookup */
+const ZIP2ST=[[0,'MA'],[6,'CT'],[7,'NJ'],[10,'NY'],[15,'PA'],[19,'DE'],[20,'MD'],[22,'VA'],[25,'WV'],[27,'NC'],[29,'SC'],[30,'GA'],[32,'FL'],[35,'AL'],[37,'TN'],[39,'MS'],[40,'KY'],[43,'OH'],[46,'IN'],[48,'MI'],[50,'IA'],[53,'WI'],[55,'MN'],[57,'SD'],[58,'ND'],[59,'MT'],[60,'IL'],[63,'MO'],[66,'KS'],[68,'NE'],[70,'LA'],[71,'AR'],[73,'OK'],[75,'TX'],[87,'NM'],[85,'AZ'],[80,'CO'],[82,'WY'],[83,'ID'],[84,'UT'],[89,'NV'],[90,'CA'],[97,'OR'],[98,'WA'],[99,'AK']];
+const SHOTS=[
+ {k:'front',  en:'Front 3/4',  es:'Frente 3/4',  req:1},
+ {k:'rear',   en:'Rear 3/4',   es:'Trasera 3/4', req:1},
+ {k:'side',   en:'Side',       es:'Lateral',     req:1},
+ {k:'interior',en:'Interior',  es:'Interior',    req:1},
+ {k:'dash',   en:'Dashboard',  es:'Tablero',     req:1},
+ {k:'odometer',en:'Odometer',  es:'Odómetro',    req:1},
+ {k:'vin',    en:'VIN plate',  es:'Placa VIN',   req:1},
+ {k:'engine', en:'Engine bay', es:'Motor',       req:1},
+ {k:'tires',  en:'Tire tread', es:'Llantas',     req:0},
+ {k:'title',  en:'Title doc',  es:'Título',      req:0},
+ {k:'damage', en:'Any damage', es:'Daños',       req:0},
+ {k:'other',  en:'Other',      es:'Otra',        req:0}
+];
+const SCAM_PATTERNS=[
+  {re:/wire transfer|western union|moneygram/i, en:'Asks for a wire transfer — the most common car-sale scam.', es:'Pide transferencia bancaria — la estafa más común.'},
+  {re:/shipping agent|freight forwarder|my agent will pick/i, en:'Mentions a "shipping agent" picking up the car — classic overpayment scam.', es:'Menciona un "agente de envío" — estafa clásica de sobrepago.'},
+  {re:/cashier'?s check for more|overpay|send back the difference/i, en:'Overpayment pattern: they send too much and ask for the difference back.', es:'Patrón de sobrepago: envían de más y piden la diferencia.'},
+  {re:/gift card|crypto|bitcoin|usdt/i, en:'Wants payment in gift cards or crypto — never do this.', es:'Quiere pago en tarjetas de regalo o cripto — nunca lo haga.'},
+  {re:/i am out of (the )?(country|state) .*(cannot|can't) (see|inspect)/i, en:'Claims to be out of the country and unable to see the car.', es:'Dice estar fuera del país y no poder ver el auto.'}
+];
 
-/* ---------- demo car photos (generated SVG art) ---------- */
-function carArt(kind, hue, hue2){
-  const sky = `<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1">
+const I18N={
+ en:{heroTitle:'Buy and sell cars<br>the honest way.',heroSub:'Real offers, verified sellers, and the paperwork figured out before you even meet. No dealership games.',
+  statCars:'cars for sale',statSold:'sold on Driveway',statFee:'listing fee',make:'Make',maxPrice:'Max price',yearFrom:'Year from',yourZip:'Your ZIP',search:'Search',
+  freshListings:'Fresh listings',howTitle:'How Driveway works',browse:'Browse',sell:'Sell',garage:'My garage',soldPrices:'Sold prices',wanted:'Wanted',
+  sellYourCar:'+ Sell your car',logIn:'Log in',logOut:'Log out',createAccount:'Create account',createAccountSub:'Free forever. Sell cars, make offers, set standing bids.',
+  fullName:'Full name',phone:'Phone',zip:'ZIP code',password:'Password',signUp:'Sign up',haveAccount:'Already have an account?',newHere:'New to Driveway?',
+  welcomeBack:'Welcome back',welcomeBackSub:'Log in to manage your listings and offers.',makeOffer:'Make Offer',save:'Save',saved:'Saved',
+  myGarage:'My garage',myGarageSub:'Your listings, offers, standing bids and holds — all in one place.',orBestOffer:'or best offer'},
+ es:{heroTitle:'Compra y vende autos<br>de forma honesta.',heroSub:'Ofertas reales, vendedores verificados y el papeleo resuelto antes de conocerse. Sin juegos de concesionario.',
+  statCars:'autos en venta',statSold:'vendidos en Driveway',statFee:'costo de publicar',make:'Marca',maxPrice:'Precio máx.',yearFrom:'Año desde',yourZip:'Su código postal',search:'Buscar',
+  freshListings:'Publicaciones recientes',howTitle:'Cómo funciona Driveway',browse:'Explorar',sell:'Vender',garage:'Mi garaje',soldPrices:'Precios de venta',wanted:'Se busca',
+  sellYourCar:'+ Vender mi auto',logIn:'Entrar',logOut:'Salir',createAccount:'Crear cuenta',createAccountSub:'Gratis siempre. Venda autos, haga ofertas, cree ofertas permanentes.',
+  fullName:'Nombre completo',phone:'Teléfono',zip:'Código postal',password:'Contraseña',signUp:'Registrarse',haveAccount:'¿Ya tiene cuenta?',newHere:'¿Nuevo en Driveway?',
+  welcomeBack:'Bienvenido',welcomeBackSub:'Entre para administrar sus publicaciones y ofertas.',makeOffer:'Hacer oferta',save:'Guardar',saved:'Guardado',
+  myGarage:'Mi garaje',myGarageSub:'Sus publicaciones, ofertas, ofertas permanentes y reservas en un solo lugar.',orBestOffer:'o mejor oferta'}
+};
+let LANG = localStorage.getItem('bw2_lang') || 'en';
+const t = k => (I18N[LANG] && I18N[LANG][k]) || I18N.en[k] || k;
+
+/* ---- built-in SVG fallback art ---- */
+function carArt(kind,hue,hue2){
+  const sky=`<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="hsl(${hue2},22%,91%)"/><stop offset="1" stop-color="hsl(${hue2},16%,82%)"/></linearGradient>
     <linearGradient id="c" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="hsl(${hue},70%,58%)"/><stop offset="1" stop-color="hsl(${hue},70%,42%)"/></linearGradient></defs>
-    <rect width="640" height="400" fill="url(#s)"/>
-    <ellipse cx="320" cy="352" rx="270" ry="26" fill="rgba(0,0,0,.13)"/>`;
-  let body = '';
-  if(kind==='suv') body = `
-    <path d="M110 300 L118 232 Q122 210 148 206 L200 200 L238 158 Q246 148 262 148 L420 148 Q436 148 444 158 L484 202 L520 208 Q542 212 546 234 L552 300 Q552 314 536 314 L126 314 Q110 314 110 300 Z" fill="url(#c)"/>
-    <path d="M250 162 L262 160 L410 160 L438 162 L470 200 L242 200 Z" fill="#bcd7ee" opacity=".92"/>
-    <rect x="330" y="160" width="8" height="42" fill="hsl(${hue},70%,34%)"/>`;
-  else if(kind==='truck') body = `
-    <path d="M96 302 L100 240 Q102 226 118 224 L300 218 L300 168 Q300 156 314 156 L408 156 Q420 156 428 166 L466 216 L534 224 Q550 227 552 242 L556 302 Q556 314 540 314 L112 314 Q96 314 96 302 Z" fill="url(#c)"/>
-    <path d="M314 168 L404 168 L436 214 L314 214 Z" fill="#bcd7ee" opacity=".92"/>
-    <rect x="104" y="224" width="196" height="10" fill="hsl(${hue},70%,34%)"/>`;
-  else if(kind==='coupe') body = `
-    <path d="M92 300 L104 262 Q110 246 132 242 L204 230 L268 182 Q280 172 300 172 L392 172 Q412 172 428 186 L474 228 L528 240 Q548 245 552 262 L556 298 Q556 312 540 312 L108 312 Q92 312 92 300 Z" fill="url(#c)"/>
-    <path d="M278 186 L296 182 L388 182 L414 188 L448 224 L252 230 Z" fill="#bcd7ee" opacity=".92"/>`;
-  else body = `
-    <path d="M96 300 L106 252 Q112 236 134 232 L212 224 L262 176 Q272 166 290 166 L400 166 Q416 166 428 176 L474 222 L526 232 Q546 237 550 254 L554 298 Q554 312 538 312 L112 312 Q96 312 96 300 Z" fill="url(#c)"/>
-    <path d="M270 178 L288 176 L396 176 L420 180 L456 220 L248 224 Z" fill="#bcd7ee" opacity=".92"/>
-    <rect x="336" y="176" width="7" height="46" fill="hsl(${hue},70%,34%)"/>`;
-  const wheels = `
-    <circle cx="196" cy="308" r="40" fill="#1e2733"/><circle cx="196" cy="308" r="22" fill="#454f5e"/><circle cx="196" cy="308" r="9" fill="#8a95a5"/>
-    <circle cx="452" cy="308" r="40" fill="#1e2733"/><circle cx="452" cy="308" r="22" fill="#454f5e"/><circle cx="452" cy="308" r="9" fill="#8a95a5"/>
-    <rect x="112" y="270" width="30" height="10" rx="5" fill="#f4f7fb" opacity=".85"/>
-    <rect x="500" y="270" width="30" height="10" rx="5" fill="#ffd76b"/>`;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400">${sky}${body}${wheels}</svg>`;
-  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    <rect width="640" height="400" fill="url(#s)"/><ellipse cx="320" cy="352" rx="270" ry="26" fill="rgba(0,0,0,.13)"/>`;
+  let body;
+  if(kind==='suv') body=`<path d="M110 300 L118 232 Q122 210 148 206 L200 200 L238 158 Q246 148 262 148 L420 148 Q436 148 444 158 L484 202 L520 208 Q542 212 546 234 L552 300 Q552 314 536 314 L126 314 Q110 314 110 300 Z" fill="url(#c)"/><path d="M250 162 L262 160 L410 160 L438 162 L470 200 L242 200 Z" fill="#bcd7ee" opacity=".92"/>`;
+  else if(kind==='truck') body=`<path d="M96 302 L100 240 Q102 226 118 224 L300 218 L300 168 Q300 156 314 156 L408 156 Q420 156 428 166 L466 216 L534 224 Q550 227 552 242 L556 302 Q556 314 540 314 L112 314 Q96 314 96 302 Z" fill="url(#c)"/><path d="M314 168 L404 168 L436 214 L314 214 Z" fill="#bcd7ee" opacity=".92"/>`;
+  else if(kind==='coupe') body=`<path d="M92 300 L104 262 Q110 246 132 242 L204 230 L268 182 Q280 172 300 172 L392 172 Q412 172 428 186 L474 228 L528 240 Q548 245 552 262 L556 298 Q556 312 540 312 L108 312 Q92 312 92 300 Z" fill="url(#c)"/><path d="M278 186 L296 182 L388 182 L414 188 L448 224 L252 230 Z" fill="#bcd7ee" opacity=".92"/>`;
+  else body=`<path d="M96 300 L106 252 Q112 236 134 232 L212 224 L262 176 Q272 166 290 166 L400 166 Q416 166 428 176 L474 222 L526 232 Q546 237 550 254 L554 298 Q554 312 538 312 L112 312 Q96 312 96 300 Z" fill="url(#c)"/><path d="M270 178 L288 176 L396 176 L420 180 L456 220 L248 224 Z" fill="#bcd7ee" opacity=".92"/>`;
+  const wheels=`<circle cx="196" cy="308" r="40" fill="#1e2733"/><circle cx="196" cy="308" r="22" fill="#454f5e"/><circle cx="196" cy="308" r="9" fill="#8a95a5"/>
+    <circle cx="452" cy="308" r="40" fill="#1e2733"/><circle cx="452" cy="308" r="22" fill="#454f5e"/><circle cx="452" cy="308" r="9" fill="#8a95a5"/>`;
+  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400">${sky}${body}${wheels}</svg>`);
 }
 
-/* Real car photos are hot-loaded from the Unsplash CDN (free-to-use license).
-   If a photo fails to load (offline / URL gone), the card falls back to the
-   built-in SVG illustration via pfb(). */
-const U = id => `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=1100&q=80`;
-const DEMO = [
-  {make:"Tesla",model:"Model 3 Long Range",year:2021,miles:22400,price:30900,body:"Sedan",trans:"Automatic",fuel:"Electric",kind:"sedan",hue:0,city:"San Jose",state:"CA",img:U('1560958089-b8a1929cea89'),desc:"Long Range AWD in red multi-coat. 310+ mi range, autopilot, one owner, garage kept. Clean title, no accidents."},
-  {make:"Ford",model:"Mustang GT",year:2018,miles:38900,price:31500,body:"Coupe",trans:"Manual",fuel:"Gasoline",kind:"coupe",hue:0,city:"Nashville",state:"TN",img:U('1494976388531-d1058494cdd8'),desc:"5.0 V8, 6-speed manual, performance package. Adult owned, never tracked, all stock. Sounds amazing, runs perfect."},
-  {make:"BMW",model:"M4 Coupe",year:2020,miles:26700,price:52900,body:"Coupe",trans:"Automatic",fuel:"Gasoline",kind:"coupe",hue:230,city:"Miami",state:"FL",img:U('1555215695-3004980ad54e'),desc:"Competition package, carbon roof, harman/kardon sound. Full service history at BMW dealer. Immaculate inside and out."},
-  {make:"Chevrolet",model:"Camaro SS",year:2019,miles:31200,price:33800,body:"Coupe",trans:"Automatic",fuel:"Gasoline",kind:"coupe",hue:215,city:"Dallas",state:"TX",img:U('1552519507-da3b142c6e3d'),desc:"6.2 V8, 10-speed auto, magnetic ride. Clean Carfax, garage queen, summer driven only. New Michelins."},
-  {make:"Porsche",model:"911 Carrera S",year:2019,miles:18400,price:94500,body:"Coupe",trans:"Automatic",fuel:"Gasoline",kind:"coupe",hue:48,city:"Seattle",state:"WA",img:U('1503376780353-7e6692767b70'),desc:"992 Carrera S, PDK, sport chrono, sport exhaust. Full PPF wrap, always garaged, enthusiast owned. All records since new."},
-  {make:"Nissan",model:"GT-R Premium",year:2017,miles:24100,price:82900,body:"Coupe",trans:"Automatic",fuel:"Gasoline",kind:"coupe",hue:200,city:"Los Angeles",state:"CA",img:U('1525609004556-c46c7d6cf023'),desc:"Pearl white, bone stock, never launched. Dealer serviced, fresh transmission service. Adult owned and pampered."},
-  {make:"Jeep",model:"Wrangler Rubicon",year:2019,miles:41300,price:35500,body:"SUV",trans:"Automatic",fuel:"Gasoline",kind:"suv",hue:140,city:"Phoenix",state:"AZ",img:U('1568605117036-5fe5e7bab0b7'),desc:"4-door Rubicon, hard top + soft top included. Light trail use, no rock damage. New brakes and battery."},
-  {make:"Mercedes-Benz",model:"AMG GT",year:2018,miles:19800,price:89900,body:"Coupe",trans:"Automatic",fuel:"Gasoline",kind:"coupe",hue:290,city:"Atlanta",state:"GA",img:U('1583121274602-3e2820c69888'),desc:"Handcrafted AMG 4.0 biturbo V8. Burmester sound, exclusive interior. Concours condition, all keys and books."},
-  {make:"Ford",model:"Ranger Lariat 4x4",year:2020,miles:46500,price:29800,body:"Truck",trans:"Automatic",fuel:"Gasoline",kind:"truck",hue:215,city:"Denver",state:"CO",img:U('1590362891991-f776e747a588'),desc:"2.3 EcoBoost, FX4 off-road package, tow package. One owner, all services at Ford dealer. Bed liner included."},
-  {make:"Toyota",model:"GR Supra 3.0",year:2021,miles:15900,price:46500,body:"Coupe",trans:"Automatic",fuel:"Gasoline",kind:"coupe",hue:355,city:"Austin",state:"TX",img:U('1603584173870-7f23fdae1b7a'),desc:"3.0 turbo inline-6, premium package. Stock, no mods, garage kept. Under factory warranty."},
-  {make:"Lamborghini",model:"Huracán LP 610-4",year:2016,miles:12600,price:189900,body:"Coupe",trans:"Automatic",fuel:"Gasoline",kind:"coupe",hue:48,city:"Las Vegas",state:"NV",img:U('1544636331-e26879cd4d9b'),desc:"Giallo Midas over black, front lift, clear bra. Fresh annual service, no stories. Serious inquiries only."}
-].map((c,i)=>({
-  id:'demo'+i, sellerEmail:'demo@driveway.example', sellerName:'Driveway Seller',
-  photos:[c.img],
-  fb: carArt(c.kind,c.hue,(c.hue+150)%360),
-  created: Date.now()-(i+1)*36e5*7, demo:true, ...c
+const U=id=>`https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=1100&q=80`;
+
+/* Demo inventory. history/obd/recall data is synthetic sample data for the prototype. */
+const DEMO_RAW=[
+ {make:"Tesla",model:"Model 3 Long Range",year:2021,miles:22400,price:30900,mv:31800,body:"Sedan",trans:"Automatic",fuel:"Electric",kind:"sedan",hue:0,city:"San Jose",state:"CA",doors:4,safety:5,evSoh:93,img:U('1560958089-b8a1929cea89'),
+  desc:"Long Range AWD in red multi-coat. 310+ mi range when new, autopilot, one owner, garage kept. Clean title, no accidents.",
+  hist:{brand:'Clean',owners:1,accidents:0,flood:0,rust:0},recalls:[],obd:{codes:[],ready:1}},
+ {make:"Ford",model:"Mustang GT",year:2018,miles:38900,price:31500,mv:30200,body:"Coupe",trans:"Manual",fuel:"Gasoline",kind:"coupe",hue:0,city:"Nashville",state:"TN",doors:2,safety:4,img:U('1494976388531-d1058494cdd8'),
+  desc:"5.0 V8, 6-speed manual, performance package. Adult owned, never tracked, all stock. Sounds amazing, runs perfect.",
+  hist:{brand:'Clean',owners:2,accidents:0,flood:0,rust:0},recalls:['Driver airbag inflator — open'],obd:{codes:[],ready:1}},
+ {make:"BMW",model:"M4 Coupe",year:2020,miles:26700,price:52900,mv:54500,body:"Coupe",trans:"Automatic",fuel:"Gasoline",kind:"coupe",hue:230,city:"Miami",state:"FL",doors:2,safety:4,img:U('1555215695-3004980ad54e'),
+  desc:"Competition package, carbon roof, harman/kardon sound. Full service history at BMW dealer. Immaculate inside and out.",
+  hist:{brand:'Clean',owners:1,accidents:0,flood:0,rust:0},recalls:[],obd:{codes:[],ready:1}},
+ {make:"Chevrolet",model:"Camaro SS",year:2019,miles:31200,price:33800,mv:32400,body:"Coupe",trans:"Automatic",fuel:"Gasoline",kind:"coupe",hue:215,city:"Dallas",state:"TX",doors:2,safety:4,img:U('1552519507-da3b142c6e3d'),
+  desc:"6.2 V8, 10-speed auto, magnetic ride. Clean Carfax, garage queen, summer driven only. New Michelins.",
+  hist:{brand:'Clean',owners:2,accidents:1,flood:0,rust:0},recalls:[],obd:{codes:[],ready:1}},
+ {make:"Porsche",model:"911 Carrera S",year:2019,miles:18400,price:94500,mv:96800,body:"Coupe",trans:"Automatic",fuel:"Gasoline",kind:"coupe",hue:48,city:"Seattle",state:"WA",doors:2,safety:5,img:U('1503376780353-7e6692767b70'),
+  desc:"992 Carrera S, PDK, sport chrono, sport exhaust. Full PPF wrap, always garaged, enthusiast owned. All records since new.",
+  hist:{brand:'Clean',owners:1,accidents:0,flood:0,rust:0},recalls:[],obd:{codes:[],ready:1}},
+ {make:"Nissan",model:"GT-R Premium",year:2017,miles:24100,price:82900,mv:80000,body:"Coupe",trans:"Automatic",fuel:"Gasoline",kind:"coupe",hue:200,city:"Los Angeles",state:"CA",doors:2,safety:4,img:U('1525609004556-c46c7d6cf023'),
+  desc:"Pearl white, bone stock, never launched. Dealer serviced, fresh transmission service. Adult owned and pampered.",
+  hist:{brand:'Clean',owners:2,accidents:0,flood:0,rust:0},recalls:[],obd:{codes:[],ready:1}},
+ {make:"Jeep",model:"Wrangler Rubicon",year:2019,miles:41300,price:35500,mv:34200,body:"SUV",trans:"Automatic",fuel:"Gasoline",kind:"suv",hue:140,city:"Phoenix",state:"AZ",doors:4,safety:3,towLb:3500,img:U('1568605117036-5fe5e7bab0b7'),
+  desc:"4-door Rubicon, hard top + soft top included. Light trail use, no rock damage. New brakes and battery.",
+  hist:{brand:'Clean',owners:2,accidents:0,flood:0,rust:0},recalls:['Clutch pressure plate — open'],obd:{codes:[],ready:1}},
+ {make:"Mercedes-Benz",model:"AMG GT",year:2018,miles:19800,price:89900,mv:88000,body:"Coupe",trans:"Automatic",fuel:"Gasoline",kind:"coupe",hue:290,city:"Atlanta",state:"GA",doors:2,safety:4,img:U('1583121274602-3e2820c69888'),
+  desc:"Handcrafted AMG 4.0 biturbo V8. Burmester sound, exclusive interior. Concours condition, all keys and books.",
+  hist:{brand:'Clean',owners:1,accidents:0,flood:0,rust:0},recalls:[],obd:{codes:[],ready:1}},
+ {make:"Ford",model:"Ranger Lariat 4x4",year:2020,miles:46500,price:29800,mv:30600,body:"Truck",trans:"Automatic",fuel:"Gasoline",kind:"truck",hue:215,city:"Denver",state:"CO",doors:4,safety:4,towLb:7500,img:U('1590362891991-f776e747a588'),
+  desc:"2.3 EcoBoost, FX4 off-road package, tow package. One owner, all services at Ford dealer. Bed liner included.",
+  hist:{brand:'Clean',owners:1,accidents:0,flood:0,rust:3},recalls:[],obd:{codes:[],ready:1}},
+ {make:"Toyota",model:"GR Supra 3.0",year:2021,miles:15900,price:46500,mv:45200,body:"Coupe",trans:"Automatic",fuel:"Gasoline",kind:"coupe",hue:355,city:"Austin",state:"TX",doors:2,safety:5,img:U('1603584173870-7f23fdae1b7a'),
+  desc:"3.0 turbo inline-6, premium package. Stock, no mods, garage kept. Under factory warranty.",
+  hist:{brand:'Clean',owners:1,accidents:0,flood:0,rust:0},recalls:[],obd:{codes:[],ready:1}},
+ {make:"Lamborghini",model:"Huracán LP 610-4",year:2016,miles:12600,price:189900,mv:194000,body:"Coupe",trans:"Automatic",fuel:"Gasoline",kind:"coupe",hue:48,city:"Las Vegas",state:"NV",doors:2,safety:3,img:U('1544636331-e26879cd4d9b'),
+  desc:"Giallo Midas over black, front lift, clear bra. Fresh annual service, no stories. Serious inquiries only.",
+  hist:{brand:'Clean',owners:2,accidents:0,flood:0,rust:0},recalls:[],obd:{codes:[],ready:1}}
+];
+const DEMO=DEMO_RAW.map((c,i)=>({
+  id:'demo'+i, sellerEmail:'seller'+(i%4)+'@driveway.example',
+  sellerName:['Marcus Lee','Dana Ruiz','Chris Poole','Whitney Adams'][i%4],
+  sellerRating:[4.9,4.7,5.0,4.8][i%4], sellerDeals:[12,5,3,8][i%4],
+  photos:[{url:c.img,tag:'front'}], fb:carArt(c.kind,c.hue,(c.hue+150)%360),
+  vin:'DEMO'+String(10000000000000+i*7919).slice(0,13),
+  created:Date.now()-(i+1)*36e5*11, demo:true, status:'active',
+  priceHistory:[{price:c.price+(i%3?900:0),ts:Date.now()-(i+3)*864e5},{price:c.price,ts:Date.now()-(i+1)*36e5*11}],
+  history:c.hist, recalls:c.recalls, obd:c.obd, records:[], audio:null,
+  deadline:(i===0||i===3)?Date.now()+(i===0?2:4)*864e5:null,
+  rules:null, hold:null, ...c
 }));
 
-/* photo fallback: swap a broken external photo for the built-in illustration */
-function pfb(el, id){
-  const c = carById(id);
-  if(c && c.fb){ el.onerror = null; el.src = c.fb; }
-}
+/* Seeded sold comps so the price database is useful on day one (synthetic sample data) */
+const SOLD_SEED=(()=>{
+  const base=[["Toyota","Camry",2020,42000,19400,"TX"],["Toyota","Camry",2019,55000,17250,"FL"],["Toyota","Camry",2021,31000,21800,"CA"],
+   ["Honda","CR-V",2020,44000,23900,"CO"],["Honda","CR-V",2019,58000,21400,"OH"],["Honda","Civic",2021,29000,20950,"WA"],
+   ["Ford","F-150",2019,61000,28400,"TN"],["Ford","F-150",2020,48000,32100,"TX"],["Ford","Mustang GT",2018,41000,29800,"GA"],
+   ["Ford","Mustang GT",2017,52000,27200,"NV"],["Chevrolet","Camaro SS",2019,34000,32600,"TX"],["Chevrolet","Silverado",2020,50000,31200,"OK"],
+   ["Tesla","Model 3",2021,26000,29900,"CA"],["Tesla","Model 3",2020,38000,26400,"NY"],["Tesla","Model Y",2021,30000,34800,"WA"],
+   ["BMW","M4",2020,29000,53400,"FL"],["BMW","330i",2021,28000,32900,"IL"],["Jeep","Wrangler",2019,45000,33900,"AZ"],
+   ["Jeep","Wrangler",2018,58000,29400,"CO"],["Porsche","911",2019,21000,95500,"CA"],["Nissan","GT-R",2017,27000,79800,"NV"],
+   ["Toyota","GR Supra",2021,17000,44900,"TX"],["Subaru","Outback",2019,61000,19300,"OR"],["Kia","Telluride",2021,38000,34600,"GA"],
+   ["Mercedes-Benz","AMG GT",2018,22000,86500,"FL"],["Ford","Ranger",2020,44000,29200,"CO"],["Hyundai","Elantra",2022,16000,17600,"NC"]];
+  return base.map((b,i)=>({make:b[0],model:b[1],year:b[2],miles:b[3],price:b[4],state:b[5],
+    ts:Date.now()-((i*11)%85+3)*864e5, seed:true}));
+})();
 
-const allCars = ()=> [...userCars].reverse().concat(DEMO);
-const carById = id => allCars().find(c=>c.id===id);
-const me = ()=> users.find(u=>u.email===session) || null;
-const fmt$ = n => '$'+Number(n).toLocaleString('en-US');
-const fmtMi = n => Number(n).toLocaleString('en-US')+' mi';
+/* ============ 2. STATE & HELPERS ============ */
+const store={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},set(k,v){localStorage.setItem(k,JSON.stringify(v))}};
+let users   = store.get('bw2_users',[]);
+let session = store.get('bw2_session',null);
+let userCars= store.get('bw2_listings',[]);
+let offers  = store.get('bw2_offers',[]);
+let favs    = store.get('bw2_favs',{});
+let standing= store.get('bw2_standing',[]);
+let wanted  = store.get('bw2_wanted',[]);
+let soldLog = store.get('bw2_sold',[]);
+let buyerZip= store.get('bw2_zip','');
 
-/* ---------- toast ---------- */
-let toastT;
-function toast(msg){
-  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
-  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2600);
-}
+const save={users:()=>store.set('bw2_users',users),cars:()=>store.set('bw2_listings',userCars),
+  offers:()=>store.set('bw2_offers',offers),favs:()=>store.set('bw2_favs',favs),
+  standing:()=>store.set('bw2_standing',standing),wanted:()=>store.set('bw2_wanted',wanted),
+  sold:()=>store.set('bw2_sold',soldLog)};
 
-/* ---------- routing ---------- */
-function go(view){
-  ['home','sell','dash'].forEach(v=>document.getElementById('view-'+v).style.display = v===view?'':'none');
-  window.scrollTo({top:0});
-  if(view==='home') renderGrid();
-  if(view==='dash') dashTab(currentTab);
-}
-function requireAuth(then){
-  if(me()) { then(); return; }
-  pendingAfterAuth = then;
-  openModal('authModal'); authMode('signup');
-}
-let pendingAfterAuth = null;
+const allCars=()=>[...userCars].reverse().concat(DEMO);
+const carById=id=>allCars().find(c=>c.id===id);
+const me=()=>users.find(u=>u.email===session)||null;
+const fmt$=n=>'$'+Math.round(Number(n)).toLocaleString('en-US');
+const fmtMi=n=>Number(n).toLocaleString('en-US')+' mi';
+const esc=s=>String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function timeAgo(ts){const h=Math.floor((Date.now()-ts)/36e5);if(h<1)return'just now';if(h<24)return h+'h ago';const d=Math.floor(h/24);return d===1?'yesterday':d+' days ago';}
+function timeLeft(ts){const m=Math.floor((ts-Date.now())/6e4);if(m<=0)return'ended';if(m<60)return m+'m left';const h=Math.floor(m/60);if(h<48)return h+'h left';return Math.floor(h/24)+'d left';}
+let toastT;function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2800);}
+function err(id,msg){const e=document.getElementById(id);if(!e)return;if(!msg){e.style.display='none';return}e.textContent=msg;e.style.display='block';}
+function zipState(z){if(!z||z.length<3)return null;const p=+z.slice(0,2);let best=null;for(const [pre,st] of ZIP2ST){if(p>=pre)best=st;}return ST[best]?best:null;}
+function pfb(el,id){const c=carById(id);if(c&&c.fb){el.onerror=null;el.src=c.fb;}}
 
-/* ---------- header ---------- */
-function renderHeader(){
-  const r = document.getElementById('headerRight');
-  const u = me();
-  if(u){
-    const initials = u.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
-    r.innerHTML = `
-      <button class="btn btn-primary" onclick="requireAuth(()=>go('sell'))">+ Sell your car</button>
-      <button class="btn btn-ghost" onclick="go('dash')">My garage${offerDot()}</button>
-      <button class="avatar" title="${u.name} — click to log out" onclick="logout()">${initials}</button>`;
-  } else {
-    r.innerHTML = `
-      <button class="btn btn-ghost" onclick="openModal('authModal');authMode('login')">Log in</button>
-      <button class="btn btn-primary" onclick="requireAuth(()=>go('sell'))">+ Sell your car</button>`;
+/* market value estimate for user listings (very rough, demo only) */
+const TIER={Porsche:2.4,Lamborghini:6,"Mercedes-Benz":1.9,BMW:1.7,Audi:1.6,Lexus:1.5,Tesla:1.6,Acura:1.2,Infiniti:1.2,Volvo:1.3,Jeep:1.15,GMC:1.2,Ram:1.15,Ford:1,Chevrolet:1,Toyota:1.05,Honda:1.05,Subaru:1,Mazda:.95,Nissan:.92,Hyundai:.88,Kia:.9,Volkswagen:.92,Dodge:1};
+const medianOf=a=>{const s=[...a].sort((x,y)=>x-y);return s.length%2?s[(s.length-1)/2]:Math.round((s[s.length/2-1]+s[s.length/2])/2);};
+/* Market value: anchored on real sold comps when we have them, formula only as a fallback.
+   Comps are adjusted ~6% per model year and ~$0.06 per mile of difference. */
+function estimateValue(c){
+  const comps=modelComps(c);
+  if(comps.length){
+    const adj=comps.map(s=>{
+      let v=s.price*(1+.06*((+c.year||s.year)-s.year));
+      v-=.06*((+c.miles||s.miles)-s.miles);
+      return clamp(v,s.price*.4,s.price*2.2);
+    });
+    let v=medianOf(adj);
+    if(c.history&&c.history.brand&&c.history.brand!=='Clean')v*=.62;
+    if(c.history&&c.history.accidents)v*=1-.06*c.history.accidents;
+    return Math.max(800,Math.round(v/50)*50);
   }
+  const age=Math.max(0,2026-(+c.year||2020));
+  let v=34000*(TIER[c.make]||1)*Math.max(.18,Math.pow(.91,age));
+  v*=clamp(1.15-((+c.miles||0)/100000)*.30,.5,1.2);
+  if(c.body==='Truck'||c.body==='SUV')v*=1.12;
+  if(c.fuel==='Electric')v*=1.03;
+  if(c.history&&c.history.brand&&c.history.brand!=='Clean')v*=.62;
+  if(c.history&&c.history.accidents)v*=1-.06*c.history.accidents;
+  return Math.max(800,Math.round(v/100)*100);
 }
-function offerDot(){
-  const u=me(); if(!u) return '';
-  const pending = offers.filter(o=>o.sellerEmail===u.email && o.status==='pending').length;
-  return pending? ` <span style="background:var(--red);color:#fff;border-radius:99px;font-size:11px;padding:1px 7px;font-weight:700">${pending}</span>` : '';
+const mvOf=c=>c.mv||estimateValue(c);
+/* deal rating vs market value */
+function dealRating(c){
+  const mv=mvOf(c),d=(mv-c.price)/mv;
+  if(d>.08)return{k:'great',en:'Great deal',es:'Gran precio'};
+  if(d>.02)return{k:'good',en:'Good deal',es:'Buen precio'};
+  if(d>-.06)return{k:'fair',en:'Fair price',es:'Precio justo'};
+  return{k:'high',en:'Above market',es:'Sobre mercado'};
+}
+/* predicted days to sell from price vs market */
+function daysToSell(price,mv){
+  const r=price/mv;
+  return Math.round(clamp(9*Math.pow(2.9,(r-.94)*6),2,180));
+}
+/* guaranteed instant-offer floor (wholesale-style) */
+const floorPrice=c=>Math.round(mvOf(c)*.86/50)*50;
+/* monthly depreciation estimate */
+const depPerMonth=c=>Math.max(35,Math.round(mvOf(c)*0.012/5)*5);
+
+/* cost to own for a given buyer state */
+function costToOwn(c,st,age){
+  const s=ST[st];if(!s)return null;
+  const tax=c.price*s[0]/100, reg=s[1];
+  const mpg=c.fuel==='Electric'?0:(c.body==='Truck'?18:c.body==='SUV'?24:28);
+  const fuel=c.fuel==='Electric'?55:Math.round(12000/12/mpg*3.35);
+  let ins=Math.round((38+mvOf(c)*0.0013)*s[5]);
+  if(age&&age<21)ins=Math.round(ins*2.1); else if(age&&age<25)ins=Math.round(ins*1.5);
+  const maint=Math.round(38+(c.miles/1000)*0.55+(TIER[c.make]||1)*22);
+  return{tax:Math.round(tax),reg,fuel,ins,maint,monthly:ins+fuel+maint,upfront:Math.round(tax)+reg};
+}
+/* shipping quote by rough interstate distance */
+const CENT={AL:[32.8,-86.8],AK:[64,-152],AZ:[34.3,-111.7],AR:[34.9,-92.4],CA:[37.2,-119.5],CO:[39,-105.5],CT:[41.6,-72.7],DE:[39,-75.5],FL:[28.6,-82.4],GA:[32.6,-83.4],HI:[20.3,-156.4],ID:[44.4,-114.6],IL:[40,-89.2],IN:[39.9,-86.3],IA:[42.1,-93.5],KS:[38.5,-98.4],KY:[37.5,-85.3],LA:[31,-92],ME:[45.4,-69.2],MD:[39,-76.8],MA:[42.3,-71.8],MI:[44.3,-85.4],MN:[46.3,-94.3],MS:[32.7,-89.7],MO:[38.4,-92.5],MT:[47,-109.6],NE:[41.5,-99.8],NV:[39.3,-116.6],NH:[43.7,-71.6],NJ:[40.2,-74.7],NM:[34.4,-106.1],NY:[42.9,-75.5],NC:[35.5,-79.4],ND:[47.4,-100.5],OH:[40.3,-82.8],OK:[35.6,-97.5],OR:[43.9,-120.6],PA:[40.9,-77.8],RI:[41.7,-71.6],SC:[33.9,-80.9],SD:[44.4,-100.2],TN:[35.8,-86.4],TX:[31.5,-99.3],UT:[39.3,-111.7],VT:[44.1,-72.7],VA:[37.5,-78.8],WA:[47.4,-120.5],WV:[38.6,-80.6],WI:[44.6,-89.7],WY:[43,-107.5]};
+function milesBetween(a,b){const A=CENT[a],B=CENT[b];if(!A||!B)return null;
+  const dy=(A[0]-B[0])*69,dx=(A[1]-B[1])*54;return Math.round(Math.sqrt(dx*dx+dy*dy));}
+function shipQuote(from,to){const d=milesBetween(from,to);if(d===null)return null;
+  if(d<60)return{miles:d,price:0,days:0};
+  const rate=d<500?1.15:d<1500?.78:.62;
+  return{miles:d,price:Math.round((190+d*rate)/5)*5,days:Math.max(2,Math.round(d/420)+2)};}
+
+let holds = store.get('bw2_holds',{});
+const saveHolds=()=>store.set('bw2_holds',holds);
+const isSold=id=>soldLog.some(s=>s.carId===id);
+const holdOf=id=>{const h=holds[id];return h&&h.until>Date.now()?h:null;};
+
+/* seller reputation, computed from completed deals */
+function repOf(email){
+  const c=allCars().find(x=>x.sellerEmail===email);
+  if(c&&c.demo)return{rating:c.sellerRating,deals:c.sellerDeals};
+  const deals=soldLog.filter(s=>s.sellerEmail===email).length;
+  return{rating:deals?Math.min(5,4.6+deals*.05).toFixed(1):null,deals};
+}
+/* curbstoner signal: unusually high listing volume from one private account */
+function volumeFlag(email){
+  const n=userCars.filter(c=>c.sellerEmail===email&&Date.now()-c.created<30*864e5).length;
+  return n>=4?n:0;
 }
 
-/* ---------- filters & grid ---------- */
-let filters = {make:'',price:'',year:'',state:'',body:'All',q:''};
-function initFilters(){
-  const mk=document.getElementById('fMake'); MAKES.forEach(m=>mk.add(new Option(m,m)));
-  const st=document.getElementById('fState'); STATES.forEach(s=>st.add(new Option(s,s)));
-  const smk=document.getElementById('sMake'); smk.add(new Option('Select make','')); MAKES.forEach(m=>smk.add(new Option(m,m)));
-  const sst=document.getElementById('sState'); sst.add(new Option('Select','')); STATES.forEach(s=>sst.add(new Option(s,s)));
-  const chips=document.getElementById('bodyChips');
-  chips.innerHTML = BODIES.map(b=>`<button class="chip ${b==='All'?'active':''}" data-b="${b}" onclick="setBody('${b}')">${b}</button>`).join('');
+/* ============ 3. AUTH ============ */
+function applyI18n(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{el.innerHTML=t(el.dataset.i18n);});
+  document.documentElement.lang=LANG;
 }
-function setBody(b){
-  filters.body=b;
-  document.querySelectorAll('#bodyChips .chip').forEach(c=>c.classList.toggle('active',c.dataset.b===b));
-  renderGrid();
+function toggleLang(){LANG=LANG==='en'?'es':'en';localStorage.setItem('bw2_lang',LANG);applyI18n();renderAll();toast(LANG==='es'?'Idioma: Español':'Language: English');}
+function authMode(m){
+  document.getElementById('authSignup').style.display=m==='signup'?'':'none';
+  document.getElementById('authLogin').style.display=m==='login'?'':'none';
 }
+let pendingAfterAuth=null;
+function requireAuth(then){if(me()){then();return;}pendingAfterAuth=then;openModal('authModal');authMode('signup');}
+function signup(){
+  const g=id=>document.getElementById(id).value.trim();
+  const name=g('suName'),email=g('suEmail').toLowerCase(),phone=g('suPhone'),zip=g('suZip'),pass=document.getElementById('suPass').value;
+  if(!name||!email||!pass)return err('signupErr','Please fill in name, email and password.');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))return err('signupErr','That email doesn\'t look right.');
+  if(pass.length<6)return err('signupErr','Password must be at least 6 characters.');
+  if(users.some(u=>u.email===email))return err('signupErr','An account with this email already exists. Try logging in.');
+  err('signupErr');
+  users.push({name,email,phone,zip,pass,verifiedFunds:false,created:Date.now()});save.users();
+  if(zip){buyerZip=zip;store.set('bw2_zip',zip);}
+  session=email;store.set('bw2_session',session);
+  afterAuth('Welcome to Driveway, '+name.split(' ')[0]+'! 🎉');
+}
+function login(){
+  const email=document.getElementById('liEmail').value.trim().toLowerCase(),pass=document.getElementById('liPass').value;
+  const u=users.find(u=>u.email===email&&u.pass===pass);
+  if(!u)return err('loginErr','Wrong email or password.');
+  err('loginErr');session=email;store.set('bw2_session',session);
+  afterAuth('Welcome back, '+u.name.split(' ')[0]+'!');
+}
+function afterAuth(msg){
+  closeModal('authModal');renderAll();toast(msg);
+  if(pendingAfterAuth){const f=pendingAfterAuth;pendingAfterAuth=null;f();}
+}
+function logout(){if(!confirm('Log out of Driveway?'))return;session=null;store.set('bw2_session',null);renderAll();go('home');toast('Logged out.');}
+
+/* simulated bank connection → "funds verified" badge on this user's offers */
+function verifyFunds(){
+  requireAuth(()=>{
+    openGen(`<h2>Verify your funds</h2><p class="sub">Sellers prioritise buyers who can actually pay. Connect a bank account or upload a pre-approval letter.</p>
+      <div class="note demo"><b>Prototype note:</b> in a real product this connects to a bank aggregator or a lender's pre-approval API. Here it just flips a flag so you can see how the badge works.</div>
+      <button class="btn btn-primary btn-lg" style="width:100%;margin-top:14px" onclick="doVerify()">Connect bank account (demo)</button>`);
+  });
+}
+function doVerify(){const u=me();u.verifiedFunds=true;save.users();closeModal('genModal');renderAll();toast('✅ Funds verified — your offers now carry a verified badge.');}
+
+/* ============ 4. BROWSE ============ */
+let filters={make:'',price:'',year:'',body:'All',q:'',smart:{}};
+const SMART=[
+ {k:'uber',   en:'Rideshare-ready',  es:'Apto para Uber', test:c=>c.doors>=4&&c.year>=2012},
+ {k:'teen',   en:'Good first car',   es:'Buen primer auto',test:c=>c.safety>=4&&c.price<=25000&&(!c.history||!c.history.accidents)},
+ {k:'tow',    en:'Tows 5,000+ lb',   es:'Remolca 5,000+ lb',test:c=>(c.towLb||0)>=5000},
+ {k:'ev',     en:'EV battery 90%+',  es:'Batería 90%+',   test:c=>c.fuel==='Electric'&&(c.evSoh||0)>=90},
+ {k:'norust', en:'No salt-belt years',es:'Sin cinturón de sal',test:c=>!c.history||!c.history.rust},
+ {k:'clean',  en:'Clean history',    es:'Historial limpio',test:c=>c.history&&c.history.brand==='Clean'&&!c.history.accidents&&!c.history.flood},
+ {k:'ending', en:'Offers close soon',es:'Ofertas cierran pronto',test:c=>c.deadline&&c.deadline>Date.now()&&c.deadline-Date.now()<3*864e5}
+];
+const BODIES=["All","Coupe","Sedan","SUV","Truck","Electric"];
+function initControls(){
+  const mk=document.getElementById('fMake');mk.innerHTML='<option value="">'+(LANG==='es'?'Cualquiera':'Any make')+'</option>';
+  MAKES.forEach(m=>mk.add(new Option(m,m)));
+  document.getElementById('fZip').value=buyerZip||'';
+  document.getElementById('bodyChips').innerHTML=BODIES.map(b=>
+    `<button class="chip ${b===filters.body?'active':''}" data-b="${b}" onclick="setBody('${b}')">${b}</button>`).join('');
+  document.getElementById('smartChips').innerHTML=SMART.map(s=>
+    `<button class="chip smart ${filters.smart[s.k]?'active':''}" onclick="toggleSmart('${s.k}')">${LANG==='es'?s.es:s.en}</button>`).join('');
+  document.getElementById('howGrid').innerHTML=[
+    ['1','List in minutes','Guided photos, a cold-start recording and a free title check are built into the listing form.'],
+    ['2','Get real offers','Buyers with verified funds send offers. Your rules can accept, counter or decline them automatically.'],
+    ['3','Know the real price','Every accepted offer feeds our sold-price database, so both sides negotiate with facts.'],
+    ['4','Close it safely','Registration cost, shipping and a 48-hour hold deposit are all handled before you meet.']
+  ].map(s=>`<div class="how-step"><div class="num">${s[0]}</div><h3>${s[1]}</h3><p>${s[2]}</p></div>`).join('');
+}
+function setBody(b){filters.body=b;initControls();renderGrid();}
+function toggleSmart(k){filters.smart[k]=!filters.smart[k];initControls();renderGrid();}
+function onZip(){const z=document.getElementById('fZip').value.trim();if(z.length===5){buyerZip=z;store.set('bw2_zip',z);renderGrid();}}
 function applyFilters(){
   filters.make=document.getElementById('fMake').value;
   filters.price=document.getElementById('fPrice').value;
   filters.year=document.getElementById('fYear').value;
-  filters.state=document.getElementById('fState').value;
-  renderGrid();
+  onZip();renderGrid();
   document.getElementById('listTitle').scrollIntoView({behavior:'smooth',block:'center'});
 }
-function hdrGo(){
-  filters.q = document.getElementById('hdrSearch').value.trim().toLowerCase();
-  go('home'); renderGrid();
-}
+function hdrGo(){filters.q=document.getElementById('hdrSearch').value.trim().toLowerCase();go('home');renderGrid();}
 function matches(c){
-  if(filters.make && c.make!==filters.make) return false;
-  if(filters.price && c.price>+filters.price) return false;
-  if(filters.year && c.year<+filters.year) return false;
-  if(filters.state && c.state!==filters.state) return false;
-  if(filters.body==='Electric'){ if(c.fuel!=='Electric') return false; }
-  else if(filters.body!=='All' && c.body!==filters.body) return false;
-  if(filters.q && !(`${c.make} ${c.model}`.toLowerCase().includes(filters.q))) return false;
+  if(filters.make&&c.make!==filters.make)return false;
+  if(filters.price&&c.price>+filters.price)return false;
+  if(filters.year&&c.year<+filters.year)return false;
+  if(filters.body==='Electric'){if(c.fuel!=='Electric')return false;}
+  else if(filters.body!=='All'&&c.body!==filters.body)return false;
+  if(filters.q&&!((c.make+' '+c.model).toLowerCase().includes(filters.q)))return false;
+  for(const s of SMART)if(filters.smart[s.k]&&!s.test(c))return false;
   return true;
 }
+function trustBadges(c){
+  const b=[];
+  const shots=new Set((c.photos||[]).map(p=>p.tag));
+  if(c.history&&c.history.brand==='Clean')b.push('<span class="tb ok">✓ Clean title</span>');
+  else if(c.history)b.push('<span class="tb bad">⚠ '+esc(c.history.brand)+' title</span>');
+  if(c.recalls&&c.recalls.length)b.push('<span class="tb warn">⚠ '+c.recalls.length+' open recall</span>');
+  else b.push('<span class="tb ok">✓ No open recalls</span>');
+  if(c.obd&&!c.obd.codes.length&&c.obd.ready)b.push('<span class="tb info">✓ OBD clean</span>');
+  if(c.audio)b.push('<span class="tb pur">♪ Cold start</span>');
+  if(SHOTS.filter(s=>s.req).every(s=>shots.has(s.k)))b.push('<span class="tb ok">✓ Photos verified</span>');
+  if(c.history&&c.history.flood)b.push('<span class="tb bad">⚠ Flood area</span>');
+  if(c.history&&c.history.rust)b.push('<span class="tb warn">❄ Salt belt '+c.history.rust+'y</span>');
+  if(c.fuel==='Electric'&&c.evSoh)b.push('<span class="tb '+(c.evSoh>=90?'ok':'warn')+'">🔋 '+c.evSoh+'%</span>');
+  if(volumeFlag(c.sellerEmail))b.push('<span class="tb warn">⚑ High-volume seller</span>');
+  return b.slice(0,4).join('');
+}
 function renderGrid(){
-  const cars = allCars().filter(matches);
-  document.getElementById('statCars').textContent = allCars().length;
-  document.getElementById('listCount').textContent = cars.length + (cars.length===1?' car':' cars');
-  const myFavs = (me() && favs[me().email]) || [];
-  const g = document.getElementById('carGrid');
-  if(!cars.length){
-    g.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="big">🔍</div>No cars match your filters.<br>Try widening the search.</div>`;
-    return;
-  }
-  g.innerHTML = cars.map(c=>{
-    const isNew = Date.now()-c.created < 48*36e5;
-    const hearted = myFavs.includes(c.id);
-    return `
-    <div class="car-card" onclick="openDetail('${c.id}')">
+  const list=allCars().filter(matches);
+  document.getElementById('statCars').textContent=allCars().filter(c=>!isSold(c.id)).length;
+  document.getElementById('statSold').textContent=soldLog.length+SOLD_SEED.length;
+  document.getElementById('listCount').textContent=list.length+(list.length===1?' car':' cars');
+  const myFavs=(me()&&favs[me().email])||[];
+  const g=document.getElementById('carGrid');
+  if(!list.length){g.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="big">🔍</div>No cars match your filters.<br>Try turning a few off.</div>';return;}
+  g.innerHTML=list.map(c=>{
+    const isNew=Date.now()-c.created<48*36e5, hearted=myFavs.includes(c.id);
+    const d=dealRating(c), hold=holdOf(c.id), sold=isSold(c.id);
+    const prev=(c.priceHistory||[]).length>1?c.priceHistory[0].price:null;
+    return `<div class="car-card" onclick="openDetail('${c.id}')">
       <div class="car-photo">
-        <img src="${c.photos[0]}" alt="${c.make} ${c.model}" loading="lazy" onerror="pfb(this,'${c.id}')">
-        ${isNew?'<span class="badge new">NEW</span>':(c.demo?'':'<span class="badge">Private seller</span>')}
-        <button class="fav-btn" onclick="event.stopPropagation();toggleFav('${c.id}')" title="Save">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="${hearted?'#ef4444':'none'}" stroke="${hearted?'#ef4444':'#64748b'}" stroke-width="2"><path d="M12 21C7 16.5 3 13.3 3 9.3 3 6.4 5.2 4 8 4c1.6 0 3.1.8 4 2 0.9-1.2 2.4-2 4-2 2.8 0 5 2.4 5 5.3 0 4-4 7.2-9 11.7z"/></svg>
+        <img src="${c.photos[0].url}" alt="${esc(c.make+' '+c.model)}" loading="lazy" onerror="pfb(this,'${c.id}')">
+        ${sold?'<span class="badge sold">SOLD</span>':hold?'<span class="badge hold">ON HOLD</span>':isNew?'<span class="badge new">NEW</span>':''}
+        <span class="deal ${d.k}">${LANG==='es'?d.es:d.en}</span>
+        <button class="fav-btn" onclick="event.stopPropagation();toggleFav('${c.id}')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="${hearted?'#ef4444':'none'}" stroke="${hearted?'#ef4444':'#64748b'}" stroke-width="2"><path d="M12 21C7 16.5 3 13.3 3 9.3 3 6.4 5.2 4 8 4c1.6 0 3.1.8 4 2 .9-1.2 2.4-2 4-2 2.8 0 5 2.4 5 5.3 0 4-4 7.2-9 11.7z"/></svg>
         </button>
       </div>
       <div class="car-body">
-        <div class="car-price">${fmt$(c.price)} <span class="offer-tag">or best offer</span></div>
-        <div class="car-title">${c.year} ${c.make} ${c.model}</div>
+        <div class="car-price">${fmt$(c.price)}${prev&&prev>c.price?`<span class="was">${fmt$(prev)}</span>`:''}<span class="offer-tag">${t('orBestOffer')}</span></div>
+        <div class="car-title">${c.year} ${esc(c.make)} ${esc(c.model)}</div>
         <div class="car-meta"><i>${fmtMi(c.miles)}</i>·<i>${c.trans}</i>·<i>${c.fuel}</i></div>
+        <div class="trust-row">${trustBadges(c)}</div>
         <div class="car-loc">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.2"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
-          ${c.city}, ${c.state}
+          <span>📍 ${esc(c.city)}, ${c.state}</span>
+          ${c.deadline&&c.deadline>Date.now()?`<span class="deadline">⏱ ${timeLeft(c.deadline)}</span>`:''}
         </div>
-      </div>
-    </div>`;
+      </div></div>`;
   }).join('');
 }
 function toggleFav(id){
   requireAuth(()=>{
-    const em = me().email;
-    favs[em] = favs[em]||[];
-    const i = favs[em].indexOf(id);
-    if(i>=0){ favs[em].splice(i,1); toast('Removed from saved'); }
-    else { favs[em].push(id); toast('Saved ❤️'); }
-    store.set('bw_favs',favs);
-    renderGrid();
-    if(document.getElementById('view-dash').style.display!=='none') dashTab(currentTab);
+    const em=me().email;favs[em]=favs[em]||[];
+    const i=favs[em].indexOf(id);
+    if(i>=0){favs[em].splice(i,1);toast('Removed from saved');}else{favs[em].push(id);toast('Saved ❤️');}
+    save.favs();renderGrid();if(currentView==='dash')dashTab(currentTab);
   });
 }
 
-/* ---------- detail modal ---------- */
-let galIdx = 0, galCar = null;
+/* ============ 5. DETAIL ============ */
+let galIdx=0,galCar=null;
 function openDetail(id){
-  const c = carById(id); if(!c) return;
-  galCar = c; galIdx = 0;
-  const el = document.getElementById('detailContent');
-  const mine = me() && me().email===c.sellerEmail;
-  el.innerHTML = `
-    <button class="modal-x" onclick="closeModal('detailModal')" style="background:rgba(255,255,255,.9)">✕</button>
-    <div class="detail-gallery">
-      <div class="main"><img id="galMain" src="${c.photos[0]}" alt="${c.make} ${c.model}" onerror="pfb(this,'${c.id}')"></div>
-      ${c.photos.length>1?`
-        <button class="gal-nav gal-prev" onclick="galStep(-1)">‹</button>
-        <button class="gal-nav gal-next" onclick="galStep(1)">›</button>
-        <div class="thumbs" id="galThumbs">${c.photos.map((p,i)=>`<img src="${p}" class="${i===0?'on':''}" onclick="galTo(${i})" onerror="pfb(this,'${c.id}')">`).join('')}</div>`:''}
+  const c=carById(id);if(!c)return;galCar=c;galIdx=0;
+  const u=me(),mine=u&&u.email===c.sellerEmail,rep=repOf(c.sellerEmail);
+  const bst=zipState(buyerZip),cto=bst?costToOwn(c,bst,u&&u.age):null;
+  const ship=bst?shipQuote(c.state,bst):null;
+  const hold=holdOf(c.id),sold=isSold(c.id),d=dealRating(c);
+  const comps=findComps(c);
+  const openOffers=offers.filter(o=>o.carId===c.id&&o.status!=='declined');
+  const best=openOffers.reduce((m,o)=>Math.max(m,o.amount),0);
+  document.getElementById('detailContent').innerHTML=`
+   <button class="modal-x" onclick="closeModal('detailModal')" style="background:rgba(255,255,255,.9)">✕</button>
+   <div class="detail-gallery">
+     <div class="main"><img id="galMain" src="${c.photos[0].url}" onerror="pfb(this,'${c.id}')"></div>
+     <div class="shot-tag" id="shotTag">${shotName(c.photos[0].tag)}</div>
+     ${c.photos.length>1?`<button class="gal-nav gal-prev" onclick="galStep(-1)">‹</button><button class="gal-nav gal-next" onclick="galStep(1)">›</button>`:''}
+     <div class="thumbs" id="galThumbs">${c.photos.map((p,i)=>`<img src="${p.url}" class="${i?'':'on'}" onclick="galTo(${i})" onerror="pfb(this,'${c.id}')">`).join('')}</div>
+   </div>
+   <div class="detail-body">
+    <div>
+      <h2>${c.year} ${esc(c.make)} ${esc(c.model)}</h2>
+      <div class="detail-price">${fmt$(c.price)} <span class="deal ${d.k}" style="position:static;font-size:12px;vertical-align:middle">${LANG==='es'?d.es:d.en}</span></div>
+      <div style="font-size:13.5px;color:var(--muted)">📍 ${esc(c.city)}, ${c.state} · listed ${timeAgo(c.created)} · est. market ${fmt$(mvOf(c))}
+        ${c.deadline&&c.deadline>Date.now()?` · <b style="color:var(--amber)">offers close in ${timeLeft(c.deadline)}</b>`:''}</div>
+      ${openOffers.length?`<div class="box" style="margin-top:14px;border-color:var(--amber);background:var(--amber-soft)">
+        <b style="font-size:14px">🔥 ${openOffers.length} active offer${openOffers.length>1?'s':''}</b>
+        <div style="font-size:13.5px;margin-top:4px">Best offer is in the <b>${fmt$(Math.floor(best/1000)*1000)}–${fmt$(Math.ceil(best/1000)*1000)}</b> range. Exact amounts stay private.</div></div>`:''}
+      <div class="spec-grid">
+        <div class="spec"><span>Mileage</span><b>${fmtMi(c.miles)}</b></div>
+        <div class="spec"><span>Body</span><b>${c.body}</b></div>
+        <div class="spec"><span>Transmission</span><b>${c.trans}</b></div>
+        <div class="spec"><span>Fuel</span><b>${c.fuel}</b></div>
+        ${c.towLb?`<div class="spec"><span>Tow rating</span><b>${c.towLb.toLocaleString()} lb</b></div>`:''}
+        ${c.evSoh?`<div class="spec"><span>Battery health</span><b>${c.evSoh}%</b></div>`:''}
+        ${c.safety?`<div class="spec"><span>Safety</span><b>${'★'.repeat(c.safety)}</b></div>`:''}
+        <div class="spec"><span>Depreciation</span><b>~${fmt$(depPerMonth(c))}/mo</b></div>
+      </div>
+      <div class="detail-desc">${esc(c.desc||'No description provided.')}</div>
+
+      <div class="box"><h4>🛡️ Free vehicle history</h4>
+        <div class="kv"><span>Title brand</span><b style="color:${c.history&&c.history.brand==='Clean'?'var(--green)':'var(--red)'}">${esc((c.history&&c.history.brand)||'Unknown')}</b></div>
+        <div class="kv"><span>Reported owners</span><b>${(c.history&&c.history.owners)||'—'}</b></div>
+        <div class="kv"><span>Reported accidents</span><b>${c.history?c.history.accidents:'—'}</b></div>
+        <div class="kv"><span>Flood-disaster area history</span><b>${c.history&&c.history.flood?'⚠ Yes':'No'}</b></div>
+        <div class="kv"><span>Years in road-salt states</span><b>${(c.history&&c.history.rust)||0}</b></div>
+        <div class="kv"><span>Open safety recalls</span><b style="color:${c.recalls&&c.recalls.length?'var(--amber)':'var(--green)'}">${c.recalls&&c.recalls.length?esc(c.recalls.join('; ')):'None'}</b></div>
+        <div class="note" style="margin-top:10px">Sample data for the prototype. In production this comes from the federal NMVTIS title database and the free NHTSA recall API, shown free on every listing.</div>
+      </div>
+
+      ${c.obd?`<div class="box"><h4>🔌 Self-service diagnostic report</h4>
+        <div class="kv"><span>Stored fault codes</span><b style="color:${c.obd.codes.length?'var(--red)':'var(--green)'}">${c.obd.codes.length?esc(c.obd.codes.join(', ')):'None'}</b></div>
+        <div class="kv"><span>Readiness monitors</span><b style="color:${c.obd.ready?'var(--green)':'var(--amber)'}">${c.obd.ready?'All ready':'Not ready — codes may have been cleared recently'}</b></div>
+        </div>`:''}
+
+      ${c.audio?`<div class="box"><h4>🎧 Cold-start recording</h4>
+        <div class="audio-row"><audio controls src="${c.audio}"></audio></div>
+        <div class="note" style="margin-top:8px">Recorded by the seller on a cold engine. Listen for knocking, belt squeal or rough idle.</div></div>`:''}
+
+      ${(c.records&&c.records.length)?`<div class="box"><h4>📒 Digital logbook</h4>
+        ${c.records.map(r=>`<div class="kv"><span>${new Date(r.ts).toLocaleDateString()}</span><b>${esc(r.title)}</b></div>`).join('')}
+        <div class="note" style="margin-top:8px">Service records stay attached to this VIN — the next owner inherits them.</div></div>`:''}
+
+      ${(c.priceHistory&&c.priceHistory.length>1)?`<div class="box"><h4>📉 Price history</h4>
+        ${c.priceHistory.map(p=>`<div class="kv"><span>${new Date(p.ts).toLocaleDateString()}</span><b>${fmt$(p.price)}</b></div>`).join('')}</div>`:''}
+
+      ${comps.length?`<div class="box"><h4>💵 What these actually sold for</h4>
+        <div class="comp-wrap"><table class="comps"><tr><th>Car</th><th>Miles</th><th>Sold</th><th>When</th></tr>
+        ${comps.slice(0,5).map(s=>`<tr><td>${s.year} ${esc(s.make)} ${esc(s.model)}</td><td>${fmtMi(s.miles)}</td><td><b>${fmt$(s.price)}</b></td><td>${timeAgo(s.ts)}</td></tr>`).join('')}
+        </table></div>
+        <div class="note" style="margin-top:8px">Real accepted-offer prices, not asking prices. Dealers have this data; buyers normally don't.</div></div>`:''}
+
+      <div class="box"><h4>🤖 Ask about this car</h4>
+        <div class="qa-log" id="qaLog"><div class="qa-msg bot">Ask me anything about this listing — features, condition, cost, paperwork. I answer from the listing data and pass anything I don't know to the seller.</div></div>
+        <div style="display:flex;gap:8px"><input id="qaInput" class="f" style="flex:1;border:1px solid var(--line);border-radius:10px;padding:10px 12px" placeholder="Does it have Apple CarPlay?" onkeydown="if(event.key==='Enter')askQa('${c.id}')">
+        <button class="btn btn-outline btn-sm" onclick="askQa('${c.id}')">Ask</button></div>
+      </div>
     </div>
-    <div class="detail-body">
-      <div>
-        <h2>${c.year} ${c.make} ${c.model}</h2>
-        <div class="detail-price">${fmt$(c.price)} <span style="font-size:13px;color:var(--accent);font-weight:700;vertical-align:middle"> or best offer</span></div>
-        <div style="font-size:13.5px;color:var(--muted)">${c.city}, ${c.state} · listed ${timeAgo(c.created)}</div>
-        <div class="spec-grid">
-          <div class="spec"><span>Mileage</span><b>${fmtMi(c.miles)}</b></div>
-          <div class="spec"><span>Body</span><b>${c.body}</b></div>
-          <div class="spec"><span>Transmission</span><b>${c.trans}</b></div>
-          <div class="spec"><span>Fuel</span><b>${c.fuel}</b></div>
-        </div>
-        <div class="detail-desc">${esc(c.desc||'No description provided.')}</div>
+
+    <div class="seller-card">
+      <div class="who"><div class="avatar">${esc((c.sellerName||'S')[0]).toUpperCase()}</div>
+        <div><b>${esc(c.sellerName)}</b>
+          <span>${rep.rating?`<span class="stars">${'★'.repeat(Math.round(rep.rating))}</span> ${rep.rating} · ${rep.deals} deal${rep.deals===1?'':'s'}`:'New seller'}</span></div></div>
+      ${volumeFlag(c.sellerEmail)?`<div class="pill amber" style="display:block;text-align:center;margin-bottom:10px">⚑ ${volumeFlag(c.sellerEmail)} listings in 30 days — may be a dealer</div>`:''}
+      ${sold?`<div class="pill red" style="display:block;text-align:center;padding:10px">Sold on Driveway</div>`
+       :mine?`<div class="pill gray" style="display:block;text-align:center;padding:10px;margin-bottom:10px">This is your listing</div>
+              <button class="btn btn-outline" onclick="closeModal('detailModal');go('dash')">Manage in My garage</button>`
+       :`${hold?`<div class="pill amber" style="display:block;text-align:center;margin-bottom:10px">On hold for another buyer · ${timeLeft(hold.until)}</div>`:''}
+         <button class="btn btn-green btn-lg" onclick="openOffer('${c.id}')">💰 ${t('makeOffer')}</button>
+         ${hold?'':`<button class="btn btn-outline" onclick="placeHold('${c.id}')">🔒 Hold it for 48h ($500 refundable)</button>`}
+         <button class="btn btn-outline" onclick="toggleFav('${c.id}');openDetail('${c.id}')">♡ ${t('save')}</button>`}
+
+      <div class="box" style="margin-top:14px"><h4>📍 Cost in your state</h4>
+        <div class="f" style="margin-bottom:8px"><input id="dZip" maxlength="5" placeholder="Your ZIP code" value="${esc(buyerZip)}" oninput="detailZip('${c.id}')"></div>
+        ${cto?`<div class="kv"><span>Sales tax (${bst} ${ST[bst][0]}%)</span><b>${fmt$(cto.tax)}</b></div>
+          <div class="kv"><span>Title + registration</span><b>${fmt$(cto.reg)}</b></div>
+          <div class="kv"><span>Due at purchase</span><b>${fmt$(c.price+cto.upfront)}</b></div>
+          <div class="kv"><span>Insurance est.</span><b>${fmt$(cto.ins)}/mo</b></div>
+          <div class="kv"><span>Fuel / energy est.</span><b>${fmt$(cto.fuel)}/mo</b></div>
+          <div class="kv"><span>Maintenance est.</span><b>${fmt$(cto.maint)}/mo</b></div>
+          <div class="kv"><span><b>All-in monthly</b></span><b style="color:var(--accent)">${fmt$(cto.monthly)}/mo</b></div>`
+         :'<div class="note">Enter your ZIP to see tax, registration, insurance and fuel for this exact car.</div>'}
       </div>
-      <div class="seller-card">
-        <div class="who">
-          <div class="avatar">${(c.sellerName||'S')[0].toUpperCase()}</div>
-          <div><b>${esc(c.sellerName)}</b><span>${c.demo?'Verified demo seller':'Private seller'}</span></div>
-        </div>
-        ${mine
-          ? `<div class="pill gray" style="display:block;text-align:center;padding:10px">This is your listing</div>`
-          : `<button class="btn btn-green btn-lg" onclick="openOffer('${c.id}')">💰 Make Offer</button>
-             <button class="btn btn-outline" onclick="toggleFav('${c.id}');openDetail('${c.id}')">♡ Save to favorites</button>`}
-        <div class="trust">🛡️ Driveway tip: meet in a public place, verify the title matches the seller's ID, never wire money in advance.</div>
+
+      ${bst?`<div class="box"><h4>📋 Can you register it?</h4>
+        ${registerCheck(c,bst)}</div>`:''}
+
+      ${ship?`<div class="box"><h4>🚚 Get it to you</h4>
+        ${ship.price?`<div class="kv"><span>Distance</span><b>${ship.miles.toLocaleString()} mi</b></div>
+          <div class="kv"><span>Enclosed-carrier est.</span><b>${fmt$(ship.price)}</b></div>
+          <div class="kv"><span>Transit time</span><b>~${ship.days} days</b></div>`
+         :'<div class="kv"><span>Distance</span><b>Local — go see it</b></div>'}</div>`:''}
+
+      <div class="box"><h4>🤝 Safe meetup</h4>
+        <div style="font-size:13px;color:var(--muted);line-height:1.5">Nearest police-station safe exchange zone in ${esc(c.city)}: <b style="color:var(--ink)">${esc(c.city)} PD — Community Lot, open 24/7, cameras</b>. Both sides scan ID in the app before meeting.</div>
       </div>
-    </div>`;
+      <div class="trust">🛡️ Never wire money in advance, verify the title matches the seller's ID, and take it to a mechanic before you pay.</div>
+    </div>
+   </div>`;
   openModal('detailModal');
 }
-function galStep(d){ galTo((galIdx + d + galCar.photos.length) % galCar.photos.length); }
-function galTo(i){
-  galIdx = i;
-  document.getElementById('galMain').src = galCar.photos[i];
-  const t = document.getElementById('galThumbs');
-  if(t) [...t.children].forEach((im,j)=>im.classList.toggle('on',j===i));
+const shotName=k=>{const s=SHOTS.find(x=>x.k===k);return s?(LANG==='es'?s.es:s.en):'Photo';};
+function galStep(d){galTo((galIdx+d+galCar.photos.length)%galCar.photos.length);}
+function galTo(i){galIdx=i;document.getElementById('galMain').src=galCar.photos[i].url;
+  document.getElementById('shotTag').textContent=shotName(galCar.photos[i].tag);
+  const th=document.getElementById('galThumbs');if(th)[...th.children].forEach((im,j)=>im.classList.toggle('on',j===i));}
+function detailZip(id){const z=document.getElementById('dZip').value.trim();if(z.length===5){buyerZip=z;store.set('bw2_zip',z);openDetail(id);setTimeout(()=>{const e=document.getElementById('dZip');if(e)e.focus();},30);}}
+function registerCheck(c,st){
+  const s=ST[st],rows=[];
+  const carbOk=c.fuel==='Electric'||c.year>=2015||!s[3];
+  rows.push(`<div class="kv"><span>Emissions / safety test</span><b>${s[2]?'Required':'Not required'}</b></div>`);
+  rows.push(`<div class="kv"><span>${st} emissions standard</span><b style="color:${carbOk?'var(--green)':'var(--amber)'}">${s[3]?(carbOk?'Should qualify':'Check 50-state certification'):'Federal — fine'}</b></div>`);
+  rows.push(`<div class="kv"><span>Out-of-state purchase</span><b>${c.state===st?'Same state — simple':'Temp tag + '+st+' title transfer'}</b></div>`);
+  if(c.history&&c.history.brand!=='Clean')rows.push(`<div class="kv"><span>Branded title in ${st}</span><b style="color:var(--red)">Extra inspection required</b></div>`);
+  rows.push(`<div class="note" style="margin-top:8px">Estimates for the prototype — rules differ by county and change often. Verify with the ${st} DMV before buying.</div>`);
+  return rows.join('');
 }
-function timeAgo(ts){
-  const h = Math.floor((Date.now()-ts)/36e5);
-  if(h<1) return 'just now';
-  if(h<24) return h+'h ago';
-  const d = Math.floor(h/24);
-  return d===1?'yesterday':d+' days ago';
+/* rule-based listing assistant */
+function askQa(id){
+  const inp=document.getElementById('qaInput'),q=inp.value.trim();if(!q)return;
+  const c=carById(id),log=document.getElementById('qaLog');
+  log.insertAdjacentHTML('beforeend',`<div class="qa-msg me">${esc(q)}</div>`);
+  inp.value='';
+  const l=q.toLowerCase();let a=null;
+  const has=(...w)=>w.some(x=>l.includes(x));
+  if(has('mile','odometer','km'))a=`It shows <b>${fmtMi(c.miles)}</b>, about ${Math.round(c.miles/Math.max(1,2026-c.year)).toLocaleString()} miles a year — ${c.miles/Math.max(1,2026-c.year)<12000?'below':'above'} the US average.`;
+  else if(has('accident','wreck','damage'))a=c.history?`The history report shows <b>${c.history.accidents} reported accident${c.history.accidents===1?'':'s'}</b> and a <b>${c.history.brand.toLowerCase()}</b> title.`:'No history data on file.';
+  else if(has('price','negotiab','best offer','lower','discount'))a=`Asking is ${fmt$(c.price)} against an estimated market value of ${fmt$(mvOf(c))}. ${c.rules?'The seller has automatic offer rules set, so you may get an instant answer.':'Use Make Offer — the seller sees every offer.'}`;
+  else if(has('battery','range','charge'))a=c.fuel==='Electric'?`Battery health is <b>${c.evSoh}%</b> of original capacity. Expect roughly ${Math.round(310*c.evSoh/100)} miles of range in mild weather, less in winter.`:'This one is not electric.';
+  else if(has('tow','trailer','haul'))a=c.towLb?`Rated to tow <b>${c.towLb.toLocaleString()} lb</b>.`:'No tow rating is listed for this car — assume it is not a tow vehicle.';
+  else if(has('carplay','android','bluetooth','screen','nav'))a=c.year>=2018?`Not stated explicitly, but a ${c.year} ${c.make} almost certainly has Bluetooth and very likely CarPlay. I have flagged this for the seller to confirm.`:'Not stated in the listing — I have passed the question to the seller.';
+  else if(has('title','lien','loan','owe'))a=`Title brand is <b>${(c.history&&c.history.brand)||'unknown'}</b>. If there is still a loan on it, Driveway pays the lender directly and releases funds only when the title is clear.`;
+  else if(has('recall'))a=c.recalls&&c.recalls.length?`There ${c.recalls.length===1?'is':'are'} <b>${c.recalls.length} open recall${c.recalls.length===1?'':'s'}</b>: ${esc(c.recalls.join('; '))}. Recall work is free at any franchised dealer.`:'No open safety recalls on this VIN.';
+  else if(has('insur','cost','month','own'))a=buyerZip?`With your ZIP ${buyerZip}, I estimate about <b>${fmt$((costToOwn(c,zipState(buyerZip))||{}).monthly||0)}/month</b> all-in including insurance, fuel and maintenance.`:'Enter your ZIP in the panel on the right and I will price out insurance, fuel and registration for you.';
+  else if(has('trade','swap'))a='Driveway is private-party only, but you can list your own car and run both deals side by side in My garage.';
+  else if(has('test drive','see it','meet'))a=`The seller is in ${esc(c.city)}, ${c.state}. Meet at the police-station safe exchange zone listed on the right — both sides verify ID in the app first.`;
+  if(a)log.insertAdjacentHTML('beforeend',`<div class="qa-msg bot">${a}</div>`);
+  else log.insertAdjacentHTML('beforeend',`<div class="qa-msg bot">I don't have that in the listing data, so I have sent the question to <b>${esc(c.sellerName)}</b>. You will get an answer here.</div>`);
+  log.scrollTop=log.scrollHeight;
 }
-function esc(s){ return String(s).replace(/[&<>"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+function placeHold(id){
+  requireAuth(()=>{
+    const c=carById(id);
+    openGen(`<h2>Hold this car for 48 hours</h2><p class="sub">${c.year} ${esc(c.make)} ${esc(c.model)} — ${fmt$(c.price)}</p>
+      <div class="note">A <b>$500 refundable deposit</b> takes the car off the market for 48 hours so you can drive out, get a mechanic's inspection or arrange financing. Fully refunded if you walk away — no one can buy it out from under you in the meantime.</div>
+      <div class="note demo" style="margin-top:10px"><b>Prototype note:</b> real deposits need a licensed payment partner. Here the hold is simulated so you can see the flow.</div>
+      <button class="btn btn-primary btn-lg" style="width:100%;margin-top:14px" onclick="doHold('${id}')">Place $500 refundable hold</button>`);
+  });
+}
+function doHold(id){
+  const u=me();holds[id]={email:u.email,name:u.name,until:Date.now()+48*36e5};saveHolds();
+  closeModal('genModal');renderGrid();toast('🔒 Held for 48 hours. It is off the market for everyone else.');
+}
+/* ============ 6. SELL WIZARD ============ */
+let draft=null,step=1;
+function newDraft(){
+  const u=me();
+  return{make:'',model:'',year:'',miles:'',vin:'',body:'Sedan',trans:'Automatic',fuel:'Gasoline',doors:4,towLb:'',evSoh:'',safety:4,
+    city:'',state:(u&&zipState(u.zip))||'',desc:'',photos:[],audio:null,obd:null,records:[],loan:'',price:'',
+    deadlineDays:0,rules:{on:false,accept:'',counter:'',decline:''}};
+}
+function startSell(){requireAuth(()=>{if(!draft)draft=newDraft();step=1;go('sell');});}
+function renderSell(){
+  if(!draft)draft=newDraft();
+  const labels=['Car details','Photos & proof','Price & rules','Review'];
+  document.getElementById('view-sell').innerHTML=`<div class="page">
+    <h1>Sell your car</h1><p class="lead">Free to list. The extras below are what make buyers trust you enough to send a real offer.</p>
+    <div class="steps">${labels.map((l,i)=>`<div class="step-pill ${step===i+1?'on':step>i+1?'done':''}" onclick="gotoStep(${i+1})">
+      <small>Step ${i+1}</small><b>${l}</b></div>`).join('')}</div>
+    <div class="form-err" id="sellErr" style="margin-bottom:14px"></div>
+    <div id="stepBody"></div></div>`;
+  renderStep();
+}
+function gotoStep(n){if(n>step&&!validateStep(step))return;step=n;renderSell();window.scrollTo({top:0});}
+function renderStep(){
+  const b=document.getElementById('stepBody');
+  if(step===1)b.innerHTML=stepCar();
+  if(step===2){b.innerHTML=stepPhotos();bindPhotoInput();}
+  if(step===3){b.innerHTML=stepPrice();syncPrice();}
+  if(step===4)b.innerHTML=stepReview();
+}
+const nav=(back,next,nextLabel)=>`<div class="wizard-nav">
+  ${back?`<button class="btn btn-outline" onclick="gotoStep(${back})">← Back</button>`:'<span></span>'}
+  ${next?`<button class="btn btn-primary" onclick="gotoStep(${next})">${nextLabel||'Continue'} →</button>`:''}</div>`;
+function D(k,v){draft[k]=v;}
+function stepCar(){
+  return `<div class="panel"><h3>What are you selling?</h3><p class="hint">The VIN unlocks the free title check, recall lookup and history report.</p>
+   <div class="form-grid">
+    <div class="row2">
+      <div class="f"><label>Make *</label><select onchange="D('make',this.value)">${['',...MAKES].map(m=>`<option ${draft.make===m?'selected':''}>${m}</option>`).join('')}</select></div>
+      <div class="f"><label>Model *</label><input value="${esc(draft.model)}" oninput="D('model',this.value)" placeholder="Camry SE"></div>
+    </div>
+    <div class="row3">
+      <div class="f"><label>Year *</label><input type="number" value="${draft.year}" oninput="D('year',this.value)" placeholder="2019"></div>
+      <div class="f"><label>Mileage *</label><input type="number" value="${draft.miles}" oninput="D('miles',this.value)" placeholder="45000"></div>
+      <div class="f"><label>VIN <span class="sublabel">(17 chars)</span></label><input value="${esc(draft.vin)}" maxlength="17" oninput="D('vin',this.value.toUpperCase())" placeholder="1HGCV1F3XLA000000"></div>
+    </div>
+    <div class="row3">
+      <div class="f"><label>Body</label><select onchange="D('body',this.value);renderStep()">${['Sedan','SUV','Truck','Coupe','Hatchback','Convertible','Van','Wagon'].map(x=>`<option ${draft.body===x?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="f"><label>Transmission</label><select onchange="D('trans',this.value)">${['Automatic','Manual'].map(x=>`<option ${draft.trans===x?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="f"><label>Fuel</label><select onchange="D('fuel',this.value);renderStep()">${['Gasoline','Hybrid','Electric','Diesel'].map(x=>`<option ${draft.fuel===x?'selected':''}>${x}</option>`).join('')}</select></div>
+    </div>
+    <div class="row3">
+      <div class="f"><label>Doors</label><select onchange="D('doors',+this.value)">${[2,4,5].map(x=>`<option ${draft.doors===x?'selected':''}>${x}</option>`).join('')}</select></div>
+      ${draft.fuel==='Electric'?`<div class="f"><label>Battery health % <span class="sublabel">(from the car's menu)</span></label><input type="number" value="${draft.evSoh}" oninput="D('evSoh',this.value)" placeholder="93"></div>`:
+        `<div class="f"><label>Tow rating (lb) <span class="sublabel">optional</span></label><input type="number" value="${draft.towLb}" oninput="D('towLb',this.value)" placeholder="7500"></div>`}
+      <div class="f"><label>Safety rating</label><select onchange="D('safety',+this.value)">${[5,4,3].map(x=>`<option value="${x}" ${draft.safety===x?'selected':''}>${'★'.repeat(x)}</option>`).join('')}</select></div>
+    </div>
+    <div class="row2">
+      <div class="f"><label>City *</label><input value="${esc(draft.city)}" oninput="D('city',this.value)" placeholder="Austin"></div>
+      <div class="f"><label>State *</label><select onchange="D('state',this.value)"><option value="">Select</option>${STATES.map(s=>`<option ${draft.state===s?'selected':''}>${s}</option>`).join('')}</select></div>
+    </div>
+    <div class="f"><label>Description</label><textarea oninput="D('desc',this.value)" placeholder="Condition, service history, why you're selling. Buyers respond to honesty about flaws.">${esc(draft.desc)}</textarea></div>
+   </div>${nav(0,2)}</div>`;
+}
+function stepPhotos(){
+  const got=new Set(draft.photos.map(p=>p.tag));
+  return `<div class="panel"><h3>Guided photos</h3><p class="hint">Shoot these angles and your listing gets a "Photos verified" badge. Listings with the odometer and VIN shots get far more serious offers.</p>
+    <div class="photo-drop" id="photoDrop" onclick="document.getElementById('photoInput').click()">
+      <b>Click to upload or drag photos here</b>JPG or PNG · up to 12</div>
+    <input type="file" id="photoInput" accept="image/*" multiple hidden>
+    <div class="shot-list">${SHOTS.map(s=>`<span class="shot-need ${got.has(s.k)?'got':''}">${got.has(s.k)?'✓':s.req?'•':'○'} ${LANG==='es'?s.es:s.en}</span>`).join('')}</div>
+    <div class="photo-previews" id="photoPreviews"></div></div>
 
-/* ---------- auth ---------- */
-function authMode(m){
-  document.getElementById('authSignup').style.display = m==='signup'?'':'none';
-  document.getElementById('authLogin').style.display = m==='login'?'':'none';
-}
-function err(id,msg){
-  const e=document.getElementById(id);
-  if(!msg){ e.style.display='none'; return; }
-  e.textContent=msg; e.style.display='block';
-}
-function signup(){
-  const name=document.getElementById('suName').value.trim();
-  const email=document.getElementById('suEmail').value.trim().toLowerCase();
-  const phone=document.getElementById('suPhone').value.trim();
-  const pass=document.getElementById('suPass').value;
-  if(!name||!email||!pass) return err('signupErr','Please fill in name, email and password.');
-  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return err('signupErr','That email doesn\'t look right.');
-  if(pass.length<6) return err('signupErr','Password must be at least 6 characters.');
-  if(users.some(u=>u.email===email)) return err('signupErr','An account with this email already exists. Try logging in.');
-  err('signupErr');
-  users.push({name,email,phone,pass}); store.set('bw_users',users);
-  session=email; store.set('bw_session',session);
-  afterAuth(`Welcome to Driveway, ${name.split(' ')[0]}! 🎉`);
-}
-function login(){
-  const email=document.getElementById('liEmail').value.trim().toLowerCase();
-  const pass=document.getElementById('liPass').value;
-  const u=users.find(u=>u.email===email && u.pass===pass);
-  if(!u) return err('loginErr','Wrong email or password.');
-  err('loginErr');
-  session=email; store.set('bw_session',session);
-  afterAuth(`Welcome back, ${u.name.split(' ')[0]}!`);
-}
-function afterAuth(msg){
-  closeModal('authModal'); renderHeader(); renderGrid(); toast(msg);
-  if(pendingAfterAuth){ const f=pendingAfterAuth; pendingAfterAuth=null; f(); }
-}
-function logout(){
-  if(!confirm('Log out of Driveway?')) return;
-  session=null; store.set('bw_session',null);
-  renderHeader(); go('home'); toast('Logged out. See you soon!');
-}
+   <div class="panel"><h3>🎧 Cold-start recording</h3><p class="hint">Ten seconds of the engine starting cold. Knocking, squealing and rough idle are audible — and far harder to fake than photos. Buyers from other states rely on this.</p>
+    ${draft.audio?`<div class="audio-row"><audio controls src="${draft.audio}"></audio><button class="btn btn-outline btn-sm" onclick="D('audio',null);renderStep()">Remove</button></div>`
+      :`<button class="btn btn-outline" id="recBtn" onclick="toggleRec()">● Start recording</button>
+        <span id="recTime" style="margin-left:10px;font-weight:700;color:var(--red)"></span>`}
+   </div>
 
-/* ---------- sell flow ---------- */
-let photos = [];
-const drop = document.getElementById('photoDrop');
-const input = document.getElementById('photoInput');
-input.addEventListener('change', e=>addPhotos(e.target.files));
-['dragover','dragleave','drop'].forEach(ev=>drop.addEventListener(ev, e=>{
-  e.preventDefault();
-  drop.classList.toggle('drag', ev==='dragover');
-  if(ev==='drop') addPhotos(e.dataTransfer.files);
-}));
+   <div class="panel"><h3>🔌 Diagnostic self-check</h3><p class="hint">Plug a $20 OBD-II adapter into the port under the dash. We read stored fault codes and whether the readiness monitors are set — that also reveals codes cleared right before a sale.</p>
+    ${draft.obd?`<div class="kv"><span>Stored codes</span><b style="color:${draft.obd.codes.length?'var(--red)':'var(--green)'}">${draft.obd.codes.length?draft.obd.codes.join(', '):'None'}</b></div>
+      <div class="kv"><span>Readiness monitors</span><b>${draft.obd.ready?'All ready':'Not ready'}</b></div>`
+      :`<button class="btn btn-outline" onclick="runObd()">Run diagnostic scan (demo)</button>`}
+    <div class="note demo" style="margin-top:10px"><b>Prototype note:</b> a real build pairs with the adapter over Bluetooth. This button generates a sample result.</div>
+   </div>
+
+   <div class="panel"><h3>📒 Digital logbook</h3><p class="hint">Add service records. They attach to the VIN permanently — if this car is ever resold on Driveway, the history follows it and makes it worth more.</p>
+    ${draft.records.map((r,i)=>`<div class="kv"><span>${new Date(r.ts).toLocaleDateString()}</span><b>${esc(r.title)} <button class="btn btn-sm btn-outline" onclick="draft.records.splice(${i},1);renderStep()">✕</button></b></div>`).join('')}
+    <div style="display:flex;gap:8px;margin-top:10px"><input id="recIn" class="f" style="flex:1;border:1px solid var(--line);border-radius:10px;padding:10px 12px" placeholder="e.g. Timing belt replaced at 90,000 mi" onkeydown="if(event.key==='Enter')addRecord()">
+    <button class="btn btn-outline" onclick="addRecord()">Add</button></div>
+   </div>${nav(1,3)}`;
+}
+function bindPhotoInput(){
+  const inp=document.getElementById('photoInput'),drop=document.getElementById('photoDrop');
+  if(!inp)return;
+  inp.addEventListener('change',e=>addPhotos(e.target.files));
+  ['dragover','dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{
+    e.preventDefault();drop.classList.toggle('drag',ev==='dragover');
+    if(ev==='drop')addPhotos(e.dataTransfer.files);}));
+  renderPhotos();
+}
 function addPhotos(files){
-  [...files].filter(f=>f.type.startsWith('image/')).slice(0, 8-photos.length).forEach(f=>{
+  const order=SHOTS.map(s=>s.k);
+  [...files].filter(f=>f.type.startsWith('image/')).slice(0,12-draft.photos.length).forEach(f=>{
     const r=new FileReader();
-    r.onload=()=>{ compressImg(r.result, url=>{ photos.push(url); renderPhotos(); }); };
+    r.onload=()=>compressImg(r.result,url=>{
+      const used=new Set(draft.photos.map(p=>p.tag));
+      const tag=order.find(k=>!used.has(k))||'other';
+      draft.photos.push({url,tag});renderStep();
+    });
     r.readAsDataURL(f);
   });
-  input.value='';
+  const inp=document.getElementById('photoInput');if(inp)inp.value='';
 }
-function compressImg(src, cb){
+function compressImg(src,cb){
   const img=new Image();
-  img.onload=()=>{
-    const max=1280, k=Math.min(1, max/Math.max(img.width,img.height));
-    const cv=document.createElement('canvas');
-    cv.width=img.width*k; cv.height=img.height*k;
-    cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
-    cb(cv.toDataURL('image/jpeg',.78));
-  };
-  img.src=src;
+  img.onload=()=>{const max=1200,k=Math.min(1,max/Math.max(img.width,img.height));
+    const cv=document.createElement('canvas');cv.width=img.width*k;cv.height=img.height*k;
+    cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);cb(cv.toDataURL('image/jpeg',.72));};
+  img.onerror=()=>cb(src);img.src=src;
 }
 function renderPhotos(){
-  document.getElementById('photoPreviews').innerHTML = photos.map((p,i)=>`
-    <div class="ph"><img src="${p}">
-      ${i===0?'<span class="cover-tag">COVER</span>':''}
-      <button onclick="photos.splice(${i},1);renderPhotos()">✕</button>
-    </div>`).join('');
+  const el=document.getElementById('photoPreviews');if(!el)return;
+  el.innerHTML=draft.photos.map((p,i)=>`<div class="ph"><img src="${p.url}">
+    <button onclick="draft.photos.splice(${i},1);renderStep()">✕</button>
+    <select onchange="draft.photos[${i}].tag=this.value;renderStep()">
+      ${SHOTS.map(s=>`<option value="${s.k}" ${p.tag===s.k?'selected':''}>${LANG==='es'?s.es:s.en}</option>`).join('')}
+    </select></div>`).join('');
+}
+let mediaRec=null,recChunks=[],recTimer=null;
+function toggleRec(){
+  if(mediaRec&&mediaRec.state==='recording'){mediaRec.stop();return;}
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    toast('Microphone not available in this browser.');return;}
+  navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+    mediaRec=new MediaRecorder(stream);recChunks=[];
+    mediaRec.ondataavailable=e=>recChunks.push(e.data);
+    mediaRec.onstop=()=>{
+      clearInterval(recTimer);stream.getTracks().forEach(t=>t.stop());
+      const blob=new Blob(recChunks,{type:mediaRec.mimeType||'audio/webm'});
+      const fr=new FileReader();fr.onload=()=>{draft.audio=fr.result;renderStep();toast('🎧 Cold-start recording saved.');};
+      fr.readAsDataURL(blob);};
+    mediaRec.start();
+    let s=10;const btn=document.getElementById('recBtn'),tm=document.getElementById('recTime');
+    if(btn)btn.textContent='■ Stop';
+    recTimer=setInterval(()=>{s--;if(tm)tm.textContent=s+'s';if(s<=0&&mediaRec.state==='recording')mediaRec.stop();},1000);
+  }).catch(()=>toast('Microphone permission denied.'));
+}
+function runObd(){
+  const bad=Math.random()<.25;
+  draft.obd={codes:bad?['P0420 — catalyst efficiency below threshold']:[],ready:bad?0:1,ts:Date.now()};
+  renderStep();toast(bad?'Scan complete — one stored code found.':'Scan complete — no stored codes.');
+}
+function addRecord(){
+  const el=document.getElementById('recIn'),v=el.value.trim();if(!v)return;
+  draft.records.push({title:v,ts:Date.now()});el.value='';renderStep();
+}
+function draftCar(){
+  return{make:draft.make,model:draft.model,year:+draft.year,miles:+draft.miles,price:+draft.price||0,
+    body:draft.body,trans:draft.trans,fuel:draft.fuel,doors:+draft.doors,towLb:+draft.towLb||0,
+    evSoh:+draft.evSoh||0,safety:+draft.safety,city:draft.city,state:draft.state,
+    history:{brand:'Clean',owners:1,accidents:0,flood:0,rust:draft.state&&ST[draft.state]&&ST[draft.state][4]?2:0}};
+}
+function stepPrice(){
+  const c=draftCar(),mv=estimateValue(c),lo=Math.round(mv*.6),hi=Math.round(mv*1.6);
+  if(!draft.price)draft.price=mv;
+  const comps=findComps(c);
+  const loan=+draft.loan||0;
+  return `<div class="panel"><h3>Set your price</h3><p class="hint">Drag the slider. We estimate how long it takes to sell at each price, based on the market value of your car.</p>
+    <div class="slider-row">
+      <input type="range" min="${lo}" max="${hi}" step="50" value="${clamp(draft.price,lo,hi)}" oninput="D('price',+this.value);syncPrice()">
+      <div class="price-out" id="priceOut">${fmt$(draft.price)}</div>
+    </div>
+    <div class="meter">
+      <div><span>Est. market value</span><b>${fmt$(mv)}</b></div>
+      <div><span>Expected time to sell</span><b id="dtsOut">—</b></div>
+      <div><span>Depreciation while you wait</span><b id="depOut">—</b></div>
+      <div><span>Guaranteed floor offer</span><b>${fmt$(Math.round(mv*.86/50)*50)}</b></div>
+    </div>
+    <div class="note" style="margin-top:12px">🛟 <b>Guaranteed floor:</b> if nobody buys privately within 14 days, we buy it at ${fmt$(Math.round(mv*.86/50)*50)}. You risk nothing by trying the private market first.
+      <span style="display:block;margin-top:6px;color:var(--purple)"><b>Prototype note:</b> this needs a wholesale buying partner in a real build.</span></div>
+    ${comps.length?`<div class="box"><h4>💵 What similar cars actually sold for</h4>
+      <div class="comp-wrap"><table class="comps"><tr><th>Car</th><th>Miles</th><th>Sold for</th><th>When</th></tr>
+      ${comps.slice(0,5).map(s=>`<tr><td>${s.year} ${esc(s.make)} ${esc(s.model)}</td><td>${fmtMi(s.miles)}</td><td><b>${fmt$(s.price)}</b></td><td>${timeAgo(s.ts)}</td></tr>`).join('')}</table></div></div>`:''}
+   </div>
+
+   <div class="panel"><h3>💳 Still paying it off?</h3><p class="hint">Most private sales die here: the bank holds the title, so the seller can't hand it over. Enter your loan balance and we handle the payoff — we pay the lender directly, get the title released and send it to the buyer.</p>
+    <div class="row2">
+      <div class="f"><label>Remaining loan balance</label><input type="number" value="${draft.loan}" oninput="D('loan',this.value);renderStep()" placeholder="14000"></div>
+      <div class="f"><label>You walk away with</label>
+        <div style="font-size:24px;font-weight:800;padding:8px 0;color:${(+draft.price||0)-loan>=0?'var(--green)':'var(--red)'}">${loan?fmt$((+draft.price||0)-loan):'—'}</div></div>
+    </div>
+    ${loan>(+draft.price||0)?`<div class="note" style="background:var(--red-soft);color:#991b1b">You owe more than the asking price. You would need to bring ${fmt$(loan-(+draft.price||0))} to closing.</div>`:''}
+    <div class="note demo" style="margin-top:10px"><b>Prototype note:</b> real lien payoff needs lender integrations and money-transmitter licensing in every state you operate in.</div>
+   </div>
+
+   <div class="panel"><h3>⏱ Offer deadline</h3><p class="hint">Give buyers a clock and they stop stalling. Everyone sees how many offers exist and the range of the best one — never the exact number.</p>
+    <div class="f"><select onchange="D('deadlineDays',+this.value)">
+      ${[[0,'No deadline — classic listing'],[3,'Offers close in 3 days'],[7,'Offers close in 7 days'],[14,'Offers close in 14 days']]
+        .map(o=>`<option value="${o[0]}" ${draft.deadlineDays===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select></div>
+   </div>
+
+   <div class="panel"><h3>🤝 Automatic negotiation</h3><p class="hint">Hate haggling? Set your rules once and Driveway answers offers for you, instantly, day or night.</p>
+    <label style="display:flex;gap:9px;align-items:center;font-size:14.5px;font-weight:600;margin-bottom:12px">
+      <input type="checkbox" ${draft.rules.on?'checked':''} onchange="draft.rules.on=this.checked;renderStep()" style="width:18px;height:18px;accent-color:var(--accent)">
+      Let Driveway answer offers automatically</label>
+    ${draft.rules.on?`<div class="row3">
+      <div class="f"><label>Accept instantly at or above</label><input type="number" value="${draft.rules.accept}" oninput="draft.rules.accept=this.value" placeholder="${Math.round((+draft.price||0)*.96)}"></div>
+      <div class="f"><label>Otherwise counter with</label><input type="number" value="${draft.rules.counter}" oninput="draft.rules.counter=this.value" placeholder="${Math.round((+draft.price||0)*.98)}"></div>
+      <div class="f"><label>Decline below</label><input type="number" value="${draft.rules.decline}" oninput="draft.rules.decline=this.value" placeholder="${Math.round((+draft.price||0)*.82)}"></div>
+    </div><div class="note">Lowball offers get a polite automatic decline, serious ones get an instant counter, and a strong offer closes the deal while you sleep.</div>`:''}
+   </div>${nav(2,4,'Review listing')}`;
+}
+function syncPrice(){
+  const c=draftCar();c.price=+draft.price;const mv=estimateValue(c);
+  const o=document.getElementById('priceOut');if(o)o.textContent=fmt$(draft.price);
+  const d=document.getElementById('dtsOut');if(d){const n=daysToSell(+draft.price,mv);d.textContent='~'+n+' day'+(n===1?'':'s');}
+  const dep=document.getElementById('depOut');if(dep){const n=daysToSell(+draft.price,mv);
+    dep.textContent='−'+fmt$(Math.round(depPerMonth(c)*n/30));}
+}
+function roastListing(){
+  const p=[],c=draftCar();
+  const tags=new Set(draft.photos.map(x=>x.tag));
+  if(draft.photos.length<4)p.push('Only '+draft.photos.length+' photo'+(draft.photos.length===1?'':'s')+'. Buyers skip listings with fewer than six — you are leaving money on the table.');
+  if(!tags.has('odometer'))p.push('No odometer photo. This is the single most requested shot, and its absence reads as something to hide.');
+  if(!tags.has('vin'))p.push('No VIN plate photo. Serious buyers want to run their own history check before driving out.');
+  if(!tags.has('interior'))p.push('No interior photo. The interior is what people actually judge condition by.');
+  if((draft.desc||'').length<80)p.push('The description is thin. Write about service history, why you are selling and any flaws — honesty about flaws sells faster than hiding them.');
+  if(!draft.audio)p.push('No cold-start recording. It takes ten seconds and it is the cheapest trust you can buy.');
+  if(!draft.obd)p.push('No diagnostic scan. A clean scan quietly answers the "does it have a check engine light" question.');
+  if(!draft.vin||draft.vin.length<17)p.push('VIN is missing or incomplete, so the free title and recall check cannot run.');
+  const mv=estimateValue(c);
+  if(+draft.price>mv*1.12)p.push('Your price is about '+Math.round((+draft.price/mv-1)*100)+'% over market. Expect a long, quiet wait.');
+  if(+draft.price<mv*.82)p.push('Your price is well under market value — you will sell in days, but you are giving away roughly '+fmt$(mv*.9-+draft.price)+'.');
+  if(!draft.records.length)p.push('No service records. Even two lines of maintenance history separates you from the cars people are afraid of.');
+  const el=document.getElementById('roastBox');
+  el.className='roast'+(p.length?'':' good');el.style.display='block';
+  el.innerHTML=p.length
+    ? '<b>Here is what a buyer will hold against you:</b><ul>'+p.map(x=>'<li>'+x+'</li>').join('')+'</ul>'
+    : '<b>Honestly? This is a strong listing.</b> Photos, proof and price all check out. Publish it.';
+}
+function stepReview(){
+  const c=draftCar();const tags=new Set(draft.photos.map(p=>p.tag));
+  const verified=SHOTS.filter(s=>s.req).every(s=>tags.has(s.k));
+  return `<div class="panel"><h3>Review and publish</h3><p class="hint">One last look before it goes live.</p>
+    <div class="row2">
+      <div>${draft.photos.length?`<img src="${draft.photos[0].url}" style="width:100%;border-radius:12px;aspect-ratio:16/10;object-fit:cover">`:'<div class="note">No photos added.</div>'}</div>
+      <div>
+        <div style="font-size:22px;font-weight:800">${fmt$(draft.price||0)}</div>
+        <div style="font-size:16px;font-weight:600">${draft.year} ${esc(draft.make)} ${esc(draft.model)}</div>
+        <div style="color:var(--muted);font-size:14px">${draft.miles?fmtMi(draft.miles):'—'} · ${esc(draft.city)}, ${draft.state}</div>
+        <div class="trust-row" style="margin-top:10px">
+          ${verified?'<span class="tb ok">✓ Photos verified</span>':'<span class="tb warn">Photos incomplete</span>'}
+          ${draft.audio?'<span class="tb pur">♪ Cold start</span>':''}
+          ${draft.obd?(draft.obd.codes.length?'<span class="tb warn">⚠ OBD code</span>':'<span class="tb info">✓ OBD clean</span>'):''}
+          ${draft.rules.on?'<span class="tb info">🤝 Auto-negotiation</span>':''}
+          ${draft.deadlineDays?'<span class="tb warn">⏱ '+draft.deadlineDays+'-day deadline</span>':''}
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-outline" style="margin-top:16px" onclick="roastListing()">🔥 Roast my listing</button>
+    <div class="roast" id="roastBox"></div>
+    ${matchingStanding(c).length?`<div class="note" style="margin-top:14px;background:var(--green-soft);color:#065f46">
+      <b>${matchingStanding(c).length} buyer${matchingStanding(c).length>1?'s have':' has'} a standing bid matching this car.</b> They will be offered your listing the second you publish.</div>`:''}
+    <div class="wizard-nav"><button class="btn btn-outline" onclick="gotoStep(3)">← Back</button>
+      <button class="btn btn-primary btn-lg" onclick="publishListing()">Publish listing — free</button></div>
+   </div>`;
+}
+function validateStep(n){
+  err('sellErr');
+  if(n===1){
+    if(!draft.make||!draft.model||!draft.year||!draft.miles||!draft.city||!draft.state){err('sellErr','Fill in make, model, year, mileage, city and state.');return false;}
+    if(+draft.year<1960||+draft.year>2027){err('sellErr','Year must be between 1960 and 2027.');return false;}
+  }
+  if(n===2&&!draft.photos.length){err('sellErr','Add at least one photo — listings with photos get far more offers.');return false;}
+  if(n===3&&!(+draft.price>0)){err('sellErr','Set a price.');return false;}
+  return true;
 }
 function publishListing(){
-  const u = me();
-  if(!u){ requireAuth(()=>{}); return; }
-  const v = id=>document.getElementById(id).value.trim();
-  const make=v('sMake'), model=v('sModel'), year=+v('sYear'), miles=+v('sMiles'), price=+v('sPrice');
-  const city=v('sCity'), state=v('sState');
-  if(!make||!model||!year||!miles&&miles!==0||!price||!city||!state)
-    return err('sellErr','Please fill in all required fields (marked *).');
-  if(year<1960||year>2027) return err('sellErr','Year must be between 1960 and 2027.');
-  if(!photos.length) return err('sellErr','Add at least one photo — listings with photos get 10× more offers.');
-  err('sellErr');
-  const car = {
-    id:'u'+Date.now(), sellerEmail:u.email, sellerName:u.name,
-    make, model, year, miles, price, city, state,
-    body:v('sBody'), trans:v('sTrans'), fuel:v('sFuel'), desc:v('sDesc'),
-    photos:[...photos], created:Date.now()
-  };
-  userCars.push(car);
-  try{ store.set('bw_listings',userCars); }
-  catch(e){ userCars.pop(); return err('sellErr','Browser storage is full — try fewer or smaller photos.'); }
-  photos=[]; renderPhotos();
-  ['sModel','sYear','sMiles','sPrice','sCity','sDesc'].forEach(id=>document.getElementById(id).value='');
-  toast('🎉 Your listing is live!');
-  go('home'); renderGrid();
+  if(!validateStep(1)||!validateStep(2)||!validateStep(3))return;
+  const u=me();if(!u)return requireAuth(()=>{});
+  const c=Object.assign(draftCar(),{
+    id:'u'+Date.now(),sellerEmail:u.email,sellerName:u.name,vin:draft.vin,desc:draft.desc,
+    photos:draft.photos.slice(),audio:draft.audio,obd:draft.obd,records:draft.records.slice(),
+    recalls:[],loan:+draft.loan||0,created:Date.now(),status:'active',
+    priceHistory:[{price:+draft.price,ts:Date.now()}],
+    deadline:draft.deadlineDays?Date.now()+draft.deadlineDays*864e5:null,
+    rules:draft.rules.on?{accept:+draft.rules.accept||Math.round(+draft.price*.96),
+      counter:+draft.rules.counter||Math.round(+draft.price*.98),
+      decline:+draft.rules.decline||Math.round(+draft.price*.82)}:null
+  });
+  userCars.push(c);
+  try{save.cars();}
+  catch(e){userCars.pop();return err('sellErr','Browser storage is full — remove a few photos or the audio clip and try again.');}
+  const matched=fireStandingOffers(c);
+  draft=null;step=1;go('home');renderGrid();
+  toast(matched?`🎉 Live — and ${matched} standing bid${matched>1?'s':''} already came in!`:'🎉 Your listing is live!');
 }
 
-/* ---------- offers ---------- */
-let offerCarId = null;
+/* ============ 7. OFFERS, AUTO-NEGOTIATION, STANDING BIDS ============ */
+function scamCheck(text){
+  const hits=SCAM_PATTERNS.filter(p=>p.re.test(text||''));
+  return hits.map(h=>LANG==='es'?h.es:h.en);
+}
+let offerCarId=null;
 function openOffer(id){
   requireAuth(()=>{
-    const c=carById(id); if(!c) return;
-    if(me().email===c.sellerEmail){ toast("That's your own listing 😄"); return; }
-    offerCarId=id;
-    document.getElementById('offerSub').textContent = `${c.year} ${c.make} ${c.model} — asking ${fmt$(c.price)}`;
-    document.getElementById('offerAmount').value='';
-    document.getElementById('offerMsg').value='';
-    err('offerErr');
-    closeModal('detailModal');
+    const c=carById(id),u=me();
+    if(u.email===c.sellerEmail){toast("That's your own listing 😄");return;}
+    offerCarId=id;closeModal('detailModal');
+    const mv=mvOf(c),sug=Math.round(c.price*.94/50)*50;
+    document.getElementById('offerContent').innerHTML=`
+      <button class="modal-x" onclick="closeModal('offerModal')">✕</button>
+      <h2>${t('makeOffer')}</h2><p class="sub">${c.year} ${esc(c.make)} ${esc(c.model)} — asking ${fmt$(c.price)}</p>
+      <div class="form-grid">
+        <div class="form-err" id="offerErr"></div>
+        <div class="note">Market value estimate is <b>${fmt$(mv)}</b>. Similar cars recently sold for <b>${compRange(c)}</b>. A realistic offer here is around <b>${fmt$(sug)}</b>.
+          ${c.rules?'<br><b style="color:var(--accent)">This seller answers offers automatically — you will get a reply instantly.</b>':''}</div>
+        <div class="f"><label>Your offer (USD)</label><input id="offerAmount" type="number" value="${sug}"></div>
+        <div class="f"><label>Message to seller <span class="sublabel">optional</span></label><textarea id="offerMsg" placeholder="Hi! Can I come see it this weekend?"></textarea></div>
+        ${u.verifiedFunds?'<div class="note" style="background:var(--green-soft);color:#065f46">✓ Your offer carries a <b>funds verified</b> badge — sellers see these first.</div>'
+          :'<div class="note" style="background:var(--amber-soft);color:#78350f">Your offer is unverified. <a onclick="closeModal(\'offerModal\');verifyFunds()" style="font-weight:700;cursor:pointer">Verify your funds</a> and sellers will take it far more seriously.</div>'}
+        <button class="btn btn-green btn-lg" onclick="submitOffer()">Send offer</button>
+      </div>`;
     openModal('offerModal');
   });
 }
 function submitOffer(){
   const amount=+document.getElementById('offerAmount').value;
   const msg=document.getElementById('offerMsg').value.trim();
-  const c=carById(offerCarId);
-  if(!amount||amount<1) return err('offerErr','Enter your offer amount.');
+  const c=carById(offerCarId),u=me();
+  if(!amount||amount<1)return err('offerErr','Enter your offer amount.');
   err('offerErr');
-  offers.push({
-    id:'o'+Date.now(), carId:c.id, carTitle:`${c.year} ${c.make} ${c.model}`,
-    carPhoto:c.photos[0], asking:c.price, amount, msg,
-    buyerEmail:me().email, buyerName:me().name, buyerPhone:me().phone||'',
-    sellerEmail:c.sellerEmail, status:'pending', created:Date.now()
-  });
-  store.set('bw_offers',offers);
-  closeModal('offerModal'); renderHeader();
-  toast(`✅ Offer of ${fmt$(amount)} sent to the seller!`);
+  const warns=scamCheck(msg);
+  const o={id:'o'+Date.now(),carId:c.id,carTitle:`${c.year} ${c.make} ${c.model}`,carPhoto:c.photos[0].url,
+    asking:c.price,amount,msg,warns,verified:!!u.verifiedFunds,standing:false,
+    buyerEmail:u.email,buyerName:u.name,buyerPhone:u.phone||'',sellerEmail:c.sellerEmail,
+    status:'pending',created:Date.now()};
+  applyRules(o,c);
+  offers.push(o);save.offers();
+  closeModal('offerModal');renderAll();
+  if(o.status==='accepted'){recordSale(c,o.amount,o);toast('🤝 Accepted instantly by the seller\'s rules! Check My garage.');}
+  else if(o.status==='countered')toast(`↩️ Instant counter: the seller wants ${fmt$(o.counter)}. Respond in My garage.`);
+  else if(o.status==='declined')toast('Declined automatically — the seller set a floor above that.');
+  else toast(`✅ Offer of ${fmt$(amount)} sent to the seller!`);
 }
-function setOfferStatus(id, status){
-  const o=offers.find(o=>o.id===id); if(!o) return;
-  o.status=status; store.set('bw_offers',offers);
-  renderHeader(); dashTab(currentTab);
-  toast(status==='accepted' ? `🤝 Offer accepted! Contact ${o.buyerName} to close the deal.` : 'Offer declined.');
+function applyRules(o,c){
+  if(!c.rules)return;
+  if(o.amount>=c.rules.accept){o.status='accepted';o.auto=1;}
+  else if(o.amount>=c.rules.decline){o.status='countered';o.counter=c.rules.counter;o.auto=1;}
+  else{o.status='declined';o.auto=1;}
+}
+function recordSale(c,price,o){
+  if(isSold(c.id))return;
+  soldLog.push({carId:c.id,make:c.make,model:c.model,year:c.year,miles:c.miles,price,state:c.state,
+    ts:Date.now(),sellerEmail:c.sellerEmail,buyerEmail:o?o.buyerEmail:null});
+  save.sold();
+  offers.filter(x=>x.carId===c.id&&x.status==='pending').forEach(x=>x.status='declined');
+  save.offers();
+}
+function setOfferStatus(id,status){
+  const o=offers.find(x=>x.id===id);if(!o)return;
+  o.status=status;save.offers();
+  if(status==='accepted'){const c=carById(o.carId);if(c)recordSale(c,o.amount,o);
+    toast(`🤝 Deal! Contact ${o.buyerName}${o.buyerPhone?' at '+o.buyerPhone:''} to close it.`);}
+  else toast('Offer declined.');
+  renderAll();
+}
+function acceptCounter(id){
+  const o=offers.find(x=>x.id===id);if(!o)return;
+  o.amount=o.counter;o.status='accepted';save.offers();
+  const c=carById(o.carId);if(c)recordSale(c,o.amount,o);
+  renderAll();toast('🤝 Counter accepted — the car is yours to close.');
+}
+function counterOffer(id){
+  const o=offers.find(x=>x.id===id);if(!o)return;
+  const v=prompt('Counter with what amount?',Math.round(o.amount*1.05));
+  if(!v)return;
+  o.status='countered';o.counter=+v;save.offers();renderAll();toast('Counter sent.');
+}
+/* standing bids = limit orders on cars */
+function matchStanding(s,c){
+  if(c.sellerEmail===s.buyerEmail)return false;
+  if(s.make&&c.make!==s.make)return false;
+  if(s.model&&!(c.model.toLowerCase().includes(s.model.toLowerCase())))return false;
+  if(s.yearMin&&c.year<s.yearMin)return false;
+  if(s.maxMiles&&c.miles>s.maxMiles)return false;
+  if(s.state&&c.state!==s.state)return false;
+  return c.price<=s.amount*1.15;
+}
+const matchingStanding=c=>standing.filter(s=>s.active&&matchStanding(s,c));
+function fireStandingOffers(c){
+  const list=matchingStanding(c);
+  list.forEach(s=>{
+    const u=users.find(x=>x.email===s.buyerEmail)||{name:s.buyerName,phone:''};
+    const o={id:'o'+Date.now()+Math.random().toString(36).slice(2,6),carId:c.id,
+      carTitle:`${c.year} ${c.make} ${c.model}`,carPhoto:c.photos[0].url,asking:c.price,
+      amount:Math.min(s.amount,c.price),msg:'Automatic offer from my standing bid.',warns:[],
+      verified:true,standing:true,buyerEmail:s.buyerEmail,buyerName:s.buyerName,buyerPhone:u.phone||'',
+      sellerEmail:c.sellerEmail,status:'pending',created:Date.now()};
+    applyRules(o,c);offers.push(o);
+    if(o.status==='accepted')recordSale(c,o.amount,o);
+  });
+  if(list.length)save.offers();
+  return list.length;
+}
+function newStanding(){
+  requireAuth(()=>{
+    openGen(`<h2>Create a standing bid</h2><p class="sub">Like a limit order for cars: name your price and the car you want. The moment a matching listing appears, your offer is on the seller's screen — before anyone else has even seen it.</p>
+      <div class="form-grid">
+        <div class="form-err" id="stErr"></div>
+        <div class="row2">
+          <div class="f"><label>Make</label><select id="stMake"><option value="">Any</option>${MAKES.map(m=>`<option>${m}</option>`).join('')}</select></div>
+          <div class="f"><label>Model contains <span class="sublabel">optional</span></label><input id="stModel" placeholder="Camry"></div>
+        </div>
+        <div class="row3">
+          <div class="f"><label>Year from</label><input id="stYear" type="number" placeholder="2018"></div>
+          <div class="f"><label>Max miles</label><input id="stMiles" type="number" placeholder="70000"></div>
+          <div class="f"><label>State <span class="sublabel">optional</span></label><select id="stState"><option value="">Any</option>${STATES.map(s=>`<option>${s}</option>`).join('')}</select></div>
+        </div>
+        <div class="f"><label>I will pay up to</label><input id="stAmount" type="number" placeholder="18000"></div>
+        <button class="btn btn-primary btn-lg" onclick="saveStanding()">Create standing bid</button>
+      </div>`);
+  });
+}
+function saveStanding(){
+  const g=id=>document.getElementById(id).value.trim();
+  const amount=+g('stAmount');
+  if(!amount)return err('stErr','Enter the most you would pay.');
+  const u=me();
+  const s={id:'s'+Date.now(),buyerEmail:u.email,buyerName:u.name,make:g('stMake'),model:g('stModel'),
+    yearMin:+g('stYear')||0,maxMiles:+g('stMiles')||0,state:g('stState'),amount,active:true,created:Date.now()};
+  standing.push(s);save.standing();
+  const now=allCars().filter(c=>!isSold(c.id)&&matchStanding(s,c));
+  closeModal('genModal');renderAll();
+  toast(now.length?`Standing bid live — ${now.length} car${now.length>1?'s':''} already match.`:'Standing bid live. We are watching for matches.');
+}
+function sendStandingNow(sid){
+  const s=standing.find(x=>x.id===sid);if(!s)return;
+  const list=allCars().filter(c=>!isSold(c.id)&&matchStanding(s,c)&&!offers.some(o=>o.carId===c.id&&o.buyerEmail===s.buyerEmail));
+  list.forEach(c=>{
+    const o={id:'o'+Date.now()+Math.random().toString(36).slice(2,6),carId:c.id,carTitle:`${c.year} ${c.make} ${c.model}`,
+      carPhoto:c.photos[0].url,asking:c.price,amount:Math.min(s.amount,c.price),
+      msg:'Automatic offer from my standing bid.',warns:[],verified:true,standing:true,
+      buyerEmail:s.buyerEmail,buyerName:s.buyerName,buyerPhone:'',sellerEmail:c.sellerEmail,
+      status:'pending',created:Date.now()};
+    applyRules(o,c);offers.push(o);if(o.status==='accepted')recordSale(c,o.amount,o);
+  });
+  save.offers();renderAll();
+  toast(list.length?`Sent ${list.length} offer${list.length>1?'s':''}.`:'No new matches right now.');
+}
+function delStanding(id){standing=standing.filter(s=>s.id!==id);save.standing();renderAll();toast('Standing bid removed.');}
+
+/* ============ 8. SOLD PRICE DATABASE ============ */
+const allSold=()=>SOLD_SEED.concat(soldLog).sort((a,b)=>b.ts-a.ts);
+/* strict: same make AND the same model line — this is what a valuation may rely on */
+function modelComps(c){
+  const cm=(c.model||'').toLowerCase().trim();
+  if(!cm)return[];
+  return allSold().filter(s=>{
+    if(s.make!==c.make)return false;
+    const sm=s.model.toLowerCase().trim();
+    return cm===sm||cm.includes(sm)||sm.includes(cm);
+  });
+}
+/* loose: falls back to other models from the same make, for "related sales" tables only */
+function findComps(c){
+  const m=modelComps(c);
+  return (m.length?m:allSold().filter(s=>s.make===c.make)).slice(0,8);
+}
+function compRange(c){
+  const l=findComps(c).map(s=>s.price);
+  if(!l.length)return 'no comparable sales yet';
+  return fmt$(Math.min(...l))+'–'+fmt$(Math.max(...l));
+}
+let soldQ='';
+function renderSold(){
+  const q=soldQ.toLowerCase();
+  const list=allSold().filter(s=>!q||(s.make+' '+s.model).toLowerCase().includes(q));
+  const avg=list.length?Math.round(list.reduce((a,s)=>a+s.price,0)/list.length):0;
+  document.getElementById('view-sold').innerHTML=`<div class="page" style="max-width:1000px">
+    <h1>Sold prices</h1>
+    <p class="lead">What cars <b>actually sold for</b> on Driveway — accepted offers, not asking prices. Dealers have this data. Now you do too.</p>
+    <div class="panel">
+      <div class="f" style="margin-bottom:14px"><input id="soldQ" value="${esc(soldQ)}" placeholder="Search make or model, e.g. Mustang" oninput="soldQ=this.value;renderSold();document.getElementById('soldQ').focus()"></div>
+      <div class="meter" style="margin-bottom:16px">
+        <div><span>Sales in view</span><b>${list.length}</b></div>
+        <div><span>Average sold price</span><b>${avg?fmt$(avg):'—'}</b></div>
+        <div><span>Lowest</span><b>${list.length?fmt$(Math.min(...list.map(s=>s.price))):'—'}</b></div>
+        <div><span>Highest</span><b>${list.length?fmt$(Math.max(...list.map(s=>s.price))):'—'}</b></div>
+      </div>
+      <div class="comp-wrap"><table class="comps">
+        <tr><th>Vehicle</th><th>Miles</th><th>State</th><th>Sold for</th><th>When</th></tr>
+        ${list.length?list.slice(0,60).map(s=>`<tr><td><b>${s.year} ${esc(s.make)} ${esc(s.model)}</b></td><td>${fmtMi(s.miles)}</td><td>${s.state}</td>
+          <td><b style="color:var(--green)">${fmt$(s.price)}</b></td><td>${timeAgo(s.ts)} ${s.seed?'':'<span class="pill blue">Driveway</span>'}</td></tr>`).join('')
+          :'<tr><td colspan="5" style="padding:30px;text-align:center;color:var(--muted)">No sales match that search yet.</td></tr>'}
+      </table></div>
+      <div class="note" style="margin-top:14px">Seeded with sample sales so the database is useful on day one. Every accepted offer on Driveway adds a real, verified data point.</div>
+    </div></div>`;
 }
 
-/* ---------- dashboard ---------- */
+/* ============ 9. WANTED BOARD ============ */
+function renderWanted(){
+  document.getElementById('view-wanted').innerHTML=`<div class="page" style="max-width:1000px">
+    <h1>Wanted board</h1>
+    <p class="lead">Buyers post what they are looking for and sellers come to them. If you have the car sitting in your driveway, here is your customer.</p>
+    <button class="btn btn-primary" style="margin-bottom:18px" onclick="newWanted()">+ Post what you're looking for</button>
+    <div class="dash-list">
+      ${wanted.length?wanted.slice().reverse().map(w=>`<div class="dash-item">
+        <div class="avatar">${esc(w.buyerName[0]).toUpperCase()}</div>
+        <div class="info"><b>${esc(w.title)}</b>
+          <span>Budget up to ${fmt$(w.budget)} · ${esc(w.timeframe)} · ${esc(w.buyerName)} · ${timeAgo(w.ts)}</span>
+          ${w.note?`<div class="offer-msg">${esc(w.note)}</div>`:''}</div>
+        <div class="actions">${me()&&me().email===w.buyerEmail
+          ? `<button class="btn btn-outline btn-sm" onclick="delWanted('${w.id}')">Remove</button>`
+          : `<button class="btn btn-green btn-sm" onclick="startSell()">I have this car</button>`}</div>
+      </div>`).join('')
+      :'<div class="empty"><div class="big">📋</div>Nobody has posted a request yet. Be the first.</div>'}
+    </div></div>`;
+}
+function newWanted(){
+  requireAuth(()=>{
+    openGen(`<h2>Post what you're looking for</h2><p class="sub">Sellers browse this board before they even write a listing.</p>
+      <div class="form-grid">
+        <div class="form-err" id="wErr"></div>
+        <div class="f"><label>What do you want?</label><input id="wTitle" placeholder="2018-2021 Toyota RAV4, under 60k miles"></div>
+        <div class="row2">
+          <div class="f"><label>Budget up to</label><input id="wBudget" type="number" placeholder="25000"></div>
+          <div class="f"><label>How soon?</label><select id="wTime"><option>Ready to buy this week</option><option>Within a month</option><option>Just watching</option></select></div>
+        </div>
+        <div class="f"><label>Notes <span class="sublabel">optional</span></label><textarea id="wNote" placeholder="Must be clean title, no accidents. Can pick up within 300 miles."></textarea></div>
+        <button class="btn btn-primary btn-lg" onclick="saveWanted()">Post request</button>
+      </div>`);
+  });
+}
+function saveWanted(){
+  const g=id=>document.getElementById(id).value.trim();
+  if(!g('wTitle'))return err('wErr','Describe the car you want.');
+  const u=me();
+  wanted.push({id:'w'+Date.now(),buyerEmail:u.email,buyerName:u.name,title:g('wTitle'),
+    budget:+g('wBudget')||0,timeframe:g('wTime'),note:g('wNote'),ts:Date.now()});
+  save.wanted();closeModal('genModal');renderAll();toast('Posted to the wanted board.');
+}
+function delWanted(id){wanted=wanted.filter(w=>w.id!==id);save.wanted();renderWanted();toast('Removed.');}
+
+/* ============ 10. GARAGE ============ */
 let currentTab='listings';
+const TABS=[['listings','My listings'],['offersIn','Offers received'],['offersOut','My offers'],['standing','Standing bids'],['holds','Holds'],['favs','Saved']];
 function dashTab(tab){
   currentTab=tab;
-  ['Listings','OffersIn','OffersOut','Favs'].forEach(t=>{
-    document.getElementById('tab'+t).classList.toggle('on', t.toLowerCase()===tab.toLowerCase());
-  });
-  const u=me(); const el=document.getElementById('dashContent');
-  if(!u){ el.innerHTML='<div class="empty">Log in to see your garage.</div>'; return; }
+  const u=me();
+  document.getElementById('dashTabs').innerHTML=TABS.map(([k,l])=>{
+    let n=0;
+    if(u&&k==='offersIn')n=offers.filter(o=>o.sellerEmail===u.email&&o.status==='pending').length;
+    if(u&&k==='offersOut')n=offers.filter(o=>o.buyerEmail===u.email&&o.status==='countered').length;
+    return `<button class="${k===tab?'on':''}" onclick="dashTab('${k}')">${l}${n?` <span class="pill red" style="padding:1px 7px">${n}</span>`:''}</button>`;
+  }).join('');
+  const el=document.getElementById('dashContent');
+  if(!u){el.innerHTML='<div class="empty">Log in to see your garage.</div>';return;}
 
   if(tab==='listings'){
-    const mine=userCars.filter(c=>c.sellerEmail===u.email);
-    el.innerHTML = mine.length? mine.map(c=>{
-      const carOffers=offers.filter(o=>o.carId===c.id);
+    const mine=userCars.filter(c=>c.sellerEmail===u.email).reverse();
+    el.innerHTML=mine.length?mine.map(c=>{
+      const co=offers.filter(o=>o.carId===c.id),sold=isSold(c.id),h=holdOf(c.id);
+      const mv=mvOf(c),n=daysToSell(c.price,mv);
       return `<div class="dash-item">
-        <img class="thumb" src="${c.photos[0]}" onerror="pfb(this,'${c.id}')">
-        <div class="info"><b>${c.year} ${c.make} ${c.model}</b><span>${fmt$(c.price)} · ${fmtMi(c.miles)} · ${c.city}, ${c.state}</span>
-          <span>${carOffers.length} offer${carOffers.length===1?'':'s'} received</span></div>
+        <img class="thumb" src="${c.photos[0].url}" onerror="pfb(this,'${c.id}')">
+        <div class="info"><b>${c.year} ${esc(c.make)} ${esc(c.model)}</b>
+          <span>${fmt$(c.price)} · ${fmtMi(c.miles)} · ${esc(c.city)}, ${c.state}</span>
+          <span>${co.length} offer${co.length===1?'':'s'} · est. ${n} day${n===1?'':'s'} to sell${c.rules?' · 🤝 auto-negotiation on':''}${c.loan?' · loan '+fmt$(c.loan):''}</span>
+          ${sold?'<span class="pill green">Sold '+fmt$(soldLog.find(s=>s.carId===c.id).price)+'</span>':h?'<span class="pill amber">On hold · '+timeLeft(h.until)+'</span>':'<span class="pill blue">Active</span>'}
+          ${c.deadline&&c.deadline>Date.now()?'<span class="pill amber">⏱ '+timeLeft(c.deadline)+'</span>':''}</div>
         <div class="actions">
           <button class="btn btn-outline btn-sm" onclick="openDetail('${c.id}')">View</button>
+          ${sold?'':`<button class="btn btn-outline btn-sm" onclick="changePrice('${c.id}')">Change price</button>
+          <button class="btn btn-outline btn-sm" onclick="takeFloor('${c.id}')">Take floor ${fmt$(floorPrice(c))}</button>`}
           <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="removeListing('${c.id}')">Remove</button>
-        </div>
-      </div>`;
-    }).join('') : `<div class="empty"><div class="big">🚗</div>You haven't listed any cars yet.<br><br><button class="btn btn-primary" onclick="go('sell')">+ Sell your car</button></div>`;
+        </div></div>`;
+    }).join('')
+    :`<div class="empty"><div class="big">🚗</div>You haven't listed a car yet.<br><br><button class="btn btn-primary" onclick="startSell()">+ Sell your car</button></div>`;
   }
 
   if(tab==='offersIn'){
     const list=offers.filter(o=>o.sellerEmail===u.email).sort((a,b)=>b.created-a.created);
-    el.innerHTML = list.length? list.map(o=>`
-      <div class="dash-item">
-        <img class="thumb" src="${o.carPhoto}" onerror="pfb(this,'${o.carId}')">
-        <div class="info"><b>${fmt$(o.amount)} <span style="color:var(--muted);font-weight:500;font-size:13px">for ${o.carTitle} (asking ${fmt$(o.asking)})</span></b>
-          <span>from ${esc(o.buyerName)}${o.status==='accepted'&&o.buyerPhone?' · 📞 '+esc(o.buyerPhone):''} · ${timeAgo(o.created)}</span></div>
-        ${o.status==='pending'
-          ? `<div class="actions">
-               <button class="btn btn-green btn-sm" onclick="setOfferStatus('${o.id}','accepted')">Accept</button>
-               <button class="btn btn-outline btn-sm" onclick="setOfferStatus('${o.id}','declined')">Decline</button>
-             </div>`
-          : `<span class="pill ${o.status==='accepted'?'green':'red'}">${o.status}</span>`}
+    el.innerHTML=list.length?list.map(o=>`<div class="dash-item">
+      <img class="thumb" src="${o.carPhoto}" onerror="pfb(this,'${o.carId}')">
+      <div class="info"><b>${fmt$(o.amount)} <span style="font-weight:500;font-size:13px;color:var(--muted)">for ${esc(o.carTitle)} · asking ${fmt$(o.asking)}</span></b>
+        <span>${esc(o.buyerName)} ${o.verified?'<span class="pill green">✓ funds verified</span>':'<span class="pill gray">unverified</span>'}
+          ${o.standing?'<span class="pill pur">standing bid</span>':''}${o.auto?'<span class="pill blue">auto-handled</span>':''} · ${timeAgo(o.created)}
+          ${o.status==='accepted'&&o.buyerPhone?' · 📞 '+esc(o.buyerPhone):''}</span>
         ${o.msg?`<div class="offer-msg">💬 ${esc(o.msg)}</div>`:''}
-      </div>`).join('') : `<div class="empty"><div class="big">📭</div>No offers yet. Offers on your listings will appear here.</div>`;
+        ${o.warns&&o.warns.length?`<div class="scam-warn">🚨 Scam warning: ${o.warns.map(esc).join(' ')}</div>`:''}</div>
+      ${o.status==='pending'?`<div class="actions">
+          <button class="btn btn-green btn-sm" onclick="setOfferStatus('${o.id}','accepted')">Accept</button>
+          <button class="btn btn-outline btn-sm" onclick="counterOffer('${o.id}')">Counter</button>
+          <button class="btn btn-outline btn-sm" onclick="setOfferStatus('${o.id}','declined')">Decline</button></div>`
+        :`<span class="pill ${o.status==='accepted'?'green':o.status==='countered'?'amber':'red'}">${o.status}${o.status==='countered'?' '+fmt$(o.counter):''}</span>`}
+      </div>`).join('')
+      :'<div class="empty"><div class="big">📭</div>No offers yet. They will land here the moment a buyer bites.</div>';
   }
 
   if(tab==='offersOut'){
     const list=offers.filter(o=>o.buyerEmail===u.email).sort((a,b)=>b.created-a.created);
-    el.innerHTML = list.length? list.map(o=>`
-      <div class="dash-item">
-        <img class="thumb" src="${o.carPhoto}" onerror="pfb(this,'${o.carId}')">
-        <div class="info"><b>${o.carTitle}</b><span>your offer: ${fmt$(o.amount)} (asking ${fmt$(o.asking)}) · ${timeAgo(o.created)}</span></div>
-        <span class="pill ${o.status==='accepted'?'green':o.status==='declined'?'red':'amber'}">${o.status}</span>
-      </div>`).join('') : `<div class="empty"><div class="big">💸</div>You haven't made any offers yet.<br>Find a car you like and hit “Make Offer”.</div>`;
+    el.innerHTML=list.length?list.map(o=>`<div class="dash-item">
+      <img class="thumb" src="${o.carPhoto}" onerror="pfb(this,'${o.carId}')">
+      <div class="info"><b>${esc(o.carTitle)}</b>
+        <span>your offer ${fmt$(o.amount)} · asking ${fmt$(o.asking)} · ${timeAgo(o.created)}${o.standing?' · from a standing bid':''}</span>
+        ${o.status==='countered'?`<div class="offer-msg">↩️ Seller countered at <b>${fmt$(o.counter)}</b>${o.auto?' (automatically)':''}</div>`:''}</div>
+      ${o.status==='countered'?`<div class="actions">
+          <button class="btn btn-green btn-sm" onclick="acceptCounter('${o.id}')">Accept ${fmt$(o.counter)}</button>
+          <button class="btn btn-outline btn-sm" onclick="setOfferStatus('${o.id}','declined')">Walk away</button></div>`
+        :`<span class="pill ${o.status==='accepted'?'green':o.status==='declined'?'red':'amber'}">${o.status}</span>`}
+      </div>`).join('')
+      :`<div class="empty"><div class="big">💸</div>No offers yet.<br>Find a car and hit Make Offer — or set a standing bid and let cars come to you.</div>`;
+  }
+
+  if(tab==='standing'){
+    const list=standing.filter(s=>s.buyerEmail===u.email);
+    el.innerHTML=`<div class="panel" style="margin-bottom:16px"><h3>Standing bids</h3>
+      <p class="hint">A limit order for cars. Name your price once; when a matching car is listed, your offer is already waiting on the seller's screen.</p>
+      <button class="btn btn-primary" onclick="newStanding()">+ New standing bid</button></div>
+      ${list.length?list.map(s=>{
+        const m=allCars().filter(c=>!isSold(c.id)&&matchStanding(s,c)).length;
+        return `<div class="dash-item"><div class="avatar">⚡</div>
+          <div class="info"><b>${fmt$(s.amount)} for ${s.make||'any make'} ${esc(s.model||'')}</b>
+            <span>${s.yearMin?s.yearMin+'+':'any year'} · ${s.maxMiles?'under '+fmtMi(s.maxMiles):'any mileage'} · ${s.state||'any state'}</span>
+            <span class="pill ${m?'green':'gray'}">${m} matching car${m===1?'':'s'} right now</span></div>
+          <div class="actions">${m?`<button class="btn btn-green btn-sm" onclick="sendStandingNow('${s.id}')">Send offers now</button>`:''}
+            <button class="btn btn-outline btn-sm" onclick="delStanding('${s.id}')">Remove</button></div></div>`;
+      }).join('')
+      :'<div class="empty"><div class="big">⚡</div>No standing bids yet.</div>'}`;
+  }
+
+  if(tab==='holds'){
+    const mine=Object.entries(holds).filter(([id,h])=>h.email===u.email&&h.until>Date.now());
+    el.innerHTML=mine.length?mine.map(([id,h])=>{
+      const c=carById(id);if(!c)return'';
+      return `<div class="dash-item"><img class="thumb" src="${c.photos[0].url}" onerror="pfb(this,'${c.id}')">
+        <div class="info"><b>${c.year} ${esc(c.make)} ${esc(c.model)}</b>
+          <span>${fmt$(c.price)} · held until ${new Date(h.until).toLocaleString()}</span>
+          <span class="pill amber">⏱ ${timeLeft(h.until)} · $500 refundable</span></div>
+        <div class="actions"><button class="btn btn-green btn-sm" onclick="openOffer('${c.id}')">Make offer</button>
+          <button class="btn btn-outline btn-sm" onclick="releaseHold('${c.id}')">Release hold</button></div></div>`;
+    }).join('')
+    :'<div class="empty"><div class="big">🔒</div>No active holds. Use "Hold it for 48h" on any car you need time to inspect.</div>';
   }
 
   if(tab==='favs'){
-    const ids=favs[u.email]||[];
-    const cars=ids.map(carById).filter(Boolean);
-    el.innerHTML = cars.length? cars.map(c=>`
-      <div class="dash-item">
-        <img class="thumb" src="${c.photos[0]}" onerror="pfb(this,'${c.id}')">
-        <div class="info"><b>${c.year} ${c.make} ${c.model}</b><span>${fmt$(c.price)} · ${c.city}, ${c.state}</span></div>
-        <div class="actions">
-          <button class="btn btn-outline btn-sm" onclick="openDetail('${c.id}')">View</button>
-          <button class="btn btn-outline btn-sm" onclick="toggleFav('${c.id}')">Unsave</button>
-        </div>
-      </div>`).join('') : `<div class="empty"><div class="big">❤️</div>No saved cars yet. Tap the heart on any listing.</div>`;
+    const ids=favs[u.email]||[],cars=ids.map(carById).filter(Boolean);
+    el.innerHTML=cars.length?cars.map(c=>`<div class="dash-item">
+      <img class="thumb" src="${c.photos[0].url}" onerror="pfb(this,'${c.id}')">
+      <div class="info"><b>${c.year} ${esc(c.make)} ${esc(c.model)}</b><span>${fmt$(c.price)} · ${esc(c.city)}, ${c.state}</span></div>
+      <div class="actions"><button class="btn btn-outline btn-sm" onclick="openDetail('${c.id}')">View</button>
+        <button class="btn btn-outline btn-sm" onclick="toggleFav('${c.id}')">Unsave</button></div></div>`).join('')
+      :'<div class="empty"><div class="big">❤️</div>No saved cars yet.</div>';
   }
 }
+function changePrice(id){
+  const c=userCars.find(x=>x.id===id);if(!c)return;
+  const v=prompt('New price (USD):',c.price);if(!v||!+v)return;
+  c.priceHistory=c.priceHistory||[];c.priceHistory.push({price:+v,ts:Date.now()});
+  c.price=+v;save.cars();renderAll();toast('Price updated — buyers see the drop on your card.');
+}
+function takeFloor(id){
+  const c=userCars.find(x=>x.id===id);if(!c)return;
+  const p=floorPrice(c);
+  if(!confirm(`Sell to Driveway now for ${fmt$(p)}? Your listing closes immediately.`))return;
+  recordSale(c,p,null);renderAll();toast(`Sold at the guaranteed floor: ${fmt$(p)}.`);
+}
+function releaseHold(id){delete holds[id];saveHolds();renderAll();toast('Hold released, deposit refunded.');}
 function removeListing(id){
-  if(!confirm('Remove this listing? This cannot be undone.')) return;
-  userCars=userCars.filter(c=>c.id!==id);
-  store.set('bw_listings',userCars);
-  toast('Listing removed.');
-  dashTab('listings'); renderGrid();
+  if(!confirm('Remove this listing? This cannot be undone.'))return;
+  userCars=userCars.filter(c=>c.id!==id);save.cars();renderAll();toast('Listing removed.');
 }
 
-/* ---------- modals ---------- */
-function openModal(id){ document.getElementById(id).classList.add('open'); document.body.style.overflow='hidden'; }
-function closeModal(id){ document.getElementById(id).classList.remove('open'); document.body.style.overflow=''; }
-document.querySelectorAll('.modal-back').forEach(m=>m.addEventListener('mousedown', e=>{ if(e.target===m) closeModal(m.id); }));
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') document.querySelectorAll('.modal-back.open').forEach(m=>closeModal(m.id)); });
+/* ============ 11. SHELL & BOOT ============ */
+let currentView='home';
+const VIEWS=['home','sell','dash','sold','wanted'];
+function go(view){
+  currentView=view;
+  VIEWS.forEach(v=>document.getElementById('view-'+v).style.display=v===view?'':'none');
+  window.scrollTo({top:0});
+  if(view==='home')renderGrid();
+  if(view==='sell')renderSell();
+  if(view==='dash')dashTab(currentTab);
+  if(view==='sold')renderSold();
+  if(view==='wanted')renderWanted();
+  renderNav();
+}
+function renderNav(){
+  document.getElementById('mainNav').innerHTML=[['home',t('browse')],['sold',t('soldPrices')],['wanted',t('wanted')],['dash',t('garage')]]
+    .map(([v,l])=>`<button class="${currentView===v?'on':''}" onclick="go('${v}')">${l}</button>`).join('');
+}
+function renderHeader(){
+  const r=document.getElementById('headerRight'),u=me();
+  const langBtn=`<button class="lang hide-sm" onclick="toggleLang()">${LANG==='en'?'ES':'EN'}</button>`;
+  const menuBtn=`<button class="menu-btn" onclick="openMenu()" aria-label="Menu">☰</button>`;
+  const sellBtn=`<button class="btn btn-primary" onclick="startSell()">+<span class="lbl" style="margin-left:6px">${t('sellYourCar').replace('+ ','')}</span></button>`;
+  if(u){
+    const ini=u.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    const pend=pendingCount(u);
+    r.innerHTML=`${langBtn}${sellBtn}
+      <button class="btn btn-ghost hide-sm" onclick="go('dash')">${t('garage')}${pend?` <span class="pill red" style="padding:1px 7px">${pend}</span>`:''}</button>
+      <button class="avatar" title="${esc(u.name)}" onclick="openMenu()">${ini}</button>${menuBtn}`;
+  }else{
+    r.innerHTML=`${langBtn}
+      <button class="btn btn-ghost hide-sm" onclick="openModal('authModal');authMode('login')">${t('logIn')}</button>
+      ${sellBtn}${menuBtn}`;
+  }
+}
+function pendingCount(u){
+  if(!u)return 0;
+  return offers.filter(o=>o.sellerEmail===u.email&&o.status==='pending').length
+       + offers.filter(o=>o.buyerEmail===u.email&&o.status==='countered').length;
+}
+function openMenu(){
+  const u=me(),pend=pendingCount(u);
+  const item=(label,action)=>`<button onclick="closeModal('genModal');${action}">${label}</button>`;
+  openGen(`<h2>${u?esc(u.name):'Driveway'}</h2>
+    <p class="sub">${u?esc(u.email):'Buy and sell cars across the USA'}</p>
+    <div class="f" style="margin-bottom:10px"><input id="menuSearch" placeholder="Search make, model…"
+      onkeydown="if(event.key==='Enter'){filters.q=this.value.trim().toLowerCase();closeModal('genModal');go('home');renderGrid();}"></div>
+    <div class="menu-sheet">
+      ${item('🔍 '+t('browse'),"go('home')")}
+      ${item('💵 '+t('soldPrices'),"go('sold')")}
+      ${item('📋 '+t('wanted'),"go('wanted')")}
+      ${item('🚗 '+t('sell'),"startSell()")}
+      ${u?item('🔧 '+t('garage')+(pend?' · '+pend+' new':''),"go('dash')"):''}
+      ${u&&!u.verifiedFunds?item('✅ Verify my funds',"verifyFunds()"):''}
+      ${item((LANG==='en'?'🌐 Español':'🌐 English'),"toggleLang()")}
+      ${u?item('↩︎ '+t('logOut'),"logout()"):item('👤 '+t('logIn'),"openModal('authModal');authMode('login')")}
+    </div>`);
+}
+function renderAll(){
+  applyI18n();initControls();renderHeader();renderNav();renderGrid();
+  if(currentView==='dash')dashTab(currentTab);
+  if(currentView==='sold')renderSold();
+  if(currentView==='wanted')renderWanted();
+  if(currentView==='sell')renderSell();
+}
+function openModal(id){document.getElementById(id).classList.add('open');document.body.style.overflow='hidden';}
+function closeModal(id){document.getElementById(id).classList.remove('open');document.body.style.overflow='';}
+function openGen(html){document.getElementById('genContent').innerHTML=`<button class="modal-x" onclick="closeModal('genModal')">✕</button>`+html;openModal('genModal');}
+document.querySelectorAll('.modal-back').forEach(m=>m.addEventListener('mousedown',e=>{if(e.target===m)closeModal(m.id);}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-back.open').forEach(m=>closeModal(m.id));});
 
-/* ---------- boot ---------- */
-initFilters();
-renderHeader();
-renderGrid();
+applyI18n();initControls();renderHeader();renderNav();renderGrid();
 </script>
 </body>
 </html>
