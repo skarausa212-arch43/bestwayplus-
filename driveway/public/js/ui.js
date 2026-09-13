@@ -10,13 +10,14 @@ export function trustBadges(l) {
       ? '<span class="tb ok">✓ Clean title</span>'
       : `<span class="tb bad">⚠ ${esc(h.titleBrand)} title</span>`);
     if (h.recalls?.length) out.push(`<span class="tb warn">⚠ ${h.recalls.length} open recall</span>`);
-    if (h.obd && !h.obd.codes?.length) out.push('<span class="tb info">✓ OBD clean</span>');
+    if (h.obd && !h.obd.codes?.length && h.obd.ready) out.push('<span class="tb info">✓ OBD clean</span>');
     if (h.flood) out.push('<span class="tb bad">⚠ Flood area</span>');
     if (h.rustYears) out.push(`<span class="tb warn">❄ Salt belt ${h.rustYears}y</span>`);
   }
   const tags = new Set((l.photos || []).map((p) => p.tag));
   const required = ['front', 'rear', 'side', 'interior', 'dash', 'odometer', 'vin', 'engine'];
   if (required.every((t) => tags.has(t))) out.push('<span class="tb ok">✓ Photos verified</span>');
+  if (l.audio) out.push('<span class="tb pur">♪ Cold start</span>');
   if (l.fuel === 'Electric' && l.evSoh) {
     out.push(`<span class="tb ${l.evSoh >= 90 ? 'ok' : 'warn'}">🔋 ${l.evSoh}%</span>`);
   }

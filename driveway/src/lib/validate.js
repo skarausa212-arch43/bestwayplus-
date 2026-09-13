@@ -77,6 +77,11 @@ export const schemas = {
 
   priceUpdate: z.object({ price: intFrom(100, 5_000_000) }),
 
+  obd: z.object({
+    codes: z.array(trimmed(120).min(1)).max(30).default([]),
+    ready: z.coerce.boolean().default(true)
+  }),
+
   offer: z.object({
     amount: intFrom(1, 5_000_000),
     message: trimmed(2000).default('')

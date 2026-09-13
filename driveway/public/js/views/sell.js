@@ -15,7 +15,7 @@ const blank = () => ({
   body: 'Sedan', transmission: 'Automatic', fuel: 'Gasoline',
   doors: 4, towLb: '', evSoh: '', safety: 4,
   city: '', state: store.user?.zip ? '' : '',
-  description: '', photos: [], serviceRecords: [],
+  description: '', photos: [], serviceRecords: [], audio: null, obd: null,
   loanBalance: '', price: '', deadlineDays: 0,
   rulesOn: false, acceptAt: '', counterAt: '', declineBelow: ''
 });
@@ -74,6 +74,23 @@ function paint(root) {
       paint(root);
     },
     pickPhotos: () => $('#photoInput', root).click(),
+    record: () => toggleRecording(root),
+    delAudio: () => {
+      URL.revokeObjectURL(draft.audio.url);
+      draft.audio = null;
+      paint(root);
+    },
+    scan: () => {
+      // Sample result until the adapter integration exists; ~1 in 4 finds a code,
+      // so the "not ready" path is visible in the flow too.
+      const faulty = Math.random() < 0.25;
+      draft.obd = faulty
+        ? { codes: ['P0420 — catalyst efficiency below threshold'], ready: false }
+        : { codes: [], ready: true };
+      paint(root);
+      toast(faulty ? 'Scan complete — one stored code found.' : 'Scan complete — no stored codes.');
+    },
+    delObd: () => { draft.obd = null; paint(root); },
     roast: () => { $('#roastBox', root).outerHTML = roast(); },
     publish: () => publish(root)
   });
@@ -181,6 +198,28 @@ function stepPhotos() {
         <button data-act="delPhoto" data-i="${i}" aria-label="Remove photo">✕</button>
         <select data-photo-tag="${i}">${tags.map((t) => `<option value="${t.key}" ${p.tag === t.key ? 'selected' : ''}>${esc(t.label)}</option>`).join('')}</select>
       </div>`).join('')}</div>
+  </div>
+
+  <div class="panel">
+    <h3>🎧 Cold-start recording</h3>
+    <p class="hint">Ten seconds of the engine starting from cold. Knocking, belt squeal and a rough idle are all audible, and a recording is far harder to fake than a photo — it is the cheapest trust you can buy, especially for buyers in another state.</p>
+    ${draft.audio
+      ? `<div class="audio-row"><audio controls src="${draft.audio.url}"></audio>
+           <button class="btn btn-outline btn-sm" data-act="delAudio">Remove</button></div>`
+      : `<button class="btn btn-outline" data-act="record" id="recBtn">● Start recording</button>
+         <span id="recTime" style="margin-left:10px;font-weight:700;color:var(--red)"></span>
+         <div class="note" id="recNote" hidden></div>`}
+  </div>
+
+  <div class="panel">
+    <h3>🔌 Diagnostic self-check</h3>
+    <p class="hint">Plug a $20 OBD-II adapter into the port under the dash. Stored fault codes matter, but the readiness monitors matter more: clearing codes right before a sale leaves them "not ready", and that shows up here.</p>
+    ${draft.obd
+      ? `<div class="kv"><span>Stored codes</span><b style="color:${draft.obd.codes.length ? 'var(--red)' : 'var(--green)'}">${draft.obd.codes.length ? esc(draft.obd.codes.join(', ')) : 'None'}</b></div>
+         <div class="kv"><span>Readiness monitors</span><b>${draft.obd.ready ? 'All ready' : 'Not ready'}</b></div>
+         <button class="btn btn-outline btn-sm" style="margin-top:10px" data-act="delObd">Remove report</button>`
+      : '<button class="btn btn-outline" data-act="scan">Run diagnostic scan (demo)</button>'}
+    <div class="note demo"><b>Prototype note:</b> this generates a sample result and is stored as <b>self-reported</b>. A production build pairs with the adapter over Bluetooth and signs the reading.</div>
   </div>
 
   <div class="panel">
@@ -296,6 +335,8 @@ function stepReview() {
         <div style="color:var(--muted);font-size:14px">${draft.miles ? miles(draft.miles) : '—'} · ${esc(draft.city)}, ${esc(draft.state)}</div>
         <div class="trust-row" style="margin-top:10px">
           ${verified ? '<span class="tb ok">✓ Photos verified</span>' : '<span class="tb warn">Photos incomplete</span>'}
+          ${draft.audio ? '<span class="tb pur">♪ Cold start</span>' : ''}
+          ${draft.obd ? (draft.obd.codes.length ? '<span class="tb warn">⚠ OBD code</span>' : '<span class="tb info">✓ OBD clean</span>') : ''}
           ${draft.rulesOn ? '<span class="tb info">🤝 Auto-negotiation</span>' : ''}
           ${Number(draft.deadlineDays) ? `<span class="tb warn">⏱ ${draft.deadlineDays}-day deadline</span>` : ''}
           ${draft.serviceRecords.length ? `<span class="tb pur">📒 ${draft.serviceRecords.length} record${draft.serviceRecords.length === 1 ? '' : 's'}</span>` : ''}
@@ -323,6 +364,8 @@ function roast() {
   if (!tags.has('interior')) problems.push('No interior photo. The interior is how people actually judge condition.');
   if ((draft.description || '').length < 80) problems.push('The description is thin. Write about service history, why you are selling, and any flaws.');
   if (!draft.vin || draft.vin.length < 17) problems.push('VIN is missing or incomplete, so the free title and recall check cannot run.');
+  if (!draft.audio) problems.push('No cold-start recording. It takes ten seconds and it is the cheapest trust you can buy.');
+  if (!draft.obd) problems.push('No diagnostic scan. A clean scan quietly answers the "is there a check engine light" question before anyone asks it.');
   if (!draft.serviceRecords.length) problems.push('No service records. Even two lines of maintenance history separates you from the cars people are afraid of.');
   if (valuation && price > valuation.marketValue * 1.12) problems.push(`Your price is about ${Math.round((price / valuation.marketValue - 1) * 100)}% over market. Expect a long, quiet wait.`);
   if (valuation && price && price < valuation.marketValue * 0.82) problems.push(`Your price is well under market — you will sell in days, but you are giving away roughly ${money(valuation.marketValue * 0.9 - price)}.`);
@@ -374,6 +417,62 @@ function wirePhotos(root) {
     draft.serviceRecords.push(value);
     paint(root);
   });
+}
+
+/* ---------------- cold-start recording ---------------- */
+
+const RECORD_SECONDS = 10;
+let recorder = null;
+let recordTimer = null;
+
+async function toggleRecording(root) {
+  if (recorder && recorder.state === 'recording') {
+    recorder.stop();
+    return;
+  }
+  const note = $('#recNote', root);
+  const showNote = (message) => {
+    if (!note) return toast(message);
+    note.textContent = message;
+    note.hidden = false;
+  };
+
+  if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+    return showNote('This browser cannot record audio. You can still publish — buyers will just have one less reason to trust the listing.');
+  }
+
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch {
+    return showNote('Microphone access was blocked, so there is nothing to record from.');
+  }
+
+  const chunks = [];
+  recorder = new MediaRecorder(stream);
+  recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+  recorder.onstop = () => {
+    clearInterval(recordTimer);
+    stream.getTracks().forEach((t) => t.stop());
+    const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+    recorder = null;
+    if (!blob.size) return showNote('Nothing was recorded — check the microphone and try again.');
+    draft.audio = { blob, url: URL.createObjectURL(blob) };
+    paint(root);
+    toast('🎧 Cold-start recording saved.');
+  };
+
+  recorder.start();
+  let left = RECORD_SECONDS;
+  const button = $('#recBtn', root);
+  const clock = $('#recTime', root);
+  if (button) button.textContent = '■ Stop';
+  if (clock) clock.textContent = `${left}s`;
+  recordTimer = setInterval(() => {
+    left -= 1;
+    if (clock) clock.textContent = `${left}s`;
+    if (left <= 0 && recorder?.state === 'recording') recorder.stop();
+  }, 1000);
 }
 
 function wirePrice(root) {
@@ -485,6 +584,9 @@ async function publish(root) {
   }
 
   const id = created.listing.id;
+
+  // The listing exists from here on. Attachments are best-effort: if one fails
+  // we say so rather than pretending the publish failed and stranding the car.
   if (draft.photos.length) {
     button.textContent = `Uploading ${draft.photos.length} photo${draft.photos.length === 1 ? '' : 's'}…`;
     const form = new FormData();
@@ -495,11 +597,26 @@ async function publish(root) {
     try {
       await api.upload(`/api/listings/${id}/photos`, form);
     } catch (err) {
-      // The listing exists; only the photos failed, and the seller can add them from the listing.
-      toast(`Listing published, but the photos failed: ${err.message}`);
-      resetDraft();
-      location.hash = `#/car/${id}`;
-      return;
+      return finishPartial(id, `Listing published, but the photos failed: ${err.message}`);
+    }
+  }
+
+  if (draft.audio) {
+    button.textContent = 'Uploading recording…';
+    const form = new FormData();
+    form.append('audio', draft.audio.blob, 'cold-start.webm');
+    try {
+      await api.upload(`/api/listings/${id}/audio`, form);
+    } catch (err) {
+      return finishPartial(id, `Listing published, but the recording failed: ${err.message}`);
+    }
+  }
+
+  if (draft.obd) {
+    try {
+      await api.post(`/api/listings/${id}/obd`, { codes: draft.obd.codes, ready: draft.obd.ready });
+    } catch {
+      return finishPartial(id, 'Listing published, but the diagnostic report could not be saved.');
     }
   }
 
@@ -507,6 +624,13 @@ async function publish(root) {
   toast(fired
     ? `🎉 Live — and ${fired} standing bid${fired > 1 ? 's' : ''} already came in!`
     : '🎉 Your listing is live!');
+  resetDraft();
+  location.hash = `#/car/${id}`;
+}
+
+/** The listing went up but an attachment did not; send the seller to it either way. */
+function finishPartial(id, message) {
+  toast(message);
   resetDraft();
   location.hash = `#/car/${id}`;
 }

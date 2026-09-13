@@ -87,9 +87,14 @@ function view({ listing: l, relatedSales, buyerContext, offers }) {
         <div class="kv"><span>Open safety recalls</span><b style="color:${h.recalls.length ? 'var(--amber)' : 'var(--green)'}">${h.recalls.length ? esc(h.recalls.join('; ')) : 'None'}</b></div>
         <div class="note">${esc(h.source)}</div></div>` : ''}
 
-      ${h?.obd ? `<div class="box"><h4>🔌 Self-service diagnostic report</h4>
+      ${l.audio ? `<div class="box"><h4>🎧 Cold-start recording</h4>
+        <div class="audio-row"><audio controls preload="none" src="${esc(l.audio.url)}"></audio></div>
+        <div class="note">Recorded by the seller on a cold engine. Listen for knocking, belt squeal or a rough idle.</div></div>` : ''}
+
+      ${h?.obd ? `<div class="box"><h4>🔌 Diagnostic self-check</h4>
         <div class="kv"><span>Stored fault codes</span><b style="color:${h.obd.codes?.length ? 'var(--red)' : 'var(--green)'}">${h.obd.codes?.length ? esc(h.obd.codes.join(', ')) : 'None'}</b></div>
-        <div class="kv"><span>Readiness monitors</span><b>${h.obd.ready ? 'All ready' : 'Not ready — codes may have been cleared recently'}</b></div></div>` : ''}
+        <div class="kv"><span>Readiness monitors</span><b style="color:${h.obd.ready ? 'var(--green)' : 'var(--amber)'}">${h.obd.ready ? 'All ready' : 'Not ready — codes may have been cleared recently'}</b></div>
+        <div class="note">Self-reported by the seller from an OBD-II adapter, not verified by Driveway.</div></div>` : ''}
 
       ${l.serviceRecords.length ? `<div class="box"><h4>📒 Digital logbook</h4>
         ${l.serviceRecords.map((r) => `<div class="kv"><span>${date(r.at)}</span><b>${esc(r.title)}</b></div>`).join('')}

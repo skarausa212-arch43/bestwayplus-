@@ -3,7 +3,7 @@ import { getDb, now } from '../db/index.js';
 import { parse, schemas } from '../lib/validate.js';
 import { requireAuth } from '../lib/auth.js';
 import { wrap, badRequest, forbidden, notFound } from '../lib/errors.js';
-import { upload, savePhoto, removeListingPhotos } from '../lib/photos.js';
+import { upload, savePhoto, removeListingPhotos, audioUpload, saveAudio, removeFile } from '../lib/photos.js';
 import { config } from '../config.js';
 import { PHOTO_TAG_KEYS } from '../data/states.js';
 import {
@@ -19,6 +19,15 @@ import { stateForZip } from '../data/states.js';
 export const listingsRouter = Router();
 
 const mine = (listing, user) => listing && user && listing.user_id === user.id;
+
+/** Loads the listing named in the route and asserts the caller owns it. */
+function ownListing(req, { mustBeActive = true } = {}) {
+  const listing = rawListing(Number(req.params.id));
+  if (!listing || listing.status === 'removed') throw notFound('That listing no longer exists.');
+  if (!mine(listing, req.user)) throw forbidden('That is not your listing.');
+  if (mustBeActive && listing.status !== 'active') throw badRequest('That listing is closed.');
+  return listing;
+}
 
 listingsRouter.get(
   '/',
@@ -109,6 +118,70 @@ listingsRouter.post(
     addPhotos(listing.id, saved);
 
     res.status(201).json({ listing: hydrate(rawListing(listing.id), { viewerId: req.user.id }) });
+  })
+);
+
+/**
+ * Cold-start recording: ten seconds of the engine starting from cold.
+ * Knocking, belt squeal and a rough idle are all audible, and it is far harder
+ * to fake than a photo — which is exactly why out-of-state buyers ask for it.
+ */
+listingsRouter.post(
+  '/:id/audio',
+  requireAuth,
+  audioUpload.single('audio'),
+  wrap(async (req, res) => {
+    const listing = ownListing(req);
+    if (!req.file) throw badRequest('Attach a recording.');
+
+    const saved = await saveAudio(listing.id, req.file.buffer);
+    if (listing.audio_path) await removeFile(listing.audio_path);
+
+    getDb()
+      .prepare('UPDATE listings SET audio_path = ?, audio_at = ?, updated_at = ? WHERE id = ?')
+      .run(saved.path, now(), now(), listing.id);
+
+    res.status(201).json({ listing: hydrate(rawListing(listing.id), { viewerId: req.user.id }) });
+  })
+);
+
+listingsRouter.delete(
+  '/:id/audio',
+  requireAuth,
+  wrap(async (req, res) => {
+    const listing = ownListing(req);
+    await removeFile(listing.audio_path);
+    getDb()
+      .prepare('UPDATE listings SET audio_path = NULL, audio_at = NULL, updated_at = ? WHERE id = ?')
+      .run(now(), listing.id);
+    res.json({ ok: true });
+  })
+);
+
+/**
+ * Diagnostic self-check from an OBD-II adapter. Stored as self-reported: the
+ * readiness monitors are the interesting part, because clearing a fault code
+ * right before a sale leaves the monitors "not ready" and that shows up here.
+ */
+listingsRouter.post(
+  '/:id/obd',
+  requireAuth,
+  wrap(async (req, res) => {
+    const listing = ownListing(req);
+    const report = parse(schemas.obd, req.body);
+
+    getDb()
+      .prepare(
+        `UPDATE vehicle_history
+            SET obd = ?, obd_source = 'self-reported', obd_at = ?
+          WHERE listing_id = ?`
+      )
+      .run(JSON.stringify({ codes: report.codes, ready: report.ready ? 1 : 0 }), now(), listing.id);
+
+    res.status(201).json({
+      listing: hydrate(rawListing(listing.id), { viewerId: req.user.id }),
+      prototypeNote: 'Self-reported. A production build pairs with the adapter over Bluetooth and signs the result.'
+    });
   })
 );
 

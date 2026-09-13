@@ -445,3 +445,85 @@ test('smart filters narrow the grid server-side', async () => {
   const clean = await request(app).get('/api/listings').query({ cleanHistory: 'true' });
   assert.ok(clean.body.items.length > 0, 'clean-history filter still returns cars');
 });
+
+/** A minimal but genuinely well-formed WebM/EBML header, enough to pass sniffing. */
+const webmBytes = () => Buffer.concat([
+  Buffer.from([0x1a, 0x45, 0xdf, 0xa3]),
+  Buffer.alloc(64, 0x11)
+]);
+
+test('cold-start audio uploads, sniffs the bytes and serves back', async () => {
+  const agent = await signUp('audio@example.com');
+  const id = (await agent.post('/api/listings').send(carPayload())).body.listing.id;
+
+  const res = await agent
+    .post(`/api/listings/${id}/audio`)
+    .attach('audio', webmBytes(), { filename: 'cold-start.webm', contentType: 'audio/webm' });
+  assert.equal(res.status, 201, JSON.stringify(res.body));
+
+  const audio = res.body.listing.audio;
+  assert.ok(audio.url.endsWith('.webm'));
+  const served = await request(app).get(audio.url);
+  assert.equal(served.status, 200);
+
+  // Replacing it should not leave the old file behind.
+  const second = await agent
+    .post(`/api/listings/${id}/audio`)
+    .attach('audio', webmBytes(), { filename: 'again.webm', contentType: 'audio/webm' });
+  assert.notEqual(second.body.listing.audio.url, audio.url);
+  assert.equal((await request(app).get(audio.url)).status, 404, 'the replaced recording is deleted');
+
+  await agent.delete(`/api/listings/${id}/audio`).expect(200);
+  assert.equal((await request(app).get(`/api/listings/${id}`)).body.listing.audio, null);
+});
+
+test('a file that only claims to be audio is rejected', async () => {
+  const agent = await signUp('fakeaudio@example.com');
+  const id = (await agent.post('/api/listings').send(carPayload())).body.listing.id;
+
+  const res = await agent
+    .post(`/api/listings/${id}/audio`)
+    .attach('audio', Buffer.from('<html>not audio at all</html>'), { filename: 'evil.webm', contentType: 'audio/webm' });
+  assert.equal(res.status, 400, 'declared content-type must not be trusted');
+  assert.match(res.body.error, /not a readable audio/i);
+});
+
+test('only the owner can attach a recording', async () => {
+  const owner = await signUp('audioowner@example.com');
+  const other = await signUp('audioother@example.com');
+  const id = (await owner.post('/api/listings').send(carPayload())).body.listing.id;
+
+  const res = await other
+    .post(`/api/listings/${id}/audio`)
+    .attach('audio', webmBytes(), { filename: 'x.webm', contentType: 'audio/webm' });
+  assert.equal(res.status, 403);
+});
+
+test('OBD report is stored and labelled self-reported', async () => {
+  const agent = await signUp('obd@example.com');
+  const id = (await agent.post('/api/listings').send(carPayload())).body.listing.id;
+
+  const res = await agent.post(`/api/listings/${id}/obd`).send({ codes: [], ready: true });
+  assert.equal(res.status, 201);
+  assert.match(res.body.prototypeNote, /self-reported/i);
+
+  const obd = (await request(app).get(`/api/listings/${id}`)).body.listing.history.obd;
+  assert.deepEqual(obd.codes, []);
+  assert.equal(obd.ready, 1);
+  assert.equal(obd.source, 'self-reported');
+
+  const withCode = await agent.post(`/api/listings/${id}/obd`).send({
+    codes: ['P0420 — catalyst efficiency below threshold'], ready: false
+  });
+  assert.equal(withCode.status, 201);
+  const updated = (await request(app).get(`/api/listings/${id}`)).body.listing.history.obd;
+  assert.equal(updated.codes.length, 1);
+  assert.equal(updated.ready, 0);
+});
+
+test('migrations are recorded and re-running them is a no-op', async () => {
+  const { MIGRATIONS, runMigrations } = await import('../src/db/migrations.js');
+  const applied = getDb().prepare('SELECT id FROM schema_migrations').all().map((r) => r.id);
+  for (const m of MIGRATIONS) assert.ok(applied.includes(m.id), `${m.id} recorded`);
+  assert.deepEqual(runMigrations(getDb()), [], 'a second run applies nothing');
+});

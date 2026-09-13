@@ -19,7 +19,7 @@ reference.
 npm install
 npm run seed     # load sample sold prices so valuations work on day one
 npm start        # http://localhost:3000 — open it in a browser
-npm test         # 30 API and unit tests, no network needed
+npm test         # 35 API and unit tests, no network needed
 npm run dev      # same as start, restarts on file changes
 ```
 
@@ -65,6 +65,19 @@ full-size image plus a thumbnail. Re-encoding also strips EXIF, which would
 otherwise publish the seller's home GPS coordinates along with the car.
 
 Every price change is recorded, so a listing carries its own price history.
+
+### Proof a seller can attach
+`POST|DELETE /api/listings/:id/audio` · `POST /api/listings/:id/obd`
+
+A **cold-start recording** is ten seconds of the engine starting from cold:
+knocking, belt squeal and a rough idle are audible, and it is far harder to fake
+than a photo. Uploads are sniffed by their actual bytes rather than the declared
+content-type, because these files are served back to other people.
+
+A **diagnostic self-check** stores OBD-II fault codes and readiness monitors.
+The monitors are the interesting half: clearing codes right before a sale leaves
+them "not ready", and that shows on the listing. It is stored and displayed as
+self-reported — never as something Driveway verified.
 
 ### Offers and automatic negotiation
 `POST /api/listings/:id/offers` · `GET /api/offers/received` ·
@@ -165,8 +178,9 @@ src/
   server.js           process entry point
   config.js           configuration and limits
   db/
-    schema.sql        full schema, written to port to Postgres cleanly
-    index.js          connection, migration, transaction helper
+    schema.sql        full schema for a fresh database, written to port to Postgres cleanly
+    migrations.js     additive, recorded migrations that carry an existing database forward
+    index.js          connection, migration runner, transaction helper
   lib/
     auth.js           hashing, sessions, requireAuth, rate limiting
     pricing.js        valuation, cost-to-own, registration, shipping
@@ -200,7 +214,7 @@ partner or a licence rather than more code:
 | Guaranteed floor price | A wholesale buying partner carrying the inventory risk |
 | Lien payoff | Lender integrations plus the same licensing |
 | Title, history and recalls | NMVTIS data provider; the NHTSA recall API is free |
-| OBD-II report | Pairing with the adapter over Bluetooth from a mobile app |
+| OBD-II report | Pairing with the adapter over Bluetooth and signing the reading, so it stops being self-reported |
 
 Every stubbed endpoint says so in its own response (`prototypeNote`), so the
 gaps stay visible instead of quietly looking finished.
@@ -212,8 +226,6 @@ but a half-translated UI is worse than an English one, so it lands as a whole.
 
 ## Next
 
-1. Cold-start audio recording and the OBD-II report, wired into the sell flow
-   and stored alongside the photos.
-2. Email notifications for new offers, counters and closing deadlines.
-3. Spanish translation of the full interface.
-4. Postgres migration path and a deployment setup.
+1. Email notifications for new offers, counters and closing deadlines.
+2. Spanish translation of the full interface.
+3. Postgres migration path and a deployment setup.

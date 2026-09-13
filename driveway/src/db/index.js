@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from '../config.js';
+import { runMigrations } from './migrations.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -15,6 +16,7 @@ export function openDb(file = config.dbFile) {
   conn.pragma('journal_mode = WAL');
   conn.pragma('foreign_keys = ON');
   conn.exec(fs.readFileSync(path.join(here, 'schema.sql'), 'utf8'));
+  runMigrations(conn);
   return conn;
 }
 

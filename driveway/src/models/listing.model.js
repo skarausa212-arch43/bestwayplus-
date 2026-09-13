@@ -140,9 +140,12 @@ export function hydrate(row, { viewerId = null } = {}) {
       flood: !!history.flood,
       rustYears: history.rust_years,
       recalls: JSON.parse(history.recalls || '[]'),
-      obd: history.obd ? JSON.parse(history.obd) : null,
+      obd: history.obd
+        ? { ...JSON.parse(history.obd), source: history.obd_source || 'self-reported', at: history.obd_at }
+        : null,
       source: 'Sample data for the prototype — NMVTIS and the NHTSA recall API replace this in production.'
     },
+    audio: row.audio_path ? { url: row.audio_path, at: row.audio_at } : null,
     rules: (() => {
       const r = db().prepare('SELECT * FROM listing_rules WHERE listing_id = ?').get(id);
       if (!r) return null;
