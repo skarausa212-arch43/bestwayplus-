@@ -204,6 +204,14 @@ export function searchListings(q, viewerId = null) {
   if (q.maxMiles) add('l.miles <= ?', q.maxMiles);
   if (q.q) add('(LOWER(l.make || \' \' || l.model) LIKE ?)', `%${q.q.toLowerCase()}%`);
 
+  if (q.minDoors) add('l.doors >= ?', q.minDoors);
+  if (q.minTow) add('l.tow_lb >= ?', q.minTow);
+  if (q.minEvSoh) add('l.ev_soh >= ?', q.minEvSoh);
+  if (q.minSafety) add('l.safety >= ?', q.minSafety);
+  if (q.cleanHistory) add(`(h.title_brand = 'Clean' AND h.accidents = 0 AND h.flood = 0)`);
+  if (q.noSaltBelt) add('COALESCE(h.rust_years, 0) = 0');
+  if (q.endingSoon) add('l.deadline_at IS NOT NULL AND l.deadline_at > ? AND l.deadline_at < ?', now(), now() + 3 * 86400000);
+
   const order = {
     new: 'l.created_at DESC',
     price_asc: 'l.price ASC',
@@ -211,10 +219,12 @@ export function searchListings(q, viewerId = null) {
     miles_asc: 'l.miles ASC'
   }[q.sort || 'new'];
 
-  const sql = `SELECT l.* FROM listings l WHERE ${where.join(' AND ')} ORDER BY ${order} LIMIT ? OFFSET ?`;
-  const rows = db().prepare(sql).all(...args, q.limit, q.offset);
+  const from = `FROM listings l LEFT JOIN vehicle_history h ON h.listing_id = l.id`;
+  const rows = db()
+    .prepare(`SELECT l.* ${from} WHERE ${where.join(' AND ')} ORDER BY ${order} LIMIT ? OFFSET ?`)
+    .all(...args, q.limit, q.offset);
   const total = db()
-    .prepare(`SELECT COUNT(*) AS n FROM listings l WHERE ${where.join(' AND ')}`)
+    .prepare(`SELECT COUNT(*) AS n ${from} WHERE ${where.join(' AND ')}`)
     .get(...args).n;
 
   return { total, items: rows.map((r) => hydrate(r, { viewerId })) };

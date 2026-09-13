@@ -412,3 +412,36 @@ test('a round offer amount is still reported as a band, not a number', async () 
   assert.notEqual(range.low, range.high, 'a round number must not collapse into an exact figure');
   assert.deepEqual(range, { low: 19000, high: 20000 });
 });
+
+test('valuation endpoint prices a car before it is listed', async () => {
+  const res = await request(app).post('/api/valuation').send({
+    make: 'Honda', model: 'Civic Si', year: 2020, miles: 38000, price: 22000
+  });
+  assert.equal(res.status, 200);
+  assert.equal(res.body.basis, 'comps');
+  assert.ok(res.body.marketValue > 15000 && res.body.marketValue < 24000);
+  assert.ok(res.body.guaranteedFloor < res.body.marketValue);
+  assert.ok(res.body.daysToSell > 0);
+  assert.ok(res.body.comps.length > 0);
+});
+
+test('smart filters narrow the grid server-side', async () => {
+  const agent = await signUp('smart@example.com');
+  const tow = (await agent.post('/api/listings').send(
+    carPayload({ make: 'Ram', model: '1500', body: 'Truck', towLb: 8000, doors: 4, price: 31000 })
+  )).body.listing.id;
+  const coupe = (await agent.post('/api/listings').send(
+    carPayload({ make: 'Mazda', model: 'MX-5 Miata', body: 'Coupe', doors: 2, towLb: 0, price: 19000 })
+  )).body.listing.id;
+
+  const towing = await request(app).get('/api/listings').query({ minTow: 5000 });
+  const ids = towing.body.items.map((l) => l.id);
+  assert.ok(ids.includes(tow));
+  assert.ok(!ids.includes(coupe));
+
+  const rideshare = await request(app).get('/api/listings').query({ minDoors: 4, yearFrom: 2012 });
+  assert.ok(!rideshare.body.items.map((l) => l.id).includes(coupe), 'a 2-door is not rideshare-ready');
+
+  const clean = await request(app).get('/api/listings').query({ cleanHistory: 'true' });
+  assert.ok(clean.body.items.length > 0, 'clean-history filter still returns cars');
+});

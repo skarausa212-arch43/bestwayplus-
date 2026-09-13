@@ -111,9 +111,28 @@ export const schemas = {
     maxPrice: z.coerce.number().int().min(0).optional(),
     yearFrom: z.coerce.number().int().min(1900).optional(),
     maxMiles: z.coerce.number().int().min(0).optional(),
+    // Smart filters — the ones no other US marketplace offers.
+    minDoors: z.coerce.number().int().min(0).max(6).optional(),
+    minTow: z.coerce.number().int().min(0).optional(),
+    minEvSoh: z.coerce.number().int().min(0).max(100).optional(),
+    minSafety: z.coerce.number().int().min(0).max(5).optional(),
+    cleanHistory: z.coerce.boolean().optional(),
+    noSaltBelt: z.coerce.boolean().optional(),
+    endingSoon: z.coerce.boolean().optional(),
     sort: z.enum(['new', 'price_asc', 'price_desc', 'miles_asc']).default('new'),
     limit: z.coerce.number().int().min(1).max(60).default(24),
     offset: z.coerce.number().int().min(0).default(0)
+  }),
+
+  /** Valuation preview while a seller is still filling in the form. */
+  valuation: z.object({
+    make: trimmed(40).min(1),
+    model: trimmed(60).min(1),
+    year: intFrom(1960, new Date().getFullYear() + 2),
+    miles: intFrom(0, 1_500_000),
+    body: trimmed(20).optional(),
+    fuel: trimmed(20).optional(),
+    price: z.coerce.number().int().min(0).optional()
   })
 };
 

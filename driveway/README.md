@@ -5,10 +5,11 @@ send real offers, and the awkward parts of a private sale — the paperwork, the
 money, knowing what the car is actually worth — are handled before the two
 sides ever meet.
 
-This repository currently holds **step one: the backend**. The API is complete
-and tested; the browser UI is being ported onto it next. The interactive
-concept prototype lives at [`../driveway.html`](../driveway.html) and remains
-the design reference.
+The app runs end to end: browse, listing pages, a four-step sell flow with real
+photo upload, offers with automatic negotiation, standing bids, a garage, the
+sold-price database and a wanted board. The original single-file concept
+prototype lives at [`../driveway.html`](../driveway.html) and remains the design
+reference.
 
 ---
 
@@ -17,8 +18,8 @@ the design reference.
 ```bash
 npm install
 npm run seed     # load sample sold prices so valuations work on day one
-npm start        # http://localhost:3000
-npm test         # 28 tests, no network needed
+npm start        # http://localhost:3000 — open it in a browser
+npm test         # 30 API and unit tests, no network needed
 npm run dev      # same as start, restarts on file changes
 ```
 
@@ -120,9 +121,45 @@ monthly depreciation figure and the guaranteed floor price.
 
 ---
 
+## The browser app
+
+Plain ES modules, no build step and no framework — the page the server sends is
+the page that runs. It talks to the same public API documented above.
+
+- **Browse** — hero search plus the smart filters (rideshare-ready, good first
+  car, tow rating, EV battery health, no salt-belt years, clean history, offers
+  closing soon), each mapped onto real query parameters so filtering happens in
+  SQL rather than in the browser.
+- **Listing page** — gallery, trust badges, free history panel, price history,
+  comparable sales, and a sidebar that prices out tax, registration, insurance,
+  fuel and shipping for the viewer's own ZIP. A rule-based assistant answers
+  questions from the listing data and hands anything else to the seller.
+- **Sell** — a four-step wizard: car details, guided photos with per-shot tags,
+  price (slider against the live valuation, predicted days to sell, lien payoff
+  equity, offer deadline, automatic negotiation rules), then review with the
+  "roast my listing" critique before publishing.
+- **My garage** — listings, offers received and made, standing bids, holds and
+  saved cars, with accept/counter/decline and the guaranteed floor.
+
+Two conventions keep it honest: no inline event handlers anywhere (the page's
+own CSP forbids them, so clicks are delegated through `data-act` attributes),
+and field changes update only the elements that depend on them — repainting a
+whole step on every keystroke would throw away the user's cursor.
+
 ## Layout
 
 ```
+public/
+  index.html          app shell
+  styles.css          design system
+  js/
+    app.js            hash router, header, boot
+    api.js            fetch wrapper and typed errors
+    state.js          session, modals, form errors
+    format.js         money/miles/date helpers, delegated clicks, toast
+    ui.js             car card, trust badges, empty states
+    auth.js           sign-up, log-in, funds verification
+    views/            browse, listing, sell, garage, boards
 src/
   app.js              Express app (exported so tests can mount it)
   server.js           process entry point
@@ -168,9 +205,15 @@ partner or a licence rather than more code:
 Every stubbed endpoint says so in its own response (`prototypeNote`), so the
 gaps stay visible instead of quietly looking finished.
 
+The interface is English-only for now. Every user-facing string sits in the view
+that renders it rather than being scattered through helpers, so adding the
+Spanish version from the concept prototype is a translation pass, not a hunt —
+but a half-translated UI is worse than an English one, so it lands as a whole.
+
 ## Next
 
-1. Port the prototype's UI onto this API (browse, listing page, sell wizard, garage).
-2. Photo pipeline extras: guided-capture validation, cold-start audio upload.
-3. Email notifications for new offers and counters.
+1. Cold-start audio recording and the OBD-II report, wired into the sell flow
+   and stored alongside the photos.
+2. Email notifications for new offers, counters and closing deadlines.
+3. Spanish translation of the full interface.
 4. Postgres migration path and a deployment setup.

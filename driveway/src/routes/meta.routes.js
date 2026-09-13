@@ -3,7 +3,8 @@ import { getDb, now } from '../db/index.js';
 import { parse, schemas } from '../lib/validate.js';
 import { requireAuth } from '../lib/auth.js';
 import { wrap, notFound } from '../lib/errors.js';
-import { searchSales } from '../models/sale.model.js';
+import { searchSales, relatedSales } from '../models/sale.model.js';
+import { estimateValue, floorPrice, depreciationPerMonth, daysToSell, dealRating } from '../lib/pricing.js';
 import { MAKES, STATES, STATE_DATA, PHOTO_TAGS, stateForZip } from '../data/states.js';
 import { config } from '../config.js';
 
@@ -32,6 +33,33 @@ metaRouter.get('/meta/state/:code', (req, res) => {
     disclaimer: 'Approximate figures for the prototype — verify with the state DMV and revenue department.'
   });
 });
+
+/**
+ * Values a car before it is listed, so the sell form can show a market value,
+ * a predicted time to sell and the guaranteed floor while the seller types.
+ */
+metaRouter.post(
+  '/valuation',
+  wrap(async (req, res) => {
+    const car = parse(schemas.valuation, req.body);
+    const comps = relatedSales(car.make, car.model, 8);
+    const { value, basis, compCount } = estimateValue(car, comps);
+    const price = car.price || value;
+
+    res.json({
+      marketValue: value,
+      basis,
+      compCount,
+      guaranteedFloor: floorPrice(value),
+      depreciationPerMonth: depreciationPerMonth(value),
+      daysToSell: daysToSell(price, value),
+      deal: dealRating(price, value),
+      comps: comps.map((s) => ({
+        year: s.year, make: s.make, model: s.model, miles: s.miles, price: s.price, state: s.state, at: s.created_at
+      }))
+    });
+  })
+);
 
 metaRouter.get('/meta/zip/:zip', (req, res) => {
   const state = stateForZip(req.params.zip);
