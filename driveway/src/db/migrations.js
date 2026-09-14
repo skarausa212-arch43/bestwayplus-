@@ -36,6 +36,46 @@ export const MIGRATIONS = [
   }
 ];
 
+MIGRATIONS.push(
+  {
+    id: '004-notifications',
+    up(db) {
+      db.exec(`CREATE TABLE IF NOT EXISTS notifications (
+        id             INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id        INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        kind           TEXT    NOT NULL,
+        title          TEXT    NOT NULL,
+        body           TEXT    NOT NULL,
+        link           TEXT,
+        data           TEXT    NOT NULL DEFAULT '{}',
+        created_at     INTEGER NOT NULL,
+        read_at         INTEGER,
+        email_to       TEXT,
+        email_sent_at  INTEGER,
+        email_error    TEXT,
+        email_attempts INTEGER NOT NULL DEFAULT 0
+      )`);
+      db.exec('CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, created_at DESC)');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications(user_id, read_at)');
+    }
+  },
+  {
+    id: '005-email-preference',
+    up(db) {
+      // Opting out silences email but keeps the in-app feed: a seller must
+      // still be able to find out that an offer arrived.
+      addColumn(db, 'users', 'notify_email', 'INTEGER NOT NULL DEFAULT 1');
+    }
+  },
+  {
+    id: '006-deadline-reminder',
+    up(db) {
+      // Stamped when the closing reminder goes out, so the job cannot send twice.
+      addColumn(db, 'listings', 'deadline_notified_at', 'INTEGER');
+    }
+  }
+);
+
 export function runMigrations(db) {
   db.exec(`CREATE TABLE IF NOT EXISTS schema_migrations (
     id         TEXT PRIMARY KEY,

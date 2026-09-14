@@ -527,3 +527,196 @@ test('migrations are recorded and re-running them is a no-op', async () => {
   for (const m of MIGRATIONS) assert.ok(applied.includes(m.id), `${m.id} recorded`);
   assert.deepEqual(runMigrations(getDb()), [], 'a second run applies nothing');
 });
+
+/* ---------------- notifications ---------------- */
+
+const { outbox } = await import('../src/lib/mailer.js');
+const mailTo = (email) => outbox.all().filter((m) => m.to === email);
+
+test('an offer notifies the seller in-app and by email', async () => {
+  outbox.clear();
+  const seller = await signUp('nseller@example.com', 'Nora Seller');
+  const buyer = await signUp('nbuyer@example.com', 'Ben Buyer');
+  const id = (await seller.post('/api/listings').send(carPayload())).body.listing.id;
+
+  await buyer.post(`/api/listings/${id}/offers`).send({ amount: 20000, message: 'Weekend viewing?' }).expect(201);
+
+  const feed = await seller.get('/api/notifications');
+  assert.equal(feed.body.unread, 1);
+  const item = feed.body.items[0];
+  assert.equal(item.kind, 'offer_received');
+  assert.match(item.title, /\$20,000/);
+  assert.match(item.body, /Ben Buyer/);
+  assert.match(item.body, /Weekend viewing/);
+  assert.equal(item.link, 'garage/received');
+  assert.equal(item.emailSent, true);
+
+  const mail = mailTo('nseller@example.com').at(-1);
+  assert.match(mail.subject, /New offer: \$20,000/);
+  assert.match(mail.text, /garage/);
+  assert.ok(mail.html.includes('Driveway'));
+
+  // The buyer has nothing to hear about yet.
+  assert.equal((await buyer.get('/api/notifications')).body.unread, 0);
+});
+
+test('accepting an offer notifies both sides', async () => {
+  outbox.clear();
+  const seller = await signUp('aseller@example.com', 'Ann Seller');
+  const buyer = await signUp('abuyer@example.com', 'Al Buyer');
+  const id = (await seller.post('/api/listings').send(carPayload())).body.listing.id;
+  const offer = await buyer.post(`/api/listings/${id}/offers`).send({ amount: 21000 });
+
+  await seller.post(`/api/offers/${offer.body.offer.id}/accept`).expect(200);
+
+  const buyerFeed = await buyer.get('/api/notifications');
+  assert.equal(buyerFeed.body.items[0].kind, 'offer_accepted_buyer');
+  assert.match(buyerFeed.body.items[0].body, /never wire money/i);
+
+  const sellerFeed = await seller.get('/api/notifications');
+  assert.equal(sellerFeed.body.items[0].kind, 'offer_accepted_seller');
+  assert.match(sellerFeed.body.items[0].title, /Sold/);
+
+  assert.equal(mailTo('abuyer@example.com').length, 1);
+  assert.equal(mailTo('aseller@example.com').length, 2, 'offer received, then sold');
+});
+
+test('automatic rules notify both sides with the outcome', async () => {
+  outbox.clear();
+  const seller = await signUp('rseller@example.com', 'Rex Seller');
+  const buyer = await signUp('rbuyer@example.com', 'Ria Buyer');
+  const rules = { acceptAt: 21000, counterAt: 21500, declineBelow: 17000 };
+  const id = (await seller.post('/api/listings').send({ ...carPayload(), rules })).body.listing.id;
+
+  await buyer.post(`/api/listings/${id}/offers`).send({ amount: 19000 }).expect(201);
+
+  const buyerFeed = await buyer.get('/api/notifications');
+  assert.equal(buyerFeed.body.items[0].kind, 'offer_countered');
+  assert.match(buyerFeed.body.items[0].title, /\$21,500/);
+
+  const sellerFeed = await seller.get('/api/notifications');
+  assert.equal(sellerFeed.body.items[0].kind, 'offer_auto_countered');
+  assert.match(sellerFeed.body.items[0].body, /without you lifting a finger/);
+});
+
+test('opting out stops the email but keeps the in-app record', async () => {
+  outbox.clear();
+  const seller = await signUp('quiet@example.com', 'Quiet Seller');
+  const buyer = await signUp('qbuyer@example.com', 'Q Buyer');
+
+  const pref = await seller.patch('/api/me/preferences').send({ notifyEmail: false });
+  assert.equal(pref.status, 200);
+  assert.equal((await seller.get('/api/auth/me')).body.user.notifyEmail, false);
+
+  const id = (await seller.post('/api/listings').send(carPayload())).body.listing.id;
+  await buyer.post(`/api/listings/${id}/offers`).send({ amount: 20000 }).expect(201);
+
+  const feed = await seller.get('/api/notifications');
+  assert.equal(feed.body.unread, 1, 'still visible in the app');
+  assert.equal(feed.body.items[0].emailSent, false);
+  assert.equal(mailTo('quiet@example.com').length, 0, 'no email was sent');
+
+  await seller.patch('/api/me/preferences').send({ notifyEmail: 'yes' }).expect(400);
+});
+
+test('marking notifications read clears the counter', async () => {
+  const seller = await signUp('mseller@example.com');
+  const buyer = await signUp('mbuyer@example.com');
+  const id = (await seller.post('/api/listings').send(carPayload())).body.listing.id;
+  await buyer.post(`/api/listings/${id}/offers`).send({ amount: 20000 });
+
+  assert.equal((await seller.get('/api/notifications')).body.unread, 1);
+  await seller.post('/api/notifications/read').send({}).expect(200);
+  assert.equal((await seller.get('/api/notifications')).body.unread, 0);
+  assert.equal((await seller.get('/api/notifications')).body.items[0].read, true);
+});
+
+test('notifications are private to their owner', async () => {
+  const seller = await signUp('pseller@example.com');
+  const buyer = await signUp('pbuyer@example.com');
+  const stranger = await signUp('stranger@example.com');
+  const id = (await seller.post('/api/listings').send(carPayload())).body.listing.id;
+  await buyer.post(`/api/listings/${id}/offers`).send({ amount: 20000 });
+
+  assert.equal((await stranger.get('/api/notifications')).body.items.length, 0);
+  assert.equal((await request(app).get('/api/notifications')).status, 401);
+});
+
+test('a standing bid firing notifies the buyer and the seller', async () => {
+  outbox.clear();
+  const buyer = await signUp('sbid@example.com', 'Bid Buyer');
+  const seller = await signUp('sbidseller@example.com', 'Bid Seller');
+  await buyer.post('/api/standing-bids').send({ make: 'Volvo', model: 'XC60', yearMin: 2015, amount: 26000 }).expect(201);
+
+  await seller.post('/api/listings').send(
+    carPayload({ make: 'Volvo', model: 'XC60 Momentum', year: 2019, miles: 50000, price: 27000 })
+  ).expect(201);
+
+  const sellerFeed = await seller.get('/api/notifications');
+  assert.equal(sellerFeed.body.items[0].kind, 'offer_received');
+  assert.match(sellerFeed.body.items[0].body, /standing bid/);
+  assert.equal(mailTo('sbidseller@example.com').length, 1);
+});
+
+test('a hold notifies the seller', async () => {
+  const seller = await signUp('hseller@example.com');
+  const buyer = await signUp('hbuyer@example.com', 'Holly Buyer');
+  const id = (await seller.post('/api/listings').send(carPayload())).body.listing.id;
+
+  await buyer.post(`/api/listings/${id}/hold`).expect(201);
+  const feed = await seller.get('/api/notifications');
+  assert.equal(feed.body.items[0].kind, 'hold_placed');
+  assert.match(feed.body.items[0].title, /Holly Buyer/);
+});
+
+test('deadline reminders go out once, to the seller and to live bidders', async () => {
+  outbox.clear();
+  const { runDeadlineReminders, expireHolds } = await import('../src/jobs/scheduler.js');
+
+  const seller = await signUp('dseller@example.com');
+  const buyer = await signUp('dbuyer@example.com');
+  const id = (await seller.post('/api/listings').send({ ...carPayload(), deadlineDays: 1 })).body.listing.id;
+  await buyer.post(`/api/listings/${id}/offers`).send({ amount: 20500 });
+
+  const first = await runDeadlineReminders();
+  assert.equal(first.sent, 1);
+
+  const sellerFeed = await seller.get('/api/notifications');
+  assert.equal(sellerFeed.body.items[0].kind, 'deadline_soon');
+  assert.match(sellerFeed.body.items[0].body, /1 live offer/);
+
+  const buyerFeed = await buyer.get('/api/notifications');
+  assert.equal(buyerFeed.body.items[0].kind, 'deadline_soon');
+  assert.match(buyerFeed.body.items[0].title, /Last chance/);
+
+  const second = await runDeadlineReminders();
+  assert.equal(second.sent, 0, 'a listing is reminded about exactly once');
+
+  // Holds past their expiry are cleaned up by the same tick.
+  const held = (await seller.post('/api/listings').send(carPayload())).body.listing.id;
+  await buyer.post(`/api/listings/${held}/hold`).expect(201);
+  getDb().prepare('UPDATE holds SET expires_at = ? WHERE listing_id = ?').run(Date.now() - 1000, held);
+  assert.equal(expireHolds(), 1);
+  assert.equal((await request(app).get(`/api/listings/${held}`)).body.listing.hold, null);
+});
+
+test('a listing without a deadline is never reminded about', async () => {
+  const { runDeadlineReminders } = await import('../src/jobs/scheduler.js');
+  const seller = await signUp('ndseller@example.com');
+  await seller.post('/api/listings').send(carPayload()).expect(201);
+  assert.equal((await runDeadlineReminders()).sent, 0);
+});
+
+test('mail headers cannot be injected through a subject', async () => {
+  outbox.clear();
+  const { sendMail } = await import('../src/lib/mailer.js');
+  await sendMail({
+    to: 'victim@example.com\nBcc: attacker@evil.example',
+    subject: 'Hello\nBcc: attacker@evil.example',
+    text: 'body',
+    html: '<p>body</p>'
+  });
+  const mail = outbox.all().at(-1);
+  assert.ok(!mail.to.includes('\n'));
+  assert.ok(!mail.subject.includes('\n'));
+});

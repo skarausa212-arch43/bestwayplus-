@@ -12,7 +12,8 @@ import {
 } from '../models/listing.model.js';
 import { fireBidsAtListing } from '../models/standing.model.js';
 import { relatedSales, recordSale } from '../models/sale.model.js';
-import { offersOnListing } from '../models/offer.model.js';
+import { offersOnListing, offerById } from '../models/offer.model.js';
+import { offerCreated, holdPlaced } from '../services/notifications.js';
 import { costToOwn, registrationCheck, shippingQuote, floorPrice } from '../lib/pricing.js';
 import { stateForZip } from '../data/states.js';
 
@@ -85,6 +86,18 @@ listingsRouter.post(
     const id = createListing(req.user.id, data);
     const listing = rawListing(id);
     const firedBids = fireBidsAtListing(listing);
+
+    // Each standing bid that fired is a real offer; both sides hear about it.
+    for (const fired of firedBids) {
+      const offer = offerById(fired.offerId);
+      if (offer) {
+        await offerCreated({
+          listing: rawListing(id),
+          offer,
+          buyer: getDb().prepare('SELECT * FROM users WHERE id = ?').get(offer.buyer_id)
+        });
+      }
+    }
 
     res.status(201).json({
       listing: hydrate(rawListing(id), { viewerId: req.user.id }),
@@ -265,6 +278,8 @@ listingsRouter.post(
          ON CONFLICT(listing_id) DO UPDATE SET user_id = excluded.user_id, expires_at = excluded.expires_at`
       )
       .run(listing.id, req.user.id, ts + config.holdHours * 3600000, ts);
+
+    await holdPlaced({ listing, buyer: req.user, until: ts + config.holdHours * 3600000 });
 
     res.status(201).json({
       hold: { until: ts + config.holdHours * 3600000, depositCents: config.holdDepositCents },

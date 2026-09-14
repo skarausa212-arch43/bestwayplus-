@@ -2,13 +2,17 @@ import { Router } from 'express';
 import { getDb } from '../db/index.js';
 import { parse, schemas } from '../lib/validate.js';
 import { requireAuth } from '../lib/auth.js';
-import { wrap, notFound } from '../lib/errors.js';
+import { wrap, notFound, badRequest } from '../lib/errors.js';
+import { listForUser, unreadCount, markRead } from '../models/notification.model.js';
 import {
   createOffer, respondToOffer, acceptCounter, withdrawOffer,
-  offersReceived, offersMade
+  offersReceived, offersMade, offerById
 } from '../models/offer.model.js';
 import { createBid, bidsForUser, deactivateBid, fireBidNow } from '../models/standing.model.js';
 import { hydrate, rawListing } from '../models/listing.model.js';
+import {
+  offerCreated, offerAccepted, offerDeclined, offerCountered, offerWithdrawn
+} from '../services/notifications.js';
 
 export const offersRouter = Router();
 
@@ -17,12 +21,12 @@ offersRouter.post(
   requireAuth,
   wrap(async (req, res) => {
     const { amount, message } = parse(schemas.offer, req.body);
-    const result = createOffer({
-      listingId: Number(req.params.id),
-      buyer: req.user,
-      amount,
-      message
-    });
+    const listingId = Number(req.params.id);
+    const result = createOffer({ listingId, buyer: req.user, amount, message });
+
+    // Notifications go out after the write has committed: an email that cannot
+    // be sent must never roll back a deal that was already agreed.
+    await offerCreated({ listing: rawListing(listingId), offer: offerById(result.id), buyer: req.user });
 
     // An auto-handled offer gets its answer in the same response.
     const outcome = {
@@ -45,30 +49,68 @@ offersRouter.get('/offers/made', requireAuth, wrap(async (req, res) => {
 }));
 
 offersRouter.post('/offers/:id/accept', requireAuth, wrap(async (req, res) => {
-  res.json(respondToOffer(Number(req.params.id), req.user.id, 'accept'));
+  const id = Number(req.params.id);
+  const offer = offerById(id);
+  const result = respondToOffer(id, req.user.id, 'accept');
+  await offerAccepted({ listing: rawListing(offer.listing_id), offer });
+  res.json(result);
 }));
 
 offersRouter.post('/offers/:id/decline', requireAuth, wrap(async (req, res) => {
-  res.json(respondToOffer(Number(req.params.id), req.user.id, 'decline'));
+  const id = Number(req.params.id);
+  const offer = offerById(id);
+  const result = respondToOffer(id, req.user.id, 'decline');
+  await offerDeclined({ listing: rawListing(offer.listing_id), offer });
+  res.json(result);
 }));
 
 offersRouter.post('/offers/:id/counter', requireAuth, wrap(async (req, res) => {
   const { amount } = parse(schemas.counter, req.body);
-  res.json(respondToOffer(Number(req.params.id), req.user.id, 'counter', amount));
+  const id = Number(req.params.id);
+  const offer = offerById(id);
+  const result = respondToOffer(id, req.user.id, 'counter', amount);
+  await offerCountered({ listing: rawListing(offer.listing_id), offer, amount });
+  res.json(result);
 }));
 
 offersRouter.post('/offers/:id/accept-counter', requireAuth, wrap(async (req, res) => {
-  res.json(acceptCounter(Number(req.params.id), req.user.id));
+  const id = Number(req.params.id);
+  const result = acceptCounter(id, req.user.id);
+  const offer = offerById(id);
+  await offerAccepted({ listing: rawListing(offer.listing_id), offer, byBuyer: true });
+  res.json(result);
 }));
 
 offersRouter.post('/offers/:id/withdraw', requireAuth, wrap(async (req, res) => {
-  res.json(withdrawOffer(Number(req.params.id), req.user.id));
+  const id = Number(req.params.id);
+  const offer = offerById(id);
+  const result = withdrawOffer(id, req.user.id);
+  await offerWithdrawn({ listing: rawListing(offer.listing_id), offer });
+  res.json(result);
 }));
 
 /* ---------------- standing bids ---------------- */
 
 offersRouter.get('/standing-bids', requireAuth, wrap(async (req, res) => {
   res.json({ items: bidsForUser(req.user.id) });
+}));
+
+/* ---------------- notifications ---------------- */
+
+offersRouter.get('/notifications', requireAuth, wrap(async (req, res) => {
+  res.json({ items: listForUser(req.user.id), unread: unreadCount(req.user.id) });
+}));
+
+offersRouter.post('/notifications/read', requireAuth, wrap(async (req, res) => {
+  const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(Number).filter(Boolean) : null;
+  res.json({ marked: markRead(req.user.id, ids) });
+}));
+
+offersRouter.patch('/me/preferences', requireAuth, wrap(async (req, res) => {
+  const wants = req.body?.notifyEmail;
+  if (typeof wants !== 'boolean') throw badRequest('notifyEmail must be true or false.');
+  getDb().prepare('UPDATE users SET notify_email = ? WHERE id = ?').run(wants ? 1 : 0, req.user.id);
+  res.json({ notifyEmail: wants });
 }));
 
 offersRouter.post('/standing-bids', requireAuth, wrap(async (req, res) => {

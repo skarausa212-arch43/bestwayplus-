@@ -57,6 +57,9 @@ header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.93);backdro
 .btn-lg{padding:14px 26px;font-size:16px;border-radius:14px}
 .btn-sm{padding:7px 13px;font-size:13px;border-radius:9px}
 .btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.bell{position:relative;width:40px;height:40px;border-radius:11px;border:1px solid var(--line);background:#fff;font-size:16px;flex:none;line-height:1}
+.bell:hover{background:var(--bg)}
+.bell-count{position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;font-size:10.5px;font-weight:800;min-width:18px;height:18px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 4px}
 .avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#7c3aed);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;cursor:pointer;border:none;flex:none}
 
 /* ---------- hero & search ---------- */

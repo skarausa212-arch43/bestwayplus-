@@ -7,6 +7,7 @@ import { renderListing } from './views/listing.js';
 import { renderSell } from './views/sell.js';
 import { renderGarage } from './views/garage.js';
 import { renderSold, renderWanted } from './views/boards.js';
+import { openNotifications, refreshNotifications, startNotificationPolling, stopNotificationPolling } from './notifications.js';
 
 const view = document.getElementById('view');
 
@@ -62,10 +63,14 @@ function renderHeader() {
 
   if (user) {
     const initials = user.name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+    const bell = `<button class="bell" data-bell aria-label="Notifications">🔔<span class="bell-count" id="bellCount" hidden></span></button>`;
     right.innerHTML = `${sell}
       <a class="btn btn-ghost hide-sm" href="#/garage">My garage<span id="pendingBadge"></span></a>
+      ${bell}
       <button class="avatar" title="${esc(user.name)}" data-menu>${esc(initials)}</button>${menu}`;
+    right.querySelector('[data-bell]').addEventListener('click', openNotifications);
     refreshBadge();
+    refreshNotifications();
   } else {
     right.innerHTML = `<button class="btn btn-ghost hide-sm" data-login>Log in</button>${sell}${menu}`;
     right.querySelector('[data-login]').addEventListener('click', () => openAuth('login'));
@@ -100,12 +105,14 @@ function openMenu() {
       ${item('📋 Wanted board', '#/wanted')}
       ${item('🚗 Sell your car', '#/sell')}
       ${user ? item('🔧 My garage', '#/garage') : ''}
+      ${user ? '<button data-bell>🔔 Notifications</button>' : ''}
       ${user && !user.fundsVerified ? '<button data-verify>✅ Verify my funds</button>' : ''}
       ${user ? '<button data-logout>↩︎ Log out</button>' : '<button data-login>👤 Log in</button>'}
     </div>`);
 
   back.querySelectorAll('[data-go]').forEach((b) =>
     b.addEventListener('click', () => { closeModal(); location.hash = b.dataset.go; }));
+  back.querySelector('[data-bell]')?.addEventListener('click', () => { closeModal(); openNotifications(); });
   back.querySelector('[data-verify]')?.addEventListener('click', () => { closeModal(); verifyFunds(); });
   back.querySelector('[data-logout]')?.addEventListener('click', () => { closeModal(); logout(); });
   back.querySelector('[data-login]')?.addEventListener('click', () => { closeModal(); openAuth('login'); });
@@ -120,8 +127,10 @@ document.getElementById('hdrSearch').addEventListener('keydown', (e) => {
   else location.hash = '#/browse';
 });
 
-onUserChange(() => {
+onUserChange((user) => {
   renderHeader();
+  if (user) startNotificationPolling();
+  else stopNotificationPolling();
   route();
 });
 
@@ -139,4 +148,5 @@ onUserChange(() => {
   }
   renderHeader();
   route();
+  if (store.user) startNotificationPolling();
 })();

@@ -72,6 +72,7 @@ export const publicUser = (u) =>
     phone: u.phone,
     zip: u.zip,
     fundsVerified: !!u.funds_verified,
+    notifyEmail: u.notify_email !== 0,
     createdAt: u.created_at
   };
 

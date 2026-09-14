@@ -19,7 +19,7 @@ reference.
 npm install
 npm run seed     # load sample sold prices so valuations work on day one
 npm start        # http://localhost:3000 — open it in a browser
-npm test         # 35 API and unit tests, no network needed
+npm test         # 46 API and unit tests, no network needed
 npm run dev      # same as start, restarts on file changes
 ```
 
@@ -39,6 +39,19 @@ Everything has a working default. Override with environment variables:
 | `BCRYPT_ROUNDS` | `12` | Password hashing cost |
 | `HOLD_HOURS` | `48` | How long a hold takes a car off the market |
 | `RATE_LIMIT` | on | Set to `off` to disable auth rate limiting locally |
+| `MAIL_TRANSPORT` | `file` | `file` · `console` · `smtp` · `memory` (tests) |
+| `MAIL_DIR` | `outbox/` | Where the `file` transport writes `.eml` files |
+| `MAIL_FROM` | Driveway no-reply | From header on outgoing mail |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_SECURE` | — | Only read when `MAIL_TRANSPORT=smtp` |
+| `APP_URL` | `http://localhost:$PORT` | Base for links inside emails |
+| `JOBS` | on | Set to `off` to stop the background scheduler |
+| `JOBS_INTERVAL_MS` | `900000` | How often the scheduler ticks |
+| `DEADLINE_WARNING_MS` | `86400000` | How far ahead the closing reminder goes out |
+
+By default nothing here touches the network: emails are written to `outbox/` as
+real `.eml` files you can open, which is far more useful than a log line for
+checking what a buyer would actually receive. Point `MAIL_TRANSPORT` at `smtp`
+in production.
 
 ---
 
@@ -104,6 +117,25 @@ matching listing is published your offer is already on the seller's screen.
 Every accepted offer becomes a public comp. Dealers have transaction data;
 consumers normally see only asking prices. This is the asset that compounds —
 the longer the site runs, the harder it is to copy.
+
+### Notifications
+`GET /api/notifications` · `POST /api/notifications/read` ·
+`PATCH /api/me/preferences`
+
+Offers, counters, acceptances, holds and closing deadlines all raise a
+notification. The in-app feed is the source of truth and email is a copy of it:
+turning email off still leaves everything in the bell, because a seller must be
+able to find out that an offer arrived.
+
+Delivery never blocks a deal. Notifications are written after the database
+transaction commits, and a failed send is recorded on the row rather than
+thrown — an unreachable mail server must not roll back a sale that was already
+agreed.
+
+A background scheduler sends the "offers close in N hours" reminder to the
+seller and to everyone with a live offer, exactly once per listing, and expires
+holds whose time is up. The reminder stamp is written *before* the mail goes
+out: sending twice is worse than sending late.
 
 ### Reference data
 `GET /api/meta` · `GET /api/meta/state/:code` · `GET /api/meta/zip/:zip` ·
@@ -181,8 +213,12 @@ src/
     schema.sql        full schema for a fresh database, written to port to Postgres cleanly
     migrations.js     additive, recorded migrations that carry an existing database forward
     index.js          connection, migration runner, transaction helper
+  jobs/scheduler.js   deadline reminders and hold expiry
+  services/
+    notifications.js  what each event says, in-app and by email
   lib/
     auth.js           hashing, sessions, requireAuth, rate limiting
+    mailer.js         file / console / smtp / memory transports
     pricing.js        valuation, cost-to-own, registration, shipping
     photos.js         upload handling and image processing
     scam.js           offer-message scam patterns
@@ -224,8 +260,12 @@ that renders it rather than being scattered through helpers, so adding the
 Spanish version from the concept prototype is a translation pass, not a hunt —
 but a half-translated UI is worse than an English one, so it lands as a whole.
 
+The SMTP transport is implemented but has never been exercised here: this
+container has no mail server to send through. Everything else in the
+notification path — templates, delivery bookkeeping, opt-out, the scheduler —
+is covered by tests against the in-memory transport.
+
 ## Next
 
-1. Email notifications for new offers, counters and closing deadlines.
-2. Spanish translation of the full interface.
-3. Postgres migration path and a deployment setup.
+1. Spanish translation of the full interface.
+2. Postgres migration path and a deployment setup.
