@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { store } from '../state.js';
-import { toast, onClick, $, esc } from '../format.js';
+import { toast, onClick, $, esc, money, timeAgo } from '../format.js';
 import { carCard, skeletonGrid, emptyState } from '../ui.js';
 import { stagger, revealOnScroll, countUp, pulse } from '../motion.js';
 import { requireAuth } from '../auth.js';
@@ -33,26 +33,27 @@ function queryParams() {
 }
 
 const shell = () => `
-  <section class="hero">
-    <span class="orb orb-1"></span><span class="orb orb-2"></span><span class="orb orb-3"></span>
-    <div class="hero-in">
-    <h1>Buy and sell cars<br>the honest way.</h1>
-    <p class="sub">Real offers, verified sellers, and the paperwork figured out before you even meet. No dealership games.</p>
+  <section class="hero"><div class="hero-in">
+    <p class="eyebrow">Private-party marketplace · 50 states</p>
+    <h1>Buy and sell cars<br>the <em>honest</em> way.</h1>
+    <p class="hero-lead">Real offers from verified buyers, the paperwork worked out before you meet,
+      and the one number nobody else will show you — what cars like yours actually sold for.</p>
     <div class="hero-stats">
       <div><b id="statCars">—</b><span>cars for sale</span></div>
       <div><b id="statSold">—</b><span>sold on Driveway</span></div>
-      <div><b>$0</b><span>listing fee</span></div>
+      <div><b>$0</b><span>to list yours</span></div>
     </div>
+    <div class="ticker" id="ticker" aria-hidden="true"><div class="ticker-track" id="tickerTrack"></div></div>
   </div></section>
 
   <div class="search-panel"><div class="search-card">
     <div class="field"><label for="f-make">Make</label><select id="f-make" name="make"><option value="">Any make</option></select></div>
     <div class="field"><label for="f-price">Max price</label><select id="f-price" name="maxPrice">
-      <option value="">—</option><option value="15000">Under $15,000</option><option value="25000">Under $25,000</option>
+      <option value="">Any price</option><option value="15000">Under $15,000</option><option value="25000">Under $25,000</option>
       <option value="35000">Under $35,000</option><option value="50000">Under $50,000</option><option value="100000">Under $100,000</option>
     </select></div>
     <div class="field"><label for="f-year">Year from</label><select id="f-year" name="yearFrom">
-      <option value="">—</option><option>2022</option><option>2020</option><option>2018</option><option>2015</option><option>2010</option>
+      <option value="">Any year</option><option>2022</option><option>2020</option><option>2018</option><option>2015</option><option>2010</option>
     </select></div>
     <div class="field"><label for="f-zip">Your ZIP</label><input id="f-zip" maxlength="5" inputmode="numeric" placeholder="78701" value="${esc(store.zip)}"></div>
     <button class="btn btn-primary" data-act="search">Search</button>
@@ -61,18 +62,22 @@ const shell = () => `
   <div class="wrap">
     <div class="chips" id="bodyChips"></div>
     <div class="chips" id="smartChips"></div>
-    <div class="section-head"><h2 id="listTitle">Fresh listings</h2><span class="count" id="listCount"></span></div>
+    <div class="section-head">
+      <div><p class="eyebrow">Live now</p><h2 id="listTitle">Fresh listings</h2></div>
+      <span class="count" id="listCount"></span>
+    </div>
     <div id="grid">${skeletonGrid()}</div>
     <div style="text-align:center;margin-bottom:50px"><button class="btn btn-outline" id="moreBtn" hidden>Load more</button></div>
   </div>
 
   <section class="how"><div class="wrap">
-    <h2 class="reveal" style="letter-spacing:-.8px">How Driveway works</h2>
+    <p class="eyebrow reveal">How it works</p>
+    <h2 class="reveal">Four steps, none of them a dealership.</h2>
     <div class="how-grid">
-      <div class="how-step reveal"><div class="num">1</div><h3>List in minutes</h3><p>Guided photos and a free history check are built into the listing form.</p></div>
-      <div class="how-step reveal"><div class="num">2</div><h3>Get real offers</h3><p>Your rules can accept, counter or decline offers automatically, day or night.</p></div>
-      <div class="how-step reveal"><div class="num">3</div><h3>Know the real price</h3><p>Every accepted offer feeds the sold-price database, so both sides negotiate with facts.</p></div>
-      <div class="how-step reveal"><div class="num">4</div><h3>Close it safely</h3><p>Registration cost, shipping and a 48-hour hold are settled before you meet.</p></div>
+      <div class="how-step reveal"><div class="num">01</div><h3>List in minutes</h3><p>Guided photos, a cold-start recording and a free history check are built into the form.</p></div>
+      <div class="how-step reveal"><div class="num">02</div><h3>Get real offers</h3><p>Your rules accept, counter or decline offers automatically — day or night, while you sleep.</p></div>
+      <div class="how-step reveal"><div class="num">03</div><h3>Know the real price</h3><p>Every accepted offer feeds the sold-price database, so both sides negotiate with facts.</p></div>
+      <div class="how-step reveal"><div class="num">04</div><h3>Close it safely</h3><p>Registration cost, shipping and a 48-hour hold are all settled before you meet.</p></div>
     </div>
   </div></section>`;
 
@@ -190,10 +195,32 @@ async function loadStats(root) {
   try {
     const [listings, sales] = await Promise.all([
       api.get('/api/listings', { limit: 1 }),
-      api.get('/api/sales', { limit: 1 })
+      api.get('/api/sales', { limit: 20 })
     ]);
     const format = (v) => v.toLocaleString('en-US');
     countUp($('#statCars', root), listings.total, { format });
     countUp($('#statSold', root), sales.total, { format });
+    paintTicker(root, sales.items);
   } catch { /* the hero counters are decoration; a failure here is not worth showing */ }
+}
+
+/**
+ * The hero ticker is the sold-price database in motion. It is the one thing on
+ * the site no competitor can copy, so it belongs above the fold rather than
+ * buried on its own page.
+ */
+function paintTicker(root, sales) {
+  const track = $('#tickerTrack', root);
+  if (!track || !sales?.length) return;
+
+  const items = sales.slice(0, 14).map((s) => `
+    <span class="ticker-item">
+      <i>sold</i>
+      <span>${s.year} ${esc(s.make)} ${esc(s.model)}</span>
+      <b>${money(s.price)}</b>
+      <span>· ${esc(s.state)} · ${timeAgo(s.at)}</span>
+    </span>`).join('');
+
+  // Duplicated so the -50% loop meets itself with no visible seam.
+  track.innerHTML = items + items;
 }

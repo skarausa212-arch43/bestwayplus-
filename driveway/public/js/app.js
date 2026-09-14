@@ -11,35 +11,6 @@ import { openNotifications, refreshNotifications, startNotificationPolling, stop
 
 const view = document.getElementById('view');
 
-/* ---------------- theme ---------------- */
-
-const THEME_KEY = 'dw_theme';
-
-function storedTheme() {
-  try { return localStorage.getItem(THEME_KEY); } catch { return null; }
-}
-
-/** No stored choice means "follow the system", which the CSS handles on its own. */
-function applyTheme(theme = storedTheme()) {
-  if (theme === 'dark' || theme === 'light') document.documentElement.dataset.theme = theme;
-  else delete document.documentElement.dataset.theme;
-}
-
-function currentlyDark() {
-  const stored = storedTheme();
-  if (stored) return stored === 'dark';
-  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
-}
-
-function toggleTheme() {
-  const next = currentlyDark() ? 'light' : 'dark';
-  try { localStorage.setItem(THEME_KEY, next); } catch { /* private mode */ }
-  applyTheme(next);
-  renderHeader();
-}
-
-applyTheme();
-
 const NAV = [
   ['#/browse', 'Browse'],
   ['#/sold', 'Sold prices'],
@@ -97,24 +68,20 @@ function renderHeader() {
   const user = store.user;
   const sell = '<a class="btn btn-primary" href="#/sell">+<span class="lbl" style="margin-left:6px">Sell your car</span></a>';
   const menu = '<button class="menu-btn" data-menu aria-label="Menu">☰</button>';
-  const dark = currentlyDark();
-  const theme = `<button class="icon-btn" data-theme-toggle aria-label="${dark ? 'Switch to light theme' : 'Switch to dark theme'}" title="${dark ? 'Light theme' : 'Dark theme'}">${dark ? '☀️' : '🌙'}</button>`;
-
   if (user) {
     const initials = user.name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
     const bell = `<button class="bell" data-bell aria-label="Notifications">🔔<span class="bell-count" id="bellCount" hidden></span></button>`;
     right.innerHTML = `${sell}
       <a class="btn btn-ghost hide-sm" href="#/garage">My garage<span id="pendingBadge"></span></a>
-      ${theme}${bell}
+      ${bell}
       <button class="avatar" title="${esc(user.name)}" data-menu>${esc(initials)}</button>${menu}`;
     right.querySelector('[data-bell]').addEventListener('click', openNotifications);
     refreshBadge();
     refreshNotifications();
   } else {
-    right.innerHTML = `<button class="btn btn-ghost hide-sm" data-login>Log in</button>${sell}${theme}${menu}`;
+    right.innerHTML = `<button class="btn btn-ghost hide-sm" data-login>Log in</button>${sell}${menu}`;
     right.querySelector('[data-login]').addEventListener('click', () => openAuth('login'));
   }
-  right.querySelector('[data-theme-toggle]').addEventListener('click', toggleTheme);
   right.querySelectorAll('[data-menu]').forEach((b) => b.addEventListener('click', openMenu));
 }
 
@@ -146,7 +113,6 @@ function openMenu() {
       ${item('🚗 Sell your car', '#/sell')}
       ${user ? item('🔧 My garage', '#/garage') : ''}
       ${user ? '<button data-bell>🔔 Notifications</button>' : ''}
-      <button data-theme-toggle>${currentlyDark() ? '☀️ Light theme' : '🌙 Dark theme'}</button>
       ${user && !user.fundsVerified ? '<button data-verify>✅ Verify my funds</button>' : ''}
       ${user ? '<button data-logout>↩︎ Log out</button>' : '<button data-login>👤 Log in</button>'}
     </div>`);
@@ -155,7 +121,6 @@ function openMenu() {
     b.addEventListener('click', () => { closeModal(); location.hash = b.dataset.go; }));
   back.querySelectorAll('.menu-sheet button').forEach((b, i) => b.style.setProperty('--i', String(i)));
   back.querySelector('[data-bell]')?.addEventListener('click', () => { closeModal(); openNotifications(); });
-  back.querySelector('[data-theme-toggle]')?.addEventListener('click', () => { closeModal(); toggleTheme(); });
   back.querySelector('[data-verify]')?.addEventListener('click', () => { closeModal(); verifyFunds(); });
   back.querySelector('[data-logout]')?.addEventListener('click', () => { closeModal(); logout(); });
   back.querySelector('[data-login]')?.addEventListener('click', () => { closeModal(); openAuth('login'); });

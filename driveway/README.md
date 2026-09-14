@@ -193,15 +193,25 @@ whole step on every keystroke would throw away the user's cursor.
 
 ### Look and motion
 
-Light and dark themes are both first-class. The choice is stored per browser and
-applied by a tiny script in `<head>` before the first paint, so a dark-theme
-visitor never gets a white flash; with no stored choice the CSS follows the
-system preference on its own.
+The design is **editorial, not dashboard**: a warm paper canvas rather than the
+usual cold grey, near-black ink for type and primary buttons, one electric blue
+for links and focus, and an acid lime reserved for the few things worth
+shouting about. Headlines run large and tight with a serif italic cutting into
+them, section headers carry a small letterspaced eyebrow, and panels are drawn
+with hairlines instead of drop shadows. A barely-there paper grain sits over
+everything so large flat areas do not read as empty screen.
 
-Motion is used to explain state, not to decorate: views fade up as you navigate,
-grids and lists stagger in, panels reveal as they scroll into view, hero and
-sold-price figures count up, the bell rings when something new lands, and
-buttons show a spinner in place while an action is in flight.
+Cards keep their photo at 4:3 and put the price first at display size; hovering
+lifts the card, zooms the photo, and slides in the deal rating and a corner
+arrow — the resting state stays quiet.
+
+The hero carries a **ticker of real sold prices**, running live from the sales
+table. It is the one thing on the site a competitor cannot copy, so it sits
+above the fold rather than on a page of its own.
+
+Motion explains state rather than decorating it: views fade up as you navigate,
+grids and lists stagger in, panels rise as they scroll into view, figures count
+up, the bell rings when something new lands, buttons show a spinner in place.
 
 Two rules keep it from becoming noise. Every animation touches only `transform`
 and `opacity`, so nothing animating can trigger layout while a list is
@@ -209,16 +219,18 @@ scrolling. And all of it stands down under `prefers-reduced-motion`: helpers in
 `motion.js` apply the final state immediately rather than animating, which a
 test asserts by checking that nothing is left mid-fade.
 
+The interface is light-only by choice. A second theme doubles the surface that
+has to be checked on every change, and the paper palette is the point.
+
 ## Layout
 
 ```
 public/
   index.html          app shell
-  styles.css          design system: tokens, both themes, keyframes
+  styles.css          design system: tokens, type scale, keyframes
   js/
-    theme-init.js     applies the saved theme before first paint
     motion.js         reveal, stagger, count-up, pulse — all reduced-motion aware
-    app.js            hash router, header, theme toggle, boot
+    app.js            hash router, header, boot
     api.js            fetch wrapper and typed errors
     state.js          session, modals, form errors
     format.js         money/miles/date helpers, delegated clicks, toast
