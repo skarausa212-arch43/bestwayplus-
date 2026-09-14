@@ -1,6 +1,7 @@
 import { api } from '../api.js';
 import { store, showFormErrors, clearFormErrors } from '../state.js';
 import { money, miles, esc, onClick, $, $$, toast } from '../format.js';
+import { stagger } from '../motion.js';
 import { requireAuth } from '../auth.js';
 
 const STEPS = ['Car details', 'Photos & proof', 'Price & rules', 'Review'];
@@ -91,7 +92,10 @@ function paint(root) {
       toast(faulty ? 'Scan complete — one stored code found.' : 'Scan complete — no stored codes.');
     },
     delObd: () => { draft.obd = null; paint(root); },
-    roast: () => { $('#roastBox', root).outerHTML = roast(); },
+    roast: () => {
+      $('#roastBox', root).outerHTML = roast();
+      stagger($('#roastBox', root), 'li', { step: 70 });
+    },
     publish: () => publish(root)
   });
 }

@@ -2,6 +2,7 @@ import { api } from '../api.js';
 import { store, modal, closeModal, showFormErrors, clearFormErrors } from '../state.js';
 import { money, miles, esc, timeAgo, timeLeft, date, onClick, $, toast } from '../format.js';
 import { trustBadges, sellerLine, emptyState } from '../ui.js';
+import { revealOnScroll, stagger } from '../motion.js';
 import { requireAuth } from '../auth.js';
 
 let current = null;
@@ -21,6 +22,8 @@ export async function renderListing(root, id) {
   galleryIndex = 0;
   root.innerHTML = `<div class="page wide">${view(data)}</div>`;
   wire(root, data);
+  stagger($('.spec-grid', root), '.spec', { step: 45 });
+  revealOnScroll(root);
 }
 
 const photoUrl = (l, i) => l.photos[i]?.url;
@@ -78,7 +81,7 @@ function view({ listing: l, relatedSales, buyerContext, offers }) {
 
       <p class="desc">${esc(l.description || 'No description provided.')}</p>
 
-      ${h ? `<div class="box"><h4>🛡️ Free vehicle history</h4>
+      ${h ? `<div class="box reveal"><h4>🛡️ Free vehicle history</h4>
         <div class="kv"><span>Title brand</span><b style="color:${h.titleBrand === 'Clean' ? 'var(--green)' : 'var(--red)'}">${esc(h.titleBrand)}</b></div>
         <div class="kv"><span>Reported owners</span><b>${h.owners}</b></div>
         <div class="kv"><span>Reported accidents</span><b>${h.accidents}</b></div>
@@ -87,23 +90,23 @@ function view({ listing: l, relatedSales, buyerContext, offers }) {
         <div class="kv"><span>Open safety recalls</span><b style="color:${h.recalls.length ? 'var(--amber)' : 'var(--green)'}">${h.recalls.length ? esc(h.recalls.join('; ')) : 'None'}</b></div>
         <div class="note">${esc(h.source)}</div></div>` : ''}
 
-      ${l.audio ? `<div class="box"><h4>🎧 Cold-start recording</h4>
+      ${l.audio ? `<div class="box reveal"><h4>🎧 Cold-start recording</h4>
         <div class="audio-row"><audio controls preload="none" src="${esc(l.audio.url)}"></audio></div>
         <div class="note">Recorded by the seller on a cold engine. Listen for knocking, belt squeal or a rough idle.</div></div>` : ''}
 
-      ${h?.obd ? `<div class="box"><h4>🔌 Diagnostic self-check</h4>
+      ${h?.obd ? `<div class="box reveal"><h4>🔌 Diagnostic self-check</h4>
         <div class="kv"><span>Stored fault codes</span><b style="color:${h.obd.codes?.length ? 'var(--red)' : 'var(--green)'}">${h.obd.codes?.length ? esc(h.obd.codes.join(', ')) : 'None'}</b></div>
         <div class="kv"><span>Readiness monitors</span><b style="color:${h.obd.ready ? 'var(--green)' : 'var(--amber)'}">${h.obd.ready ? 'All ready' : 'Not ready — codes may have been cleared recently'}</b></div>
         <div class="note">Self-reported by the seller from an OBD-II adapter, not verified by Driveway.</div></div>` : ''}
 
-      ${l.serviceRecords.length ? `<div class="box"><h4>📒 Digital logbook</h4>
+      ${l.serviceRecords.length ? `<div class="box reveal"><h4>📒 Digital logbook</h4>
         ${l.serviceRecords.map((r) => `<div class="kv"><span>${date(r.at)}</span><b>${esc(r.title)}</b></div>`).join('')}
         <div class="note">Service records stay attached to this VIN — the next owner inherits them.</div></div>` : ''}
 
-      ${l.priceHistory.length > 1 ? `<div class="box"><h4>📉 Price history</h4>
+      ${l.priceHistory.length > 1 ? `<div class="box reveal"><h4>📉 Price history</h4>
         ${l.priceHistory.map((p) => `<div class="kv"><span>${date(p.at)}</span><b>${money(p.price)}</b></div>`).join('')}</div>` : ''}
 
-      ${relatedSales.length ? `<div class="box"><h4>💵 What these actually sold for</h4>
+      ${relatedSales.length ? `<div class="box reveal"><h4>💵 What these actually sold for</h4>
         <div class="table-wrap"><table class="data">
           <tr><th>Car</th><th>Miles</th><th>Sold for</th><th>When</th></tr>
           ${relatedSales.map((s) => `<tr><td>${s.year} ${esc(s.make)} ${esc(s.model)}</td><td>${miles(s.miles)}</td>
@@ -111,12 +114,12 @@ function view({ listing: l, relatedSales, buyerContext, offers }) {
         </table></div>
         <div class="note">Real accepted-offer prices, not asking prices.</div></div>` : ''}
 
-      ${mine && offers?.length ? `<div class="box"><h4>📥 Offers on your listing</h4>
+      ${mine && offers?.length ? `<div class="box reveal"><h4>📥 Offers on your listing</h4>
         ${offers.map((o) => `<div class="kv"><span>${esc(o.buyer.name)} ${o.verifiedFunds ? '<span class="pill green">✓ verified</span>' : ''}</span>
           <b>${money(o.amount)} · ${esc(o.status)}</b></div>`).join('')}
         <a class="btn btn-outline btn-sm" href="#/garage" style="margin-top:10px">Manage in My garage</a></div>` : ''}
 
-      <div class="box"><h4>🤖 Ask about this car</h4>
+      <div class="box reveal"><h4>🤖 Ask about this car</h4>
         <div class="qa-log" id="qaLog"><div class="qa-msg bot">Ask about features, condition, cost or paperwork. I answer from the listing data and pass anything I don't know to the seller.</div></div>
         <div style="display:flex;gap:8px">
           <input id="qaInput" style="flex:1;border:1px solid var(--line);border-radius:10px;padding:10px 12px" placeholder="Does it have Apple CarPlay?">
@@ -219,7 +222,12 @@ function wire(root, data) {
 function showPhoto(l, index) {
   if (!l.photos.length) return;
   galleryIndex = (index + l.photos.length) % l.photos.length;
-  $('#galMain').src = photoUrl(l, galleryIndex);
+  const main = $('#galMain');
+  // Restart the fade so each photo arrives rather than snapping into place.
+  main.style.animation = 'none';
+  void main.offsetWidth;
+  main.style.animation = '';
+  main.src = photoUrl(l, galleryIndex);
   $('#shotTag').textContent = tagLabel(l.photos[galleryIndex].tag);
   const thumbs = $('#thumbs');
   if (thumbs) [...thumbs.children].forEach((img, i) => img.classList.toggle('on', i === galleryIndex));

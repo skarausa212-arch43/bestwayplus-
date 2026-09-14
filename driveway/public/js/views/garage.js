@@ -2,6 +2,7 @@ import { api } from '../api.js';
 import { store, modal, closeModal, showFormErrors, clearFormErrors } from '../state.js';
 import { money, miles, esc, timeAgo, timeLeft, onClick, $, toast } from '../format.js';
 import { cardThumb, emptyState } from '../ui.js';
+import { stagger } from '../motion.js';
 import { requireAuth } from '../auth.js';
 
 const TABS = [
@@ -91,21 +92,17 @@ async function load(root) {
   ).join('');
 
   const body = $('#tabBody', root);
-  if (tab === 'listings') return void (body.innerHTML = listingsTab(listings.items));
-  if (tab === 'received') return void (body.innerHTML = receivedTab(received.items));
-  if (tab === 'made') return void (body.innerHTML = madeTab(made.items));
-  if (tab === 'standing') {
-    const { items } = await api.get('/api/standing-bids');
-    return void (body.innerHTML = standingTab(items));
-  }
-  if (tab === 'holds') {
-    const { items } = await api.get('/api/my/holds');
-    return void (body.innerHTML = holdsTab(items));
-  }
-  if (tab === 'favorites') {
-    const { items } = await api.get('/api/my/favorites');
-    return void (body.innerHTML = favoritesTab(items));
-  }
+  const show = (html) => {
+    body.innerHTML = html;
+    stagger(body, '.dash-item', { step: 50 });
+  };
+
+  if (tab === 'listings') return show(listingsTab(listings.items));
+  if (tab === 'received') return show(receivedTab(received.items));
+  if (tab === 'made') return show(madeTab(made.items));
+  if (tab === 'standing') return show(standingTab((await api.get('/api/standing-bids')).items));
+  if (tab === 'holds') return show(holdsTab((await api.get('/api/my/holds')).items));
+  if (tab === 'favorites') return show(favoritesTab((await api.get('/api/my/favorites')).items));
 }
 
 /* ---------------- tabs ---------------- */

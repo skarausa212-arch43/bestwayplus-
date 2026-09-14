@@ -2,6 +2,7 @@ import { api } from '../api.js';
 import { store, modal, closeModal, showFormErrors, clearFormErrors } from '../state.js';
 import { money, miles, esc, timeAgo, onClick, $, toast } from '../format.js';
 import { emptyState } from '../ui.js';
+import { stagger, countUp } from '../motion.js';
 import { requireAuth } from '../auth.js';
 
 /* ---------------- sold prices ---------------- */
@@ -36,10 +37,17 @@ async function load(root) {
   const { stats, items } = data;
 
   $('#soldStats', root).innerHTML = `
-    <div><span>Sales in view</span><b>${stats.count}</b></div>
-    <div><span>Average sold price</span><b>${stats.average ? money(stats.average) : '—'}</b></div>
-    <div><span>Lowest</span><b>${stats.lowest ? money(stats.lowest) : '—'}</b></div>
-    <div><span>Highest</span><b>${stats.highest ? money(stats.highest) : '—'}</b></div>`;
+    <div><span>Sales in view</span><b data-count="${stats.count}">0</b></div>
+    <div><span>Average sold price</span><b data-count="${stats.average || 0}" data-money>${stats.average ? '$0' : '—'}</b></div>
+    <div><span>Lowest</span><b data-count="${stats.lowest || 0}" data-money>${stats.lowest ? '$0' : '—'}</b></div>
+    <div><span>Highest</span><b data-count="${stats.highest || 0}" data-money>${stats.highest ? '$0' : '—'}</b></div>`;
+
+  // Numbers that tick up read as live data rather than a static table header.
+  $('#soldStats', root).querySelectorAll('[data-count]').forEach((el) => {
+    const target = Number(el.dataset.count);
+    if (!target) return;
+    countUp(el, target, { format: (v) => (el.hasAttribute('data-money') ? money(v) : v.toLocaleString('en-US')) });
+  });
 
   $('#soldTable', root).innerHTML = items.length
     ? `<table class="data">
@@ -88,6 +96,7 @@ export async function renderWanted(root) {
           : '<button class="btn btn-green btn-sm" data-act="sell">I have this car</button>'}</div>
       </div>`).join('')
     : emptyState('📋', 'Nobody has posted a request yet. Be the first.');
+  stagger($('#wantedList', root), '.dash-item', { step: 55 });
 }
 
 function postModal(root) {

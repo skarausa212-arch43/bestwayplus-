@@ -1,6 +1,7 @@
 import { api } from './api.js';
 import { store, modal, closeModal, setUser } from './state.js';
 import { esc, timeAgo, toast, $ } from './format.js';
+import { pulse, stagger } from './motion.js';
 
 /**
  * Notifications live in the header bell. The list is the source of truth —
@@ -21,8 +22,11 @@ export async function refreshNotifications({ silent = true } = {}) {
   }
   try {
     const { unread: count } = await api.get('/api/notifications');
+    const arrived = count > unread;
     unread = count;
     paintBell();
+    // Something new landed while the page was open — make the bell say so.
+    if (arrived) pulse(document.querySelector('.bell'), 'ring', 900);
   } catch {
     if (!silent) toast('Could not load notifications.');
   }
@@ -129,6 +133,8 @@ export async function openNotifications() {
         ${n.link ? `<div class="actions"><button class="btn btn-outline btn-sm" data-open="${esc(n.link)}">Open</button></div>` : ''}
       </div>`).join('')
     : '<div class="empty"><div class="big">🔔</div>Nothing yet. Offers and counters land here.</div>';
+
+  stagger($('#notifyList', back), '.dash-item', { step: 60 });
 
   back.querySelectorAll('[data-open]').forEach((button) =>
     button.addEventListener('click', () => {

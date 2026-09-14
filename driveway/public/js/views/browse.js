@@ -2,6 +2,7 @@ import { api } from '../api.js';
 import { store } from '../state.js';
 import { toast, onClick, $, esc } from '../format.js';
 import { carCard, skeletonGrid, emptyState } from '../ui.js';
+import { stagger, revealOnScroll, countUp, pulse } from '../motion.js';
 import { requireAuth } from '../auth.js';
 
 const BODIES = ['All', 'Coupe', 'Sedan', 'SUV', 'Truck', 'Electric'];
@@ -32,7 +33,9 @@ function queryParams() {
 }
 
 const shell = () => `
-  <section class="hero"><div class="hero-in">
+  <section class="hero">
+    <span class="orb orb-1"></span><span class="orb orb-2"></span><span class="orb orb-3"></span>
+    <div class="hero-in">
     <h1>Buy and sell cars<br>the honest way.</h1>
     <p class="sub">Real offers, verified sellers, and the paperwork figured out before you even meet. No dealership games.</p>
     <div class="hero-stats">
@@ -64,12 +67,12 @@ const shell = () => `
   </div>
 
   <section class="how"><div class="wrap">
-    <h2 style="font-size:26px;letter-spacing:-.5px">How Driveway works</h2>
+    <h2 class="reveal" style="letter-spacing:-.8px">How Driveway works</h2>
     <div class="how-grid">
-      <div class="how-step"><div class="num">1</div><h3>List in minutes</h3><p>Guided photos and a free history check are built into the listing form.</p></div>
-      <div class="how-step"><div class="num">2</div><h3>Get real offers</h3><p>Your rules can accept, counter or decline offers automatically, day or night.</p></div>
-      <div class="how-step"><div class="num">3</div><h3>Know the real price</h3><p>Every accepted offer feeds the sold-price database, so both sides negotiate with facts.</p></div>
-      <div class="how-step"><div class="num">4</div><h3>Close it safely</h3><p>Registration cost, shipping and a 48-hour hold are settled before you meet.</p></div>
+      <div class="how-step reveal"><div class="num">1</div><h3>List in minutes</h3><p>Guided photos and a free history check are built into the listing form.</p></div>
+      <div class="how-step reveal"><div class="num">2</div><h3>Get real offers</h3><p>Your rules can accept, counter or decline offers automatically, day or night.</p></div>
+      <div class="how-step reveal"><div class="num">3</div><h3>Know the real price</h3><p>Every accepted offer feeds the sold-price database, so both sides negotiate with facts.</p></div>
+      <div class="how-step reveal"><div class="num">4</div><h3>Close it safely</h3><p>Registration cost, shipping and a 48-hour hold are settled before you meet.</p></div>
     </div>
   </div></section>`;
 
@@ -107,11 +110,17 @@ export async function renderBrowse(root) {
     open: (node) => { location.hash = `#/car/${node.dataset.id}`; },
     fav: async (node) => {
       requireAuth(async () => {
+        pulse(node, 'pop', 500);
         const { favorited } = await api.post(`/api/listings/${node.dataset.id}/favorite`);
         toast(favorited ? 'Saved ❤️' : 'Removed from saved');
         const item = state.items.find((l) => String(l.id) === node.dataset.id);
         if (item) item.favorited = favorited;
-        paint(root);
+        // Repaint just this card's heart so the grid does not flash.
+        const svg = node.querySelector('svg');
+        if (svg) {
+          svg.setAttribute('fill', favorited ? '#ef4444' : 'none');
+          svg.setAttribute('stroke', favorited ? '#ef4444' : 'currentColor');
+        }
       });
     }
   });
@@ -123,6 +132,7 @@ export async function renderBrowse(root) {
 
   await load(root);
   loadStats(root);
+  revealOnScroll(root);
 }
 
 function renderChips(root) {
@@ -170,6 +180,8 @@ function paint(root) {
     ? `<div class="grid">${state.items.map(carCard).join('')}</div>`
     : emptyState('🔍', 'No cars match those filters.<br>Try turning a few off.');
 
+  stagger($('.grid', grid));
+
   const more = $('#moreBtn', root);
   if (more) more.hidden = state.items.length >= state.total;
 }
@@ -180,9 +192,8 @@ async function loadStats(root) {
       api.get('/api/listings', { limit: 1 }),
       api.get('/api/sales', { limit: 1 })
     ]);
-    const cars = $('#statCars', root);
-    const sold = $('#statSold', root);
-    if (cars) cars.textContent = listings.total;
-    if (sold) sold.textContent = sales.total;
+    const format = (v) => v.toLocaleString('en-US');
+    countUp($('#statCars', root), listings.total, { format });
+    countUp($('#statSold', root), sales.total, { format });
   } catch { /* the hero counters are decoration; a failure here is not worth showing */ }
 }

@@ -191,14 +191,34 @@ own CSP forbids them, so clicks are delegated through `data-act` attributes),
 and field changes update only the elements that depend on them — repainting a
 whole step on every keystroke would throw away the user's cursor.
 
+### Look and motion
+
+Light and dark themes are both first-class. The choice is stored per browser and
+applied by a tiny script in `<head>` before the first paint, so a dark-theme
+visitor never gets a white flash; with no stored choice the CSS follows the
+system preference on its own.
+
+Motion is used to explain state, not to decorate: views fade up as you navigate,
+grids and lists stagger in, panels reveal as they scroll into view, hero and
+sold-price figures count up, the bell rings when something new lands, and
+buttons show a spinner in place while an action is in flight.
+
+Two rules keep it from becoming noise. Every animation touches only `transform`
+and `opacity`, so nothing animating can trigger layout while a list is
+scrolling. And all of it stands down under `prefers-reduced-motion`: helpers in
+`motion.js` apply the final state immediately rather than animating, which a
+test asserts by checking that nothing is left mid-fade.
+
 ## Layout
 
 ```
 public/
   index.html          app shell
-  styles.css          design system
+  styles.css          design system: tokens, both themes, keyframes
   js/
-    app.js            hash router, header, boot
+    theme-init.js     applies the saved theme before first paint
+    motion.js         reveal, stagger, count-up, pulse — all reduced-motion aware
+    app.js            hash router, header, theme toggle, boot
     api.js            fetch wrapper and typed errors
     state.js          session, modals, form errors
     format.js         money/miles/date helpers, delegated clicks, toast
