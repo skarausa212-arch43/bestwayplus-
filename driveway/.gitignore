@@ -1,11 +1,16 @@
 node_modules/
-uploads/
-data/
+
+# App directories, anchored to this folder on purpose: an unanchored "data/"
+# also matches nested data/ folders (for example the reference tables shipped
+# inside .claude/skills), which would silently drop them from commits.
+/uploads/
+/data/
+/outbox/
+/coverage/
+
 *.sqlite
 *.sqlite-journal
 *.sqlite-wal
 *.sqlite-shm
 .env
 .DS_Store
-coverage/
-outbox/
