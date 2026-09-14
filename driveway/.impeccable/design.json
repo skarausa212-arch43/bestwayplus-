@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-14T00:00:00Z",
+  "title": "Design System: Driveway",
+  "extensions": {
+    "colorMeta": {
+      "paper": { "role": "neutral", "displayName": "Manual Paper", "tonalRamp": ["#fffefb", "#f6f4ef", "#efebe1", "#e7e2d5", "#d9d4c7", "#c2bbaa"] },
+      "surface": { "role": "neutral", "displayName": "Plate Surface" },
+      "plate-ink": { "role": "neutral", "displayName": "Plate Ink Navy", "tonalRamp": ["#0f1b33", "#16243f", "#2c3a55", "#5d6b85", "#a7b3ca", "#eef1f8"] },
+      "muted": { "role": "neutral", "displayName": "Drafting Grey-Blue" },
+      "rule": { "role": "neutral", "displayName": "Hairline Rule" },
+      "live-blue": { "role": "primary", "displayName": "Live Layer Blue", "tonalRamp": ["#e9edff", "#b9c6ff", "#1a4cff", "#0b2fb5", "#10256e"] },
+      "deal-green": { "role": "secondary", "displayName": "Deal Green", "tonalRamp": ["#e1f2e9", "#b9dfcb", "#0a7d4f", "#075c3a"] },
+      "rating-gold": { "role": "tertiary", "displayName": "Rating Gold", "tonalRamp": ["#fbf0dd", "#e2c68a", "#c96f00", "#8a5200"] },
+      "alert-red": { "role": "tertiary", "displayName": "Alert Red", "tonalRamp": ["#fbeae9", "#edbdb9", "#b3261e"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Plate Display", "purpose": "Hero and section headlines. Archivo at width 112. Never above 3.9rem." },
+      "headline": { "displayName": "Section Headline", "purpose": "Section openings inside a page." },
+      "title": { "displayName": "Card Title", "purpose": "Vehicle titles, panel headings." },
+      "figure": { "displayName": "Figure", "purpose": "Prices, payments and any number the reader compares. Always tabular lining." },
+      "body": { "displayName": "Interface Body", "purpose": "Manrope. All running copy, controls and table text." },
+      "label": { "displayName": "Field Label", "purpose": "Uppercase field and category labels. Never a kicker above a heading." }
+    },
+    "shadows": [
+      { "name": "sh-1", "value": "0 1px 2px rgba(15,27,51,.05)", "purpose": "Resting outline controls and chips." },
+      { "name": "sh-2", "value": "0 2px 4px rgba(15,27,51,.05), 0 10px 22px -14px rgba(15,27,51,.22)", "purpose": "Search plate, financing plate, callout figures." },
+      { "name": "sh-3", "value": "0 4px 8px rgba(15,27,51,.06), 0 22px 48px -22px rgba(15,27,51,.30)", "purpose": "Hero plate, hovered vehicle cards, modals." },
+      { "name": "sh-blue", "value": "0 2px 4px rgba(11,47,181,.18), 0 12px 26px -14px rgba(11,47,181,.45)", "purpose": "Primary buttons and range thumbs only, so the live layer reads as lit." }
+    ],
+    "motion": [
+      { "name": "ease", "value": "cubic-bezier(.16, 1, .3, 1)", "purpose": "Exponential ease-out; the default for every state change." },
+      { "name": "ease-in-out", "value": "cubic-bezier(.65, 0, .35, 1)", "purpose": "Symmetric moves that return to where they started." },
+      { "name": "t-fast", "value": "140ms", "purpose": "Hover and focus tints." },
+      { "name": "t", "value": "240ms", "purpose": "Card lift, view entrance, modal." },
+      { "name": "t-slow", "value": "560ms", "purpose": "Image scale on hover, meter fills." },
+      { "name": "plate-draw", "value": "1.5s cubic-bezier(.16, 1, .3, 1)", "purpose": "The one authored moment: the hero vehicle outline draws itself once via stroke-dashoffset, then its callouts fade in at 1.15s / 1.3s / 1.45s." }
+    ],
+    "breakpoints": [
+      { "name": "search-pair", "value": "380px" },
+      { "name": "sm", "value": "560px" },
+      { "name": "md", "value": "768px" },
+      { "name": "nav", "value": "900px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "header-search", "value": "1180px" },
+      { "name": "xl", "value": "1440px" },
+      { "name": "xxl", "value": "1920px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Every primary action. The only filled blue surface on a page.",
+      "html": "<button class=\"ds-btn\">Search</button>",
+      "css": ".ds-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; height:44px; padding:0 18px; border:1px solid transparent; border-radius:4px; background:#1a4cff; color:#fff; font:700 14.5px/1 Manrope,system-ui,sans-serif; letter-spacing:-.005em; box-shadow:0 2px 4px rgba(11,47,181,.18), 0 12px 26px -14px rgba(11,47,181,.45); transition:background 140ms cubic-bezier(.16,1,.3,1), box-shadow 240ms cubic-bezier(.16,1,.3,1), transform 140ms cubic-bezier(.16,1,.3,1); } .ds-btn:hover { background:#0b2fb5; box-shadow:0 4px 8px rgba(11,47,181,.22), 0 18px 36px -16px rgba(11,47,181,.55); } .ds-btn:active { transform:translateY(1px); } .ds-btn:focus-visible { outline:2px solid #1a4cff; outline-offset:2px; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary actions beside a primary one, and standalone controls on paper.",
+      "html": "<button class=\"ds-btn-outline\">Load more</button>",
+      "css": ".ds-btn-outline { display:inline-flex; align-items:center; justify-content:center; gap:8px; height:44px; padding:0 18px; border:1px solid #c2bbaa; border-radius:4px; background:#fffefb; color:#0f1b33; font:700 14.5px/1 Manrope,system-ui,sans-serif; box-shadow:0 1px 2px rgba(15,27,51,.05); transition:border-color 140ms cubic-bezier(.16,1,.3,1), background 140ms cubic-bezier(.16,1,.3,1); } .ds-btn-outline:hover { border-color:#2c3a55; background:#f6f4ef; }"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "The standard form field: an uppercase label over a 44px control that tints blue on focus.",
+      "html": "<div class=\"ds-field\"><label for=\"ds-zip\">ZIP code</label><input id=\"ds-zip\" placeholder=\"78701\"></div>",
+      "css": ".ds-field { display:grid; gap:6px; font-family:Manrope,system-ui,sans-serif; } .ds-field label { font-size:12px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:#5d6b85; } .ds-field input { height:44px; padding:0 12px; border:1px solid #c2bbaa; border-radius:4px; background:#fffefb; color:#0f1b33; font-size:15px; transition:border-color 140ms cubic-bezier(.16,1,.3,1), box-shadow 140ms cubic-bezier(.16,1,.3,1); } .ds-field input::placeholder { color:#5d6b85; } .ds-field input:focus { outline:none; border-color:#1a4cff; box-shadow:0 0 0 3px #e9edff; }"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Body-style and smart filters. Selected body chips go ink; selected smart filters go live blue.",
+      "html": "<button class=\"ds-chip\">Sedan</button><button class=\"ds-chip is-on\">Clean history</button>",
+      "css": ".ds-chip { display:inline-flex; align-items:center; gap:7px; height:38px; padding:0 14px; margin-right:8px; border:1px solid #d9d4c7; border-radius:4px; background:#fffefb; color:#2c3a55; font:600 13.5px/1 Manrope,system-ui,sans-serif; transition:border-color 140ms cubic-bezier(.16,1,.3,1), background 140ms cubic-bezier(.16,1,.3,1), color 140ms cubic-bezier(.16,1,.3,1); } .ds-chip:hover { border-color:#c2bbaa; color:#0f1b33; } .ds-chip.is-on { background:#1a4cff; border-color:#1a4cff; color:#fff; }"
+    },
+    {
+      "name": "Trust Badge",
+      "kind": "chip",
+      "refersTo": "badge-deal",
+      "description": "The four-at-most signals on a vehicle card. Green states a fact verified, gold a caution, red a problem.",
+      "html": "<span class=\"ds-tb ok\">Clean title</span><span class=\"ds-tb warn\">Salt belt 2y</span>",
+      "css": ".ds-tb { display:inline-flex; align-items:center; gap:5px; margin-right:6px; padding:4px 8px; border:1px solid transparent; border-radius:2px; font:700 11.5px/1.3 Manrope,system-ui,sans-serif; } .ds-tb.ok { background:#e1f2e9; color:#075c3a; border-color:#b9dfcb; } .ds-tb.warn { background:#fbf0dd; color:#8a5200; border-color:#e2c68a; } .ds-tb.bad { background:#fbeae9; color:#b3261e; border-color:#edbdb9; }"
+    },
+    {
+      "name": "Vehicle Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "One listing: image, price, the payment that price implies, the car, a ruled spec strip, badges, and a footer.",
+      "html": "<article class=\"ds-card\"><div class=\"ds-card-body\"><div class=\"ds-price\">$19,850 <span>or best offer</span></div><div class=\"ds-mo\"><b>$308/mo</b> <i>est. · 72 mo at 7.4%</i></div><div class=\"ds-title\">2020 Toyota Camry</div><div class=\"ds-trim\">SE Nightshade</div></div></article>",
+      "css": ".ds-card { background:#fffefb; border:1px solid #d9d4c7; border-radius:4px; overflow:hidden; transition:border-color 240ms cubic-bezier(.16,1,.3,1), box-shadow 240ms cubic-bezier(.16,1,.3,1), transform 240ms cubic-bezier(.16,1,.3,1); } .ds-card:hover { border-color:#c2bbaa; box-shadow:0 4px 8px rgba(15,27,51,.06), 0 22px 48px -22px rgba(15,27,51,.30); transform:translateY(-3px); } .ds-card-body { padding:16px; display:grid; gap:10px; } .ds-price { font:700 25px/1 Archivo,system-ui,sans-serif; font-stretch:112%; letter-spacing:-.028em; font-variant-numeric:tabular-nums; color:#0f1b33; } .ds-price span { font:700 11px/1 Manrope,system-ui,sans-serif; letter-spacing:.06em; text-transform:uppercase; color:#5d6b85; } .ds-mo { font:400 13px/1.4 Manrope,system-ui,sans-serif; font-variant-numeric:tabular-nums; color:#2c3a55; } .ds-mo b { color:#1a4cff; } .ds-mo i { font-style:normal; color:#5d6b85; } .ds-title { font:700 17px/1.22 Archivo,system-ui,sans-serif; font-stretch:112%; letter-spacing:-.018em; color:#0f1b33; } .ds-trim { font:500 13px/1.4 Manrope,system-ui,sans-serif; color:#5d6b85; }"
+    },
+    {
+      "name": "Main Navigation",
+      "kind": "nav",
+      "refersTo": "button-ghost",
+      "description": "Sticky header nav. The active item is underlined by a blue rule that scales in from the left.",
+      "html": "<nav class=\"ds-nav\"><a href=\"#\" class=\"is-on\">Browse</a><a href=\"#\">Closed prices</a><a href=\"#\">Wanted</a></nav>",
+      "css": ".ds-nav { display:flex; gap:2px; font-family:Manrope,system-ui,sans-serif; } .ds-nav a { position:relative; padding:9px 13px; font-size:14.5px; font-weight:600; color:#2c3a55; text-decoration:none; border-radius:4px; transition:color 140ms cubic-bezier(.16,1,.3,1), background 140ms cubic-bezier(.16,1,.3,1); } .ds-nav a::after { content:''; position:absolute; left:13px; right:13px; bottom:4px; height:2px; background:#1a4cff; transform:scaleX(0); transform-origin:left; transition:transform 240ms cubic-bezier(.16,1,.3,1); } .ds-nav a:hover { color:#0f1b33; background:#efebe1; } .ds-nav a.is-on { color:#0f1b33; } .ds-nav a.is-on::after { transform:scaleX(1); }"
+    },
+    {
+      "name": "Callout",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "A leader line from a drawing to the figure it measures. Only ever carries a computed number.",
+      "html": "<div class=\"ds-callout\"><span class=\"fig\"><i>Comp-anchored value</i><b>$27,200</b></span><span class=\"lead\"></span></div>",
+      "css": ".ds-callout { display:inline-flex; align-items:center; gap:8px; font-family:Manrope,system-ui,sans-serif; } .ds-callout .lead { position:relative; flex:none; width:54px; height:1px; background:#0f1b33; } .ds-callout .lead::before { content:''; position:absolute; left:0; top:50%; width:5px; height:5px; margin-top:-2.5px; border-radius:50%; background:#0f1b33; } .ds-callout .fig { display:grid; gap:1px; padding:7px 11px; background:#fffefb; border:1px solid #c2bbaa; border-radius:2px; box-shadow:0 2px 4px rgba(15,27,51,.05), 0 10px 22px -14px rgba(15,27,51,.22); white-space:nowrap; } .ds-callout .fig i { font-style:normal; font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#5d6b85; } .ds-callout .fig b { font:700 15px/1.2 Archivo,system-ui,sans-serif; font-stretch:112%; letter-spacing:-.01em; font-variant-numeric:tabular-nums; color:#1a4cff; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Shop Manual Plate",
+    "overview": "Driveway's job is to make a private car sale arguable with numbers instead of adjectives, so the interface is built like a page from a factory service manual: warm paper stock, deep navy plate ink for all type and line-work, and vehicles drawn as side elevations in one outline weight rather than photographed. Leader lines run from a drawing to the figure it carries, and numbers are tabular so one column reads against another.\n\nThe one thing a printed manual never had is a live layer, and that is where electric blue lives. Blue means the marketplace computed this, or you can act on this — primary buttons, active states, estimated payments, comp-anchored values, focus rings — and it appears nowhere else. Green is rationed to deal ratings, verification and success; gold to star ratings. A green pill means the same thing on every surface.\n\nThe anti-references are the two rooms this category always ships: the dusk photograph behind a dark gradient with a red accent and a floating search bar, and the classifieds grid of unlabeled thumbnails. Neither is here. A listing with no photographs draws its own elevation, and says in words that it is a drawing.",
+    "keyCharacteristics": [
+      "Warm paper ground, deep navy ink, one saturated blue that only ever means live",
+      "Everything drawn: 1.6-unit outline icons and 4-unit vehicle elevations, one stroke family",
+      "Hairline rules and 2–4px radii; the page is cut, not rounded",
+      "Tabular lining numerals wherever two figures could be compared",
+      "One authored motion moment and nothing else that loops on its own"
+    ],
+    "rules": [
+      { "name": "The Live Layer Rule", "body": "Electric blue marks what the marketplace computed or what the visitor can act on. Never decoration, never a car's paint, never a section background.", "section": "colors" },
+      { "name": "One Job Per Signal Colour", "body": "Green is deal ratings, verification and success. Gold is star ratings and the caution register. Red is destructive and error. None of the three ever borrows another's job.", "section": "colors" },
+      { "name": "No Kickers", "body": "An uppercase label names a field or a category. It never sits above a heading. The heading carries its own weight.", "section": "typography" },
+      { "name": "Every Comparable Number Is Tabular", "body": "Prices, mileage, payments, ratings and table cells all carry font-variant-numeric: tabular-nums lining-nums, so a column of figures lines up.", "section": "typography" },
+      { "name": "Depth Is Structural", "body": "A shadow says a plate sits above the paper. Every shadow carries an offset and a soft blur and is tinted with the navy ink. Most surfaces separate with a hairline instead.", "section": "elevation" },
+      { "name": "Icons Are Drawn", "body": "Every interface glyph comes from public/js/icons.js: a 24 grid, 1.6 stroke, round caps and joins, currentColor. No emoji, no Unicode dingbats.", "section": "typography" }
+    ],
+    "dos": [
+      "Do reach for blue when something is actionable or computed, and for nothing else.",
+      "Do draw any new icon on the 24 grid at 1.6 stroke and add it to public/js/icons.js.",
+      "Do give any figure a reader might compare tabular lining numerals.",
+      "Do label an estimate as an estimate, in the place it is shown.",
+      "Do let a listing with no photographs draw itself, and say in words that it is a drawing.",
+      "Do theme the browser's own surfaces — selection, caret, scrollbar, focus ring, underline offset — from these tokens."
+    ],
+    "donts": [
+      "Don't put a kicker or eyebrow above a heading.",
+      "Don't use an emoji or a Unicode dingbat as an interface icon.",
+      "Don't paint a car in Live Blue, or use green for anything but a deal rating, verification or success.",
+      "Don't nest a card inside a card, or use a grid of same-size icon-heading-text cards as a page's structure.",
+      "Don't add a second looping animation; the hero plate drawing itself is the one authored moment.",
+      "Don't reintroduce a dark theme.",
+      "Don't state a rate, a credit decision or a customer testimonial: there is no lender and there are no testimonials."
+    ]
+  }
+}

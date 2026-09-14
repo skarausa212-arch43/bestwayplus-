@@ -1,9 +1,11 @@
 import { api } from '../api.js';
 import { store, modal, closeModal, showFormErrors, clearFormErrors } from '../state.js';
 import { money, miles, esc, timeAgo, timeLeft, date, onClick, $, toast } from '../format.js';
-import { trustBadges, sellerLine, emptyState } from '../ui.js';
+import { trustBadges, sellerLine, emptyState, monthlyPayment } from '../ui.js';
 import { revealOnScroll, stagger } from '../motion.js';
+import { cardPlate } from '../plate.js';
 import { requireAuth } from '../auth.js';
+import { icon, iconFilled } from '../icons.js';
 
 let current = null;
 let galleryIndex = 0;
@@ -14,7 +16,7 @@ export async function renderListing(root, id) {
   try {
     data = await api.get(`/api/listings/${id}`, { zip: store.zip });
   } catch (err) {
-    root.innerHTML = `<div class="page">${emptyState('⚠️', esc(err.message), '<a class="btn btn-outline" href="#/browse">Back to listings</a>')}</div>`;
+    root.innerHTML = `<div class="page">${emptyState('alert', esc(err.message), '<a class="btn btn-outline" href="#/browse">Back to listings</a>')}</div>`;
     return;
   }
 
@@ -30,13 +32,16 @@ const photoUrl = (l, i) => l.photos[i]?.url;
 
 function gallery(l) {
   if (!l.photos.length) {
-    return `<div class="gallery"><div class="main"><div class="noimg" style="height:100%;display:flex;align-items:center;justify-content:center;color:#94a3b8">No photos yet</div></div></div>`;
+    // A drawing of the actual body style beats an empty grey box, and it is
+    // honest: the card says in words that no photographs have been added.
+    return `<div class="gallery"><div class="main">${cardPlate(l)}</div>
+      <div class="shot-tag">Drawing — no photos yet</div></div>`;
   }
   return `<div class="gallery">
     <div class="main"><img id="galMain" src="${esc(l.photos[0].url)}" alt="${esc(`${l.year} ${l.make} ${l.model}`)}"></div>
     <div class="shot-tag" id="shotTag">${esc(tagLabel(l.photos[0].tag))}</div>
-    ${l.photos.length > 1 ? `<button class="gal-nav gal-prev" data-act="prev" aria-label="Previous photo">‹</button>
-      <button class="gal-nav gal-next" data-act="next" aria-label="Next photo">›</button>
+    ${l.photos.length > 1 ? `<button class="gal-nav gal-prev" data-act="prev" aria-label="Previous photo">${icon('chevronLeft', { size: 20 })}</button>
+      <button class="gal-nav gal-next" data-act="next" aria-label="Next photo">${icon('chevronRight', { size: 20 })}</button>
       <div class="thumbs" id="thumbs">${l.photos.map((p, i) =>
         `<img src="${esc(p.thumbUrl)}" class="${i ? '' : 'on'}" data-act="thumb" data-i="${i}" alt="">`).join('')}</div>` : ''}
   </div>`;
@@ -49,7 +54,7 @@ function view({ listing: l, relatedSales, buyerContext, offers }) {
   const mine = store.user && store.user.id === l.sellerId;
   const h = l.history;
 
-  return `<a href="#/browse" style="font-size:14px">← All listings</a>
+  return `<a class="backlink" href="#/browse">${icon('arrowLeft', { size: 15 })}All listings</a>
   <div class="detail" style="margin-top:14px">
     <div>
       ${gallery(l)}
@@ -58,15 +63,15 @@ function view({ listing: l, relatedSales, buyerContext, offers }) {
         <span class="deal ${l.deal.key}">${esc(l.deal.label)}</span>
         <span class="car-price"><span class="offer-tag">or best offer</span></span></div>
       <div style="font-size:13.5px;color:var(--muted)">
-        📍 ${esc(l.city)}, ${esc(l.state)} · listed ${timeAgo(l.createdAt)} · est. market ${money(l.marketValue)}
-        ${l.valuationBasis === 'comps' ? ` (from ${l.compCount} real sales)` : ' (model estimate)'}
+        ${icon('pin', { size: 14 })} ${esc(l.city)}, ${esc(l.state)} · listed ${timeAgo(l.createdAt)} · est. market ${money(l.marketValue)}
+        ${l.valuationBasis === 'comps' ? ` (from ${l.compCount} closed sales)` : ' (model estimate)'}
         ${l.deadlineAt && l.deadlineAt > Date.now() ? ` · <b style="color:var(--amber)">offers close in ${timeLeft(l.deadlineAt)}</b>` : ''}
       </div>
       <div class="trust-row" style="margin-top:10px">${trustBadges(l)}</div>
 
       ${l.offerCount ? `<div class="note warn" style="margin-top:14px">
-        <b>🔥 ${l.offerCount} active offer${l.offerCount > 1 ? 's' : ''}.</b>
-        Best one sits in the <b>${money(l.bestOfferRange.low)}–${money(l.bestOfferRange.high)}</b> range. Exact amounts stay private.</div>` : ''}
+        ${icon('bolt', { size: 17 })}<div><b>${l.offerCount} active offer${l.offerCount > 1 ? 's' : ''}.</b>
+        Best one sits in the <b>${money(l.bestOfferRange.low)}–${money(l.bestOfferRange.high)}</b> range. Exact amounts stay private.</div></div>` : ''}
 
       <div class="spec-grid">
         <div class="spec"><span>Mileage</span><b>${miles(l.miles)}</b></div>
@@ -75,38 +80,40 @@ function view({ listing: l, relatedSales, buyerContext, offers }) {
         <div class="spec"><span>Fuel</span><b>${esc(l.fuel)}</b></div>
         ${l.towLb ? `<div class="spec"><span>Tow rating</span><b>${l.towLb.toLocaleString()} lb</b></div>` : ''}
         ${l.evSoh ? `<div class="spec"><span>Battery health</span><b>${l.evSoh}%</b></div>` : ''}
-        ${l.safety ? `<div class="spec"><span>Safety</span><b>${'★'.repeat(l.safety)}</b></div>` : ''}
+        ${l.drivetrain ? `<div class="spec"><span>Drivetrain</span><b>${esc(l.drivetrain)}</b></div>` : ''}
+        ${l.safety ? `<div class="spec"><span>Safety rating</span><b>${l.safety} of 5</b></div>` : ''}
+        <div class="spec"><span>Est. payment</span><b>${money(monthlyPayment(l.price))}/mo</b></div>
         <div class="spec"><span>Depreciation</span><b>~${money(l.depreciationPerMonth)}/mo</b></div>
       </div>
 
       <p class="desc">${esc(l.description || 'No description provided.')}</p>
 
-      ${h ? `<div class="box reveal"><h4>🛡️ Free vehicle history</h4>
+      ${h ? `<div class="box"><h4>${icon('shield', { size: 17 })}Free vehicle history</h4>
         <div class="kv"><span>Title brand</span><b style="color:${h.titleBrand === 'Clean' ? 'var(--green)' : 'var(--red)'}">${esc(h.titleBrand)}</b></div>
         <div class="kv"><span>Reported owners</span><b>${h.owners}</b></div>
         <div class="kv"><span>Reported accidents</span><b>${h.accidents}</b></div>
-        <div class="kv"><span>Flood-disaster area</span><b>${h.flood ? '⚠ Yes' : 'No'}</b></div>
+        <div class="kv"><span>Flood-disaster area</span><b>${h.flood ? 'Yes' : 'No'}</b></div>
         <div class="kv"><span>Years in road-salt states</span><b>${h.rustYears}</b></div>
         <div class="kv"><span>Open safety recalls</span><b style="color:${h.recalls.length ? 'var(--amber)' : 'var(--green)'}">${h.recalls.length ? esc(h.recalls.join('; ')) : 'None'}</b></div>
         <div class="note">${esc(h.source)}</div></div>` : ''}
 
-      ${l.audio ? `<div class="box reveal"><h4>🎧 Cold-start recording</h4>
+      ${l.audio ? `<div class="box"><h4>${icon('waveform', { size: 17 })}Cold-start recording</h4>
         <div class="audio-row"><audio controls preload="none" src="${esc(l.audio.url)}"></audio></div>
         <div class="note">Recorded by the seller on a cold engine. Listen for knocking, belt squeal or a rough idle.</div></div>` : ''}
 
-      ${h?.obd ? `<div class="box reveal"><h4>🔌 Diagnostic self-check</h4>
+      ${h?.obd ? `<div class="box"><h4>${icon('plug', { size: 17 })}Diagnostic self-check</h4>
         <div class="kv"><span>Stored fault codes</span><b style="color:${h.obd.codes?.length ? 'var(--red)' : 'var(--green)'}">${h.obd.codes?.length ? esc(h.obd.codes.join(', ')) : 'None'}</b></div>
         <div class="kv"><span>Readiness monitors</span><b style="color:${h.obd.ready ? 'var(--green)' : 'var(--amber)'}">${h.obd.ready ? 'All ready' : 'Not ready — codes may have been cleared recently'}</b></div>
         <div class="note">Self-reported by the seller from an OBD-II adapter, not verified by Driveway.</div></div>` : ''}
 
-      ${l.serviceRecords.length ? `<div class="box reveal"><h4>📒 Digital logbook</h4>
+      ${l.serviceRecords.length ? `<div class="box"><h4>${icon('clipboard', { size: 17 })}Digital logbook</h4>
         ${l.serviceRecords.map((r) => `<div class="kv"><span>${date(r.at)}</span><b>${esc(r.title)}</b></div>`).join('')}
         <div class="note">Service records stay attached to this VIN — the next owner inherits them.</div></div>` : ''}
 
-      ${l.priceHistory.length > 1 ? `<div class="box reveal"><h4>📉 Price history</h4>
+      ${l.priceHistory.length > 1 ? `<div class="box"><h4>${icon('trendDown', { size: 17 })}Price history</h4>
         ${l.priceHistory.map((p) => `<div class="kv"><span>${date(p.at)}</span><b>${money(p.price)}</b></div>`).join('')}</div>` : ''}
 
-      ${relatedSales.length ? `<div class="box reveal"><h4>💵 What these actually sold for</h4>
+      ${relatedSales.length ? `<div class="box"><h4>${icon('chart', { size: 17 })}What these actually closed at</h4>
         <div class="table-wrap"><table class="data">
           <tr><th>Car</th><th>Miles</th><th>Sold for</th><th>When</th></tr>
           ${relatedSales.map((s) => `<tr><td>${s.year} ${esc(s.make)} ${esc(s.model)}</td><td>${miles(s.miles)}</td>
@@ -114,24 +121,24 @@ function view({ listing: l, relatedSales, buyerContext, offers }) {
         </table></div>
         <div class="note">Real accepted-offer prices, not asking prices.</div></div>` : ''}
 
-      ${mine && offers?.length ? `<div class="box reveal"><h4>📥 Offers on your listing</h4>
-        ${offers.map((o) => `<div class="kv"><span>${esc(o.buyer.name)} ${o.verifiedFunds ? '<span class="pill green">✓ verified</span>' : ''}</span>
+      ${mine && offers?.length ? `<div class="box"><h4>${icon('inbox', { size: 17 })}Offers on your listing</h4>
+        ${offers.map((o) => `<div class="kv"><span>${esc(o.buyer.name)} ${o.verifiedFunds ? `<span class="pill green">${icon('checkCircle', { size: 12 })}verified</span>` : ''}</span>
           <b>${money(o.amount)} · ${esc(o.status)}</b></div>`).join('')}
         <a class="btn btn-outline btn-sm" href="#/garage" style="margin-top:10px">Manage in My garage</a></div>` : ''}
 
-      <div class="box reveal"><h4>🤖 Ask about this car</h4>
+      <div class="box"><h4>${icon('message', { size: 17 })}Ask about this car</h4>
         <div class="qa-log" id="qaLog"><div class="qa-msg bot">Ask about features, condition, cost or paperwork. I answer from the listing data and pass anything I don't know to the seller.</div></div>
         <div style="display:flex;gap:8px">
-          <input id="qaInput" style="flex:1;border:1px solid var(--line);border-radius:10px;padding:10px 12px" placeholder="Does it have Apple CarPlay?">
+          <input id="qaInput" class="f-inline" placeholder="Does it have Apple CarPlay?">
           <button class="btn btn-outline btn-sm" data-act="ask">Ask</button></div>
       </div>
     </div>
 
-    <aside>
+    <aside class="side">
       <div class="seller-card">
         <div class="who"><div class="avatar">${esc((l.seller?.name || 'S')[0]).toUpperCase()}</div>
           <div><b>${esc(l.seller?.name || 'Private seller')}</b>${sellerLine(l.seller)}</div></div>
-        ${l.seller?.highVolume ? `<div class="pill amber" style="display:block;text-align:center;margin-bottom:10px">⚑ ${l.seller.highVolume} listings in 30 days — may be a dealer</div>` : ''}
+        ${l.seller?.highVolume ? `<div class="pill amber" style="display:block;text-align:center;margin-bottom:10px">${icon('flag', { size: 12 })}${l.seller.highVolume} listings in 30 days — may be a dealer</div>` : ''}
 
         ${l.status === 'sold'
           ? `<div class="pill red" style="display:block;text-align:center;padding:10px">Sold for ${money(l.sale.price)}</div>`
@@ -139,24 +146,25 @@ function view({ listing: l, relatedSales, buyerContext, offers }) {
             ? `<div class="pill gray" style="display:block;text-align:center;padding:10px;margin-bottom:10px">This is your listing</div>
                <a class="btn btn-outline" href="#/garage">Manage in My garage</a>`
             : `${l.hold && !l.hold.mine ? `<div class="pill amber" style="display:block;text-align:center;margin-bottom:10px">On hold for another buyer · ${timeLeft(l.hold.until)}</div>` : ''}
-               <button class="btn btn-green btn-lg" data-act="offer">💰 Make Offer</button>
-               ${l.hold ? '' : `<button class="btn btn-outline" data-act="hold">🔒 Hold it for ${store.meta?.holdHours ?? 48}h ($500 refundable)</button>`}
-               <button class="btn btn-outline" data-act="fav">${l.favorited ? '♥ Saved' : '♡ Save'}</button>`}
+               <button class="btn btn-primary btn-lg" data-act="offer">${icon('handshake', { size: 18 })}Make an offer</button>
+               ${l.hold ? '' : `<button class="btn btn-outline" data-act="hold">${icon('lock', { size: 16 })}Hold it for ${store.meta?.holdHours ?? 48}h ($500 refundable)</button>`}
+               <button class="btn btn-outline" data-act="fav">${l.favorited
+                 ? `${iconFilled('heart', { size: 16 })}Saved` : `${icon('heart', { size: 16 })}Save`}</button>`}
 
-        ${l.rules?.enabled ? '<div class="note good">⚡ This seller answers offers automatically — you get a reply instantly.</div>' : ''}
+        ${l.rules?.enabled ? `<div class="note">${icon('bolt', { size: 16 })}<div>This seller answers offers automatically — you get a reply instantly.</div></div>` : ''}
 
-        <div class="box" style="box-shadow:none;border:1px solid var(--line)"><h4>📍 Cost in your state</h4>
+        <div class="box"><h4>${icon('calculator', { size: 17 })}Cost in your state</h4>
           <div class="f" style="margin-bottom:8px"><input id="zipInput" maxlength="5" inputmode="numeric" placeholder="Your ZIP code" value="${esc(store.zip)}"></div>
-          ${buyerContext ? costPanel(l, buyerContext) : '<div class="note">Enter your ZIP to price out tax, registration, insurance and fuel for this exact car.</div>'}
+          ${buyerContext ? costPanel(l, buyerContext) : `<div class="note">${icon('pin', { size: 16 })}<div>Enter your ZIP to price out tax, registration, insurance and fuel for this exact car.</div></div>`}
         </div>
 
         ${buyerContext ? registrationPanel(buyerContext) : ''}
         ${buyerContext?.shipping ? shippingPanel(buyerContext.shipping) : ''}
 
-        <div class="box" style="box-shadow:none;border:1px solid var(--line)"><h4>🤝 Safe meetup</h4>
+        <div class="box"><h4>${icon('pin', { size: 17 })}Safe meetup</h4>
           <div style="font-size:13px;color:var(--muted);line-height:1.5">Meet at a police-station safe exchange zone in ${esc(l.city)} — open 24/7 and covered by cameras. Both sides verify ID in the app first.</div></div>
 
-        <div class="note">🛡️ Never wire money in advance, check the title matches the seller's ID, and have a mechanic look at it before you pay.</div>
+        <div class="note">${icon('shield', { size: 16 })}<div>Never wire money in advance, check the title matches the seller's ID, and have a mechanic look at it before you pay.</div></div>
       </div>
     </aside>
   </div>`;
@@ -170,13 +178,13 @@ const costPanel = (l, ctx) => {
     <div class="kv"><span>Insurance est.</span><b>${money(c.insurancePerMonth)}/mo</b></div>
     <div class="kv"><span>Fuel / energy est.</span><b>${money(c.fuelPerMonth)}/mo</b></div>
     <div class="kv"><span>Maintenance est.</span><b>${money(c.maintenancePerMonth)}/mo</b></div>
-    <div class="kv"><span><b>All-in monthly</b></span><b style="color:var(--accent)">${money(c.allInPerMonth)}/mo</b></div>
+    <div class="kv"><span><b>All-in monthly</b></span><b style="color:var(--blue)">${money(c.allInPerMonth)}/mo</b></div>
     <div class="note">${esc(c.disclaimer)}</div>`;
 };
 
 const registrationPanel = (ctx) => {
   const r = ctx.registration;
-  return `<div class="box" style="box-shadow:none;border:1px solid var(--line)"><h4>📋 Can you register it?</h4>
+  return `<div class="box"><h4>${icon('document', { size: 17 })}Can you register it?</h4>
     <div class="kv"><span>Emissions / safety test</span><b>${r.testRequired ? 'Required' : 'Not required'}</b></div>
     <div class="kv"><span>${esc(r.state)} emissions standard</span><b>${esc(r.emissionsNote)}</b></div>
     <div class="kv"><span>Out-of-state purchase</span><b>${esc(r.outOfStateNote)}</b></div>
@@ -184,7 +192,7 @@ const registrationPanel = (ctx) => {
     <div class="note">${esc(r.disclaimer)}</div></div>`;
 };
 
-const shippingPanel = (s) => `<div class="box" style="box-shadow:none;border:1px solid var(--line)"><h4>🚚 Get it to you</h4>
+const shippingPanel = (s) => `<div class="box"><h4>${icon('truckShip', { size: 17 })}Get it to you</h4>
   ${s.local
     ? '<div class="kv"><span>Distance</span><b>Local — go and see it</b></div>'
     : `<div class="kv"><span>Distance</span><b>${s.distance.toLocaleString()} mi</b></div>
@@ -201,7 +209,7 @@ function wire(root, data) {
     ask: () => ask(l),
     fav: async () => requireAuth(async () => {
       const { favorited } = await api.post(`/api/listings/${l.id}/favorite`);
-      toast(favorited ? 'Saved ❤️' : 'Removed from saved');
+      toast(favorited ? 'Saved to your garage.' : 'Removed from saved.');
       renderListing(root, l.id);
     }),
     offer: () => requireAuth(() => offerModal(root, data)),
@@ -248,7 +256,7 @@ function offerModal(root, { listing: l, relatedSales }) {
       <div class="form-err" data-form-error hidden></div>
       <div class="note">Market value is about <b>${money(l.marketValue)}</b>. Similar cars sold for <b>${compRange}</b>.
         A realistic offer here is around <b>${money(suggested)}</b>.
-        ${l.rules?.enabled ? '<br><b style="color:var(--accent)">This seller answers automatically — expect an instant reply.</b>' : ''}</div>
+        ${l.rules?.enabled ? '<br><b style="color:var(--blue)">This seller answers automatically — expect an instant reply.</b>' : ''}</div>
       <div class="f"><label for="of-amount">Your offer (USD)</label><input id="of-amount" name="amount" type="number" value="${suggested}"></div>
       <div class="f"><label for="of-msg">Message to seller <span class="sublabel">optional</span></label>
         <textarea id="of-msg" name="message" placeholder="Hi! Can I come and see it this weekend?"></textarea></div>

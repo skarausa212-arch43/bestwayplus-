@@ -1,4 +1,5 @@
 import { el, $, esc } from './format.js';
+import { icon, iconFilled } from './icons.js';
 
 /** Session user, reference data and the buyer's ZIP, shared by every view. */
 export const store = {
@@ -36,7 +37,7 @@ export function closeModal() {
 export function modal(html, { wide = false } = {}) {
   closeModal();
   const back = el(`<div class="modal-back"><div class="modal ${wide ? 'md' : ''}">
-    <button class="modal-x" data-close aria-label="Close">✕</button>${html}</div></div>`);
+    <button class="modal-x" data-close aria-label="Close">${icon('close', { size: 18 })}</button>${html}</div></div>`);
   back.addEventListener('mousedown', (e) => { if (e.target === back) closeModal(); });
   back.querySelector('[data-close]').addEventListener('click', closeModal);
   document.getElementById('modalRoot').append(back);

@@ -11,12 +11,12 @@ let query = '';
 
 export async function renderSold(root) {
   root.innerHTML = `<div class="page wide">
-    <h1>Sold prices</h1>
-    <p class="lead">What cars <b>actually sold for</b> on Driveway — accepted offers, not asking prices.
+    <h1>Closed prices</h1>
+    <p class="lead">What cars <b>actually closed at</b> on Driveway — accepted offers, not asking prices.
       Dealers have transaction data like this. Buyers normally don't.</p>
     <div class="panel">
       <div class="f" style="margin-bottom:14px"><input id="soldQ" value="${esc(query)}" placeholder="Search make or model, e.g. Mustang"></div>
-      <div class="meter" id="soldStats"></div>
+      <div class="stat-row" id="soldStats"></div>
       <div class="table-wrap" id="soldTable" style="margin-top:16px"><div class="skeleton" style="height:200px"></div></div>
       <div class="note">Seeded with sample sales so the database is useful from day one. Every accepted offer adds a real, verified data point.</div>
     </div>
@@ -38,7 +38,7 @@ async function load(root) {
 
   $('#soldStats', root).innerHTML = `
     <div><span>Sales in view</span><b data-count="${stats.count}">0</b></div>
-    <div><span>Average sold price</span><b data-count="${stats.average || 0}" data-money>${stats.average ? '$0' : '—'}</b></div>
+    <div><span>Average closed price</span><b data-count="${stats.average || 0}" data-money>${stats.average ? '$0' : '—'}</b></div>
     <div><span>Lowest</span><b data-count="${stats.lowest || 0}" data-money>${stats.lowest ? '$0' : '—'}</b></div>
     <div><span>Highest</span><b data-count="${stats.highest || 0}" data-money>${stats.highest ? '$0' : '—'}</b></div>`;
 
@@ -59,7 +59,7 @@ async function load(root) {
           <td>${timeAgo(s.at)} ${s.source === 'driveway' ? '<span class="pill blue">Driveway</span>' : ''}</td>
         </tr>`).join('')}
       </table>`
-    : emptyState('🔍', 'No sales match that search yet.');
+    : emptyState('search', 'No sales match that search yet.');
 }
 
 /* ---------------- wanted board ---------------- */
@@ -95,7 +95,7 @@ export async function renderWanted(root) {
           ? `<button class="btn btn-outline btn-sm" data-act="del" data-id="${w.id}">Remove</button>`
           : '<button class="btn btn-green btn-sm" data-act="sell">I have this car</button>'}</div>
       </div>`).join('')
-    : emptyState('📋', 'Nobody has posted a request yet. Be the first.');
+    : emptyState('clipboard', 'Nobody has posted a request yet. Be the first.');
   stagger($('#wantedList', root), '.dash-item', { step: 55 });
 }
 

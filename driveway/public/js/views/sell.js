@@ -3,6 +3,7 @@ import { store, showFormErrors, clearFormErrors } from '../state.js';
 import { money, miles, esc, onClick, $, $$, toast } from '../format.js';
 import { stagger } from '../motion.js';
 import { requireAuth } from '../auth.js';
+import { icon } from '../icons.js';
 
 const STEPS = ['Car details', 'Photos & proof', 'Price & rules', 'Review'];
 
@@ -12,8 +13,8 @@ let valuation = null;
 let valuationKey = null;
 
 const blank = () => ({
-  make: '', model: '', year: '', miles: '', vin: '',
-  body: 'Sedan', transmission: 'Automatic', fuel: 'Gasoline',
+  make: '', model: '', trim: '', year: '', miles: '', vin: '',
+  body: 'Sedan', drivetrain: 'FWD', transmission: 'Automatic', fuel: 'Gasoline',
   doors: 4, towLb: '', evSoh: '', safety: 4,
   city: '', state: store.user?.zip ? '' : '',
   description: '', photos: [], serviceRecords: [], audio: null, obd: null,
@@ -153,7 +154,8 @@ function stepCar() {
     <div class="form-grid">
       <div class="row2">
         <div class="f"><label for="s-make">Make *</label><select id="s-make" name="make" data-field="make"><option value="">Select</option>${opts(meta.makes, draft.make)}</select></div>
-        <div class="f"><label for="s-model">Model *</label><input id="s-model" name="model" data-field="model" value="${esc(draft.model)}" placeholder="Camry SE"></div>
+        <div class="f"><label for="s-model">Model *</label><input id="s-model" name="model" data-field="model" value="${esc(draft.model)}" placeholder="Camry"></div>
+        <div class="f"><label for="s-trim">Trim <span class="sublabel">optional</span></label><input id="s-trim" name="trim" data-field="trim" maxlength="40" value="${esc(draft.trim)}" placeholder="SE Nightshade"></div>
       </div>
       <div class="row3">
         <div class="f"><label for="s-year">Year *</label><input id="s-year" name="year" data-field="year" type="number" value="${esc(draft.year)}" placeholder="2019"></div>
@@ -162,6 +164,7 @@ function stepCar() {
       </div>
       <div class="row3">
         <div class="f"><label for="s-body">Body</label><select id="s-body" name="body" data-field="body">${opts(meta.bodies, draft.body)}</select></div>
+        <div class="f"><label for="s-drive">Drivetrain</label><select id="s-drive" name="drivetrain" data-field="drivetrain">${opts(['FWD', 'RWD', 'AWD', '4WD'], draft.drivetrain)}</select></div>
         <div class="f"><label for="s-trans">Transmission</label><select id="s-trans" name="transmission" data-field="transmission">${opts(['Automatic', 'Manual'], draft.transmission)}</select></div>
         <div class="f"><label for="s-fuel">Fuel</label><select id="s-fuel" name="fuel" data-field="fuel">${opts(meta.fuels, draft.fuel)}</select></div>
       </div>
@@ -174,7 +177,7 @@ function stepCar() {
           <label for="s-tow">Tow rating (lb) <span class="sublabel">optional</span></label>
           <input id="s-tow" name="towLb" data-field="towLb" type="number" value="${esc(draft.towLb)}" placeholder="7500"></div>
         <div class="f"><label for="s-safety">Safety rating</label><select id="s-safety" name="safety" data-field="safety">
-          ${[5, 4, 3].map((n) => `<option value="${n}" ${Number(draft.safety) === n ? 'selected' : ''}>${'★'.repeat(n)}</option>`).join('')}</select></div>
+          ${[5, 4, 3].map((n) => `<option value="${n}" ${Number(draft.safety) === n ? 'selected' : ''}>${n} of 5</option>`).join('')}</select></div>
       </div>
       <div class="row2">
         <div class="f"><label for="s-city">City *</label><input id="s-city" name="city" data-field="city" value="${esc(draft.city)}" placeholder="Austin"></div>
@@ -196,16 +199,17 @@ function stepPhotos() {
     <div class="photo-drop" id="photoDrop" data-act="pickPhotos"><b>Click to upload or drag photos here</b>JPEG, PNG or HEIC · up to ${store.meta?.limits.photosPerListing ?? 12}</div>
     <input type="file" id="photoInput" accept="image/*" multiple hidden>
     <div class="shot-list">${tags.map((t) =>
-      `<span class="shot-need ${have.has(t.key) ? 'got' : ''}">${have.has(t.key) ? '✓' : t.required ? '•' : '○'} ${esc(t.label)}</span>`).join('')}</div>
+      `<span class="shot-need ${have.has(t.key) ? 'got' : ''}">${have.has(t.key)
+        ? icon('check', { size: 13 }) : t.required ? icon('camera', { size: 13 }) : ''}${esc(t.label)}</span>`).join('')}</div>
     <div class="photo-previews">${draft.photos.map((p, i) => `
       <div class="ph"><img src="${p.preview}" alt="">
-        <button data-act="delPhoto" data-i="${i}" aria-label="Remove photo">✕</button>
+        <button data-act="delPhoto" data-i="${i}" aria-label="Remove photo">${icon('close', { size: 15 })}</button>
         <select data-photo-tag="${i}">${tags.map((t) => `<option value="${t.key}" ${p.tag === t.key ? 'selected' : ''}>${esc(t.label)}</option>`).join('')}</select>
       </div>`).join('')}</div>
   </div>
 
   <div class="panel">
-    <h3>🎧 Cold-start recording</h3>
+    <h3>${icon('waveform', { size: 18 })}Cold-start recording</h3>
     <p class="hint">Ten seconds of the engine starting from cold. Knocking, belt squeal and a rough idle are all audible, and a recording is far harder to fake than a photo — it is the cheapest trust you can buy, especially for buyers in another state.</p>
     ${draft.audio
       ? `<div class="audio-row"><audio controls src="${draft.audio.url}"></audio>
@@ -216,7 +220,7 @@ function stepPhotos() {
   </div>
 
   <div class="panel">
-    <h3>🔌 Diagnostic self-check</h3>
+    <h3>${icon('plug', { size: 18 })}Diagnostic self-check</h3>
     <p class="hint">Plug a $20 OBD-II adapter into the port under the dash. Stored fault codes matter, but the readiness monitors matter more: clearing codes right before a sale leaves them "not ready", and that shows up here.</p>
     ${draft.obd
       ? `<div class="kv"><span>Stored codes</span><b style="color:${draft.obd.codes.length ? 'var(--red)' : 'var(--green)'}">${draft.obd.codes.length ? esc(draft.obd.codes.join(', ')) : 'None'}</b></div>
@@ -227,10 +231,10 @@ function stepPhotos() {
   </div>
 
   <div class="panel">
-    <h3>📒 Digital logbook</h3>
+    <h3>${icon('clipboard', { size: 18 })}Digital logbook</h3>
     <p class="hint">Service records attach to the VIN permanently. If this car is ever resold on Driveway the history follows it, which makes it worth more.</p>
     ${draft.serviceRecords.map((r, i) =>
-      `<div class="kv"><span>${esc(r)}</span><button class="btn btn-sm btn-outline" data-act="delRecord" data-i="${i}">✕</button></div>`).join('')}
+      `<div class="kv"><span>${esc(r)}</span><button class="btn btn-sm btn-outline" data-act="delRecord" data-i="${i}">${icon('close', { size: 14 })}</button></div>`).join('')}
     <div style="display:flex;gap:8px;margin-top:10px">
       <input id="recordInput" style="flex:1;border:1px solid var(--line);border-radius:10px;padding:10px 12px" placeholder="e.g. Timing belt replaced at 90,000 mi">
       <button class="btn btn-outline" data-act="addRecord">Add</button></div>
@@ -256,17 +260,17 @@ function stepPrice() {
       <div class="price-out" id="priceOut">${money(price)}</div>
     </div>
     <div class="meter" id="priceMeter">${priceMeter()}</div>
-    ${v?.comps?.length ? `<div class="box"><h4>💵 What similar cars actually sold for</h4>
+    ${v?.comps?.length ? `<div class="box"><h4>${icon('chart', { size: 17 })}What similar cars actually closed at</h4>
       <div class="table-wrap"><table class="data">
         <tr><th>Car</th><th>Miles</th><th>Sold for</th></tr>
         ${v.comps.slice(0, 5).map((s) => `<tr><td>${s.year} ${esc(s.make)} ${esc(s.model)}</td><td>${miles(s.miles)}</td><td><b>${money(s.price)}</b></td></tr>`).join('')}
       </table></div></div>` : ''}
-    <div class="note">🛟 <b>Guaranteed floor:</b> if nobody buys privately, you can close at ${money(v?.guaranteedFloor || 0)} at any time from My garage. Trying the private market first costs you nothing but time.
-      <span style="display:block;margin-top:6px;color:var(--purple)"><b>Prototype note:</b> needs a wholesale buying partner in a real build.</span></div>
+    <div class="note">${icon('shield', { size: 17 })}<div><b>Guaranteed floor:</b> if nobody buys privately, you can close at ${money(v?.guaranteedFloor || 0)} at any time from My garage. Trying the private market first costs you nothing but time.
+      <span style="display:block;margin-top:6px;color:var(--muted)"><b>Prototype note:</b> needs a wholesale buying partner in a real build.</span></div>
   </div>
 
   <div class="panel">
-    <h3>💳 Still paying it off?</h3>
+    <h3>${icon('card', { size: 18 })}Still paying it off?</h3>
     <p class="hint">This is where most private sales die: the bank holds the title, so the seller cannot hand it over. Tell us the balance and we pay the lender directly, then send the released title to the buyer.</p>
     <div class="row2">
       <div class="f"><label for="s-loan">Remaining loan balance</label><input id="s-loan" data-field="loanBalance" type="number" value="${esc(draft.loanBalance)}" placeholder="14000"></div>
@@ -287,7 +291,7 @@ function stepPrice() {
   </div>
 
   <div class="panel">
-    <h3>🤝 Automatic negotiation</h3>
+    <h3>${icon('handshake', { size: 18 })}Automatic negotiation</h3>
     <p class="hint">Hate haggling? Set your rules once and Driveway answers offers for you, instantly, day or night.</p>
     <label style="display:flex;gap:9px;align-items:center;font-size:14.5px;font-weight:600;margin-bottom:12px">
       <input type="checkbox" data-field="rulesOn" ${draft.rulesOn ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--accent)">
@@ -338,19 +342,19 @@ function stepReview() {
         <div style="font-size:16px;font-weight:600">${esc(draft.year)} ${esc(draft.make)} ${esc(draft.model)}</div>
         <div style="color:var(--muted);font-size:14px">${draft.miles ? miles(draft.miles) : '—'} · ${esc(draft.city)}, ${esc(draft.state)}</div>
         <div class="trust-row" style="margin-top:10px">
-          ${verified ? '<span class="tb ok">✓ Photos verified</span>' : '<span class="tb warn">Photos incomplete</span>'}
-          ${draft.audio ? '<span class="tb pur">♪ Cold start</span>' : ''}
-          ${draft.obd ? (draft.obd.codes.length ? '<span class="tb warn">⚠ OBD code</span>' : '<span class="tb info">✓ OBD clean</span>') : ''}
-          ${draft.rulesOn ? '<span class="tb info">🤝 Auto-negotiation</span>' : ''}
+          ${verified ? `<span class="tb ok">${icon('camera', { size: 13 })}Photos verified</span>` : '<span class="tb warn">Photos incomplete</span>'}
+          ${draft.audio ? `<span class="tb info">${icon('waveform', { size: 13 })}Cold start</span>` : ''}
+          ${draft.obd ? (draft.obd.codes.length ? `<span class="tb warn">${icon('alert', { size: 13 })}OBD code</span>` : `<span class="tb info">${icon('plug', { size: 13 })}OBD clean</span>`) : ''}
+          ${draft.rulesOn ? `<span class="tb info">${icon('handshake', { size: 13 })}Auto-negotiation</span>` : ''}
           ${Number(draft.deadlineDays) ? `<span class="tb warn">⏱ ${draft.deadlineDays}-day deadline</span>` : ''}
-          ${draft.serviceRecords.length ? `<span class="tb pur">📒 ${draft.serviceRecords.length} record${draft.serviceRecords.length === 1 ? '' : 's'}</span>` : ''}
+          ${draft.serviceRecords.length ? `<span class="tb info">${icon('clipboard', { size: 13 })}${draft.serviceRecords.length} record${draft.serviceRecords.length === 1 ? '' : 's'}</span>` : ''}
         </div>
       </div>
     </div>
-    <button class="btn btn-outline" style="margin-top:16px" data-act="roast">🔥 Roast my listing</button>
+    <button class="btn btn-outline" style="margin-top:16px" data-act="roast">${icon('eye', { size: 16 })}Check my listing</button>
     <div id="roastBox"></div>
     <div class="wizard-nav">
-      <button class="btn btn-outline" data-act="back">← Back</button>
+      <button class="btn btn-outline" data-act="back">${icon('arrowLeft', { size: 16 })}Back</button>
       <button class="btn btn-primary btn-lg" data-act="publish" id="publishBtn">Publish listing — free</button>
     </div>
   </div>`;
@@ -380,8 +384,8 @@ function roast() {
 }
 
 const nav = (back, next) => `<div class="wizard-nav">
-  ${back ? '<button class="btn btn-outline" data-act="back">← Back</button>' : '<span></span>'}
-  ${next ? '<button class="btn btn-primary" data-act="next">Continue →</button>' : ''}</div>`;
+  ${back ? `<button class="btn btn-outline" data-act="back">${icon('arrowLeft', { size: 16 })}Back</button>` : '<span></span>'}
+  ${next ? `<button class="btn btn-primary" data-act="next">Continue${icon('arrowRight', { size: 16 })}</button>` : ''}</div>`;
 
 /* ---------------- interactions ---------------- */
 
@@ -463,7 +467,7 @@ async function toggleRecording(root) {
     if (!blob.size) return showNote('Nothing was recorded — check the microphone and try again.');
     draft.audio = { blob, url: URL.createObjectURL(blob) };
     paint(root);
-    toast('🎧 Cold-start recording saved.');
+    toast('Cold-start recording saved.');
   };
 
   recorder.start();
@@ -563,7 +567,8 @@ async function publish(root) {
   const price = Number(draft.price);
   const payload = {
     make: draft.make, model: draft.model, year: Number(draft.year), miles: Number(draft.miles),
-    price, body: draft.body, transmission: draft.transmission, fuel: draft.fuel,
+    price, body: draft.body, trim: draft.trim, drivetrain: draft.drivetrain,
+    transmission: draft.transmission, fuel: draft.fuel,
     doors: Number(draft.doors), towLb: Number(draft.towLb) || 0, evSoh: Number(draft.evSoh) || 0,
     safety: Number(draft.safety), city: draft.city, state: draft.state,
     vin: draft.vin || '', description: draft.description,
@@ -626,8 +631,8 @@ async function publish(root) {
 
   const fired = created.standingBidOffers;
   toast(fired
-    ? `🎉 Live — and ${fired} standing bid${fired > 1 ? 's' : ''} already came in!`
-    : '🎉 Your listing is live!');
+    ? `Live — and ${fired} standing bid${fired > 1 ? 's' : ''} already came in.`
+    : 'Your listing is live.');
   resetDraft();
   location.hash = `#/car/${id}`;
 }

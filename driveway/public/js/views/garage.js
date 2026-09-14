@@ -4,6 +4,7 @@ import { money, miles, esc, timeAgo, timeLeft, onClick, $, toast } from '../form
 import { cardThumb, emptyState } from '../ui.js';
 import { stagger } from '../motion.js';
 import { requireAuth } from '../auth.js';
+import { icon, iconFilled } from '../icons.js';
 
 const TABS = [
   ['listings', 'My listings'],
@@ -38,7 +39,7 @@ async function paint(root) {
     accept: (node) => act(root, `/api/offers/${node.dataset.id}/accept`, 'Deal done — contact details are now visible.'),
     decline: (node) => act(root, `/api/offers/${node.dataset.id}/decline`, 'Offer declined.'),
     withdraw: (node) => act(root, `/api/offers/${node.dataset.id}/withdraw`, 'Offer withdrawn.'),
-    acceptCounter: (node) => act(root, `/api/offers/${node.dataset.id}/accept-counter`, '🤝 Counter accepted — the car is yours to close.'),
+    acceptCounter: (node) => act(root, `/api/offers/${node.dataset.id}/accept-counter`, 'Counter accepted — the car is yours to close.'),
     counter: (node) => counterModal(root, node.dataset.id, Number(node.dataset.amount)),
     changePrice: (node) => priceModal(root, node.dataset.id, Number(node.dataset.price)),
     takeFloor: (node) => floorModal(root, node.dataset.id, Number(node.dataset.floor)),
@@ -114,7 +115,7 @@ const listingsTab = (items) => items.length ? items.map((l) => `
       <b>${l.year} ${esc(l.make)} ${esc(l.model)}</b>
       <span>${money(l.price)} · ${miles(l.miles)} · ${esc(l.city)}, ${esc(l.state)}</span>
       <span>${l.offerCount} open offer${l.offerCount === 1 ? '' : 's'} · est. ${l.daysToSell} day${l.daysToSell === 1 ? '' : 's'} to sell${
-        l.rules ? ' · 🤝 auto-negotiation on' : ''}${l.loanBalance ? ` · loan ${money(l.loanBalance)}` : ''}</span>
+        l.rules ? ' · auto-negotiation on' : ''}${l.loanBalance ? ` · loan ${money(l.loanBalance)}` : ''}</span>
       ${l.status === 'sold'
         ? `<span class="pill green">Sold for ${money(l.sale.price)}</span>`
         : l.hold ? `<span class="pill amber">On hold · ${timeLeft(l.hold.until)}</span>`
@@ -129,7 +130,7 @@ const listingsTab = (items) => items.length ? items.map((l) => `
         <button class="btn btn-danger btn-sm" data-act="remove" data-id="${l.id}">Remove</button>` : ''}
     </div>
   </div>`).join('')
-  : emptyState('🚗', "You haven't listed a car yet.", '<a class="btn btn-primary" href="#/sell">+ Sell your car</a>');
+  : emptyState('car', "You haven't listed a car yet.", '<a class="btn btn-primary" href="#/sell">+ Sell your car</a>');
 
 const receivedTab = (items) => items.length ? items.map((o) => `
   <div class="dash-item">
@@ -137,12 +138,12 @@ const receivedTab = (items) => items.length ? items.map((o) => `
     <div class="info">
       <b>${money(o.amount)} <span style="font-weight:500;font-size:13px;color:var(--muted)">for ${esc(o.listingTitle)} · asking ${money(o.asking)}</span></b>
       <span>${esc(o.buyer.name)}
-        ${o.verifiedFunds ? '<span class="pill green">✓ funds verified</span>' : '<span class="pill gray">unverified</span>'}
+        ${o.verifiedFunds ? `<span class="pill green">${icon('checkCircle', { size: 13 })}funds verified</span>` : '<span class="pill gray">unverified</span>'}
         ${o.fromStanding ? '<span class="pill pur">standing bid</span>' : ''}
         ${o.autoHandled ? '<span class="pill blue">auto-handled</span>' : ''} · ${timeAgo(o.createdAt)}
-        ${o.status === 'accepted' && o.buyer.phone ? ` · 📞 ${esc(o.buyer.phone)}` : ''}</span>
-      ${o.message ? `<div class="offer-msg">💬 ${esc(o.message)}</div>` : ''}
-      ${o.scamFlags?.length ? `<div class="scam-warn">🚨 ${o.scamFlags.map((f) => esc(f.warning)).join(' ')}</div>` : ''}
+        ${o.status === 'accepted' && o.buyer.phone ? ` · ${icon('phone', { size: 13 })} ${esc(o.buyer.phone)}` : ''}</span>
+      ${o.message ? `<div class="offer-msg">${esc(o.message)}</div>` : ''}
+      ${o.scamFlags?.length ? `<div class="scam-warn">${icon('alert', { size: 15 })}<span>${o.scamFlags.map((f) => esc(f.warning)).join(' ')}</span></div>` : ''}
     </div>
     <div class="actions">
       ${['pending', 'countered'].includes(o.status) ? `
@@ -153,7 +154,7 @@ const receivedTab = (items) => items.length ? items.map((o) => `
       ${o.status === 'countered' ? `<span class="pill amber">countered ${money(o.counterAmount)}</span>` : ''}
     </div>
   </div>`).join('')
-  : emptyState('📭', 'No offers yet. They land here the moment a buyer bites.');
+  : emptyState('inbox', 'No offers yet. They land here the moment a buyer bites.');
 
 const madeTab = (items) => items.length ? items.map((o) => `
   <div class="dash-item">
@@ -161,7 +162,7 @@ const madeTab = (items) => items.length ? items.map((o) => `
     <div class="info">
       <b>${esc(o.listingTitle)}</b>
       <span>your offer ${money(o.amount)} · asking ${money(o.asking)} · ${timeAgo(o.createdAt)}${o.fromStanding ? ' · from a standing bid' : ''}</span>
-      ${o.status === 'countered' ? `<div class="offer-msg">↩️ Seller countered at <b>${money(o.counterAmount)}</b>${o.autoHandled ? ' (automatically)' : ''}</div>` : ''}
+      ${o.status === 'countered' ? `<div class="offer-msg">Seller countered at <b>${money(o.counterAmount)}</b>${o.autoHandled ? ' (automatically)' : ''}</div>` : ''}
     </div>
     <div class="actions">
       ${o.status === 'countered' ? `
@@ -173,7 +174,7 @@ const madeTab = (items) => items.length ? items.map((o) => `
       <button class="btn btn-outline btn-sm" data-act="open" data-id="${o.listingId}">View car</button>
     </div>
   </div>`).join('')
-  : emptyState('💸', 'No offers yet.<br>Find a car and hit Make Offer — or set a standing bid and let cars come to you.');
+  : emptyState('dollar', 'No offers yet.<br>Find a car and hit Make Offer — or set a standing bid and let cars come to you.');
 
 const standingTab = (items) => `
   <div class="panel">
@@ -183,7 +184,7 @@ const standingTab = (items) => `
   </div>
   ${items.length ? items.map((b) => `
     <div class="dash-item">
-      <div class="avatar">⚡</div>
+      <div class="avatar">${icon('bolt', { size: 18 })}</div>
       <div class="info">
         <b>${money(b.amount)} for ${esc(b.make || 'any make')} ${esc(b.model || '')}</b>
         <span>${b.yearMin ? `${b.yearMin}+` : 'any year'} · ${b.maxMiles ? `under ${miles(b.maxMiles)}` : 'any mileage'} · ${esc(b.state || 'any state')}</span>
@@ -194,7 +195,7 @@ const standingTab = (items) => `
         <button class="btn btn-outline btn-sm" data-act="delBid" data-id="${b.id}">Remove</button>
       </div>
     </div>`).join('')
-    : emptyState('⚡', 'No standing bids yet.')}`;
+    : emptyState('bolt', 'No standing bids yet.')}`;
 
 const holdsTab = (items) => items.length ? items.map((l) => `
   <div class="dash-item">
@@ -209,7 +210,7 @@ const holdsTab = (items) => items.length ? items.map((l) => `
       <button class="btn btn-outline btn-sm" data-act="releaseHold" data-id="${l.id}">Release hold</button>
     </div>
   </div>`).join('')
-  : emptyState('🔒', 'No active holds. Use "Hold it" on any car you need time to inspect.');
+  : emptyState('lock', 'No active holds. Use "Hold it" on any car you need time to inspect.');
 
 const favoritesTab = (items) => items.length ? items.map((l) => `
   <div class="dash-item">
@@ -221,7 +222,7 @@ const favoritesTab = (items) => items.length ? items.map((l) => `
       <button class="btn btn-outline btn-sm" data-act="unfav" data-id="${l.id}">Unsave</button>
     </div>
   </div>`).join('')
-  : emptyState('❤️', 'No saved cars yet. Tap the heart on any listing.');
+  : emptyState('heart', 'No saved cars yet. Tap the heart on any listing.');
 
 /* ---------------- modals ---------------- */
 

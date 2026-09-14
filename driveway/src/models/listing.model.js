@@ -14,13 +14,14 @@ export function createListing(userId, data) {
         `INSERT INTO listings
           (user_id, make, model, year, miles, price, body, transmission, fuel, doors,
            tow_lb, ev_soh, safety, city, state, vin, description, loan_balance,
-           deadline_at, status, created_at, updated_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'active',?,?)`
+           trim, drivetrain, deadline_at, status, created_at, updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'active',?,?)`
       )
       .run(
         userId, data.make, data.model, data.year, data.miles, data.price, data.body,
         data.transmission, data.fuel, data.doors, data.towLb, data.evSoh, data.safety,
         data.city, data.state, data.vin || null, data.description, data.loanBalance,
+        data.trim || null, data.drivetrain || null,
         data.deadlineDays ? ts + data.deadlineDays * 86400000 : null, ts, ts
       );
     const id = info.lastInsertRowid;
@@ -106,7 +107,9 @@ export function hydrate(row, { viewerId = null } = {}) {
     year: row.year,
     miles: row.miles,
     price: row.price,
+    trim: row.trim || null,
     body: row.body,
+    drivetrain: row.drivetrain || null,
     transmission: row.transmission,
     fuel: row.fuel,
     doors: row.doors,
@@ -205,6 +208,7 @@ export function searchListings(q, viewerId = null) {
   if (q.maxPrice) add('l.price <= ?', q.maxPrice);
   if (q.yearFrom) add('l.year >= ?', q.yearFrom);
   if (q.maxMiles) add('l.miles <= ?', q.maxMiles);
+  if (q.minMiles) add('l.miles >= ?', q.minMiles);
   if (q.q) add('(LOWER(l.make || \' \' || l.model) LIKE ?)', `%${q.q.toLowerCase()}%`);
 
   if (q.minDoors) add('l.doors >= ?', q.minDoors);

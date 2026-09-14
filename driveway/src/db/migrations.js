@@ -73,6 +73,16 @@ MIGRATIONS.push(
       // Stamped when the closing reminder goes out, so the job cannot send twice.
       addColumn(db, 'listings', 'deadline_notified_at', 'INTEGER');
     }
+  },
+  {
+    id: '007-trim-drivetrain',
+    up(db) {
+      // Buyers shop by trim and drivetrain long before they compare prices, and
+      // a card without them forces a click to answer "is this the AWD one?".
+      // Both are optional: older listings keep showing what they actually have.
+      addColumn(db, 'listings', 'trim', 'TEXT');
+      addColumn(db, 'listings', 'drivetrain', 'TEXT');
+    }
   }
 );
 

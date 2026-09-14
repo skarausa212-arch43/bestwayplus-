@@ -2,6 +2,7 @@ import { api } from './api.js';
 import { store, modal, closeModal, setUser } from './state.js';
 import { esc, timeAgo, toast, $ } from './format.js';
 import { pulse, stagger } from './motion.js';
+import { icon } from './icons.js';
 
 /**
  * Notifications live in the header bell. The list is the source of truth —
@@ -66,15 +67,15 @@ export function stopNotificationPolling() {
 }
 
 const ICONS = {
-  offer_received: '💰',
-  offer_accepted_seller: '🤝',
-  offer_accepted_buyer: '🤝',
-  offer_countered: '↩️',
-  offer_auto_countered: '⚡',
-  offer_declined: '🚫',
-  offer_withdrawn: '↩︎',
-  hold_placed: '🔒',
-  deadline_soon: '⏱'
+  offer_received: 'dollar',
+  offer_accepted_seller: 'handshake',
+  offer_accepted_buyer: 'handshake',
+  offer_countered: 'arrowReturn',
+  offer_auto_countered: 'bolt',
+  offer_declined: 'close',
+  offer_withdrawn: 'arrowReturn',
+  hold_placed: 'lock',
+  deadline_soon: 'clock'
 };
 
 export async function openNotifications() {
@@ -89,7 +90,9 @@ export async function openNotifications() {
 
   const prefsButton = back.querySelector('[data-prefs]');
   const paintPrefs = () => {
-    prefsButton.textContent = store.user?.notifyEmail ? '🔕 Turn emails off' : '🔔 Turn emails on';
+    prefsButton.innerHTML = store.user?.notifyEmail
+      ? `${icon('bell', { size: 16 })}Turn emails off`
+      : `${icon('bell', { size: 16 })}Turn emails on`;
   };
   paintPrefs();
 
@@ -124,15 +127,17 @@ export async function openNotifications() {
   $('#notifyList', back).innerHTML = items.length
     ? items.map((n) => `
       <div class="dash-item" style="padding:12px;${n.read ? 'opacity:.62' : ''}">
-        <div class="avatar" style="background:var(--bg);color:var(--ink)">${ICONS[n.kind] || '🔔'}</div>
+        <div class="avatar">${icon(ICONS[n.kind] || 'bell', { size: 18 })}</div>
         <div class="info">
           <b>${esc(n.title)}</b>
           <span style="white-space:pre-line">${esc(n.body)}</span>
-          <span>${timeAgo(n.createdAt)}${n.emailError ? ' · ✉️ email failed' : n.emailSent ? ' · ✉️ emailed' : ''}</span>
+          <span>${timeAgo(n.createdAt)}${n.emailError
+            ? ` · ${icon('mail', { size: 13 })} email failed`
+            : n.emailSent ? ` · ${icon('mail', { size: 13 })} emailed` : ''}</span>
         </div>
         ${n.link ? `<div class="actions"><button class="btn btn-outline btn-sm" data-open="${esc(n.link)}">Open</button></div>` : ''}
       </div>`).join('')
-    : '<div class="empty"><div class="big">🔔</div>Nothing yet. Offers and counters land here.</div>';
+    : `<div class="empty"><div class="big">${icon('bell', { size: 42 })}</div>Nothing yet. Offers and counters land here.</div>`;
 
   stagger($('#notifyList', back), '.dash-item', { step: 60 });
 

@@ -1,65 +1,111 @@
 import { money, miles, esc, timeAgo, timeLeft } from './format.js';
 import { store } from './state.js';
+import { icon, iconFilled } from './icons.js';
+import { cardPlate } from './plate.js';
 
-/** Trust badges: the short signals that tell a buyer whether to bother. */
-export function trustBadges(l) {
+/** An estimate only: there is no lender, so this is arithmetic, not an offer. */
+export const FINANCE = { apr: 7.4, termMonths: 72, downPct: 0.1 };
+
+export function monthlyPayment(price, { apr = FINANCE.apr, term = FINANCE.termMonths, down = null } = {}) {
+  const principal = Math.max(0, price - (down == null ? price * FINANCE.downPct : down));
+  const r = apr / 100 / 12;
+  if (!principal) return 0;
+  if (!r) return Math.round(principal / term);
+  return Math.round((principal * r) / (1 - Math.pow(1 + r, -term)));
+}
+
+/**
+ * Trust badges: the short signals that tell a buyer whether to bother.
+ * Capped at four on a card — the rest live on the listing page, where there is
+ * room to explain them.
+ */
+export function trustBadges(l, limit = 4) {
   const out = [];
   const h = l.history;
+  const tb = (kind, ico, text) => `<span class="tb ${kind}">${icon(ico, { size: 13 })}${text}</span>`;
+
   if (h) {
     out.push(h.titleBrand === 'Clean'
-      ? '<span class="tb ok">✓ Clean title</span>'
-      : `<span class="tb bad">⚠ ${esc(h.titleBrand)} title</span>`);
-    if (h.recalls?.length) out.push(`<span class="tb warn">⚠ ${h.recalls.length} open recall</span>`);
-    if (h.obd && !h.obd.codes?.length && h.obd.ready) out.push('<span class="tb info">✓ OBD clean</span>');
-    if (h.flood) out.push('<span class="tb bad">⚠ Flood area</span>');
-    if (h.rustYears) out.push(`<span class="tb warn">❄ Salt belt ${h.rustYears}y</span>`);
+      ? tb('ok', 'checkCircle', 'Clean title')
+      : tb('bad', 'alert', `${esc(h.titleBrand)} title`));
+    if (h.recalls?.length) out.push(tb('warn', 'alert', `${h.recalls.length} open recall`));
+    if (h.obd && !h.obd.codes?.length && h.obd.ready) out.push(tb('info', 'plug', 'OBD clean'));
+    if (h.flood) out.push(tb('bad', 'alert', 'Flood area'));
+    if (h.rustYears) out.push(tb('warn', 'snowflake', `Salt belt ${h.rustYears}y`));
   }
   const tags = new Set((l.photos || []).map((p) => p.tag));
   const required = ['front', 'rear', 'side', 'interior', 'dash', 'odometer', 'vin', 'engine'];
-  if (required.every((t) => tags.has(t))) out.push('<span class="tb ok">✓ Photos verified</span>');
-  if (l.audio) out.push('<span class="tb pur">♪ Cold start</span>');
+  if (required.every((t) => tags.has(t))) out.push(tb('ok', 'camera', 'Photos verified'));
+  if (l.audio) out.push(tb('info', 'waveform', 'Cold start'));
   if (l.fuel === 'Electric' && l.evSoh) {
-    out.push(`<span class="tb ${l.evSoh >= 90 ? 'ok' : 'warn'}">🔋 ${l.evSoh}%</span>`);
+    out.push(tb(l.evSoh >= 90 ? 'ok' : 'warn', 'battery', `Battery ${l.evSoh}%`));
   }
-  if (l.seller?.highVolume) out.push(`<span class="tb warn">⚑ ${l.seller.highVolume} listings/30d</span>`);
-  return out.slice(0, 4).join('');
+  if (l.seller?.highVolume) out.push(tb('warn', 'flag', `${l.seller.highVolume} listings/30d`));
+  return out.slice(0, limit).join('');
 }
 
 const photoOf = (l, key = 'thumbUrl') =>
   l.photos?.length
     ? `<img src="${esc(l.photos[0][key])}" alt="${esc(`${l.year} ${l.make} ${l.model}`)}" loading="lazy">`
-    : '<div class="noimg">No photos yet</div>';
+    : cardPlate(l);
 
+/**
+ * A vehicle card carries what a buyer compares on: price, the payment that
+ * price implies, the car, how it is driven, where it is, and who is selling.
+ * Everything else — recalls, rust, battery health — is progressive disclosure:
+ * at most four badges here, the full picture one click away.
+ */
 export function carCard(l) {
   const isNew = Date.now() - l.createdAt < 48 * 36e5;
   const previous = l.priceHistory?.length > 1 ? l.priceHistory[0].price : null;
   const badge = l.status === 'sold' ? '<span class="badge sold">SOLD</span>'
     : l.hold ? '<span class="badge hold">ON HOLD</span>'
-    : isNew ? '<span class="badge new">NEW</span>' : '';
+    : isNew ? '<span class="badge new">JUST LISTED</span>' : '';
+  const mo = monthlyPayment(l.price);
 
-  return `<article class="car-card" data-act="open" data-id="${l.id}">
+  return `<article class="car-card" data-act="open" data-id="${l.id}" tabindex="0"
+      aria-label="${esc(`${l.year} ${l.make} ${l.model}`)}, ${money(l.price)}">
     <div class="car-photo">
       ${photoOf(l)}
       ${badge}
       <span class="deal ${l.deal.key}">${esc(l.deal.label)}</span>
-      <button class="fav-btn" data-act="fav" data-id="${l.id}" aria-label="Save">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="${l.favorited ? '#ef4444' : 'none'}" stroke="${l.favorited ? '#ef4444' : '#64748b'}" stroke-width="2">
-          <path d="M12 21C7 16.5 3 13.3 3 9.3 3 6.4 5.2 4 8 4c1.6 0 3.1.8 4 2 .9-1.2 2.4-2 4-2 2.8 0 5 2.4 5 5.3 0 4-4 7.2-9 11.7z"/></svg>
+      <button class="fav-btn${l.favorited ? ' on' : ''}" data-act="fav" data-id="${l.id}"
+        aria-pressed="${l.favorited ? 'true' : 'false'}" aria-label="Save this car">
+        ${l.favorited ? iconFilled('heart', { size: 18 }) : icon('heart', { size: 18 })}
       </button>
     </div>
     <div class="car-body">
       <div class="car-price">${money(l.price)}
         ${previous && previous > l.price ? `<span class="was">${money(previous)}</span>` : ''}
         <span class="offer-tag">or best offer</span></div>
-      <div class="car-title">${l.year} ${esc(l.make)} ${esc(l.model)}</div>
-      <div class="car-meta"><span>${miles(l.miles)}</span>·<span>${esc(l.transmission)}</span>·<span>${esc(l.fuel)}</span></div>
+      <div class="car-mo"><b>${money(mo)}/mo</b>
+        <i>est. · ${FINANCE.termMonths} mo at ${FINANCE.apr}%</i></div>
+      <div>
+        <div class="car-title">${l.year} ${esc(l.make)} ${esc(l.model)}</div>
+        ${l.trim ? `<div class="car-trim">${esc(l.trim)}</div>` : ''}
+      </div>
+      <div class="car-meta">
+        <span>${icon('odometer', { size: 13 })}<i>${miles(l.miles)}</i></span>
+        <span>${icon('steering', { size: 13 })}<i>${esc(l.drivetrain || l.transmission)}</i></span>
+        <span>${icon(l.fuel === 'Electric' ? 'bolt' : 'fuel', { size: 13 })}<i>${esc(l.fuel)}</i></span>
+      </div>
       <div class="trust-row">${trustBadges(l)}</div>
       <div class="car-loc">
-        <span>📍 ${esc(l.city)}, ${esc(l.state)}</span>
-        ${l.deadlineAt && l.deadlineAt > Date.now() ? `<span class="deadline">⏱ ${timeLeft(l.deadlineAt)}</span>` : ''}
+        <span>${icon('pin', { size: 14 })}${esc(l.city)}, ${esc(l.state)}</span>
+        ${l.deadlineAt && l.deadlineAt > Date.now()
+          ? `<span class="deadline">${icon('clock', { size: 14 })}${timeLeft(l.deadlineAt)}</span>`
+          : `<span class="car-seller">${sellerRating(l.seller)}</span>`}
       </div>
     </div>
   </article>`;
+}
+
+/** Ratings are the only place gold appears. A seller with no deals says so. */
+function sellerRating(seller) {
+  if (!seller) return '';
+  if (!seller.rating) return 'New seller';
+  return `<span class="rate">${icon('star', { size: 13 })}${seller.rating}</span>
+    <span>· ${seller.deals} deal${seller.deals === 1 ? '' : 's'}</span>`;
 }
 
 export const cardThumb = (l) =>
@@ -70,13 +116,16 @@ export const cardThumb = (l) =>
 export const skeletonGrid = (n = 8) =>
   `<div class="grid">${Array.from({ length: n }, () => '<div class="skeleton"></div>').join('')}</div>`;
 
-export const emptyState = (icon, text, action = '') =>
-  `<div class="empty"><div class="big">${icon}</div>${text}${action ? `<br><br>${action}` : ''}</div>`;
+export const emptyState = (iconName, text, action = '') =>
+  `<div class="empty"><div class="big">${icon(iconName, { size: 42 })}</div>${text}${action ? `<br><br>${action}` : ''}</div>`;
 
 export const sellerLine = (seller) => {
   if (!seller) return '';
   if (!seller.rating) return '<span>New seller · no completed deals yet</span>';
-  return `<span><span class="stars">${'★'.repeat(Math.round(seller.rating))}</span> ${seller.rating} · ${seller.deals} deal${seller.deals === 1 ? '' : 's'}</span>`;
+  const full = Math.round(seller.rating);
+  const stars = Array.from({ length: 5 }, (_, i) =>
+    i < full ? iconFilled('star', { size: 14 }) : icon('star', { size: 14 })).join('');
+  return `<span><span class="stars">${stars}</span> ${seller.rating} · ${seller.deals} deal${seller.deals === 1 ? '' : 's'}</span>`;
 };
 
 export const ago = timeAgo;

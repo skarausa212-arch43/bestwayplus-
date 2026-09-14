@@ -1,5 +1,7 @@
 # Driveway
 
+Design system: [`DESIGN.md`](DESIGN.md) · Product truth: [`PRODUCT.md`](PRODUCT.md)
+
 A US private-party car marketplace. Sellers list a car in a few minutes, buyers
 send real offers, and the awkward parts of a private sale — the paperwork, the
 money, knowing what the car is actually worth — are handled before the two
@@ -18,6 +20,7 @@ reference.
 ```bash
 npm install
 npm run seed     # load sample sold prices so valuations work on day one
+npm run demo     # sold prices plus 16 demonstration listings, so the site has inventory
 npm start        # http://localhost:3000 — open it in a browser
 npm test         # 46 API and unit tests, no network needed
 npm run dev      # same as start, restarts on file changes
@@ -193,31 +196,55 @@ whole step on every keystroke would throw away the user's cursor.
 
 ### Look and motion
 
-The design is **editorial, not dashboard**: a warm paper canvas rather than the
-usual cold grey, near-black ink for type and primary buttons, one electric blue
-for links and focus, and an acid lime reserved for the few things worth
-shouting about. Headlines run large and tight with a serif italic cutting into
-them, section headers carry a small letterspaced eyebrow, and panels are drawn
-with hairlines instead of drop shadows. A barely-there paper grain sits over
-everything so large flat areas do not read as empty screen.
+The design world is a **factory shop manual**, and `DESIGN.md` is its rulebook —
+tokens in the frontmatter, the reasoning in the prose. In short:
 
-Cards keep their photo at 4:3 and put the price first at display size; hovering
-lifts the card, zooms the photo, and slides in the deal rating and a corner
-arrow — the resting state stays quiet.
+The ground is warm paper stock (`#f6f4ef`), every stroke of type and line-work is
+deep navy plate ink (`#0f1b33`), and one electric blue (`#1a4cff`) carries the
+layer a printed manual never had: primary actions, active states, focus rings and
+every figure the marketplace computed rather than copied. Green is rationed to
+deal ratings, verification and success; gold to star ratings; red to destructive
+actions and errors. Nothing borrows another signal's job.
 
-The hero carries a **ticker of real sold prices**, running live from the sales
-table. It is the one thing on the site a competitor cannot copy, so it sits
-above the fold rather than on a page of its own.
+Type is two self-hosted variable faces in `public/fonts/` — **Archivo** at width
+112 for headlines, prices and card titles, **Manrope** for the interface. The CSP
+allows no third-party font host, so both ship with the app. Any figure a reader
+might compare to another figure is tabular and lining.
 
-Motion explains state rather than decorating it: views fade up as you navigate,
-grids and lists stagger in, panels rise as they scroll into view, figures count
-up, the bell rings when something new lands, buttons show a spinner in place.
+**Everything is drawn.** `js/icons.js` holds one outline icon family — a 24 grid,
+1.6 stroke, round caps, `currentColor` — and it is the only place an interface
+glyph may come from; there is not an emoji left in the UI. `js/plate.js` draws
+vehicles as side elevations in the same family at 4.0 stroke, eight body styles
+sharing one chassis. The same geometry serves the hero at 800px and a listing
+card at 300px, so a listing with no photographs draws its own car in its own body
+style rather than showing a grey box — and says in words that it is a drawing.
 
-Two rules keep it from becoming noise. Every animation touches only `transform`
-and `opacity`, so nothing animating can trigger layout while a list is
-scrolling. And all of it stands down under `prefers-reduced-motion`: helpers in
-`motion.js` apply the final state immediately rather than animating, which a
-test asserts by checking that nothing is left mid-fade.
+The hero is that drawing at full size: an American road running to a ridge line,
+the vehicle standing on it, and three callouts on leader lines carrying live
+figures. It is original vector art with a documented photo slot — drop an `<img
+class="hero-photo">` into `.hero-photo-slot` and the stylesheet hides the drawing
+and keeps the frame, the callouts and the road.
+
+Motion is **one authored moment**: the hero vehicle's outline draws itself once
+via `stroke-dashoffset`, then its callouts fade in. Nothing else on the page
+loops. The signature interaction is the condition selector — picking New, Used,
+Verified or Electric redraws the hero vehicle as a different body style and
+refilters the grid in one move. Everything else moves only in response to a
+person: card lift, image scale on hover, the view fade on navigation, a staggered
+grid, counters that tick up, a spinner in place of a button label.
+
+Two rules keep it from becoming noise. Animations touch only `transform` and
+`opacity`, so nothing animating can trigger layout while a list is scrolling. And
+all of it stands down under `prefers-reduced-motion`: helpers in `motion.js`
+apply the final state immediately, which a test asserts by checking that nothing
+is left mid-fade.
+
+Mobile is composed, not stacked. Under 768px the drawn plate moves *above* the
+copy and crops to 16:9, two of its three callouts drop, the search row pairs its
+fields, and the financing calculator jumps ahead of its own explanation. Under
+560px a vehicle card's drawing crops to 16:9 so sixteen cars are not a scroll
+marathon. Verified with no horizontal overflow at 375, 390, 768, 1024, 1440 and
+1920.
 
 The interface is light-only by choice. A second theme doubles the surface that
 has to be checked on every change, and the paper palette is the point.
@@ -228,15 +255,21 @@ has to be checked on every change, and the paper palette is the point.
 public/
   index.html          app shell
   styles.css          design system: tokens, type scale, keyframes
+  fonts/              self-hosted Archivo and Manrope (woff2, latin + latin-ext)
   js/
     motion.js         reveal, stagger, count-up, pulse — all reduced-motion aware
     app.js            hash router, header, boot
     api.js            fetch wrapper and typed errors
     state.js          session, modals, form errors
     format.js         money/miles/date helpers, delegated clicks, toast
-    ui.js             car card, trust badges, empty states
+    ui.js             car card, trust badges, payment estimate, empty states
+    icons.js          the drawn outline icon family — the only source of UI glyphs
+    plate.js          drawn vehicle elevations and the hero road scene
     auth.js           sign-up, log-in, funds verification
     views/            browse, listing, sell, garage, boards
+scripts/
+  seed.js             sample closed sales, so valuations work on an empty instance
+  demo.js             16 demonstration listings across 5 fictional private sellers
 src/
   app.js              Express app (exported so tests can mount it)
   server.js           process entry point

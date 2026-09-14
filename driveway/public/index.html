@@ -3,24 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Driveway — Buy & Sell Cars in the USA</title>
-<meta name="description" content="Buy and sell cars privately across the USA: real offers, verified sellers, and the paperwork figured out before you meet.">
-<meta name="theme-color" content="#f5f3ee">
+<title>Driveway — Buy and sell cars privately across the USA</title>
+<meta name="description" content="A private-party car marketplace that prices every car against what comparable cars actually sold for, answers offers by your own rules, and keeps your contact details private until you accept one.">
+<meta name="theme-color" content="#f6f4ef">
+<link rel="preload" href="/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/styles.css">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230c0c0e'/%3E%3Crect x='6' y='19' width='20' height='4.6' rx='2' fill='%23c9f751'/%3E%3Ccircle cx='10.5' cy='23.6' r='2' fill='%230c0c0e'/%3E%3Ccircle cx='21.5' cy='23.6' r='2' fill='%230c0c0e'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%230f1b33'/%3E%3Cpath d='M6 19.5l1.9-4.4A2.4 2.4 0 0 1 10.1 13.6h11.8a2.4 2.4 0 0 1 2.2 1.5L26 19.5' stroke='%231a4cff' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3Cpath d='M6 19.5h20' stroke='%23f6f4ef' stroke-width='2'/%3E%3Ccircle cx='11' cy='22' r='2.2' fill='none' stroke='%23f6f4ef' stroke-width='1.8'/%3E%3Ccircle cx='21' cy='22' r='2.2' fill='none' stroke='%23f6f4ef' stroke-width='1.8'/%3E%3C/svg%3E">
 </head>
 <body>
 
+<a class="sr-only" href="#view">Skip to main content</a>
+
 <header>
   <div class="header-in">
-    <a class="logo" href="#/browse">
-      <svg width="34" height="34" viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#0c0c0e"/><path d="M7 20l2.2-5.4A3 3 0 0 1 12 12.7h8a3 3 0 0 1 2.8 1.9L25 20" stroke="#c9f751" stroke-width="2.2" stroke-linecap="round"/><rect x="6" y="19" width="20" height="4.6" rx="2" fill="#f5f3ee"/><circle cx="10.5" cy="23.6" r="2" fill="#0c0c0e"/><circle cx="21.5" cy="23.6" r="2" fill="#0c0c0e"/></svg>
-      Drive<span>way</span>
+    <a class="logo" href="#/browse" aria-label="Driveway — home">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <rect width="32" height="32" rx="4" fill="#0f1b33"/>
+        <path d="M6 19.5l1.9-4.4A2.4 2.4 0 0 1 10.1 13.6h11.8a2.4 2.4 0 0 1 2.2 1.5L26 19.5" stroke="#1a4cff" stroke-width="2" stroke-linecap="round"/>
+        <path d="M6 19.5h20" stroke="#f6f4ef" stroke-width="2"/>
+        <circle cx="11" cy="22" r="2.2" stroke="#f6f4ef" stroke-width="1.8"/>
+        <circle cx="21" cy="22" r="2.2" stroke="#f6f4ef" stroke-width="1.8"/>
+      </svg>
+      <span class="wordmark">Drive<span>way</span></span>
     </a>
-    <nav class="nav" id="mainNav"></nav>
+    <nav class="nav" id="mainNav" aria-label="Main"></nav>
     <div class="header-search">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.4" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-      <input id="hdrSearch" placeholder="Search make, model…" aria-label="Search cars">
+      <svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.4 15.4 21 21"/></svg>
+      <input id="hdrSearch" placeholder="Search make or model" aria-label="Search cars by make or model">
     </div>
     <div class="header-right" id="headerRight"></div>
   </div>
@@ -30,11 +40,44 @@
 
 <footer>
   <div class="wrap">
-    <div class="logo">
-      <svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#f5f3ee"/><path d="M7 20l2.2-5.4A3 3 0 0 1 12 12.7h8a3 3 0 0 1 2.8 1.9L25 20" stroke="#0c0c0e" stroke-width="2.2" stroke-linecap="round"/><rect x="6" y="19" width="20" height="4.6" rx="2" fill="#0c0c0e"/><circle cx="10.5" cy="23.6" r="2" fill="#f5f3ee"/><circle cx="21.5" cy="23.6" r="2" fill="#f5f3ee"/></svg>
-      Drive<span>way</span>
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <div class="logo">
+          <svg width="30" height="30" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <rect width="32" height="32" rx="4" fill="#1b2b4d"/>
+            <path d="M6 19.5l1.9-4.4A2.4 2.4 0 0 1 10.1 13.6h11.8a2.4 2.4 0 0 1 2.2 1.5L26 19.5" stroke="#6f92ff" stroke-width="2" stroke-linecap="round"/>
+            <path d="M6 19.5h20" stroke="#eef1f8" stroke-width="2"/>
+            <circle cx="11" cy="22" r="2.2" stroke="#eef1f8" stroke-width="1.8"/>
+            <circle cx="21" cy="22" r="2.2" stroke="#eef1f8" stroke-width="1.8"/>
+          </svg>
+          <span class="wordmark">Drive<span>way</span></span>
+        </div>
+        <p>A private-party car marketplace. Prices measured against closed sales,
+          offers answered by your own rules, contact details private until you accept one.</p>
+      </div>
+      <div class="foot-col">
+        <h4>Buy</h4>
+        <a href="#/browse">All cars for sale</a>
+        <a href="#/sold">Closed-sale prices</a>
+        <a href="#/wanted">Wanted board</a>
+      </div>
+      <div class="foot-col">
+        <h4>Sell</h4>
+        <a href="#/sell">List your car free</a>
+        <a href="#/sell">Value my car</a>
+        <a href="#/garage">My garage</a>
+      </div>
+      <div class="foot-col">
+        <h4>How it works</h4>
+        <a href="#/browse">Comp-anchored pricing</a>
+        <a href="#/browse">Auto-negotiation</a>
+        <a href="#/browse">What stays private</a>
+      </div>
     </div>
-    <div>© 2026 Driveway · Estimates are illustrative, not financial or legal advice</div>
+    <div class="foot-bot">
+      <span>© 2026 Driveway</span>
+      <span>Valuations, payments and time-to-sell figures are estimates, not financial or legal advice.</span>
+    </div>
   </div>
 </footer>
 

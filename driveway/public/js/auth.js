@@ -16,7 +16,7 @@ const signupForm = `
     <div class="f"><label for="su-pass">Password</label><input id="su-pass" name="password" type="password" autocomplete="new-password" placeholder="8+ characters"></div>
     <button class="btn btn-primary btn-lg" type="submit">Sign up</button>
   </form>
-  <div class="switch-auth">Already have an account? <a data-switch="login">Log in</a></div>`;
+  <div class="switch-auth">Already have an account? <button type="button" data-switch="login">Log in</button></div>`;
 
 const loginForm = `
   <h2>Welcome back</h2>
@@ -27,7 +27,7 @@ const loginForm = `
     <div class="f"><label for="li-pass">Password</label><input id="li-pass" name="password" type="password" autocomplete="current-password"></div>
     <button class="btn btn-primary btn-lg" type="submit">Log in</button>
   </form>
-  <div class="switch-auth">New to Driveway? <a data-switch="signup">Create account</a></div>`;
+  <div class="switch-auth">New to Driveway? <button type="button" data-switch="signup">Create account</button></div>`;
 
 /** Opens the auth modal; `then` runs once the user is signed in. */
 export function openAuth(mode = 'signup', then = null) {
@@ -47,7 +47,7 @@ export function openAuth(mode = 'signup', then = null) {
       setUser(user);
       if (user.zip) store.setZip(user.zip);
       closeModal();
-      toast(mode === 'login' ? `Welcome back, ${user.name.split(' ')[0]}!` : `Welcome to Driveway, ${user.name.split(' ')[0]}! 🎉`);
+      toast(mode === 'login' ? `Welcome back, ${user.name.split(' ')[0]}!` : `Welcome to Driveway, ${user.name.split(' ')[0]}.`);
       then?.();
     } catch (err) {
       showFormErrors(form, err);
@@ -74,14 +74,14 @@ export function verifyFunds() {
   requireAuth(() => {
     const back = modal(`
       <h2>Verify your funds</h2>
-      <p class="sub">Sellers see verified offers first — it is the difference between a real buyer and a tyre-kicker.</p>
+      <p class="sub">Sellers see verified offers first — it is the difference between a real buyer and a tire-kicker.</p>
       <div class="note demo"><b>Prototype note:</b> a real build connects a bank aggregator or a lender's pre-approval API. This button just flips the flag so you can see how the badge works.</div>
       <button class="btn btn-primary btn-lg" style="width:100%;margin-top:14px" data-go>Connect bank account (demo)</button>`);
     back.querySelector('[data-go]').addEventListener('click', async () => {
       const { user } = await api.post('/api/auth/verify-funds');
       setUser(user);
       closeModal();
-      toast('✅ Funds verified — your offers now carry the badge.');
+      toast('Funds verified — your offers now carry the badge.');
     });
   });
 }

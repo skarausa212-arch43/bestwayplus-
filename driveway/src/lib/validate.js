@@ -42,10 +42,12 @@ export const schemas = {
   listing: z.object({
     make: trimmed(40).min(1, 'Pick a make.'),
     model: trimmed(60).min(1, 'Enter the model.'),
+    trim: trimmed(40).optional().default(''),
     year: intFrom(1960, new Date().getFullYear() + 2),
     miles: intFrom(0, 1_500_000),
     price: intFrom(100, 5_000_000),
     body: z.enum(['Sedan', 'SUV', 'Truck', 'Coupe', 'Hatchback', 'Convertible', 'Van', 'Wagon']).default('Sedan'),
+    drivetrain: z.enum(['FWD', 'RWD', 'AWD', '4WD']).optional().default('FWD'),
     transmission: z.enum(['Automatic', 'Manual']).default('Automatic'),
     fuel: z.enum(['Gasoline', 'Hybrid', 'Electric', 'Diesel']).default('Gasoline'),
     doors: intFrom(2, 6).default(4),
@@ -116,6 +118,7 @@ export const schemas = {
     maxPrice: z.coerce.number().int().min(0).optional(),
     yearFrom: z.coerce.number().int().min(1900).optional(),
     maxMiles: z.coerce.number().int().min(0).optional(),
+    minMiles: z.coerce.number().int().min(0).optional(),
     // Smart filters — the ones no other US marketplace offers.
     minDoors: z.coerce.number().int().min(0).max(6).optional(),
     minTow: z.coerce.number().int().min(0).optional(),
