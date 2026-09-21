@@ -78,7 +78,8 @@ p{margin:0}
   position:sticky;top:0;z-index:40;backdrop-filter:saturate(180%) blur(20px);
   background:color-mix(in srgb,var(--bg) 82%,transparent);
   border-bottom:1px solid var(--line);
-  display:flex;align-items:center;gap:16px;padding:12px 20px;
+  display:flex;align-items:center;gap:16px;
+  padding:calc(12px + var(--safe-t)) calc(20px + var(--safe-r)) 12px calc(20px + var(--safe-l));
 }
 .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;letter-spacing:-.03em}
 .brand .logo{width:34px;height:34px;flex:none}
@@ -107,14 +108,15 @@ p{margin:0}
   .tabbar{
     display:flex;position:fixed;bottom:0;left:0;right:0;z-index:50;
     background:var(--bg);
-    border-top:1px solid var(--line);padding:8px 6px calc(8px + env(safe-area-inset-bottom));
+    border-top:1px solid var(--line);
+    padding:8px calc(6px + var(--safe-r)) calc(8px + var(--safe-b)) calc(6px + var(--safe-l));
     justify-content:space-around;
   }
   .tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--ink-3);font-size:11px;font-weight:600;padding:4px}
   .tabbar button svg{width:24px;height:24px}
   .tabbar button.active{color:var(--primary)}
   .main{padding:16px 14px 96px}
-  .topbar{padding:12px 14px}
+  .topbar{padding:calc(12px + var(--safe-t)) calc(14px + var(--safe-r)) 12px calc(14px + var(--safe-l))}
 }
 
 /* ---------- Cards & primitives ---------- */
@@ -576,6 +578,17 @@ textarea.input{resize:vertical;min-height:80px}
 
 /* ===================== ANIMATIONS & BRAND ===================== */
 :root{--gold:#E9C46A;--gold-2:#C9A24B;--gold-3:#B8862F;}
+/* Safe area. Android 15+ forces the WebView edge-to-edge, so the shell draws
+   under the status bar and the camera cutout — the header landed on top of
+   the clock and the language button could not be tapped at all. Everything
+   pinned to an edge reads these, and boot() fills in a fallback for shells
+   where env() reports nothing. */
+:root{
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-l:env(safe-area-inset-left,0px);
+  --safe-r:env(safe-area-inset-right,0px);
+}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 
 /* staggered entrance for lists/cards */
@@ -887,7 +900,7 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 /* form side */
 .auth-form-side{display:flex;align-items:center;justify-content:center;padding:40px 28px;background:var(--bg);position:relative}
 .auth-theme{position:absolute;top:22px;right:22px}
-.auth-topctl{position:absolute;top:22px;right:22px;display:flex;gap:8px;align-items:center;z-index:6}
+.auth-topctl{position:absolute;top:calc(22px + var(--safe-t));right:calc(22px + var(--safe-r));display:flex;gap:8px;align-items:center;z-index:6}
 .auth-topctl .auth-theme{position:static;top:auto;right:auto}
 .auth-card{width:100%;max-width:396px}
 .auth-mobilemark{display:none}
@@ -1104,7 +1117,7 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
   .mh-word{font-size:26px;font-weight:850;letter-spacing:-.03em}
   .auth-mhero-tag{margin:16px 0 0;font-size:23px;line-height:1.14;font-weight:850;letter-spacing:-.02em;text-wrap:balance}
   .auth-mhero-tag span{color:#D6FFEC}
-  .auth-topctl{top:14px;right:14px;z-index:8}
+  .auth-topctl{top:calc(14px + var(--safe-t));right:calc(14px + var(--safe-r));z-index:8}
   .auth-topctl .iconbtn{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.26);color:#fff;backdrop-filter:blur(6px)}
   .auth-topctl .langbtn b{color:#fff}
   .auth-form-side .auth-card{width:auto;max-width:none;margin:-44px 14px 0;background:var(--surface);
@@ -1141,7 +1154,7 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 
 /* ═══════════════ SIDEBAR DASHBOARD LAYOUT ═══════════════ */
 .app.dash{max-width:1480px;margin:0 auto;display:grid;grid-template-columns:250px 1fr;min-height:100vh;position:relative;z-index:1}
-.sidebar{position:sticky;top:0;height:100vh;border-right:1px solid var(--line);
+.sidebar{position:sticky;top:0;height:100vh;padding-top:var(--safe-t);border-right:1px solid var(--line);
   padding:22px 16px;display:flex;flex-direction:column;gap:6px;background:color-mix(in srgb,var(--bg) 60%,var(--surface))}
 .brand.side{display:flex;align-items:center;gap:10px;font-weight:850;font-size:22px;letter-spacing:-.03em;padding:4px 10px;margin-bottom:16px}
 .brand.side .logo{width:34px;height:34px}
@@ -1166,7 +1179,7 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .support-card svg{width:20px;height:20px;color:var(--primary-600);flex:none}
 .support-card b{display:block;font-size:13.5px}.support-card span{color:var(--ink-3);font-size:12px}
 .mainwrap{min-width:0;display:flex;flex-direction:column}
-.dash .topbar{border-bottom:1px solid var(--line);padding:12px 26px}
+.dash .topbar{border-bottom:1px solid var(--line);padding:calc(12px + var(--safe-t)) calc(26px + var(--safe-r)) 12px 26px}
 .userchip{display:flex;align-items:center;gap:10px;padding:5px 12px 5px 5px;border-radius:15px;transition:background .15s;min-width:0;flex:0 1 auto}
 .userchip:hover{background:var(--surface-2)}
 .userchip .avatar{width:38px;height:38px;flex:none}
@@ -1212,10 +1225,11 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
   .sidebar{display:none}
   .mobile-brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:19px;margin-right:auto}
   .dash .main{padding:16px 14px 96px}
-  .dash .topbar{padding:12px 16px}
+  .dash .topbar{padding:calc(12px + var(--safe-t)) calc(16px + var(--safe-r)) 12px calc(16px + var(--safe-l))}
   .tabbar{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:50;
     background:var(--bg);
-    border-top:1px solid var(--line);padding:8px 6px calc(8px + env(safe-area-inset-bottom));justify-content:space-around}
+    border-top:1px solid var(--line);justify-content:space-around;
+    padding:8px calc(6px + var(--safe-r)) calc(8px + var(--safe-b)) calc(6px + var(--safe-l))}
   .topbar{backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--bg)}
   .tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--ink-3);font-size:11px;font-weight:600;padding:4px}
   .tabbar button svg{width:24px;height:24px}
@@ -2308,8 +2322,15 @@ function openLangMenu(anchor){
 }
 
 /* ---------- Icons (inline SVG) ---------- */
+// Every copy of the mark shipped the same gradient ids, and a duplicate id
+// resolves to the first match in the document — on a phone that is the hidden
+// desktop header, and a paint server inside a display:none subtree paints
+// nothing. The mark lost its green strokes and rendered as four bare dots.
+// Each read of I.logo now gets its own ids.
+let _logoSeq=0;
+const LOGO_MARK=`<svg class="logo" viewBox="0 0 100 100" fill="none"><defs><linearGradient id="lgA" x1="84" y1="14" x2="18" y2="72" gradientUnits="userSpaceOnUse"><stop stop-color="#A3E635"/><stop offset=".3" stop-color="#4ADE80"/><stop offset=".62" stop-color="#22C55E"/><stop offset="1" stop-color="#059669"/></linearGradient><linearGradient id="lgAd" x1="40" y1="30" x2="20" y2="60" gradientUnits="userSpaceOnUse"><stop stop-color="#0C9C57"/><stop offset="1" stop-color="#04673F"/></linearGradient></defs><path d="M30 40 C 22 42 18.5 34 25 29.5 L 48.5 12 Q 50 10.7 51.5 12 L 77 30.5 Q 79 32 79 35 L 79 66" stroke="url(#lgA)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M30 40 C 24 41.5 21 37.5 22.2 33.5" stroke="url(#lgAd)" stroke-width="9" stroke-linecap="round" opacity=".55"/><path d="M41 35 L41 55 Q41 58 44 58 L61 58 C 68 58 68 49.5 61 51" stroke="url(#lgA)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M61 58 C 66 58 66.5 53.5 63.5 52" stroke="url(#lgAd)" stroke-width="9" stroke-linecap="round" opacity=".5"/><g style="fill:var(--ink)"><rect x="46" y="35.5" width="6.6" height="6.6" rx="1.5"/><rect x="55" y="35.5" width="6.6" height="6.6" rx="1.5"/><rect x="46" y="44.5" width="6.6" height="6.6" rx="1.5"/><rect x="55" y="44.5" width="6.6" height="6.6" rx="1.5"/></g><path class="spk" d="M84 13 C 85 22 86 23 94.5 24 C 86 25 85 26 84 35 C 83 26 82 25 73.5 24 C 82 23 83 22 84 13 Z" fill="#34D77F"/></svg>`;
 const I = {
-  logo:`<svg class="logo" viewBox="0 0 100 100" fill="none"><defs><linearGradient id="lgA" x1="84" y1="14" x2="18" y2="72" gradientUnits="userSpaceOnUse"><stop stop-color="#A3E635"/><stop offset=".3" stop-color="#4ADE80"/><stop offset=".62" stop-color="#22C55E"/><stop offset="1" stop-color="#059669"/></linearGradient><linearGradient id="lgAd" x1="40" y1="30" x2="20" y2="60" gradientUnits="userSpaceOnUse"><stop stop-color="#0C9C57"/><stop offset="1" stop-color="#04673F"/></linearGradient></defs><path d="M30 40 C 22 42 18.5 34 25 29.5 L 48.5 12 Q 50 10.7 51.5 12 L 77 30.5 Q 79 32 79 35 L 79 66" stroke="url(#lgA)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M30 40 C 24 41.5 21 37.5 22.2 33.5" stroke="url(#lgAd)" stroke-width="9" stroke-linecap="round" opacity=".55"/><path d="M41 35 L41 55 Q41 58 44 58 L61 58 C 68 58 68 49.5 61 51" stroke="url(#lgA)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M61 58 C 66 58 66.5 53.5 63.5 52" stroke="url(#lgAd)" stroke-width="9" stroke-linecap="round" opacity=".5"/><g style="fill:var(--ink)"><rect x="46" y="35.5" width="6.6" height="6.6" rx="1.5"/><rect x="55" y="35.5" width="6.6" height="6.6" rx="1.5"/><rect x="46" y="44.5" width="6.6" height="6.6" rx="1.5"/><rect x="55" y="44.5" width="6.6" height="6.6" rx="1.5"/></g><path class="spk" d="M84 13 C 85 22 86 23 94.5 24 C 86 25 85 26 84 35 C 83 26 82 25 73.5 24 C 82 23 83 22 84 13 Z" fill="#34D77F"/></svg>`,
+  get logo(){ const n=++_logoSeq; return LOGO_MARK.replace(/lgAd\b/g,'lgAd'+n).replace(/lgA\b/g,'lgA'+n); },
   home:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>`,
   book:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>`,
   jobs:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H4a1 1 0 00-1 1v11a1 1 0 001 1h16a1 1 0 001-1V8a1 1 0 00-1-1Z"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>`,
@@ -8062,8 +8083,32 @@ function closeModal(){if(modalEl){modalEl.remove();modalEl=null;}}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 
 /* ---------- Boot ---------- */
+// Android 15+ runs the WebView edge-to-edge, so the app draws under the status
+// bar and the camera cutout. The CSS reads env(safe-area-inset-*) for that, but
+// not every shell reports those values — where they come back empty we are still
+// under the bars, just blind to how far. Measure what env() actually yields and,
+// only inside the app shell, fall back to a status-bar-sized gap. A browser tab
+// is left alone: it has real chrome above us and needs no padding.
+const SHELL_STATUS_BAR = 40;      // dp ≈ CSS px; covers Pixel-class cutout bars
+function applySafeArea(){
+  let got=0;
+  try{
+    const probe=document.createElement('div');
+    probe.style.cssText='position:fixed;top:0;left:0;width:0;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none';
+    document.body.appendChild(probe);
+    got=probe.getBoundingClientRect().height;
+    probe.remove();
+  }catch(e){}
+  if(got>0)return;                                    // the shell reports insets — trust them
+  const inShell=!!window.Capacitor||/;\s*wv\)|Capacitor/i.test(navigator.userAgent||'');
+  const standalone=!!(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches);
+  if(!inShell&&!standalone)return;
+  document.documentElement.style.setProperty('--safe-t',SHELL_STATUS_BAR+'px');
+}
+
 async function boot(){
   initTheme();
+  applySafeArea();
   // Social sign-in hands the session token back via the URL fragment.
   if(location.hash.startsWith('#token=')){
     const tk=decodeURIComponent(location.hash.slice(7));

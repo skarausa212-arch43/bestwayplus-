@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>LUMI — sprzątanie i usługi domowe we Wrocławiu</title>
 <meta name="description" content="LUMI — usługi domowe we Wrocławiu: sprzątanie, mycie okien i ogród. Stała cena znana przed zamówieniem, sprawdzeni wykonawcy, płatność w aplikacji.">
 <style>
@@ -28,7 +28,7 @@
   /* header */
   header{position:sticky;top:0;z-index:50;backdrop-filter:saturate(1.4) blur(12px);background:color-mix(in srgb,var(--bg) 82%,transparent);border-bottom:1px solid transparent;transition:border-color .3s}
   header.stuck{border-color:var(--line)}
-  .hd{display:flex;align-items:center;justify-content:space-between;padding:14px 0;gap:12px}
+  .hd{display:flex;align-items:center;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top,0px)) 0 14px;gap:12px}
   .brand{display:flex;align-items:center;gap:11px;font-weight:850;font-size:21px;letter-spacing:-.02em}
   .brand svg{width:38px;height:38px}
   .nav-links{display:flex;gap:26px;margin-left:auto}
