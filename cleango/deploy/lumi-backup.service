@@ -1,0 +1,19 @@
+[Unit]
+Description=LUMI encrypted off-site backup
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/lumi
+ExecStart=/usr/bin/env node /opt/lumi/ops/backup.js run
+# The same per-instance env the app runs with — that is where the backup key and
+# the S3 credentials live (deploy/instance.local.env, server-only).
+EnvironmentFile=-/etc/systemd/system/lumi-backup.env
+Nice=10
+IOSchedulingClass=idle
+# A backup that hangs must not sit there until the next one starts.
+TimeoutStartSec=30min
+
+[Install]
+WantedBy=multi-user.target

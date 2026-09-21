@@ -1,0 +1,2122 @@
+openapi: 3.1.0
+info:
+  title: LUMI API
+  version: "1.0.0"
+  description: |
+    Public and internal API contract for LUMI — the operating system for your
+    home (on-demand home services, cleaning first, Poland).
+
+    Conventions (see 06_API_SPECIFICATION.md):
+      - REST/JSON, versioned base path `/api/v1`
+      - JWT bearer auth; role- and status-checked server-side
+      - camelCase payloads, UTC ISO-8601 timestamps, UUID identifiers
+      - Idempotency-Key on retryable writes; cursor pagination; stable error codes
+      - Critical writes (pricing, assignment, capture, payout, refund) are
+        server-only. Internal commission / fraud scores are never returned.
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+tags:
+  - name: Identity
+  - name: Provider Onboarding
+  - name: Service Catalog
+  - name: Properties
+  - name: Family Home
+  - name: Media
+  - name: Bookings
+  - name: FlashClean
+  - name: Provider Availability
+  - name: Dispatch Offers
+  - name: Active Booking
+  - name: Live Location
+  - name: Chat
+  - name: Payments
+  - name: Wallet
+  - name: Reviews
+  - name: Disputes
+  - name: Subscriptions
+  - name: Promo
+  - name: Referral
+  - name: Smart Home
+  - name: Recurring
+  - name: Airbnb
+  - name: Company
+  - name: Corporate
+  - name: Notifications
+  - name: Support
+  - name: Admin
+  - name: Webhooks
+
+paths:
+  # ---- Identity ----
+  /me:
+    get:
+      tags: [Identity]
+      summary: Current profile
+      responses:
+        "200": { $ref: "#/components/responses/ProfileResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    patch:
+      tags: [Identity]
+      summary: Update safe profile fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProfileUpdate" }
+      responses:
+        "200": { $ref: "#/components/responses/ProfileResponse" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /me/delete-request:
+    post:
+      tags: [Identity]
+      summary: Create GDPR account deletion request
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { reason: { type: string } }
+      responses:
+        "202": { $ref: "#/components/responses/Accepted" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  # ---- Provider Onboarding ----
+  /provider/onboarding:
+    get:
+      tags: [Provider Onboarding]
+      summary: Onboarding progress
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /provider/onboarding/basic:
+    patch:
+      tags: [Provider Onboarding]
+      summary: Basic identity details
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProviderBasic" }
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+  /provider/onboarding/equipment:
+    patch:
+      tags: [Provider Onboarding]
+      summary: Equipment & radius
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProviderEquipment" }
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+  /provider/documents:
+    post:
+      tags: [Provider Onboarding]
+      summary: Create a signed document upload session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DocumentUploadRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/UploadSessionResponse" }
+  /provider/onboarding/submit:
+    post:
+      tags: [Provider Onboarding]
+      summary: Submit verification for admin review
+      responses:
+        "202": { $ref: "#/components/responses/Accepted" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+
+  # ---- Service Catalog ----
+  /service-categories:
+    get:
+      tags: [Service Catalog]
+      summary: List active service categories
+      parameters:
+        - { in: query, name: city, schema: { type: string } }
+        - { in: query, name: mode, schema: { $ref: "#/components/schemas/BookingMode" } }
+        - { in: query, name: locale, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ServiceCategory" }
+                  meta: { $ref: "#/components/schemas/Meta" }
+  /service-categories/{id}:
+    get:
+      tags: [Service Catalog]
+      summary: Full category schema (fields, options, modes)
+      parameters: [ { $ref: "#/components/parameters/PathId" } ]
+      responses:
+        "200": { $ref: "#/components/responses/ServiceCategoryResponse" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ---- Properties ----
+  /properties:
+    get:
+      tags: [Properties]
+      summary: Owned and shared properties
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Property" }
+                  meta: { $ref: "#/components/schemas/Meta" }
+    post:
+      tags: [Properties]
+      summary: Create a property
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PropertyCreate" }
+      responses:
+        "201": { $ref: "#/components/responses/PropertyResponse" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+  /properties/{id}:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    get:
+      tags: [Properties]
+      summary: Get property
+      responses:
+        "200": { $ref: "#/components/responses/PropertyResponse" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [Properties]
+      summary: Update property
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PropertyCreate" }
+      responses:
+        "200": { $ref: "#/components/responses/PropertyResponse" }
+    delete:
+      tags: [Properties]
+      summary: Soft-delete property
+      responses:
+        "204": { description: Deleted }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ---- Family Home ----
+  /properties/{id}/members:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    get:
+      tags: [Family Home]
+      summary: List property members
+      responses:
+        "200": { $ref: "#/components/responses/GenericList" }
+  /properties/{id}/members/invite:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Family Home]
+      summary: Invite a member with permissions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MemberInvite" }
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /properties/{id}/members/{memberId}:
+    parameters:
+      - { $ref: "#/components/parameters/PathId" }
+      - { in: path, name: memberId, required: true, schema: { type: string, format: uuid } }
+    patch:
+      tags: [Family Home]
+      summary: Update member permissions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MemberPermissions" }
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+    delete:
+      tags: [Family Home]
+      summary: Remove member
+      responses:
+        "204": { description: Removed }
+  /property-invitations/{token}/accept:
+    parameters:
+      - { in: path, name: token, required: true, schema: { type: string } }
+    post:
+      tags: [Family Home]
+      summary: Accept a property invitation
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+
+  # ---- Media ----
+  /media/upload-session:
+    post:
+      tags: [Media]
+      summary: Create a signed media upload session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MediaUploadRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/UploadSessionResponse" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+  /media/{id}/complete:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Media]
+      summary: Mark upload complete
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                checksum: { type: string }
+                width: { type: integer }
+                height: { type: integer }
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+  /media/{id}:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    delete:
+      tags: [Media]
+      summary: Delete media (before evidence lock only)
+      responses:
+        "204": { description: Deleted }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  # ---- Bookings ----
+  /bookings:
+    get:
+      tags: [Bookings]
+      summary: List bookings (role-scoped)
+      parameters:
+        - { in: query, name: status, schema: { $ref: "#/components/schemas/BookingStatus" } }
+        - { $ref: "#/components/parameters/Limit" }
+        - { $ref: "#/components/parameters/Cursor" }
+      responses:
+        "200": { $ref: "#/components/responses/BookingListResponse" }
+    post:
+      tags: [Bookings]
+      summary: Create a draft booking
+      parameters: [ { $ref: "#/components/parameters/IdempotencyKey" } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BookingCreate" }
+      responses:
+        "201": { $ref: "#/components/responses/BookingResponse" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /bookings/{id}:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    get:
+      tags: [Bookings]
+      summary: Get a role-shaped booking
+      description: Customer/provider payloads never include platformFee, fraud scores or other providers' offers.
+      responses:
+        "200": { $ref: "#/components/responses/BookingResponse" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [Bookings]
+      summary: Edit booking (draft/editable only)
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BookingCreate" }
+      responses:
+        "200": { $ref: "#/components/responses/BookingResponse" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /bookings/{id}/estimate:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Bookings]
+      summary: Start AI + pricing estimate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mediaIds: { type: array, items: { type: string, format: uuid } }
+                answers: { type: object, additionalProperties: true }
+      responses:
+        "202":
+          description: Estimate processing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      estimateId: { type: string, format: uuid }
+                      status: { type: string, enum: [processing, ready, failed] }
+    get:
+      tags: [Bookings]
+      summary: Fetch estimate result
+      responses:
+        "200": { $ref: "#/components/responses/EstimateResponse" }
+  /bookings/{id}/confirm:
+    parameters:
+      - { $ref: "#/components/parameters/PathId" }
+      - { $ref: "#/components/parameters/IdempotencyKey" }
+    post:
+      tags: [Bookings]
+      summary: Confirm quote, authorize payment, start dispatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [quoteId, paymentMethodId]
+              properties:
+                quoteId: { type: string, format: uuid }
+                paymentMethodId: { type: string, format: uuid }
+                promoCode: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/BookingResponse" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "402":
+          description: Payment could not be authorized
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /bookings/{id}/cancel:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Bookings]
+      summary: Cancel a booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reasonCode]
+              properties:
+                reasonCode: { type: string }
+                comment: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      status: { $ref: "#/components/schemas/BookingStatus" }
+                      cancellationFee: { type: number }
+                      refundStatus: { type: string }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /bookings/{id}/confirm-completion:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Active Booking]
+      summary: Customer confirms completion
+      responses:
+        "200": { $ref: "#/components/responses/BookingResponse" }
+  /bookings/{id}/report-issue:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Active Booking]
+      summary: Customer reports an issue at completion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [category, description]
+              properties:
+                category: { type: string }
+                description: { type: string }
+                mediaIds: { type: array, items: { type: string, format: uuid } }
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+
+  # ---- FlashClean ----
+  /flashclean/preview:
+    post:
+      tags: [FlashClean]
+      summary: Emergency price/ETA preview
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FlashPreviewRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/FlashPreviewResponse" }
+  /flashclean/confirm:
+    post:
+      tags: [FlashClean]
+      summary: Create and dispatch an emergency booking
+      parameters: [ { $ref: "#/components/parameters/IdempotencyKey" } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BookingCreate" }
+      responses:
+        "201": { $ref: "#/components/responses/BookingResponse" }
+  /flashclean/{bookingId}/search-status:
+    parameters:
+      - { in: path, name: bookingId, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [FlashClean]
+      summary: Live dispatch search status
+      responses:
+        "200": { $ref: "#/components/responses/FlashSearchStatusResponse" }
+
+  # ---- Provider availability & status ----
+  /provider/availability:
+    get:
+      tags: [Provider Availability]
+      summary: Get weekly availability
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+    put:
+      tags: [Provider Availability]
+      summary: Replace weekly availability
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/WeeklyAvailability" }
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+  /provider/status/online:
+    post:
+      tags: [Provider Availability]
+      summary: Go online (requires verification)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                location: { $ref: "#/components/schemas/GeoPoint" }
+                emergencyAvailable: { type: boolean }
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /provider/status/offline:
+    post:
+      tags: [Provider Availability]
+      summary: Go offline
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+
+  # ---- Dispatch offers ----
+  /provider/offers:
+    get:
+      tags: [Dispatch Offers]
+      summary: Current valid offers
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Offer" } }
+                  meta: { $ref: "#/components/schemas/Meta" }
+  /provider/offers/{id}:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    get:
+      tags: [Dispatch Offers]
+      summary: Offer detail (providerGross only — never customer price)
+      responses:
+        "200": { $ref: "#/components/responses/OfferResponse" }
+  /provider/offers/{id}/accept:
+    parameters:
+      - { $ref: "#/components/parameters/PathId" }
+      - { $ref: "#/components/parameters/IdempotencyKey" }
+    post:
+      tags: [Dispatch Offers]
+      summary: Accept an offer (atomic — only one provider wins)
+      description: |
+        Backed by the `accept_booking_offer` transaction. Concurrent acceptances
+        serialize; the first wins, later callers receive `BOOKING_ALREADY_ACCEPTED`.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                currentLocation: { $ref: "#/components/schemas/GeoPoint" }
+      responses:
+        "200": { $ref: "#/components/responses/BookingResponse" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Not available / already accepted / provider busy
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+              examples:
+                alreadyAccepted:
+                  value: { error: { code: BOOKING_ALREADY_ACCEPTED, message: "This booking is no longer available.", requestId: "5b1c..." } }
+  /provider/offers/{id}/decline:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Dispatch Offers]
+      summary: Decline an offer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { reasonCode: { type: string } }
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+
+  # ---- Active booking workflow ----
+  /provider/bookings/{id}/en-route:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Active Booking]
+      summary: Mark en-route
+      responses:
+        "200": { $ref: "#/components/responses/BookingResponse" }
+  /provider/bookings/{id}/arrived:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Active Booking]
+      summary: Mark arrived (geofenced)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { location: { $ref: "#/components/schemas/GeoPoint" } }
+      responses:
+        "200": { $ref: "#/components/responses/BookingResponse" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /provider/bookings/{id}/start:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Active Booking]
+      summary: Start service (before photos required)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [beforeMediaIds]
+              properties:
+                beforeMediaIds: { type: array, minItems: 1, items: { type: string, format: uuid } }
+                checklist: { type: object, additionalProperties: true }
+                customerPin: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/BookingResponse" }
+        "400":
+          description: Photos required / invalid transition
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+  /provider/bookings/{id}/finish:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Active Booking]
+      summary: Finish service (after photos required)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [afterMediaIds]
+              properties:
+                afterMediaIds: { type: array, minItems: 1, items: { type: string, format: uuid } }
+                checklist: { type: object, additionalProperties: true }
+                providerNotes: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/BookingResponse" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+
+  # ---- Live location ----
+  /provider/location:
+    post:
+      tags: [Live Location]
+      summary: Push a provider location sample
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LocationSample" }
+      responses:
+        "204": { description: Accepted }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /bookings/{id}/provider-location:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    get:
+      tags: [Live Location]
+      summary: Provider location for an active booking (customer only)
+      responses:
+        "200": { $ref: "#/components/responses/ProviderLocationResponse" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ---- Chat ----
+  /bookings/{id}/conversation:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    get:
+      tags: [Chat]
+      summary: Get the booking conversation
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+  /conversations/{id}/messages:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    get:
+      tags: [Chat]
+      summary: List messages
+      parameters:
+        - { $ref: "#/components/parameters/Limit" }
+        - { $ref: "#/components/parameters/Cursor" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Message" } }
+                  pagination: { $ref: "#/components/schemas/Pagination" }
+    post:
+      tags: [Chat]
+      summary: Send a text message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, body]
+              properties:
+                type: { type: string, enum: [text] }
+                body: { type: string }
+                replyToId: { type: [string, "null"], format: uuid }
+      responses:
+        "201": { $ref: "#/components/responses/GenericObject" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /conversations/{id}/messages/media:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Chat]
+      summary: Send a media message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, mediaId]
+              properties:
+                type: { type: string, enum: [image, video, voice, location] }
+                mediaId: { type: string, format: uuid }
+      responses:
+        "201": { $ref: "#/components/responses/GenericObject" }
+  /conversations/{id}/read:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Chat]
+      summary: Mark read up to a message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { lastReadMessageId: { type: string, format: uuid } }
+      responses:
+        "204": { description: OK }
+
+  # ---- Payments ----
+  /payment-methods:
+    get:
+      tags: [Payments]
+      summary: List saved payment methods
+      responses:
+        "200": { $ref: "#/components/responses/GenericList" }
+  /payment-methods/setup-intent:
+    post:
+      tags: [Payments]
+      summary: Create a Stripe SetupIntent
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+  /payment-methods/{id}:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    delete:
+      tags: [Payments]
+      summary: Remove a payment method
+      responses:
+        "204": { description: Deleted }
+  /payments/{bookingId}/authorize:
+    parameters:
+      - { in: path, name: bookingId, required: true, schema: { type: string, format: uuid } }
+      - { $ref: "#/components/parameters/IdempotencyKey" }
+    post:
+      tags: [Payments]
+      summary: Authorize payment (usually via booking confirm)
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+        "402": { $ref: "#/components/responses/PaymentError" }
+  /payments/{bookingId}/capture:
+    parameters:
+      - { in: path, name: bookingId, required: true, schema: { type: string, format: uuid } }
+      - { $ref: "#/components/parameters/IdempotencyKey" }
+    post:
+      tags: [Payments]
+      summary: Capture payment (server/admin/internal only)
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /payments/{bookingId}/refund:
+    parameters:
+      - { in: path, name: bookingId, required: true, schema: { type: string, format: uuid } }
+      - { $ref: "#/components/parameters/IdempotencyKey" }
+    post:
+      tags: [Payments]
+      summary: Refund (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, reasonCode]
+              properties:
+                amount: { type: number }
+                reasonCode: { type: string }
+                note: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ---- Wallet ----
+  /provider/wallet:
+    get:
+      tags: [Wallet]
+      summary: Provider wallet balances
+      responses:
+        "200": { $ref: "#/components/responses/WalletResponse" }
+  /provider/wallet/transactions:
+    get:
+      tags: [Wallet]
+      summary: Wallet ledger
+      parameters:
+        - { $ref: "#/components/parameters/Limit" }
+        - { $ref: "#/components/parameters/Cursor" }
+      responses:
+        "200": { $ref: "#/components/responses/GenericList" }
+  /provider/payouts:
+    post:
+      tags: [Wallet]
+      summary: Request a payout
+      parameters: [ { $ref: "#/components/parameters/IdempotencyKey" } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount]
+              properties: { amount: { type: number } }
+      responses:
+        "202": { $ref: "#/components/responses/Accepted" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  # ---- Reviews ----
+  /bookings/{id}/reviews:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Reviews]
+      summary: Review a completed booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReviewCreate" }
+      responses:
+        "201": { $ref: "#/components/responses/GenericObject" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /providers/{id}/reviews:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    get:
+      tags: [Reviews]
+      summary: Public reviews for a provider
+      responses:
+        "200": { $ref: "#/components/responses/GenericList" }
+  /reviews/{id}/report:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Reviews]
+      summary: Report a review
+      responses:
+        "202": { $ref: "#/components/responses/Accepted" }
+
+  # ---- Disputes ----
+  /bookings/{id}/disputes:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Disputes]
+      summary: Open a dispute (locks evidence)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [category, description]
+              properties:
+                category: { type: string }
+                description: { type: string }
+                requestedRefund: { type: number }
+                mediaIds: { type: array, items: { type: string, format: uuid } }
+      responses:
+        "201": { $ref: "#/components/responses/GenericObject" }
+  /disputes/{id}:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    get:
+      tags: [Disputes]
+      summary: Get dispute
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+  /disputes/{id}/messages:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Disputes]
+      summary: Add a dispute message
+      responses:
+        "201": { $ref: "#/components/responses/GenericObject" }
+
+  # ---- Subscriptions ----
+  /subscription-plans:
+    get:
+      tags: [Subscriptions]
+      summary: List plans
+      responses:
+        "200": { $ref: "#/components/responses/GenericList" }
+  /subscriptions:
+    post:
+      tags: [Subscriptions]
+      summary: Subscribe
+      parameters: [ { $ref: "#/components/parameters/IdempotencyKey" } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [planId, paymentMethodId]
+              properties:
+                planId: { type: string, format: uuid }
+                paymentMethodId: { type: string, format: uuid }
+      responses:
+        "201": { $ref: "#/components/responses/GenericObject" }
+  /subscriptions/current:
+    get:
+      tags: [Subscriptions]
+      summary: Current subscription
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+  /subscriptions/{id}/cancel:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Subscriptions]
+      summary: Cancel subscription
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+  /subscriptions/{id}/resume:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Subscriptions]
+      summary: Resume subscription
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+
+  # ---- Promo & Referral ----
+  /promo-codes/validate:
+    post:
+      tags: [Promo]
+      summary: Validate a promo code for a booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string }
+                bookingId: { type: string, format: uuid }
+      responses:
+        "200": { $ref: "#/components/responses/PromoValidateResponse" }
+  /referrals/code:
+    get:
+      tags: [Referral]
+      summary: Get my referral code
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+  /referrals/invite:
+    post:
+      tags: [Referral]
+      summary: Send a referral invite
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [channel, recipient]
+              properties:
+                channel: { type: string, enum: [email, sms, link] }
+                recipient: { type: string }
+      responses:
+        "202": { $ref: "#/components/responses/Accepted" }
+  /referrals:
+    get:
+      tags: [Referral]
+      summary: List my referrals
+      responses:
+        "200": { $ref: "#/components/responses/GenericList" }
+
+  # ---- Smart Home ----
+  /properties/{id}/smart-home:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    get:
+      tags: [Smart Home]
+      summary: LUMI Score + recommendations for a property
+      responses:
+        "200": { $ref: "#/components/responses/SmartHomeResponse" }
+  /properties/{id}/recommendations/{recommendationId}/dismiss:
+    parameters:
+      - { $ref: "#/components/parameters/PathId" }
+      - { in: path, name: recommendationId, required: true, schema: { type: string } }
+    post:
+      tags: [Smart Home]
+      summary: Dismiss a recommendation
+      responses:
+        "204": { description: OK }
+  /properties/{id}/recommendations/{recommendationId}/book:
+    parameters:
+      - { $ref: "#/components/parameters/PathId" }
+      - { in: path, name: recommendationId, required: true, schema: { type: string } }
+    post:
+      tags: [Smart Home]
+      summary: Create a prefilled booking draft from a recommendation
+      responses:
+        "201": { $ref: "#/components/responses/BookingResponse" }
+
+  # ---- Recurring ----
+  /recurring-bookings:
+    get:
+      tags: [Recurring]
+      summary: List recurring rules
+      responses:
+        "200": { $ref: "#/components/responses/GenericList" }
+    post:
+      tags: [Recurring]
+      summary: Create a recurring rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RecurringRule" }
+      responses:
+        "201": { $ref: "#/components/responses/GenericObject" }
+  /recurring-bookings/{id}:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    patch:
+      tags: [Recurring]
+      summary: Update a recurring rule
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+    delete:
+      tags: [Recurring]
+      summary: Delete a recurring rule
+      responses:
+        "204": { description: Deleted }
+  /recurring-bookings/{id}/pause:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Recurring]
+      summary: Pause
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+  /recurring-bookings/{id}/resume:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Recurring]
+      summary: Resume
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+  /recurring-bookings/{id}/skip-next:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Recurring]
+      summary: Skip the next occurrence
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+
+  # ---- Airbnb ----
+  /integrations/airbnb/connect:
+    post:
+      tags: [Airbnb]
+      summary: Begin Airbnb connection
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+  /integrations/airbnb:
+    get:
+      tags: [Airbnb]
+      summary: List Airbnb integrations
+      responses:
+        "200": { $ref: "#/components/responses/GenericList" }
+  /integrations/airbnb/{id}/sync:
+    parameters:
+      - { $ref: "#/components/parameters/PathId" }
+      - { $ref: "#/components/parameters/IdempotencyKey" }
+    post:
+      tags: [Airbnb]
+      summary: Sync calendar (idempotent)
+      responses:
+        "202": { $ref: "#/components/responses/Accepted" }
+  /integrations/airbnb/{id}:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    delete:
+      tags: [Airbnb]
+      summary: Disconnect Airbnb
+      responses:
+        "204": { description: Disconnected }
+  /properties/{id}/calendar-events:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    get:
+      tags: [Airbnb]
+      summary: Property calendar events
+      responses:
+        "200": { $ref: "#/components/responses/GenericList" }
+
+  # ---- Company ----
+  /companies:
+    post:
+      tags: [Company]
+      summary: Create a company
+      responses:
+        "201": { $ref: "#/components/responses/GenericObject" }
+  /companies/{id}:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    get:
+      tags: [Company]
+      summary: Get company
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+    patch:
+      tags: [Company]
+      summary: Update company
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+  /companies/{id}/members:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    get:
+      tags: [Company]
+      summary: List members
+      responses:
+        "200": { $ref: "#/components/responses/GenericList" }
+    post:
+      tags: [Company]
+      summary: Add member
+      responses:
+        "201": { $ref: "#/components/responses/GenericObject" }
+  /companies/{id}/bookings:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    get:
+      tags: [Company]
+      summary: Company bookings
+      responses:
+        "200": { $ref: "#/components/responses/BookingListResponse" }
+  /companies/{id}/analytics:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    get:
+      tags: [Company]
+      summary: Company analytics
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+  /companies/{id}/payouts:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    get:
+      tags: [Company]
+      summary: Company payouts
+      responses:
+        "200": { $ref: "#/components/responses/GenericList" }
+
+  # ---- Corporate ----
+  /organizations:
+    post:
+      tags: [Corporate]
+      summary: Create an organization
+      responses:
+        "201": { $ref: "#/components/responses/GenericObject" }
+  /organizations/{id}:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    get:
+      tags: [Corporate]
+      summary: Get organization
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+  /organizations/{id}/members:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Corporate]
+      summary: Add organization member
+      responses:
+        "201": { $ref: "#/components/responses/GenericObject" }
+  /organizations/{id}/properties:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Corporate]
+      summary: Attach a property/office
+      responses:
+        "201": { $ref: "#/components/responses/GenericObject" }
+  /organizations/{id}/bookings:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    get:
+      tags: [Corporate]
+      summary: Organization bookings
+      responses:
+        "200": { $ref: "#/components/responses/BookingListResponse" }
+  /organizations/{id}/invoices:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    get:
+      tags: [Corporate]
+      summary: Organization invoices
+      responses:
+        "200": { $ref: "#/components/responses/GenericList" }
+  /organizations/{id}/analytics:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    get:
+      tags: [Corporate]
+      summary: Organization analytics
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+
+  # ---- Notifications ----
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: List notifications
+      parameters:
+        - { $ref: "#/components/parameters/Limit" }
+        - { $ref: "#/components/parameters/Cursor" }
+      responses:
+        "200": { $ref: "#/components/responses/GenericList" }
+  /notifications/{id}/read:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Notifications]
+      summary: Mark one read
+      responses:
+        "204": { description: OK }
+  /notifications/read-all:
+    post:
+      tags: [Notifications]
+      summary: Mark all read
+      responses:
+        "204": { description: OK }
+  /notification-preferences:
+    get:
+      tags: [Notifications]
+      summary: Get preferences
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+    patch:
+      tags: [Notifications]
+      summary: Update preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                push: { type: boolean }
+                email: { type: boolean }
+                smsCriticalOnly: { type: boolean }
+                marketing: { type: boolean }
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+
+  # ---- Support ----
+  /support/tickets:
+    get:
+      tags: [Support]
+      summary: List tickets
+      responses:
+        "200": { $ref: "#/components/responses/GenericList" }
+    post:
+      tags: [Support]
+      summary: Create a ticket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subject, description]
+              properties:
+                bookingId: { type: [string, "null"], format: uuid }
+                subject: { type: string }
+                description: { type: string }
+                mediaIds: { type: array, items: { type: string, format: uuid } }
+      responses:
+        "201": { $ref: "#/components/responses/GenericObject" }
+  /support/tickets/{id}:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    get:
+      tags: [Support]
+      summary: Get ticket
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+  /support/tickets/{id}/messages:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Support]
+      summary: Add a ticket message
+      responses:
+        "201": { $ref: "#/components/responses/GenericObject" }
+
+  # ---- Admin ----
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: Search users
+      responses:
+        "200": { $ref: "#/components/responses/GenericList" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/providers/pending-verification:
+    get:
+      tags: [Admin]
+      summary: Providers pending verification
+      responses:
+        "200": { $ref: "#/components/responses/GenericList" }
+  /admin/providers/{id}/approve:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Admin]
+      summary: Approve provider verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminReason" }
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/providers/{id}/reject:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Admin]
+      summary: Reject provider verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminReason" }
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+  /admin/bookings:
+    get:
+      tags: [Admin]
+      summary: Inspect bookings
+      responses:
+        "200": { $ref: "#/components/responses/BookingListResponse" }
+  /admin/payments:
+    get:
+      tags: [Admin]
+      summary: Inspect payments
+      responses:
+        "200": { $ref: "#/components/responses/GenericList" }
+  /admin/refunds:
+    post:
+      tags: [Admin]
+      summary: Issue a refund
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminReason" }
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+  /admin/disputes:
+    get:
+      tags: [Admin]
+      summary: List disputes
+      responses:
+        "200": { $ref: "#/components/responses/GenericList" }
+  /admin/disputes/{id}/resolve:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    post:
+      tags: [Admin]
+      summary: Resolve a dispute
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resolution, reason]
+              properties:
+                resolution: { type: string, enum: [full_refund, partial_refund, no_refund, provider_penalty] }
+                refundAmount: { type: number }
+                providerAdjustment: { type: number }
+                reason: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+  /admin/pricing-rules:
+    get:
+      tags: [Admin]
+      summary: List pricing rules
+      responses:
+        "200": { $ref: "#/components/responses/GenericList" }
+    post:
+      tags: [Admin]
+      summary: Create a pricing rule
+      responses:
+        "201": { $ref: "#/components/responses/GenericObject" }
+  /admin/pricing-rules/{id}:
+    parameters: [ { $ref: "#/components/parameters/PathId" } ]
+    patch:
+      tags: [Admin]
+      summary: Update a pricing rule
+      responses:
+        "200": { $ref: "#/components/responses/GenericObject" }
+  /admin/service-categories:
+    get:
+      tags: [Admin]
+      summary: List categories (incl. inactive)
+      responses:
+        "200": { $ref: "#/components/responses/GenericList" }
+    post:
+      tags: [Admin]
+      summary: Create a category
+      responses:
+        "201": { $ref: "#/components/responses/GenericObject" }
+  /admin/notifications/broadcast:
+    post:
+      tags: [Admin]
+      summary: Broadcast a notification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminReason" }
+      responses:
+        "202": { $ref: "#/components/responses/Accepted" }
+
+  # ---- Webhooks ----
+  /webhooks/stripe:
+    post:
+      tags: [Webhooks]
+      summary: Stripe webhook (signature-verified, idempotent)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        "200": { description: Processed }
+        "400": { description: Invalid signature }
+  /webhooks/ai:
+    post:
+      tags: [Webhooks]
+      summary: Async AI provider callback
+      security: []
+      responses:
+        "200": { description: Processed }
+  /webhooks/integrations/airbnb:
+    post:
+      tags: [Webhooks]
+      summary: Airbnb integration callback
+      security: []
+      responses:
+        "200": { description: Processed }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    PathId:
+      in: path
+      name: id
+      required: true
+      schema: { type: string, format: uuid }
+    Limit:
+      in: query
+      name: limit
+      schema: { type: integer, default: 20, minimum: 1, maximum: 100 }
+    Cursor:
+      in: query
+      name: cursor
+      schema: { type: string }
+      description: Opaque cursor for stable, high-volume pagination.
+    IdempotencyKey:
+      in: header
+      name: Idempotency-Key
+      required: true
+      schema: { type: string, format: uuid }
+      description: Retryable-write idempotency. Same key + same body returns the original result.
+
+  responses:
+    Accepted:
+      description: Accepted
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/OkEnvelope" }
+    GenericObject:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { type: object, additionalProperties: true }
+              meta: { $ref: "#/components/schemas/Meta" }
+    GenericList:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { type: array, items: { type: object, additionalProperties: true } }
+              pagination: { $ref: "#/components/schemas/Pagination" }
+              meta: { $ref: "#/components/schemas/Meta" }
+    ProfileResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { $ref: "#/components/schemas/Profile" }
+              meta: { $ref: "#/components/schemas/Meta" }
+    PropertyResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { $ref: "#/components/schemas/Property" }
+    ServiceCategoryResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { $ref: "#/components/schemas/ServiceCategory" }
+    BookingResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { $ref: "#/components/schemas/Booking" }
+              meta: { $ref: "#/components/schemas/Meta" }
+    BookingListResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { type: array, items: { $ref: "#/components/schemas/Booking" } }
+              pagination: { $ref: "#/components/schemas/Pagination" }
+    EstimateResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { $ref: "#/components/schemas/Estimate" }
+    OfferResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { $ref: "#/components/schemas/Offer" }
+    WalletResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { $ref: "#/components/schemas/WalletBalance" }
+    SmartHomeResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { $ref: "#/components/schemas/SmartHome" }
+    ProviderLocationResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { $ref: "#/components/schemas/ProviderLocation" }
+    FlashPreviewResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { $ref: "#/components/schemas/FlashPreview" }
+    FlashSearchStatusResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { $ref: "#/components/schemas/FlashSearchStatus" }
+    UploadSessionResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { $ref: "#/components/schemas/UploadSession" }
+    PromoValidateResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { $ref: "#/components/schemas/PromoValidation" }
+    Unauthorized:
+      description: Authentication required or token invalid
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    Forbidden:
+      description: Role or ownership check failed
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    ValidationError:
+      description: Payload validation failed
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    Conflict:
+      description: State conflict / invalid transition
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    PaymentError:
+      description: Payment could not be processed
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    RateLimited:
+      description: Too many requests
+      headers:
+        Retry-After: { schema: { type: integer }, description: Seconds to wait }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+
+  schemas:
+    Meta:
+      type: object
+      properties:
+        requestId: { type: string, format: uuid }
+        timestamp: { type: string, format: date-time }
+    Pagination:
+      type: object
+      properties:
+        nextCursor: { type: [string, "null"] }
+        hasMore: { type: boolean }
+    OkEnvelope:
+      type: object
+      properties:
+        data: { type: object, additionalProperties: true }
+        meta: { $ref: "#/components/schemas/Meta" }
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { $ref: "#/components/schemas/ErrorCode" }
+            message: { type: string }
+            details: { type: object, additionalProperties: true }
+            requestId: { type: string, format: uuid }
+    ErrorCode:
+      type: string
+      enum:
+        - AUTH_REQUIRED
+        - AUTH_TOKEN_EXPIRED
+        - AUTH_INVALID_TOKEN
+        - ACCOUNT_PENDING
+        - ACCOUNT_SUSPENDED
+        - ACCOUNT_BLOCKED
+        - ROLE_FORBIDDEN
+        - VALIDATION_ERROR
+        - MISSING_REQUIRED_FIELD
+        - INVALID_FORMAT
+        - INVALID_STATE_TRANSITION
+        - RESOURCE_NOT_FOUND
+        - BOOKING_NOT_FOUND
+        - BOOKING_ALREADY_ACCEPTED
+        - BOOKING_NOT_SEARCHABLE
+        - BOOKING_EXPIRED
+        - BOOKING_CANNOT_CANCEL
+        - BOOKING_PHOTOS_REQUIRED
+        - BOOKING_ALREADY_COMPLETED
+        - BOOKING_ACCESS_DENIED
+        - PROVIDER_NOT_VERIFIED
+        - PROVIDER_OFFLINE
+        - PROVIDER_UNAVAILABLE
+        - PROVIDER_DOCUMENT_EXPIRED
+        - PROVIDER_ALREADY_BUSY
+        - PAYMENT_METHOD_REQUIRED
+        - PAYMENT_AUTHORIZATION_FAILED
+        - PAYMENT_CAPTURE_FAILED
+        - PAYMENT_ALREADY_CAPTURED
+        - REFUND_NOT_ALLOWED
+        - PAYOUT_NOT_AVAILABLE
+        - MEDIA_UPLOAD_FAILED
+        - MEDIA_INVALID_TYPE
+        - MEDIA_TOO_LARGE
+        - MEDIA_ACCESS_DENIED
+        - PROMO_INVALID
+        - PROMO_EXPIRED
+        - PROMO_LIMIT_REACHED
+        - SUBSCRIPTION_REQUIRED
+        - SUBSCRIPTION_INACTIVE
+        - IDEMPOTENCY_KEY_REUSED
+        - RATE_LIMITED
+        - TOO_MANY_SMS_ATTEMPTS
+        - TOO_MANY_BOOKING_ATTEMPTS
+
+    BookingStatus:
+      type: string
+      enum: [draft, estimating, awaiting_payment_method, searching, offered, accepted,
+             provider_en_route, provider_arrived, in_progress,
+             awaiting_completion_confirmation, completed, cancelled, disputed, refunded, expired]
+    BookingMode:
+      type: string
+      enum: [scheduled, instant, flashclean, recurring, airbnb_automatic, corporate]
+
+    GeoPoint:
+      type: object
+      required: [lat, lng]
+      properties:
+        lat: { type: number }
+        lng: { type: number }
+
+    Profile:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        role: { type: string, enum: [customer, provider, company_manager, company_staff, admin, support] }
+        status: { type: string, enum: [pending, active, suspended, blocked, deleted] }
+        firstName: { type: [string, "null"] }
+        lastName: { type: [string, "null"] }
+        displayName: { type: [string, "null"] }
+        phone: { type: [string, "null"] }
+        email: { type: [string, "null"] }
+        avatarUrl: { type: [string, "null"] }
+        locale: { type: string }
+        timezone: { type: string }
+    ProfileUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        firstName: { type: string }
+        lastName: { type: string }
+        displayName: { type: string }
+        locale: { type: string }
+        marketingConsent: { type: boolean }
+
+    ProviderBasic:
+      type: object
+      properties:
+        dateOfBirth: { type: string, format: date }
+        pesel: { type: string }
+        address: { $ref: "#/components/schemas/Address" }
+        languages:
+          type: array
+          items:
+            type: object
+            properties:
+              code: { type: string }
+              proficiency: { type: string, enum: [basic, intermediate, advanced, native] }
+    ProviderEquipment:
+      type: object
+      properties:
+        hasVehicle: { type: boolean }
+        hasProfessionalChemicals: { type: boolean }
+        hasVacuum: { type: boolean }
+        hasSteamCleaner: { type: boolean }
+        hasWindowEquipment: { type: boolean }
+        serviceRadiusKm: { type: number }
+        emergencyAvailable: { type: boolean }
+    DocumentUploadRequest:
+      type: object
+      required: [documentType, mimeType, sizeBytes]
+      properties:
+        documentType: { type: string }
+        mimeType: { type: string }
+        sizeBytes: { type: integer }
+
+    Address:
+      type: object
+      properties:
+        line1: { type: string }
+        line2: { type: [string, "null"] }
+        city: { type: string }
+        postalCode: { type: string }
+        countryCode: { type: string, default: PL }
+
+    ServiceCategory:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        name: { type: string }
+        description: { type: [string, "null"] }
+        iconKey: { type: [string, "null"] }
+        supportsInstant: { type: boolean }
+        supportsScheduled: { type: boolean }
+        supportsRecurring: { type: boolean }
+        requiresPhotos: { type: boolean }
+        fields:
+          type: array
+          items:
+            type: object
+            properties:
+              code: { type: string }
+              type: { type: string, enum: [number, boolean, text, select] }
+              required: { type: boolean }
+
+    Property:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        propertyType: { type: string, enum: [apartment, house, office] }
+        address: { $ref: "#/components/schemas/Address" }
+        location: { $ref: "#/components/schemas/GeoPoint" }
+        areaSqm: { type: [number, "null"] }
+        roomsCount: { type: [integer, "null"] }
+        bathroomsCount: { type: [integer, "null"] }
+        hasPets: { type: boolean }
+        lumiScore: { type: [integer, "null"] }
+        myRole: { type: string, enum: [owner, family, guest] }
+    PropertyCreate:
+      type: object
+      required: [name, propertyType, address]
+      properties:
+        name: { type: string }
+        propertyType: { type: string, enum: [apartment, house, office] }
+        address: { $ref: "#/components/schemas/Address" }
+        location: { $ref: "#/components/schemas/GeoPoint" }
+        areaSqm: { type: number }
+        roomsCount: { type: integer }
+        bathroomsCount: { type: integer }
+        hasElevator: { type: boolean }
+        hasParking: { type: boolean }
+        hasPets: { type: boolean }
+        accessNotes: { type: string }
+
+    MemberInvite:
+      type: object
+      required: [email, permissions]
+      properties:
+        email: { type: string, format: email }
+        permissions: { $ref: "#/components/schemas/MemberPermissions" }
+    MemberPermissions:
+      type: object
+      properties:
+        view: { type: boolean }
+        book: { type: boolean }
+        pay: { type: boolean }
+        manage: { type: boolean }
+
+    MediaUploadRequest:
+      type: object
+      required: [type, mimeType, sizeBytes]
+      properties:
+        bookingId: { type: [string, "null"], format: uuid }
+        propertyId: { type: [string, "null"], format: uuid }
+        type: { type: string, enum: [image, video, document, voice] }
+        stage: { type: string, enum: [booking_request, before_service, during_service, after_service, dispute] }
+        mimeType: { type: string }
+        sizeBytes: { type: integer }
+    UploadSession:
+      type: object
+      properties:
+        mediaId: { type: string, format: uuid }
+        documentId: { type: string, format: uuid }
+        uploadUrl: { type: string }
+        storagePath: { type: string }
+        expiresAt: { type: string, format: date-time }
+
+    BookingCreate:
+      type: object
+      required: [propertyId, serviceCategoryId, mode]
+      properties:
+        propertyId: { type: string, format: uuid }
+        serviceCategoryId: { type: string, format: uuid }
+        mode: { $ref: "#/components/schemas/BookingMode" }
+        scheduledStart: { type: [string, "null"], format: date-time }
+        customerNotes: { type: string }
+        answers: { type: object, additionalProperties: true }
+        serviceOptions:
+          type: array
+          items:
+            type: object
+            properties:
+              serviceOptionId: { type: string, format: uuid }
+              value: {}
+        mediaIds: { type: array, items: { type: string, format: uuid } }
+    Booking:
+      type: object
+      description: Role-shaped. platformFee is never present in customer/provider payloads.
+      properties:
+        id: { type: string, format: uuid }
+        status: { $ref: "#/components/schemas/BookingStatus" }
+        mode: { $ref: "#/components/schemas/BookingMode" }
+        propertyId: { type: string, format: uuid }
+        serviceCategoryId: { type: string, format: uuid }
+        scheduledStart: { type: [string, "null"], format: date-time }
+        customerTotal: { type: [number, "null"], description: "Present in customer payloads only" }
+        providerGross: { type: [number, "null"], description: "Present in provider payloads only" }
+        currency: { type: string }
+        durationMinutes: { type: [integer, "null"] }
+        createdAt: { type: string, format: date-time }
+
+    Estimate:
+      type: object
+      properties:
+        status: { type: string, enum: [processing, ready, failed] }
+        estimatedDurationMinutes: { type: integer }
+        estimatedWorkers: { type: integer }
+        difficultyScore: { type: number }
+        confidence: { type: number }
+        suggestedServices:
+          type: array
+          items:
+            type: object
+            properties:
+              slug: { type: string }
+              reason: { type: string }
+        quote: { $ref: "#/components/schemas/Quote" }
+    Quote:
+      type: object
+      properties:
+        quoteId: { type: string, format: uuid }
+        customerTotal: { type: number }
+        currency: { type: string }
+        expiresAt: { type: string, format: date-time }
+
+    Offer:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        bookingId: { type: string, format: uuid }
+        service:
+          type: object
+          properties:
+            slug: { type: string }
+            name: { type: string }
+        providerGross: { type: number }
+        currency: { type: string }
+        estimatedDistanceKm: { type: number }
+        estimatedArrivalMinutes: { type: integer }
+        estimatedDurationMinutes: { type: integer }
+        expiresAt: { type: string, format: date-time }
+        requirements: { type: array, items: { type: string } }
+
+    LocationSample:
+      type: object
+      required: [lat, lng]
+      properties:
+        bookingId: { type: [string, "null"], format: uuid }
+        lat: { type: number }
+        lng: { type: number }
+        accuracyMeters: { type: number }
+        heading: { type: number }
+        speedMps: { type: number }
+        recordedAt: { type: string, format: date-time }
+    ProviderLocation:
+      type: object
+      properties:
+        lat: { type: number }
+        lng: { type: number }
+        etaMinutes: { type: [integer, "null"] }
+        recordedAt: { type: string, format: date-time }
+
+    Message:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        conversationId: { type: string, format: uuid }
+        senderId: { type: [string, "null"], format: uuid }
+        type: { type: string, enum: [text, image, video, voice, system, location] }
+        body: { type: [string, "null"] }
+        mediaId: { type: [string, "null"], format: uuid }
+        createdAt: { type: string, format: date-time }
+
+    WalletBalance:
+      type: object
+      properties:
+        availableBalance: { type: number }
+        pendingBalance: { type: number }
+        currency: { type: string }
+
+    ReviewCreate:
+      type: object
+      required: [qualityRating, punctualityRating, communicationRating, professionalismRating]
+      properties:
+        qualityRating: { type: integer, minimum: 1, maximum: 5 }
+        punctualityRating: { type: integer, minimum: 1, maximum: 5 }
+        communicationRating: { type: integer, minimum: 1, maximum: 5 }
+        professionalismRating: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: string }
+
+    SmartHome:
+      type: object
+      properties:
+        lumiScore: { type: integer, minimum: 0, maximum: 100 }
+        recommendations:
+          type: array
+          items: { $ref: "#/components/schemas/Recommendation" }
+    Recommendation:
+      type: object
+      properties:
+        id: { type: string }
+        type: { type: string }
+        priority: { type: string, enum: [low, medium, high] }
+        title: { type: string }
+        reason: { type: string }
+        serviceCategoryId: { type: [string, "null"], format: uuid }
+
+    RecurringRule:
+      type: object
+      required: [propertyId, serviceCategoryId, frequency]
+      properties:
+        propertyId: { type: string, format: uuid }
+        serviceCategoryId: { type: string, format: uuid }
+        frequency: { type: string, enum: [weekly, biweekly, monthly, custom] }
+        intervalValue: { type: integer, default: 1 }
+        preferredWeekday: { type: integer, minimum: 0, maximum: 6 }
+        preferredTime: { type: string }
+        preferredProviderId: { type: [string, "null"], format: uuid }
+
+    FlashPreviewRequest:
+      type: object
+      required: [propertyId, serviceCategoryId]
+      properties:
+        propertyId: { type: string, format: uuid }
+        serviceCategoryId: { type: string, format: uuid }
+        answers: { type: object, additionalProperties: true }
+        mediaIds: { type: array, items: { type: string, format: uuid } }
+    FlashPreview:
+      type: object
+      properties:
+        estimatedArrivalMinutes: { type: integer }
+        customerTotal: { type: number }
+        currency: { type: string }
+        surgeMultiplier: { type: number }
+        quoteExpiresAt: { type: string, format: date-time }
+    FlashSearchStatus:
+      type: object
+      properties:
+        status: { $ref: "#/components/schemas/BookingStatus" }
+        round: { type: integer }
+        radiusKm: { type: number }
+        candidateCount: { type: integer }
+        currentCustomerTotal: { type: number }
+        elapsedSeconds: { type: integer }
+
+    WeeklyAvailability:
+      type: object
+      properties:
+        weeklySchedule:
+          type: array
+          items:
+            type: object
+            properties:
+              weekday: { type: integer, minimum: 0, maximum: 6 }
+              startTime: { type: string }
+              endTime: { type: string }
+
+    PromoValidation:
+      type: object
+      properties:
+        valid: { type: boolean }
+        discountAmount: { type: number }
+        currency: { type: string }
+
+    AdminReason:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string }
