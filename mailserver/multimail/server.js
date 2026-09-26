@@ -1057,6 +1057,42 @@ app.post('/api/bundle/login', (req, res) => {
   res.json({ ok: true, added, total: s.accounts.length });
 });
 
+// Ящики сборки для нативных клиентов (Android): по имени+паролю сборки
+// возвращаем список ящиков с данными для IMAP/SMTP-входа. Combo — фича веб-сервиса,
+// по IMAP её не существует, поэтому приложение получает состав здесь и логинится сам.
+const bundleFails = new Map(); // ip -> [timestamps] — защита от перебора пароля сборки
+function bundleBruteforced(ip) {
+  const now = Date.now();
+  const list = (bundleFails.get(ip) || []).filter((t) => now - t < 3600_000);
+  bundleFails.set(ip, list);
+  return list.length >= 10;
+}
+app.post('/api/bundle/accounts', (req, res) => {
+  const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress;
+  const name = String(req.body?.name || '').trim().toLowerCase();
+  const pass = req.body?.password;
+  if (bundleBruteforced(ip)) {
+    return res.status(429).json({ error: 'Too many attempts. Please wait an hour.' });
+  }
+  const b = bundles[name];
+  if (!b || typeof pass !== 'string' || bundleHash(pass, b.salt) !== b.hash) {
+    bundleFails.get(ip).push(Date.now());
+    return res.status(401).json({ error: 'Wrong combo name or password.' });
+  }
+  res.json({
+    name,
+    imapHost: MAIL_HOST,
+    imapPort: 993,
+    smtpHost: MAIL_HOST,
+    smtpPort: 465,
+    accounts: b.accounts.map((a) => ({
+      email: a.email,
+      password: a.password,
+      host: a.host || MAIL_HOST,
+    })),
+  });
+});
+
 // Отправка письма от имени любого добавленного ящика (с вложениями base64)
 app.post('/api/send', express.json({ limit: '25mb' }), async (req, res) => {
   const s = getSession(req, res);
