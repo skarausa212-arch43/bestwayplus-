@@ -27,7 +27,7 @@ const RULES = [
   ['Backend', 'Money in minor units (grosz), not floats', () => /amountMinor|Math\.round\([^)]*\* 100\)/.test(server)],
   ['Backend', 'RLS present in production schema', () => fs.readdirSync(path.join(ROOT, 'db/migrations')).some((f) => /rls/i.test(f))],
   ['UI', 'Design tokens exist and are used', () => exists('design/tokens.css') && /var\(--/.test(spa)],
-  ['UI', 'Dark mode + localization', () => /prefers-color-scheme/.test(spa) && /svcLabelRu|plural/.test(spa)],
+  ['UI', 'Localization (RU UI helpers present)', () => /svcLabelRu|plural/.test(spa)],
   ['UI', 'Accessibility: reduced motion honoured', () => /prefers-reduced-motion/.test(spa)],
   ['Testing', 'Release-gate runner + API suite exist', () => exists('test/run.js') && exists('test/api.test.js')],
   ['Testing', 'Deterministic financial tests', () => /idempoten|append-only/i.test(read('pricing/test.js'))],

@@ -11,8 +11,6 @@
     --ink:#0B1220;--ink2:#39445a;--muted:#68758b;--bg:#ffffff;--bg2:#F4F8F6;
     --card:#ffffff;--line:#E7ECEA;--line2:#dbe3e0;--shadow:0 18px 50px rgba(6,42,26,.10);
   }
-  @media(prefers-color-scheme:dark){:root{--ink:#eef2f5;--ink2:#c3ccd8;--muted:#93a0b2;--bg:#0A1017;--bg2:#0E1620;--card:#111A25;--line:#1e2a37;--line2:#26333f;--shadow:0 18px 50px rgba(0,0,0,.4);--p050:#0f2a1e}}
-  :root[data-theme="dark"]{--ink:#eef2f5;--ink2:#c3ccd8;--muted:#93a0b2;--bg:#0A1017;--bg2:#0E1620;--card:#111A25;--line:#1e2a37;--line2:#26333f;--shadow:0 18px 50px rgba(0,0,0,.4);--p050:#0f2a1e}
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
   body{margin:0;font:17px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;overflow-x:hidden}
@@ -144,7 +142,6 @@
       <a href="#calc">Cena</a><a href="#how">Jak to działa</a><a href="#features">Możliwości</a><a href="#reviews">Dlaczego LUMI</a>
     </nav>
     <div class="hd-cta">
-      <button class="iconbtn" id="theme" title="Motyw" aria-label="Zmień motyw">🌙</button>
       <a class="btn ghost" href="/">Zaloguj się</a>
       <a class="btn" href="/">Zamów</a>
     </div>
@@ -258,14 +255,9 @@
   var root=document.documentElement; root.classList.add('js');
   // safety: if the observer never fires for some element, reveal after a beat
   setTimeout(function(){document.querySelectorAll('.reveal:not(.in)').forEach(function(n){var r=n.getBoundingClientRect();if(r.top<innerHeight*1.1)n.classList.add('in');});},400);
-  // theme
-  var tb=document.getElementById('theme');
-  var saved=localStorage.getItem('lumi_theme');
-  if(saved)root.setAttribute('data-theme',saved);
-  function isDark(){var t=root.getAttribute('data-theme');return t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;}
-  function paint(){tb.textContent=isDark()?'☀️':'🌙';}
-  paint();
-  tb.onclick=function(){var d=!isDark();root.setAttribute('data-theme',d?'dark':'light');localStorage.setItem('lumi_theme',d?'dark':'light');paint();};
+  // Светлая тема — единственная; старый выбор пользователя стираем.
+  try{localStorage.removeItem('lumi_theme');}catch(e){}
+  root.setAttribute('data-theme','light');
 
   // sticky header shadow
   var hdr=document.getElementById('hdr');

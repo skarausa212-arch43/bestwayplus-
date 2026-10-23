@@ -44,19 +44,6 @@
   --font:"Manrope",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   --sp:8px;
 }
-:root[data-theme="dark"]{
-  --primary:#34D77F; --primary-600:#22C55E; --primary-050:#0C2A1B;
-  --accent:#22C55E; --accent-600:#059669; --accent-050:#0B2A1D;
-  --success:#34D77F; --info:#60A5FA;
-  --ink:#E8EEF4; --ink-2:#93A2B4; --ink-3:#64748B;
-  --bg:#0B1220; --surface:#131C2B; --surface-2:#0F1826;             /* navy #0F172A family */
-  --line:#233042; --line-strong:#33465C;
-  --danger:#F06A6E; --warn:#F5B94C;
-  --glow:52,215,127;
-  /* dark uses tonal elevation + borders more than shadows (§10) */
-  --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 28px rgba(0,0,0,.4);
-  --shadow-lg:0 24px 70px rgba(0,0,0,.6);
-}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
 body{
@@ -148,9 +135,6 @@ p{margin:0}
 .badge.amber{background:#FEF3E2;color:#B25E09}
 .badge.grey{background:var(--surface-2);color:var(--ink-2)}
 .badge.red{background:#FEECEB;color:#C4342A}
-:root[data-theme="dark"] .badge.blue{background:#12233F;color:#7DA9F5}
-:root[data-theme="dark"] .badge.amber{background:#2E2410;color:#E9A94B}
-:root[data-theme="dark"] .badge.red{background:#2E1512;color:#F08A82}
 label.field{display:block;margin-bottom:14px}
 label.field span{display:block;font-size:13.5px;font-weight:600;color:var(--ink-2);margin-bottom:7px}
 .input,select.input,textarea.input{
@@ -662,8 +646,6 @@ textarea.input{resize:vertical;min-height:80px}
 @keyframes radarSweep{to{transform:rotate(360deg)}}
 @keyframes radarBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 @media (prefers-reduced-motion:reduce){.radar-fx .ring,.radar-fx .sweep,.radar-fx .core{animation:none}.radar-fx .ring{opacity:.35;transform:scale(2.5)}}
-:root[data-theme="dark"] .radar-fx .sweep,.radar-fx .sweep{mix-blend-mode:screen}
-
 /* confetti */
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:300;overflow:hidden}
 .confetti i{position:absolute;top:-12px;width:9px;height:14px;border-radius:2px;animation:fall linear forwards}
@@ -696,8 +678,6 @@ textarea.input{resize:vertical;min-height:80px}
 .svc .ico.c-assembly{background:linear-gradient(135deg,#ECE6FF,#DCD1FF);color:#7A5AF0}
 .svc .ico.c-garden{background:linear-gradient(135deg,#E4F7D9,#D0F0BE);color:#4F9E2E}
 .svc .ico.c-painting{background:linear-gradient(135deg,#EBE1FF,#E7D6FF);color:#8A50E0}
-:root[data-theme="dark"] .svc .ico{filter:saturate(1.1) brightness(1.05)}
-
 /* notifications */
 .notif-badge{position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;padding:0 4px;border-radius:999px;background:var(--danger);color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center;box-shadow:0 0 0 2px var(--bg);animation:pop .3s cubic-bezier(.2,1.5,.4,1)}
 .notif{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:14px;cursor:pointer;transition:background .15s}
@@ -784,12 +764,7 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 
 /* skeleton shimmer */
 .sk{background:linear-gradient(90deg,var(--surface-2),#eefaf3,var(--surface-2));background-size:200% 100%}
-:root[data-theme="dark"] .sk{background:linear-gradient(90deg,var(--surface-2),#1b2a22,var(--surface-2));background-size:200% 100%}
-
 /* dark-mode success/operational tints */
-:root[data-theme="dark"] .badge.green{background:var(--accent-050);color:#57e6dd}
-:root[data-theme="dark"] .notif .ni.operational{background:var(--accent-050);color:#57e6dd}
-
 /* ═══════════ HOME CONSOLE HERO (generative aurora) ═══════════ */
 .hero.console{background:linear-gradient(140deg,#13201F 0%,#0C2E31 55%,#12201A 100%);
   animation:none;background-size:auto;min-height:280px;padding:34px 38px;
@@ -1317,8 +1292,6 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .oauth-btn svg{width:19px;height:19px;flex:none}
 .oauth-btn.apple{background:#000;border-color:#000;color:#fff}
 .oauth-btn.apple:hover{background:#111;border-color:#111}
-:root[data-theme="dark"] .oauth-btn.apple{background:#fff;border-color:#fff;color:#000}
-
 /* ═══════════════ AURORA GLASS · TACTILE (design v2) ═══════════════
    Living aurora backdrop + frosted-glass surfaces + recessed "press me"
    buttons. Perf rules preserved: blobs are pure radial-gradients (no filter)
@@ -1337,18 +1310,10 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 @keyframes auDrift1{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(5vmax,-4vmax,0) scale(1.12)}}
 @keyframes auDrift2{0%,100%{transform:translate3d(0,0,0) scale(1.08)}50%{transform:translate3d(-6vmax,5vmax,0) scale(.92)}}
 @keyframes auDrift3{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(4vmax,-5vmax,0) scale(1.15)}}
-:root[data-theme="dark"] .aurora .a1{background:radial-gradient(circle,rgba(20,200,113,.16),transparent 66%)}
-:root[data-theme="dark"] .aurora .a2{background:radial-gradient(circle,rgba(56,140,255,.13),transparent 66%)}
-:root[data-theme="dark"] .aurora .a3{background:radial-gradient(circle,rgba(124,98,255,.12),transparent 66%)}
-:root[data-theme="dark"] .aurora .a4{background:radial-gradient(circle,rgba(18,196,190,.12),transparent 66%)}
-
 /* frosted-glass surfaces (desktop gets real blur; phones translucent-solid) */
 .card{background:color-mix(in srgb,var(--surface) 76%,transparent);
   border-color:color-mix(in srgb,#ffffff 55%,var(--line));
   box-shadow:0 14px 38px -14px rgba(17,60,42,.16),inset 0 1px 0 rgba(255,255,255,.55)}
-:root[data-theme="dark"] .card{background:color-mix(in srgb,var(--surface) 74%,transparent);
-  border-color:color-mix(in srgb,#ffffff 10%,var(--line));
-  box-shadow:0 14px 38px -12px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.05)}
 /* …but not the card form. The frost above is only frost where the blur behind
    it exists, and the blur is off below 761px for performance — so on a phone
    that translucency is just the page showing through, under the card number.
@@ -1390,10 +1355,6 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .btn.ghost:hover{transform:none;background:color-mix(in srgb,var(--surface-2) 90%,transparent)}
 .btn.ghost:active{transform:translateY(1px);
   box-shadow:inset 4px 4px 10px rgba(12,70,52,.24),inset -2px -2px 6px rgba(255,255,255,.4)}
-:root[data-theme="dark"] .btn.ghost{
-  box-shadow:inset 3px 3px 8px rgba(0,0,0,.5),inset -2px -2px 6px rgba(255,255,255,.05)}
-:root[data-theme="dark"] .btn.ghost:active{
-  box-shadow:inset 4px 4px 10px rgba(0,0,0,.65),inset -1px -1px 4px rgba(255,255,255,.04)}
 .btn.danger{box-shadow:0 0 0 5px color-mix(in srgb,var(--surface) 42%,transparent),
              0 0 0 6px rgba(120,20,20,.1),0 12px 24px -8px rgba(240,68,56,.5),
              inset 0 2px 2px rgba(255,255,255,.4),inset 0 -4px 8px rgba(120,10,20,.45)}
@@ -1409,23 +1370,15 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .iconbtn{background:color-mix(in srgb,var(--surface-2) 70%,transparent);
   box-shadow:inset 2px 2px 6px rgba(12,70,52,.14),inset -2px -2px 6px rgba(255,255,255,.65)}
 .iconbtn:hover{transform:none;box-shadow:inset 3px 3px 7px rgba(12,70,52,.2),inset -2px -2px 5px rgba(255,255,255,.5)}
-:root[data-theme="dark"] .iconbtn{box-shadow:inset 2px 2px 6px rgba(0,0,0,.45),inset -2px -2px 6px rgba(255,255,255,.04)}
 .seg{background:color-mix(in srgb,var(--surface-2) 74%,transparent);
   box-shadow:inset 2px 2px 6px rgba(12,70,52,.12),inset -2px -2px 6px rgba(255,255,255,.5)}
-:root[data-theme="dark"] .seg{box-shadow:inset 2px 2px 6px rgba(0,0,0,.45),inset -2px -2px 6px rgba(255,255,255,.03)}
 .seg button.active{box-shadow:0 4px 12px -4px rgba(var(--glow),.45),inset 0 1px 1px rgba(255,255,255,.6),inset 0 -2px 4px rgba(4,90,60,.18)}
 .opt.sel,.extra.sel{box-shadow:inset 3px 3px 8px rgba(6,110,70,.22),inset -2px -2px 6px rgba(255,255,255,.55)}
-:root[data-theme="dark"] .opt.sel,:root[data-theme="dark"] .extra.sel{
-  box-shadow:inset 3px 3px 8px rgba(0,0,0,.5),inset -1px -1px 4px rgba(120,255,190,.08)}
 .tabbar button{border-radius:14px;transition:transform .12s var(--ease)}
 .tabbar button:active{transform:scale(.92)}
 .tabbar button.active{background:color-mix(in srgb,var(--primary-050) 80%,transparent);
   box-shadow:inset 2px 2px 6px rgba(10,120,80,.22),inset -2px -2px 6px rgba(255,255,255,.55)}
-:root[data-theme="dark"] .tabbar button.active{background:var(--primary-050);
-  box-shadow:inset 2px 2px 6px rgba(0,0,0,.5),inset -1px -1px 4px rgba(120,255,190,.06)}
 .input{box-shadow:inset 2px 2px 5px rgba(12,70,52,.07),inset -2px -2px 5px rgba(255,255,255,.5)}
-:root[data-theme="dark"] .input{box-shadow:inset 2px 2px 5px rgba(0,0,0,.35)}
-
 /* ── extra motion: one-shot entrance stagger for cards (cheap, non-looping) ── */
 .main .grid>.card,.main>.card{animation:cardIn .5s var(--ease) both}
 .main .grid>.card:nth-child(1){animation-delay:.02s}
@@ -1506,8 +1459,6 @@ body::before{content:"";position:fixed;inset:-20% -10% auto -10%;height:70vh;z-i
 .prof.on .pi{color:#fff;background:linear-gradient(135deg,#1ad57f,#0b8f75);box-shadow:0 5px 12px rgba(12,130,90,.4)}
 .prof.soon{opacity:.55}
 .prof.soon .badge{margin-left:auto}
-:root[data-theme="dark"] .prof{box-shadow:inset 2px 2px 6px rgba(0,0,0,.45),inset -2px -2px 6px rgba(255,255,255,.04)}
-:root[data-theme="dark"] .prof.on{box-shadow:inset 3px 3px 8px rgba(0,0,0,.55),inset -1px -1px 4px rgba(120,255,190,.07)}
 .eq-group{margin-bottom:10px;animation:cardIn .35s var(--ease) both}
 .eq-head{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3);margin:8px 0 6px}
 
@@ -2692,19 +2643,15 @@ async function api(path,method='GET',body){
   return data;
 }
 
-/* ---------- Theme ---------- */
+/* ---------- Theme ----------
+   Светлая тема — единственная. Переключатель и тёмная палитра убраны;
+   data-theme остаётся проставленным, чтобы разметка и внешние стили,
+   которые на него смотрят, продолжали работать. */
 function initTheme(){
-  const saved=localStorage.getItem('cg_theme');
-  const dark=saved?saved==='dark':window.matchMedia('(prefers-color-scheme:dark)').matches;
-  document.documentElement.dataset.theme=dark?'dark':'light';
+  document.documentElement.dataset.theme='light';
+  try{ localStorage.removeItem('cg_theme'); }catch(e){}
 }
-function toggleTheme(){
-  const d=document.documentElement.dataset.theme==='dark';
-  document.documentElement.dataset.theme=d?'light':'dark';
-  localStorage.setItem('cg_theme',d?'light':'dark');
-  rerender();
-}
-const isDark=()=>document.documentElement.dataset.theme==='dark';
+const isDark=()=>false;
 
 /* =========================================================================
    AUTH SCREEN
@@ -2905,7 +2852,6 @@ function renderAuth(){
     <div class="auth-form-side">
       <div class="auth-topctl">
         <button class="iconbtn langbtn" id="authLang" title="Язык">${I.globe}<b>${state.lang.toUpperCase()}</b></button>
-        <button class="iconbtn auth-theme" id="authTheme" title="Тема"></button>
       </div>
       <div class="auth-mhero">
         <span class="mh-glow mh-g1"></span><span class="mh-glow mh-g2"></span><span class="mh-glow mh-g3"></span>
@@ -3130,8 +3076,6 @@ function renderAuth(){
   // Стена входа больше не тупик: с неё можно вернуться к витрине.
   const back=$('#authBack',wrap); if(back)back.onclick=()=>{ state.view='home'; render(); };
   const fx=$('#authFX',wrap); if(fx) heroAurora(fx);
-  const tb=$('#authTheme',wrap);
-  if(tb){ tb.innerHTML=isDark()?I.sun:I.moon; tb.onclick=()=>{toggleTheme();tb.innerHTML=isDark()?I.sun:I.moon;}; }
   const lb=$('#authLang',wrap); if(lb) lb.onclick=(e)=>openLangMenu(e.currentTarget);
 }
 
@@ -3181,7 +3125,6 @@ function shell(content){
         <div class="brand mobile-brand">${I.logo}<span>LUMI</span></div>
         <div class="spacer"></div>
         <button class="iconbtn langbtn" id="langBtn" title="Язык">${I.globe}<b>${state.lang.toUpperCase()}</b></button>
-        <button class="iconbtn" id="themeBtn" title="Тема">${isDark()?I.sun:I.moon}</button>
         ${guest?`<button class="btn sm" id="loginBtn">${t('Войти')}</button>`:`
         <button class="iconbtn" id="bellBtn" title="Уведомления" style="position:relative">${I.bell}<span id="bellBadge" class="notif-badge" style="display:none"></span></button>
         <button class="userchip" id="meBtn" title="${u.name}">
@@ -3212,7 +3155,6 @@ function shell(content){
     tab.appendChild(tb);
   });
   $('#langBtn',app).onclick=(e)=>openLangMenu(e.currentTarget);
-  $('#themeBtn',app).onclick=toggleTheme;
   const bell=$('#bellBtn',app); if(bell)bell.onclick=openNotifications;
   const me=$('#meBtn',app); if(me)me.onclick=openProfile;
   const lg=$('#loginBtn',app); if(lg)lg.onclick=()=>requireAuth('');
@@ -6331,7 +6273,6 @@ async function openCardModal(onSaved){
   try{ ({clientSecret,publishableKey}=await api('/api/cards/setup-intent','POST')); }
   catch(e){ toast(e.message,true); return; }
   if(!clientSecret){ toast(t('Не удалось открыть форму карты'),true); return; }
-  const dark=document.documentElement.getAttribute('data-theme')==='dark';
   const stripe=Stripe(publishableKey||cat.stripePublishableKey);
   // Stripe's fields live in an iframe, so CSS custom properties can't reach
   // them — resolve our tokens to concrete values and hand those over. Without
@@ -6355,11 +6296,11 @@ async function openCardModal(onSaved){
     return `rgba(20,200,113,${alpha})`;                       // brand green
   };
   const appearance={
-    theme:dark?'night':'stripe',
+    theme:'stripe',
     variables:{
       colorPrimary:tok('--primary','#14C871'),
-      colorBackground:tok('--surface',dark?'#131C2B':'#FFFFFF'),
-      colorText:tok('--ink',dark?'#E8EEF4':'#0F172A'),
+      colorBackground:tok('--surface','#FFFFFF'),
+      colorText:tok('--ink','#0F172A'),
       colorTextSecondary:tok('--ink-2','#64748B'),
       colorTextPlaceholder:tok('--ink-3','#94A3B8'),
       colorDanger:tok('--danger','#E5484D'),
@@ -6376,7 +6317,7 @@ async function openCardModal(onSaved){
       '.Label':{fontWeight:'600',fontSize:'13px',marginBottom:'6px'},
       '.Tab':{border:`1px solid ${tok('--line','#E6EBEA')}`,boxShadow:'none'},
       '.Tab--selected':{border:`1px solid ${tok('--primary','#14C871')}`,
-        backgroundColor:tok('--primary-050',dark?'#0C2A1B':'#E8F9F0')},
+        backgroundColor:tok('--primary-050','#E8F9F0')},
     },
   };
   const elements=stripe.elements({clientSecret,appearance});

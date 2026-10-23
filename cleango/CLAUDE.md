@@ -38,7 +38,9 @@ Single source of engineering rules for the project (implements
 ## UI
 - Use **design tokens** (`design/tokens.css`) — no hardcoded colors/spacing.
 - **Shared components only** (`design/components.html`); don't fork them.
-- **Dark mode and localization mandatory** (RU UI + `prefers-color-scheme`).
+- **Localization mandatory** (RU UI + pl/en/uk).
+- **Light theme only** — the dark palette and the theme switch were removed by the
+  owner's decision; don't reintroduce `prefers-color-scheme` colour overrides.
 - **Accessibility baseline** — semantic markup, focus states,
   `prefers-reduced-motion`.
 
