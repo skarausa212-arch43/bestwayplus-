@@ -1,0 +1,167 @@
+/**
+ * Tiny zero-dependency SMTP client (built on Node's net/tls).
+ *
+ * Supports implicit TLS (port 465), STARTTLS (587/25) and AUTH LOGIN / PLAIN —
+ * enough to relay through any real SMTP server (a domain mailbox or a provider
+ * like Brevo, Mailgun, Amazon SES, Postmark, Gmail…). We deliberately relay
+ * rather than run our own MTA: deliverability (SPF/DKIM/DMARC, IP reputation)
+ * is a solved problem for providers and a nightmare to self-host.
+ *
+ *   await sendMail(cfg, { to, subject, text, html })
+ *
+ * cfg: { host, port, secure, user, pass, from, fromName, rejectUnauthorized, timeoutMs }
+ */
+'use strict';
+const net = require('net');
+const tls = require('tls');
+const crypto = require('crypto');
+
+function encodeWord(s) {
+  s = String(s == null ? '' : s);
+  if (/^[\x00-\x7F]*$/.test(s)) return s;                 // pure ASCII — send as-is
+  return '=?UTF-8?B?' + Buffer.from(s, 'utf8').toString('base64') + '?=';
+}
+function wrap76(b64) { return (b64.match(/.{1,76}/g) || ['']).join('\r\n'); }
+function stripHtml(html) {
+  return String(html).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function buildMessage(cfg, msg) {
+  const domain = (String(cfg.from).split('@')[1] || 'lumi.local');
+  const from = cfg.fromName ? `${encodeWord(cfg.fromName)} <${cfg.from}>` : cfg.from;
+  const headers = [
+    'From: ' + from,
+    'To: ' + msg.to,
+    'Subject: ' + encodeWord(msg.subject),
+    'Date: ' + new Date().toUTCString(),
+    'Message-ID: <' + crypto.randomBytes(12).toString('hex') + '@' + domain + '>',
+    'MIME-Version: 1.0',
+  ];
+  let body;
+  if (msg.html) {
+    const boundary = '=_lumi_' + crypto.randomBytes(8).toString('hex');
+    headers.push('Content-Type: multipart/alternative; boundary="' + boundary + '"');
+    body = [
+      '--' + boundary,
+      'Content-Type: text/plain; charset=UTF-8',
+      'Content-Transfer-Encoding: base64', '',
+      wrap76(Buffer.from(msg.text || stripHtml(msg.html), 'utf8').toString('base64')),
+      '--' + boundary,
+      'Content-Type: text/html; charset=UTF-8',
+      'Content-Transfer-Encoding: base64', '',
+      wrap76(Buffer.from(msg.html, 'utf8').toString('base64')),
+      '--' + boundary + '--', '',
+    ].join('\r\n');
+  } else {
+    headers.push('Content-Type: text/plain; charset=UTF-8');
+    headers.push('Content-Transfer-Encoding: base64');
+    body = wrap76(Buffer.from(msg.text || '', 'utf8').toString('base64'));
+  }
+  const raw = headers.join('\r\n') + '\r\n\r\n' + body;
+  // normalize to CRLF and dot-stuff lines that begin with '.'
+  return raw.replace(/\r?\n/g, '\r\n').replace(/\r\n\./g, '\r\n..');
+}
+
+// Wrap a socket in a lockstep request/response reader. SMTP replies may span
+// multiple lines; the final line has "NNN " (digit-digit-digit space).
+function reader(socket) {
+  const replies = [];   // completed replies waiting to be read
+  const waiters = [];   // read() calls waiting for a reply
+  let lineBuf = '', cur = [];
+  const deliver = (r) => { const w = waiters.shift(); if (w) w.resolve(r); else replies.push(r); };
+  const failAll = (e) => { while (waiters.length) waiters.shift().reject(e); };
+  socket.setEncoding('utf8');
+  socket.on('data', (chunk) => {
+    lineBuf += chunk;
+    let nl;
+    while ((nl = lineBuf.indexOf('\n')) >= 0) {
+      const line = lineBuf.slice(0, nl).replace(/\r$/, '');
+      lineBuf = lineBuf.slice(nl + 1);
+      cur.push(line);
+      if (/^\d{3} /.test(line)) { const text = cur.join('\n'); cur = []; deliver({ code: parseInt(line.slice(0, 3), 10), text }); }
+    }
+  });
+  socket.on('error', failAll);
+  socket.on('close', () => failAll(new Error('SMTP connection closed')));
+  return {
+    read() { return new Promise((resolve, reject) => { const r = replies.shift(); if (r) resolve(r); else waiters.push({ resolve, reject }); }); },
+    line(s) { socket.write(s + '\r\n'); },
+    raw(s) { socket.write(s); },
+  };
+}
+
+function sendMail(cfg, msg) {
+  return new Promise((resolve, reject) => {
+    if (!cfg || !cfg.host) return reject(new Error('SMTP host not configured'));
+    if (!msg || !msg.to) return reject(new Error('missing recipient'));
+    const port = Number(cfg.port) || (cfg.secure ? 465 : 587);
+    const secure = cfg.secure != null ? !!cfg.secure : port === 465;
+    const rejectUnauthorized = cfg.rejectUnauthorized !== false;
+    const timeoutMs = cfg.timeoutMs || 20000;
+    const clientName = (String(cfg.from || 'lumi').split('@')[1]) || 'lumi.local';
+    let settled = false;
+    const fail = (e) => { if (settled) return; settled = true; reject(e instanceof Error ? e : new Error(String(e))); };
+    const ok = (v) => { if (settled) return; settled = true; resolve(v); };
+    const expect = (r, codes) => { if (!codes.includes(r.code)) throw new Error('SMTP ' + r.code + ': ' + r.text.split('\n').pop()); };
+
+    let socket = secure
+      ? tls.connect({ host: cfg.host, port, servername: cfg.host, rejectUnauthorized })
+      : net.connect({ host: cfg.host, port });
+    socket.setTimeout(timeoutMs, () => socket.destroy(new Error('SMTP timeout')));
+    socket.on('error', fail);
+
+    (async () => {
+      let conn = reader(socket);
+      const cmd = async (line, codes) => { conn.line(line); const r = await conn.read(); expect(r, codes); return r; };
+
+      expect(await conn.read(), [220]);                         // server greeting
+      let ehlo = await cmd('EHLO ' + clientName, [250]);
+
+      if (!secure && /STARTTLS/i.test(ehlo.text)) {
+        await cmd('STARTTLS', [220]);
+        socket.removeListener('error', fail);
+        socket = await new Promise((res, rej) => {
+          const t = tls.connect({ socket, servername: cfg.host, rejectUnauthorized }, () => res(t));
+          t.on('error', rej);
+        });
+        socket.setTimeout(timeoutMs, () => socket.destroy(new Error('SMTP timeout')));
+        socket.on('error', fail);
+        conn = reader(socket);
+        ehlo = await cmd('EHLO ' + clientName, [250]);
+      }
+
+      if (cfg.user) {
+        // Never hand the mailbox password to a server we are not talking to over
+        // TLS: on a plain socket it goes out in clear text to anyone on the path.
+        // A relay that offers no STARTTLS is misconfigured — that is not a reason
+        // to leak the password. The escape hatch exists for a local test relay.
+        if (!socket.encrypted && !cfg.allowPlaintextAuth) {
+          throw new Error('SMTP: сервер не предложил STARTTLS — отказываюсь отправлять пароль открытым текстом');
+        }
+        if (/AUTH[ =-][^\n]*PLAIN/i.test(ehlo.text)) {
+          // RFC 4616: [authzid] NUL authcid NUL passwd. Written as the \0 escape on
+          // purpose — a raw NUL byte in the source survives neither a careless
+          // editor pass nor most diff tools, and losing it turns every AUTH
+          // PLAIN login into a 535 that reads exactly like a wrong password.
+          const tok = Buffer.from('\0' + cfg.user + '\0' + (cfg.pass || ''), 'utf8').toString('base64');
+          await cmd('AUTH PLAIN ' + tok, [235]);
+        } else {
+          await cmd('AUTH LOGIN', [334]);
+          await cmd(Buffer.from(cfg.user, 'utf8').toString('base64'), [334]);
+          await cmd(Buffer.from(cfg.pass || '', 'utf8').toString('base64'), [235]);
+        }
+      }
+
+      await cmd('MAIL FROM:<' + cfg.from + '>', [250]);
+      await cmd('RCPT TO:<' + msg.to + '>', [250, 251]);
+      await cmd('DATA', [354]);
+      conn.raw(buildMessage(cfg, msg) + '\r\n.\r\n');
+      const done = await conn.read(); expect(done, [250]);
+      try { conn.line('QUIT'); } catch {}
+      socket.end();
+      ok({ ok: true, response: done.text.split('\n').pop() });
+    })().catch((e) => { try { socket.destroy(); } catch {} fail(e); });
+  });
+}
+
+module.exports = { sendMail, buildMessage };

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LUMI — библиотека компонентов</title>
+<link rel="stylesheet" href="./tokens.css" />
+<style>
+/* Component library — doc 10, built on the doc 09 design tokens.
+   Each LUMI* component is shown with its states (default/hover/pressed/
+   disabled/loading/error), light + dark. Uses design/tokens.css only. */
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--font-family);background:var(--bg-primary);color:var(--text-primary);
+  -webkit-font-smoothing:antialiased;transition:background var(--motion-standard)}
+.wrap{max-width:1080px;margin:0 auto;padding:24px 20px 80px}
+header{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg-primary) 85%,transparent);
+  backdrop-filter:blur(16px);border-bottom:1px solid var(--border-soft);display:flex;align-items:center;gap:12px;padding:14px 20px}
+.logo{width:34px;height:34px;filter:drop-shadow(0 2px 8px rgba(201,162,75,.35))}
+.brand{font-weight:800;font-size:19px;letter-spacing:-.03em}
+.brand small{display:block;font-weight:500;font-size:11px;color:var(--text-tertiary);letter-spacing:0}
+.spacer{flex:1}
+.iconbtn{width:40px;height:40px;border-radius:var(--radius-md);display:grid;place-items:center;
+  background:var(--surface-2);border:none;color:var(--text-secondary);cursor:pointer}
+h2{font-size:20px;letter-spacing:-.02em;margin:36px 0 4px;display:flex;align-items:center;gap:10px}
+h2 .n{font-size:12px;font-weight:700;color:var(--primary);background:var(--primary-soft);padding:2px 8px;border-radius:999px}
+.desc{color:var(--text-secondary);font-size:13.5px;margin-bottom:16px}
+.panel{background:var(--bg-secondary);border:1px solid var(--border-soft);border-radius:var(--radius-lg);
+  padding:20px;box-shadow:var(--elev-1)}
+.rowg{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.stack{display:flex;flex-direction:column;gap:10px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+.lab{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-tertiary);margin-bottom:8px}
+.sub{margin-top:18px}
+
+/* ---- Tokens: colours ---- */
+.sw{display:flex;flex-direction:column;gap:6px}
+.sw .chip{height:52px;border-radius:var(--radius-md);border:1px solid var(--border-soft)}
+.sw span{font-size:12px;color:var(--text-secondary)}
+.sw b{font-size:12px;font-variant-numeric:tabular-nums}
+
+/* ---- Typography ---- */
+.type div{margin:6px 0}
+
+/* ---- LumiButton ---- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 20px;
+  border:none;border-radius:14px;font:var(--label-lg);font-family:var(--font-family);cursor:pointer;
+  background:var(--primary);color:#fff;box-shadow:0 6px 18px rgba(20,200,113,.28);
+  transition:transform var(--motion-fast) var(--ease-standard),background var(--motion-fast);position:relative;overflow:hidden}
+.btn:hover{background:var(--primary-pressed);transform:translateY(-1px)}
+.btn:active{transform:scale(.97)}
+.btn[disabled]{opacity:.5;cursor:not-allowed;box-shadow:none;transform:none}
+.btn.secondary{background:var(--surface-2);color:var(--text-primary);box-shadow:none;border:1px solid var(--border-soft)}
+.btn.tertiary{background:transparent;color:var(--primary);box-shadow:none}
+.btn.destructive{background:var(--error);box-shadow:0 6px 18px rgba(229,72,77,.28)}
+.btn.sm{height:40px;padding:0 14px;font:var(--label-md);border-radius:11px}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---- LumiTextField / SearchField ---- */
+.field{display:block}
+.field .cap{font:var(--label-md);color:var(--text-secondary);margin-bottom:7px;display:block}
+.input{width:100%;height:48px;padding:0 14px;border-radius:var(--radius-md);border:1.5px solid var(--border-soft);
+  background:var(--bg-secondary);color:var(--text-primary);font-size:15px;outline:none;transition:border var(--motion-fast),box-shadow var(--motion-fast)}
+.input:focus{border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-soft)}
+.input.error{border-color:var(--error);box-shadow:0 0 0 4px color-mix(in srgb,var(--error) 15%,transparent)}
+.input[disabled]{opacity:.55;cursor:not-allowed}
+.err{color:var(--error);font-size:12px;margin-top:6px}
+.search{position:relative}
+.search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--text-tertiary)}
+.search .input{padding-left:40px}
+
+/* ---- LumiStatusChip ---- */
+.chip-s{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;font:var(--label-md)}
+.chip-s svg{width:14px;height:14px}
+.chip-s.green{background:var(--primary-soft);color:var(--primary-pressed)}
+.chip-s.blue{background:color-mix(in srgb,var(--info) 14%,transparent);color:var(--info)}
+.chip-s.amber{background:color-mix(in srgb,var(--warning) 18%,transparent);color:var(--warning)}
+.chip-s.red{background:color-mix(in srgb,var(--error) 14%,transparent);color:var(--error)}
+.chip-s.grey{background:var(--surface-2);color:var(--text-secondary)}
+.dots{display:inline-flex;gap:3px}.dots i{width:5px;height:5px;border-radius:50%;background:currentColor;animation:dotb 1s infinite}
+.dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
+@keyframes dotb{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
+.pulse{width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 0 0 currentColor;animation:pulse 1.6s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
+
+/* ---- LumiServiceCard ---- */
+.svc{background:var(--bg-secondary);border:1.5px solid var(--border-soft);border-radius:var(--radius-xl);
+  padding:18px;cursor:pointer;transition:transform var(--motion-standard) var(--ease-standard),border-color var(--motion-fast),box-shadow var(--motion-fast);position:relative}
+.svc:hover{transform:translateY(-3px);box-shadow:var(--elev-3);border-color:var(--primary)}
+.svc.sel{border-color:var(--primary);background:var(--primary-soft)}
+.svc .ico{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;margin-bottom:12px;
+  background:linear-gradient(135deg,#D9FBEE,#B7F5DF);color:#0F9E6E}
+.svc .ico.blue{background:linear-gradient(135deg,#E1EEFF,#CFE2FF);color:#2C7BE5}
+.svc .ico.gold{background:linear-gradient(135deg,#FFF4D6,#FFE9AE);color:#D9A400}
+.svc h4{margin:0;font:var(--title-md)}
+.svc .from{color:var(--text-tertiary);font-size:13px;margin-top:3px}
+.svc .tick{position:absolute;top:14px;right:14px;width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center}
+
+/* ---- LumiBookingCard ---- */
+.bk{display:flex;gap:14px;align-items:center;background:var(--bg-secondary);border:1px solid var(--border-soft);
+  border-radius:var(--radius-lg);padding:16px;box-shadow:var(--elev-1)}
+.bk .thumb{width:52px;height:52px;border-radius:14px;background:var(--primary-soft);color:var(--primary-pressed);display:grid;place-items:center;flex:none}
+.bk .meta{flex:1;min-width:0}.bk h4{margin:0;font:var(--title-md)}
+.bk .m{color:var(--text-secondary);font-size:12.5px;margin:3px 0 6px}
+.price{font-weight:800;font-size:16px;font-variant-numeric:tabular-nums;text-align:right}
+.price small{display:block;font-weight:500;font-size:11px;color:var(--text-tertiary)}
+
+/* ---- AI recommendation card ---- */
+.ai{border:1.5px solid var(--primary);border-radius:var(--radius-lg);padding:18px;background:var(--bg-secondary)}
+.aiband{display:inline-flex;gap:8px;align-items:center;background:var(--primary-soft);color:var(--primary-pressed);
+  border-radius:12px;padding:8px 12px;font:var(--label-md);margin-bottom:12px}
+.aiband svg{width:18px;height:18px}
+
+/* ---- Rating ---- */
+.stars{display:inline-flex;gap:3px;color:var(--star)}.stars svg{width:20px;height:20px}
+
+/* ---- Empty / Error / Loading ---- */
+.empty{text-align:center;padding:32px;color:var(--text-tertiary)}
+.empty svg{width:48px;height:48px;opacity:.5;margin-bottom:10px}
+.sk{background:linear-gradient(90deg,var(--surface-2),var(--border-soft),var(--surface-2));
+  background-size:200% 100%;animation:sk 1.3s infinite;border-radius:12px}
+@keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ---- Bottom sheet preview ---- */
+.sheet{max-width:360px;background:var(--surface-elevated);border:1px solid var(--border-soft);
+  border-radius:28px 28px var(--radius-lg) var(--radius-lg);box-shadow:var(--elev-3);padding:8px 18px 18px}
+.handle{width:40px;height:4px;border-radius:4px;background:var(--border-strong);margin:8px auto 14px}
+
+/* ---- Premium badge ---- */
+.prem{display:inline-flex;gap:6px;align-items:center;background:linear-gradient(135deg,#0B1220,#1b2740);color:#F0D488;
+  padding:6px 12px;border-radius:999px;font:var(--label-md)}.prem svg{width:15px;height:15px}
+.muted{color:var(--text-secondary)}
+</style>
+</head>
+<body>
+<header>
+  <svg class="logo" viewBox="0 0 48 48" fill="none"><defs><linearGradient id="g" x1="6" y1="6" x2="42" y2="44" gradientUnits="userSpaceOnUse"><stop stop-color="#F0D488"/><stop offset=".5" stop-color="#C9A24B"/><stop offset="1" stop-color="#A9781F"/></linearGradient></defs><path d="M10 22.5 24 10l14 12.5V38a2.5 2.5 0 0 1-2.5 2.5h-23A2.5 2.5 0 0 1 10 38V22.5Z" stroke="url(#g)" stroke-width="2.6" stroke-linejoin="round"/><path d="M24 18.5l1.9 4.6 4.6 1.9-4.6 1.9L24 31.5l-1.9-4.6-4.6-1.9 4.6-1.9L24 18.5Z" fill="url(#g)"/></svg>
+  <div class="brand">LUMI<small>Библиотека компонентов · doc 10</small></div>
+  <div class="spacer"></div>
+  <button class="iconbtn" id="themeBtn" title="Тема">🌗</button>
+</header>
+<div class="wrap">
+
+<h2><span class="n">§5</span>Цвета</h2>
+<div class="desc">Токены светлой/тёмной темы. Тёмная — скорректирована, а не инвертирована.</div>
+<div class="panel grid2" id="swatches"></div>
+
+<h2><span class="n">§7</span>Типографика</h2>
+<div class="panel type">
+  <div style="font:var(--display-md)">Display Medium — 34/40/700</div>
+  <div style="font:var(--headline-md)">Headline Medium — 24/30/700</div>
+  <div style="font:var(--title-md)">Title Medium — 16/22/600</div>
+  <div style="font:var(--body-md)" class="muted">Body Medium — 14/20/400. Спокойный, читаемый текст для описаний и подсказок.</div>
+  <div style="font:var(--label-md);text-transform:uppercase;letter-spacing:.05em" class="muted">Label Medium — 12/16/600</div>
+  <div style="font:var(--headline-lg);font-variant-numeric:tabular-nums;color:var(--primary)">129 zł · табличные цифры</div>
+</div>
+
+<h2><span class="n">§14</span>LumiButton</h2>
+<div class="desc">Высота 52, радиус 14, одна главная кнопка на область экрана.</div>
+<div class="panel">
+  <div class="rowg">
+    <button class="btn">Заказать услугу</button>
+    <button class="btn secondary">Вторичная</button>
+    <button class="btn tertiary">Третичная</button>
+    <button class="btn destructive">Удалить</button>
+    <button class="btn" disabled>Недоступна</button>
+    <button class="btn"><span class="spin"></span> Загрузка…</button>
+    <button class="btn sm">Small</button>
+  </div>
+</div>
+
+<h2><span class="n">§15</span>LumiTextField / SearchField</h2>
+<div class="panel grid2" style="grid-template-columns:repeat(auto-fill,minmax(230px,1fr))">
+  <label class="field"><span class="cap">По умолчанию</span><input class="input" placeholder="Улица, дом, квартира"></label>
+  <label class="field"><span class="cap">В фокусе</span><input class="input" style="border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-soft)" value="ul. Puławska 12"></label>
+  <label class="field"><span class="cap">Ошибка</span><input class="input error" value="—"><div class="err">Введите адрес</div></label>
+  <label class="field"><span class="cap">Отключено</span><input class="input" value="Недоступно" disabled></label>
+  <label class="field"><span class="cap">Поиск</span><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input class="input" placeholder="когда мыли окна?"></div></label>
+</div>
+
+<h2><span class="n">§19</span>LumiStatusChip</h2>
+<div class="desc">Статус никогда не передаётся только цветом — всегда иконка/точка + текст.</div>
+<div class="panel rowg" id="chips"></div>
+
+<h2><span class="n">§17</span>LumiServiceCard</h2>
+<div class="panel grid2">
+  <div class="svc"><div class="ico">🧹</div><h4>Уборка</h4><div class="from">от 90 zł</div></div>
+  <div class="svc sel"><div class="tick">✓</div><div class="ico blue">🪟</div><h4>Окна</h4><div class="from">выбрано</div></div>
+  <div class="svc"><div class="ico gold">⚡</div><h4>Электрик</h4><div class="from">Скоро</div><span class="chip-s grey" style="position:absolute;top:12px;right:12px">Скоро</span></div>
+</div>
+
+<h2><span class="n">§18</span>LumiBookingCard</h2>
+<div class="panel stack">
+  <div class="bk"><div class="thumb">🧹</div><div class="meta"><h4>Генеральная уборка</h4><div class="m">Warsaw · 3 комнаты · 2 часа назад</div><span class="chip-s blue"><span class="dots"><i></i><i></i><i></i></span>В процессе</span></div><div class="price">302 zł<small>итого</small></div></div>
+  <div class="bk"><div class="thumb">🪟</div><div class="meta"><h4>Мытьё окон</h4><div class="m">Kraków · 2 комнаты · вчера</div><span class="chip-s green">✓ Завершён</span></div><div class="price">109 zł<small>итого</small></div></div>
+</div>
+
+<h2><span class="n">§28</span>AI-карточка · LumiRecommendationCard</h2>
+<div class="panel">
+  <div class="ai">
+    <div class="aiband"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="7" width="14" height="12" rx="3"/><path d="M9 3v4M15 3v4M9 16h6"/></svg>AI-рекомендация · уверенность 88%</div>
+    <div style="font:var(--title-md);margin-bottom:4px">Пора помыть окна</div>
+    <div class="muted" style="font-size:14px;margin-bottom:14px">Последний раз — 112 дней назад. Заказать, чтобы поднять LUMI Score.</div>
+    <button class="btn sm">Заказать</button>
+  </div>
+</div>
+
+<h2><span class="n">§19</span>LumiRating · LumiPrice · LumiPremiumBadge</h2>
+<div class="panel rowg" style="gap:24px">
+  <span class="stars" id="stars"></span>
+  <span class="price" style="text-align:left">1 240 zł<small>доступный баланс</small></span>
+  <span class="prem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 8l4 4 5-7 5 7 4-4-1.5 11H4.5L3 8Z"/></svg>LUMI+</span>
+</div>
+
+<h2><span class="n">§25</span>Состояния загрузки · пусто · ошибка</h2>
+<div class="panel grid2" style="grid-template-columns:1fr 1fr 1fr">
+  <div><div class="lab">Skeleton</div><div class="sk" style="height:16px;width:70%;margin-bottom:8px"></div><div class="sk" style="height:16px;width:90%;margin-bottom:8px"></div><div class="sk" style="height:16px;width:50%"></div></div>
+  <div><div class="lab">Empty</div><div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg><div>Пока нет заказов</div></div></div>
+  <div><div class="lab">Error</div><div class="empty" style="color:var(--text-secondary)"><div style="color:var(--error);font-weight:700;margin-bottom:6px">Не удалось загрузить фото</div>Черновик заказа сохранён.<br>Повторите при связи.</div></div>
+</div>
+
+<h2><span class="n">§22</span>LumiBottomSheet</h2>
+<div class="panel" style="display:grid;place-items:center;background:var(--surface-2)">
+  <div class="sheet">
+    <div class="handle"></div>
+    <div style="font:var(--title-lg);margin-bottom:6px">Подтвердить заказ</div>
+    <div class="muted" style="font-size:14px;margin-bottom:16px">Генеральная уборка · 302 zł · сегодня</div>
+    <button class="btn" style="width:100%">Подтвердить · 302 zł</button>
+  </div>
+</div>
+
+</div>
+<script>
+const SW=[['Primary','--primary'],['Primary pressed','--primary-pressed'],['Primary soft','--primary-soft'],
+  ['Background','--bg-primary'],['Surface','--surface-elevated'],['Text primary','--text-primary'],
+  ['Text secondary','--text-secondary'],['Border soft','--border-soft'],
+  ['Success','--success'],['Warning','--warning'],['Error','--error'],['Info','--info']];
+const cs=getComputedStyle(document.documentElement);
+document.getElementById('swatches').innerHTML=SW.map(([n,v])=>
+  `<div class="sw"><div class="chip" style="background:var(${v})"></div><span>${n}</span><b>${cs.getPropertyValue(v).trim()}</b></div>`).join('');
+
+const star='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 6 20.6l1.4-6.8L2.3 9.1l6.9-.8L12 2Z"/></svg>';
+document.getElementById('stars').innerHTML=star.repeat(4)+star.replace('currentColor','var(--border-soft)');
+
+const clock='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+const check='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+const car='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l1.5-4.5A2 2 0 018.4 7h7.2a2 2 0 011.9 1.5L19 13v5h-2v-2H7v2H5v-5Z"/><circle cx="8" cy="16" r="1"/><circle cx="16" cy="16" r="1"/></svg>';
+const x='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+const CH=[['amber','<span class="pulse"></span>','Ищем исполнителя'],['blue',clock,'Исполнитель назначен'],
+  ['blue',car,'В пути'],['blue','<span class="dots"><i></i><i></i><i></i></span>','В процессе'],
+  ['green',check,'Завершён'],['red',x,'Отменён']];
+document.getElementById('chips').innerHTML=CH.map(([c,ic,t])=>`<span class="chip-s ${c}">${ic}${t}</span>`).join('');
+
+const root=document.documentElement;
+document.getElementById('themeBtn').onclick=()=>{
+  root.dataset.theme=root.dataset.theme==='dark'?'light':'dark';
+  // refresh swatch values
+  const cs2=getComputedStyle(root);
+  document.querySelectorAll('#swatches .sw b').forEach((b,i)=>b.textContent=cs2.getPropertyValue(SW[i][1]).trim());
+};
+</script>
+</body>
+</html>
