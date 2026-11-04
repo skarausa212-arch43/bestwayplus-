@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#0b0b0c">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800;900&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800;900&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700;900&family=Anton&family=Fredoka:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#0b0b0c; --bg2:#121214; --card:#17171a; --line:#26262b;
@@ -344,6 +344,151 @@ footer a:hover{color:var(--lime)}
   .mbar .pill{padding:11px 18px}
   footer{padding-bottom:100px}
 }
+
+
+/* ===== gallery mockups: each one its own layout ===== */
+.mk{height:70cqw;position:relative;overflow:hidden;font-size:2cqw;line-height:1.25}
+.mk *{box-sizing:border-box}
+.mk .mnav{display:flex;justify-content:space-between;align-items:center}
+.mk .mlinks{display:flex;gap:2.6cqw;font-size:1.7cqw}
+
+/* 1 · salon — editorial serif, arch photo, price list */
+.mk-salon{background:#f4ece4;color:#3a2a22;padding:3cqw 5cqw;font-family:var(--body)}
+.mk-salon .mnav{border-bottom:1px solid #d9c7b6;padding-bottom:2cqw;font-size:1.5cqw;letter-spacing:.2em;text-transform:uppercase}
+.mk-salon .mlogo{font-family:var(--serif);font-style:italic;font-size:4cqw;letter-spacing:0;text-transform:none}
+.mk-salon .body{display:grid;grid-template-columns:1.2fr 1fr;gap:4cqw;margin-top:3.6cqw;align-items:end}
+.mk-salon h5{font-family:var(--serif);font-weight:400;font-size:8.4cqw;line-height:.88;letter-spacing:-.02em}
+.mk-salon h5 i{color:#c8794a}
+.mk-salon .menu{margin-top:3cqw;display:grid;gap:1.2cqw;font-size:1.7cqw}
+.mk-salon .menu div{display:flex;gap:1cqw;align-items:baseline}
+.mk-salon .menu div::after{content:"";order:1;flex:1;border-bottom:1px dotted #a88f7c}
+.mk-salon .menu b{order:2;font-weight:600}
+.mk-salon .ob{display:inline-block;margin-top:3cqw;border:1.5px solid #3a2a22;border-radius:99px;padding:1.3cqw 3cqw;font-size:1.6cqw;letter-spacing:.14em;text-transform:uppercase}
+.mk-salon .arch{aspect-ratio:3/4;border-radius:50% 50% 1.5cqw 1.5cqw/38% 38% 1.5cqw 1.5cqw;background:linear-gradient(160deg,#e3b18f,#c8794a 55%,#7b4a2c);position:relative;overflow:hidden;display:grid;place-items:center;font-size:13cqw}
+.mk-salon .arch::after{content:"";position:absolute;inset:-50%;background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.35) 50%,transparent 60%);animation:shine 4s ease-in-out infinite}
+@keyframes shine{0%,30%{transform:translateX(-60%)}70%,100%{transform:translateX(60%)}}
+
+/* 2 · taco truck — loud poster, condensed type, menu board */
+.mk-taco{background:#e0412b;color:#fff8e7;font-family:Anton,Impact,sans-serif;text-transform:uppercase}
+.mk-taco .check{height:3cqw;background:repeating-conic-gradient(#fff8e7 0 25%,#1a1a1a 0 50%) 0 0/3cqw 3cqw;animation:checks 3s linear infinite}
+@keyframes checks{to{background-position:6cqw 0}}
+.mk-taco .in{padding:2.6cqw 4cqw;display:grid;grid-template-columns:1.25fr 1fr;gap:3cqw}
+.mk-taco .logo{font-size:2.6cqw;letter-spacing:.06em;color:#ffd23f}
+.mk-taco h5{font-weight:400;font-size:14.5cqw;line-height:.84;margin-top:1.4cqw}
+.mk-taco h5 span{color:#ffd23f;display:block}
+.mk-taco h5 em{font-style:normal;-webkit-text-stroke:.25cqw #fff8e7;color:transparent;display:block}
+.mk-taco .board{background:#1a1a1a;border-radius:1.6cqw;padding:3cqw;font-size:2.5cqw;display:grid;gap:1.8cqw;position:relative;margin-top:2cqw;transform:rotate(2deg)}
+.mk-taco .board h6{font-weight:400;color:#ffd23f;font-size:3.4cqw;font-family:inherit}
+.mk-taco .board div{display:flex;justify-content:space-between;border-bottom:1px dashed #444;padding-bottom:1cqw}
+.mk-taco .board b{color:#ffd23f;font-weight:400}
+.mk-taco .stk{position:absolute;right:-2cqw;top:-5cqw;width:12cqw;height:12cqw;border-radius:50%;background:#ffd23f;color:#e0412b;display:grid;place-items:center;text-align:center;font-size:2.1cqw;line-height:1;animation:wob 2.4s ease-in-out infinite}
+@keyframes wob{50%{transform:rotate(-14deg) scale(1.08)}}
+.mk-taco .loc{position:absolute;left:0;right:0;bottom:0;background:#ffd23f;color:#1a1a1a;padding:1.5cqw 4cqw;font-size:2cqw;letter-spacing:.04em;display:flex;justify-content:space-between}
+
+/* 3 · lawn — split screen, quote form, mowing stripes */
+.mk-lawn{background:#f5f8f0;color:#1f3b1a;display:grid;grid-template-columns:1.1fr 1fr;font-family:var(--body)}
+.mk-lawn .l{padding:3cqw 4cqw;display:flex;flex-direction:column}
+.mk-lawn .mlogo{font-weight:900;font-size:2.4cqw;letter-spacing:-.02em}
+.mk-lawn .tag{display:inline-block;margin-top:3cqw;background:#d6e6ca;border-radius:99px;padding:.8cqw 2cqw;font-size:1.5cqw;font-weight:600;align-self:flex-start}
+.mk-lawn h5{font-weight:900;font-size:6cqw;line-height:.98;letter-spacing:-.04em;margin-top:1.6cqw}
+.mk-lawn .form{margin-top:auto;background:#fff;border-radius:2cqw;padding:2.4cqw;box-shadow:0 1cqw 3cqw rgba(31,59,26,.12);display:grid;gap:1.4cqw}
+.mk-lawn .field{border:1px solid #cfdcc5;border-radius:1cqw;padding:1.2cqw 1.6cqw;font-size:1.6cqw;color:#7d8f74}
+.mk-lawn .sz{display:flex;gap:1cqw}
+.mk-lawn .sz span{flex:1;text-align:center;border:1px solid #cfdcc5;border-radius:1cqw;padding:1cqw 0;font-size:1.5cqw;font-weight:600}
+.mk-lawn .sz span.on{background:#1f3b1a;color:#fff;border-color:#1f3b1a}
+.mk-lawn .go{background:#2f6b25;color:#fff;text-align:center;border-radius:1cqw;padding:1.4cqw;font-weight:700;font-size:1.7cqw}
+.mk-lawn .r{position:relative;overflow:hidden;background:repeating-linear-gradient(90deg,#3f8a32 0 7cqw,#4f9e40 7cqw 14cqw)}
+.mk-lawn .r::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.12),transparent 40%,rgba(0,0,0,.25))}
+.mk-lawn .mower{position:absolute;bottom:8cqw;font-size:7cqw;animation:mow 6s linear infinite}
+@keyframes mow{from{left:-10cqw}to{left:110%}}
+.mk-lawn .tree{position:absolute;top:4cqw;right:4cqw;font-size:12cqw}
+.mk-lawn .from{position:absolute;left:3cqw;top:4cqw;background:#fff;color:#1f3b1a;border-radius:1.6cqw;padding:1.6cqw 2.2cqw;font-weight:900;font-size:3.4cqw;line-height:1}
+.mk-lawn .from small{display:block;font-size:1.3cqw;font-weight:600;color:#6c7d63;margin-bottom:.6cqw}
+
+/* 4 · auto — industrial, mono type, hazard stripe, price table */
+.mk-auto{background:#111113;color:#ececec;font-family:"Space Mono",ui-monospace,monospace}
+.mk-auto .hz{height:2.4cqw;background:repeating-linear-gradient(-45deg,#ffcc00 0 2cqw,#111113 2cqw 4cqw);animation:hz 1.5s linear infinite;background-size:5.66cqw 100%}
+@keyframes hz{to{background-position:5.66cqw 0}}
+.mk-auto .in{padding:2.6cqw 4cqw}
+.mk-auto .mlogo{font-family:var(--body);font-weight:900;font-style:italic;font-size:2.6cqw;text-transform:uppercase;letter-spacing:-.02em}
+.mk-auto .mlogo b{color:#ef4444}
+.mk-auto h5{font-family:var(--body);font-weight:900;font-style:italic;text-transform:uppercase;font-size:8.6cqw;line-height:.92;letter-spacing:-.04em;margin:4.4cqw 0 4cqw}
+.mk-auto h5 u{text-decoration:none;box-shadow:inset 0 -1.6cqw 0 #ef4444}
+.mk-auto .grid{display:grid;grid-template-columns:1.1fr 1fr;gap:3cqw;align-items:start}
+.mk-auto table{width:100%;border-collapse:collapse;font-size:1.9cqw}
+.mk-auto .strip{position:absolute;left:0;right:0;bottom:0;border-top:1px solid #2b2b30;display:flex;justify-content:space-around;padding:2.2cqw 4cqw;font-size:1.6cqw;color:#9a9aa3}
+.mk-auto .strip b{color:#ffcc00;font-weight:700}
+.mk-auto td{padding:1cqw 0;border-bottom:1px solid #2b2b30}
+.mk-auto td:last-child{text-align:right;color:#ffcc00}
+.mk-auto .bays{display:grid;gap:1.2cqw}
+.mk-auto .bay{border:1px solid #2b2b30;padding:1.4cqw 1.8cqw;font-size:1.5cqw;display:flex;align-items:center;gap:1.4cqw}
+.mk-auto .bay i{width:1.4cqw;height:1.4cqw;border-radius:50%;background:#22c55e;box-shadow:0 0 1.4cqw #22c55e;animation:blink 1.2s steps(1) infinite}
+.mk-auto .bay.busy i{background:#ef4444;box-shadow:0 0 1.4cqw #ef4444;animation:none}
+.mk-auto .sq{display:inline-block;background:#ef4444;color:#fff;font-family:var(--body);font-weight:900;text-transform:uppercase;font-size:1.7cqw;padding:1.6cqw 2.6cqw;margin-top:.4cqw}
+
+/* 5 · cleaning — rounded, bubbly, price calculator */
+.mk-clean{background:linear-gradient(180deg,#e6f5fb,#f6fbfd);color:#0b3a4a;font-family:Fredoka,var(--body);text-align:center;padding:3cqw 5cqw}
+.mk-clean .mnav{text-align:left}
+.mk-clean .mlogo{font-weight:700;font-size:2.8cqw;color:#0ea5c6}
+.mk-clean .mlinks span:last-child{background:#0ea5c6;color:#fff;border-radius:99px;padding:.6cqw 1.8cqw}
+.mk-clean h5{font-weight:700;font-size:8cqw;line-height:1;margin-top:4.4cqw;letter-spacing:-.01em}
+.mk-clean h5 span{color:#0ea5c6}
+.mk-clean p{font-size:1.9cqw;opacity:.7;margin-top:1.2cqw}
+.mk-clean .calc{margin:3cqw auto 0;width:78%;background:#fff;border-radius:3cqw;padding:2.6cqw 3cqw;box-shadow:0 1.6cqw 4cqw rgba(14,165,198,.18);display:grid;grid-template-columns:1fr 1fr auto;gap:2.4cqw;align-items:center;text-align:left}
+.mk-clean .calc small{display:block;font-size:1.4cqw;opacity:.6;margin-bottom:.8cqw}
+.mk-clean .pills{display:flex;gap:.8cqw}
+.mk-clean .pills span{width:3.6cqw;height:3.6cqw;border-radius:50%;display:grid;place-items:center;font-size:1.6cqw;background:#e6f5fb;font-weight:600}
+.mk-clean .pills span.on{background:#0ea5c6;color:#fff}
+.mk-clean .tot{text-align:center}
+.mk-clean .chips{display:flex;justify-content:center;gap:1.6cqw;margin-top:3.6cqw;font-size:1.6cqw;font-weight:600}
+.mk-clean .chips span{background:#fff;border-radius:99px;padding:1cqw 2cqw;box-shadow:0 .6cqw 1.6cqw rgba(14,165,198,.12)}
+.mk-clean .tot b{display:block;font-size:4.6cqw;line-height:1}
+.mk-clean .tot span{display:inline-block;margin-top:.8cqw;background:#0b3a4a;color:#fff;border-radius:99px;padding:.8cqw 2cqw;font-size:1.5cqw}
+.mk-clean .bub{position:absolute;border-radius:50%;background:radial-gradient(circle at 30% 30%,#fff,rgba(14,165,198,.25) 60%,rgba(14,165,198,.08));border:1px solid rgba(14,165,198,.3);animation:bub 6s ease-in-out infinite}
+@keyframes bub{0%{transform:translateY(4cqw);opacity:0}20%{opacity:1}100%{transform:translateY(-30cqw);opacity:0}}
+
+/* 6 · coach — sporty, giant outline number, progress chart */
+.mk-coach{background:#1b1340;color:#f1edff;font-family:var(--body);display:grid;grid-template-columns:.9fr 1.1fr}
+.mk-coach .l{background:#c8ff3d;color:#1b1340;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:3cqw}
+.mk-coach .mlogo{font-family:var(--display);font-weight:900;font-size:2.2cqw;text-transform:uppercase}
+.mk-coach .num{font-family:var(--display);font-weight:900;font-size:30cqw;line-height:.75;letter-spacing:-.08em;margin-left:-1cqw}
+.mk-coach .wk{font-family:var(--display);font-weight:800;font-size:2.4cqw;letter-spacing:.3em}
+.mk-coach .r{padding:3cqw 4cqw;display:flex;flex-direction:column}
+.mk-coach .mlinks{justify-content:flex-end;opacity:.7}
+.mk-coach h5{font-family:var(--display);font-weight:900;text-transform:uppercase;font-size:5cqw;line-height:.95;letter-spacing:-.04em;margin-top:3cqw}
+.mk-coach h5 span{-webkit-text-stroke:.2cqw #c8ff3d;color:transparent}
+.mk-coach .chart{margin-top:auto;display:flex;align-items:flex-end;gap:2cqw;height:16cqw;border-bottom:1px solid #3a2f73;padding-bottom:.6cqw}
+.mk-coach .chart div{flex:1;display:flex;flex-direction:column;align-items:center;gap:.6cqw;height:100%;justify-content:flex-end;font-size:1.3cqw;opacity:.85}
+.mk-coach .chart i{display:block;width:100%;border-radius:1cqw 1cqw 0 0;background:linear-gradient(#c8ff3d,#7c5cff);transform-origin:bottom;animation:grow 3.2s cubic-bezier(.2,.8,.2,1) infinite}
+@keyframes grow{0%{transform:scaleY(0)}35%,85%{transform:scaleY(1)}100%{transform:scaleY(0)}}
+.mk-coach .cta{margin-top:2.4cqw;display:flex;gap:1.6cqw;align-items:center;font-size:1.6cqw}
+.mk-coach .cta b{background:#c8ff3d;color:#1b1340;border-radius:99px;padding:1.3cqw 2.6cqw}
+
+/* 7 · plumbing — utility: emergency bar, checklist, service-area map */
+.mk-plumb{background:#fff;color:#0f2a4a;font-family:var(--body)}
+.mk-plumb .em{background:#ff7a1a;color:#fff;font-weight:700;font-size:1.6cqw;padding:1.1cqw 4cqw;display:flex;justify-content:space-between}
+.mk-plumb .em span:first-child::before{content:"";display:inline-block;width:1.2cqw;height:1.2cqw;border-radius:50%;background:#fff;margin-right:1cqw;animation:blink 1s steps(1) infinite}
+.mk-plumb .in{padding:2.4cqw 4cqw}
+.mk-plumb .mlogo{font-weight:900;font-size:2.6cqw;letter-spacing:-.03em}
+.mk-plumb .mlogo b{color:#ff7a1a}
+.mk-plumb .body{display:grid;grid-template-columns:1.15fr 1fr;gap:3.4cqw;margin-top:3cqw}
+.mk-plumb h5{font-weight:900;font-size:5.6cqw;line-height:1;letter-spacing:-.04em}
+.mk-plumb ul{list-style:none;margin:2cqw 0 2.6cqw;display:grid;gap:1cqw;font-size:1.7cqw;font-weight:600}
+.mk-plumb li::before{content:"✓";display:inline-grid;place-items:center;width:2.4cqw;height:2.4cqw;border-radius:50%;background:#e8f0fb;color:#1f5eff;margin-right:1.2cqw;font-size:1.3cqw}
+.mk-plumb .ph{display:inline-flex;align-items:center;gap:1.4cqw;background:#0f2a4a;color:#fff;border-radius:1.4cqw;padding:1.4cqw 2.4cqw}
+.mk-plumb .ph small{display:block;font-size:1.2cqw;opacity:.7}
+.mk-plumb .ph b{font-size:2.3cqw}
+.mk-plumb .map{height:34cqw;border-radius:2cqw;position:relative;overflow:hidden;background:#eef3fa;background-image:linear-gradient(#dbe4f0 1px,transparent 1px),linear-gradient(90deg,#dbe4f0 1px,transparent 1px);background-size:3.2cqw 3.2cqw}
+.mk-plumb .map::before{content:"";position:absolute;left:-10%;top:58%;width:130%;height:2.4cqw;background:#fff;transform:rotate(-18deg);box-shadow:0 0 0 .3cqw #dbe4f0}
+.mk-plumb .zone{position:absolute;left:50%;top:50%;width:70%;height:70%;border-radius:50%;transform:translate(-50%,-50%);background:rgba(31,94,255,.12);border:.3cqw dashed #1f5eff;animation:zone 2.6s ease-in-out infinite}
+@keyframes zone{50%{transform:translate(-50%,-50%) scale(.86)}}
+.mk-plumb .pin{position:absolute;left:50%;top:50%;transform:translate(-50%,-90%);font-size:5cqw;animation:drop 2.6s ease-in-out infinite}
+@keyframes drop{50%{transform:translate(-50%,-120%)}}
+.mk-plumb .svc{display:grid;grid-template-columns:repeat(4,1fr);gap:1.6cqw;margin-top:3.4cqw}
+.mk-plumb .svc div{background:#f3f6fb;border-radius:1.4cqw;padding:1.8cqw;font-size:1.6cqw;font-weight:700;display:flex;align-items:center;gap:1.2cqw;transition:background .3s}
+.mk-plumb .svc div span{font-size:2.6cqw}
+.mk-plumb .svc div:first-child{background:#0f2a4a;color:#fff}
+.mk-plumb .lbl{position:absolute;left:2cqw;bottom:2cqw;background:#fff;border-radius:1cqw;padding:1cqw 1.6cqw;font-size:1.5cqw;font-weight:700;box-shadow:0 .6cqw 2cqw rgba(15,42,74,.12)}
 
 /* ===== extra motion ===== */
 html.lenis,html.lenis body{height:auto}
@@ -714,8 +859,56 @@ function siteHTML(s){
     <div class="bhero"><div><span class="bh" style="display:block">${s.h}</span><span class="bp" style="display:block">${s.p}</span><span class="bbtn">${s.btn}</span></div><div class="bimg">${s.img}</div></div>
     <div class="bcards">${s.cards.map(c=>`<div class="sk"><b>${c[0]}</b>${c[1]}</div>`).join('')}</div></div>`;
 }
+
+/* gallery: hand-built mockups, one distinct layout per business */
+const nav = (logo, links) => `<div class="mnav"><span class="mlogo">${logo}</span><span class="mlinks">${links.map(l=>`<span>${l}</span>`).join('')}</span></div>`;
+const MOCKS = {
+  'luxehairmiami.com': `<div class="mk mk-salon">
+    <div class="mnav"><span>Services · Team</span><span class="mlogo">Luxe</span><span>Book now</span></div>
+    <div class="body"><div>
+      <h5>Color,<br>cuts &amp; <i>care.</i></h5>
+      <div class="menu"><div><span>Women's cut &amp; style</span><b>$65</b></div><div><span>Balayage</span><b>$180</b></div><div><span>Blowout</span><b>$45</b></div></div>
+      <span class="ob">Book an appointment</span>
+    </div><div class="arch">💇‍♀️</div></div></div>`,
+  'elguerotacos.com': `<div class="mk mk-taco"><div class="check"></div>
+    <div class="in"><div><div class="logo">🌮 El Güero</div><h5>Street<span>Tacos.</span><em>Every night</em></h5></div>
+      <div class="board"><span class="stk">$2<br>Tue</span><h6>Tonight's menu</h6>
+        <div><span>Al pastor</span><b>$3</b></div><div><span>Carne asada</span><b>$3.5</b></div><div><span>Birria + consomé</span><b>$4</b></div><div><span>Horchata</span><b>$3</b></div><div><span>Quesabirria</span><b>$4.5</b></div></div></div>
+    <div class="loc"><span>📍 Today: 5th &amp; Main</span><span>5PM – 11PM</span></div></div>`,
+  'greenacrelawn.com': `<div class="mk mk-lawn"><div class="l">
+      <span class="mlogo">🌿 Green Acre</span><span class="tag">Charlotte &amp; suburbs</span>
+      <h5>A lawn they'll envy.</h5>
+      <div class="form"><div class="field">Your address</div><div class="sz"><span>Small</span><span class="on">Medium</span><span>Large</span></div><div class="go">Get my free quote →</div></div>
+    </div><div class="r"><div class="from"><small>WEEKLY MOWING</small>from $35</div><span class="tree">🌳</span><span class="mower">🚜</span></div></div>`,
+  'ironlineauto.com': `<div class="mk mk-auto"><div class="hz"></div><div class="in">
+      ${nav('<b>//</b> Ironline Auto', ['Services','Hours','(614) 555-0199'])}
+      <h5>Honest repairs.<br><u>Done today.</u></h5>
+      <div class="grid"><table><tr><td>Oil change</td><td>$49</td></tr><tr><td>Brake pads</td><td>$129</td></tr><tr><td>Check engine scan</td><td>FREE</td></tr><tr><td>Tire rotation</td><td>$25</td></tr></table>
+      <div class="bays"><div class="bay"><i></i>Bay 1 · open now</div><div class="bay busy"><i></i>Bay 2 · in service</div><span class="sq">Schedule service →</span></div></div>
+    </div><div class="strip"><span><b>ASE</b> certified</span><span><b>12 mo</b> warranty</span><span><b>Free</b> loaner rides</span></div></div>`,
+  'sparklecleanco.com': `<div class="mk mk-clean">
+      <span class="bub" style="width:6cqw;height:6cqw;left:6%;bottom:6%;animation-delay:0s"></span><span class="bub" style="width:4cqw;height:4cqw;left:16%;bottom:2%;animation-delay:-2s"></span><span class="bub" style="width:8cqw;height:8cqw;right:7%;bottom:10%;animation-delay:-3.5s"></span><span class="bub" style="width:3cqw;height:3cqw;right:20%;bottom:4%;animation-delay:-1s"></span>
+      ${nav('✨ sparkle', ['Pricing','Reviews','Book'])}
+      <h5>Come home to<br><span>spotless.</span></h5><p>Bonded, insured &amp; eco-friendly. Book in 60 seconds.</p>
+      <div class="calc"><div><small>Bedrooms</small><div class="pills"><span>1</span><span class="on">2</span><span>3</span><span>4</span></div></div>
+        <div><small>Bathrooms</small><div class="pills"><span>1</span><span class="on">2</span><span>3</span></div></div>
+        <div class="tot"><b>$129</b><span>Book it</span></div></div>
+      <div class="chips"><span>🌿 Eco products</span><span>🛡️ Fully insured</span><span>⏱️ 2-hr arrival window</span></div></div>`,
+  'peakformcoach.com': `<div class="mk mk-coach"><div class="l"><span class="mlogo">⚡ Peak Form</span><div><div class="num">12</div><div class="wk">WEEKS</div></div></div>
+      <div class="r"><span class="mlinks"><span>Programs</span><span>About</span><span>Start</span></span>
+        <h5>Get strong.<br><span>Stay strong.</span></h5>
+        <div class="chart"><div><i style="height:28%"></i>W1</div><div><i style="height:46%;animation-delay:.1s"></i>W4</div><div><i style="height:70%;animation-delay:.2s"></i>W8</div><div><i style="height:96%;animation-delay:.3s"></i>W12</div></div>
+        <div class="cta"><b>Book free intro call</b><span>Online or in-person</span></div></div></div>`,
+  'rapidflowplumbing.com': `<div class="mk mk-plumb"><div class="em"><span>24/7 emergency service</span><span>(512) 555-0142</span></div><div class="in">
+      ${nav('Rapid<b>Flow</b>', ['Services','Areas','Pricing'])}
+      <div class="body"><div><h5>Austin's 24/7 plumber.</h5>
+        <ul><li>Licensed &amp; insured</li><li>Upfront, flat-rate pricing</li><li>At your door in 60 minutes</li></ul>
+        <span class="ph">📞<span><small>Call or text now</small><b>(512) 555-0142</b></span></span></div>
+        <div class="map"><span class="zone"></span><span class="pin">📍</span><span class="lbl">Austin + 25 miles</span></div></div>
+        <div class="svc"><div><span>🚿</span>Leak repair</div><div><span>🔥</span>Water heaters</div><div><span>🧰</span>Drain cleaning</div><div><span>🚽</span>Toilets</div></div></div></div>`
+};
 $('#track').innerHTML = SITES.slice(1).concat(SITES[0]).map((s,i)=>`
-  <figure class="shot"><div class="frame"><div class="bbar"><i></i><i></i><i></i><div class="burl">🔒 ${s.url}</div></div>${siteHTML(s)}</div>
+  <figure class="shot"><div class="frame"><div class="bbar"><i></i><i></i><i></i><div class="burl">🔒 ${s.url}</div></div>${MOCKS[s.url] || siteHTML(s)}</div>
   <figcaption><span><em>0${i+1}</em><b>${s.kind}</b></span><span>${s.city}</span></figcaption></figure>`).join('');
 
 /* pricing toggle */
