@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BestWay Studio — Websites that sell. For $99.</title>
-<meta name="description" content="A custom website for your business for $99. Domain, hosting and SSL included. Designed by humans, live in 72 hours.">
-<meta property="og:title" content="Websites that sell. For $99.">
+<title>BestWay Studio — Websites that sell. For $199.</title>
+<meta name="description" content="A custom website for your business for $199. Domain, hosting and SSL included. Designed by humans, live in 72 hours.">
+<meta property="og:title" content="Websites that sell. For $199.">
 <meta property="og:description" content="Custom site + .com domain + hosting. Live in 72 hours.">
 <meta name="theme-color" content="#0b0b0c">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -127,11 +127,11 @@ section{position:relative}
 .bstatus i{width:7px;height:7px;border-radius:50%;background:var(--coral);box-shadow:0 0 10px var(--coral)}
 .bstatus.live i{background:var(--lime);box-shadow:0 0 10px var(--lime)}
 .sticker{position:absolute;right:-14px;top:-30px;z-index:8;width:118px;height:118px;border-radius:50%;background:var(--coral);color:#000;display:grid;place-items:center;text-align:center;font-family:var(--display);font-weight:900;line-height:.9;box-shadow:0 18px 40px -10px rgba(255,90,54,.6)}
-.sticker b{font-size:2rem;display:block}
+.sticker b{font-size:1.55rem;display:block;letter-spacing:-.04em}
 .sticker small{font-size:.58rem;letter-spacing:.12em;font-weight:600}
 .sticker svg{position:absolute;inset:0;animation:spin 14s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-@media(max-width:600px){.sticker{width:92px;height:92px;right:-4px;top:-38px}.sticker b{font-size:1.5rem}}
+@media(max-width:600px){.sticker{width:92px;height:92px;right:-4px;top:-38px}.sticker b{font-size:1.2rem}}
 
 /* marquee */
 .marq{padding:34px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden;background:var(--bg)}
@@ -319,20 +319,123 @@ details .ans{color:var(--dim);padding:0 60px 26px 0;font-size:1rem}
 .order .pts div{display:flex;gap:16px;align-items:flex-start;color:var(--dim)}
 .order .pts b{color:var(--ink);display:block;font-weight:600}
 .order .pts em{font-style:normal;font-family:var(--display);color:var(--lime);font-size:.8rem;margin-top:3px}
-form{background:var(--ink);color:#0b0b0c;border-radius:26px;padding:34px;display:grid;gap:16px}
+form{background:var(--ink);color:#0b0b0c;border-radius:26px;padding:34px;position:relative;overflow:hidden}
+.fb{display:grid;gap:20px}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-@media(max-width:560px){.row{grid-template-columns:1fr}form{padding:24px}}
+@media(max-width:560px){.row{grid-template-columns:1fr}form{padding:22px 18px}}
 label{display:grid;gap:7px;font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#55555c}
+.opt{font-weight:500;letter-spacing:0;text-transform:none;color:#8a8a92;margin-left:4px}
 input,select,textarea{font:inherit;font-size:1rem;letter-spacing:0;text-transform:none;font-weight:500;color:#0b0b0c;background:transparent;border:0;border-bottom:1.5px solid #c9c5bb;padding:10px 0;border-radius:0;width:100%;transition:border-color .3s}
 select{appearance:none;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='none' stroke='%230b0b0c' stroke-width='2' d='M5 8l5 5 5-5'/%3E%3C/svg%3E") right center/16px no-repeat;padding-right:24px}
-textarea{min-height:80px;resize:vertical}
+textarea{min-height:76px;resize:vertical}
 input:focus,select:focus,textarea:focus{outline:none;border-color:#0b0b0c}
-input.bad{border-color:var(--coral)}
-form .send{margin-top:8px;font:inherit;font-family:var(--display);font-weight:800;font-size:1.05rem;text-transform:uppercase;letter-spacing:-.01em;background:#0b0b0c;color:var(--lime);border:0;border-radius:99px;padding:22px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:transform .2s}
-form .send:hover{transform:scale(1.02)}
-form .fine{font-size:.8rem;color:#77777f;text-align:center}
+.bad,input.bad,textarea.bad{border-color:var(--coral)!important}
+.shake{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+
+/* steps header */
+.fsteps{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;font-family:var(--display);font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a3a3aa}
+.fsteps span{transition:color .3s}
+.fsteps span.on{color:#0b0b0c}
+.fsteps span.done{color:#5a5a62}
+.fbar{height:4px;background:#e2ded4;border-radius:9px;overflow:hidden;margin-top:-10px}
+.fbar i{display:block;height:100%;width:25%;background:#0b0b0c;border-radius:inherit;transition:width .5s cubic-bezier(.7,0,.2,1)}
+fieldset{border:0;min-width:0}
+.fstep{display:none;gap:18px}
+.fstep.on{display:grid}
+legend{font-family:var(--display);font-weight:800;font-size:1.35rem;letter-spacing:-.03em;text-transform:uppercase;margin-bottom:16px;padding:0}
+.q{font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#55555c;margin-bottom:-8px}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;cursor:pointer;letter-spacing:0;text-transform:none;font-size:.92rem;font-weight:600;color:#0b0b0c}
+.chip input,.sty input,.add input{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
+.chip span{border:1.5px solid #d4d0c6;border-radius:99px;padding:9px 15px;transition:all .2s;user-select:none}
+.chip:hover span{border-color:#0b0b0c}
+.chip input:checked + span{background:#0b0b0c;color:var(--lime);border-color:#0b0b0c}
+.chip input:focus-visible + span,.sty input:focus-visible + span,.add input:focus-visible + span{outline:2px solid var(--violet);outline-offset:2px}
+
+/* style cards */
+.styles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:560px){.styles{grid-template-columns:1fr 1fr}}
+.sty{cursor:pointer;letter-spacing:0;text-transform:none}
+.sty span{display:grid;gap:3px;border:1.5px solid #d4d0c6;border-radius:16px;padding:10px;transition:all .2s;height:100%}
+.sty i{display:block;height:44px;border-radius:10px;margin-bottom:6px;border:1px solid rgba(0,0,0,.08)}
+.sty b{font-size:.95rem;color:#0b0b0c}
+.sty small{font-size:.75rem;font-weight:500;color:#77777f}
+.sty:hover span{border-color:#0b0b0c}
+.sty input:checked + span{border-color:#0b0b0c;box-shadow:0 0 0 2px #0b0b0c;transform:translateY(-2px)}
+
+/* colors */
+.colors{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.csw{display:flex;align-items:center;gap:8px;letter-spacing:0;text-transform:none;font-size:.9rem;color:#0b0b0c;border:1.5px solid #d4d0c6;border-radius:99px;padding:5px 14px 5px 5px;cursor:pointer}
+.csw input{width:30px;height:30px;padding:0;border:0;border-radius:50%;overflow:hidden;cursor:pointer;background:none}
+.csw input::-webkit-color-swatch-wrapper{padding:0}
+.csw input::-webkit-color-swatch{border:0;border-radius:50%}
+.csw input::-moz-color-swatch{border:0;border-radius:50%}
+.colors.auto .csw{opacity:.35;pointer-events:none}
+
+/* domain */
+.dom-in{display:flex;align-items:center;gap:6px;border-bottom:1.5px solid #c9c5bb;letter-spacing:0;text-transform:none}
+.dom-in span{font-family:"Space Mono",ui-monospace,monospace;font-size:.9rem;color:#8a8a92;font-weight:400}
+.dom-in input{border:0;font-family:"Space Mono",ui-monospace,monospace;font-size:.95rem}
+.dom-in:focus-within{border-color:#0b0b0c}
+.dom-in.bad{border-color:var(--coral)}
+.hint{font-size:.85rem;color:#6a6a72;margin-top:-8px}
+
+/* add-ons */
+.adds{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:560px){.adds{grid-template-columns:1fr}}
+.add{cursor:pointer;letter-spacing:0;text-transform:none}
+.add span{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1.5px solid #d4d0c6;border-radius:14px;padding:12px 14px;font-size:.9rem;font-weight:600;color:#0b0b0c;transition:all .2s}
+.add span b{font-family:var(--display);font-size:.8rem;white-space:nowrap}
+.add span::before{content:"";flex:none;width:18px;height:18px;border-radius:6px;border:1.5px solid #b9b5ab;transition:all .2s}
+.add span em{flex:1;font-style:normal}
+.add:hover span{border-color:#0b0b0c}
+.add input:checked + span{border-color:#0b0b0c;background:#0b0b0c;color:var(--ink)}
+.add input:checked + span b{color:var(--lime)}
+.add input:checked + span::before{background:var(--lime) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round' d='M5.5 10.5l3 3 6-6.5'/%3E%3C/svg%3E") center/13px no-repeat;border-color:var(--lime)}
+
+/* review */
+.brief{display:grid;gap:0;border:1.5px solid #e2ded4;border-radius:16px;overflow:hidden}
+.brief div{display:grid;grid-template-columns:120px 1fr;gap:12px;padding:10px 14px;font-size:.88rem;border-bottom:1px solid #e9e6de}
+.brief div:last-child{border-bottom:0}
+.brief dt{color:#77777f;font-weight:600}
+.brief dd{color:#0b0b0c;word-break:break-word;white-space:pre-line}
+.brief dd i{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:-2px;margin-right:4px;border:1px solid rgba(0,0,0,.15)}
+@media(max-width:560px){.brief div{grid-template-columns:1fr;gap:2px}}
+.bill{background:#0b0b0c;color:var(--ink);border-radius:16px;padding:16px 18px;display:grid;gap:8px;font-size:.92rem}
+.bill div{display:flex;justify-content:space-between;gap:12px}
+.bill div span:last-child{font-family:var(--display);font-size:.85rem}
+.bill .tot{border-top:1px dashed #3a3a42;padding-top:10px;margin-top:4px;font-weight:700}
+.bill .tot span:last-child{color:var(--lime);font-size:1.15rem}
+.bill small{color:var(--dim);font-size:.8rem}
+.agree{display:flex;gap:10px;align-items:center;letter-spacing:0;text-transform:none;font-size:.92rem;font-weight:600;color:#0b0b0c;cursor:pointer}
+.agree input{width:20px;height:20px;accent-color:#0b0b0c;flex:none}
+.agree.bad span{color:var(--coral)}
+.err{background:#fff1ec;border:1.5px solid var(--coral);color:#7a2410;border-radius:14px;padding:14px 16px;font-size:.9rem;line-height:1.45}
+.err a{text-decoration:underline;font-weight:700}
+
+/* footer nav */
+.fnav{display:flex;align-items:center;gap:12px;border-top:1px solid #e2ded4;padding-top:18px}
+.fnav .due{margin-right:auto;line-height:1.1}
+.fnav .back + .due{margin-left:4px}
+.fnav .due small{display:block;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#77777f}
+.fnav .due b{font-family:var(--display);font-size:1.5rem;letter-spacing:-.03em}
+.back{white-space:nowrap;font:inherit;font-weight:700;font-size:.92rem;background:none;border:1.5px solid #d4d0c6;border-radius:99px;padding:14px 18px;cursor:pointer;color:#0b0b0c}
+.back:hover{border-color:#0b0b0c}
+form .send{font:inherit;font-family:var(--display);font-weight:800;font-size:.95rem;text-transform:uppercase;letter-spacing:-.01em;background:#0b0b0c;color:var(--lime);border:0;border-radius:99px;padding:18px 24px;cursor:pointer;display:flex;gap:14px;justify-content:space-between;align-items:center;transition:transform .2s,opacity .2s}
+form .send:hover{transform:scale(1.03)}
+form .send.pay{background:var(--lime);color:#000;box-shadow:0 10px 30px -10px rgba(120,160,0,.7)}
+form .send[disabled]{opacity:.6;pointer-events:none}
+form .send[hidden],.back[hidden]{display:none}
+@media(max-width:420px){form .send{padding:16px 18px;font-size:.85rem}.fnav .due b{font-size:1.25rem}.back{padding:12px 14px}}
+form .fine{font-size:.78rem;color:#77777f;text-align:center;margin-top:-6px}
 .ok{display:none;text-align:center;padding:40px 10px}
+.ok.show{display:block}
 .ok b{font-family:var(--display);font-size:1.8rem;display:block;margin:10px 0}
+.ok p{color:#55555c;max-width:380px;margin:0 auto}
+.paid-note{background:#fff1ec;border-radius:14px;padding:12px 16px;font-size:.9rem;color:#7a2410}
 footer{padding:40px 0 50px;color:var(--dim);font-size:.88rem;border-top:1px solid var(--line);margin-top:100px}
 footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px}
 footer a:hover{color:var(--lime)}
@@ -554,22 +657,22 @@ details .ans{overflow:hidden}
       <h1 class="h1" style="margin-top:22px">
         <span class="ln"><span>Websites</span></span>
         <span class="ln"><span>that <span class="serif">sell.</span></span></span>
-        <span class="ln"><span>For <span class="out">$99</span></span></span>
+        <span class="ln"><span>For <span class="out">$199</span></span></span>
       </h1>
-      <p class="lead hero-in">A custom site designed by real humans, your own <b>.com domain</b>, hosting and SSL — <b>live in 72 hours</b>. You don't pay a cent until you love the design.</p>
+      <p class="lead hero-in">A custom site designed by real humans, your own <b>.com domain</b>, hosting and SSL — <b>live in 72 hours</b>. One flat price, paid securely online. No surprises.</p>
       <div class="cta hero-in">
         <a href="#order" class="pill xl magnet" data-hover><span>Start my website</span><span class="arr">→</span></a>
         <a href="#work" class="ghost" data-hover>See the work</a>
       </div>
       <div class="ticks hero-in">
-        <span><b>72h</b> to launch</span><span><b>$0</b> upfront</span><span><b>100%</b> yours</span>
+        <span><b>72h</b> to launch</span><span><b>2</b> revision rounds</span><span><b>100%</b> yours</span>
       </div>
     </div>
 
     <div class="stage hero-in">
       <div class="sticker" aria-hidden="true">
         <svg viewBox="0 0 118 118"><defs><path id="c" d="M59,59 m-46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0"/></defs><text font-family="Unbounded,sans-serif" font-size="9" font-weight="700" letter-spacing="3.2" fill="#000"><textPath href="#c">ONE-TIME · NO CONTRACT · ONE-TIME · NO CONTRACT ·</textPath></text></svg>
-        <div><b>$99</b></div>
+        <div><b>$199</b></div>
       </div>
       <div class="bstatus" id="bstatus"><i></i><span id="bstat">building…</span></div>
       <div class="build" id="build">
@@ -631,7 +734,7 @@ details .ans{overflow:hidden}
         <div class="tier"><span>Design agency</span><b>$3,000+</b></div>
         <div class="tier"><span>Freelancer</span><b>$900</b></div>
         <div class="tier"><span>DIY builder + your weekends</span><b>$300</b></div>
-        <div class="tier"><span>BestWay Studio</span><b>$99</b></div>
+        <div class="tier"><span>BestWay Studio</span><b>$199</b></div>
       </div>
     </div>
     <div>
@@ -700,9 +803,9 @@ details .ans{overflow:hidden}
     </div>
     <div class="steps" id="steps">
       <div class="rail"><i id="rail"></i></div>
-      <div class="step"><span class="dot">01</span><small>5 minutes</small><h3>Tell us</h3><p>A short form: services, area, hours, photos or logo if you have them.</p></div>
+      <div class="step"><span class="dot">01</span><small>5 minutes</small><h3>Brief &amp; pay</h3><p>Tell us what your site needs, pick a style, check out securely.</p></div>
       <div class="step"><span class="dot">02</span><small>Day 1–2</small><h3>We design</h3><p>A designer builds your page and writes the copy. You get a private preview link.</p></div>
-      <div class="step"><span class="dot">03</span><small>Day 2–3</small><h3>You approve</h3><p>Two rounds of changes included. Pay only when you're happy.</p></div>
+      <div class="step"><span class="dot">03</span><small>Day 2–3</small><h3>You review</h3><p>Two rounds of changes included. We polish until it's right.</p></div>
       <div class="step"><span class="dot">04</span><small>Day 3</small><h3>We launch</h3><p>Domain connected, SSL on, link in your inbox. You're open for business.</p></div>
     </div>
   </div>
@@ -717,8 +820,8 @@ details .ans{overflow:hidden}
       <div class="plan hot rv"><div class="in">
         <span class="tag">Step 1 · One-time</span>
         <h3>Your website</h3>
-        <div class="amt">$99<small>once</small></div>
-        <div class="note">Pay after you approve the design.</div>
+        <div class="amt">$199<small>once</small></div>
+        <div class="note">Paid securely at checkout via Stripe.</div>
         <ul>
           <li>Custom one-page design, up to 6 sections</li>
           <li>Mobile, tablet &amp; desktop</li>
@@ -746,7 +849,7 @@ details .ans{overflow:hidden}
         <a href="#faq" class="ghost" data-hover style="justify-content:center">How cancelling works</a>
       </div></div>
     </div>
-    <div class="sum rv"><span>Launch total</span><b>$111</b><span>then $12/mo · no setup fees · no contracts</span></div>
+    <div class="sum rv"><span>Due today</span><b>$211</b><span>$199 site + first month of hosting · then $12/mo · cancel anytime</span></div>
     <div class="addons">
       <div class="addon rv"><span>Extra page (Menu, Gallery…)</span><b>+$49</b></div>
       <div class="addon rv"><span>Simple logo design</span><b>+$79</b></div>
@@ -766,8 +869,8 @@ details .ans{overflow:hidden}
       <h2 class="big" style="margin-top:20px">Fair<br><span class="serif lime">questions.</span></h2>
     </div>
     <div>
-      <details><summary>How is a custom site only $99?<i></i></summary><p class="ans">We do one thing — one-page sites for local businesses — and we've streamlined every step. No meetings, no endless scope. That focus keeps the price low without cutting corners on design.</p></details>
-      <details><summary>Do I pay before I see anything?<i></i></summary><p class="ans">No. We design first and send you a preview link. You pay the $99 once you approve it. Hosting billing starts the day your site goes live.</p></details>
+      <details><summary>How is a custom site only $199?<i></i></summary><p class="ans">We do one thing — one-page sites for local businesses — and we've streamlined every step. No meetings, no endless scope. That focus keeps the price low without cutting corners on design.</p></details>
+      <details><summary>When do I pay?<i></i></summary><p class="ans">At checkout, right after you fill out your site brief. Payment is handled by Stripe, so we never see your card. Your designer starts within one business day. Hosting is $12/month (or $119/year) and you can cancel anytime.</p></details>
       <details><summary>Who owns the domain?<i></i></summary><p class="ans">You do. It's registered in your name. If you ever cancel, we transfer it to you and hand over your site files. No hostage situations.</p></details>
       <details><summary>Can I make changes later?<i></i></summary><p class="ans">Yes — up to 30 minutes of edits every month are included: new hours, prices, photos, specials. Just email us. Bigger changes are quoted upfront.</p></details>
       <details><summary>I already have a domain. Can I use it?<i></i></summary><p class="ans">Absolutely. We'll point it to your new site. Hosting is the same $12/month.</p></details>
@@ -780,39 +883,138 @@ details .ans{overflow:hidden}
 <section class="final" id="order">
   <div class="giant" id="giant" aria-hidden="true"><span>Let's build</span><span>yours</span><span>Let's build</span><span>yours</span></div>
   <div class="wrap order">
-    <div>
+    <div class="order-side">
       <div class="label">Get started</div>
-      <h3 style="margin-top:20px">Tell us about<br>your business.</h3>
+      <h3 style="margin-top:20px">Tell us what<br>you need.</h3>
       <div class="pts">
-        <div><em>01</em><span><b>Reply within 24 hours</b>From a real designer, not a bot.</span></div>
-        <div><em>02</em><span><b>See the design first</b>Pay only when you love it.</span></div>
-        <div><em>03</em><span><b>Your domain, your site</b>Always. Even if you leave.</span></div>
+        <div><em>01</em><span><b>Fill out your site brief</b>5 minutes. Style, colors, sections, domain.</span></div>
+        <div><em>02</em><span><b>Secure checkout</b>Paid via Stripe. We never see your card.</span></div>
+        <div><em>03</em><span><b>Live in 72 hours</b>Your designer emails you within 1 business day.</span></div>
       </div>
     </div>
     <form id="form" novalidate>
-      <div class="fb" style="display:grid;gap:18px">
-        <div class="row">
-          <label>Your name<input name="name" required autocomplete="name" placeholder="Jane Smith"></label>
-          <label>Business<input name="business" required placeholder="Smith Plumbing LLC"></label>
+      <div class="fb">
+        <div class="fsteps" aria-hidden="true">
+          <span class="on">Business</span><span>Your site</span><span>Domain</span><span>Pay</span>
         </div>
-        <div class="row">
-          <label>Email<input type="email" name="email" required autocomplete="email" placeholder="jane@email.com"></label>
-          <label>Phone<input type="tel" name="phone" autocomplete="tel" placeholder="(555) 123-4567"></label>
-        </div>
-        <div class="row">
-          <label>Type of business
-            <select name="type"><option>Home services</option><option>Beauty &amp; wellness</option><option>Restaurant / food</option><option>Contractor</option><option>Auto</option><option>Health / clinic</option><option>Coach / consultant</option><option>Other</option></select>
+        <div class="fbar"><i id="fbar"></i></div>
+
+        <!-- STEP 1 -->
+        <fieldset class="fstep on" data-step="0">
+          <legend>About your business</legend>
+          <div class="row">
+            <label>Your name<input name="name" required autocomplete="name" placeholder="Jane Smith"></label>
+            <label>Business name<input name="business" required placeholder="Smith Plumbing LLC"></label>
+          </div>
+          <div class="row">
+            <label>Email<input type="email" name="email" required autocomplete="email" placeholder="jane@email.com"></label>
+            <label>Phone<input type="tel" name="phone" required autocomplete="tel" placeholder="(555) 123-4567"></label>
+          </div>
+          <div class="row">
+            <label>Type of business
+              <select name="type"><option>Home services</option><option>Beauty &amp; wellness</option><option>Restaurant / food</option><option>Contractor</option><option>Auto</option><option>Health / clinic</option><option>Coach / consultant</option><option>Other</option></select>
+            </label>
+            <label>City, state<input name="city" required placeholder="Austin, TX"></label>
+          </div>
+          <label>What does your business do?<textarea name="about" required placeholder="We're a family-owned plumbing company serving Austin since 2015. Fast, honest, licensed…"></textarea></label>
+          <label>Services or products to show <span class="opt">one per line</span><textarea name="services" placeholder="Leak repair&#10;Water heaters&#10;Drain cleaning"></textarea></label>
+        </fieldset>
+
+        <!-- STEP 2 -->
+        <fieldset class="fstep" data-step="1">
+          <legend>Your website</legend>
+          <div class="q">Main goal of the site</div>
+          <div class="chips">
+            <label class="chip"><input type="radio" name="goal" value="Phone calls" checked><span>📞 Get calls</span></label>
+            <label class="chip"><input type="radio" name="goal" value="Bookings"><span>📅 Bookings</span></label>
+            <label class="chip"><input type="radio" name="goal" value="Quote requests"><span>📝 Quote requests</span></label>
+            <label class="chip"><input type="radio" name="goal" value="Walk-ins"><span>🚪 Walk-ins</span></label>
+            <label class="chip"><input type="radio" name="goal" value="Online orders"><span>🛒 Orders</span></label>
+          </div>
+
+          <div class="q">Pick a style</div>
+          <div class="styles">
+            <label class="sty"><input type="radio" name="design" value="Bold" checked><span><i style="background:linear-gradient(135deg,#111 50%,#c8ff3d 50%)"></i><b>Bold</b><small>Big type, high contrast</small></span></label>
+            <label class="sty"><input type="radio" name="design" value="Elegant"><span><i style="background:linear-gradient(135deg,#f4ece4 50%,#c8794a 50%)"></i><b>Elegant</b><small>Serif, calm, premium</small></span></label>
+            <label class="sty"><input type="radio" name="design" value="Friendly"><span><i style="background:linear-gradient(135deg,#e6f5fb 50%,#0ea5c6 50%)"></i><b>Friendly</b><small>Rounded, soft, warm</small></span></label>
+            <label class="sty"><input type="radio" name="design" value="Clean"><span><i style="background:linear-gradient(135deg,#fff 50%,#0f2a4a 50%)"></i><b>Clean</b><small>Simple, trustworthy</small></span></label>
+            <label class="sty"><input type="radio" name="design" value="Loud"><span><i style="background:linear-gradient(135deg,#e0412b 50%,#ffd23f 50%)"></i><b>Loud</b><small>Poster, playful</small></span></label>
+            <label class="sty"><input type="radio" name="design" value="Industrial"><span><i style="background:repeating-linear-gradient(-45deg,#ffcc00 0 6px,#111 6px 12px)"></i><b>Industrial</b><small>Gritty, no-nonsense</small></span></label>
+          </div>
+
+          <div class="q">Brand colors</div>
+          <div class="colors">
+            <label class="csw"><input type="color" name="color1" value="#0f2a4a"><span>Main</span></label>
+            <label class="csw"><input type="color" name="color2" value="#ffb020"><span>Accent</span></label>
+            <label class="chip"><input type="checkbox" name="colorsAuto" value="yes"><span>🎨 Pick for me</span></label>
+          </div>
+
+          <div class="q">Sections you want <span class="opt">up to 6</span></div>
+          <div class="chips" id="sections">
+            <label class="chip"><input type="checkbox" name="sections" value="About" checked><span>About us</span></label>
+            <label class="chip"><input type="checkbox" name="sections" value="Services" checked><span>Services</span></label>
+            <label class="chip"><input type="checkbox" name="sections" value="Prices / menu"><span>Prices / menu</span></label>
+            <label class="chip"><input type="checkbox" name="sections" value="Gallery"><span>Photo gallery</span></label>
+            <label class="chip"><input type="checkbox" name="sections" value="Reviews" checked><span>Reviews</span></label>
+            <label class="chip"><input type="checkbox" name="sections" value="Hours & map" checked><span>Hours &amp; map</span></label>
+            <label class="chip"><input type="checkbox" name="sections" value="FAQ"><span>FAQ</span></label>
+            <label class="chip"><input type="checkbox" name="sections" value="Contact form" checked><span>Contact form</span></label>
+          </div>
+
+          <div class="q">Logo &amp; photos</div>
+          <div class="chips">
+            <label class="chip"><input type="radio" name="assets" value="I have logo and photos" checked><span>I have them</span></label>
+            <label class="chip"><input type="radio" name="assets" value="Have logo, use stock photos"><span>Use stock photos</span></label>
+            <label class="chip"><input type="radio" name="assets" value="Need a logo"><span>I need a logo (+$79)</span></label>
+          </div>
+
+          <div class="row">
+            <label>Websites you like <span class="opt">optional</span><input name="likes" placeholder="competitor.com, a site you love…"></label>
+            <label>Hours <span class="opt">optional</span><input name="hours" placeholder="Mon–Fri 8am–6pm"></label>
+          </div>
+          <label>Anything else? <span class="opt">optional</span><textarea name="notes" placeholder="Specials, awards, the vibe you're going for…"></textarea></label>
+        </fieldset>
+
+        <!-- STEP 3 -->
+        <fieldset class="fstep" data-step="2">
+          <legend>Domain &amp; extras</legend>
+          <div class="chips">
+            <label class="chip"><input type="radio" name="domainChoice" value="new" checked><span>🌐 I need a new domain</span></label>
+            <label class="chip"><input type="radio" name="domainChoice" value="existing"><span>🔗 I already have one</span></label>
+          </div>
+          <label><span id="domLbl">Domain you'd like</span>
+            <span class="dom-in"><span>https://</span><input name="domain" required placeholder="smithplumbing.com" autocapitalize="off" spellcheck="false"></span>
           </label>
-          <label>City, state<input name="city" placeholder="Austin, TX"></label>
+          <p class="hint" id="domHint">We'll register it in your name. If it's taken, we'll suggest the closest match.</p>
+
+          <div class="q">Hosting, SSL &amp; edits</div>
+          <div class="chips">
+            <label class="chip"><input type="radio" name="billing" value="monthly" checked><span>$12 / month</span></label>
+            <label class="chip"><input type="radio" name="billing" value="yearly"><span>$119 / year · save $25</span></label>
+          </div>
+
+          <div class="q">Add-ons <span class="opt">optional</span></div>
+          <div class="adds" id="adds"></div>
+        </fieldset>
+
+        <!-- STEP 4 -->
+        <fieldset class="fstep" data-step="3">
+          <legend>Review &amp; pay</legend>
+          <div class="brief" id="brief"></div>
+          <div class="bill" id="bill"></div>
+          <label class="agree"><input type="checkbox" name="agree" required><span>I confirm the details above are correct.</span></label>
+          <div class="err" id="err" hidden></div>
+        </fieldset>
+
+        <div class="fnav">
+          <button type="button" class="back" id="back" hidden>← Back</button>
+          <div class="due"><small>Due today</small><b id="due">$211</b></div>
+          <button type="button" class="send" id="next" data-hover><span>Continue</span><span>→</span></button>
+          <button type="submit" class="send pay" id="pay" data-hover hidden><span id="payTxt">Pay $211</span><span>🔒</span></button>
         </div>
-        <label>Domain
-          <select name="domain"><option>I need a new domain</option><option>I already have one</option><option>Not sure</option></select>
-        </label>
-        <label>Anything else?<textarea name="notes" placeholder="Services, a site you like, your colors…"></textarea></label>
-        <button class="send" type="submit" data-hover><span>Request my $99 site</span><span>→</span></button>
-        <p class="fine">No payment now. We never share your info.</p>
+        <p class="fine">Secure checkout by Stripe · Your answers are saved on this device as you type</p>
       </div>
-      <div class="ok" id="ok"><div style="font-size:2.6rem">🎉</div><b>You're in.</b><p style="color:#55555c">We'll email you within one business day with a short questionnaire and your timeline.</p></div>
+      <div class="ok" id="ok"><div style="font-size:2.6rem">🎉</div><b>Payment received!</b><p>Thank you. Order <span id="okId"></span> is in. Your designer will email you within one business day, and your site will be live within 72 hours.</p></div>
     </form>
   </div>
 </section>
@@ -825,7 +1027,7 @@ details .ans{overflow:hidden}
   </div>
 </footer>
 
-<div class="mbar hide" id="mbar"><span><b class="lime">$99</b> · live in 3 days</span><a href="#order" class="pill"><span>Get started</span><span class="arr">→</span></a></div>
+<div class="mbar hide" id="mbar"><span><b class="lime">$199</b> · live in 3 days</span><a href="#order" class="pill"><span>Get started</span><span class="arr">→</span></a></div>
 
 <script src="vendor/gsap.min.js"></script>
 <script src="vendor/ScrollTrigger.min.js"></script>
@@ -833,8 +1035,8 @@ details .ans{overflow:hidden}
 <script>
 /* ---- Settings: change before going live ---- */
 const CONFIG = {
-  email: "hello@bestwaystudio.com",  // where orders go
-  formEndpoint: ""                    // optional: Formspree / own API URL. Empty = opens the visitor's email app.
+  email: "hello@bestwaystudio.com",   // shown as the fallback contact
+  checkoutEndpoint: "/api/checkout"   // served by studio/server.js (creates the Stripe Checkout session)
 };
 
 /* ---- Demo sites (hero build + gallery). Fictional businesses. ---- */
@@ -926,23 +1128,170 @@ addEventListener('scroll', () => {
   $('#mbar').classList.toggle('hide', scrollY < innerHeight * .8 || o.top < innerHeight);
 }, {passive:true});
 
-/* form */
-$('#form').addEventListener('submit', async e => {
-  e.preventDefault();
-  const f = e.target, d = Object.fromEntries(new FormData(f));
-  for (const el of f.querySelectorAll('[required]')) {
-    const bad = !el.value.trim() || (el.type === 'email' && !/^\S+@\S+\.\S+$/.test(el.value));
-    el.classList.toggle('bad', bad);
-    if (bad) { el.focus(); return; }
+/* ---------- Order wizard: brief → domain & extras → pay ---------- */
+/* Prices shown here are for display only; studio/server.js recalculates them before charging. */
+const PRICES = {
+  site: 199,
+  hosting: {monthly: 12, yearly: 119},
+  addons: {
+    page:    {name: 'Extra page (Menu, Gallery…)', price: 49},
+    logo:    {name: 'Simple logo design', price: 79},
+    gbp:     {name: 'Google Business Profile setup', price: 49},
+    spanish: {name: 'Spanish version', price: 49},
+    booking: {name: 'Online booking', price: 39},
+    email:   {name: 'Google Workspace email setup', price: 29}
   }
-  let sent = false;
-  if (CONFIG.formEndpoint) {
-    try { sent = (await fetch(CONFIG.formEndpoint, {method:'POST', headers:{'Content-Type':'application/json',Accept:'application/json'}, body:JSON.stringify(d)})).ok; } catch(_) {}
+};
+const form = $('#form'), steps = $$('.fstep'), stepTabs = $$('.fsteps span');
+let step = 0;
+
+$('#adds').innerHTML = Object.entries(PRICES.addons).map(([k, a]) =>
+  `<label class="add"><input type="checkbox" name="addons" value="${k}"><span><em>${a.name}</em><b>+$${a.price}</b></span></label>`).join('');
+
+const esc = v => String(v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function data(){
+  const fd = new FormData(form), d = {};
+  for (const [k, v] of fd) {
+    if (k === 'sections' || k === 'addons') (d[k] = d[k] || []).push(v);
+    else d[k] = typeof v === 'string' ? v.trim() : v;
   }
-  if (!sent) location.href = `mailto:${CONFIG.email}?subject=${encodeURIComponent('New $99 website request — ' + d.business)}&body=${encodeURIComponent(Object.entries(d).map(([k,v])=>`${k}: ${v}`).join('\n'))}`;
-  f.querySelector('.fb').style.display = 'none';
-  $('#ok').style.display = 'block';
+  d.sections = d.sections || []; d.addons = d.addons || [];
+  return d;
+}
+function money(d){
+  const lines = [['Custom website', PRICES.site]];
+  d.addons.forEach(k => PRICES.addons[k] && lines.push([PRICES.addons[k].name, PRICES.addons[k].price]));
+  const host = d.billing === 'yearly' ? PRICES.hosting.yearly : PRICES.hosting.monthly;
+  lines.push([`Domain + hosting (${d.billing === 'yearly' ? 'first year' : 'first month'})`, host]);
+  return {lines, total: lines.reduce((a, l) => a + l[1], 0), host};
+}
+function refresh(){
+  const d = data(), m = money(d);
+  $('#due').textContent = '$' + m.total;
+  $('#payTxt').textContent = 'Pay $' + m.total;
+  $('.colors').classList.toggle('auto', d.colorsAuto === 'yes');
+  const existing = d.domainChoice === 'existing';
+  $('#domLbl').textContent = existing ? 'Your domain' : "Domain you'd like";
+  $('#domHint').textContent = existing ? "We'll point it to your new site. Hosting is the same price." : "We'll register it in your name. If it's taken, we'll suggest the closest match.";
+}
+
+/* "I need a logo" ticks the logo add-on */
+form.addEventListener('change', e => {
+  if (e.target.name === 'assets') form.querySelector('input[name="addons"][value="logo"]').checked = e.target.value === 'Need a logo';
+  if (e.target.name === 'sections') {
+    const on = $$('#sections input:checked');
+    if (on.length > 6) { e.target.checked = false; e.target.closest('.chip').classList.add('shake'); setTimeout(() => e.target.closest('.chip').classList.remove('shake'), 400); }
+  }
+  refresh(); save();
 });
+form.addEventListener('input', () => { refresh(); save(); });
+
+function validate(i){
+  let first = null;
+  steps[i].querySelectorAll('[required]').forEach(el => {
+    let bad = el.type === 'checkbox' ? !el.checked : !el.value.trim();
+    if (!bad && el.type === 'email') bad = !/^\S+@\S+\.\S+$/.test(el.value.trim());
+    if (!bad && el.name === 'domain') bad = !/^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(el.value.trim().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, ''));
+    const box = el.name === 'domain' ? el.closest('.dom-in') : el.type === 'checkbox' ? el.closest('label') : el;
+    box.classList.toggle('bad', bad);
+    if (bad && !first) first = el;
+  });
+  if (first) { first.focus({preventScroll:true}); const b = first.closest('label') || first; b.classList.add('shake'); setTimeout(() => b.classList.remove('shake'), 400); }
+  return !first;
+}
+
+function row(k, v){ return v ? `<div><dt>${k}</dt><dd>${v}</dd></div>` : ''; }
+function review(){
+  const d = data(), m = money(d);
+  const colors = d.colorsAuto === 'yes' ? 'Designer picks' : `<i style="background:${esc(d.color1)}"></i>${esc(d.color1)} &nbsp; <i style="background:${esc(d.color2)}"></i>${esc(d.color2)}`;
+  $('#brief').innerHTML = [
+    row('Business', esc(`${d.business} · ${d.type} · ${d.city}`)),
+    row('Contact', esc(`${d.name} · ${d.email} · ${d.phone}`)),
+    row('About', esc(d.about)),
+    row('Services', esc(d.services)),
+    row('Goal', esc(d.goal)), row('Style', esc(d.design)), row('Colors', colors),
+    row('Sections', esc(d.sections.join(', '))), row('Logo & photos', esc(d.assets)),
+    row('Likes', esc(d.likes)), row('Hours', esc(d.hours)), row('Notes', esc(d.notes)),
+    row('Domain', esc(`${d.domain} (${d.domainChoice === 'existing' ? 'already owned' : 'new'})`))
+  ].join('');
+  $('#bill').innerHTML = m.lines.map(l => `<div><span>${esc(l[0])}</span><span>$${l[1]}</span></div>`).join('') +
+    `<div class="tot"><span>Due today</span><span>$${m.total}</span></div>` +
+    `<small>Then $${m.host}/${d.billing === 'yearly' ? 'year' : 'month'} for hosting, edits &amp; support. Cancel anytime.</small>`;
+}
+
+function go(n){
+  const prev = step; step = Math.max(0, Math.min(3, n));
+  if (step === 3) review();
+  steps.forEach((s, i) => s.classList.toggle('on', i === step));
+  stepTabs.forEach((t, i) => { t.classList.toggle('on', i === step); t.classList.toggle('done', i < step); });
+  $('#fbar').style.width = (step + 1) * 25 + '%';
+  $('#back').hidden = step === 0;
+  $('#next').hidden = step === 3;
+  $('#pay').hidden = step !== 3;
+  $('#err').hidden = true;
+  if (window.gsap && prev !== step) gsap.fromTo(steps[step], {x: step > prev ? 40 : -40, opacity: 0}, {x: 0, opacity: 1, duration: .5, ease: 'expo.out', clearProps: 'transform'});
+  if (prev !== step) { const top = form.getBoundingClientRect().top; if (top < 0) scrollTo({top: scrollY + top - 90, behavior: 'smooth'}); }
+}
+$('#next').addEventListener('click', () => { if (validate(step)) go(step + 1); });
+$('#back').addEventListener('click', () => go(step - 1));
+stepTabs.forEach((t, i) => t.addEventListener('click', () => { if (i < step) go(i); }));
+
+/* save the draft on this device (convenience only) */
+const KEY = 'bw-brief-v1';
+function save(){ try { const d = data(); delete d.agree; localStorage.setItem(KEY, JSON.stringify(d)); } catch (_) {} }
+(function restore(){
+  let d; try { d = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (_) {}
+  if (!d) return;
+  form.querySelectorAll('input,select,textarea').forEach(el => {
+    if (!(el.name in d) || el.name === 'agree') return;
+    const v = d[el.name];
+    if (el.type === 'checkbox' || el.type === 'radio') el.checked = Array.isArray(v) ? v.includes(el.value) : v === el.value;
+    else el.value = v;
+  });
+  // unchecked groups are absent from the saved draft
+  if (!d.addons) form.querySelectorAll('input[name="addons"]').forEach(el => el.checked = false);
+  if (!d.colorsAuto) form.querySelector('input[name="colorsAuto"]').checked = false;
+})();
+refresh();
+
+/* pay → Stripe Checkout (session created by studio/server.js) */
+form.addEventListener('submit', async e => {
+  e.preventDefault();
+  if (step !== 3) { if (validate(step)) go(step + 1); return; }
+  for (let i = 0; i < 4; i++) if (!validate(i)) { go(i); validate(i); return; }
+  const d = data(), btn = $('#pay');
+  btn.disabled = true; $('#payTxt').textContent = 'Opening secure checkout…';
+  let url = null, msg = '';
+  try {
+    const r = await fetch(CONFIG.checkoutEndpoint, {method: 'POST', headers: {'Content-Type': 'application/json', Accept: 'application/json'}, body: JSON.stringify(d)});
+    const j = await r.json().catch(() => ({}));
+    if (r.ok && j.url) url = j.url; else msg = j.error || '';
+  } catch (_) {}
+  if (url) { location.href = url; return; }
+  btn.disabled = false; refresh();
+  const body = encodeURIComponent($('#brief').innerText + '\n\n' + $('#bill').innerText);
+  $('#err').innerHTML = `${msg ? esc(msg) + '<br>' : ''}Online checkout isn't available right now, so you have not been charged. ` +
+    `<a href="mailto:${CONFIG.email}?subject=${encodeURIComponent('Website order — ' + d.business)}&body=${body}">Email us your brief</a> and we'll send a payment link.`;
+  $('#err').hidden = false;
+});
+
+/* back from Stripe */
+(function returnFromCheckout(){
+  const q = new URLSearchParams(location.search);
+  if (q.get('paid')) {
+    $('#okId').textContent = '#' + q.get('paid').slice(0, 12);
+    form.querySelector('.fb').style.display = 'none';
+    $('#ok').classList.add('show');
+    try { localStorage.removeItem(KEY); } catch (_) {}
+    setTimeout(() => $('#order').scrollIntoView(), 300);
+  } else if (q.get('canceled')) {
+    go(3);
+    $('#err').innerHTML = 'Checkout was canceled, so no charge was made. Your answers are still here whenever you\'re ready.';
+    $('#err').hidden = false;
+    setTimeout(() => $('#order').scrollIntoView(), 300);
+  }
+  if (q.get('paid') || q.get('canceled')) history.replaceState(null, '', location.pathname + '#order');
+})();
 
 /* split statement into words */
 (() => {
@@ -967,7 +1316,7 @@ if (window.gsap && window.ScrollTrigger && !reduce) {
   document.body.appendChild(loader);
   const lc = {v:0};
   const intro = gsap.timeline();
-  intro.to(lc, {v:99, duration:1, ease:'power2.inOut', onUpdate:() => $('#lc').textContent = Math.round(lc.v)})
+  intro.to(lc, {v:199, duration:1, ease:'power2.inOut', onUpdate:() => $('#lc').textContent = Math.round(lc.v)})
        .to(loader, {yPercent:-100, duration:.8, ease:'expo.inOut'}, '+=.1')
        .set(loader, {display:'none'})
        .from('.h1 .ln > span', {yPercent:115, rotate:4, duration:1.1, ease:'expo.out', stagger:.09}, '-=.35')
@@ -1019,7 +1368,7 @@ if (window.gsap && window.ScrollTrigger && !reduce) {
   gsap.to('#say .w', {opacity:1, stagger:.1, ease:'none', scrollTrigger:{trigger:'#say', start:'top 80%', end:'bottom 45%', scrub:true}});
 
   /* price drop (pinned) */
-  const tiers = $$('.tier'), steps = [3000, 900, 300, 99], subs = ['Typical agency quote', 'Freelancer, 2–4 weeks', 'Plus every weekend for a month', 'Custom design. Live in 3 days.'];
+  const tiers = $$('.tier'), steps = [3000, 900, 300, 199], subs = ['Typical agency quote', 'Freelancer, 2–4 weeks', 'Plus every weekend for a month', 'Custom design. Live in 3 days.'];
   const pv = {v:3000};
   const fmt = n => n.toLocaleString('en-US');
   const setTier = i => {
@@ -1032,7 +1381,7 @@ if (window.gsap && window.ScrollTrigger && !reduce) {
     onUpdate: self => setTier(Math.min(3, Math.floor(self.progress * 3.6)))}});
   dtl.to(pv, {v:900, ease:'power2.inOut', duration:1, onUpdate:() => $('#pnum').textContent = fmt(Math.round(pv.v))})
      .to(pv, {v:300, ease:'power2.inOut', duration:1, onUpdate:() => $('#pnum').textContent = fmt(Math.round(pv.v))})
-     .to(pv, {v:99, ease:'power2.inOut', duration:1, onUpdate:() => $('#pnum').textContent = fmt(Math.round(pv.v))})
+     .to(pv, {v:199, ease:'power2.inOut', duration:1, onUpdate:() => $('#pnum').textContent = fmt(Math.round(pv.v))})
      .to('#price', {scale:1.06, duration:.3, ease:'back.out(3)', transformOrigin:'right bottom'}, '-=.1')
      .to({}, {duration:.4});
 
@@ -1169,10 +1518,8 @@ function confetti(x, y, n = 140){
 }
 window.confetti = confetti;
 
-/* confetti when the order goes through */
-$('#form').addEventListener('submit', () => setTimeout(() => {
-  if ($('#ok').style.display === 'block') { const b = $('#form').getBoundingClientRect(); confetti(b.left + b.width / 2, b.top + b.height / 3, 180); }
-}, 50));
+/* confetti after a successful payment */
+if ($('#ok').classList.contains('show')) setTimeout(() => { const b = $('#form').getBoundingClientRect(); confetti(b.left + b.width / 2, Math.max(120, b.top + 120), 200); }, 900);
 
 /* button text roll */
 $$('.pill > span:first-child, .send > span:first-child').forEach(s => { s.innerHTML = `<span class="roll"><span>${s.innerHTML}</span></span>`; });
@@ -1252,7 +1599,7 @@ if (window.Lenis) {
 gsap.to('#progress', {scaleX:1, ease:'none', scrollTrigger:{start:0, end:'max', scrub:.3}});
 ScrollTrigger.create({start:0, end:'max', onUpdate:self => $('#nav').classList.toggle('up', self.direction === 1 && self.scroll() > 500)});
 
-/* $99 in the hero fills with lime after the intro */
+/* $199 in the hero fills with lime after the intro */
 gsap.to('.h1 .out', {backgroundSize:'100% 100%', duration:1.2, ease:'expo.inOut', delay:2.6});
 
 /* headings: split into letters and flip them in */
@@ -1325,13 +1672,13 @@ if (fine) $$('.tile, .plan').forEach(el => {
 
 /* price counters */
 const hot = $('.plan.hot .amt').firstChild;
-[[hot, 99], [$('#hp').firstChild, 12]].forEach(([node, end]) => {
+[[hot, 199], [$('#hp').firstChild, 12]].forEach(([node, end]) => {
   const o = {v:0};
   gsap.to(o, {v:end, duration:1.6, ease:'expo.out', scrollTrigger:{trigger:'.plans', start:'top 80%'},
     onUpdate:() => { if (!/119/.test(node.textContent)) node.textContent = '$' + Math.round(o.v); }});
 });
 
-/* confetti when the price lands on $99 */
+/* confetti when the price lands on $199 */
 let popped = false;
 new MutationObserver(() => {
   if (!popped && $('#price').classList.contains('win')) { popped = true; const b = $('#price').getBoundingClientRect(); confetti(b.left + b.width * .6, b.top + b.height * .5, 160); }
