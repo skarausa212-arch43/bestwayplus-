@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// Sellsite — static site + Stripe Checkout + order storage.
+// BestWay Studio — static site + Stripe Checkout + order storage.
 // No dependencies: needs Node 18+ (built-in fetch).
 //
 // Env:
 //   STRIPE_SECRET_KEY      sk_live_... / sk_test_...           (required for payments)
 //   STRIPE_WEBHOOK_SECRET  whsec_...                            (required to mark orders paid)
-//   PUBLIC_URL             https://sellsite.com                 (where the site is served)
+//   PUBLIC_URL             https://bestwaystudio.com            (where the site is served)
 //   PORT                   default 8787
 //   ORDERS_DIR             default ./orders (next to this file)
 //   TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID   optional: ping you when an order is paid
@@ -86,7 +86,7 @@ const loadOrder = id => { try { return JSON.parse(fs.readFileSync(orderPath(id),
 
 async function createCheckout(body) {
   const b = clean(body);
-  const id = 'SS-' + crypto.randomBytes(5).toString('hex').toUpperCase();
+  const id = 'BW-' + crypto.randomBytes(5).toString('hex').toUpperCase();
   const host = PRICES.hosting[b.billing];
   const items = [
     {price_data: {currency: 'usd', unit_amount: PRICES.site, product_data: {name: 'Custom business website', description: `One-page site for ${b.business}`.slice(0, 200)}}, quantity: 1},
@@ -207,4 +207,4 @@ http.createServer(async (req, res) => {
   } catch (e) {
     console.error(e); if (!res.headersSent) json(res, 500, {error: 'Server error.'});
   }
-}).listen(PORT, () => console.log(`Sellsite on :${PORT} → ${PUBLIC_URL} (payments ${STRIPE_KEY ? 'on' : 'OFF'})`));
+}).listen(PORT, () => console.log(`BestWay Studio on :${PORT} → ${PUBLIC_URL} (payments ${STRIPE_KEY ? 'on' : 'OFF'})`));
