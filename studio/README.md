@@ -1,6 +1,6 @@
-# BestWay Studio
+# Sellsite
 
-Landing page for $199 small-business websites, with a site-brief form and Stripe checkout.
+Sellsite — "A website that sells for you." Landing page for $199 small-business websites, with a site-brief form and Stripe checkout.
 
 - `index.html` — the site (GSAP and Lenis are vendored in `vendor/`, no CDN needed)
 - `server.js` — serves the site, creates Stripe Checkout sessions, stores orders. Node 18+, no npm install.

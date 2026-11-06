@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BestWay Studio — Websites that sell. For $199.</title>
+<title>Sellsite — A website that sells for you. $199.</title>
 <meta name="description" content="A custom website for your business for $199. Domain, hosting and SSL included. Designed by humans, live in 72 hours.">
 <meta property="og:title" content="Websites that sell. For $199.">
 <meta property="og:description" content="Custom site + .com domain + hosting. Live in 72 hours.">
@@ -58,8 +58,12 @@ section{position:relative}
 .nav.solid{background:rgba(11,11,12,.72);backdrop-filter:blur(14px);padding:12px 0}
 .nav .wrap{display:flex;align-items:center;justify-content:space-between}
 .logo{white-space:nowrap;font-family:var(--display);font-weight:800;font-size:1rem;letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
-.logo i{width:26px;height:26px;border-radius:8px;background:var(--lime);display:inline-block;position:relative;overflow:hidden}
-.logo i::after{content:"";position:absolute;inset:6px;border-radius:50%;background:var(--bg);animation:pulse 2.4s ease-in-out infinite}
+.logo svg{width:28px;height:28px;flex:none;overflow:visible}
+.logo svg .tag{transform-origin:14px 14px;transition:transform .5s cubic-bezier(.3,1.6,.4,1)}
+.logo:hover svg .tag{transform:rotate(-12deg) scale(1.06)}
+.logo svg .up{animation:up 2.4s cubic-bezier(.7,0,.2,1) infinite}
+@keyframes up{0%,55%{transform:none;opacity:1}75%{transform:translate(3px,-3px);opacity:0}76%{transform:translate(-3px,3px);opacity:0}100%{transform:none;opacity:1}}
+.logo b{color:var(--lime);font-weight:800}
 @keyframes pulse{50%{transform:scale(.55)}}
 .menu{display:flex;gap:30px;align-items:center;font-size:.92rem;color:var(--dim)}
 .menu a:not(.pill):hover{color:var(--ink)}
@@ -635,7 +639,7 @@ details .ans{overflow:hidden}
 
 <nav class="nav" id="nav">
   <div class="wrap">
-    <a href="#top" class="logo" data-hover><i></i>BESTWAY STUDIO</a>
+    <a href="#top" class="logo" data-hover aria-label="Sellsite home"><svg viewBox="0 0 28 28" aria-hidden="true"><g class="tag"><path d="M3 6a3 3 0 0 1 3-3h7.3a3 3 0 0 1 2.1.9l8.7 8.7a3 3 0 0 1 0 4.2l-7.3 7.3a3 3 0 0 1-4.2 0L3.9 15.4A3 3 0 0 1 3 13.3z" fill="#c8ff3d"/><circle cx="8.6" cy="8.6" r="2" fill="#0b0b0c"/></g><path class="up" d="M11.5 18.5l6-6m0 0h-4.2m4.2 0v4.2" stroke="#0b0b0c" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>SELL<b>SITE</b></span></a>
     <div class="menu">
       <a href="#work" data-hover>Work</a>
       <a href="#included" data-hover>What's included</a>
@@ -653,7 +657,7 @@ details .ans{overflow:hidden}
   <canvas id="dots" aria-hidden="true"></canvas>
   <div class="wrap">
     <div>
-      <div class="label hero-in">Websites for local business · USA</div>
+      <div class="label hero-in">A website that sells for you · USA</div>
       <h1 class="h1" style="margin-top:22px">
         <span class="ln"><span>Websites</span></span>
         <span class="ln"><span>that <span class="serif">sell.</span></span></span>
@@ -734,7 +738,7 @@ details .ans{overflow:hidden}
         <div class="tier"><span>Design agency</span><b>$3,000+</b></div>
         <div class="tier"><span>Freelancer</span><b>$900</b></div>
         <div class="tier"><span>DIY builder + your weekends</span><b>$300</b></div>
-        <div class="tier"><span>BestWay Studio</span><b>$199</b></div>
+        <div class="tier"><span>Sellsite</span><b>$199</b></div>
       </div>
     </div>
     <div>
@@ -1022,7 +1026,7 @@ details .ans{overflow:hidden}
 
 <footer>
   <div class="wrap">
-    <span>© <span id="yr"></span> BestWay Studio — Websites for small business</span>
+    <span>© <span id="yr"></span> Sellsite — A website that sells for you</span>
     <span><a href="#work">Work</a> · <a href="#pricing">Pricing</a> · <a href="#faq">FAQ</a> · <a id="mail" href="#">Email us</a></span>
   </div>
 </footer>
@@ -1035,7 +1039,7 @@ details .ans{overflow:hidden}
 <script>
 /* ---- Settings: change before going live ---- */
 const CONFIG = {
-  email: "hello@bestwaystudio.com",   // shown as the fallback contact
+  email: "hello@sellsite.com",        // shown as the fallback contact (change to your real address)
   checkoutEndpoint: "/api/checkout"   // served by studio/server.js (creates the Stripe Checkout session)
 };
 
@@ -1237,7 +1241,7 @@ $('#back').addEventListener('click', () => go(step - 1));
 stepTabs.forEach((t, i) => t.addEventListener('click', () => { if (i < step) go(i); }));
 
 /* save the draft on this device (convenience only) */
-const KEY = 'bw-brief-v1';
+const KEY = 'sellsite-brief-v1';
 function save(){ try { const d = data(); delete d.agree; localStorage.setItem(KEY, JSON.stringify(d)); } catch (_) {} }
 (function restore(){
   let d; try { d = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (_) {}
@@ -1312,7 +1316,7 @@ if (window.gsap && window.ScrollTrigger && !reduce) {
   /* loader → hero intro */
   const loader = document.createElement('div');
   loader.className = 'loader';
-  loader.innerHTML = '<span>BestWay Studio</span><b>$<i id="lc" style="font-style:normal">0</i></b>';
+  loader.innerHTML = '<span>Sellsite · A website that sells for you</span><b>$<i id="lc" style="font-style:normal">0</i></b>';
   document.body.appendChild(loader);
   const lc = {v:0};
   const intro = gsap.timeline();
