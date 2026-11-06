@@ -15,11 +15,14 @@ At checkout (one Stripe subscription with a 30-day trial):
 | Item | Price | When |
 |---|---|---|
 | Custom website | $199 one-time | today |
+| Online store upgrade (optional): up to 20 products + online payments | +$200 one-time | today |
 | Add-ons (optional) | $29–$79 one-time each | today |
 | .com domain, first year | free | — |
 | Hosting + SSL + domain renewal | $12/month or $119/year | after the free 30 days |
 
 The free period is `FREE_HOSTING_DAYS` in `server.js`.
+
+If the customer picks **their own hosting**, checkout is a one-time payment (no subscription) and the brief says to install the site on their host.
 
 Prices live in `PRICES` in `server.js`. The browser only sends the customer's choices, and the server works out the amount. If you change a price, update both `server.js` and the `PRICES` block in `index.html` (that one is only for display).
 

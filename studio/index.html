@@ -275,8 +275,8 @@ section{position:relative}
 .plan.hot .amt{color:var(--lime)}
 .plan .note{color:var(--dim);font-size:.92rem;min-height:1.4em}
 .plan ul{list-style:none;display:grid;gap:12px;margin:28px 0 34px;flex:1}
-.plan li{display:flex;gap:12px;font-size:.98rem}
-.plan li::before{content:"";flex:none;width:20px;height:20px;border-radius:50%;margin-top:1px;background:var(--lime) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round' d='M5.5 10.5l3 3 6-6.5'/%3E%3C/svg%3E") center/13px no-repeat}
+.plan li{position:relative;padding-left:32px;font-size:.98rem}
+.plan li::before{content:"";position:absolute;left:0;top:1px;width:20px;height:20px;border-radius:50%;background:var(--lime) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round' d='M5.5 10.5l3 3 6-6.5'/%3E%3C/svg%3E") center/13px no-repeat}
 .plan:not(.hot) li::before{background-color:#2e2e35;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='none' stroke='%23c8ff3d' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round' d='M5.5 10.5l3 3 6-6.5'/%3E%3C/svg%3E")}
 .plan .pill,.plan .ghost{justify-content:center}
 .toggle{display:inline-flex;background:#0f0f12;border:1px solid var(--line);border-radius:99px;padding:4px;margin-top:4px}
@@ -407,6 +407,69 @@ legend{font-family:var(--display);font-weight:800;font-size:1.35rem;letter-spaci
 .bill{background:#0b0b0c;color:var(--ink);border-radius:16px;padding:16px 18px;display:grid;gap:8px;font-size:.92rem}
 .bill div{display:flex;justify-content:space-between;gap:12px}
 .bill div span:last-child{font-family:var(--display);font-size:.85rem}
+/* online store upsell */
+.store-card{margin-top:18px;border-radius:26px;padding:2px;background:linear-gradient(120deg,var(--violet),var(--lime) 60%,var(--coral))}
+.store-card .in{background:#141417;border-radius:24px;padding:36px;display:grid;grid-template-columns:1.15fr 1fr;gap:36px;align-items:center}
+@media(max-width:900px){.store-card .in{grid-template-columns:1fr;padding:26px}}
+.store-card .tag{font-family:var(--display);font-size:.68rem;letter-spacing:.16em;color:var(--lime);text-transform:uppercase}
+.store-card h3{font-family:var(--display);font-weight:800;font-size:clamp(1.5rem,3.2vw,2.4rem);letter-spacing:-.03em;line-height:1;text-transform:uppercase;margin:12px 0 12px}
+.store-card p{color:var(--dim);max-width:460px}
+.store-card ul{list-style:none;display:grid;gap:10px;margin:22px 0 28px}
+.store-card li{position:relative;padding-left:32px;font-size:.96rem}
+.store-card li::before{content:"";position:absolute;left:0;top:1px;width:20px;height:20px;border-radius:50%;background:var(--lime) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round' d='M5.5 10.5l3 3 6-6.5'/%3E%3C/svg%3E") center/13px no-repeat}
+.store-card .px{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.store-card .px b{font-family:var(--display);font-weight:900;font-size:clamp(3rem,7vw,4.6rem);letter-spacing:-.06em;color:var(--lime);line-height:1}
+.store-card .px span{color:var(--dim)}
+.shopdemo{background:#f7f3ea;color:#2a1d0c;border-radius:18px;padding:16px;position:relative;box-shadow:0 30px 60px -30px rgba(124,92,255,.6)}
+.shopdemo .top{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:.9rem;margin-bottom:12px}
+.shopdemo .cart{position:relative;font-size:1.2rem}
+.shopdemo .cart i{position:absolute;top:-6px;right:-10px;background:#e0412b;color:#fff;font-style:normal;font-size:.65rem;font-weight:800;min-width:18px;height:18px;border-radius:99px;display:grid;place-items:center;animation:bump 3s ease-in-out infinite}
+@keyframes bump{0%,62%,100%{transform:scale(1)}68%{transform:scale(1.5)}76%{transform:scale(.9)}84%{transform:scale(1.1)}}
+.shopdemo .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.shopdemo .it{background:#fff;border-radius:12px;padding:8px;font-size:.72rem;font-weight:700;display:grid;gap:3px}
+.shopdemo .it i{display:grid;place-items:center;aspect-ratio:1;border-radius:9px;font-size:1.8rem;font-style:normal}
+.shopdemo .it s{text-decoration:none;color:#8a6d3b;font-weight:600}
+.shopdemo .it u{text-decoration:none;text-align:center;background:#2a1d0c;color:#f7f3ea;border-radius:99px;padding:4px 0;font-size:.65rem;margin-top:3px}
+.shopdemo .it:nth-child(2) u{animation:added 3s ease-in-out infinite}
+@keyframes added{0%,50%{background:#2a1d0c}56%,90%{background:#2f9e44}}
+.shopdemo .it:nth-child(2) u::after{content:"Add to cart";animation:addedt 3s steps(1) infinite}
+@keyframes addedt{0%,55%{content:"Add to cart"}56%,90%{content:"Added ✓"}}
+.shopdemo .pay{margin-top:12px;display:flex;justify-content:space-between;align-items:center;background:#2a1d0c;color:#f7f3ea;border-radius:12px;padding:10px 12px;font-size:.78rem;font-weight:700}
+.shopdemo .pay span:last-child{background:var(--lime);color:#000;border-radius:99px;padding:5px 10px}
+/* package picker in the form */
+.pkgs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:520px){.pkgs{grid-template-columns:1fr}}
+.pkg{cursor:pointer;letter-spacing:0;text-transform:none}
+.pkg input{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
+.pkg span{display:grid;gap:3px;border:1.5px solid #d4d0c6;border-radius:16px;padding:14px;transition:all .2s;height:100%;position:relative}
+.pkg b{font-size:1rem;color:#0b0b0c}
+.pkg small{font-size:.8rem;font-weight:500;color:#6a6a72}
+.pkg em{font-style:normal;font-family:var(--display);font-weight:800;font-size:1.3rem;color:#0b0b0c;margin-top:6px}
+.pkg:hover span{border-color:#0b0b0c}
+.pkg input:checked + span{border-color:#0b0b0c;box-shadow:0 0 0 2px #0b0b0c;background:#fff}
+.pkg input:focus-visible + span{outline:2px solid var(--violet);outline-offset:2px}
+.pkg .hot{position:absolute;top:-9px;right:12px;background:var(--lime);color:#000;font-size:.62rem;font-weight:800;letter-spacing:.06em;padding:3px 8px;border-radius:99px}
+.storeq{display:grid;gap:18px;background:#fff;border:1.5px dashed #c9c5bb;border-radius:18px;padding:18px}
+.storeq[hidden]{display:none}
+.storeq .note{font-size:.84rem;color:#6a6a72;line-height:1.45}
+/* store mockup in the gallery */
+.mk-shop{background:#f7f3ea;color:#2a1d0c;font-family:var(--body);padding:3cqw 4cqw}
+.mk-shop .mlogo{font-family:var(--serif);font-style:italic;font-size:3.8cqw}
+.mk-shop .mlinks{align-items:center}
+.mk-shop .cartb{position:relative;font-size:2.6cqw}
+.mk-shop .cartb i{position:absolute;top:-1.2cqw;right:-2cqw;background:#e0412b;color:#fff;font-style:normal;font-size:1.3cqw;font-weight:800;min-width:2.6cqw;height:2.6cqw;border-radius:99px;display:grid;place-items:center;animation:bump 3s ease-in-out infinite}
+.mk-shop .shero{display:flex;justify-content:space-between;align-items:end;margin:3cqw 0 2.6cqw}
+.mk-shop h5{font-family:var(--serif);font-weight:400;font-size:6.6cqw;line-height:.95}
+.mk-shop h5 i{color:#c98a1b}
+.mk-shop .ship{font-size:1.6cqw;background:#2a1d0c;color:#f7f3ea;border-radius:99px;padding:1cqw 2.2cqw;white-space:nowrap}
+.mk-shop .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2cqw}
+.mk-shop .it{background:#fff;border-radius:1.8cqw;padding:1.4cqw;font-size:1.6cqw;font-weight:700;display:grid;gap:.5cqw}
+.mk-shop .it i{display:grid;place-items:center;aspect-ratio:1;border-radius:1.2cqw;font-size:7cqw;font-style:normal}
+.mk-shop .it s{text-decoration:none;color:#8a6d3b;font-weight:600}
+.mk-shop .it u{text-decoration:none;text-align:center;background:#2a1d0c;color:#f7f3ea;border-radius:99px;padding:.7cqw 0;font-size:1.4cqw;margin-top:.4cqw}
+.mk-shop .it:nth-child(3) u{animation:added 3s ease-in-out infinite}
+.mk-shop .pay{margin-top:2.4cqw;display:flex;gap:1.4cqw;align-items:center;font-size:1.5cqw;color:#8a6d3b;font-weight:600}
+.mk-shop .pay b{background:#fff;border-radius:.8cqw;padding:.6cqw 1.4cqw;color:#2a1d0c}
 .bill .free{color:var(--lime);font-weight:800}
 .gift{display:flex;gap:10px;align-items:center;margin-top:16px;background:rgba(200,255,61,.1);border:1px dashed rgba(200,255,61,.5);border-radius:14px;padding:12px 14px;font-size:.92rem;color:var(--ink)}
 .gift b{color:var(--lime)}
@@ -855,10 +918,36 @@ details .ans{overflow:hidden}
           <li>Up to 30 min of edits every month</li>
           <li>Daily backups &amp; uptime monitoring</li>
           <li>Cancel anytime — keep your domain</li>
+          <li>Or use <b>your own hosting</b>: we install the site there, no monthly fee</li>
         </ul>
         <a href="#faq" class="ghost" data-hover style="justify-content:center">How cancelling works</a>
       </div></div>
     </div>
+    <div class="store-card rv"><div class="in">
+      <div>
+        <span class="tag">🛒 Upgrade · Online store</span>
+        <h3>Sell online.<br>We set it all up.</h3>
+        <p>Turn your website into a real online store. We list your products and connect online payments, so orders and money come straight to you.</p>
+        <ul>
+          <li>Up to 20 products listed by us: photos, prices, sizes &amp; colors</li>
+          <li>Cart and secure checkout</li>
+          <li>Online payments connected to <b>your</b> Stripe, Square or PayPal</li>
+          <li>Shipping, local pickup or delivery options</li>
+          <li>Email notification for every order</li>
+        </ul>
+        <div class="px"><b>+$200</b><span>one-time · $399 total with your website</span></div>
+        <a href="#order" class="pill xl" data-pkg="store" data-hover style="margin-top:22px"><span>Start my store</span><span class="arr">→</span></a>
+      </div>
+      <div class="shopdemo" aria-hidden="true">
+        <div class="top"><span>🍯 Golden Hive</span><span class="cart">🛒<i>2</i></span></div>
+        <div class="grid">
+          <div class="it"><i style="background:#fbe3a6">🍯</i>Wildflower<s>$14</s><u>Add to cart</u></div>
+          <div class="it"><i style="background:#f4d0b5">🕯️</i>Beeswax candle<s>$18</s><u></u></div>
+          <div class="it"><i style="background:#dfe8c8">🎁</i>Gift box<s>$39</s><u>Add to cart</u></div>
+        </div>
+        <div class="pay"><span>2 items · $53</span><span>Checkout →</span></div>
+      </div>
+    </div></div>
     <div class="sum rv"><span>Due today</span><b>$199</b><span>🎁 .com domain + first month of hosting free · then $12/mo · cancel anytime</span></div>
     <div class="addons">
       <div class="addon rv"><span>Extra page (Menu, Gallery…)</span><b>+$49</b></div>
@@ -880,7 +969,8 @@ details .ans{overflow:hidden}
     </div>
     <div>
       <details><summary>How is a custom site only $199?<i></i></summary><p class="ans">We do one thing — one-page sites for local businesses — and we've streamlined every step. No meetings, no endless scope. That focus keeps the price low without cutting corners on design.</p></details>
-      <details><summary>When do I pay?<i></i></summary><p class="ans">At checkout, right after you fill out your site brief. Payment is handled by Stripe, so we never see your card. Your designer starts within one business day. Your .com domain and first month of hosting are free. After that, hosting is $12/month (or $119/year), and you can cancel anytime.</p></details>
+      <details><summary>When do I pay?<i></i></summary><p class="ans">At checkout, right after you fill out your site brief. Payment is handled by Stripe, so we never see your card. Your designer starts within one business day. Your .com domain and first month of hosting are free. After that, hosting is $12/month (or $119/year), and you can cancel anytime. Or you can choose your own hosting: we'll install your site there, with no monthly fee from us.</p></details>
+      <details><summary>How does the online store work?<i></i></summary><p class="ans">For +$200 we turn your site into a store: we list up to 20 of your products (photos, prices, sizes, colors), add a cart and checkout, and connect online payments to your own Stripe, Square or PayPal account. Money goes straight to you. The payment provider charges its usual processing fee per sale; we take no cut. Need more than 20 products? Just ask.</p></details>
       <details><summary>Is the domain really free?<i></i></summary><p class="ans">Yes. Every website comes with a free .com domain registered in your name, plus your first month of hosting on us. From month two, hosting is $12/month (or $119/year), which also covers your domain renewal. Already have a domain? We connect it, and the first month of hosting is still free.</p></details>
       <details><summary>Who owns the domain?<i></i></summary><p class="ans">You do. It's registered in your name. If you ever cancel, we transfer it to you and hand over your site files. No hostage situations.</p></details>
       <details><summary>Can I make changes later?<i></i></summary><p class="ans">Yes — up to 30 minutes of edits every month are included: new hours, prices, photos, specials. Just email us. Bigger changes are quoted upfront.</p></details>
@@ -934,6 +1024,39 @@ details .ans{overflow:hidden}
         <!-- STEP 2 -->
         <fieldset class="fstep" data-step="1">
           <legend>Your website</legend>
+          <div class="q">What are we building?</div>
+          <div class="pkgs">
+            <label class="pkg"><input type="radio" name="package" value="site" checked><span><b>Business website</b><small>A one-page site that brings calls &amp; bookings</small><em>$199</em></span></label>
+            <label class="pkg"><input type="radio" name="package" value="store"><span><i class="hot">SELL ONLINE</i><b>Website + online store</b><small>20 products listed, cart &amp; online payments</small><em>$399</em></span></label>
+          </div>
+          <div class="storeq" id="storeq" hidden>
+            <label>What will you sell? <span class="opt">up to 20 products</span><textarea name="storeProducts" placeholder="Product names, prices, sizes/colors… or “I'll send a spreadsheet”"></textarea></label>
+            <div class="q">Product photos &amp; details</div>
+            <div class="chips">
+              <label class="chip"><input type="radio" name="storeSource" value="I'll email photos and a list" checked><span>📸 I'll email photos &amp; a list</span></label>
+              <label class="chip"><input type="radio" name="storeSource" value="Copy from my Instagram / Etsy / Amazon"><span>🔗 Copy from Instagram / Etsy</span></label>
+              <label class="chip"><input type="radio" name="storeSource" value="Use stock photos"><span>🖼️ Use stock photos</span></label>
+            </div>
+            <div class="q">How do customers get their order?</div>
+            <div class="chips">
+              <label class="chip"><input type="checkbox" name="fulfillment" value="Shipping" checked><span>📦 Shipping</span></label>
+              <label class="chip"><input type="checkbox" name="fulfillment" value="Local pickup"><span>🏪 Local pickup</span></label>
+              <label class="chip"><input type="checkbox" name="fulfillment" value="Local delivery"><span>🚚 Local delivery</span></label>
+              <label class="chip"><input type="checkbox" name="fulfillment" value="Digital download"><span>💾 Digital</span></label>
+            </div>
+            <div class="q">Where should payments go?</div>
+            <div class="chips">
+              <label class="chip"><input type="radio" name="storePay" value="Stripe" checked><span>Stripe</span></label>
+              <label class="chip"><input type="radio" name="storePay" value="Square"><span>Square</span></label>
+              <label class="chip"><input type="radio" name="storePay" value="PayPal"><span>PayPal</span></label>
+              <label class="chip"><input type="radio" name="storePay" value="Not sure"><span>Not sure, advise me</span></label>
+            </div>
+            <div class="chips">
+              <label class="chip"><input type="radio" name="storeAcct" value="Has an account" checked><span>I already have an account</span></label>
+              <label class="chip"><input type="radio" name="storeAcct" value="Needs help setting up an account"><span>Help me set one up</span></label>
+            </div>
+            <p class="note">Payments go straight to your own account. The provider charges its usual processing fee per sale. We never hold your money.</p>
+          </div>
           <div class="q">Main goal of the site</div>
           <div class="chips">
             <label class="chip"><input type="radio" name="goal" value="Phone calls" checked><span>📞 Get calls</span></label>
@@ -999,9 +1122,11 @@ details .ans{overflow:hidden}
           <p class="hint" id="domHint">We'll register it in your name. If it's taken, we'll suggest the closest match.</p>
 
           <div class="q">Hosting, SSL &amp; edits <span class="opt">first month free</span></div>
+          <p class="hint" id="hostHint" hidden>We'll install your site on your hosting. After checkout, send us the login (cPanel, FTP or your host's dashboard). No monthly fee from us; the domain renews with your own registrar after the first year.</p>
           <div class="chips">
             <label class="chip"><input type="radio" name="billing" value="monthly" checked><span>$12 / month after</span></label>
             <label class="chip"><input type="radio" name="billing" value="yearly"><span>$119 / year after · save $25</span></label>
+            <label class="chip"><input type="radio" name="billing" value="own"><span>🖥️ I'll use my own hosting</span></label>
           </div>
 
           <div class="q">Add-ons <span class="opt">optional</span></div>
@@ -1064,6 +1189,7 @@ const SITES = [
   {url:"greenacrelawn.com", logo:"🌿 Green Acre", links:["Services","Areas","Quote"], h:"A lawn they'll envy.", p:"Weekly mowing, edging & cleanup from $35.", btn:"Free quote", img:"🌳", cards:[["🌱","Mowing"],["🍂","Cleanup"],["💧","Irrigation"]], bg:"#e7f0df", fg:"#1f3b1a", acc:"#2f6b25", card:"#d6e6ca", btnfg:"#fff", kind:"Landscaping", city:"Charlotte, NC"},
   {url:"ironlineauto.com", logo:"🔧 Ironline", links:["Services","Hours","Book"], h:"Honest repairs. Done today.", p:"ASE-certified mechanics. Free inspections.", btn:"Schedule service", img:"🚗", cards:[["🛞","Tires"],["🛢️","Oil"],["⚙️","Brakes"]], bg:"#141416", fg:"#f4f4f5", acc:"#ef4444", card:"#222226", btnfg:"#fff", kind:"Auto repair", city:"Columbus, OH"},
   {url:"sparklecleanco.com", logo:"✨ Sparkle", links:["Pricing","Reviews","Book"], h:"Come home to spotless.", p:"Bonded, insured, eco-friendly cleaning.", btn:"Price in 30 sec", img:"🧽", cards:[["🏠","Homes"],["🏢","Offices"],["📦","Move-out"]], bg:"#e6f5fb", fg:"#0b3a4a", acc:"#0ea5c6", card:"#d2ecf6", btnfg:"#fff", kind:"Cleaning", city:"Denver, CO"},
+  {url:"goldenhivehoney.com", kind:"Online store", city:"Asheville, NC"},
   {url:"peakformcoach.com", logo:"⚡ Peak Form", links:["Programs","About","Start"], h:"Strong in 12 weeks.", p:"Online or in-person coaching. Free intro call.", btn:"Book a call", img:"🏋️", cards:[["💪","Strength"],["🥗","Nutrition"],["📈","Progress"]], bg:"#1b1340", fg:"#f1edff", acc:"#c8ff3d", card:"#2a2060", btnfg:"#1b1340", kind:"Fitness coach", city:"Seattle, WA"}
 ];
 
@@ -1118,6 +1244,16 @@ const MOCKS = {
         <h5>Get strong.<br><span>Stay strong.</span></h5>
         <div class="chart"><div><i style="height:28%"></i>W1</div><div><i style="height:46%;animation-delay:.1s"></i>W4</div><div><i style="height:70%;animation-delay:.2s"></i>W8</div><div><i style="height:96%;animation-delay:.3s"></i>W12</div></div>
         <div class="cta"><b>Book free intro call</b><span>Online or in-person</span></div></div></div>`,
+  'goldenhivehoney.com': `<div class="mk mk-shop">
+      ${nav('Golden Hive', ['Shop','Our bees','<span class="cartb">🛒<i>3</i></span>'])}
+      <div class="shero"><h5>Raw honey,<br><i>straight from the hive.</i></h5><span class="ship">🚚 Free shipping over $50</span></div>
+      <div class="grid">
+        <div class="it"><i style="background:#fbe3a6">🍯</i>Wildflower honey<s>$14</s><u>Add to cart</u></div>
+        <div class="it"><i style="background:#f4d0b5">🕯️</i>Beeswax candle<s>$18</s><u>Add to cart</u></div>
+        <div class="it"><i style="background:#dfe8c8">🎁</i>Gift box<s>$39</s><u>Added ✓</u></div>
+        <div class="it"><i style="background:#ece0f5">🧴</i>Honey lip balm<s>$6</s><u>Add to cart</u></div>
+      </div>
+      <div class="pay">Pay with <b>Apple Pay</b><b>Card</b><b>PayPal</b></div></div>`,
   'rapidflowplumbing.com': `<div class="mk mk-plumb"><div class="em"><span>24/7 emergency service</span><span>(512) 555-0142</span></div><div class="in">
       ${nav('Rapid<b>Flow</b>', ['Services','Areas','Pricing'])}
       <div class="body"><div><h5>Austin's 24/7 plumber.</h5>
@@ -1149,6 +1285,7 @@ addEventListener('scroll', () => {
 /* Prices shown here are for display only; studio/server.js recalculates them before charging. */
 const PRICES = {
   site: 199,
+  store: 200,
   hosting: {monthly: 12, yearly: 119},
   addons: {
     page:    {name: 'Extra page (Menu, Gallery…)', price: 49},
@@ -1169,18 +1306,20 @@ const esc = v => String(v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':
 function data(){
   const fd = new FormData(form), d = {};
   for (const [k, v] of fd) {
-    if (k === 'sections' || k === 'addons') (d[k] = d[k] || []).push(v);
+    if (k === 'sections' || k === 'addons' || k === 'fulfillment') (d[k] = d[k] || []).push(v);
     else d[k] = typeof v === 'string' ? v.trim() : v;
   }
-  d.sections = d.sections || []; d.addons = d.addons || [];
+  d.sections = d.sections || []; d.addons = d.addons || []; d.fulfillment = d.fulfillment || [];
   return d;
 }
 function money(d){
   const lines = [['Custom website', PRICES.site]];
+  if (d.package === 'store') lines.push(['Online store: 20 products + online payments', PRICES.store]);
   d.addons.forEach(k => PRICES.addons[k] && lines.push([PRICES.addons[k].name, PRICES.addons[k].price]));
-  const host = d.billing === 'yearly' ? PRICES.hosting.yearly : PRICES.hosting.monthly;
+  const own = d.billing === 'own';
+  const host = own ? 0 : d.billing === 'yearly' ? PRICES.hosting.yearly : PRICES.hosting.monthly;
   if (d.domainChoice !== 'existing') lines.push(['.com domain (first year)', 0]);
-  lines.push(['Hosting + SSL, first month', 0]);
+  lines.push(own ? ['Install on your own hosting', 0] : ['Hosting + SSL, first month', 0]);
   return {lines, total: lines.reduce((a, l) => a + l[1], 0), host};
 }
 function refresh(){
@@ -1188,14 +1327,22 @@ function refresh(){
   $('#due').textContent = '$' + m.total;
   $('#payTxt').textContent = 'Pay $' + m.total;
   $('.colors').classList.toggle('auto', d.colorsAuto === 'yes');
+  $('#storeq').hidden = d.package !== 'store';
+  $('#hostHint').hidden = d.billing !== 'own';
   const existing = d.domainChoice === 'existing';
   $('#domLbl').textContent = existing ? 'Your domain' : "Domain you'd like";
   $('#domHint').textContent = existing ? "We'll point it to your new site. Hosting is the same price." : "We'll register it in your name. If it's taken, we'll suggest the closest match.";
 }
 
+$$('[data-pkg]').forEach(a => a.addEventListener('click', () => {
+  const r = form.querySelector(`input[name="package"][value="${a.dataset.pkg}"]`);
+  if (r) { r.checked = true; refresh(); save(); }
+}));
+
 /* "I need a logo" ticks the logo add-on */
 form.addEventListener('change', e => {
   if (e.target.name === 'assets') form.querySelector('input[name="addons"][value="logo"]').checked = e.target.value === 'Need a logo';
+  if (e.target.name === 'goal' && e.target.value === 'Online orders') form.querySelector('input[name="package"][value="store"]').checked = true;
   if (e.target.name === 'sections') {
     const on = $$('#sections input:checked');
     if (on.length > 6) { e.target.checked = false; e.target.closest('.chip').classList.add('shake'); setTimeout(() => e.target.closest('.chip').classList.remove('shake'), 400); }
@@ -1223,6 +1370,7 @@ function review(){
   const d = data(), m = money(d);
   const colors = d.colorsAuto === 'yes' ? 'Designer picks' : `<i style="background:${esc(d.color1)}"></i>${esc(d.color1)} &nbsp; <i style="background:${esc(d.color2)}"></i>${esc(d.color2)}`;
   $('#brief').innerHTML = [
+    row('Package', d.package === 'store' ? 'Website + online store' : 'Business website'),
     row('Business', esc(`${d.business} · ${d.type} · ${d.city}`)),
     row('Contact', esc(`${d.name} · ${d.email} · ${d.phone}`)),
     row('About', esc(d.about)),
@@ -1230,12 +1378,17 @@ function review(){
     row('Goal', esc(d.goal)), row('Style', esc(d.design)), row('Colors', colors),
     row('Sections', esc(d.sections.join(', '))), row('Logo & photos', esc(d.assets)),
     row('Likes', esc(d.likes)), row('Hours', esc(d.hours)), row('Notes', esc(d.notes)),
-    row('Domain', esc(`${d.domain} (${d.domainChoice === 'existing' ? 'already owned' : 'new'})`))
+    row('Domain', esc(`${d.domain} (${d.domainChoice === 'existing' ? 'already owned' : 'new'})`)),
+    row('Hosting', d.billing === 'own' ? 'Own hosting' : d.billing === 'yearly' ? 'Ours, $119/year' : 'Ours, $12/month'),
+    ...(d.package === 'store' ? [row('Products', esc(d.storeProducts || 'To be sent')), row('Product info', esc(d.storeSource)),
+      row('Delivery', esc(d.fulfillment.join(', ') || '—')), row('Payments', esc(`${d.storePay} · ${d.storeAcct}`))] : [])
   ].join('');
   const start = new Date(Date.now() + 30 * 864e5).toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
   $('#bill').innerHTML = m.lines.map(l => `<div><span>${esc(l[0])}</span><span>${l[1] ? '$' + l[1] : '<b class="free">FREE</b>'}</span></div>`).join('') +
     `<div class="tot"><span>Due today</span><span>$${m.total}</span></div>` +
-    `<small>Hosting starts ${start}: $${m.host}/${d.billing === 'yearly' ? 'year' : 'month'}, incl. domain renewal, edits &amp; support. Cancel anytime before then and pay nothing more.</small>`;
+    (d.billing === 'own'
+      ? `<small>One-time payment. Your site goes on your own hosting, so there's no monthly fee from us.</small>`
+      : `<small>Hosting starts ${start}: $${m.host}/${d.billing === 'yearly' ? 'year' : 'month'}, incl. domain renewal, edits &amp; support. Cancel anytime before then and pay nothing more.</small>`);
 }
 
 function go(n){
@@ -1270,6 +1423,7 @@ function save(){ try { const d = data(); delete d.agree; localStorage.setItem(KE
   // unchecked groups are absent from the saved draft
   if (!d.addons) form.querySelectorAll('input[name="addons"]').forEach(el => el.checked = false);
   if (!d.colorsAuto) form.querySelector('input[name="colorsAuto"]').checked = false;
+  if (d.package === 'store' && !d.fulfillment) form.querySelectorAll('input[name="fulfillment"]').forEach(el => el.checked = false);
 })();
 refresh();
 

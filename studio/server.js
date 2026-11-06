@@ -30,6 +30,7 @@ const FREE_HOSTING_DAYS = 30;
 // Prices in cents. The browser only sends choices; the amount is always computed here.
 const PRICES = {
   site: 19900,
+  store: 20000, // online store upgrade: up to 20 products + online payments
   hosting: {monthly: {amount: 1200, interval: 'month'}, yearly: {amount: 11900, interval: 'year'}},
   addons: {
     page:    {name: 'Extra page', amount: 4900},
@@ -44,7 +45,8 @@ const PRICES = {
 const TEXT_FIELDS = {
   name: 120, business: 160, email: 200, phone: 40, type: 60, city: 120, about: 3000, services: 3000,
   goal: 40, design: 40, color1: 7, color2: 7, colorsAuto: 3, assets: 60, likes: 500, hours: 200, notes: 3000,
-  domainChoice: 10, domain: 253, billing: 10
+  domainChoice: 10, domain: 253, billing: 10,
+  package: 10, storeProducts: 3000, storeSource: 80, storePay: 20, storeAcct: 60
 };
 const REQUIRED = ['name', 'business', 'email', 'phone', 'city', 'about', 'domain'];
 
@@ -53,7 +55,10 @@ function clean(input) {
   for (const [k, max] of Object.entries(TEXT_FIELDS)) o[k] = String(input[k] ?? '').trim().slice(0, max);
   o.sections = (Array.isArray(input.sections) ? input.sections : []).map(s => String(s).slice(0, 40)).slice(0, 6);
   o.addons = [...new Set((Array.isArray(input.addons) ? input.addons : []).filter(a => a in PRICES.addons))];
-  o.billing = o.billing === 'yearly' ? 'yearly' : 'monthly';
+  o.billing = ['yearly', 'own'].includes(o.billing) ? o.billing : 'monthly';
+  o.package = o.package === 'store' ? 'store' : 'site';
+  o.fulfillment = (Array.isArray(input.fulfillment) ? input.fulfillment : []).map(s => String(s).slice(0, 40)).slice(0, 4);
+  if (o.package !== 'store') { o.storeProducts = o.storeSource = o.storePay = o.storeAcct = ''; o.fulfillment = []; }
   o.domainChoice = o.domainChoice === 'existing' ? 'existing' : 'new';
   o.domain = o.domain.toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
   for (const k of REQUIRED) if (!o[k]) throw new Error(`Please fill in: ${k}`);
@@ -90,28 +95,32 @@ const loadOrder = id => { try { return JSON.parse(fs.readFileSync(orderPath(id),
 async function createCheckout(body) {
   const b = clean(body);
   const id = 'BW-' + crypto.randomBytes(5).toString('hex').toUpperCase();
-  const host = PRICES.hosting[b.billing];
+  const own = b.billing === 'own';
+  const host = own ? null : PRICES.hosting[b.billing];
   const items = [
     {price_data: {currency: 'usd', unit_amount: PRICES.site, product_data: {name: 'Custom business website', description: `One-page site for ${b.business}. Includes a free .com domain and first month of hosting.`.slice(0, 300)}}, quantity: 1},
+    ...(b.package === 'store' ? [{price_data: {currency: 'usd', unit_amount: PRICES.store, product_data: {name: 'Online store setup', description: 'Up to 20 products listed, cart & checkout, online payments connected'}}, quantity: 1}] : []),
     ...b.addons.map(a => ({price_data: {currency: 'usd', unit_amount: PRICES.addons[a].amount, product_data: {name: PRICES.addons[a].name}}, quantity: 1})),
-    {price_data: {currency: 'usd', unit_amount: host.amount, recurring: {interval: host.interval}, product_data: {name: `Hosting + SSL + domain renewal (${b.domain})`.slice(0, 200), description: 'First month free'}}, quantity: 1}
+    ...(own ? [] : [{price_data: {currency: 'usd', unit_amount: host.amount, recurring: {interval: host.interval}, product_data: {name: `Hosting + SSL + domain renewal (${b.domain})`.slice(0, 200), description: 'First month free'}}, quantity: 1}])
   ];
   const session = await stripe('POST', 'checkout/sessions', {
-    mode: 'subscription',
+    // Own hosting = one-time payment; our hosting = subscription with a free first month.
+    mode: own ? 'payment' : 'subscription',
     customer_email: b.email,
     client_reference_id: id,
     line_items: Object.fromEntries(items.map((it, i) => [i, it])),
     metadata: {order_id: id, business: b.business.slice(0, 450), domain: b.domain},
     // Free first month: the hosting subscription starts billing after the trial;
     // the website and add-ons (one-time items) are charged today.
-    subscription_data: {trial_period_days: FREE_HOSTING_DAYS, metadata: {order_id: id, domain: b.domain}},
+    subscription_data: own ? undefined : {trial_period_days: FREE_HOSTING_DAYS, metadata: {order_id: id, domain: b.domain}},
+    payment_intent_data: own ? {metadata: {order_id: id, domain: b.domain}} : undefined,
     allow_promotion_codes: 'true',
     billing_address_collection: 'auto',
     success_url: `${PUBLIC_URL}/?paid=${id}#order`,
     cancel_url: `${PUBLIC_URL}/?canceled=1#order`
   });
-  const total = PRICES.site + b.addons.reduce((a, k) => a + PRICES.addons[k].amount, 0); // due today; hosting starts after the trial
-  saveOrder({id, status: 'pending', created: new Date().toISOString(), due_today_cents: total, hosting_cents: host.amount, hosting_interval: host.interval, free_domain: b.domainChoice === 'new', stripe_session: session.id, brief: b});
+  const total = PRICES.site + (b.package === 'store' ? PRICES.store : 0) + b.addons.reduce((a, k) => a + PRICES.addons[k].amount, 0); // due today; hosting starts after the trial
+  saveOrder({id, status: 'pending', created: new Date().toISOString(), due_today_cents: total, hosting_cents: own ? 0 : host.amount, hosting_interval: own ? 'own hosting' : host.interval, free_domain: b.domainChoice === 'new', stripe_session: session.id, brief: b});
   return session.url;
 }
 
@@ -130,6 +139,7 @@ async function notify(order) {
   if (!tok || !chat) return;
   const b = order.brief;
   const text = [`💰 New paid order ${order.id} — $${(order.amount_paid_cents / 100).toFixed(2)}${b.domainChoice === 'new' ? ' · 🎁 register free domain' : ''}`,
+    b.package === 'store' ? `🛒 ONLINE STORE · pay: ${b.storePay} (${b.storeAcct}) · ${b.fulfillment.join(', ')}` : 'Business website',
     `${b.business} (${b.type}, ${b.city})`, `${b.name} · ${b.email} · ${b.phone}`,
     `Domain: ${b.domain} (${b.domainChoice}) · ${b.billing}`, `Style: ${b.design} · Goal: ${b.goal}`,
     `Sections: ${b.sections.join(', ')}`, `Add-ons: ${b.addons.join(', ') || '—'}`, '', b.about].join('\n');
