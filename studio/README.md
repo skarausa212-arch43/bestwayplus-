@@ -8,13 +8,18 @@ Landing page for $199 small-business websites, with a site-brief form and Stripe
 
 ## What the customer pays
 
-At checkout (one Stripe subscription):
+Every website includes a **free .com domain** (registered in the customer's name) and the **first month of hosting free**.
 
-| Item | Price |
-|---|---|
-| Custom website | $199 one-time |
-| Add-ons (optional) | $29–$79 one-time each |
-| Domain + hosting + SSL | $12/month or $119/year, recurring |
+At checkout (one Stripe subscription with a 30-day trial):
+
+| Item | Price | When |
+|---|---|---|
+| Custom website | $199 one-time | today |
+| Add-ons (optional) | $29–$79 one-time each | today |
+| .com domain, first year | free | — |
+| Hosting + SSL + domain renewal | $12/month or $119/year | after the free 30 days |
+
+The free period is `FREE_HOSTING_DAYS` in `server.js`.
 
 Prices live in `PRICES` in `server.js`. The browser only sends the customer's choices, and the server works out the amount. If you change a price, update both `server.js` and the `PRICES` block in `index.html` (that one is only for display).
 

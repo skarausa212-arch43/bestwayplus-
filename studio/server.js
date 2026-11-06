@@ -24,6 +24,9 @@ const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 const ORDERS_DIR = process.env.ORDERS_DIR || path.join(ROOT, 'orders');
 fs.mkdirSync(ORDERS_DIR, {recursive: true});
 
+// Every website includes a free .com domain and this many days of free hosting.
+const FREE_HOSTING_DAYS = 30;
+
 // Prices in cents. The browser only sends choices; the amount is always computed here.
 const PRICES = {
   site: 19900,
@@ -89,9 +92,9 @@ async function createCheckout(body) {
   const id = 'BW-' + crypto.randomBytes(5).toString('hex').toUpperCase();
   const host = PRICES.hosting[b.billing];
   const items = [
-    {price_data: {currency: 'usd', unit_amount: PRICES.site, product_data: {name: 'Custom business website', description: `One-page site for ${b.business}`.slice(0, 200)}}, quantity: 1},
+    {price_data: {currency: 'usd', unit_amount: PRICES.site, product_data: {name: 'Custom business website', description: `One-page site for ${b.business}. Includes a free .com domain and first month of hosting.`.slice(0, 300)}}, quantity: 1},
     ...b.addons.map(a => ({price_data: {currency: 'usd', unit_amount: PRICES.addons[a].amount, product_data: {name: PRICES.addons[a].name}}, quantity: 1})),
-    {price_data: {currency: 'usd', unit_amount: host.amount, recurring: {interval: host.interval}, product_data: {name: `Domain + hosting + SSL (${b.domain})`.slice(0, 200)}}, quantity: 1}
+    {price_data: {currency: 'usd', unit_amount: host.amount, recurring: {interval: host.interval}, product_data: {name: `Hosting + SSL + domain renewal (${b.domain})`.slice(0, 200), description: 'First month free'}}, quantity: 1}
   ];
   const session = await stripe('POST', 'checkout/sessions', {
     mode: 'subscription',
@@ -99,14 +102,16 @@ async function createCheckout(body) {
     client_reference_id: id,
     line_items: Object.fromEntries(items.map((it, i) => [i, it])),
     metadata: {order_id: id, business: b.business.slice(0, 450), domain: b.domain},
-    subscription_data: {metadata: {order_id: id, domain: b.domain}},
+    // Free first month: the hosting subscription starts billing after the trial;
+    // the website and add-ons (one-time items) are charged today.
+    subscription_data: {trial_period_days: FREE_HOSTING_DAYS, metadata: {order_id: id, domain: b.domain}},
     allow_promotion_codes: 'true',
     billing_address_collection: 'auto',
     success_url: `${PUBLIC_URL}/?paid=${id}#order`,
     cancel_url: `${PUBLIC_URL}/?canceled=1#order`
   });
-  const total = PRICES.site + b.addons.reduce((a, k) => a + PRICES.addons[k].amount, 0) + host.amount;
-  saveOrder({id, status: 'pending', created: new Date().toISOString(), total_cents: total, stripe_session: session.id, brief: b});
+  const total = PRICES.site + b.addons.reduce((a, k) => a + PRICES.addons[k].amount, 0); // due today; hosting starts after the trial
+  saveOrder({id, status: 'pending', created: new Date().toISOString(), due_today_cents: total, hosting_cents: host.amount, hosting_interval: host.interval, free_domain: b.domainChoice === 'new', stripe_session: session.id, brief: b});
   return session.url;
 }
 
@@ -124,7 +129,7 @@ async function notify(order) {
   const {TELEGRAM_BOT_TOKEN: tok, TELEGRAM_CHAT_ID: chat} = process.env;
   if (!tok || !chat) return;
   const b = order.brief;
-  const text = [`💰 New paid order ${order.id} — $${(order.amount_paid_cents / 100).toFixed(2)}`,
+  const text = [`💰 New paid order ${order.id} — $${(order.amount_paid_cents / 100).toFixed(2)}${b.domainChoice === 'new' ? ' · 🎁 register free domain' : ''}`,
     `${b.business} (${b.type}, ${b.city})`, `${b.name} · ${b.email} · ${b.phone}`,
     `Domain: ${b.domain} (${b.domainChoice}) · ${b.billing}`, `Style: ${b.design} · Goal: ${b.goal}`,
     `Sections: ${b.sections.join(', ')}`, `Add-ons: ${b.addons.join(', ') || '—'}`, '', b.about].join('\n');
