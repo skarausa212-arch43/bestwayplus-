@@ -46,7 +46,7 @@ const TEXT_FIELDS = {
   name: 120, business: 160, email: 200, phone: 40, type: 60, city: 120, about: 3000, services: 3000,
   goal: 40, design: 40, color1: 7, color2: 7, colorsAuto: 3, assets: 60, likes: 500, hours: 200, notes: 3000,
   domainChoice: 10, domain: 253, billing: 10,
-  package: 10, storeProducts: 3000, storeSource: 80, storePay: 20, storeAcct: 60
+  package: 10, template: 40, storeProducts: 3000, storeSource: 80, storePay: 20, storeAcct: 60
 };
 const REQUIRED = ['name', 'business', 'email', 'phone', 'city', 'about', 'domain'];
 
@@ -58,7 +58,7 @@ function clean(input) {
   o.billing = ['yearly', 'own'].includes(o.billing) ? o.billing : 'monthly';
   o.package = o.package === 'store' ? 'store' : 'site';
   o.fulfillment = (Array.isArray(input.fulfillment) ? input.fulfillment : []).map(s => String(s).slice(0, 40)).slice(0, 4);
-  if (o.package !== 'store') { o.storeProducts = o.storeSource = o.storePay = o.storeAcct = ''; o.fulfillment = []; }
+  if (o.package !== 'store') { o.template = o.storeProducts = o.storeSource = o.storePay = o.storeAcct = ''; o.fulfillment = []; }
   o.domainChoice = o.domainChoice === 'existing' ? 'existing' : 'new';
   o.domain = o.domain.toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
   for (const k of REQUIRED) if (!o[k]) throw new Error(`Please fill in: ${k}`);
@@ -139,7 +139,7 @@ async function notify(order) {
   if (!tok || !chat) return;
   const b = order.brief;
   const text = [`💰 New paid order ${order.id} — $${(order.amount_paid_cents / 100).toFixed(2)}${b.domainChoice === 'new' ? ' · 🎁 register free domain' : ''}`,
-    b.package === 'store' ? `🛒 ONLINE STORE · pay: ${b.storePay} (${b.storeAcct}) · ${b.fulfillment.join(', ')}` : 'Business website',
+    b.package === 'store' ? `🛒 ONLINE STORE${b.template ? ` (${b.template} template)` : ''} · pay: ${b.storePay} (${b.storeAcct}) · ${b.fulfillment.join(', ')}` : 'Business website',
     `${b.business} (${b.type}, ${b.city})`, `${b.name} · ${b.email} · ${b.phone}`,
     `Domain: ${b.domain} (${b.domainChoice}) · ${b.billing}`, `Style: ${b.design} · Goal: ${b.goal}`,
     `Sections: ${b.sections.join(', ')}`, `Add-ons: ${b.addons.join(', ') || '—'}`, '', b.about].join('\n');
