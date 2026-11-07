@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Unbounded, Manrope } from "next/font/google";
+// Fonts are bundled from npm, so builds never depend on fonts.googleapis.com.
+import "@fontsource-variable/unbounded/wght.css";
+import "@fontsource-variable/manrope/wght.css";
 import "./globals.css";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
@@ -9,8 +11,6 @@ import { BackgroundFx } from "@/components/fx/background-fx";
 import { ScrollProgress, CursorGlow } from "@/components/fx/fx";
 import { getDict } from "@/i18n";
 
-const display = Unbounded({ subsets: ["latin", "cyrillic"], weight: ["600", "700", "800"], variable: "--font-unbounded" });
-const sans = Manrope({ subsets: ["latin", "cyrillic"], weight: ["400", "500", "600", "700"], variable: "--font-manrope" });
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getDict();
@@ -30,7 +30,7 @@ export const viewport: Viewport = { themeColor: "#151515", width: "device-width"
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const { t, locale } = await getDict();
   return (
-    <html lang={locale} className={`${display.variable} ${sans.variable}`}>
+    <html lang={locale}>
       <body className="min-h-dvh">
         <BackgroundFx />
         <CursorGlow />

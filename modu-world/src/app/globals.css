@@ -17,8 +17,8 @@
   --color-success: #5ec98b;
   --color-danger: #ff6b6b;
 
-  --font-display: var(--font-unbounded), ui-sans-serif, system-ui, sans-serif;
-  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Unbounded Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
 
   --radius-card: 1.75rem;
   --shadow-soft: 0 20px 60px -20px rgb(0 0 0 / 0.6);
