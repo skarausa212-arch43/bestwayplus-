@@ -11,6 +11,8 @@ async function main() {
   const c = new Client({ connectionString: url });
   await c.connect();
   try {
+    // all-or-nothing: a failed seed must not leave half-created demo accounts behind
+    await c.query("begin");
     await seedCatalog(c);
     console.log("✓ catalogue (characters)");
     if (withDemo) {
@@ -23,6 +25,10 @@ async function main() {
         for (const t of res.issued) console.log(`  ${t.serial}  ${t.code.padEnd(10)} ${t.url}  — ${t.note}`);
       }
     }
+    await c.query("commit");
+  } catch (e) {
+    await c.query("rollback").catch(() => {});
+    throw e;
   } finally {
     await c.end();
   }

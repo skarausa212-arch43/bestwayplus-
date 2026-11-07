@@ -1,0 +1,78 @@
+name: MODU WORLD deploy
+
+# Builds MODU WORLD on the runner and installs the bundle on 89.127.193.91
+# (see modu-world/deploy/install.sh). The server only unpacks and runs it.
+on:
+  push:
+    branches: [claude/practical-gates-rbqg8m]
+    paths:
+      - "modu-world/**"
+      - "!modu-world/docs/**"
+      - "!modu-world/**/*.md"
+      - ".github/workflows/modu-deploy.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: modu-deploy
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: modu-world
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: modu-world/package-lock.json
+
+      - run: npm ci
+      - run: npm run typecheck
+
+      - name: Build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: npm run build
+
+      - name: Assemble bundle
+        run: |
+          set -euo pipefail
+          rm -rf bundle && mkdir -p bundle/tools bundle/.next
+          cp -a .next/standalone/. bundle/
+          cp -a .next/static bundle/.next/static
+          cp -a public bundle/public
+          cp -a supabase bundle/supabase
+          cp deploy/install.sh bundle/install.sh
+          # migrations + seed as single self-contained files (no dev dependencies on the server)
+          node_modules/.bin/esbuild scripts/migrate.ts scripts/seed.ts --bundle --platform=node --target=node20 \
+            --format=cjs --conditions=react-server --outdir=bundle/tools --out-extension:.js=.cjs --log-level=warning
+          tar -czf modu-bundle.tar.gz -C bundle .
+          ls -lh modu-bundle.tar.gz
+
+      - name: Copy bundle to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 89.127.193.91
+          username: root
+          password: ${{ secrets.LUMI24_SERVER_PASSWORD }}
+          source: modu-world/modu-bundle.tar.gz
+          target: /tmp
+          strip_components: 1
+
+      - name: Install on server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: 89.127.193.91
+          username: root
+          password: ${{ secrets.LUMI24_SERVER_PASSWORD }}
+          command_timeout: 20m
+          script: |
+            set -euo pipefail
+            rm -rf /tmp/modu-install && mkdir -p /tmp/modu-install
+            tar -xzf /tmp/modu-bundle.tar.gz -C /tmp/modu-install ./install.sh
+            bash /tmp/modu-install/install.sh

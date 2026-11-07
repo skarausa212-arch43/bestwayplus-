@@ -10,6 +10,9 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Self-contained server bundle for the VPS deploy (see deploy/).
+  output: "standalone",
+  outputFileTracingRoot: __dirname,
   experimental: {
     serverActions: { bodySizeLimit: "6mb" },
   },
