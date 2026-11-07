@@ -5,7 +5,7 @@ import { Client } from "pg";
 export default async function setup() {
   const admin = process.env.TEST_DATABASE_ADMIN_URL ?? "postgres://modu:modu@localhost:5432/modu_test";
   const app = process.env.TEST_DATABASE_URL ?? "postgres://modu_app:modu_app_dev@localhost:5432/modu_test";
-  const env = { ...process.env, DATABASE_ADMIN_URL: admin, DATABASE_URL: app, NODE_ENV: "test" };
+  const env = { ...process.env, DATABASE_ADMIN_URL: admin, DATABASE_URL: app, NODE_ENV: "test" as const };
   execFileSync("npx", ["tsx", "scripts/migrate.ts", "--reset"], { env, stdio: "inherit" });
   const c = new Client({ connectionString: admin });
   await c.connect();

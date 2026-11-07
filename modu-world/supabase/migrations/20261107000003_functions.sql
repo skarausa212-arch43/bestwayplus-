@@ -598,3 +598,13 @@ language sql stable security definer set search_path = public as $fn$
   from digital_collectibles d where d.token_id = p_token_id and d.kind = 'certificate'
 $fn$;
 grant execute on function app.certificate_metadata(numeric) to modu_app;
+
+-- Public list of DEMO tags (is_demo batches only) for presentations without a physical toy.
+create or replace function app.demo_tags() returns table (serial text, public_token text, status text, character_name text)
+language sql stable security definer set search_path = public as $fn$
+  select t.serial_number, n.public_token, t.status, c.name
+    from toy_instances t join toy_batches b on b.id = t.batch_id join nfc_tags n on n.toy_instance_id = t.id
+    join characters c on c.id = t.character_id
+   where b.is_demo order by b.created_at desc, t.edition_number limit 12
+$fn$;
+grant execute on function app.demo_tags() to modu_app;

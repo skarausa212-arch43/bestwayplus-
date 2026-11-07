@@ -43,5 +43,5 @@ export async function history(userId: string, accountId?: string, limit = 50, al
 }
 
 export async function adjustPoints(adminId: string, accountId: string, amount: number, note: string, key: string) {
-  return callFn<{ balance: number }>(adminId, "admin_adjust_points", [accountId, amount, note, key]);
+  return callFn<{ balance: number; replayed: boolean }>(adminId, "admin_adjust_points", [accountId, amount, note, key]);
 }

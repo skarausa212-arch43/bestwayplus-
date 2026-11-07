@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+/* ───────── MODU design tokens ───────── */
+@theme {
+  --color-ink: #151515;
+  --color-ink-2: #1c1c1c;
+  --color-ink-3: #242424;
+  --color-line: #2e2e2e;
+  --color-peach: #f4b58d;
+  --color-peach-deep: #e8935f;
+  --color-gold: #d6a23c;
+  --color-silver: #aab0b8;
+  --color-cream: #f6efe8;
+  --color-muted: #9a948f;
+  --color-by-red: #c8102e;
+  --color-by-green: #007c30;
+  --color-success: #5ec98b;
+  --color-danger: #ff6b6b;
+
+  --font-display: var(--font-unbounded), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 1.75rem;
+  --shadow-soft: 0 20px 60px -20px rgb(0 0 0 / 0.6);
+  --shadow-glow: 0 0 0 1px rgb(244 181 141 / 0.25), 0 18px 50px -12px rgb(244 181 141 / 0.35);
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-pulse-ring: pulse-ring 2.4s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  @keyframes pulse-ring {
+    0% { transform: scale(0.8); opacity: 0.7; }
+    100% { transform: scale(2.2); opacity: 0; }
+  }
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-ink text-cream font-sans antialiased;
+    background-image:
+      radial-gradient(1200px 600px at 80% -10%, rgb(244 181 141 / 0.08), transparent 60%),
+      radial-gradient(900px 500px at -10% 30%, rgb(214 162 60 / 0.05), transparent 60%);
+    background-attachment: fixed;
+  }
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-peach);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+  ::selection {
+    background: var(--color-peach);
+    color: var(--color-ink);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@utility card {
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-line);
+  background-color: rgb(28 28 28 / 0.8);
+  backdrop-filter: blur(4px);
+  box-shadow: var(--shadow-soft), inset 0 1px 0 rgb(255 255 255 / 0.04);
+}
+
+@utility card-glow {
+  border-radius: var(--radius-card);
+  border: 1px solid rgb(244 181 141 / 0.3);
+  background-color: rgb(28 28 28 / 0.85);
+  backdrop-filter: blur(4px);
+  box-shadow: var(--shadow-glow), inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+
+@layer components {
+  .text-gradient {
+    background: linear-gradient(100deg, #ffd9bf 0%, var(--color-peach) 40%, var(--color-gold) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.2em] text-peach;
+  }
+  .field {
+    @apply w-full rounded-2xl border border-line bg-ink px-4 py-3 text-cream placeholder:text-muted/70 transition;
+    @apply focus:border-peach focus:outline-none focus:ring-2 focus:ring-peach/30;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-cream/80;
+  }
+  .ornament {
+    background-image: url("/assets/modu/ornament.svg");
+    background-repeat: repeat-x;
+    background-size: auto 100%;
+  }
+  .container-x {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+  .mask-fade-left {
+    mask-image: linear-gradient(to right, transparent 0%, black 9%);
+  }
+}

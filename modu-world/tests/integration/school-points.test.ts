@@ -108,7 +108,7 @@ describe("points ledger", () => {
     const key = randomUUID();
     expect((await adjustPoints(admin.id, acc.id, 50, "goodwill", key)).ok).toBe(true);
     const replay = await adjustPoints(admin.id, acc.id, 50, "goodwill", key);
-    expect(replay.ok && (replay as { replayed: boolean }).replayed).toBe(true);
+    expect(replay.ok && (replay as unknown as { replayed: boolean }).replayed).toBe(true);
     expect((await accountOf(user.id)).balance).toBe(50);
     expect(await adjustPoints(admin.id, acc.id, -100, "too much", randomUUID())).toEqual({ ok: false, error: "INSUFFICIENT_POINTS" });
     expect(await adjustPoints(user.id, acc.id, 100, "self-service", randomUUID())).toEqual({ ok: false, error: "FORBIDDEN" });
