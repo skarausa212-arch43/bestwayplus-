@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Upload } from "lucide-react";
 import { SubmitButton, ActionMessage } from "@/components/ui/form";
@@ -18,11 +18,10 @@ export function AchievementForm({
 }) {
   const [state, action] = useActionState(submitAchievementAction, null);
   const [formKey, setFormKey] = useState(0);
-  const lastOk = useRef<typeof state>(null);
-  if (state?.ok && lastOk.current !== state) {
-    lastOk.current = state;
-    queueMicrotask(() => setFormKey((k) => k + 1));
-  }
+  // clear the form after each successful submission
+  useEffect(() => {
+    if (state?.ok) setFormKey((k) => k + 1);
+  }, [state]);
   const { register, watch, formState } = useForm<{ kind: Kind; currentValue: string; previousValue: string }>({
     defaultValues: { kind: "grade" },
     mode: "onChange",
@@ -31,7 +30,7 @@ export function AchievementForm({
   const needsCurrent = kind === "grade" || kind === "improvement";
 
   return (
-    <form action={action} key={formKey} className="grid gap-4" encType="multipart/form-data">
+    <form action={action} key={formKey} className="grid gap-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="label" htmlFor="childId">{labels.child}</label>

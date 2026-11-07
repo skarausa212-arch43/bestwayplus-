@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { useAccount, useConnect, useDisconnect, useSignMessage, useSwitchChain } from "wagmi";
 import { Wallet, PenLine, Unplug, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ export function WalletPanel({ chainId, labels, linked }: { chainId: number; labe
   const { signMessageAsync } = useSignMessage();
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [pending, start] = useTransition();
+  const router = useRouter();
   const injectedConnector = connectors[0];
   const alreadyLinked = address && linked.includes(address.toLowerCase());
 
@@ -46,6 +48,7 @@ export function WalletPanel({ chainId, labels, linked }: { chainId: number; labe
         const signature = await signMessageAsync({ message: n.message });
         const res = await linkWalletAction({ address, nonce: n.nonce, signature, chainId });
         setMsg(res?.ok ? { ok: true, text: res.message ?? "" } : { ok: false, text: res?.error ?? "" });
+        if (res?.ok) router.refresh();
       } catch (e) {
         setMsg({ ok: false, text: (e as Error).message.split("\n")[0] });
       }

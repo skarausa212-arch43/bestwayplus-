@@ -32,7 +32,6 @@ export async function createBatchAction(_: unknown, fd: FormData): Promise<(Acti
   if (!parsed.success) return { ok: false, error: errMsg(t, "INVALID_INPUT") };
   const res = await createBatch(user.id, parsed.data);
   if (!res.ok) return { ok: false, error: errMsg(t, res.error) };
-  revalidatePath("/admin/batches");
   return { ok: true, issued: res.issued, code: parsed.data.code };
 }
 
@@ -68,8 +67,6 @@ export async function reviewAction(_: ActionState, fd: FormData): Promise<Action
   if (!parsed.success) return { ok: false, error: errMsg(t, "INVALID_INPUT") };
   const res = await reviewAchievement(user.id, parsed.data);
   if (!res.ok) return { ok: false, error: errMsg(t, res.error) };
-  revalidatePath("/admin/school");
-  revalidatePath("/admin");
   return { ok: true, message: `${t.school.status[parsed.data.decision]} · +${res.points} MP` };
 }
 
@@ -81,7 +78,6 @@ export async function adjustPointsAction(_: ActionState, fd: FormData): Promise<
   const d = parsed.data;
   const res = await adjustPoints(user.id, d.accountId, d.amount, d.note, d.idempotencyKey);
   if (!res.ok) return { ok: false, error: errMsg(t, res.error) };
-  revalidatePath("/admin/points");
   return { ok: true, message: `${t.common.saved} · ${res.balance} MP` };
 }
 
@@ -108,8 +104,6 @@ export async function saveRewardAction(_: ActionState, fd: FormData): Promise<Ac
   if (!parsed.success) return { ok: false, error: errMsg(t, "INVALID_INPUT") };
   const res = await saveReward(user.id, parsed.data);
   if (!res.ok) return { ok: false, error: errMsg(t, res.error) };
-  revalidatePath("/admin/rewards");
-  revalidatePath("/rewards");
   return { ok: true, message: t.common.saved };
 }
 
@@ -126,8 +120,6 @@ export async function savePartnerAction(_: ActionState, fd: FormData): Promise<A
   });
   if (!parsed.success) return { ok: false, error: errMsg(t, "INVALID_INPUT") };
   await savePartner(user.id, parsed.data);
-  revalidatePath("/admin/rewards");
-  revalidatePath("/rewards");
   return { ok: true, message: t.common.saved };
 }
 
@@ -160,7 +152,6 @@ export async function setRolesAction(_: ActionState, fd: FormData): Promise<Acti
   const partnerId = fd.get("partnerId") ? uuid.parse(fd.get("partnerId")) : null;
   const res = await setUserRoles(user.id, uuid.parse(fd.get("userId")), roles, partnerId);
   if (!res.ok) return { ok: false, error: errMsg(t, res.error) };
-  revalidatePath("/admin/users");
   return { ok: true, message: t.common.saved };
 }
 

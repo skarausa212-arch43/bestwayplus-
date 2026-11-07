@@ -20,7 +20,7 @@ export function ActivateForm({
   if (state?.ok) {
     return (
       <div className="grid gap-4">
-        <ActionMessage state={state} />
+        <ActionMessage state={state} refresh={false} />
         <Button asChild size="lg">
           <Link href="/dashboard">{labels.dashboard}</Link>
         </Button>
@@ -75,7 +75,7 @@ export function AcceptTransferForm({ token, labels }: { token: string; labels: {
   if (state?.ok) {
     return (
       <div className="grid gap-4">
-        <ActionMessage state={state} />
+        <ActionMessage state={state} refresh={false} />
         <Button asChild>
           <Link href="/dashboard">{labels.dashboard}</Link>
         </Button>

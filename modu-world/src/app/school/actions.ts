@@ -28,7 +28,6 @@ export async function submitAchievementAction(_: ActionState, fd: FormData): Pro
   const file = fd.get("evidence");
   const res = await submitAchievement(user.id, parsed.data, file instanceof File ? file : null);
   if (!res.ok) return { ok: false, error: errMsg(t, res.error) };
-  revalidatePath("/school");
   return { ok: true, message: fmt(t.school.submitted, { points: res.suggested_points }) };
 }
 

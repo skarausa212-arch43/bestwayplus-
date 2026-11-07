@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Download } from "lucide-react";
 import { SubmitButton, ActionMessage } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,10 @@ export function BatchForm({
   labels: Labels;
 }) {
   const [state, action] = useActionState(createBatchAction, null);
+  const router = useRouter();
+  useEffect(() => {
+    if (state?.ok) router.refresh();
+  }, [state, router]);
   const download = () => {
     if (!state?.issued) return;
     const url = URL.createObjectURL(new Blob([csv(state.issued)], { type: "text/csv" }));

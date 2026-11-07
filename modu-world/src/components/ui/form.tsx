@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import { Loader2 } from "lucide-react";
 import { Button, type ButtonProps } from "./button";
@@ -18,7 +20,15 @@ export function SubmitButton({ children, pendingText, ...props }: ButtonProps & 
   );
 }
 
-export function ActionMessage({ state }: { state: ActionState }) {
+/** Shows the result of a server action. After a success it refreshes server components so lists update. */
+export function ActionMessage({ state, refresh = true }: { state: ActionState; refresh?: boolean }) {
+  const router = useRouter();
+  useEffect(() => {
+    if (!refresh || !state?.ok) return;
+    // run after the action's transition has settled, otherwise the refresh can be dropped
+    const id = setTimeout(() => router.refresh(), 0);
+    return () => clearTimeout(id);
+  }, [state, router, refresh]);
   if (!state) return null;
   if (state.ok && state.message) return <Notice tone="success">{state.message}</Notice>;
   if (!state.ok && state.error) return <Notice tone="error">{state.error}</Notice>;

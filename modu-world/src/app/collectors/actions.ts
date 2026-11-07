@@ -44,7 +44,6 @@ export async function requestCertificateAction(_: ActionState, fd: FormData): Pr
   const toyId = z.string().uuid().safeParse(fd.get("toyId"));
   if (!toyId.success) return { ok: false, error: errMsg(t, "INVALID_INPUT") };
   const res = await requestCertificate(user.id, toyId.data);
-  revalidatePath("/collectors");
   if (!res.ok) return { ok: false, error: errMsg(t, res.error) };
   if ("minted" in res && res.minted) return { ok: true, message: t.collectors.certStatus.minted };
   const reason = "reason" in res ? res.reason : undefined;

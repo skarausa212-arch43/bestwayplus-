@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getSessionUser } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
@@ -20,7 +19,5 @@ export async function redeemCouponAction(_: ActionState, fd: FormData): Promise<
   if (!(await rateLimit("coupon", 30, 600, user.id))) return { ok: false, error: errMsg(t, "RATE_LIMITED") };
   const res = await redeemCoupon(user.id, code.data);
   if (!res.ok) return { ok: false, error: errMsg(t, res.error) };
-  revalidatePath("/partner");
-  revalidatePath("/admin/coupons");
   return { ok: true, message: fmt(t.partner.redeemed, { title: tl(res.reward_title, locale) }) };
 }

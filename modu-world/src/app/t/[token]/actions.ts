@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getSessionUser } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { activationSchema, transferAcceptSchema } from "@/lib/validation";
@@ -21,8 +20,7 @@ export async function activateAction(_: ActionState, fd: FormData): Promise<Acti
   }
   const res = await activateToy(user.id, parsed.data.token, parsed.data.code, parsed.data.childId || null);
   if (!res.ok) return { ok: false, error: errMsg(t, res.error) };
-  revalidatePath(`/t/${parsed.data.token}`);
-  revalidatePath("/dashboard");
+  // No revalidatePath here: the form shows the success state; dynamic pages re-fetch on navigation.
   return { ok: true, message: fmt(t.toy.activated, { serial: res.serial, bonus: res.bonus }) };
 }
 
@@ -35,7 +33,6 @@ export async function acceptTransferAction(_: ActionState, fd: FormData): Promis
   if (!(await rateLimit("transfer-ip", 15, 600))) return { ok: false, error: errMsg(t, "RATE_LIMITED") };
   const res = await acceptTransfer(user.id, parsed.data.token, parsed.data.code);
   if (!res.ok) return { ok: false, error: errMsg(t, res.error) };
-  revalidatePath(`/t/${parsed.data.token}`);
-  revalidatePath("/dashboard");
+  // No revalidatePath here: the form shows the success state; dynamic pages re-fetch on navigation.
   return { ok: true, message: fmt(t.toy.transferAccepted, { serial: res.serial }) };
 }

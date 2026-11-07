@@ -19,7 +19,6 @@ export async function startTransferAction(_: ActionState, fd: FormData): Promise
   const toyId = uuid.safeParse(fd.get("toyId"));
   if (!toyId.success) return { ok: false, error: errMsg(t, "INVALID_INPUT") };
   const res = await startTransfer(user.id, toyId.data);
-  revalidatePath("/dashboard");
   if (!res.ok) return { ok: false, error: errMsg(t, res.error) };
   return { ok: true, message: fmt(t.dashboard.transferCreated, { code: res.code }), data: { code: res.code } };
 }
@@ -50,8 +49,6 @@ export async function addChildAction(_: ActionState, fd: FormData): Promise<Acti
   if (!parsed.success) return { ok: false, error: errMsg(t, "INVALID_INPUT") };
   const res = await createChild(user.id, parsed.data);
   if (!res.ok) return { ok: false, error: errMsg(t, res.error) };
-  revalidatePath("/dashboard");
-  revalidatePath("/school");
   return { ok: true, message: t.common.saved };
 }
 
@@ -71,7 +68,6 @@ export async function updateProfileAction(_: ActionState, fd: FormData): Promise
   });
   if (!parsed.success) return { ok: false, error: errMsg(t, "INVALID_INPUT") };
   await updateProfile(user.id, parsed.data);
-  revalidatePath("/", "layout");
   return { ok: true, message: t.common.saved };
 }
 
@@ -82,7 +78,6 @@ export async function attestAdultAction(_: ActionState, fd: FormData): Promise<A
   if (!date.success) return { ok: false, error: errMsg(t, "INVALID_INPUT") };
   const res = await attestAdult(user.id, date.data);
   if (!res.ok) return { ok: false, error: errMsg(t, res.error) };
-  revalidatePath("/", "layout");
   return { ok: true, message: t.settings.adultDone };
 }
 
