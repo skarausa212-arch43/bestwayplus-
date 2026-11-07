@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Settings, Nfc, Gift, Ticket, Users, History, X } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { getDict, fmt } from "@/i18n";
-import { dateFmt, tl, numFmt } from "@/i18n/format";
+import { dateFmt, tl } from "@/i18n/format";
 import { myToys } from "@/server/toys";
 import { accountsFor, history } from "@/server/points";
 import { listChildren } from "@/server/users";
@@ -13,6 +13,8 @@ import { Badge, EmptyState, Notice, PointsPill } from "@/components/ui/misc";
 import { Button } from "@/components/ui/button";
 import { ActionButton } from "@/components/ui/form";
 import { TransferButton, AddChildForm } from "./client";
+import { CountUp, TiltCard } from "@/components/fx/fx";
+import { Reveal } from "@/components/home/reveal";
 import { cancelTransferAction, assignChildAction, removeChildAction } from "./actions";
 
 export const metadata = { title: "My MODU" };
@@ -65,17 +67,21 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       <section aria-labelledby="bal" className="mt-8">
         <h2 id="bal" className="sr-only">{d.balances}</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {accounts.map((a) => (
-            <div key={a.id} className={a.is_child ? "card p-5" : "card-glow p-5"}>
+          {accounts.map((a, i) => (
+            <Reveal key={a.id} delay={i * 0.06}>
+            <TiltCard max={6} className="h-full rounded-[var(--radius-card)]">
+            <div className={a.is_child ? "card h-full p-5" : "h-full rounded-[var(--radius-card)] border-flow p-5"}>
               <div className="flex items-center justify-between text-xs text-muted">
                 <span>{t.common.pointsName}</span>
                 <Badge tone={a.is_child ? "peach" : "neutral"}>{a.is_child ? d.child : d.you}</Badge>
               </div>
               <div className="mt-1 truncate font-semibold">{a.display_name}</div>
               <div className="mt-3">
-                <PointsPill value={numFmt(a.balance, locale)} size="lg" />
+                <PointsPill value={<CountUp value={a.balance} />} size="lg" />
               </div>
             </div>
+            </TiltCard>
+            </Reveal>
           ))}
           <div className="card p-5">
             <div className="text-xs text-muted">{d.progress}</div>
@@ -83,7 +89,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               {progress}/{characters.length}
             </div>
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/5" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={characters.length}>
-              <div className="h-full rounded-full bg-gradient-to-r from-peach to-gold" style={{ width: `${(progress / Math.max(1, characters.length)) * 100}%` }} />
+              <div className="h-full origin-left rounded-full bg-gradient-to-r from-peach via-gold to-peach bg-[length:200%_100%] animate-shimmer transition-[width] duration-1000" style={{ width: `${(progress / Math.max(1, characters.length)) * 100}%` }} />
             </div>
             <div className="mt-2 text-xs text-muted">{fmt(d.progressText, { owned: progress, total: characters.length })}</div>
           </div>

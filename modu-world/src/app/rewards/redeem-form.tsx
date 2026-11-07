@@ -1,6 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { confetti } from "@/components/fx/confetti";
 import { Ticket } from "lucide-react";
 import { SubmitButton, ActionMessage } from "@/components/ui/form";
 import { redeemAction } from "./actions";
@@ -22,14 +24,22 @@ export function RedeemForm({
   const best = [...accounts].sort((a, b) => b.balance - a.balance)[0];
   const [accountId, setAccountId] = useState(best?.id ?? "");
   const balance = accounts.find((a) => a.id === accountId)?.balance ?? 0;
+  useEffect(() => {
+    if (state?.ok) confetti();
+  }, [state]);
 
   if (state?.ok) {
     return (
       <div className="grid gap-2">
-        <div className="flex items-center gap-2 rounded-2xl border border-success/40 bg-success/10 px-4 py-3">
+        <motion.div
+          initial={{ scale: 0.6, opacity: 0, rotateX: 90 }}
+          animate={{ scale: 1, opacity: 1, rotateX: 0 }}
+          transition={{ type: "spring", stiffness: 260, damping: 18 }}
+          className="flex items-center gap-2 rounded-2xl border border-success/40 bg-success/10 px-4 py-3"
+        >
           <Ticket className="size-5 text-success" />
           <span className="font-mono text-lg font-bold text-success" data-testid="new-coupon">{String(state.data?.code)}</span>
-        </div>
+        </motion.div>
         <p className="text-xs text-muted">{labels.hint}</p>
       </div>
     );

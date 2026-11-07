@@ -5,6 +5,8 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { TabBar } from "@/components/layout/tab-bar";
 import { PwaRegister } from "@/components/layout/pwa-register";
+import { BackgroundFx } from "@/components/fx/background-fx";
+import { ScrollProgress, CursorGlow } from "@/components/fx/fx";
 import { getDict } from "@/i18n";
 
 const display = Unbounded({ subsets: ["latin", "cyrillic"], weight: ["600", "700", "800"], variable: "--font-unbounded" });
@@ -30,8 +32,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={locale} className={`${display.variable} ${sans.variable}`}>
       <body className="min-h-dvh">
+        <BackgroundFx />
+        <CursorGlow />
+        <ScrollProgress />
         <Header />
-        <main id="main">{children}</main>
+        <main id="main" className="relative z-[1]">{children}</main>
         <Footer />
         <TabBar
           labels={{ home: t.nav.home, collection: t.nav.collection, scan: t.nav.scan, rewards: t.nav.rewards, profile: t.nav.profile }}

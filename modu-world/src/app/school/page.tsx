@@ -6,6 +6,7 @@ import { getSessionUser } from "@/lib/auth";
 import { listChildren } from "@/server/users";
 import { listForGuardian } from "@/server/school";
 import { PageHero } from "@/components/page-hero";
+import { Stagger, StaggerItem, TiltCard } from "@/components/fx/fx";
 import { Badge, EmptyState } from "@/components/ui/misc";
 import { Button } from "@/components/ui/button";
 import { ActionButton } from "@/components/ui/form";
@@ -26,18 +27,22 @@ export default async function SchoolPage() {
   return (
     <>
       <PageHero eyebrow={s.eyebrow} title={s.title} text={s.text} />
-      <section className="container-x grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <Stagger className="container-x grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {s.rules.map((r, i) => {
           const Icon = ICONS[i];
           return (
-            <div key={r.title} className="card p-5">
-              <Icon className="size-6 text-peach" />
+            <StaggerItem key={r.title}>
+            <TiltCard max={8} className="h-full rounded-[var(--radius-card)]">
+            <div className="card group h-full p-5">
+              <Icon className="size-6 text-peach transition-transform duration-500 group-hover:scale-125 group-hover:-rotate-12" />
               <h2 className="mt-4 font-display text-base font-bold">{r.title}</h2>
               <p className="mt-2 text-sm text-cream/65">{r.text}</p>
             </div>
+            </TiltCard>
+            </StaggerItem>
           );
         })}
-      </section>
+      </Stagger>
 
       <section className="container-x mt-10 grid gap-8 lg:grid-cols-[1.2fr_1fr]">
         <div className="card p-6 sm:p-8">

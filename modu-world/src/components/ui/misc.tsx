@@ -88,7 +88,7 @@ export function EmptyState({ icon, title, children }: { icon?: React.ReactNode; 
   );
 }
 
-export function PointsPill({ value, size = "md" }: { value: number | string; size?: "sm" | "md" | "lg" }) {
+export function PointsPill({ value, size = "md" }: { value: React.ReactNode; size?: "sm" | "md" | "lg" }) {
   const s = { sm: "text-sm gap-1", md: "text-base gap-1.5", lg: "text-3xl gap-2" }[size];
   const icon = { sm: 16, md: 20, lg: 36 }[size];
   return (

@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { Badge } from "@/components/ui/misc";
+import { TiltCard } from "@/components/fx/fx";
 import type { Character, Locale } from "@/lib/types";
 import { pick, fmt } from "@/i18n/format";
 import type { Dict } from "@/i18n/ru";
@@ -11,9 +12,10 @@ export const rarityTone = { common: "peach", rare: "gold", epic: "silver", legen
 export function CharacterCard({ c, t, locale, owned }: { c: Character; t: Dict; locale: Locale; owned?: number }) {
   const content = pick(c.content, locale);
   return (
+    <TiltCard className="rounded-[var(--radius-card)]">
     <Link
       href={`/collection/${c.slug}`}
-      className="group card relative flex flex-col overflow-hidden transition duration-300 hover:-translate-y-1 hover:border-peach/40"
+      className="group card relative flex flex-col overflow-hidden transition duration-300 hover:border-peach/50 hover:shadow-[0_30px_80px_-30px_rgb(244_181_141/0.55)]"
     >
       <div className="relative aspect-[4/5] overflow-hidden">
         <div
@@ -25,7 +27,7 @@ export function CharacterCard({ c, t, locale, owned }: { c: Character; t: Dict; 
           alt={c.name}
           fill
           sizes="(max-width: 768px) 100vw, 33vw"
-          className="object-cover object-top transition duration-500 group-hover:scale-105"
+          className="object-cover object-top transition duration-700 group-hover:scale-110"
         />
         <div className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-ink-2 to-transparent" />
         <div className="absolute left-4 top-4 z-10 flex gap-2">
@@ -48,5 +50,6 @@ export function CharacterCard({ c, t, locale, owned }: { c: Character; t: Dict; 
         </span>
       </div>
     </Link>
+    </TiltCard>
   );
 }

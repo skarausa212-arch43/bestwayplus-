@@ -27,6 +27,54 @@
   --animate-float: float 6s ease-in-out infinite;
   --animate-pulse-ring: pulse-ring 2.4s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
 
+  --animate-aurora: aurora 18s ease-in-out infinite alternate;
+  --animate-shimmer: shimmer 3.2s linear infinite;
+  --animate-marquee: marquee 38s linear infinite;
+  --animate-scan: scan 3.6s cubic-bezier(0.6, 0, 0.4, 1) infinite;
+  --animate-grid: grid-move 2.4s linear infinite;
+  --animate-coin: coin-spin 6s linear infinite;
+  --animate-orbit: orbit 22s linear infinite;
+  --animate-orbit-rev: orbit 30s linear infinite reverse;
+  --animate-border: border-spin 6s linear infinite;
+
+  @keyframes aurora {
+    0% { transform: translate3d(-10%, -5%, 0) rotate(0deg) scale(1); }
+    50% { transform: translate3d(8%, 6%, 0) rotate(25deg) scale(1.15); }
+    100% { transform: translate3d(-4%, 10%, 0) rotate(-15deg) scale(0.95); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @keyframes scan {
+    0% { transform: translateY(-100%); opacity: 0; }
+    15% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { transform: translateY(100%); opacity: 0; }
+  }
+  @keyframes grid-move {
+    from { background-position: 0 0; }
+    to { background-position: 0 48px; }
+  }
+  @keyframes coin-spin {
+    from { transform: rotateY(0deg); }
+    to { transform: rotateY(360deg); }
+  }
+  @keyframes orbit {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  @keyframes border-spin {
+    to { --border-angle: 360deg; }
+  }
+  @keyframes ornament {
+    from { background-position: 0 0; }
+    to { background-position: 480px 0; }
+  }
   @keyframes float {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-10px); }
@@ -72,6 +120,43 @@
   }
 }
 
+@property --border-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* animated conic border, e.g. on highlighted cards */
+@utility border-flow {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--color-ink-2), var(--color-ink-2)) padding-box,
+    conic-gradient(from var(--border-angle), transparent 0deg, var(--color-peach) 60deg, var(--color-gold) 120deg, transparent 180deg, transparent 360deg) border-box;
+  animation: var(--animate-border);
+}
+
+/* sweeping light reflection on text or surfaces */
+@utility shimmer-text {
+  background: linear-gradient(110deg, var(--color-cream) 35%, #fff6ee 45%, var(--color-peach) 50%, var(--color-cream) 60%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: var(--animate-shimmer);
+}
+
+/* perspective "holo floor" grid */
+@utility holo-grid {
+  background-image:
+    linear-gradient(to right, rgb(244 181 141 / 0.18) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(244 181 141 / 0.18) 1px, transparent 1px);
+  background-size: 48px 48px;
+  transform: perspective(500px) rotateX(62deg);
+  transform-origin: center top;
+  mask-image: linear-gradient(to bottom, black 0%, transparent 85%);
+  animation: var(--animate-grid);
+}
+
 @utility card {
   border-radius: var(--radius-card);
   border: 1px solid var(--color-line);
@@ -90,7 +175,9 @@
 
 @layer components {
   .text-gradient {
-    background: linear-gradient(100deg, #ffd9bf 0%, var(--color-peach) 40%, var(--color-gold) 100%);
+    background: linear-gradient(100deg, #ffd9bf 0%, var(--color-peach) 25%, var(--color-gold) 50%, var(--color-peach) 75%, #ffd9bf 100%);
+    background-size: 200% 100%;
+    animation: var(--animate-shimmer);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;

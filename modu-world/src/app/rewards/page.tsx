@@ -10,6 +10,8 @@ import { Badge, EmptyState, PointsPill } from "@/components/ui/misc";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { RedeemForm } from "./redeem-form";
+import { TiltCard } from "@/components/fx/fx";
+import { Reveal } from "@/components/home/reveal";
 
 export const metadata = { title: "Rewards" };
 export const dynamic = "force-dynamic";
@@ -66,13 +68,15 @@ export default async function RewardsPage({ searchParams }: { searchParams: Prom
           </div>
         ) : (
           <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {shown.map((rw) => {
+            {shown.map((rw, idx) => {
               const Icon = CAT_ICON[rw.category as keyof typeof CAT_ICON] ?? Gift;
               return (
-                <article key={rw.id} className="card flex flex-col p-6" data-testid="reward" data-slug={rw.slug}>
+                <Reveal key={rw.id} delay={(idx % 3) * 0.08}>
+                <TiltCard max={6} className="h-full rounded-[var(--radius-card)]">
+                <article className="card group flex h-full flex-col p-6" data-testid="reward" data-slug={rw.slug}>
                   <div className="flex items-start justify-between gap-3">
-                    <span className="grid size-12 place-items-center rounded-2xl bg-peach/10 text-peach">
-                      <Icon className="size-6" />
+                    <span className="grid size-12 place-items-center rounded-2xl bg-peach/10 text-peach transition-transform duration-500 group-hover:rotate-12">
+                      <Icon className="size-6 animate-float" />
                     </span>
                     <div className="flex flex-wrap justify-end gap-1.5">
                       {rw.partner_is_concept && <Badge tone="demo">{r.conceptNote}</Badge>}
@@ -109,6 +113,8 @@ export default async function RewardsPage({ searchParams }: { searchParams: Prom
                     </div>
                   </div>
                 </article>
+                </TiltCard>
+                </Reveal>
               );
             })}
           </div>

@@ -8,6 +8,7 @@ import { Hero } from "@/components/home/hero";
 import { NfcDemo } from "@/components/home/nfc-demo";
 import { HowItWorks } from "@/components/home/how-it-works";
 import { Reveal } from "@/components/home/reveal";
+import { Marquee, TiltCard, Parallax, CountUp } from "@/components/fx/fx";
 import { CharacterCard } from "@/components/character-card";
 import { Button } from "@/components/ui/button";
 import { Badge, PointsPill, SectionHeading } from "@/components/ui/misc";
@@ -23,6 +24,8 @@ export default async function HomePage() {
       <Hero
         t={{ eyebrow: h.heroEyebrow, title1: h.heroTitle1, title2: h.heroTitle2, text: h.heroText, explore: h.explore, activate: h.activate, stats: h.stats }}
       />
+
+      <Marquee items={["Your toy", "Your world", "NFC inside", "MODU School", "Made in Belarus", "Collectors 18+", "Genesis series"]} className="border-y border-white/5" />
 
       {/* Characters */}
       <section className="container-x py-16" aria-labelledby="chars">
@@ -112,8 +115,10 @@ export default async function HomePage() {
           </Button>
         </div>
         <div className="mt-10 flex snap-x gap-4 overflow-x-auto pb-4 [scrollbar-width:none] sm:grid sm:grid-cols-2 sm:overflow-visible lg:grid-cols-4">
-          {rewards.slice(0, 4).map((r) => (
-            <div key={r.id} className="card min-w-[240px] snap-start p-5">
+          {rewards.slice(0, 4).map((r, i) => (
+            <Reveal key={r.id} delay={i * 0.08} className="min-w-[240px] snap-start">
+            <TiltCard className="h-full rounded-[var(--radius-card)]">
+            <div className="card h-full p-5">
               <div className="flex items-center justify-between">
                 <Badge tone={r.partner_is_concept ? "demo" : "neutral"}>
                   {r.partner_is_concept ? t.common.concept : t.rewards.categories[r.category as keyof typeof t.rewards.categories]}
@@ -122,19 +127,23 @@ export default async function HomePage() {
               <h3 className="mt-6 font-display text-lg font-bold leading-snug">{tl(r.title, locale)}</h3>
               {r.partner_name && <p className="mt-1 text-xs text-muted">{r.partner_name}</p>}
               <div className="mt-6">
-                <PointsPill value={r.cost_points} />
+                <PointsPill value={<CountUp value={r.cost_points} />} />
               </div>
             </div>
+            </TiltCard>
+            </Reveal>
           ))}
         </div>
       </section>
 
       {/* Collectors */}
       <section className="container-x py-16">
-        <div className="card relative overflow-hidden p-8 sm:p-12">
-          <div className="absolute -right-10 top-1/2 hidden h-[420px] w-[340px] -translate-y-1/2 md:block">
-            <Image src="/assets/modu/dragon.webp" alt="" fill sizes="340px" className="object-contain opacity-90" />
-          </div>
+        <div className="relative overflow-hidden rounded-[var(--radius-card)] p-8 border-flow sm:p-12">
+          <Parallax offset={40} className="absolute -right-10 top-0 hidden h-full w-[340px] md:block">
+            <div className="relative h-full w-full [mask-image:linear-gradient(to_right,transparent,black_35%)]">
+              <Image src="/assets/modu/dragon.webp" alt="" fill sizes="340px" className="object-cover object-top opacity-90" />
+            </div>
+          </Parallax>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_50%,rgb(170_176_184/0.2),transparent_50%)]" />
           <div className="relative max-w-xl">
             <Badge tone="silver">18+</Badge>
@@ -178,7 +187,7 @@ export default async function HomePage() {
               </Button>
             </div>
           </div>
-          <div className="ornament relative h-6 opacity-90" aria-hidden />
+          <div className="ornament relative h-6 opacity-90 animate-[ornament_14s_linear_infinite]" aria-hidden />
         </div>
       </section>
 

@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { confetti } from "@/components/fx/confetti";
 import Link from "next/link";
 import { KeyRound } from "lucide-react";
 import { SubmitButton, ActionMessage } from "@/components/ui/form";
@@ -17,6 +18,9 @@ export function ActivateForm({
   labels: { code: string; placeholder: string; button: string; assignTo: string; me: string; dashboard: string };
 }) {
   const [state, action] = useActionState(activateAction, null);
+  useEffect(() => {
+    if (state?.ok) confetti();
+  }, [state]);
   if (state?.ok) {
     return (
       <div className="grid gap-4">
@@ -72,6 +76,9 @@ export function ActivateForm({
 
 export function AcceptTransferForm({ token, labels }: { token: string; labels: { code: string; button: string; dashboard: string } }) {
   const [state, action] = useActionState(acceptTransferAction, null);
+  useEffect(() => {
+    if (state?.ok) confetti();
+  }, [state]);
   if (state?.ok) {
     return (
       <div className="grid gap-4">

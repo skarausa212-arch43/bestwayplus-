@@ -28,7 +28,10 @@ export default async function CoinPage() {
       <div className="container-x grid gap-8 lg:grid-cols-[1fr_1.1fr]">
         <div className="grid h-fit gap-6">
           <div className="card flex items-center gap-6 p-6">
-            <Image src="/assets/modu/coin.svg" alt="MODU Coin" width={96} height={96} className="animate-float" />
+            <div className="relative [perspective:600px]">
+              <div className="absolute inset-2 rounded-full bg-gold/40 blur-xl animate-pulse" />
+              <Image src="/assets/modu/coin.svg" alt="MODU Coin" width={96} height={96} className="relative animate-coin [transform-style:preserve-3d]" />
+            </div>
             <div>
               <div className="font-display text-2xl font-bold">MODU</div>
               <Badge tone="gold">ERC-20 · testnet</Badge>
