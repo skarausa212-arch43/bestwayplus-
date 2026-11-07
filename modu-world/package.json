@@ -1,0 +1,52 @@
+{
+  "name": "modu-world",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MODU WORLD MVP — collectible NFC toys, MODU School, MODU Points and a separate testnet Web3 layer for adults.",
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed": "tsx --conditions=react-server scripts/seed.ts",
+    "db:reset": "tsx scripts/migrate.ts --reset && tsx --conditions=react-server scripts/seed.ts",
+    "test": "vitest run",
+    "test:e2e": "playwright test --trace off",
+    "contracts:test": "npm --prefix contracts test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^7.0.3",
+    "@radix-ui/react-slot": "^1.5.0",
+    "@tanstack/react-query": "^5.107.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.43.0",
+    "lucide-react": "^1.70.0",
+    "next": "^15.5.29",
+    "pg": "^8.23.1",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-hook-form": "^7.91.0",
+    "server-only": "^0.0.1",
+    "tailwind-merge": "^3.7.0",
+    "viem": "^2.57.16",
+    "wagmi": "^2.19.5",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/postcss": "^4.3.5",
+    "@types/node": "^22.20.5",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "tailwindcss": "^4.3.5",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7"
+  }
+}
