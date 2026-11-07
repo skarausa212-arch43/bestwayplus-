@@ -12,13 +12,13 @@ export function Badge({
   className?: string;
 }) {
   const tones = {
-    neutral: "bg-white/5 text-cream/80 border-white/10",
+    neutral: "bg-ink/60 text-cream/80 border-white/10 backdrop-blur-sm",
     peach: "bg-peach/15 text-peach border-peach/30",
     gold: "bg-gold/15 text-gold border-gold/30",
     silver: "bg-silver/15 text-silver border-silver/30",
     success: "bg-success/15 text-success border-success/30",
     danger: "bg-danger/15 text-danger border-danger/30",
-    demo: "bg-[repeating-linear-gradient(45deg,rgb(214_162_60/0.2)_0_6px,transparent_6px_12px)] text-gold border-gold/40",
+    demo: "bg-ink/85 text-gold border-gold/50 backdrop-blur-sm",
   };
   return (
     <span className={cn("inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold", tones[tone], className)}>

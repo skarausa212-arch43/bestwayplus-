@@ -31,7 +31,7 @@ export default async function CharacterPage({ params }: { params: Promise<{ slug
       <div className="mt-6 grid gap-10 lg:grid-cols-2">
         <div className="card relative aspect-square overflow-hidden lg:aspect-auto lg:min-h-[560px]">
           <div className="absolute inset-0" style={{ background: `radial-gradient(circle at 50% 75%, ${c.accent_color}66, transparent 60%)` }} />
-          <Image src={c.image_path} alt={c.name} fill priority sizes="(max-width:1024px) 100vw, 50vw" className="object-contain object-bottom p-6 animate-float" />
+          <Image src={c.image_path} alt={c.name} fill priority sizes="(max-width:1024px) 100vw, 50vw" className="object-cover object-top" />
         </div>
         <div>
           <div className="flex flex-wrap gap-2">
@@ -83,7 +83,7 @@ export default async function CharacterPage({ params }: { params: Promise<{ slug
         {others.map((o) => (
           <Link key={o.slug} href={`/collection/${o.slug}`} className="card group flex items-center gap-4 p-4 hover:border-peach/40">
             <div className="relative size-20 shrink-0 overflow-hidden rounded-2xl bg-ink">
-              <Image src={o.image_path} alt="" fill sizes="80px" className="object-contain" />
+              <Image src={o.image_path} alt="" fill sizes="80px" className="object-cover object-top" />
             </div>
             <div>
               <div className="font-display font-bold group-hover:text-peach">{o.name}</div>

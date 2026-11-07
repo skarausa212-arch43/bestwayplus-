@@ -1,0 +1,56 @@
+name: MODU WORLD CI
+
+on:
+  push:
+    paths: ["modu-world/**", ".github/workflows/modu-world.yml"]
+  pull_request:
+    paths: ["modu-world/**", ".github/workflows/modu-world.yml"]
+
+jobs:
+  app:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: modu-world
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: modu
+          POSTGRES_PASSWORD: modu
+          POSTGRES_DB: modu
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U modu" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGPASSWORD: modu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: modu-world/package-lock.json
+      - run: psql -h localhost -U modu -c "create database modu_test" -c "create database modu_e2e"
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+        env:
+          DATABASE_URL: postgres://modu_app:modu_app_dev@localhost:5432/modu_e2e
+          SECRET_PEPPER: ci-pepper-0123456789abcdef0123456789abcdef
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+
+  contracts:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: modu-world/contracts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm test

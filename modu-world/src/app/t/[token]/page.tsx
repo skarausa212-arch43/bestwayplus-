@@ -52,8 +52,9 @@ export default async function TagPage({ params }: { params: Promise<{ token: str
       {/* Passport card */}
       <div className="card-glow relative overflow-hidden">
         <div className="relative aspect-[4/3.2] overflow-hidden bg-gradient-to-b from-peach/20 via-ink-2 to-ink-2">
-          <Image src={p.character.image_path} alt={p.character.name} fill priority sizes="(max-width:1024px) 100vw, 50vw" className="object-contain object-bottom p-6" />
-          <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+          <Image src={p.character.image_path} alt={p.character.name} fill priority sizes="(max-width:1024px) 100vw, 50vw" className="object-cover object-top" />
+          <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-ink-2 to-transparent" />
+          <div className="absolute left-4 top-4 z-10 flex flex-wrap gap-2">
             <Badge tone={statusTone[p.status]}>{t.toy.status[p.status]}</Badge>
             {p.is_demo && <Badge tone="demo">{t.toy.demoBadge}</Badge>}
           </div>

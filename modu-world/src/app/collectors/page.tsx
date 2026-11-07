@@ -63,7 +63,7 @@ export default async function CollectorsPage() {
                       <li key={toy.id} className="card p-5" data-testid="collector-toy">
                         <div className="flex gap-4">
                           <div className="relative size-24 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-b from-silver/20 to-transparent">
-                            <Image src={toy.image_path} alt="" fill sizes="96px" className="object-contain object-bottom" />
+                            <Image src={toy.image_path} alt="" fill sizes="96px" className="object-cover object-top" />
                           </div>
                           <div className="min-w-0 flex-1">
                             <h3 className="font-display text-lg font-bold">{toy.name}</h3>

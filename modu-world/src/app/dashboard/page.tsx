@@ -44,7 +44,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="eyebrow">{d.title}</p>
-          <h1 className="mt-2 text-4xl font-extrabold">{fmt(d.hello, { name: user.displayName })}</h1>
+          <h1 className="mt-2 text-3xl font-extrabold sm:text-4xl">{fmt(d.hello, { name: user.displayName })}</h1>
           {user.isDemo && <Badge tone="demo" className="mt-3">{t.common.demoData}</Badge>}
         </div>
         <div className="flex gap-2">
@@ -107,7 +107,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               <article key={toy.id} className="card flex flex-col overflow-hidden" data-testid="my-toy">
                 <div className="flex gap-4 p-4">
                   <div className="relative size-24 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-b from-peach/20 to-transparent">
-                    <Image src={toy.image_path} alt="" fill sizes="96px" className="object-contain object-bottom" />
+                    <Image src={toy.image_path} alt="" fill sizes="96px" className="object-cover object-top" />
                   </div>
                   <div className="min-w-0">
                     <h3 className="font-display text-lg font-bold">{toy.name}</h3>

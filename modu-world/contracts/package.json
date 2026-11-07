@@ -1,0 +1,21 @@
+{
+  "name": "modu-contracts",
+  "private": true,
+  "description": "MODU WORLD testnet contracts: MODU (ERC-20, no sale) and MODU Certificate (ERC-721).",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:local": "hardhat run scripts/deploy.ts --network hardhat",
+    "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox-viem": "^3.0.0",
+    "@openzeppelin/contracts": "^5.6.1",
+    "@types/node": "^26.6.6",
+    "hardhat": "^2.29.1",
+    "solc": "^0.8.28",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
+    "viem": "^2.57.16"
+  }
+}

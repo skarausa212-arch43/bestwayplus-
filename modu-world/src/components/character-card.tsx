@@ -25,14 +25,15 @@ export function CharacterCard({ c, t, locale, owned }: { c: Character; t: Dict; 
           alt={c.name}
           fill
           sizes="(max-width: 768px) 100vw, 33vw"
-          className="object-contain object-bottom p-4 transition duration-500 group-hover:scale-105"
+          className="object-cover object-top transition duration-500 group-hover:scale-105"
         />
-        <div className="absolute left-4 top-4 flex gap-2">
+        <div className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-ink-2 to-transparent" />
+        <div className="absolute left-4 top-4 z-10 flex gap-2">
           <Badge tone={rarityTone[c.rarity]}>{t.collection.rarity[c.rarity]}</Badge>
           <Badge>{fmt(t.collection.ageFrom, { age: c.min_age })}</Badge>
         </div>
         {owned ? (
-          <div className="absolute right-4 top-4">
+          <div className="absolute right-4 top-4 z-10">
             <Badge tone="success">{fmt(t.collection.owned, { n: owned })}</Badge>
           </div>
         ) : null}
